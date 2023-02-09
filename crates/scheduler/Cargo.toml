@@ -1,0 +1,28 @@
+[package]
+name = "scheduler"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[dependencies]
+api = { path = "../api", features = ["host"] }
+board = { path = "../board" }
+defmt = { version = "0.3.2", optional = true }
+logger = { path = "../logger" }
+store = { path = "../store" }
+
+[dependencies.interpreter]
+path = "../interpreter"
+# TODO: Make those configurable.
+# features = ["toctou", "float-types"]  # 109ms .text=91K
+features = ["toctou"]  # 100ms .text=79K
+# features = []  # 89ms .text=78K
+# features = ["cache"]  # 92ms .text=82K
+
+[features]
+defmt = ["dep:defmt", "board/defmt", "logger/defmt"]
+log = ["logger/log"]
+std = ["store/std"]
+# std = ["interpreter/debug"]

@@ -1,0 +1,408 @@
+/**
+ * Copyright 2022 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// START OF MODULE button
+// Button and touch operations.
+  // Describes the state of a button.
+  enum button_State {
+    // The button is released.
+    Released,
+
+    // The button is pressed.
+    Pressed,
+  }
+
+  // Returns how many buttons are on the device.
+  @external("env", "bc")
+  export declare function button_count(
+  // How many buttons are on the device.
+  ): usize
+
+  // Register a handler for button events.
+  @external("env", "br")
+  export declare function button_register(
+    // Index of the button to listen to.
+    button: usize,
+
+    // Function called on button events.
+    //
+    // The function takes its opaque `data` and the new button `state` as arguments.
+    handler_func: usize,
+
+    // The opaque data to use when calling the handler function.
+    handler_data: usize,
+  ): void
+
+  // Unregister handlers for button events.
+  @external("env", "bu")
+  export declare function button_unregister(
+    // Index of the button to stop listening to.
+    button: usize,
+  ): void
+// END OF MODULE button
+
+// START OF MODULE clock
+// Clock and timer operations.
+  // Whether a timer should periodically trigger.
+  enum clock_Mode {
+    // The timer fires only once.
+    Oneshot,
+
+    // The timer fires periodically.
+    Periodic,
+  }
+
+  // Allocates a timer.
+  @external("env", "ta")
+  export declare function clock_allocate(
+    // Function called when the timer triggers.
+    handler_func: usize,
+
+    // The opaque data to use when calling the handler function.
+    handler_data: usize,
+  // Identifier for this timer.
+  ): usize
+
+  // Starts (or restarts) a timer given its id.
+  @external("env", "tb")
+  export declare function clock_start(
+    // The identifier of the timer to start.
+    //
+    // It must come from an allocated timer that wasn't stopped.
+    id: usize,
+
+    // Whether the timer should periodically fire.
+    mode: usize,
+
+    // How long until the timer triggers in milli-seconds.
+    duration_ms: usize,
+  ): void
+
+  // Stops a timer (if running) given its id.
+  //
+  // Note that if the timer triggers while being stopped, the handler may still be
+  // called.
+  @external("env", "tc")
+  export declare function clock_stop(
+    // The identifier of the timer to start.
+    id: usize,
+  ): void
+
+  // Deallocates a timer given its id.
+  @external("env", "td")
+  export declare function clock_free(
+    // The identifier of the timer to start.
+    id: usize,
+  ): void
+// END OF MODULE clock
+
+// START OF MODULE crypto
+// Cryptographic operations.
+  // Describes errors on cryptographic operations.
+  enum crypto_Error {
+    // A function pre-condition was broken.
+    InvalidArgument,
+
+    // An operation is unsupported.
+    Unsupported,
+  }
+
+  // START OF MODULE crypto_ccm
+  // AES-CCM according to Bluetooth.
+    // Encrypts a clear text given a key and IV.
+    @external("env", "cce")
+    export declare function crypto_ccm_encrypt(
+      // The 16 bytes key to encrypt with.
+      key: usize,
+
+      // The 8 bytes IV to encrypt with.
+      iv: usize,
+
+      // Length in bytes of the `clear` text.
+      //
+      // This must be at most 251 bytes. The `cipher` length must be 4 bytes longer than
+      // this value.
+      len: usize,
+
+      // The clear text to encrypt from.
+      //
+      // Its length must be provided in the `len` field.
+      clear: usize,
+
+      // The cipher text to encrypt to.
+      //
+      // Its length must be `len + 4` bytes.
+      cipher: usize,
+    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
+    // otherwise.
+    ): isize
+
+    // Decrypts a cipher text given a key and IV.
+    @external("env", "ccd")
+    export declare function crypto_ccm_decrypt(
+      // The 16 bytes key to encrypt with.
+      key: usize,
+
+      // The 8 bytes IV to encrypt with.
+      iv: usize,
+
+      // Length in bytes of the `clear` text.
+      //
+      // This must be at most 251 bytes. The `cipher` length must be 4 bytes longer than
+      // this value.
+      len: usize,
+
+      // The cipher text to encrypt from.
+      //
+      // Its length must be `len + 4` bytes.
+      cipher: usize,
+
+      // The clear text to encrypt to.
+      //
+      // Its length must be provided in the `len` field.
+      clear: usize,
+    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
+    // otherwise.
+    ): isize
+  // END OF MODULE crypto_ccm
+// END OF MODULE crypto
+
+// START OF MODULE debug
+// Debugging operations.
+  // Prints a message to the debug output.
+  //
+  // If debug output is disabled then this is a no-op.
+  @external("env", "dp")
+  export declare function debug_println(
+    // The message to print.
+    //
+    // Traps if the message is not valid UTF-8.
+    ptr: usize,
+
+    // The length of the message in bytes.
+    len: usize,
+  ): void
+// END OF MODULE debug
+
+// START OF MODULE led
+// LED operations.
+  // Returns how many LEDs are on the device.
+  @external("env", "lc")
+  export declare function led_count(
+  // How many LEDs are on the device.
+  ): usize
+
+  // Describes the state of a LED.
+  enum led_Status {
+    // The LED is off.
+    Off,
+
+    // The LED is on.
+    On,
+  }
+
+  // Returns a LED status.
+  @external("env", "lg")
+  export declare function led_get(
+    // Index of the LED to set.
+    led: usize,
+  // 0 for off and 1 for on.
+  ): usize
+
+  // Sets a LED status.
+  @external("env", "ls")
+  export declare function led_set(
+    // Index of the LED to set.
+    led: usize,
+
+    // 0 for off and 1 for on.
+    status: usize,
+  ): void
+// END OF MODULE led
+
+// START OF MODULE rng
+// Random number generators.
+  // Fills a slice with random bytes.
+  @external("env", "rb")
+  export declare function rng_fill_bytes(
+    // The slice to fill.
+    ptr: usize,
+
+    // The length of the slice.
+    len: usize,
+  ): void
+// END OF MODULE rng
+
+// START OF MODULE scheduling
+  // Waits until a callback is scheduled.
+  //
+  // This can be used as power management, since the CPU will sleep while waiting.
+  @external("env", "sw")
+  export declare function scheduling_wait_for_callback(
+  ): void
+
+  // Returns how many callbacks are pending.
+  @external("env", "sh")
+  export declare function scheduling_num_pending_callbacks(
+  // How many callbacks are pending.
+  ): usize
+// END OF MODULE scheduling
+
+// START OF MODULE store
+// Persistent storage operations.
+  // Describes errors interacting with the store.
+  enum store_Error {
+    // A function pre-condition was broken.
+    InvalidArgument,
+
+    // The store is full.
+    NoCapacity,
+
+    // The store reached its end of life.
+    NoLifetime,
+
+    // An operation to the underlying storage failed.
+    StorageError,
+
+    // The underlying storage doesn't match the store invariant.
+    InvalidStorage,
+  }
+
+  // Inserts an entry in the store.
+  //
+  // If an entry for that key was already present, it is overwritten.
+  @external("env", "si")
+  export declare function store_insert(
+    // Key of the entry.
+    //
+    // This must be smaller than 4096.
+    key: usize,
+
+    // Value of the entry.
+    ptr: usize,
+
+    // Length of the value.
+    len: usize,
+  // Zero for success. Otherwise complement of error number.
+  ): isize
+
+  // Removes an entry from the store.
+  //
+  // This is not an error if no entry is present. This is simply a no-op in that case.
+  @external("env", "sr")
+  export declare function store_remove(
+    // Key of the entry.
+    key: usize,
+  // Zero for success. Otherwise complement of error number.
+  ): isize
+
+  // Finds an entry in the store, if any.
+  @external("env", "sf")
+  export declare function store_find(
+    // Key of the entry to find.
+    key: usize,
+
+    // Where to write the value of the entry, if found.
+    //
+    // The (inner) pointer will be allocated by the callee and must be freed by the
+    // caller. It is thus owned by the caller when the function returns.
+    ptr: usize,
+
+    // Where to write the length of the value, if found.
+    len: usize,
+  // One if found. Zero if not found. Otherwise complement of error number.
+  ): isize
+// END OF MODULE store
+
+// START OF MODULE usb
+// USB operations.
+  // Describes errors on USB operations.
+  enum usb_Error {
+    Unknown,
+  }
+
+  // START OF MODULE usb_serial
+    // Reads from USB serial.
+    @external("env", "usr")
+    export declare function usb_serial_read(
+      // Where to write the bytes read.
+      ptr: usize,
+
+      // Maximum number of bytes to read.
+      len: usize,
+
+      // Function called when bytes have been read.
+      //
+      // The function takes its opaque `data` and `len` the number of bytes actually
+      // read. This function may be called with a smaller length if no more data was
+      // available.
+      handler_func: usize,
+
+      // The opaque data to use when calling the handler function.
+      handler_data: usize,
+    ): void
+
+    // Writes to USB serial.
+    @external("env", "usw")
+    export declare function usb_serial_write(
+      // Buffer to write.
+      ptr: usize,
+
+      // Length of the buffer in bytes.
+      len: usize,
+
+      // Function called when bytes have been written.
+      //
+      // The function takes its opaque `data` and `len` the number of bytes actually
+      // written. The function may be called before all the buffer has been written in
+      // case writing more bytes would block.
+      handler_func: usize,
+
+      // The opaque data to use when calling the handler function.
+      handler_data: usize,
+    ): void
+
+    // Cancels a pending read operation.
+    @external("env", "usu")
+    export declare function usb_serial_cancel_read(
+    ): void
+
+    // Cancels a pending write operation.
+    @external("env", "usy")
+    export declare function usb_serial_cancel_write(
+    ): void
+
+    // Flushs the USB serial.
+    @external("env", "usf")
+    export declare function usb_serial_flush(
+    // Zero on success, -1 on error.
+    ): isize
+  // END OF MODULE usb_serial
+// END OF MODULE usb
+
+// Board-specific syscalls.
+//
+// Those calls are forwarded by the scheduler.
+@external("env", "s")
+export declare function syscall(
+  x1: usize,
+
+  x2: usize,
+
+  x3: usize,
+
+  x4: usize,
+): isize

@@ -1,0 +1,7 @@
+fn_params_layout = "Compressed"
+format_strings = true
+group_imports = "StdExternalCrate"
+imports_granularity = "Module"
+normalize_comments = true
+spaces_around_ranges = true
+use_small_heuristics = "Max"

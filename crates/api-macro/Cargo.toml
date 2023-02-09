@@ -1,0 +1,17 @@
+[package]
+name = "api-macro"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+api-desc = { path = "../api-desc" }
+proc-macro2 = "1.0.50"
+
+[features]
+multivalue = ["api-desc/multivalue"]

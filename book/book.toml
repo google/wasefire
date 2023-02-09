@@ -1,0 +1,10 @@
+[book]
+authors = ["Julien Cretin <cretin@google.com>"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Wasefire"
+
+[output.html]
+default-theme = "rust"
+git-repository-url = "https://github.com/google/wasefire/tree/main/book"

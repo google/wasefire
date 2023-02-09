@@ -1,0 +1,25 @@
+[package]
+name = "fuzz-store"
+version = "0.0.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4.6"
+store = { path = "..", features = ["std"] }
+rand_core = "0.6.4"
+rand_pcg = "0.3.1"
+strum = { version = "0.24.1", features = ["derive"] }
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "store"
+path = "fuzz_targets/store.rs"

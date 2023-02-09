@@ -1,0 +1,18 @@
+[package]
+name = "board"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[dependencies]
+logger = { path = "../logger" }
+store = { path = "../store" }
+usb-device = "0.2.9"
+usbd-serial = "0.1.1"
+
+[features]
+defmt = ["logger/defmt"]
+log = ["logger/log"]
+std = ["store/std"]
