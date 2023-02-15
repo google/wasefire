@@ -21,5 +21,5 @@ jobs:
           toolchain: nightly
       - run: |
           sudo apt-get update
-          sudo apt-get install libudev-dev
+          sudo apt-get install binaryen libudev-dev wabt
       - run: ./test.sh
