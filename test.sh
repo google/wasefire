@@ -15,7 +15,12 @@
 
 set -e
 
-if [[ ! -e examples/assemblyscript/node_modules ]]; then
+if [ ! -e third_party/WebAssembly/spec/.git ]; then
+  ( set -x
+    git submodule update --init
+  )
+fi
+if [ ! -e examples/assemblyscript/node_modules ]; then
   ( set -x
     cd examples/assemblyscript
     npm install --no-save assemblyscript
