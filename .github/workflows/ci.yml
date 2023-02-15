@@ -15,8 +15,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          components: clippy,rustfmt
-          toolchain: nightly
+      - run: rustup show
       - run: ./test.sh

@@ -31,6 +31,9 @@ has_bin() {
 
 if [ $(has_bin cargo) = n ]; then
   echo "Install rustup from https://rustup.rs"
+  # TODO(https://github.com/rust-lang/rustup/issues/1397): We ideally could run
+  # some rustup command ourselves to make sure it's all setup correctly.
+  echo "Then type `rustup show` from the repository root."
   exit 1
 fi
 
