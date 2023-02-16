@@ -36,72 +36,72 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: "cargo xtask --release build-runners"
-  ./examples/rust/hsm/host:
+  _examples_rust_hsm_host:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./examples/rust/hsm/host && ./test.sh"
-  ./examples/rust/hsm/common:
+  _examples_rust_hsm_common:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./examples/rust/hsm/common && ./test.sh"
-  ./crates/xtask:
+  _crates_xtask:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./crates/xtask && ./test.sh"
-  ./crates/board:
+  _crates_board:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./crates/board && ./test.sh"
-  ./crates/logger:
+  _crates_logger:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./crates/logger && ./test.sh"
-  ./crates/interpreter:
+  _crates_interpreter:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./crates/interpreter && ./test.sh"
-  ./crates/prelude:
+  _crates_prelude:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./crates/prelude && ./test.sh"
-  ./crates/api:
+  _crates_api:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./crates/api && ./test.sh"
-  ./crates/scheduler:
+  _crates_scheduler:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./crates/scheduler && ./test.sh"
-  ./crates/runner-nordic:
+  _crates_runner-nordic:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./crates/runner-nordic && ./test.sh"
-  ./crates/store:
+  _crates_store:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./crates/store && ./test.sh"
-  ./crates/store/fuzz:
+  _crates_store_fuzz:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./crates/store/fuzz && ./test.sh"
-  ./crates/runner-host:
+  _crates_runner-host:
     needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: "cd ./crates/runner-host && ./test.sh"
-  ./crates/api-desc:
+  _crates_api-desc:
     needs: setup
     runs-on: ubuntu-latest
     steps:

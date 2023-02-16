@@ -67,7 +67,7 @@ ci_step runners 'cargo xtask build-runners'
 ci_step runners-release 'cargo xtask --release build-runners'
 
 for dir in $(find . -name test.sh -printf '%h\n'); do
-  ci_step $dir "cd $dir && ./test.sh"
+  ci_step "$(echo ${dir#.} | tr / _ )" "cd $dir && ./test.sh"
 done
 
 ci_step sync './scripts/sync.sh && git diff --exit-code'
