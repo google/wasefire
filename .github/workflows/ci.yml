@@ -11,8 +11,103 @@ on:
     - cron: 12 6 * * 2 # every Tuesday at 6:12 UTC
 
 jobs:
-  ubuntu:
+  setup:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: ./test.sh
+      - run: ./scripts/setup.sh
+  applets:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cargo xtask build-applets"
+  applets-release:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cargo xtask --release build-applets"
+  runners:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cargo xtask build-runners"
+  runners-release:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cargo xtask --release build-runners"
+  ./examples/rust/hsm/host:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./examples/rust/hsm/host && ./test.sh"
+  ./examples/rust/hsm/common:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./examples/rust/hsm/common && ./test.sh"
+  ./crates/xtask:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./crates/xtask && ./test.sh"
+  ./crates/board:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./crates/board && ./test.sh"
+  ./crates/logger:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./crates/logger && ./test.sh"
+  ./crates/interpreter:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./crates/interpreter && ./test.sh"
+  ./crates/prelude:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./crates/prelude && ./test.sh"
+  ./crates/api:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./crates/api && ./test.sh"
+  ./crates/scheduler:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./crates/scheduler && ./test.sh"
+  ./crates/runner-nordic:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./crates/runner-nordic && ./test.sh"
+  ./crates/store:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./crates/store && ./test.sh"
+  ./crates/store/fuzz:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./crates/store/fuzz && ./test.sh"
+  ./crates/runner-host:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./crates/runner-host && ./test.sh"
+  ./crates/api-desc:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "cd ./crates/api-desc && ./test.sh"
+  sync:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: "./scripts/sync.sh && git diff --exit-code"

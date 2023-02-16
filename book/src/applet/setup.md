@@ -21,5 +21,5 @@ To install all dependencies, run the setup script. If it fails, follow its
 instruction and run it again.
 
 ```shell
-./setup.sh
+./scripts/setup.sh
 ```

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2022 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,15 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+set -ex
 
-./setup.sh
-( set -x
-  cargo xtask build-applets
-  cargo xtask --release build-applets
-  cargo xtask build-runners
-  cargo xtask --release build-runners
-)
-find . -mindepth 2 \
-  -name test.sh -type f -perm /a+x \
-  -print -not -execdir {} \; -quit
+# This script upgrades all dependencies.
+
+sed -i 's/^\(channel = "nightly-\)[^"]*"$/\1'$(date +%F)'"/' rust-toolchain.toml
+git submodule foreach 'git fetch -p origin && git checkout origin/main'
+find . -name Cargo.toml -print -execdir cargo upgrade --incompatible \;
