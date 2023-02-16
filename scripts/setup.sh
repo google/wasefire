@@ -83,3 +83,10 @@ if [ ! -e examples/assemblyscript/node_modules ]; then
     npm install --no-save assemblyscript
   )
 fi
+
+if [ ! -e target/applet.wasm ]; then
+  ( set -x
+    mkdir -p target
+    touch target/applet.wasm
+  )
+fi
