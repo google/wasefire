@@ -11,7 +11,7 @@ proc-macro = true
 
 [dependencies]
 api-desc = { path = "../api-desc" }
-proc-macro2 = "1.0.50"
+proc-macro2 = "1.0.51"
 
 [features]
 multivalue = ["api-desc/multivalue"]

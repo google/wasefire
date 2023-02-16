@@ -492,7 +492,7 @@ impl RunnerOptions {
                 Permissions::default(),
             )?;
             eprintln!("Erasing the flash of {}", session.target().name);
-            flashing::erase_all(&mut session)?;
+            flashing::erase_all(&mut session, None)?;
         }
         if self.gdb {
             println!("Use the following 2 commands in different terminals:");
