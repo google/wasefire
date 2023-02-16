@@ -41,10 +41,12 @@ add_missing() {
 ensure_bin() {
   [ $(has_bin $2) = y ] || add_missing $1
 }
+ensure_pkg() {
+  pkg-config --exists $2 || add_missing $1
+}
 
-if ! pkg-config --exists libudev; then
-  add_missing libudev-dev
-fi
+ensure_pkg libudev-dev libudev
+ensure_pkg libusb-1.0-0-dev libusb-1.0
 ensure_bin npm npm
 ensure_bin wabt wasm-strip
 ensure_bin binaryen wasm-opt

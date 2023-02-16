@@ -18,11 +18,20 @@ crates. Currently, all crates are considered **unstable**.
 
 ### Repository setup
 
-Clone the repository with:
+Clone the repository and run the setup script:
 
 ```sh
 git clone https://github.com/google/wasefire
+cd wasefire
+./setup.sh
 ```
+
+The setup script is best effort. When possible, it will directly invoke
+installation commands, possibly asking for sudo password. Otherwise, it will
+return an error and print a message about the next manual step. Once the problem
+is addressed, the script must be run again. The script will eventually return a
+success code indicating that no manual step is required and everything seems in
+order.
 
 ### Running an applet
 
@@ -35,8 +44,7 @@ cargo xtask applet $lang $name runner host
 # This will ask for your password because sudo is needed to setup USB/IP.
 ```
 
-If you have compilation issues, check the troubleshooting section. Here's a
-quick explanation of the command line:
+Here's a quick explanation of the command line:
 - `cargo` is the (extendable) Rust package manager
 - `xtask` is a custom subcommand implemented in the `xtask` crate
 - `applet $rust $name` selects the applet to compile
@@ -79,31 +87,3 @@ picocom -q /dev/ttyACM1
 
 You may use another terminal emulator than `picocom` and you may have a
 different character device path than `/dev/ttyACM1`.
-
-## Troubleshooting
-
-### Command not found: cargo
-
-If your shell doesn't find the `cargo` command, you probably don't have a Rust
-toolchain installed. Follow [those instructions](https://rustup.rs/) to install
-`rustup`. Make sure to use a nightly compiler.
-
-### Compilation error: can't find crate for `core`
-
-If you get the following compilation error:
-
-```
-error[E0463]: can't find crate for `core`
-  |
-  = note: the `wasm32-unknown-unknown` target may not be installed
-  = help: consider downloading the target with `rustup target add wasm32-unknown-unknown`
-  = help: consider building the standard library from source with `cargo build -Zbuild-std`
-```
-
-You need to run: `rustup target add wasm32-unknown-unknown`
-
-### Linking error: libusb
-
-If you get linking errors due to `libusb`, you might need to uninstall
-`libusb-dev` and `libusb-0.1-4` to only keep `libusb-1.0-0-dev`, see [this
-issue](https://github.com/a1ien/rusb/issues/117) for more information.
