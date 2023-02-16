@@ -72,11 +72,9 @@ ensure_bin cargo-bloat cargo-bloat
 ensure_bin probe-run probe-run
 
 if [ -n "$MISSING" ]; then
-  for crate in $MISSING; do
-    ( set -x
-      cargo install $crate
-    )
-  done
+  ( set -x
+    cargo install$MISSING
+  )
 fi
 
 if [ ! -e examples/assemblyscript/node_modules ]; then

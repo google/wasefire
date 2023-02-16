@@ -19,6 +19,22 @@ set -e
 
 CI_WORKFLOW=.github/workflows/ci.yml
 CI_SCRIPT=scripts/ci.sh
+CI_CACHE_KEY="rust-\${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}"
+
+ci_setup() {
+  cat <<EOF
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.rustup/
+            ~/.cargo/
+            target/
+          key: $CI_CACHE_KEY$1
+          restore-keys: $CI_CACHE_KEY
+      - run: ./scripts/setup.sh
+EOF
+}
 
 cat > $CI_WORKFLOW <<EOF
 name: Continuous Integration
@@ -37,8 +53,8 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: ./scripts/setup.sh
+$(ci_setup)
+      - run: cargo xtask
 EOF
 
 sed -n '0,/^$/p' $0 > $CI_SCRIPT
@@ -56,6 +72,7 @@ ci_step() {
     needs: setup
     runs-on: ubuntu-latest
     steps:
+$(ci_setup -$1)
       - run: "$2"
 EOF
   echo "( $2 )" >> $CI_SCRIPT
