@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 aes = "0.8.2"
-anyhow = "1.0.68"
+anyhow = "1.0.69"
 api = { path = "../api", features = ["host"] }
 board = { path = "../board", features = ["std"] }
 ccm = { version = "0.5.0", features = ["std"] }
@@ -18,7 +18,7 @@ logger = { path = "../logger" }
 rand = "0.8.5"
 scheduler = { path = "../scheduler", features = ["std"] }
 store = { path = "../store", features = ["std"] }
-tokio = { version = "1.24.2", features = ["full"] }
+tokio = { version = "1.25.0", features = ["full"] }
 usb-device = "0.2.9"
 usbd-serial = "0.1.1"
 usbip-device = "0.1.5"

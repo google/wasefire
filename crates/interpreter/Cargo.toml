@@ -14,7 +14,7 @@ paste = "1.0.11"
 
 [dev-dependencies]
 lazy_static = "1.4.0"
-wast = "52.0.2"
+wast = "54.0.0"
 
 [features]
 # Enable debugging features (only works for targets with std).
