@@ -83,7 +83,7 @@ ci_step applets-release 'cargo xtask --release build-applets'
 ci_step runners 'cargo xtask build-runners'
 ci_step runners-release 'cargo xtask --release build-runners'
 
-for dir in $(find . -name test.sh -printf '%h\n'); do
+for dir in $(find . -name test.sh -printf '%h\n' | sort); do
   ci_step "$(echo ${dir#.} | tr / _ )" "cd $dir && ./test.sh"
 done
 

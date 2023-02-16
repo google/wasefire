@@ -85,111 +85,6 @@ jobs:
           restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
       - run: ./scripts/setup.sh
       - run: "cargo xtask --release build-runners"
-  _examples_rust_hsm_host:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.rustup/
-            ~/.cargo/
-            target/
-          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_examples_rust_hsm_host
-          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
-      - run: ./scripts/setup.sh
-      - run: "cd ./examples/rust/hsm/host && ./test.sh"
-  _examples_rust_hsm_common:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.rustup/
-            ~/.cargo/
-            target/
-          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_examples_rust_hsm_common
-          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
-      - run: ./scripts/setup.sh
-      - run: "cd ./examples/rust/hsm/common && ./test.sh"
-  _crates_xtask:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.rustup/
-            ~/.cargo/
-            target/
-          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_xtask
-          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
-      - run: ./scripts/setup.sh
-      - run: "cd ./crates/xtask && ./test.sh"
-  _crates_board:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.rustup/
-            ~/.cargo/
-            target/
-          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_board
-          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
-      - run: ./scripts/setup.sh
-      - run: "cd ./crates/board && ./test.sh"
-  _crates_logger:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.rustup/
-            ~/.cargo/
-            target/
-          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_logger
-          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
-      - run: ./scripts/setup.sh
-      - run: "cd ./crates/logger && ./test.sh"
-  _crates_interpreter:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.rustup/
-            ~/.cargo/
-            target/
-          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_interpreter
-          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
-      - run: ./scripts/setup.sh
-      - run: "cd ./crates/interpreter && ./test.sh"
-  _crates_prelude:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.rustup/
-            ~/.cargo/
-            target/
-          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_prelude
-          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
-      - run: ./scripts/setup.sh
-      - run: "cd ./crates/prelude && ./test.sh"
   _crates_api:
     needs: setup
     runs-on: ubuntu-latest
@@ -205,7 +100,7 @@ jobs:
           restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
       - run: ./scripts/setup.sh
       - run: "cd ./crates/api && ./test.sh"
-  _crates_scheduler:
+  _crates_api-desc:
     needs: setup
     runs-on: ubuntu-latest
     steps:
@@ -216,10 +111,85 @@ jobs:
             ~/.rustup/
             ~/.cargo/
             target/
-          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_scheduler
+          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_api-desc
           restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
       - run: ./scripts/setup.sh
-      - run: "cd ./crates/scheduler && ./test.sh"
+      - run: "cd ./crates/api-desc && ./test.sh"
+  _crates_board:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.rustup/
+            ~/.cargo/
+            target/
+          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_board
+          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
+      - run: ./scripts/setup.sh
+      - run: "cd ./crates/board && ./test.sh"
+  _crates_interpreter:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.rustup/
+            ~/.cargo/
+            target/
+          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_interpreter
+          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
+      - run: ./scripts/setup.sh
+      - run: "cd ./crates/interpreter && ./test.sh"
+  _crates_logger:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.rustup/
+            ~/.cargo/
+            target/
+          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_logger
+          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
+      - run: ./scripts/setup.sh
+      - run: "cd ./crates/logger && ./test.sh"
+  _crates_prelude:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.rustup/
+            ~/.cargo/
+            target/
+          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_prelude
+          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
+      - run: ./scripts/setup.sh
+      - run: "cd ./crates/prelude && ./test.sh"
+  _crates_runner-host:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.rustup/
+            ~/.cargo/
+            target/
+          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_runner-host
+          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
+      - run: ./scripts/setup.sh
+      - run: "cd ./crates/runner-host && ./test.sh"
   _crates_runner-nordic:
     needs: setup
     runs-on: ubuntu-latest
@@ -235,6 +205,21 @@ jobs:
           restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
       - run: ./scripts/setup.sh
       - run: "cd ./crates/runner-nordic && ./test.sh"
+  _crates_scheduler:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.rustup/
+            ~/.cargo/
+            target/
+          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_scheduler
+          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
+      - run: ./scripts/setup.sh
+      - run: "cd ./crates/scheduler && ./test.sh"
   _crates_store:
     needs: setup
     runs-on: ubuntu-latest
@@ -265,7 +250,7 @@ jobs:
           restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
       - run: ./scripts/setup.sh
       - run: "cd ./crates/store/fuzz && ./test.sh"
-  _crates_runner-host:
+  _crates_xtask:
     needs: setup
     runs-on: ubuntu-latest
     steps:
@@ -276,11 +261,11 @@ jobs:
             ~/.rustup/
             ~/.cargo/
             target/
-          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_runner-host
+          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_xtask
           restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
       - run: ./scripts/setup.sh
-      - run: "cd ./crates/runner-host && ./test.sh"
-  _crates_api-desc:
+      - run: "cd ./crates/xtask && ./test.sh"
+  _examples_rust_hsm_common:
     needs: setup
     runs-on: ubuntu-latest
     steps:
@@ -291,10 +276,25 @@ jobs:
             ~/.rustup/
             ~/.cargo/
             target/
-          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_crates_api-desc
+          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_examples_rust_hsm_common
           restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
       - run: ./scripts/setup.sh
-      - run: "cd ./crates/api-desc && ./test.sh"
+      - run: "cd ./examples/rust/hsm/common && ./test.sh"
+  _examples_rust_hsm_host:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.rustup/
+            ~/.cargo/
+            target/
+          key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-_examples_rust_hsm_host
+          restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
+      - run: ./scripts/setup.sh
+      - run: "cd ./examples/rust/hsm/host && ./test.sh"
   sync:
     needs: setup
     runs-on: ubuntu-latest
