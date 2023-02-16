@@ -24,7 +24,7 @@ jobs:
           key: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
           restore-keys: rust-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
       - run: ./scripts/setup.sh
-      - run: cargo xtask
+      - run: "cd crates/xtask && cargo build"
   applets:
     needs: setup
     runs-on: ubuntu-latest

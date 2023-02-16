@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 $(ci_setup)
-      - run: cargo xtask
+      - run: "cd crates/xtask && cargo build"
 EOF
 
 sed -n '0,/^$/p' $0 > $CI_SCRIPT
