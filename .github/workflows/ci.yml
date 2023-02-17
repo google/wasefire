@@ -23,6 +23,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
+          key: ${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ hashFiles('rust-toolchain.toml') }}
       - run: ./scripts/setup.sh
       - run: ./scripts/ci.sh
