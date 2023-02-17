@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 api = { path = "../api", features = ["wasm"] }
 const-default = "1.0.0"
-rlsf = "0.2.0"
+rlsf = "0.2.1"
 
 [features]
 multivalue = ["api/multivalue"]
