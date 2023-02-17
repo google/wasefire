@@ -23,6 +23,7 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use clap::Parser;
+use lazy_static::lazy_static;
 use probe_rs::config::TargetSelector;
 use probe_rs::{flashing, Permissions, Session};
 use rustc_demangle::demangle;
@@ -378,9 +379,7 @@ impl RunnerOptions {
             cargo.arg("build");
         }
         cargo.arg("--release");
-        if let Some(target) = self.target() {
-            cargo.arg(format!("--target={target}"));
-        }
+        cargo.arg(format!("--target={}", self.target()));
         if self.name == "nordic" {
             rustflags.extend([
                 "-C link-arg=--nmagic".to_string(),
@@ -511,10 +510,24 @@ impl RunnerOptions {
         replace_command(probe_run);
     }
 
-    fn target(&self) -> Option<&'static str> {
+    fn target(&self) -> &'static str {
+        lazy_static! {
+            // Each time we specify RUSTFLAGS, we want to specify --target. This is because if
+            // --target is not specified then RUSTFLAGS applies to all compiler invocations
+            // (including build scripts and proc macros). This leads to recompilation when RUSTFLAGS
+            // changes. See https://github.com/rust-lang/cargo/issues/8716.
+            static ref HOST_TARGET: String = {
+                const CMD: &str = "rustc -vV | sed -n 's/^host: //p'";
+                let mut output = Command::new("sh").args(["-c", CMD]).output().unwrap();
+                assert!(output.status.success());
+                assert!(output.stderr.is_empty());
+                assert_eq!(output.stdout.pop(), Some(b'\n'));
+                String::from_utf8(output.stdout).unwrap()
+            };
+        }
         match self.name.as_str() {
-            "nordic" => Some("thumbv7em-none-eabi"),
-            "host" => None,
+            "nordic" => "thumbv7em-none-eabi",
+            "host" => &HOST_TARGET,
             _ => unimplemented!(),
         }
     }
@@ -528,14 +541,7 @@ impl RunnerOptions {
     }
 
     fn board_target(&self) -> String {
-        let mut target = "target/".to_string();
-        if let Some(name) = self.target() {
-            target.push_str(name);
-            target.push('/');
-        }
-        target.push_str("release/runner-");
-        target.push_str(&self.name);
-        target
+        format!("target/{}/release/runner-{}", self.target(), self.name)
     }
 }
 

@@ -17,23 +17,18 @@ set -ex
 
 # This script runs the continuous integration tests.
 
-./scripts/setup.sh
-( cargo xtask build-applets )
-( cargo xtask --release build-applets )
-( cargo xtask build-runners )
-( cargo xtask --release build-runners )
-( cd ./crates/api && ./test.sh )
-( cd ./crates/api-desc && ./test.sh )
-( cd ./crates/board && ./test.sh )
-( cd ./crates/interpreter && ./test.sh )
-( cd ./crates/logger && ./test.sh )
-( cd ./crates/prelude && ./test.sh )
-( cd ./crates/runner-host && ./test.sh )
-( cd ./crates/runner-nordic && ./test.sh )
-( cd ./crates/scheduler && ./test.sh )
-( cd ./crates/store && ./test.sh )
-( cd ./crates/store/fuzz && ./test.sh )
-( cd ./crates/xtask && ./test.sh )
-( cd ./examples/rust/hsm/common && ./test.sh )
-( cd ./examples/rust/hsm/host && ./test.sh )
-( ./scripts/sync.sh && git diff --exit-code )
+# External tests.
+cargo xtask build-applets
+cargo xtask --release build-applets
+cargo xtask build-runners
+cargo xtask --release build-runners
+
+# Internal tests.
+for dir in $(find . -name test.sh -printf '%h\n' | sort); do
+  ( cd $dir && ./test.sh )
+done
+
+# Make sure generated content is synced.
+git diff --exit-code
+./scripts/sync.sh
+git diff --exit-code
