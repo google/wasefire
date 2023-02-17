@@ -15,6 +15,9 @@
 
 set -e
 
+# This script installs any missing dependency on a best effort basis. It is
+# idempotent and may be run to check whether everything is set up.
+
 if [ ! -e third_party/WebAssembly/spec/.git ]; then
   ( set -x
     git submodule update --init
@@ -69,16 +72,21 @@ ensure_bin cargo-bloat cargo-bloat
 ensure_bin probe-run probe-run
 
 if [ -n "$MISSING" ]; then
-  for crate in $MISSING; do
-    ( set -x
-      cargo install $crate
-    )
-  done
+  ( set -x
+    cargo install$MISSING
+  )
 fi
 
 if [ ! -e examples/assemblyscript/node_modules ]; then
   ( set -x
     cd examples/assemblyscript
     npm install --no-save assemblyscript
+  )
+fi
+
+if [ ! -e target/applet.wasm ]; then
+  ( set -x
+    mkdir -p target
+    touch target/applet.wasm
   )
 fi

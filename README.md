@@ -23,7 +23,7 @@ Clone the repository and run the setup script:
 ```sh
 git clone https://github.com/google/wasefire
 cd wasefire
-./setup.sh
+./scripts/setup.sh
 ```
 
 The setup script is best effort. When possible, it will directly invoke
