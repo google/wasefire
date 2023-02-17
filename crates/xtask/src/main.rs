@@ -518,9 +518,10 @@ impl RunnerOptions {
             // changes. See https://github.com/rust-lang/cargo/issues/8716.
             static ref HOST_TARGET: String = {
                 const CMD: &str = "rustc -vV | sed -n 's/^host: //p'";
-                let output = Command::new("sh").args(["-c", CMD]).output().unwrap();
+                let mut output = Command::new("sh").args(["-c", CMD]).output().unwrap();
                 assert!(output.status.success());
                 assert!(output.stderr.is_empty());
+                assert_eq!(output.stdout.pop(), Some(b'\n'));
                 String::from_utf8(output.stdout).unwrap()
             };
         }
