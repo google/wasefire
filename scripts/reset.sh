@@ -15,7 +15,10 @@
 
 set -ex
 
-# This script resets the repository to its cloned state.
+# This script resets the repository by keeping only committed content.
 
+git submodule foreach 'git clean -fxd && git reset --hard'
+git submodule update
 git submodule deinit --all
 git clean -fxd
+git reset --hard
