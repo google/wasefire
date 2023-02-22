@@ -17,6 +17,8 @@ set -e
 
 # This script synchronizes generated content.
 
+cargo xtask update-apis
+
 book_example() {
   sed '/ANCHOR/d' book/src/applet/prelude/$1.rs > examples/rust/$2/src/lib.rs
 }

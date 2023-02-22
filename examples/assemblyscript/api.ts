@@ -1,18 +1,16 @@
-/**
- * Copyright 2022 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // START OF MODULE button
 // Button and touch operations.
@@ -65,7 +63,7 @@
     Periodic,
   }
 
-  // Allocates a timer.
+  // Allocates a timer (initially stopped).
   @external("env", "ta")
   export declare function clock_allocate(
     // Function called when the timer triggers.
@@ -76,7 +74,7 @@
   // Identifier for this timer.
   ): usize
 
-  // Starts (or restarts) a timer given its id.
+  // Starts a stopped timer given its id.
   @external("env", "tb")
   export declare function clock_start(
     // The identifier of the timer to start.
@@ -85,13 +83,15 @@
     id: usize,
 
     // Whether the timer should periodically fire.
+    //
+    // Valid values are defined by [`Mode`](super::Mode).
     mode: usize,
 
     // How long until the timer triggers in milli-seconds.
     duration_ms: usize,
   ): void
 
-  // Stops a timer (if running) given its id.
+  // Stops a running timer given its id.
   //
   // Note that if the timer triggers while being stopped, the handler may still be
   // called.
@@ -101,7 +101,7 @@
     id: usize,
   ): void
 
-  // Deallocates a timer given its id.
+  // Deallocates a stopped timer given its id.
   @external("env", "td")
   export declare function clock_free(
     // The identifier of the timer to start.
@@ -335,54 +335,57 @@
   }
 
   // START OF MODULE usb_serial
-    // Reads from USB serial.
+    // Reads from USB serial into a buffer.
     @external("env", "usr")
     export declare function usb_serial_read(
-      // Where to write the bytes read.
-      ptr: usize,
-
-      // Maximum number of bytes to read.
-      len: usize,
-
-      // Function called when bytes have been read.
-      //
-      // The function takes its opaque `data` and `len` the number of bytes actually
-      // read. This function may be called with a smaller length if no more data was
-      // available.
-      handler_func: usize,
-
-      // The opaque data to use when calling the handler function.
-      handler_data: usize,
-    ): void
-
-    // Writes to USB serial.
-    @external("env", "usw")
-    export declare function usb_serial_write(
-      // Buffer to write.
+      // Address of the buffer.
       ptr: usize,
 
       // Length of the buffer in bytes.
       len: usize,
+    // Number of bytes read (or negative value for errors).
+    //
+    // This function does not block and may return zero.
+    ): isize
 
-      // Function called when bytes have been written.
-      //
-      // The function takes its opaque `data` and `len` the number of bytes actually
-      // written. The function may be called before all the buffer has been written in
-      // case writing more bytes would block.
+    // Writes to USB serial from a buffer.
+    @external("env", "usw")
+    export declare function usb_serial_write(
+      // Address of the buffer.
+      ptr: usize,
+
+      // Length of the buffer in bytes.
+      len: usize,
+    // Number of bytes written (or negative value for errors).
+    //
+    // This function does not block and may return zero.
+    ): isize
+
+    // USB serial events.
+    enum usb_serial_Event {
+      // Ready for read.
+      Read,
+
+      // Ready for write.
+      Write,
+    }
+
+    // Registers a callback when USB serial is ready.
+    //
+    // It is possible that the callback is spuriously called.
+    @external("env", "use")
+    export declare function usb_serial_register(
+      event: usize,
+
       handler_func: usize,
 
-      // The opaque data to use when calling the handler function.
       handler_data: usize,
     ): void
 
-    // Cancels a pending read operation.
-    @external("env", "usu")
-    export declare function usb_serial_cancel_read(
-    ): void
-
-    // Cancels a pending write operation.
-    @external("env", "usy")
-    export declare function usb_serial_cancel_write(
+    // Unregisters a callback.
+    @external("env", "usd")
+    export declare function usb_serial_unregister(
+      event: usize,
     ): void
 
     // Flushs the USB serial.
