@@ -8,7 +8,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: 12 6 * * 2 # every Tuesday at 6:12 UTC
+    - cron: 45 3 * * 2 # every Tuesday at 3:45 UTC
 
 jobs:
   ubuntu:
@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
+        if: ! github.event.schedule
         with:
           path: |
             ~/.cargo/bin/
