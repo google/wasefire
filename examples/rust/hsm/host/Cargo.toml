@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.69"
-clap = { version = "4.1.5", features = ["derive"] }
+clap = { version = "4.1.6", features = ["derive"] }
 common = { path = "../common", features = ["std"] }
 env_logger = "0.10.0"
 log = "0.4.17"

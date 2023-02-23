@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.69"
-clap = { version = "4.1.5", features = ["derive"] }
+clap = { version = "4.1.6", features = ["derive"] }
 data-encoding = "2.3.3"
 data-encoding-macro = "0.1.12"
 proc-macro2 = "1.0.51"
