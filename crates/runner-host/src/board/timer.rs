@@ -15,9 +15,9 @@
 use std::ops::DerefMut;
 use std::time::Duration;
 
-use board::timer::{Api, Command, Event};
-use board::Error;
 use tokio::task::JoinHandle;
+use wasefire_board_api::timer::{Api, Command, Event};
+use wasefire_board_api::Error;
 
 use crate::board::Board;
 

@@ -1,4 +1,3 @@
-#![no_std]
 // Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![no_std]
 
 extern crate alloc;
 
-use prelude::*;
+use wasefire::*;
 
 #[no_mangle]
 pub extern "C" fn main() {

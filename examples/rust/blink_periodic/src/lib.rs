@@ -23,7 +23,7 @@
 use core::cell::Cell;
 use core::time::Duration;
 
-use prelude::{clock, led, scheduling};
+use wasefire::{clock, led, scheduling};
 
 #[no_mangle]
 pub extern "C" fn main() {

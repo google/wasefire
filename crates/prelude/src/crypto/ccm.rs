@@ -17,7 +17,7 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
-use api::crypto::ccm as api;
+use wasefire_applet_api::crypto::ccm as api;
 
 use super::Error;
 

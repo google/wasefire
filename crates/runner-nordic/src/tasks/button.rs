@@ -16,6 +16,7 @@ use core::ops::DerefMut;
 
 use nrf52840_hal::gpio::{Input, Pin, PullUp};
 use nrf52840_hal::gpiote::{Gpiote, GpioteChannel};
+use wasefire_board_api as board;
 
 impl board::button::Api for crate::tasks::Board {
     fn count(&mut self) -> usize {

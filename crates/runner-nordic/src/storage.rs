@@ -22,7 +22,7 @@ use embedded_storage::nor_flash::{
 };
 use nrf52840_hal::nvmc::Nvmc;
 use nrf52840_hal::pac::NVMC;
-use store::{StorageError, StorageIndex, StorageResult};
+use wasefire_store::{self as store, StorageError, StorageIndex, StorageResult};
 
 const PAGE_SIZE: usize = <Nvmc<NVMC>>::ERASE_SIZE;
 

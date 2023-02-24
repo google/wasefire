@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use ::api::store::{self as api, Api};
-use board::Api as Board;
-use store::StoreError;
+use wasefire_applet_api::store::{self as api, Api};
+use wasefire_board_api::Api as Board;
+use wasefire_store::StoreError;
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 

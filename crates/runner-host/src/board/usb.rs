@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use board::usb::serial::Serial;
 use usbip_device::UsbIpBus;
+use wasefire_board_api as board;
+use wasefire_board_api::usb::serial::Serial;
 
 impl board::usb::Api for crate::board::Board {}
 

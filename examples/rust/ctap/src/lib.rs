@@ -28,8 +28,8 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::cell::{Cell, RefCell};
 
-use prelude::usb::serial;
-use prelude::{button, clock, led, scheduling, store};
+use wasefire::usb::serial;
+use wasefire::{button, clock, led, scheduling, store};
 
 const TOUCH_TIMEOUT_MS: usize = 5_000;
 const BUTTON_TIMEOUT_MS: usize = 3_000;

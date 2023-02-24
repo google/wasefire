@@ -21,8 +21,8 @@
 
 use core::slice;
 
-use prelude::debug::println;
-use prelude::rng::fill_bytes;
+use wasefire::debug::println;
+use wasefire::rng::fill_bytes;
 
 fn flip() -> bool {
     let mut x = 0u8;

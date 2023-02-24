@@ -13,15 +13,16 @@
 // limitations under the License.
 
 use proc_macro::TokenStream;
+use wasefire_applet_api_desc::Api;
 
 #[proc_macro]
 pub fn wasm(input: TokenStream) -> TokenStream {
     assert!(input.is_empty());
-    api_desc::Api::default().wasm_rust().into()
+    Api::default().wasm_rust().into()
 }
 
 #[proc_macro]
 pub fn host(input: TokenStream) -> TokenStream {
     assert!(input.is_empty());
-    api_desc::Api::default().host().into()
+    Api::default().host().into()
 }

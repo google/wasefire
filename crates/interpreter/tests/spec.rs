@@ -16,8 +16,8 @@
 
 use std::collections::HashMap;
 
-use interpreter::*;
 use lazy_static::lazy_static;
+use wasefire_interpreter::*;
 use wast::core::{WastArgCore, WastRetCore};
 use wast::lexer::Lexer;
 use wast::token::Id;

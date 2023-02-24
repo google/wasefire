@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use ::api::button::{self as api, Api};
-use board::button::Api as Bpi;
-use board::Api as Board;
+use wasefire_applet_api::button::{self as api, Api};
+use wasefire_board_api::button::Api as Bpi;
+use wasefire_board_api::Api as Board;
 
 use crate::event::button::Key;
 use crate::event::Handler;

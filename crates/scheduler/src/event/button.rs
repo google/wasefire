@@ -14,7 +14,7 @@
 
 use alloc::vec::Vec;
 
-use board::button::Event;
+use wasefire_board_api::button::Event;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Key {

@@ -29,7 +29,7 @@ use alloc::{format, vec};
 use core::cell::Cell;
 use core::time::Duration;
 
-use prelude::*;
+use wasefire::*;
 
 #[no_mangle]
 pub extern "C" fn main() {

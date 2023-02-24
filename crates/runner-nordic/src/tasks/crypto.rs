@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use wasefire_board_api as board;
+
 mod ccm;
 
 impl board::crypto::Api for crate::tasks::Board {}

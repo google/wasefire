@@ -18,7 +18,7 @@
 //! - They have 2 states: `On` or `Off`.
 //! - Their state can be read and written.
 
-use api::led as api;
+use wasefire_applet_api::led as api;
 
 pub use self::api::Status;
 pub use self::api::Status::*;

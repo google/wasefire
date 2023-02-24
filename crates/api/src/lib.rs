@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "host", doc = "Platform-side of the applet API.")]
 // Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![cfg_attr(feature = "host", doc = "Platform-side of the applet API.")]
 #![cfg_attr(feature = "wasm", doc = include_str!("wasm.md"))]
 #![no_std]
 
@@ -28,7 +28,7 @@ mod wasm;
 pub use host::*;
 
 #[cfg(feature = "wasm")]
-api_macro::wasm!();
+wasefire_applet_api_macro::wasm!();
 
 #[cfg(feature = "host")]
-api_macro::host!();
+wasefire_applet_api_macro::host!();

@@ -17,7 +17,7 @@
 use alloc::boxed::Box;
 use core::cell::Cell;
 
-use api::usb::serial as api;
+use wasefire_applet_api::usb::serial as api;
 
 use crate::scheduling;
 use crate::usb::{convert, Error};

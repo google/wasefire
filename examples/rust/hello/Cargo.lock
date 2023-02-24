@@ -9,33 +9,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "224afbd727c3d6e4b90103ece64b8d1b67fbb1973b1046c2281eed3f3803f800"
 
 [[package]]
-name = "api"
-version = "0.1.0"
-dependencies = [
- "api-macro",
-]
-
-[[package]]
-name = "api-desc"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "data-encoding",
- "data-encoding-macro",
- "proc-macro2",
- "quote",
-]
-
-[[package]]
-name = "api-macro"
-version = "0.1.0"
-dependencies = [
- "api-desc",
- "proc-macro2",
-]
-
-[[package]]
 name = "base64"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -159,7 +132,7 @@ checksum = "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9"
 name = "hello"
 version = "0.1.0"
 dependencies = [
- "prelude",
+ "wasefire",
 ]
 
 [[package]]
@@ -216,15 +189,6 @@ name = "os_str_bytes"
 version = "6.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b7820b9daea5457c9f21c69448905d723fbd21136ccf521748f23fd49e723ee"
-
-[[package]]
-name = "prelude"
-version = "0.1.0"
-dependencies = [
- "api",
- "const-default",
- "rlsf",
-]
 
 [[package]]
 name = "proc-macro-error"
@@ -350,6 +314,42 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
+
+[[package]]
+name = "wasefire"
+version = "0.1.0"
+dependencies = [
+ "const-default",
+ "rlsf",
+ "wasefire-applet-api",
+]
+
+[[package]]
+name = "wasefire-applet-api"
+version = "0.1.0"
+dependencies = [
+ "wasefire-applet-api-macro",
+]
+
+[[package]]
+name = "wasefire-applet-api-desc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "data-encoding",
+ "data-encoding-macro",
+ "proc-macro2",
+ "quote",
+]
+
+[[package]]
+name = "wasefire-applet-api-macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "wasefire-applet-api-desc",
+]
 
 [[package]]
 name = "winapi"

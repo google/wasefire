@@ -20,10 +20,7 @@ use std::process::{Child, Command};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use ::board::usb::serial::Serial;
 use anyhow::Result;
-use scheduler::Scheduler;
-use store::{FileOptions, FileStorage};
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::channel;
 use usb_device::class_prelude::UsbBusAllocator;
@@ -31,6 +28,9 @@ use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
 use usb_device::UsbError;
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 use usbip_device::UsbIpBus;
+use wasefire_board_api::usb::serial::Serial;
+use wasefire_scheduler::Scheduler;
+use wasefire_store::{FileOptions, FileStorage};
 
 use crate::board::timer::Timers;
 use crate::board::State;

@@ -1,4 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
 // Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![feature(result_option_inspect)]
 #![feature(try_blocks)]
 
@@ -25,12 +25,15 @@ use core::cell::RefCell;
 use core::marker::PhantomData;
 use core::ops::Range;
 
-use api::{Api, ArrayU32, Dispatch, Id, Signature};
-use board::Api as Board;
 use event::Key;
-use interpreter::{Call, Error, InstId, Module, RunAnswer, RunResult, Store, Val};
-use logger::*;
 use stores::{Applet, EventAction};
+use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature};
+use wasefire_board_api::{self as board, Api as Board};
+use wasefire_interpreter::{
+    self as interpreter, Call, Error, InstId, Module, RunAnswer, RunResult, Store, Val,
+};
+use wasefire_logger::*;
+use wasefire_store as store;
 
 mod call;
 mod event;
@@ -164,7 +167,7 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
 impl<B: Board> Scheduler<B> {
     pub fn run(board: B) -> ! {
         let mut scheduler = Scheduler::new(board);
-        logger::debug!("Loading applet.");
+        debug!("Loading applet.");
         scheduler.load(include_bytes!("../../../target/applet.wasm"));
         loop {
             scheduler.flush_events();
@@ -235,7 +238,7 @@ impl<B: Board> Scheduler<B> {
         let args = args.into_iter().map(|x| x.unwrap_i32()).collect();
         let erased = SchedulerCallT { scheduler: self, args };
         let call = api_id.merge(erased);
-        logger::debug!("Calling {}", logger::Debug2Format(&call.id()));
+        debug!("Calling {}", Debug2Format(&call.id()));
         call::process(call);
     }
 
@@ -246,7 +249,7 @@ impl<B: Board> Scheduler<B> {
     }
 
     fn call(&mut self, inst: InstId, name: &'static str, args: &[u32]) {
-        logger::debug!("Schedule thread {}{:?}.", name, args);
+        debug!("Schedule thread {}{:?}.", name, args);
         let args = args.iter().map(|&x| Val::I32(x)).collect();
         let answer = self.applet.store_mut().invoke(inst, name, args).map(|x| x.forget());
         self.process_answer(answer);
@@ -255,7 +258,7 @@ impl<B: Board> Scheduler<B> {
     fn process_answer(&mut self, result: Result<RunAnswer, interpreter::Error>) {
         match result {
             Ok(RunAnswer::Done(x)) => {
-                logger::debug!("Thread is done.");
+                debug!("Thread is done.");
                 debug_assert!(x.is_empty());
                 self.applet.done();
             }

@@ -22,7 +22,7 @@ extern crate alloc;
 //} ANCHOR_END: alloc
 
 //{ ANCHOR: prelude
-use prelude::*;
+use wasefire::*;
 //} ANCHOR_END: prelude
 
 //{ ANCHOR: nomangle

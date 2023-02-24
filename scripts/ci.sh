@@ -28,7 +28,13 @@ for dir in $(find . -name test.sh -printf '%h\n' | sort); do
   ( cd $dir && ./test.sh )
 done
 
-# Make sure generated content is synced.
+# Make sure tracked files are not modified and created files are ignored.
 git diff --exit-code
+
+# Make sure TOML files are formatted.
+taplo format
+git diff --exit-code
+
+# Make sure generated content is synced.
 ./scripts/sync.sh
 git diff --exit-code

@@ -25,7 +25,7 @@ use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use prelude::*;
+use wasefire::*;
 
 #[no_mangle]
 pub extern "C" fn main() {

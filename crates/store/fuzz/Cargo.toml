@@ -11,10 +11,10 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4.6"
-store = { path = "..", features = ["std"] }
 rand_core = "0.6.4"
 rand_pcg = "0.3.1"
 strum = { version = "0.24.1", features = ["derive"] }
+wasefire-store = { path = "..", features = ["std"] }
 
 # Prevent this from interfering with workspaces
 [workspace]

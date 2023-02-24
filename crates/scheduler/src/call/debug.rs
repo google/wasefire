@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use ::api::debug::{self as api, Api};
-use board::Api as Board;
+use wasefire_applet_api::debug::{self as api, Api};
+use wasefire_board_api::Api as Board;
+use wasefire_logger as logger;
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 

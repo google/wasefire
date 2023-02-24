@@ -1,17 +1,17 @@
 [package]
-name = "api-macro"
+name = "wasefire-applet-api-macro"
 version = "0.1.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
-publish = false
+publish = true
 edition = "2021"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-api-desc = { path = "../api-desc" }
 proc-macro2 = "1.0.51"
+wasefire-applet-api-desc = { version = "0.1.0", path = "../api-desc" }
 
 [features]
-multivalue = ["api-desc/multivalue"]
+multivalue = ["wasefire-applet-api-desc/multivalue"]

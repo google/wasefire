@@ -16,7 +16,7 @@
 
 use alloc::boxed::Box;
 
-use api::store as api;
+use wasefire_applet_api::store as api;
 
 /// Errors returned by storage operations.
 pub use self::api::Error;

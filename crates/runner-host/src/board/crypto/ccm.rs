@@ -16,6 +16,7 @@ use aes::cipher::generic_array::GenericArray;
 use aes::Aes128;
 use ccm::aead::{consts, AeadInPlace};
 use ccm::{Ccm, KeyInit};
+use wasefire_board_api as board;
 
 type NordicCcm = Ccm<Aes128, consts::U4, consts::U13>;
 

@@ -11,4 +11,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 common = { path = "common", features = ["api"] }
-prelude = { path = "../../../crates/prelude" }
+wasefire = { path = "../../../crates/prelude" }

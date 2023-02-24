@@ -26,7 +26,7 @@ use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use prelude::*;
+use wasefire::*;
 
 //{ ANCHOR: usage
 #[no_mangle]

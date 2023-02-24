@@ -10,4 +10,4 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-prelude = { path = "../../../crates/prelude" }
+wasefire = { path = "../../../crates/prelude" }

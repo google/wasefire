@@ -21,6 +21,8 @@
 
 use core::fmt::Debug;
 
+use wasefire_store as store;
+
 pub mod button;
 pub mod crypto;
 pub mod led;

@@ -20,7 +20,7 @@
 pub mod serial;
 
 /// Errors returned by USB operations.
-pub use api::usb::Error;
+pub use wasefire_applet_api::usb::Error;
 
 fn convert(len: isize) -> Result<usize, Error> {
     if len < 0 {

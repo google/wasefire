@@ -21,7 +21,7 @@ use alloc::rc::Rc;
 use core::cell::Cell;
 use core::time::Duration;
 
-use api::clock as api;
+use wasefire_applet_api::clock as api;
 
 pub use self::api::Mode;
 pub use self::api::Mode::*;

@@ -17,6 +17,7 @@
 use usb_device::class_prelude::UsbBus;
 use usb_device::UsbError;
 use usbd_serial::SerialPort;
+use wasefire_logger as logger;
 
 use crate::Error;
 

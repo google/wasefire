@@ -16,7 +16,7 @@ pub mod serial;
 
 use alloc::vec::Vec;
 
-use board::usb::Event;
+use wasefire_board_api::usb::Event;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {

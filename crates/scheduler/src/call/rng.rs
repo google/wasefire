@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use ::api::rng::{self as api, Api};
-use board::rng::Api as Bpi;
-use board::Api as Board;
+use wasefire_applet_api::rng::{self as api, Api};
+use wasefire_board_api::rng::Api as Bpi;
+use wasefire_board_api::Api as Board;
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 

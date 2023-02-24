@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use ::api::clock::{self as api, Api};
-use board::timer::{Api as Bpi, Command};
-use board::Api as Board;
+use wasefire_applet_api::clock::{self as api, Api};
+use wasefire_board_api::timer::{Api as Bpi, Command};
+use wasefire_board_api::Api as Board;
 
 use crate::event::timer::Key;
 use crate::event::Handler;

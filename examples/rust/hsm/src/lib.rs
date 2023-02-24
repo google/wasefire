@@ -23,7 +23,7 @@
 extern crate alloc;
 
 use common::{Deserialize, Deserializer, Error, Request, Response, Serialize, Serializer};
-use prelude::*;
+use wasefire::*;
 
 #[no_mangle]
 pub extern "C" fn main() {

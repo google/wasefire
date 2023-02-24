@@ -9,48 +9,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "224afbd727c3d6e4b90103ece64b8d1b67fbb1973b1046c2281eed3f3803f800"
 
 [[package]]
-name = "api"
-version = "0.1.0"
-dependencies = [
- "api-macro",
- "sealed",
-]
-
-[[package]]
-name = "api-desc"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "data-encoding",
- "data-encoding-macro",
- "proc-macro2",
- "quote",
-]
-
-[[package]]
-name = "api-macro"
-version = "0.1.0"
-dependencies = [
- "api-desc",
- "proc-macro2",
-]
-
-[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
-
-[[package]]
-name = "board"
-version = "0.1.0"
-dependencies = [
- "logger",
- "store",
- "usb-device",
- "usbd-serial",
-]
 
 [[package]]
 name = "cc"
@@ -212,14 +174,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "interpreter"
-version = "0.1.0"
-dependencies = [
- "num_enum",
- "paste",
-]
-
-[[package]]
 name = "io-lifetimes"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -266,15 +220,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "logger"
-version = "0.1.0"
-dependencies = [
- "defmt",
- "lazy_static",
- "log",
 ]
 
 [[package]]
@@ -387,18 +332,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "scheduler"
-version = "0.1.0"
-dependencies = [
- "api",
- "board",
- "defmt",
- "interpreter",
- "logger",
- "store",
-]
-
-[[package]]
 name = "sealed"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -409,10 +342,6 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "store"
-version = "0.1.0"
 
 [[package]]
 name = "strsim"
@@ -480,6 +409,77 @@ name = "void"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
+
+[[package]]
+name = "wasefire-applet-api"
+version = "0.1.0"
+dependencies = [
+ "sealed",
+ "wasefire-applet-api-macro",
+]
+
+[[package]]
+name = "wasefire-applet-api-desc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "data-encoding",
+ "data-encoding-macro",
+ "proc-macro2",
+ "quote",
+]
+
+[[package]]
+name = "wasefire-applet-api-macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "wasefire-applet-api-desc",
+]
+
+[[package]]
+name = "wasefire-board-api"
+version = "0.1.0"
+dependencies = [
+ "usb-device",
+ "usbd-serial",
+ "wasefire-logger",
+ "wasefire-store",
+]
+
+[[package]]
+name = "wasefire-interpreter"
+version = "0.1.0"
+dependencies = [
+ "num_enum",
+ "paste",
+]
+
+[[package]]
+name = "wasefire-logger"
+version = "0.1.0"
+dependencies = [
+ "defmt",
+ "lazy_static",
+ "log",
+]
+
+[[package]]
+name = "wasefire-scheduler"
+version = "0.1.0"
+dependencies = [
+ "defmt",
+ "wasefire-applet-api",
+ "wasefire-board-api",
+ "wasefire-interpreter",
+ "wasefire-logger",
+ "wasefire-store",
+]
+
+[[package]]
+name = "wasefire-store"
+version = "0.1.0"
 
 [[package]]
 name = "winapi"

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use nrf52840_hal::prelude::{OutputPin, StatefulOutputPin};
+use wasefire_board_api as board;
 
 impl board::led::Api for crate::tasks::Board {
     fn count(&mut self) -> usize {

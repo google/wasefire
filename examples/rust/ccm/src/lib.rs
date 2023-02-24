@@ -26,9 +26,9 @@ extern crate alloc;
 
 use alloc::{format, vec};
 
-use prelude::crypto::ccm;
-use prelude::rng::fill_bytes;
-use prelude::usb::serial::{read_byte, write_all};
+use wasefire::crypto::ccm;
+use wasefire::rng::fill_bytes;
+use wasefire::usb::serial::{read_byte, write_all};
 
 #[no_mangle]
 pub extern "C" fn main() {

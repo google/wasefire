@@ -16,8 +16,9 @@ use alloc::vec;
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 
-use board::{Api as Board, Event};
-use interpreter::InstId;
+use wasefire_board_api::{Api as Board, Event};
+use wasefire_interpreter::InstId;
+use wasefire_logger as logger;
 
 use crate::Scheduler;
 

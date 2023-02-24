@@ -16,8 +16,8 @@ use std::fs::File;
 use std::io::{stdout, Write};
 
 use anyhow::Result;
-use api_desc::{Api, Lang};
 use clap::Parser;
+use wasefire_applet_api_desc::{Api, Lang};
 
 #[derive(Parser)]
 struct Flags {

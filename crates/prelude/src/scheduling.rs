@@ -14,7 +14,7 @@
 
 //! Provides API for scheduling.
 
-use api::scheduling as api;
+use wasefire_applet_api::scheduling as api;
 
 /// Waits until a callback is called.
 ///
