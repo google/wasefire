@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use board::Event;
+use wasefire_board_api::{self as board, Event};
+use wasefire_scheduler as scheduler;
 
 use crate::Board;
 

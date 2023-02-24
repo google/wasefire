@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use interpreter::*;
+use wasefire_interpreter::*;
 
 fn main() {
     // Create an empty store.

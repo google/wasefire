@@ -14,8 +14,8 @@
 
 mod serial;
 
-use ::api::usb::Api;
-use board::Api as Board;
+use wasefire_applet_api::usb::Api;
+use wasefire_board_api::Api as Board;
 
 use crate::DispatchSchedulerCall;
 

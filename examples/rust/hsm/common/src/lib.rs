@@ -19,6 +19,9 @@ extern crate alloc;
 use alloc::vec;
 use alloc::vec::Vec;
 
+#[cfg(feature = "api")]
+use wasefire_applet_api as api;
+
 pub type KeyHandle = usize;
 
 #[derive(Debug)]

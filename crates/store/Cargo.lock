@@ -57,13 +57,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "store"
-version = "0.1.0"
-dependencies = [
- "tempfile",
-]
-
-[[package]]
 name = "tempfile"
 version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -75,6 +68,13 @@ dependencies = [
  "redox_syscall",
  "remove_dir_all",
  "winapi",
+]
+
+[[package]]
+name = "wasefire-store"
+version = "0.1.0"
+dependencies = [
+ "tempfile",
 ]
 
 [[package]]

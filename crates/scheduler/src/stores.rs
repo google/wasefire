@@ -14,8 +14,9 @@
 
 use alloc::collections::{BTreeSet, VecDeque};
 
-use board::Event;
-use interpreter::Store;
+use wasefire_board_api::Event;
+use wasefire_interpreter::Store;
+use wasefire_logger as logger;
 
 use crate::event::{Handler, Key};
 use crate::{Memory, Trap};

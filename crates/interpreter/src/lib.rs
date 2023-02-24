@@ -38,14 +38,14 @@
 //! Creating a store can simply use the `Default` trait:
 //!
 //! ```
-//! # use interpreter::*;
+//! # use wasefire_interpreter::*;
 //! let mut store = Store::default();
 //! ```
 //!
 //! Linking a host function in a store is done with [`Store::link_func()`]:
 //!
 //! ```
-//! # use interpreter::*;
+//! # use wasefire_interpreter::*;
 //! # fn doc(store: &mut Store) -> Result<(), Error> {
 //! store.link_func("env", "add", 2, 1)?;
 //! # Ok(())
@@ -55,7 +55,7 @@
 //! Instantiating a valid module in a store is done with [`Store::instantiate()`]:
 //!
 //! ```
-//! # use interpreter::*;
+//! # use wasefire_interpreter::*;
 //! # fn doc<'a>(store: &mut Store<'a>, module: Module<'a>, memory: &'a mut [u8])
 //! # -> Result<(), Error> {
 //! let inst = store.instantiate(module, memory)?;
@@ -66,7 +66,7 @@
 //! Invoking a function exported by an instance is done with [`Store::invoke()`]:
 //!
 //! ```
-//! # use interpreter::*;
+//! # use wasefire_interpreter::*;
 //! # fn doc<'a>(store: &mut Store<'a>, inst: InstId) -> Result<(), Error> {
 //! let mut result = store.invoke(inst, "mul", vec![Val::I32(13), Val::I32(29)])?;
 //! # Ok(())
@@ -76,7 +76,7 @@
 //! Processing a call to the host is done with the [`Call`] in [`RunResult::Host`]:
 //!
 //! ```
-//! # use interpreter::*;
+//! # use wasefire_interpreter::*;
 //! # fn process<'a, 'm>(call: &mut Call<'a, 'm>) -> Result<Vec<Val>, Error> { todo!() }
 //! # fn doc<'a, 'm>(mut result: RunResult<'a, 'm>) -> Result<Vec<Val>, Error> {
 //! loop {

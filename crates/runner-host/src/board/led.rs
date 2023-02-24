@@ -14,6 +14,8 @@
 
 const NUM_LEDS: usize = 1;
 
+use wasefire_board_api as board;
+
 impl board::led::Api for crate::board::Board {
     fn count(&mut self) -> usize {
         NUM_LEDS

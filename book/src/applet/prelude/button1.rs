@@ -21,7 +21,7 @@
 
 extern crate alloc;
 
-use prelude::*;
+use wasefire::*;
 
 #[no_mangle]
 pub extern "C" fn main() {

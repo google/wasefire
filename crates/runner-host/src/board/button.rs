@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use board::button::Api;
-use board::Error;
+use wasefire_board_api as board;
+use wasefire_board_api::button::Api;
+use wasefire_board_api::Error;
 
 use crate::board::{Board, State};
 

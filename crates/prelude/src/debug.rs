@@ -18,13 +18,13 @@
 // size (and other performance) doesn't matter. This permits to have a simple debugging that is
 // completely excluded from release applets.
 
-use api::debug::println::Params;
+use wasefire_applet_api::debug as api;
 
 /// Prints a line to the debug output.
 pub fn println(msg: &str) {
     if ENABLED {
-        let params = Params { ptr: msg.as_ptr(), len: msg.len() };
-        unsafe { api::debug::println(params) };
+        let params = api::println::Params { ptr: msg.as_ptr(), len: msg.len() };
+        unsafe { api::println(params) };
     }
 }
 

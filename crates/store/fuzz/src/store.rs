@@ -17,7 +17,7 @@ use std::convert::TryInto;
 
 use rand_core::{RngCore, SeedableRng};
 use rand_pcg::Pcg32;
-use store::{
+use wasefire_store::{
     BufferOptions, BufferStorage, Store, StoreDriver, StoreDriverOff, StoreDriverOn,
     StoreInterruption, StoreInvariant, StoreOperation, StoreUpdate,
 };

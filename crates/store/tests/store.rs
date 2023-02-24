@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use store::{BufferOptions, StoreDriverOff, StoreDriverOn, StoreInterruption, StoreOperation};
+use wasefire_store::{
+    BufferOptions, StoreDriverOff, StoreDriverOn, StoreInterruption, StoreOperation,
+};
 
 #[test]
 fn interrupted_overflowing_compaction() {

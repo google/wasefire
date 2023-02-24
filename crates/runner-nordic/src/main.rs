@@ -28,7 +28,6 @@ use core::cell::{Cell, RefCell};
 use core::mem::MaybeUninit;
 use core::ops::DerefMut;
 
-use board::usb::serial::Serial;
 use cortex_m::peripheral::NVIC;
 use cortex_m_rt::entry;
 use critical_section::Mutex;
@@ -47,7 +46,6 @@ use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 use panic_abort as _;
 #[cfg(feature = "debug")]
 use panic_probe as _;
-use scheduler::Scheduler;
 use storage::Storage;
 use tasks::button::{channel, Button};
 use tasks::clock::Timers;
@@ -56,6 +54,9 @@ use tasks::Events;
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
+use wasefire_board_api::usb::serial::Serial;
+use wasefire_scheduler::Scheduler;
+use {wasefire_board_api as board, wasefire_logger as logger};
 
 type Clocks = clocks::Clocks<ExternalOscillator, Internal, LfOscStopped>;
 

@@ -17,4 +17,4 @@
 pub mod ccm;
 
 /// Errors returned by cryptographic operations.
-pub use api::crypto::Error;
+pub use wasefire_applet_api::crypto::Error;

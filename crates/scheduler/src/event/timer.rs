@@ -14,7 +14,7 @@
 
 use alloc::vec::Vec;
 
-use board::timer::Event;
+use wasefire_board_api::timer::Event;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Key {

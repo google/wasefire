@@ -19,6 +19,7 @@ use embedded_hal::timer::Cancel;
 use nrf52840_hal::pac::{TIMER0, TIMER1, TIMER2, TIMER3, TIMER4};
 use nrf52840_hal::timer::{Instance, OneShot, Periodic};
 use nrf52840_hal::Timer;
+use {wasefire_board_api as board, wasefire_logger as logger};
 
 impl board::timer::Api for crate::tasks::Board {
     fn count(&mut self) -> usize {

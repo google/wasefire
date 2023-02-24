@@ -20,7 +20,7 @@
 
 use alloc::boxed::Box;
 
-use api::button as api;
+use wasefire_applet_api::button as api;
 
 pub use self::api::State;
 pub use self::api::State::*;

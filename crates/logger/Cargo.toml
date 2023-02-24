@@ -1,9 +1,8 @@
 [package]
-name = "logger"
+name = "wasefire-logger"
 version = "0.1.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
-publish = false
 edition = "2021"
 
 [dependencies]
@@ -13,4 +12,4 @@ log = { version = "0.4.17", optional = true }
 
 [features]
 defmt = ["dep:defmt"]
-log = ["dep:log", "dep:lazy_static"]
+log = ["dep:lazy_static", "dep:log"]

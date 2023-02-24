@@ -14,8 +14,8 @@
 
 mod ccm;
 
-use ::api::crypto::Api;
-use board::Api as Board;
+use wasefire_applet_api::crypto::Api;
+use wasefire_board_api::Api as Board;
 
 use crate::DispatchSchedulerCall;
 

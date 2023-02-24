@@ -1,0 +1,11 @@
+[formatting]
+column_width = 100
+reorder_arrays = true
+
+[[rule]]
+keys = ["dependencies"]
+formatting = { reorder_keys = true }
+
+[[rule]]
+keys = ["dependencies.*"]
+formatting = { reorder_keys = false }

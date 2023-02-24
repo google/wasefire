@@ -28,7 +28,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 use core::cell::Cell;
 
-use prelude::*;
+use wasefire::*;
 
 #[no_mangle]
 pub extern "C" fn main() {

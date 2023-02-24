@@ -15,6 +15,7 @@
 use alloc::vec;
 
 use nrf52840_hal::ccm::CcmData;
+use wasefire_board_api as board;
 
 impl board::crypto::ccm::Api for crate::tasks::Board {
     fn encrypt(

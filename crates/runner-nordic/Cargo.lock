@@ -19,34 +19,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "224afbd727c3d6e4b90103ece64b8d1b67fbb1973b1046c2281eed3f3803f800"
 
 [[package]]
-name = "api"
-version = "0.1.0"
-dependencies = [
- "api-macro",
- "sealed",
-]
-
-[[package]]
-name = "api-desc"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "data-encoding",
- "data-encoding-macro",
- "proc-macro2",
- "quote",
-]
-
-[[package]]
-name = "api-macro"
-version = "0.1.0"
-dependencies = [
- "api-desc",
- "proc-macro2",
-]
-
-[[package]]
 name = "az"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -72,16 +44,6 @@ name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
-
-[[package]]
-name = "board"
-version = "0.1.0"
-dependencies = [
- "logger",
- "store",
- "usb-device",
- "usbd-serial",
-]
 
 [[package]]
 name = "bytemuck"
@@ -346,14 +308,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "interpreter"
-version = "0.1.0"
-dependencies = [
- "num_enum",
- "paste",
-]
-
-[[package]]
 name = "io-lifetimes"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -392,13 +346,6 @@ name = "linux-raw-sys"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f051f77a7c8e6957c0696eac88f26b0117e54f52d3fc682ab19397a8812846a4"
-
-[[package]]
-name = "logger"
-version = "0.1.0"
-dependencies = [
- "defmt",
-]
 
 [[package]]
 name = "nb"
@@ -576,8 +523,6 @@ name = "runner-nordic"
 version = "0.1.0"
 dependencies = [
  "alloc-cortex-m",
- "api",
- "board",
  "cortex-m",
  "cortex-m-rt",
  "critical-section",
@@ -585,15 +530,17 @@ dependencies = [
  "defmt-rtt",
  "embedded-hal",
  "embedded-storage",
- "interpreter",
- "logger",
  "nrf52840-hal",
  "panic-abort",
  "panic-probe",
- "scheduler",
- "store",
  "usb-device",
  "usbd-serial",
+ "wasefire-applet-api",
+ "wasefire-board-api",
+ "wasefire-interpreter",
+ "wasefire-logger",
+ "wasefire-scheduler",
+ "wasefire-store",
 ]
 
 [[package]]
@@ -617,18 +564,6 @@ dependencies = [
  "libc",
  "linux-raw-sys",
  "windows-sys",
-]
-
-[[package]]
-name = "scheduler"
-version = "0.1.0"
-dependencies = [
- "api",
- "board",
- "defmt",
- "interpreter",
- "logger",
- "store",
 ]
 
 [[package]]
@@ -663,10 +598,6 @@ name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
-
-[[package]]
-name = "store"
-version = "0.1.0"
 
 [[package]]
 name = "strsim"
@@ -755,6 +686,75 @@ checksum = "9ee8f19f9d74293faf70901bc20ad067dc1ad390d2cbf1e3f75f721ffee908b6"
 dependencies = [
  "vcell",
 ]
+
+[[package]]
+name = "wasefire-applet-api"
+version = "0.1.0"
+dependencies = [
+ "sealed",
+ "wasefire-applet-api-macro",
+]
+
+[[package]]
+name = "wasefire-applet-api-desc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "data-encoding",
+ "data-encoding-macro",
+ "proc-macro2",
+ "quote",
+]
+
+[[package]]
+name = "wasefire-applet-api-macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "wasefire-applet-api-desc",
+]
+
+[[package]]
+name = "wasefire-board-api"
+version = "0.1.0"
+dependencies = [
+ "usb-device",
+ "usbd-serial",
+ "wasefire-logger",
+ "wasefire-store",
+]
+
+[[package]]
+name = "wasefire-interpreter"
+version = "0.1.0"
+dependencies = [
+ "num_enum",
+ "paste",
+]
+
+[[package]]
+name = "wasefire-logger"
+version = "0.1.0"
+dependencies = [
+ "defmt",
+]
+
+[[package]]
+name = "wasefire-scheduler"
+version = "0.1.0"
+dependencies = [
+ "defmt",
+ "wasefire-applet-api",
+ "wasefire-board-api",
+ "wasefire-interpreter",
+ "wasefire-logger",
+ "wasefire-store",
+]
+
+[[package]]
+name = "wasefire-store"
+version = "0.1.0"
 
 [[package]]
 name = "winapi"

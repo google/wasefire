@@ -1,18 +1,17 @@
 [package]
-name = "board"
+name = "wasefire-board-api"
 version = "0.1.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
-publish = false
 edition = "2021"
 
 [dependencies]
-logger = { path = "../logger" }
-store = { path = "../store" }
 usb-device = "0.2.9"
 usbd-serial = "0.1.1"
+wasefire-logger = { version = "0.1.0", path = "../logger" }
+wasefire-store = { version = "0.1.0", path = "../store" }
 
 [features]
-defmt = ["logger/defmt"]
-log = ["logger/log"]
-std = ["store/std"]
+defmt = ["wasefire-logger/defmt"]
+log = ["wasefire-logger/log"]
+std = ["wasefire-store/std"]

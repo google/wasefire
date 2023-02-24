@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use board::usb::serial::Serial;
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
+use wasefire_board_api as board;
+use wasefire_board_api::usb::serial::Serial;
 
 pub type Usb = Usbd<UsbPeripheral<'static>>;
 

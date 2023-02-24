@@ -21,12 +21,12 @@ mod usb;
 
 use std::sync::{Arc, Mutex};
 
-use board::usb::serial::Serial;
-use board::{Api, Event};
-use store::FileStorage;
 use tokio::sync::mpsc::{Receiver, Sender};
 use usb_device::prelude::UsbDevice;
 use usbip_device::UsbIpBus;
+use wasefire_board_api::usb::serial::Serial;
+use wasefire_board_api::{Api, Event};
+use wasefire_store::FileStorage;
 
 use self::timer::Timers;
 

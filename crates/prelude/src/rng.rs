@@ -14,10 +14,10 @@
 
 //! Provides API for random number generation.
 
-use api::rng::fill_bytes::Params;
+use wasefire_applet_api::rng as api;
 
 /// Fills a slice with random bytes.
 pub fn fill_bytes(buf: &mut [u8]) {
-    let params = Params { ptr: buf.as_mut_ptr(), len: buf.len() };
-    unsafe { api::rng::fill_bytes(params) }
+    let params = api::fill_bytes::Params { ptr: buf.as_mut_ptr(), len: buf.len() };
+    unsafe { api::fill_bytes(params) }
 }

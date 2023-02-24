@@ -24,7 +24,7 @@ extern crate alloc;
 
 use alloc::{format, vec};
 
-use prelude::*;
+use wasefire::*;
 
 #[no_mangle]
 pub extern "C" fn main() {
