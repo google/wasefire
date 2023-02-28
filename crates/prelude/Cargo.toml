@@ -5,6 +5,11 @@ authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
 edition = "2021"
+description = "High-level Wasefire applet API"
+repository = "https://github.com/google/wasefire"
+include = ["/src"]
+keywords = ["embedded", "framework", "no-std", "wasm"]
+categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
 const-default = "1.0.0"
