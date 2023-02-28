@@ -12,7 +12,7 @@ keywords = ["embedded", "no-std"]
 categories = ["embedded", "no-std"]
 
 [dev-dependencies]
-tempfile = "3.3.0"
+tempfile = "3.4.0"
 
 [features]
 std = []
