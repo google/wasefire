@@ -1,0 +1,1568 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js rust">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Wasefire</title>
+        <meta name="robots" content="noindex" />
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "rust";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="overview/index.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="overview/terminology.html"><strong aria-hidden="true">1.1.</strong> Terminology</a></li><li class="chapter-item expanded "><a href="overview/features.html"><strong aria-hidden="true">1.2.</strong> Features</a></li></ol></li><li class="chapter-item expanded "><a href="applet/index.html"><strong aria-hidden="true">2.</strong> Applet user guide</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="applet/setup.html"><strong aria-hidden="true">2.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="applet/create.html"><strong aria-hidden="true">2.2.</strong> Create a new applet</a></li><li class="chapter-item expanded "><a href="applet/run.html"><strong aria-hidden="true">2.3.</strong> Run an applet</a></li><li class="chapter-item expanded "><a href="applet/api.html"><strong aria-hidden="true">2.4.</strong> API</a></li><li class="chapter-item expanded "><a href="applet/prelude/index.html"><strong aria-hidden="true">2.5.</strong> Prelude</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="applet/prelude/led.html"><strong aria-hidden="true">2.5.1.</strong> LEDs</a></li><li class="chapter-item expanded "><a href="applet/prelude/button.html"><strong aria-hidden="true">2.5.2.</strong> Buttons</a></li><li class="chapter-item expanded "><a href="applet/prelude/timer.html"><strong aria-hidden="true">2.5.3.</strong> Timers</a></li><li class="chapter-item expanded "><a href="applet/prelude/usb.html"><strong aria-hidden="true">2.5.4.</strong> USB</a></li><li class="chapter-item expanded "><a href="applet/prelude/store.html"><strong aria-hidden="true">2.5.5.</strong> Storage</a></li></ol></li><li class="chapter-item expanded "><a href="applet/examples.html"><strong aria-hidden="true">2.6.</strong> Examples</a></li></ol></li><li class="chapter-item expanded "><a href="runner/index.html"><strong aria-hidden="true">3.</strong> Runner user guide</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="runner/api.html"><strong aria-hidden="true">3.1.</strong> API</a></li></ol></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> Developer guide</div></li><li><ol class="section"><li class="chapter-item expanded "><div><strong aria-hidden="true">4.1.</strong> Design</div></li></ol></li><li class="chapter-item expanded "><a href="faq.html">FAQ</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Wasefire</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/google/wasefire/tree/main/book" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="introduction"><a class="header" href="#introduction"><a href="https://google.github.io/wasefire">Introduction</a></a></h1>
+<p>This book is a walk through the <em>Wasefire</em> project.</p>
+<h2 id="vision"><a class="header" href="#vision">Vision</a></h2>
+<blockquote>
+<p>Make it <strong>easy</strong> and <strong>cheap</strong> to build <strong>secure</strong> firmware.</p>
+</blockquote>
+<p>The 3 aspects of the vision are realized through the 3 following pillars.</p>
+<h3 id="developer-experience"><a class="header" href="#developer-experience">Developer experience</a></h3>
+<p>The project tries to integrate with the pre-existing developer environments
+instead of creating a new one. The developer should be able to write firmware
+business logic the same way they write their non-firmware business logic. This
+is similar to the goal of <a href="https://knurling.ferrous-systems.com">knurling-rs</a>
+but for more languages than just Rust.</p>
+<h3 id="separation-of-concerns"><a class="header" href="#separation-of-concerns">Separation of concerns</a></h3>
+<p>The project does not require a team to possess multiple expertise because this
+is costly. Instead, the project splits the firmware development into
+inter-operable components such that each component requires a single expertise.
+Development can thus be distributed over multiple teams having their own
+expertise (e.g. hardware design, embedded programming, security, and business
+logic). The project provides stable and pre-existing APIs for those teams and
+components to inter-operate.</p>
+<h3 id="secure-by-design"><a class="header" href="#secure-by-design">Secure by design</a></h3>
+<p>The project is responsible for the security of the final firmware. This project
+provides the following security mechanisms:</p>
+<ul>
+<li>Sandboxing of the applets between each other and with the platform.</li>
+<li>Secure implementation within the platform boundaries (e.g. side-channel
+resistance, fault injection protection, etc).</li>
+<li>Security reviews for the supported boards (e.g. side-channel attacks, fault
+injection, etc).</li>
+<li>User documentation when the security must rely on user behavior, for example
+when a configuration is insecure.</li>
+</ul>
+<h2 id="non-goals"><a class="header" href="#non-goals">Non-goals</a></h2>
+<p>The project is not trying to build a self-service applet store. In particular,
+users are developers. A self-service applet store may come at a later phase or
+may be done independently by another project. The project will provide anything
+needed for such applet store to be secure and easy to use.</p>
+<h2 id="disclaimer"><a class="header" href="#disclaimer">Disclaimer</a></h2>
+<p>The project is still work in progress and many components might change in the
+future. However, the project follows the usual <a href="https://doc.rust-lang.org/cargo/reference/semver.html">Rust semantic
+versioning</a> to avoid
+unexpected breakages.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="overview"><a class="header" href="#overview">Overview</a></h1>
+<p>This chapter gives a high-level overview of the project.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="terminology"><a class="header" href="#terminology">Terminology</a></h1>
+<p>The project is split in the following components:</p>
+<ul>
+<li>A <em>Device</em> is a final product.</li>
+<li>A <em>User</em> is a person, team, or organization owning the Device.</li>
+<li>A <em>Board</em> is the hardware of the Device.</li>
+<li>An <em>Applet</em> is part of the software of the Device.</li>
+<li>The <em>Board API</em> is the hardware abstraction layer.</li>
+<li>The <em>Applet API</em> is the platform abstraction layer.</li>
+<li>A <em>Prelude</em> is a library providing language-specific access to the Applet API.</li>
+<li>A <em>Runner</em> is a binary implementing the Board API and running the Scheduler.</li>
+<li>The <em>Scheduler</em> is the software implementing all the platform logic and fits
+between the Board API and the Applet API.</li>
+<li>A <em>Platform</em> is the binary made of a Runner and the Scheduler.</li>
+</ul>
+<h2 id="device"><a class="header" href="#device">Device</a></h2>
+<p>A Device encompasses the following (non-exhaustive list):</p>
+<ul>
+<li>A hardware on which to run (chip, form factor, external devices, etc).</li>
+<li>How this hardware is configured and initially provisioned.</li>
+<li>A set of applets defining the firmware, and their configuration.</li>
+<li>What is the funtionality expected from the firmware.</li>
+<li>Should the Device be certified.</li>
+<li>Where will the Device be installed.</li>
+<li>Who will/should have access to the Device.</li>
+</ul>
+<h2 id="user"><a class="header" href="#user">User</a></h2>
+<p>Users may delegate part of the Device design to other teams:</p>
+<ul>
+<li>Developing hardware or selecting an existing hardware.</li>
+<li>Developing one or more applets and/or selecting one or more applets.</li>
+<li>Design of the functionality.</li>
+<li>Lifetime management (provisioning, logging, monitoring, alerting, census,
+etc).</li>
+</ul>
+<p>Users are responsible for all those steps. The project will however support them
+in those tasks for both development and security aspects. For example
+(non-exhaustive list):</p>
+<ul>
+<li>The platform provides unique ids per device.</li>
+<li>The platform supports secure updates.</li>
+<li>The platform provides applet management (with versioning).</li>
+<li>The platform supports some existing hardware (may add support for more based
+on demand).</li>
+</ul>
+<h2 id="board"><a class="header" href="#board">Board</a></h2>
+<p>The project provides support for some boards through Runners. Additional boards
+may be supported depending on User needs.</p>
+<p>Boards may be subject to some restrictions:</p>
+<ul>
+<li>Only ARM Cortex-M and RISC-V architectures are considered for now.</li>
+<li>Minimum flash and RAM requirements (to be defined).</li>
+</ul>
+<h2 id="applet"><a class="header" href="#applet">Applet</a></h2>
+<p>The functionality (or business logic) of a Device is implemented as a set of
+concurrent applets. The project provides example applets in the different
+supported languages for the User to use as starting point. Eventually, an applet
+is compilet into WebAssembly which is the only language that the Scheduler
+supports.</p>
+<h2 id="board-api"><a class="header" href="#board-api">Board API</a></h2>
+<p>The Board API may be partially implemented for 2 reasons:</p>
+<ul>
+<li>The Board doesn't support some features in hardware and a software
+implementation is not feasible or desired.</li>
+<li>The User knows that those features are not going to be used by any applets
+that will run on the Device. And the space saved by not implementing or
+building them is needed for the Device to properly function.</li>
+</ul>
+<h2 id="applet-api"><a class="header" href="#applet-api">Applet API</a></h2>
+<p>The Applet API is currently the same as (or very close to) the Board API. This
+may change in the future, for example if capabilities require it. The Board API
+is low-level and doesn't have a notion of capabilities. It fully trusts the
+Scheduler. The Applet API on the other hand may need to prove to the Scheduler
+that it is allowed to access some dynamically-allocated resource.</p>
+<p>The Board API and the Applet API provide portability of Applets across different
+Boards.</p>
+<h2 id="prelude"><a class="header" href="#prelude">Prelude</a></h2>
+<p>The Applet API is defined at the WebAssembly level. Applet developers may use it
+directly, but depending on the language this usage may not be convenient. For
+example, in Rust, using the Applet API requires the <code>unsafe</code> keyword and thus
+some good understanding of what's going on. For such languages, a Prelude is
+provided to give a simpler and more natural interface to the Applet API. For
+example, in Rust, the Prelude provides a safe API with high-level Rust-specific
+types like <code>&amp;[u8]</code> (instead of the <code>u32</code> pointer and <code>u32</code> length that the
+Applet API expects).</p>
+<h2 id="runner"><a class="header" href="#runner">Runner</a></h2>
+<p>The project provides Runners for supported Boards. However, Board support
+doesn't need to be provided by the project. The User (for example the team
+developing the Board) may develop its own Runner for its own Board. Simplifying
+the development of Runners (by maximizing the code shared with other Runners) is
+part of the project vision. The project simplifies development of both Runners
+and Applets, not just Applets.</p>
+<h2 id="scheduler"><a class="header" href="#scheduler">Scheduler</a></h2>
+<p>Together with the Board API and the Applet API, the Scheduler is the core
+contribution of the project and where most security properties are implemented.
+This is completely provided by the project and Users cannot alter it. However,
+they can configure it when configuring a Platform.</p>
+<h2 id="platform"><a class="header" href="#platform">Platform</a></h2>
+<p>This is the firmware that runs on the Device. It doesn't provide any business
+logic, but provides some core functionalities like (non-exhaustive list):</p>
+<ul>
+<li>Secure updates.</li>
+<li>Applet management.</li>
+<li>Debugging facilities.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="features"><a class="header" href="#features">Features</a></h1>
+<p>Features are implemented if their checkbox is checked.</p>
+<p>If a feature is not implemented, it doesn't mean it will get implemented.
+It means this is a feature that could be implemented if there is a user need.</p>
+<p>If a feature is not listed, it doesn't mean it won't get implemented. We may
+just not be aware of it, and a user need could justify an implementation.</p>
+<h2 id="supported-boards"><a class="header" href="#supported-boards">Supported boards</a></h2>
+<p>A board is supported if it has a Runner.</p>
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+Linux (for testing without hardware)</li>
+<li><input disabled="" type="checkbox" checked=""/>
+nRF52840</li>
+<li><input disabled="" type="checkbox"/>
+OpenTitan</li>
+</ul>
+<h2 id="supported-applet-languages"><a class="header" href="#supported-applet-languages">Supported applet languages</a></h2>
+<p>An applet language is supported if it has a Prelude.</p>
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+Rust</li>
+<li><input disabled="" type="checkbox"/>
+C</li>
+</ul>
+<p>Note that when running multiple applets concurrently on the same platform, those
+applets don't need to be written in the same language to inter-operate.</p>
+<h2 id="developer-experience-1"><a class="header" href="#developer-experience-1">Developer experience</a></h2>
+<h3 id="for-applets"><a class="header" href="#for-applets">For applets</a></h3>
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+Development doesn't require hardware (using the Linux board).</li>
+<li><input disabled="" type="checkbox"/>
+Testing facilities (probably on any board).</li>
+<li><input disabled="" type="checkbox"/>
+Fuzzing facilities (probably on Linux board only).</li>
+<li><input disabled="" type="checkbox"/>
+Rich debugger experience (probably on any board).</li>
+</ul>
+<h3 id="for-runners"><a class="header" href="#for-runners">For runners</a></h3>
+<ul>
+<li><input disabled="" type="checkbox"/>
+Testing facilities (probably a set of test applets).</li>
+</ul>
+<h2 id="reproducible-builds"><a class="header" href="#reproducible-builds">Reproducible builds</a></h2>
+<ul>
+<li><input disabled="" type="checkbox"/>
+Hermetic development environment for applets.</li>
+<li><input disabled="" type="checkbox"/>
+Hermetic development environment for platforms.</li>
+</ul>
+<h2 id="secure-platform-upgrades"><a class="header" href="#secure-platform-upgrades">Secure platform upgrades</a></h2>
+<ul>
+<li><input disabled="" type="checkbox"/>
+The platform can be upgraded.</li>
+<li><input disabled="" type="checkbox"/>
+The platform can be downgraded to the extent permitted by the
+User-configured rollback policy.</li>
+<li><input disabled="" type="checkbox"/>
+Platform upgrades are digitally signed and verified.</li>
+</ul>
+<h2 id="applet-sandboxing"><a class="header" href="#applet-sandboxing">Applet sandboxing</a></h2>
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+Applets can't tamper with the platform.</li>
+<li><input disabled="" type="checkbox"/>
+Applets can't tamper with other applets (this is only missing preemptive
+concurrency).</li>
+</ul>
+<h2 id="applet-capabilities"><a class="header" href="#applet-capabilities">Applet capabilities</a></h2>
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+Applets declare their permissions (i.e. function imports).</li>
+<li><input disabled="" type="checkbox"/>
+Applets declare their capabilities (more dynamic concept of permission).</li>
+<li><input disabled="" type="checkbox"/>
+Applets metadata (or manifest) is signed.</li>
+</ul>
+<h2 id="platform-side-channel-attack-testing-and-resistance"><a class="header" href="#platform-side-channel-attack-testing-and-resistance">Platform side-channel attack testing and resistance</a></h2>
+<ul>
+<li><input disabled="" type="checkbox"/>
+Crypto hardware accelerators are leveraged when available.
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+AES CCM (Bluetooth spec) on nRF52840</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"/>
+Otherwise fallback software crypto primitives are provided for main
+algorithms.</li>
+<li><input disabled="" type="checkbox"/>
+Both of those implementations are side-channel attack resilient.</li>
+</ul>
+<h2 id="applet-portability"><a class="header" href="#applet-portability">Applet portability</a></h2>
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+Applets are portable at binary level (comes from Wasm and APIs).</li>
+</ul>
+<h2 id="applet-multiplexing"><a class="header" href="#applet-multiplexing">Applet multiplexing</a></h2>
+<ul>
+<li><input disabled="" type="checkbox"/>
+Multiple applets may be installed at the same time.</li>
+<li><input disabled="" type="checkbox"/>
+Multiple applets may run simultaneously (not in early versions).</li>
+<li><input disabled="" type="checkbox"/>
+Applets can be installed without running.</li>
+<li><input disabled="" type="checkbox"/>
+Applets define in their metadata their running condition (e.g. at boot, at
+USB, at idle, etc).</li>
+</ul>
+<p>For now, a single applet is baked at compile-time in the platform.</p>
+<h2 id="applet-management"><a class="header" href="#applet-management">Applet management</a></h2>
+<ul>
+<li><input disabled="" type="checkbox"/>
+Applets are identified by a stable id, a version, and a digital signature
+(verified by the runtime).</li>
+<li><input disabled="" type="checkbox"/>
+Applets may be installed if not already present.</li>
+<li><input disabled="" type="checkbox"/>
+Applets may be uninstalled in which case all owned resources are deleted.</li>
+<li><input disabled="" type="checkbox"/>
+Applets may be upgraded (preserving resources) but not downgraded
+(probably modulo rollback policy).</li>
+<li><input disabled="" type="checkbox"/>
+Installed applets can be listed.</li>
+</ul>
+<h2 id="certification"><a class="header" href="#certification">Certification</a></h2>
+<ul>
+<li><input disabled="" type="checkbox"/>
+The runtime can run on certified hardware (FIPS-140-3 and CC).</li>
+<li><input disabled="" type="checkbox"/>
+TBD: The runtime might sustain being part of the security target for
+certification.</li>
+</ul>
+<h2 id="low-power"><a class="header" href="#low-power">Low power</a></h2>
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+If the runtime is only waiting on external hardware events, the CPU is
+suspended.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="applet-user-guide"><a class="header" href="#applet-user-guide">Applet user guide</a></h1>
+<p>This chapter describes all you need to know to write an applet. Because we
+currently only support Rust for writing applets, this guide only describes Rust
+usage.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="setup"><a class="header" href="#setup">Setup</a></h1>
+<p>The list of required dependencies might not be complete. So if anything in the
+tutorial doesn't go according to plan, please open an
+<a href="https://github.com/google/wasefire/issues/new">issue</a> describing the problem.</p>
+<h2 id="clone-the-project-repository"><a class="header" href="#clone-the-project-repository">Clone the project repository</a></h2>
+<p>This step will eventually not be needed. Because the project is not yet released
+on <code>crates.io</code>, the prelude and other dependencies must be available somewhere
+on the filesystem.</p>
+<pre><code class="language-shell">git clone https://github.com/google/wasefire
+cd wasefire
+</code></pre>
+<h2 id="run-the-setup-script"><a class="header" href="#run-the-setup-script">Run the setup script</a></h2>
+<p>To install all dependencies, run the setup script. If it fails, follow its
+instruction and run it again.</p>
+<pre><code class="language-shell">./scripts/setup.sh
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="create-a-new-applet"><a class="header" href="#create-a-new-applet">Create a new applet</a></h1>
+<p>This step will eventually be a simple <code>cargo wasefire new &lt;applet-name&gt;</code> command
+out of tree. But for now we will build the applet within the project repository
+as an example applet. We'll use <code>tutorial</code> as the applet name throughout this
+tutorial.</p>
+<p>You have 2 options to create and populate the applet directory. We'll go over
+both for pedagogical reasons.</p>
+<h2 id="copy-the-hello-applet"><a class="header" href="#copy-the-hello-applet">Copy the <code>hello</code> applet</a></h2>
+<p>The first step is to copy the <code>hello</code> directory to the <code>tutorial</code> directory:</p>
+<pre><code class="language-shell">cp -r examples/rust/hello examples/rust/tutorial
+</code></pre>
+<p>The second step is to update the applet name in the <code>Cargo.toml</code>:</p>
+<pre><code class="language-shell">sed -i 's/hello/tutorial/' examples/rust/tutorial/Cargo.toml
+</code></pre>
+<h2 id="create-the-applet-from-scratch"><a class="header" href="#create-the-applet-from-scratch">Create the applet from scratch</a></h2>
+<p>Create the <code>tutorial</code> directory:</p>
+<pre><code class="language-shell">mkdir examples/rust/tutorial
+</code></pre>
+<p>Create the <code>Cargo.toml</code> file in the created directory with the following
+content:</p>
+<pre><code class="language-toml">[package]
+name = &quot;tutorial&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[lib]
+crate-type = [&quot;cdylib&quot;]
+
+[dependencies]
+prelude = { path = &quot;../../../crates/prelude&quot; }
+</code></pre>
+<p>The <code>crate-type</code> entry is needed to compile to Wasm. The <code>prelude</code> dependency
+provides a high-level interface to the Applet API. Eventually, this dependency
+will released on <code>crates.io</code> and you will be able to develop out-of-tree.</p>
+<p>Then create the <code>src/lib.rs</code> file in the created directory with the following
+content:</p>
+<pre><pre class="playground"><code class="language-rust no_run">#![no_std]
+
+extern crate alloc;
+
+use wasefire::*;
+
+#[no_mangle]
+pub extern &quot;C&quot; fn main() {
+    println!(&quot;hello world&quot;);
+}</code></pre></pre>
+<p>Let's go over and explain each line.</p>
+<pre><code class="language-rust no_run noplayground">#![no_std]</code></pre>
+<p>The applet must be no-std to prevent accidental dependency on <code>std</code> which is not
+supported for the <code>wasm32-unknown-unknown</code> target. Note that using WASI with the
+<code>wasm32-wasi</code> target is not a workaround because the Applet API doesn't (yet?)
+provide WASI.</p>
+<pre><code class="language-rust no_run noplayground">extern crate alloc;</code></pre>
+<p>If the applet uses the global allocator, then it must re-enable allocation
+support (which was disabled by the no-std line before). The prelude provides the
+global allocator but this line is still needed because it must be in the binary.</p>
+<p>Note that because of those 2 lines, you need to use <code>core</code> or <code>alloc</code> instead of
+<code>std</code>.</p>
+<pre><code class="language-rust no_run noplayground">use wasefire::*;</code></pre>
+<p>This line is for convenience and imports everything the prelude defines. You can
+instead import the items you need manually.</p>
+<pre><code class="language-rust no_run noplayground">#[no_mangle]</code></pre>
+<p>Rust mangles the name of all functions. But we want the <code>main</code> function to have
+a predictible name such that the scheduler can find and call it when loading the
+applet. This line disables mangling.</p>
+<pre><code class="language-rust no_run noplayground">pub extern &quot;C&quot; fn main() {</code></pre>
+<p>This line ensures the <code>main</code> function has a correct foreign function interface.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="run-an-applet"><a class="header" href="#run-an-applet">Run an applet</a></h1>
+<p>We currently use <code>cargo xtask</code> as an alias to the local <code>xtask</code> crate to build,
+flash, and run platforms and applets. Eventually, this will be a <code>cargo-wasefire</code>
+subcommand and will work out-of-tree. You can use <code>cargo xtask help</code> to discover
+the tool.</p>
+<h2 id="on-host"><a class="header" href="#on-host">On host</a></h2>
+<p>We can run an applet (here the <code>tutorial</code> applet) on the <code>host</code> runner with the
+following command:</p>
+<pre><code class="language-shell">cargo xtask applet rust tutorial runner host
+</code></pre>
+<p>Type your password when asked. The <code>host</code> runner needs <code>sudo</code> to set USB/IP up,
+which is needed for applets that use USB. It will run those 2 commands for you:</p>
+<ul>
+<li><code>sudo modprobe vhci-hcd</code></li>
+<li><code>sudo usbip attach -r localhost -b 1-1</code></li>
+</ul>
+<p>After a bunch of compilation steps, you should see something that ends like:</p>
+<pre><code class="language-plaintext">     Running `.../wasefire/target/release/runner-host`
+[sudo] password for user:
+00000.000: hello world
+</code></pre>
+<p>The first line is output by <code>cargo</code>. The last 2 lines are output by the host
+runner. The last one was triggered by the applet. Debugging output is prefixed
+with a timestamp.</p>
+<p>The host runner (like all runners) doesn't stop, even if all applets have
+completed. Instead, it goes to sleep. This is because all known use-cases are
+reactor-like (they react to external input). Besides, if the platform has applet
+management enabled, then the platform is ready to execute applet management
+commands. However, if there is a use-case that needs to shutdown, then the API
+or scheduler will be extended to provide this functionality.</p>
+<p>Use Ctrl-C to terminate the runner. For hardware boards, you can just remove the
+power or let it run. The device is in sleep state (although if USB is enabled,
+then it wakes up every millisecond to keep the connection active).</p>
+<h2 id="on-board"><a class="header" href="#on-board">On board</a></h2>
+<p>We currently only support the nRF52840-dk board from Nordic. If you have such a
+dev board, you can run an applet (here the <code>tutorial</code> applet) on the <code>nordic</code>
+runner with the following command:</p>
+<pre><code class="language-shell">cargo xtask applet rust tutorial runner nordic
+</code></pre>
+<p>You might need additional tooling to run (like <code>probe-rs</code>). Please open an
+<a href="https://github.com/google/wasefire/issues/new">issue</a> if you encounter any
+problem. This documentation could be improved.</p>
+<p>After a bunch of compilation steps, you should see something that ends like:</p>
+<pre><code class="language-plaintext">&quot;probe-run&quot; &quot;--chip=nRF52840_xxAA&quot; &quot;target/thumbv7em-none-eabi/release/runner-nordic&quot;
+(HOST) INFO  flashing program (36 pages / 144.00 KiB)
+(HOST) INFO  success!
+────────────────────────────────────────────────────────────────────────────────
+3 ticks @ (1/100) hello world
+└─ api_helper::debug::println @ crates/api-helper/src/debug.rs:9
+</code></pre>
+<p>The first line is from <code>cargo xtask</code>. The rest is from <code>probe-run</code>. The last 2
+lines are triggered by the applet. Debugging output is prefixed by a timestamp
+(number of 10ms ticks) and followed on the next line by code location.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="api"><a class="header" href="#api">API</a></h1>
+<p>The applet API is documented <a href="https://docs.rs/wasefire-applet-api">here</a>.</p>
+<p>Note that you probably don't want to use the API directly, but instead want to
+use the prelude of your programming language. The API is low-level and
+corresponds to the interface at WebAssembly level.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="prelude-1"><a class="header" href="#prelude-1">Prelude</a></h1>
+<p>This chapter illustrates how to use some parts of the prelude.</p>
+<p>The prelude documentation is available <a href="https://docs.rs/wasefire">here</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="leds"><a class="header" href="#leds">LEDs</a></h1>
+<p>In this section, we will walk through the <code>blink</code> example in Rust. It will blink
+in order each LED of the board every second in an infinite loop (going back to
+the first LED after the last LED).</p>
+<p>The number of LEDs available on the board is advertised by the <code>led::count()</code>
+function. We want to make sure there is at least one LED available:</p>
+<pre><code class="language-rust no_run noplayground">    // Make sure there is at least one LED.
+    let num_leds = led::count();
+    assert!(num_leds &gt; 0, &quot;Board has no LEDs.&quot;);</code></pre>
+<p>Next, we initialize the variables describing the action of the next loop
+iteration. The very first action we want to take is turn on the first LED
+(indexing starts at 0).</p>
+<pre><code class="language-rust no_run noplayground">    // Initialize the first action.
+    let mut led_index = 0;
+    let mut led_status = led::On;</code></pre>
+<p>We can now start the infinite loop:</p>
+<pre><code class="language-rust no_run noplayground">    // Loop indefinitely.
+    loop {</code></pre>
+<p>Within the infinite loop (notice the indentation), we first take the action
+described by the variables which is to set the status of a LED using the
+<code>led::set()</code> function:</p>
+<pre><code class="language-rust no_run noplayground">        // Execute the action.
+        led::set(led_index, led_status);</code></pre>
+<p>We now need to update the variables to describe the next action. We always flip
+the status because we want a blinking behavior (<code>led::Status</code> implements <code>Not</code>
+so we can use the <code>!</code> notation). And if the next status is to turn on a LED,
+then we want to turn on the next LED, taking care of wrapping around to the
+first LED after the last LED:</p>
+<pre><code class="language-rust no_run noplayground">        // Prepare the next action.
+        led_status = !led_status;
+        if matches!(led_status, led::On) {
+            led_index = (led_index + 1) % num_leds;
+        }</code></pre>
+<p>Finally, before looping back to the next iteration, we sleep for half a second
+because we want to blink each LED for one second which means half a second on
+and half a second off:</p>
+<pre><code class="language-rust no_run noplayground">        // Wait before executing the next action.
+        clock::sleep(Duration::from_millis(500));</code></pre>
+<p>The final code looks like this:</p>
+<pre><pre class="playground"><code class="language-rust no_run">#![no_std]
+
+use core::time::Duration;
+
+use wasefire::*;
+
+#[no_mangle]
+pub extern &quot;C&quot; fn main() {
+    // Make sure there is at least one LED.
+    let num_leds = led::count();
+    assert!(num_leds &gt; 0, &quot;Board has no LEDs.&quot;);
+
+    // Initialize the first action.
+    let mut led_index = 0;
+    let mut led_status = led::On;
+
+    // Loop indefinitely.
+    loop {
+        // Execute the action.
+        led::set(led_index, led_status);
+
+        // Prepare the next action.
+        led_status = !led_status;
+        if matches!(led_status, led::On) {
+            led_index = (led_index + 1) % num_leds;
+        }
+
+        // Wait before executing the next action.
+        clock::sleep(Duration::from_millis(500));
+    }
+}</code></pre></pre>
+<h2 id="testing"><a class="header" href="#testing">Testing</a></h2>
+<p>The <code>host</code> runner currently has 1 LED and prints its state on <code>stdout</code> as an
+info-level log. Eventually, the number of LEDs will be configurable and how they
+are represented will be improved (for example through some graphical interface).</p>
+<p>To test the applet on the <code>host</code> runner, you'll thus need to use:</p>
+<pre><code class="language-shell">cargo xtask applet rust blink runner host --log=info
+</code></pre>
+<p>The <code>--log=info</code> flag specifies that we want info-level (or more severe)
+logging. By default, only errors are printed.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="buttons"><a class="header" href="#buttons">Buttons</a></h1>
+<p>In this section, we will walk through 2 Rust examples:</p>
+<ul>
+<li>The <code>button</code> example illustrates stateless usage but lets us introduce how to
+handle events with callbacks.</li>
+<li>The <code>led</code> example illustrates stateful usage and thus how to access state in
+callbacks.</li>
+</ul>
+<h2 id="stateless-usage"><a class="header" href="#stateless-usage">Stateless usage</a></h2>
+<p>This example prints to the debug output the new state of a button each time that
+button changed state and so for all buttons.</p>
+<p>Similarly to LEDs, there is a <code>button::count()</code> function to discover the number
+of buttons available on the board:</p>
+<pre><code class="language-rust no_run noplayground">    // Make sure there is at least one button.
+    let count = button::count();
+    assert!(count &gt; 0, &quot;Board has no buttons.&quot;);</code></pre>
+<p>We want to listen on events for all available buttons, so we loop over all
+button indices (starting at 0):</p>
+<pre><code class="language-rust no_run noplayground">    // For each button on the board.
+    for index in 0 .. count {</code></pre>
+<p>For each button, we define a handler that prints the new button state to the
+debug output. The handler takes the new button state as argument. Since
+<code>button::State</code> implements <code>Debug</code>, we simply use <code>{state:?}</code> to print the new
+state.</p>
+<pre><code class="language-rust no_run noplayground">        // We define a button handler printing the new state.
+        let handler = move |state| println!(&quot;Button {index} has been {state:?}.&quot;);</code></pre>
+<p>We can now start listening for events. This is done by creating a
+<code>button::Listener</code> which will call the provided handler each time the button
+changes state. We specify the button we want to listen to by its index and the
+handler as a closure.</p>
+<pre><code class="language-rust no_run noplayground">        // We start listening for state changes with the handler.
+        let listener = button::Listener::new(index, handler);</code></pre>
+<p>A listener continues to listen for events until it is dropped. Since we want to
+indefinitely listen, we must not drop the listener. A simple way to do that is
+to leak it. This is equivalent to calling <code>core::mem::forget()</code>.</p>
+<pre><code class="language-rust no_run noplayground">        // We leak the listener to continue listening for events.
+        listener.leak();</code></pre>
+<p>Finally, we just endlessly wait for callbacks. This step will eventually not be
+needed. Waiting for callbacks indefinitely will be the implicit behavior when
+<code>main</code> exits, in which case <code>main</code> can be seen as a callback setup procedure.
+The <code>scheduling::wait_for_callback()</code> function puts the applet to sleep until a
+callback is scheduled and <code>scheduled::wait_indefinitely()</code> is just an infinite
+loop around <code>wait_for_callback()</code>.</p>
+<pre><code class="language-rust no_run noplayground">    // We indefinitely wait for callbacks.
+    scheduling::wait_indefinitely();</code></pre>
+<p>The final code looks like this:</p>
+<pre><pre class="playground"><code class="language-rust no_run">#![no_std]
+
+extern crate alloc;
+
+use wasefire::*;
+
+#[no_mangle]
+pub extern &quot;C&quot; fn main() {
+    // Make sure there is at least one button.
+    let count = button::count();
+    assert!(count &gt; 0, &quot;Board has no buttons.&quot;);
+
+    // For each button on the board.
+    for index in 0 .. count {
+        // We define a button handler printing the new state.
+        let handler = move |state| println!(&quot;Button {index} has been {state:?}.&quot;);
+
+        // We start listening for state changes with the handler.
+        let listener = button::Listener::new(index, handler);
+
+        // We leak the listener to continue listening for events.
+        listener.leak();
+    }
+
+    // We indefinitely wait for callbacks.
+    scheduling::wait_indefinitely();
+}</code></pre></pre>
+<h2 id="testing-1"><a class="header" href="#testing-1">Testing</a></h2>
+<p>The <code>host</code> runner currently has 1 button and is controlled by typing <code>button</code> on
+a line on <code>stdin</code>. Eventually, the number of buttons will be configurable and
+how they are controlled will be improved (for example through some graphical
+interface).</p>
+<h2 id="stateful-usage"><a class="header" href="#stateful-usage">Stateful usage</a></h2>
+<p>This example combines all the LEDs and buttons available on the board by
+maintaining a dynamic mapping between them. Initially, all buttons map to the
+first LED. Each time a button is pressed or released, the LED it is mapped to is
+toggled. And when a button is released, it maps to the next LED (or the first
+one if it was mapping to the last one).</p>
+<p>In particular:</p>
+<ul>
+<li>A single button can toggle all LEDs.</li>
+<li>Multiple buttons can toggle the same LED.</li>
+<li>A button may stay pressed while another button is pressed.</li>
+<li>All buttons eventually toggle all LEDs.</li>
+</ul>
+<p>We skip over the setup which doesn't illustrate anything new:</p>
+<pre><code class="language-rust no_run noplayground">    // Make sure there is at least one button.
+    let num_buttons = button::count();
+    assert!(num_buttons &gt; 0, &quot;Board has no buttons.&quot;);
+
+    // Make sure there is at least one LED.
+    let num_leds = led::count();
+    assert!(num_leds &gt; 0, &quot;Board has no LEDs.&quot;);
+
+    // For each button on the board.
+    for button_index in 0 .. num_buttons {</code></pre>
+<p>Because buttons dynamically map to a LED, we need a state to store this
+information. We create this state on the heap because we will eventually leak
+the listener and exit the <code>main</code> function to indefinitely listen for button
+events. This state simply contains the index of the LED to which this buttons
+maps to. We have to use <code>Cell</code> because the handler is called as <code>&amp;self</code> (and
+thus closures must be <code>Fn</code> not <code>FnMut</code>)<sup class="footnote-reference"><a href="#cell">1</a></sup>.</p>
+<pre><code class="language-rust no_run noplayground">        // We create the state containing the LED to which this button maps to.
+        let led_pointer = Box::new(Cell::new(0));</code></pre>
+<p>When defining the button handler, we must move (and thus transfer ownership of)
+the state we just created to the handler, such that the handler can read and
+write the state when called.</p>
+<pre><code class="language-rust no_run noplayground">        // We define the button handler and move the state to there.
+        let handler = move |button_state| {</code></pre>
+<p>When the handler is called, we first toggle the associated LED:</p>
+<pre><code class="language-rust no_run noplayground">            // We toggle the LED.
+            let led_index = led_pointer.get();
+            led::set(led_index, !led::get(led_index));</code></pre>
+<p>And then if the button is released, we update the dynamic mapping to point to
+the next LED (wrapping if needed):</p>
+<pre><code class="language-rust no_run noplayground">            // If the button is released, we point it to the next LED.
+            if matches!(button_state, button::Released) {
+                led_pointer.set((led_index + 1) % num_leds);
+            }</code></pre>
+<p>Finally, we create a button listener with the defined handler. And we leak it to
+continue listening after it going out of scope and in particular after <code>main</code>
+returns.</p>
+<pre><code class="language-rust no_run noplayground">        // We indefinitely listen by creating and leaking a listener.
+        button::Listener::new(button_index, handler).leak();</code></pre>
+<p>The final code looks like this:</p>
+<pre><pre class="playground"><code class="language-rust no_run">#![no_std]
+
+extern crate alloc;
+
+use alloc::boxed::Box;
+use core::cell::Cell;
+
+use wasefire::*;
+
+#[no_mangle]
+pub extern &quot;C&quot; fn main() {
+    // Make sure there is at least one button.
+    let num_buttons = button::count();
+    assert!(num_buttons &gt; 0, &quot;Board has no buttons.&quot;);
+
+    // Make sure there is at least one LED.
+    let num_leds = led::count();
+    assert!(num_leds &gt; 0, &quot;Board has no LEDs.&quot;);
+
+    // For each button on the board.
+    for button_index in 0 .. num_buttons {
+        // We create the state containing the LED to which this button maps to.
+        let led_pointer = Box::new(Cell::new(0));
+
+        // We define the button handler and move the state to there.
+        let handler = move |button_state| {
+            // We toggle the LED.
+            let led_index = led_pointer.get();
+            led::set(led_index, !led::get(led_index));
+
+            // If the button is released, we point it to the next LED.
+            if matches!(button_state, button::Released) {
+                led_pointer.set((led_index + 1) % num_leds);
+            }
+        };
+
+        // We indefinitely listen by creating and leaking a listener.
+        button::Listener::new(button_index, handler).leak();
+    }
+
+    // We indefinitely wait for callbacks.
+    scheduling::wait_indefinitely();
+}</code></pre></pre>
+<div class="footnote-definition" id="cell"><sup class="footnote-definition-label">1</sup>
+<p>This is because the handler could wait for callbacks itself (which the
+prelude has no way to know, or is there?) and thus the handler may be
+reentered. This would essentially copy a mutable reference which is unsound.</p>
+</div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="timers"><a class="header" href="#timers">Timers</a></h1>
+<p>In this section, we will walk through the <code>button_abort</code> example in Rust. It
+uses the first button and the first LED of the board. On a short press, the LED
+will start blinking. On a long press, the LED will stop blinking. While the
+button is pressed, the LED indicates whether the press is short or long:</p>
+<ul>
+<li>The LED is on while the press is short.</li>
+<li>The LED turns off once the press is long.</li>
+</ul>
+<p>This applet will need a shared state to know whether the LED must be blinking or
+not. We cannot simply use a boolean because the state will be shared. We cannot
+use <code>Cell&lt;bool&gt;</code> neither because the state must be in the heap<sup class="footnote-reference"><a href="#heap">1</a></sup>. So we use
+<code>Rc&lt;Cell&lt;bool&gt;&gt;</code> which is a common pattern when using callbacks:</p>
+<pre><code class="language-rust no_run noplayground">    // We define a shared state to decide whether we must blink.
+    let blinking = Rc::new(Cell::new(false));</code></pre>
+<p>We can now allocate a timer for the blinking behavior using <code>clock::Timer::new</code>.
+This function takes the handler that will be called each time the timer fires.
+The handler simply toggles the LED if we must be blinking. Note how we must move
+a clone of the state to the callback. This is also a common pattern when using
+callbacks, because callbacks must be <code>'static</code><sup class="footnote-reference"><a href="#heap">1</a></sup>:</p>
+<pre><code class="language-rust no_run noplayground">    // Allocate a timer for blinking the LED.
+    let blink = clock::Timer::new({
+        // Move a clone of the state to the callback.
+        let blinking = blinking.clone();
+        move || {
+            // Toggle the LED if blinking.
+            if blinking.get() {
+                led::set(0, !led::get(0));
+            }
+        }
+    });</code></pre>
+<p>The rest of the code is done in an infinite loop:</p>
+<pre><code class="language-rust no_run noplayground">    loop {</code></pre>
+<p>At each iteration, we start by setting up a <code>button::Listener</code> to record whether
+the button was pressed and then released. The logic is similar to the callback
+setup for the timer. The small difference is that we won't need to call any
+function on the listener so we prefix its variable name <code>_button</code> with an
+underscore. We cannot simply omit the variable name because we don't want to
+drop it until the end of the loop iteration, otherwise we would stop listening
+to button events.</p>
+<pre><code class="language-rust no_run noplayground">        // Setup button listeners.
+        let pressed = Rc::new(Cell::new(false));
+        let released = Rc::new(Cell::new(false));
+        let _button = button::Listener::new(0, {
+            let pressed = pressed.clone();
+            let released = released.clone();
+            move |state| match state {
+                button::Pressed =&gt; pressed.set(true),
+                button::Released if pressed.get() =&gt; released.set(true),
+                button::Released =&gt; (),
+            }
+        });</code></pre>
+<p>We then wait until the button is pressed using <code>scheduling::wait_until()</code>. This
+function takes a condition as argument and only executes callbacks until the
+condition is satisfied.</p>
+<pre><code class="language-rust no_run noplayground">        // Wait for the button to be pressed.
+        scheduling::wait_until(|| pressed.get());</code></pre>
+<p>According to the specification of this example applet, when the button is
+pressed we must turn on the LED (and stop blinking if we were blinking) to
+signal a possible short press. Note that callbacks can only executed when a
+scheduling function is called, so we are essentially in a critical section. As
+such, the order in which we do those 3 lines doesn't matter. However, a callback
+might be scheduled before we stop the <code>blink</code> timer. It will execute next time
+we call a scheduling function. This is ok because when that will happen, the
+<code>blinking</code> state will be <code>false</code> and the <code>blink</code> handler will do nothing.</p>
+<pre><code class="language-rust no_run noplayground">        // Turn the LED on.
+        blink.stop();
+        blinking.set(false);
+        led::set(0, led::On);</code></pre>
+<p>To detect a long press, we need to start a timer. There is nothing new here
+except the <code>Timer::start()</code> function which takes the timer mode (one-shot or
+periodic) and its duration.</p>
+<pre><code class="language-rust no_run noplayground">        // Start the timeout to decide between short and long press.
+        let timed_out = Rc::new(Cell::new(false));
+        let timer = clock::Timer::new({
+            let timed_out = timed_out.clone();
+            move || timed_out.set(true)
+        });
+        timer.start(clock::Oneshot, Duration::from_secs(1));</code></pre>
+<p>We now wait for the first event between the button being released and the
+timeout firing. This is simply done by using a condition which is a disjunction
+of the events of interest. This is a common pattern when implementing behavior
+with a timeout.</p>
+<pre><code class="language-rust no_run noplayground">        // Wait for the button to be released or the timeout to fire.
+        scheduling::wait_until(|| released.get() || timed_out.get());</code></pre>
+<p>To signal that the timeout was reached or the button was released, we turn off
+the LED.</p>
+<pre><code class="language-rust no_run noplayground">        // Turn the LED off.
+        led::set(0, led::Off);</code></pre>
+<p>Finally, if the press was short (i.e. the button was released before the
+timeout), we start blinking. This demonstrates the use of periodic timers.</p>
+<pre><code class="language-rust no_run noplayground">        // Start blinking if short press.
+        if !timed_out.get() {
+            blinking.set(true);
+            blink.start(clock::Periodic, Duration::from_millis(200));
+        }</code></pre>
+<p>There are a few things to note:</p>
+<ul>
+<li>The code is implicit in Rust, but the button handler and the timer handler
+within the loop iteration are dropped before the next iteration. This means
+that their callbacks are unregistered. This could be done explicitly by
+calling <code>core::mem::drop()</code> on their variable if needed.</li>
+<li>It is not needed to start and stop the <code>blink</code> timer within the loop as long
+as it is started before entering the loop. This is just an optimization to
+avoid calling the handler when we know that the <code>blinking</code> shared state is
+<code>false</code>, because the handler would do nothing in that case.</li>
+</ul>
+<p>The final code looks like this:</p>
+<pre><pre class="playground"><code class="language-rust no_run">#![no_std]
+
+extern crate alloc;
+
+use alloc::rc::Rc;
+use core::cell::Cell;
+use core::time::Duration;
+
+use wasefire::*;
+
+#[no_mangle]
+pub extern &quot;C&quot; fn main() {
+    assert!(button::count() &gt; 0, &quot;Board has no buttons.&quot;);
+    assert!(led::count() &gt; 0, &quot;Board has no LEDs.&quot;);
+
+    // We define a shared state to decide whether we must blink.
+    let blinking = Rc::new(Cell::new(false));
+
+    // Allocate a timer for blinking the LED.
+    let blink = clock::Timer::new({
+        // Move a clone of the state to the callback.
+        let blinking = blinking.clone();
+        move || {
+            // Toggle the LED if blinking.
+            if blinking.get() {
+                led::set(0, !led::get(0));
+            }
+        }
+    });
+
+    loop {
+        // Setup button listeners.
+        let pressed = Rc::new(Cell::new(false));
+        let released = Rc::new(Cell::new(false));
+        let _button = button::Listener::new(0, {
+            let pressed = pressed.clone();
+            let released = released.clone();
+            move |state| match state {
+                button::Pressed =&gt; pressed.set(true),
+                button::Released if pressed.get() =&gt; released.set(true),
+                button::Released =&gt; (),
+            }
+        });
+
+        // Wait for the button to be pressed.
+        scheduling::wait_until(|| pressed.get());
+
+        // Turn the LED on.
+        blink.stop();
+        blinking.set(false);
+        led::set(0, led::On);
+
+        // Start the timeout to decide between short and long press.
+        let timed_out = Rc::new(Cell::new(false));
+        let timer = clock::Timer::new({
+            let timed_out = timed_out.clone();
+            move || timed_out.set(true)
+        });
+        timer.start(clock::Oneshot, Duration::from_secs(1));
+
+        // Wait for the button to be released or the timeout to fire.
+        scheduling::wait_until(|| released.get() || timed_out.get());
+
+        // Turn the LED off.
+        led::set(0, led::Off);
+
+        // Start blinking if short press.
+        if !timed_out.get() {
+            blinking.set(true);
+            blink.start(clock::Periodic, Duration::from_millis(200));
+        }
+    }
+}</code></pre></pre>
+<h2 id="testing-2"><a class="header" href="#testing-2">Testing</a></h2>
+<p>As for the LEDs and buttons examples, to test the applet on the <code>host</code> runner,
+you'll need to use:</p>
+<pre><code class="language-shell">cargo xtask applet rust button_abort runner host --log=info
+</code></pre>
+<p>However, in addition to <code>button</code> which does a press and release sequence, you
+can use <code>press</code> and <code>release</code> to independently press and release the button. In
+particular, <code>button</code> may be used to start blinking and <code>press</code> may be used to
+stop blinking. There's no need to explicitly release because the applet supports
+missing callbacks for robustness.</p>
+<div class="footnote-definition" id="heap"><sup class="footnote-definition-label">1</sup>
+<p>If the state were on the stack and a callback were pointing to that
+state, it would become a safety requirement to unregister the callback
+before popping the state from the stack. However, it is safe to leak a
+callback with <code>core::mem::forget()</code> and thus not drop it. So we enforce
+callbacks to be <code>'static</code> and thus not depend on references to the stack.</p>
+</div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="usb"><a class="header" href="#usb">USB</a></h1>
+<p>For now only USB serial is supported. Eventually, the idea would be for applets
+to describe the USB interfaces they need in some init function. The scheduler
+would then create the USB device based on those information. And only then start
+the applets with capabilities to the interfaces they asked for.</p>
+<p>In this section, we will illustrate USB serial usage by walking through the
+<code>memory_game</code> example. The game is essentially an infinite loop of memory
+questions. The player has 3 seconds to memorize a random base32 string (the
+length is the current level in the game and thus represents the difficulty). The
+player than has 7 seconds to type it back. On success they go to the next level,
+otherwise to the previous level.</p>
+<p>The applet has only 2 states across loop iterations:</p>
+<ul>
+<li>The level of the game (and thus the length of the string to remember) starting
+at 3.</li>
+<li>The next prompt to show to the player while they get ready for the next
+question.</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">    let mut level = 3; // length of the string to remember
+    let mut prompt = &quot;Press ENTER when you are ready.&quot;;</code></pre>
+<p>Everything else is in the infinite loop:</p>
+<pre><code class="language-rust no_run noplayground">    loop {</code></pre>
+<p>First thing we do is print the prompt and wait for the player to press Enter. We
+use ANSI escape codes to overwrite whatever was there before. As an invariant
+throughout the game, we always use a single line of the terminal. This is
+particularly important to overwrite the question since the player has to guess
+it. We write to the USB serial using <code>usb::serial::write_all()</code>.</p>
+<pre><code class="language-rust no_run noplayground">        usb::serial::write_all(format!(&quot;\r\x1b[K{prompt}&quot;).as_bytes()).unwrap();</code></pre>
+<p>We then wait until the player press Enter. We can read a single byte from the
+USB serial using <code>usb::serial::read_byte()</code>. The terminal sends <code>0x0d</code> when
+Enter is pressed.</p>
+<pre><code class="language-rust no_run noplayground">        // Make sure the player is ready.
+        while usb::serial::read_byte().unwrap() != 0x0d {}</code></pre>
+<p>To generate the next question, we use <code>rng::fill_bytes()</code> which fills a buffer
+with random bytes. We provide a buffer with the length of the current level. For
+the string to be printable we truncate the entropy of each byte from 8 to 5 bits
+and convert it to a <code>base32</code> symbol.</p>
+<pre><code class="language-rust no_run noplayground">        // Generate a question for this level.
+        let mut question = vec![0; level];
+        rng::fill_bytes(&amp;mut question);
+        for byte in &amp;mut question {
+            const BASE32: [u8; 32] = *b&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ234567&quot;;
+            *byte = BASE32[(*byte &amp; 0x1f) as usize];
+        }
+        let mut question = String::from_utf8(question).unwrap();</code></pre>
+<p>We can now show the question to the player. We do so using a <code>process</code> helper
+function that we will also use for the answer. We instantiate this function such
+that the player has 3 seconds to memorize the question and may hit Enter at any
+time to start answering.</p>
+<pre><code class="language-rust no_run noplayground">        // Display the question.
+        process(3, &quot;Memorize this&quot;, &amp;mut question, |_, x| x == 0x0d);</code></pre>
+<p>After 3 seconds have elapsed or if the player hit Enter, we read the answer from
+the player. We give them 7 seconds to type the answer. We also convert
+lower-case letters to upper-case for convenience (it's easier to read upper-case
+but easier to type lower-case). We also support backspace which the terminal
+sends as <code>0x7f</code>. And same as for the question, we let the player exit early with
+Enter to avoid waiting until the timeout.</p>
+<pre><code class="language-rust no_run noplayground">        // Read the answer.
+        let mut answer = String::new();
+        process(7, &quot;Type what you remember&quot;, &amp;mut answer, |answer, byte| {
+            match byte {
+                b'A' ..= b'Z' | b'2' ..= b'7' =&gt; answer.push(byte as char),
+                b'a' ..= b'z' =&gt; answer.push(byte.to_ascii_uppercase() as char),
+                0x7f =&gt; drop(answer.pop()),
+                0x0d =&gt; return true,
+                _ =&gt; (),
+            }
+            false
+        });</code></pre>
+<p>Once we have the answer, we check if it matches the question. If it does, we
+promote the player to the next level. If it doesn't, we demote the player to the
+previous level. However, if there are no previous level because the player is at
+level 1, then we let them retry the level to show our support. We use ANSI
+escape codes to highlight the result.</p>
+<pre><code class="language-rust no_run noplayground">        // Check the answer.
+        if answer == question {
+            level += 1;
+            prompt = &quot;\x1b[1;32mPromotion!\x1b[m Press ENTER for next level.&quot;;
+        } else if level &gt; 1 {
+            level -= 1;
+            prompt = &quot;\x1b[1;31mDemotion...\x1b[m Press ENTER for previous level.&quot;;
+        } else {
+            prompt = &quot;\x1b[1;41mRetry?\x1b[m Press ENTER to retry.&quot;;
+        }</code></pre>
+<p>Now that we're done with the main loop, let's look at the <code>process</code> helper. It
+takes 4 arguments:</p>
+<ul>
+<li><code>max_secs: usize</code>: the maximum display time in seconds.</li>
+<li><code>prompt: &amp;str</code>: the message shown at the beginning of the line.</li>
+<li><code>data: &amp;mut String</code>: the data shown after the prompt, which may be updated
+(see below).</li>
+<li><code>update: impl Fn(&amp;mut String, u8) -&gt; bool</code>: the closure called on each input
+byte possibly updating the data and returning whether processing should end
+immediately without waiting for the maximum display time.</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">fn process(
+    max_secs: usize, prompt: &amp;str, data: &amp;mut String, update: impl Fn(&amp;mut String, u8) -&gt; bool,
+) {</code></pre>
+<p>The helper counts the number of elapsed seconds in shared variable <code>secs</code> and
+updates it using a periodic timer every second.</p>
+<pre><code class="language-rust no_run noplayground">    let secs = Rc::new(Cell::new(0));
+    let timer = clock::Timer::new({
+        let time = secs.clone();
+        move || time.set(time.get() + 1)
+    });
+    timer.start(clock::Periodic, Duration::from_secs(1));</code></pre>
+<p>The helper loops as long as the update function didn't say to stop (tracked by
+the <code>done</code> variable) and there is still time available.</p>
+<pre><code class="language-rust no_run noplayground">    let mut done = false;
+    while !done &amp;&amp; secs.get() &lt; max_secs {</code></pre>
+<p>We update the line in the terminal with the prompt, time left, and current data.
+We use ANSI escape codes to highlight the data and help readability.</p>
+<pre><code class="language-rust no_run noplayground">        let secs = max_secs - secs.get();
+        let message = format!(&quot;\r\x1b[K{prompt} ({secs} seconds remaining): \x1b[1m{data}\x1b[m&quot;);
+        usb::serial::write_all(message.as_bytes()).unwrap();</code></pre>
+<p>To be able to update the time left in the terminal we must read from the USB
+serial asynchronously using <code>usb::serial::Reader</code>. We create a reader by
+providing a mutable buffer to which the reader will write the received bytes.</p>
+<pre><code class="language-rust no_run noplayground">        let mut buffer = [0; 8];
+        let reader = usb::serial::Reader::new(&amp;mut buffer);</code></pre>
+<p>We then sleep until a callback is executed using
+<code>scheduling::wait_for_callback()</code>. This callback may either be the timer firing
+the next second or the reader getting input from the USB serial.</p>
+<pre><code class="language-rust no_run noplayground">        scheduling::wait_for_callback();</code></pre>
+<p>We call <code>Reader::result()</code> to know how many bytes were read from USB serial and
+written to the buffer (or if an error occurred). We then simply iterate over the
+received bytes and update the data and early exit status according to the
+provided closure. Same as with timers, when a reader is dropped, its callback is
+canceled.</p>
+<pre><code class="language-rust no_run noplayground">        let len = reader.result().unwrap();
+        for &amp;byte in &amp;buffer[.. len] {
+            done |= update(data, byte);
+        }</code></pre>
+<p>The final code looks like this:</p>
+<pre><pre class="playground"><code class="language-rust no_run">#![no_std]
+
+extern crate alloc;
+
+use alloc::rc::Rc;
+use alloc::string::String;
+use alloc::{format, vec};
+use core::cell::Cell;
+use core::time::Duration;
+
+use wasefire::*;
+
+#[no_mangle]
+pub extern &quot;C&quot; fn main() {
+    let mut level = 3; // length of the string to remember
+    let mut prompt = &quot;Press ENTER when you are ready.&quot;;
+    loop {
+        usb::serial::write_all(format!(&quot;\r\x1b[K{prompt}&quot;).as_bytes()).unwrap();
+
+        // Make sure the player is ready.
+        while usb::serial::read_byte().unwrap() != 0x0d {}
+
+        // Generate a question for this level.
+        let mut question = vec![0; level];
+        rng::fill_bytes(&amp;mut question);
+        for byte in &amp;mut question {
+            const BASE32: [u8; 32] = *b&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ234567&quot;;
+            *byte = BASE32[(*byte &amp; 0x1f) as usize];
+        }
+        let mut question = String::from_utf8(question).unwrap();
+
+        // Display the question.
+        process(3, &quot;Memorize this&quot;, &amp;mut question, |_, x| x == 0x0d);
+
+        // Read the answer.
+        let mut answer = String::new();
+        process(7, &quot;Type what you remember&quot;, &amp;mut answer, |answer, byte| {
+            match byte {
+                b'A' ..= b'Z' | b'2' ..= b'7' =&gt; answer.push(byte as char),
+                b'a' ..= b'z' =&gt; answer.push(byte.to_ascii_uppercase() as char),
+                0x7f =&gt; drop(answer.pop()),
+                0x0d =&gt; return true,
+                _ =&gt; (),
+            }
+            false
+        });
+
+        // Check the answer.
+        if answer == question {
+            level += 1;
+            prompt = &quot;\x1b[1;32mPromotion!\x1b[m Press ENTER for next level.&quot;;
+        } else if level &gt; 1 {
+            level -= 1;
+            prompt = &quot;\x1b[1;31mDemotion...\x1b[m Press ENTER for previous level.&quot;;
+        } else {
+            prompt = &quot;\x1b[1;41mRetry?\x1b[m Press ENTER to retry.&quot;;
+        }
+    }
+}
+
+fn process(
+    max_secs: usize, prompt: &amp;str, data: &amp;mut String, update: impl Fn(&amp;mut String, u8) -&gt; bool,
+) {
+    let secs = Rc::new(Cell::new(0));
+    let timer = clock::Timer::new({
+        let time = secs.clone();
+        move || time.set(time.get() + 1)
+    });
+    timer.start(clock::Periodic, Duration::from_secs(1));
+    let mut done = false;
+    while !done &amp;&amp; secs.get() &lt; max_secs {
+        let secs = max_secs - secs.get();
+        let message = format!(&quot;\r\x1b[K{prompt} ({secs} seconds remaining): \x1b[1m{data}\x1b[m&quot;);
+        usb::serial::write_all(message.as_bytes()).unwrap();
+        let mut buffer = [0; 8];
+        let reader = usb::serial::Reader::new(&amp;mut buffer);
+        scheduling::wait_for_callback();
+        let len = reader.result().unwrap();
+        for &amp;byte in &amp;buffer[.. len] {
+            done |= update(data, byte);
+        }
+    }
+}</code></pre></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="storage"><a class="header" href="#storage">Storage</a></h1>
+<p>For now only a key-value store is supported for persistent storage. Eventually,
+additional facilities may be added: a cyclic logging journal, a file-system,
+raw flash access, etc.</p>
+<p>In this section, we will illustrate the key-value store usage by walking through
+the <code>store</code> example which provides direct store access through USB serial.</p>
+<p>We first define a helper to write a line to the USB serial.</p>
+<pre><code class="language-rust no_run noplayground">fn writeln(buf: &amp;[u8]) {
+    usb::serial::write_all(buf).unwrap();
+    usb::serial::write_all(b&quot;\r\n&quot;).unwrap();
+}</code></pre>
+<p>The first thing we do when the applet starts is print a short help describing
+how to use the applet.</p>
+<pre><code class="language-rust no_run noplayground">#[no_mangle]
+pub extern &quot;C&quot; fn main() {
+    writeln(b&quot;Usage: insert &lt;key&gt; &lt;value&gt;&quot;);
+    writeln(b&quot;Usage: find &lt;key&gt;&quot;);
+    writeln(b&quot;Usage: remove &lt;key&gt;&quot;);</code></pre>
+<p>We can then start the infinite loop processing exactly one command per
+iteration.</p>
+<pre><code class="language-rust no_run noplayground">    loop {</code></pre>
+<p>We start a loop iteration by reading a command from the user. Only space,
+lower-case alphabetic characters, digits, and backspace are supported. We exit
+as soon as the user hits Enter.</p>
+<pre><code class="language-rust no_run noplayground">        // Read the command.
+        let mut command = String::new();
+        loop {
+            usb::serial::write_all(format!(&quot;\r\x1b[K&gt; {command}&quot;).as_bytes()).unwrap();
+            match usb::serial::read_byte().unwrap() {
+                c @ (b' ' | b'a' ..= b'z' | b'0' ..= b'9') =&gt; command.push(c as char),
+                0x7f =&gt; drop(command.pop()),
+                0x0d =&gt; break,
+                _ =&gt; (),
+            }
+        }
+        usb::serial::write_all(b&quot;\r\n&quot;).unwrap();</code></pre>
+<p>We then parse the command (described later). If the command is invalid, we print
+a message and continue to the next loop iteration.</p>
+<pre><code class="language-rust no_run noplayground">        // Parse the command.
+        let command = match Command::parse(&amp;command) {
+            Some(x) =&gt; x,
+            None =&gt; {
+                writeln(b&quot;Failed: InvalidCommand&quot;);
+                continue;
+            }
+        };</code></pre>
+<p>And we finally process the command (described later). If processing failed, we
+print a message with the error. Regardless of error, this is the end of the loop
+(and thus the main function) and we continue to the next iteration.</p>
+<pre><code class="language-rust no_run noplayground">        // Process the command.
+        if let Err(error) = command.process() {
+            writeln(format!(&quot;Failed: {error:?}&quot;).as_bytes());
+        }</code></pre>
+<p>To ease parsing and processing, we define a straightforward type for commands.</p>
+<pre><code class="language-rust no_run noplayground">enum Command&lt;'a&gt; {
+    Insert { key: usize, value: &amp;'a str },
+    Find { key: usize },
+    Remove { key: usize },
+}</code></pre>
+<p>The parsing function is also straightforward.</p>
+<pre><code class="language-rust no_run noplayground">impl&lt;'a&gt; Command&lt;'a&gt; {
+    fn parse(input: &amp;'a str) -&gt; Option&lt;Self&gt; {
+        Some(match input.split_whitespace().collect::&lt;Vec&lt;_&gt;&gt;().as_slice() {
+            &amp;[&quot;insert&quot;, key, value] =&gt; Command::Insert { key: key.parse().ok()?, value },
+            &amp;[&quot;find&quot;, key] =&gt; Command::Find { key: key.parse().ok()? },
+            &amp;[&quot;remove&quot;, key] =&gt; Command::Remove { key: key.parse().ok()? },
+            _ =&gt; return None,
+        })
+    }</code></pre>
+<p>The process function is a <code>Command</code> method which may return a store error.</p>
+<pre><code class="language-rust no_run noplayground">    fn process(&amp;self) -&gt; Result&lt;(), store::Error&gt; {</code></pre>
+<p>For insert commands, we simply forward to the <code>store::insert()</code> function which
+maps a key to a value. If the key was already mapped, it is overwritten. A key
+must be a number smaller than 4096. A value must be a byte slice shorter than
+1024.</p>
+<pre><code class="language-rust no_run noplayground">        match self {
+            Command::Insert { key, value } =&gt; store::insert(*key, value.as_bytes()),</code></pre>
+<p>Remove commands are also straightforward. We use <code>store::remove()</code> which maps a
+key to nothing. It's not an error if the key wasn't mapped before.</p>
+<pre><code class="language-rust no_run noplayground">            Command::Remove { key } =&gt; store::remove(*key),</code></pre>
+<p>Finally, find commands are implemented using <code>store::find()</code> which takes a key
+and return the mapped value if any.</p>
+<pre><code class="language-rust no_run noplayground">            Command::Find { key } =&gt; {
+                match store::find(*key)? {</code></pre>
+<p>We print a message if no value was found.</p>
+<pre><code class="language-rust no_run noplayground">                    None =&gt; writeln(b&quot;Not found.&quot;),</code></pre>
+<p>Otherwise, we try to convert the byte slice to a string slice. This should
+succeed for values that were inserted by this applet since we only accept
+alphanumeric characters. In that case, we simply print the value.</p>
+<pre><code class="language-rust no_run noplayground">                    Some(value) =&gt; match core::str::from_utf8(&amp;value) {
+                        Ok(value) =&gt; writeln(format!(&quot;Found: {value}&quot;).as_bytes()),</code></pre>
+<p>However, because the store is persistent and keys are not yet partitioned by
+applets, we could read the values written by a previous applet for that key. And
+those values don't need to be valid UTF-8. In those cases, we print the value as
+a byte slice.</p>
+<pre><code class="language-rust no_run noplayground">                        Err(_) =&gt; writeln(format!(&quot;Found (not UTF-8): {value:02x?}&quot;).as_bytes()),</code></pre>
+<p>The final code looks like this:</p>
+<pre><pre class="playground"><code class="language-rust no_run">#![no_std]
+
+extern crate alloc;
+
+use alloc::format;
+use alloc::string::String;
+use alloc::vec::Vec;
+
+use wasefire::*;
+
+#[no_mangle]
+pub extern &quot;C&quot; fn main() {
+    writeln(b&quot;Usage: insert &lt;key&gt; &lt;value&gt;&quot;);
+    writeln(b&quot;Usage: find &lt;key&gt;&quot;);
+    writeln(b&quot;Usage: remove &lt;key&gt;&quot;);
+    loop {
+        // Read the command.
+        let mut command = String::new();
+        loop {
+            usb::serial::write_all(format!(&quot;\r\x1b[K&gt; {command}&quot;).as_bytes()).unwrap();
+            match usb::serial::read_byte().unwrap() {
+                c @ (b' ' | b'a' ..= b'z' | b'0' ..= b'9') =&gt; command.push(c as char),
+                0x7f =&gt; drop(command.pop()),
+                0x0d =&gt; break,
+                _ =&gt; (),
+            }
+        }
+        usb::serial::write_all(b&quot;\r\n&quot;).unwrap();
+
+        // Parse the command.
+        let command = match Command::parse(&amp;command) {
+            Some(x) =&gt; x,
+            None =&gt; {
+                writeln(b&quot;Failed: InvalidCommand&quot;);
+                continue;
+            }
+        };
+
+        // Process the command.
+        if let Err(error) = command.process() {
+            writeln(format!(&quot;Failed: {error:?}&quot;).as_bytes());
+        }
+    }
+}
+
+enum Command&lt;'a&gt; {
+    Insert { key: usize, value: &amp;'a str },
+    Find { key: usize },
+    Remove { key: usize },
+}
+
+impl&lt;'a&gt; Command&lt;'a&gt; {
+    fn parse(input: &amp;'a str) -&gt; Option&lt;Self&gt; {
+        Some(match input.split_whitespace().collect::&lt;Vec&lt;_&gt;&gt;().as_slice() {
+            &amp;[&quot;insert&quot;, key, value] =&gt; Command::Insert { key: key.parse().ok()?, value },
+            &amp;[&quot;find&quot;, key] =&gt; Command::Find { key: key.parse().ok()? },
+            &amp;[&quot;remove&quot;, key] =&gt; Command::Remove { key: key.parse().ok()? },
+            _ =&gt; return None,
+        })
+    }
+
+    fn process(&amp;self) -&gt; Result&lt;(), store::Error&gt; {
+        match self {
+            Command::Insert { key, value } =&gt; store::insert(*key, value.as_bytes()),
+            Command::Find { key } =&gt; {
+                match store::find(*key)? {
+                    None =&gt; writeln(b&quot;Not found.&quot;),
+                    Some(value) =&gt; match core::str::from_utf8(&amp;value) {
+                        Ok(value) =&gt; writeln(format!(&quot;Found: {value}&quot;).as_bytes()),
+                        Err(_) =&gt; writeln(format!(&quot;Found (not UTF-8): {value:02x?}&quot;).as_bytes()),
+                    },
+                }
+                Ok(())
+            }
+            Command::Remove { key } =&gt; store::remove(*key),
+        }
+    }
+}
+
+fn writeln(buf: &amp;[u8]) {
+    usb::serial::write_all(buf).unwrap();
+    usb::serial::write_all(b&quot;\r\n&quot;).unwrap();
+}</code></pre></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
+<p>There are a few <a href="https://github.com/google/wasefire/tree/main/examples/rust">existing
+applets</a> that
+demonstrate simple usage of the prelude and should cover all functionalities in
+the prelude. Each example starts with a short documentation in its <code>src/lib.rs</code>
+file.</p>
+<p>Noticeable examples are:</p>
+<ul>
+<li><code>hsm</code> implements some simple HSM-like API using the <code>crypto</code>, <code>store</code>, and
+<code>usb::serial</code> modules of the prelude. It comes with a companion program to
+interact with the applet (see the documentation in the <code>src/lib.rs</code> of the
+applet).</li>
+<li><code>ctap</code> implements some simple CTAP-like API using the <code>button</code>, <code>clock</code>,
+<code>led</code>, <code>scheduling</code>, <code>store</code>, and <code>usb::serial</code> modules of the prelude. It
+describes its usage when connecting to the USB serial interface.</li>
+<li><code>memory_game</code> implements some memory game using the <code>usb::serial</code> module of
+the prelude. It describes its usage when connecting to the USB serial
+interface.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="runner-user-guide"><a class="header" href="#runner-user-guide">Runner user guide</a></h1>
+<p>This chapter will describe how you can add support for a board. It is not yet
+written though and only provides a link to the API to implement.</p>
+<p>There's currently only 2 supported boards:</p>
+<ul>
+<li><code>nordic</code> for nRF52840-dk</li>
+<li><code>host</code> for Linux (not clear if more or less is actually supported)</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="api-1"><a class="header" href="#api-1">API</a></h1>
+<p>The board API is documented <a href="https://docs.rs/wasefire-board-api">here</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="frequently-asked-questions"><a class="header" href="#frequently-asked-questions">Frequently asked questions</a></h1>
+<p>This section tries to answer common questions. If your question is not listed
+here, please open an <a href="https://github.com/google/wasefire/issues/new">issue</a>.</p>
+<h3 id="are-applets-trusted-to-be-correct"><a class="header" href="#are-applets-trusted-to-be-correct">Are applets trusted to be correct?</a></h3>
+<p>No. The platform does not trust applets and applets do not trust each other.
+However, if an applet has a valid signature, then the platform trusts the
+permissions required by the applet.</p>
+<h3 id="are-applets-executed-as-native-code"><a class="header" href="#are-applets-executed-as-native-code">Are applets executed as native code?</a></h3>
+<p>No. Applets are installed as WebAssembly byte-code. This is required since the
+static guarantees provided by WebAssembly apply to the byte-code and the
+platform checks those guarantees. For execution, applets are interpreted: either
+directly from the byte-code, or for performance purposes from an optimized
+representation in flash or RAM which may be computed ahead-of-time or on-demand.</p>
+<h3 id="why-is-performance-not-an-issue"><a class="header" href="#why-is-performance-not-an-issue">Why is performance not an issue?</a></h3>
+<p>The main bets are:</p>
+<ul>
+<li>Computing intensive code (like cryptography) is done in hardware or native
+code (in the platform).</li>
+<li>Applets are supposed to only do business logic which is assumed to not be
+computing intensive.</li>
+<li>The platform targets users who can't write embedded code, so the main concern
+is not performance but making firmware development accessible.</li>
+</ul>
+<h3 id="how-does-this-fit-on-micro-controllers"><a class="header" href="#how-does-this-fit-on-micro-controllers">How does this fit on micro-controllers?</a></h3>
+<p>The interpreter currently fits in 22kB when optimized for size and 66kB when
+optimized for speed. The interpreter is also designed to have minimal RAM
+overhead. However, most optimizations (for both performance and overhead) are
+not yet implemented, which may increase the binary size.</p>
+<h3 id="applet-footprint-compared-to-native-code"><a class="header" href="#applet-footprint-compared-to-native-code">Applet footprint compared to native code?</a></h3>
+<p>WebAssembly byte-code is compact so there should be a footprint benefit compared
+to native code. However, no benchmarks have been done in that regard.</p>
+<h3 id="is-it-possible-to-share-code-between-applets"><a class="header" href="#is-it-possible-to-share-code-between-applets">Is it possible to share code between applets?</a></h3>
+<p>Yes (although not yet implemented). Applets are represented at runtime by a
+WebAssembly store which is unique per applet. Applets behavior is defined by a
+set of WebAssembly modules which are instantiated to the applet store. Applets
+may share those modules. A typical example would be an allocator module.
+Multiple applets may use the same allocator byte-code (from the module) to
+manage their own linear memory (from the module instance in the applet store).</p>
+<h3 id="what-third-party-dependencies-are-used"><a class="header" href="#what-third-party-dependencies-are-used">What third-party dependencies are used?</a></h3>
+<p>The minimum set of third-party dependencies is currently:</p>
+<ul>
+<li><code>num_enum</code> for the interpreter</li>
+<li><code>usb-device</code> and <code>usbd-serial</code> for the board API</li>
+</ul>
+<p>Additional dependencies are used by:</p>
+<ul>
+<li>the actual board implementation:
+<ul>
+<li>(e.g. <code>cortex-m-rt</code>, <code>nrf52840-hal</code>, <code>panic-abort</code> for nordic)</li>
+<li>(e.g. <code>tokio</code>, <code>usbip-device</code>, <code>aes</code>, <code>rand</code> for linux)</li>
+</ul>
+</li>
+<li>compilation (e.g. <code>proc-macro2</code>, <code>quote</code>)</li>
+<li>debugging (e.g. <code>defmt</code>, <code>defmt-rtt</code>, <code>log</code>, <code>env_logger</code>)</li>
+<li>tooling (e.g. <code>anyhow</code>, <code>clap</code>)</li>
+</ul>
+<p>In particular, the project doesn't need any operating system (e.g. TockOS) but
+may use one as part of a board implementation.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </body>
+</html>
