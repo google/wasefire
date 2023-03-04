@@ -173,7 +173,7 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "usb-device",
  "usbd-serial",
@@ -192,4 +192,4 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.1.0"
+version = "0.1.1"
