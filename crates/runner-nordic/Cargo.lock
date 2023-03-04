@@ -689,7 +689,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "sealed",
  "wasefire-applet-api-macro",
@@ -717,7 +717,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "usb-device",
  "usbd-serial",
@@ -754,7 +754,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "winapi"

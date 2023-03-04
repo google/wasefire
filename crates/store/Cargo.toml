@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-store"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -16,3 +16,6 @@ tempfile = "3.4.0"
 
 [features]
 std = []
+
+[package.metadata.docs.rs]
+features = ["std"]
