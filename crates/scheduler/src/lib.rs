@@ -32,7 +32,7 @@ use wasefire_board_api::{self as board, Api as Board};
 use wasefire_interpreter::{
     self as interpreter, Call, Error, InstId, Module, RunAnswer, RunResult, Store, Val,
 };
-use wasefire_logger::*;
+use wasefire_logger::{self as logger, *};
 use wasefire_store as store;
 
 mod call;
@@ -147,7 +147,7 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
                 let answer = self.call().resume(&results).map(|x| x.forget());
                 self.erased.scheduler.process_answer(answer);
             }
-            Err(Trap) => panic!("Applet trapped in host."),
+            Err(Trap) => logger::panic!("Applet trapped in host."),
         }
     }
 
@@ -201,7 +201,7 @@ impl<B: Board> Scheduler<B> {
         let inst = store.instantiate(module, unsafe { &mut MEMORY.0 }).unwrap();
         match store.invoke(inst, "init", vec![]) {
             Ok(RunResult::Done(x)) => assert!(x.is_empty()),
-            Ok(RunResult::Host { .. }) => panic!("init called into host"),
+            Ok(RunResult::Host { .. }) => logger::panic!("init called into host"),
             Err(Error::NotFound) => (),
             Err(e) => Err(e).unwrap(),
         }
@@ -263,9 +263,7 @@ impl<B: Board> Scheduler<B> {
                 self.applet.done();
             }
             Ok(RunAnswer::Host) => (),
-            Err(Error::Trap) => {
-                panic!("Applet trapped in wasm.");
-            }
+            Err(Error::Trap) => logger::panic!("Applet trapped in wasm."),
             Err(e) => Err(e).unwrap(),
         }
     }
