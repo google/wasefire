@@ -22,5 +22,4 @@ fn main() {
     File::create(out.join("memory.x")).unwrap().write_all(include_bytes!("memory.x")).unwrap();
     println!("cargo:rustc-link-search={}", out.display());
     println!("cargo:rerun-if-changed=memory.x");
-    println!("cargo:rerun-if-changed=build.rs");
 }
