@@ -13,10 +13,28 @@
 // limitations under the License.
 #![cfg_attr(not(any(test, feature = "log")), no_std)]
 
+#[cfg(not(feature = "defmt"))]
+mod no_defmt {
+    use core::fmt::{Debug, Display, Formatter, Result};
+    pub use core::panic;
+
+    pub struct Debug2Format<T>(pub T);
+    impl<T: Debug> Display for Debug2Format<T> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            self.0.fmt(f)
+        }
+    }
+
+    pub struct Display2Format<T>(pub T);
+    impl<T: Display> Display for Display2Format<T> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            self.0.fmt(f)
+        }
+    }
+}
+
 #[cfg(not(any(feature = "log", feature = "defmt")))]
 mod custom {
-    pub struct Debug2Format<T>(pub T);
-
     #[macro_export]
     macro_rules! println {
         ($($args: expr),*) => { if false { $(let _ = $args;)* } };
@@ -50,18 +68,9 @@ mod custom {
 
 #[cfg(feature = "log")]
 mod custom {
-    use std::fmt::{Debug, Display, Formatter, Result};
     use std::time::Instant;
 
     use lazy_static::lazy_static;
-
-    pub struct Debug2Format<T>(pub T);
-
-    impl<T: Debug> Display for Debug2Format<T> {
-        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            self.0.fmt(f)
-        }
-    }
 
     lazy_static! {
         pub static ref ORIGIN: Instant = Instant::now();
@@ -79,9 +88,11 @@ mod custom {
 #[cfg(not(feature = "defmt"))]
 pub use custom::*;
 #[cfg(feature = "defmt")]
-pub use defmt::{debug, error, info, println, trace, warn, Debug2Format};
+pub use defmt::{debug, error, info, panic, println, trace, warn, Debug2Format, Display2Format};
 #[cfg(feature = "log")]
 pub use log::{debug, error, info, trace, warn};
+#[cfg(not(feature = "defmt"))]
+pub use no_defmt::*;
 
 #[macro_export]
 macro_rules! every {
