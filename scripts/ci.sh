@@ -17,24 +17,39 @@ set -ex
 
 # This script runs the continuous integration tests.
 
-# External tests.
+# External tests are passing.
 cargo xtask build-applets
 cargo xtask --release build-applets
 cargo xtask build-runners
 cargo xtask --release build-runners
 
-# Internal tests.
+# Internal tests are passing.
 for dir in $(find . -name test.sh -printf '%h\n' | sort); do
   ( cd $dir && ./test.sh )
 done
 
-# Make sure tracked files are not modified and created files are ignored.
+# All crates specify whether they are published.
+for dir in $(find . -name Cargo.toml -printf '%h\n' | sort); do
+  sed -n '1{/^\[package\]$/!q1};/^publish =/q;/^$/q1' $dir/Cargo.toml
+
+  # All published crates have an up-to-date CHANGELOG.md.
+  $(sed -n 's/^publish = //p;T;q' $dir/Cargo.toml) || continue
+  [ -e $dir/CHANGELOG.md ]
+  ( cd $dir
+    git diff --quiet $(git log -n1 --pretty=format:%H -- CHANGELOG.md).. \
+      -- $(cargo package --list)
+    [ "$(sed -n 's/^version = //p;T;q' Cargo.toml | tr -d \")" \
+      = "$(sed -n 's/^## //p;T;q' CHANGELOG.md)" ]
+  )
+done
+
+# No tracked files were modified and no untracked files were created.
 git diff --exit-code
 
-# Make sure TOML files are formatted.
+# TOML files are well-formatted.
 taplo format
 git diff --exit-code
 
-# Make sure generated content is synced.
+# Generated content is in sync.
 ./scripts/sync.sh
 git diff --exit-code
