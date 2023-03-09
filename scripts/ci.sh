@@ -38,6 +38,8 @@ for dir in $(find . -name Cargo.toml -printf '%h\n' | sort); do
   ( cd $dir
     git diff --quiet $(git log -n1 --pretty=format:%H -- CHANGELOG.md).. \
       -- $(cargo package --list)
+    [ "$(sed -n 's/^version = //p;T;q' Cargo.toml | tr -d \")" \
+      = "$(sed -n 's/^## //p;T;q' CHANGELOG.md)" ]
   )
 done
 
