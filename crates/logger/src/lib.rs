@@ -64,11 +64,6 @@ mod custom {
     macro_rules! error {
         ($($args: expr),*) => { if false { $(let _ = $args;)* } };
     }
-
-    #[macro_export]
-    macro_rules! panic {
-        ($($args: expr),*) => { if false { $(let _ = $args;)* } };
-    }
 }
 
 #[cfg(feature = "log")]
