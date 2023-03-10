@@ -2,7 +2,7 @@
 
 ### Minor
 
-- Extend logger API
+- Add `Display2Format` and `panic`
 
 ### Patch
 
