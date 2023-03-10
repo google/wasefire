@@ -36,8 +36,9 @@ for dir in $(find . -name Cargo.toml -printf '%h\n' | sort); do
   $(sed -n 's/^publish = //p;T;q' $dir/Cargo.toml) || continue
   [ -e $dir/CHANGELOG.md ]
   ( cd $dir
-    git diff --quiet $(git log -n1 --pretty=format:%H -- CHANGELOG.md).. \
-      -- $(cargo package --list)
+    ref=$(git log --first-parent -n1 --pretty=format:%H -- CHANGELOG.md)
+    [ -n "$ref" ]
+    git diff --quiet $ref.. -- $(cargo package --list)
     [ "$(sed -n 's/^version = //p;T;q' Cargo.toml | tr -d \")" \
       = "$(sed -n 's/^## //p;T;q' CHANGELOG.md)" ]
   )
