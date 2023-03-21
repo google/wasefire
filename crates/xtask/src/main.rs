@@ -90,7 +90,7 @@ struct AppletOptions {
     /// Applet language.
     lang: String,
 
-    /// Applet name.
+    /// Applet name or path (if starts with dot or slash).
     name: String,
 
     /// Optimization level (0, 1, 2, 3, s, z).
@@ -270,7 +270,18 @@ impl AppletOptions {
     }
 
     fn execute_rust(&self, main: &MainOptions) -> Result<()> {
-        let dir = format!("examples/{}/{}", self.lang, self.name);
+        let (dir, wasm) = if self.name.starts_with(['.', '/']) {
+            let dir = &self.name;
+            // We could use `cargo metadata --no-deps --format-version=1` and parse the JSON to get
+            // both the target name and target directory.
+            let mut sed = Command::new("sed");
+            sed.args(["-n", r#"s/^name = "\(.*\)"$/\1/p"#, "Cargo.toml"]);
+            sed.current_dir(dir);
+            let name = read_output_line(&mut sed)?;
+            (dir.to_string(), format!("{dir}/{}", wasm_target(&name)))
+        } else {
+            (format!("examples/{}/{}", self.lang, self.name), wasm_target(&self.name))
+        };
         let mut cargo = Command::new("cargo");
         let mut rustflags = vec![
             format!("-C link-arg=-zstack-size={}", self.stack_size),
@@ -292,7 +303,7 @@ impl AppletOptions {
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(dir);
         execute_command(&mut cargo)?;
-        std::fs::copy(wasm_target(&self.name), "target/applet.wasm")?;
+        std::fs::copy(wasm, "target/applet.wasm")?;
         self.execute_wasm(main)
     }
 
@@ -517,12 +528,9 @@ impl RunnerOptions {
             // (including build scripts and proc macros). This leads to recompilation when RUSTFLAGS
             // changes. See https://github.com/rust-lang/cargo/issues/8716.
             static ref HOST_TARGET: String = {
-                const CMD: &str = "rustc -vV | sed -n 's/^host: //p'";
-                let mut output = Command::new("sh").args(["-c", CMD]).output().unwrap();
-                assert!(output.status.success());
-                assert!(output.stderr.is_empty());
-                assert_eq!(output.stdout.pop(), Some(b'\n'));
-                String::from_utf8(output.stdout).unwrap()
+                let mut sh = Command::new("sh");
+                sh.args(["-c", "rustc -vV | sed -n 's/^host: //p'"]);
+                read_output_line(&mut sh).unwrap()
             };
         }
         match self.name.as_str() {
@@ -587,6 +595,14 @@ fn execute_command(command: &mut Command) -> Result<()> {
 fn replace_command(mut command: Command) -> ! {
     eprintln!("{command:?}");
     panic!("{}", command.exec());
+}
+
+fn read_output_line(command: &mut Command) -> Result<String> {
+    let mut output = command.output()?;
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    assert_eq!(output.stdout.pop(), Some(b'\n'));
+    Ok(String::from_utf8(output.stdout)?)
 }
 
 fn main() -> Result<()> {
