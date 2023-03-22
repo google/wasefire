@@ -184,10 +184,9 @@ impl<'m> Store<'m> {
             let mut parser = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            debug_assert!(locals.is_empty());
             let thread = Thread::new(parser, vec![Frame::new(inst_id, 0, &[], locals)]);
             let result = thread.run(self)?;
-            debug_assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
+            assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
         }
         Ok(InstId { store_id: self.id, inst_id })
     }
