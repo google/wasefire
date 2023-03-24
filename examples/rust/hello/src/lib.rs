@@ -18,3 +18,8 @@ wasefire::applet!();
 fn main() {
     println!("hello world");
 }
+
+#[test]
+fn test() {
+    assert!(true);
+}
