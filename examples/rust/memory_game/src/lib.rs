@@ -19,8 +19,7 @@
 //! game) for 3 seconds and gives 7 seconds to type it back.
 
 #![no_std]
-
-extern crate alloc;
+wasefire::applet!();
 
 use alloc::rc::Rc;
 use alloc::string::String;
@@ -28,10 +27,7 @@ use alloc::{format, vec};
 use core::cell::Cell;
 use core::time::Duration;
 
-use wasefire::*;
-
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     let mut level = 3; // length of the string to remember
     let mut prompt = "Press ENTER when you are ready.";
     loop {

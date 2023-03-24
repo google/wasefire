@@ -18,13 +18,9 @@
 //! toggled first.
 
 #![no_std]
+wasefire::applet!();
 
-extern crate alloc;
-
-use wasefire::*;
-
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     loop {
         let mut data = [0; 32];
         let len = usb::serial::read_any(&mut data).unwrap();

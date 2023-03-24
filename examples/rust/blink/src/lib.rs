@@ -18,13 +18,11 @@
 //! period of 1 second and 50% duty cycle.
 
 #![no_std]
+wasefire::applet!();
 
 use core::time::Duration;
 
-use wasefire::*;
-
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     // Make sure there is at least one LED.
     let num_leds = led::count();
     assert!(num_leds > 0, "Board has no LEDs.");

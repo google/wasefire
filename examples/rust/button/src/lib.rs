@@ -17,13 +17,9 @@
 //! The applet prints the button state to the debug output on any button event.
 
 #![no_std]
+wasefire::applet!();
 
-extern crate alloc;
-
-use wasefire::*;
-
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     // Make sure there is at least one button.
     let count = button::count();
     assert!(count > 0, "Board has no buttons.");

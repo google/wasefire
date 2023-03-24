@@ -19,18 +19,14 @@
 
 //{ ANCHOR: all
 #![no_std]
-
-extern crate alloc;
+wasefire::applet!();
 
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use wasefire::*;
-
 //{ ANCHOR: usage
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     writeln(b"Usage: insert <key> <value>");
     writeln(b"Usage: find <key>");
     writeln(b"Usage: remove <key>");
@@ -95,7 +91,7 @@ impl<'a> Command<'a> {
 
     //{ ANCHOR: process_signature
     fn process(&self) -> Result<(), store::Error> {
-    //} ANCHOR_END: process_signature
+        //} ANCHOR_END: process_signature
         //{ ANCHOR: process_insert
         match self {
             Command::Insert { key, value } => store::insert(*key, value.as_bytes()),
@@ -103,7 +99,7 @@ impl<'a> Command<'a> {
             //{ ANCHOR: process_find
             Command::Find { key } => {
                 match store::find(*key)? {
-                //} ANCHOR_END: process_find
+                    //} ANCHOR_END: process_find
                     //{ ANCHOR: process_none
                     None => writeln(b"Not found."),
                     //} ANCHOR_END: process_none

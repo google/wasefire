@@ -47,6 +47,37 @@ pub mod usb;
 
 pub use debug::println;
 
+/// Defines the entry point of an applet.
+///
+/// This macro brings all items of this crate into scope and makes sure `main()` is the entry point
+/// of this applet.
+///
+/// # Examples
+///
+/// A typical applet looks like:
+///
+/// ```rust
+/// #![no_std]
+/// wasefire::applet!();
+///
+/// fn main() {
+///     println!("Hello world!");
+/// }
+/// ```
+#[macro_export]
+macro_rules! applet {
+    () => {
+        extern crate alloc;
+
+        use wasefire::*;
+
+        #[export_name = "main"]
+        extern "C" fn _main() {
+            main();
+        }
+    };
+}
+
 #[panic_handler]
 fn handle_panic(info: &core::panic::PanicInfo) -> ! {
     println!("{}", info);

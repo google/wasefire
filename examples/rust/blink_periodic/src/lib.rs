@@ -19,14 +19,12 @@
 //! differs, a periodic timer of 500ms is used to toggle the led.
 
 #![no_std]
+wasefire::applet!();
 
 use core::cell::Cell;
 use core::time::Duration;
 
-use wasefire::{clock, led, scheduling};
-
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     let n = led::count();
     assert!(n > 0, "No LEDs.");
     let i = Cell::new(0);

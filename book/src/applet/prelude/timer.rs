@@ -22,17 +22,13 @@
 
 //{ ANCHOR: all
 #![no_std]
-
-extern crate alloc;
+wasefire::applet!();
 
 use alloc::rc::Rc;
 use core::cell::Cell;
 use core::time::Duration;
 
-use wasefire::*;
-
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     assert!(button::count() > 0, "Board has no buttons.");
     assert!(led::count() > 0, "Board has no LEDs.");
 
