@@ -1,7 +1,10 @@
 # Changelog
 
+## 0.1.2
+
 ### Minor
 
+- Update wasefire-applet-api-macro version
 - Add test feature panicking on applet API calls
 
 ## 0.1.1
