@@ -1,5 +1,9 @@
 # Changelog
 
+### Minor
+
+- Add test feature panicking on applet API calls
+
 ## 0.1.1
 
 ### Patch
