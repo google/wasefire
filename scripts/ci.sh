@@ -13,44 +13,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -e
 
 # This script runs the continuous integration tests.
 
-# External tests are passing.
-cargo xtask build-applets
-cargo xtask --release build-applets
-cargo xtask build-runners
-cargo xtask --release build-runners
+x() { ( set -x; "$@"; ); }
+i() { echo "[1;36mInfo:[m $*"; }
+e() { echo "[1;31mError:[m $*"; exit 1; }
 
-# Internal tests are passing.
+x cargo xtask build-applets
+x cargo xtask --release build-applets
+x cargo xtask build-runners
+x cargo xtask --release build-runners
+
 for dir in $(find . -name test.sh -printf '%h\n' | sort); do
+  i "Run tests in $dir"
   ( cd $dir && ./test.sh )
 done
 
-# All crates specify whether they are published.
 for dir in $(find . -name Cargo.toml -printf '%h\n' | sort); do
-  sed -n '1{/^\[package\]$/!q1};/^publish =/q;/^$/q1' $dir/Cargo.toml
-
-  # All published crates have an up-to-date CHANGELOG.md.
+  sed -n '1{/^\[package\]$/!q1};/^publish =/q;/^$/q1' $dir/Cargo.toml \
+    || e "Cargo.toml for $dir is missing the publish field"
   $(sed -n 's/^publish = //p;T;q' $dir/Cargo.toml) || continue
-  [ -e $dir/CHANGELOG.md ]
+  [ -e $dir/CHANGELOG.md ] || e "CHANGELOG.md for $dir is missing"
   ( cd $dir
     ref=$(git log --first-parent -n1 --pretty=format:%H -- CHANGELOG.md)
-    [ -n "$ref" ]
-    git diff --quiet $ref.. -- $(cargo package --list)
+    [ -n "$ref" ] || e "CHANGELOG.md for $dir is not tracked"
+    git diff --quiet $ref.. -- $(cargo package --list) \
+      || e "CHANGELOG.md for $dir is not up-to-date"
     [ "$(sed -n 's/^version = //p;T;q' Cargo.toml | tr -d \")" \
-      = "$(sed -n 's/^## //p;T;q' CHANGELOG.md)" ]
+      = "$(sed -n 's/^## //p;T;q' CHANGELOG.md)" ] \
+      || e "CHANGELOG.md and Cargo.toml for $dir have different versions"
   )
 done
 
-# No tracked files were modified and no untracked files were created.
-git diff --exit-code
+git diff --exit-code \
+  || e "Tracked files were modified and/or untracked files were created"
 
-# TOML files are well-formatted.
-taplo format
-git diff --exit-code
+x taplo format
+git diff --exit-code || e "TOML files are not well formatted"
 
-# Generated content is in sync.
-./scripts/sync.sh
-git diff --exit-code
+x ./scripts/sync.sh
+git diff --exit-code || e "Generated content is not in sync"
