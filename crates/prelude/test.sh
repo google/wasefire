@@ -16,3 +16,4 @@
 set -ex
 
 cargo check --target=wasm32-unknown-unknown
+cargo cehck --features=test

@@ -33,6 +33,7 @@
 
 extern crate alloc;
 
+#[cfg(not(feature = "test"))]
 mod allocator;
 pub mod button;
 mod callback;
@@ -64,6 +65,7 @@ pub use debug::println;
 ///     println!("Hello world!");
 /// }
 /// ```
+#[cfg(not(feature = "test"))]
 #[macro_export]
 macro_rules! applet {
     () => {
@@ -77,7 +79,17 @@ macro_rules! applet {
         }
     };
 }
+#[cfg(feature = "test")]
+#[macro_export]
+macro_rules! applet {
+    () => {
+        extern crate alloc;
 
+        use wasefire::*;
+    };
+}
+
+#[cfg(not(feature = "test"))]
 #[panic_handler]
 fn handle_panic(info: &core::panic::PanicInfo) -> ! {
     println!("{}", info);

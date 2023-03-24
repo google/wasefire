@@ -18,3 +18,4 @@ wasefire-applet-api = { version = "0.1.0", path = "../api", features = ["wasm"] 
 
 [features]
 multivalue = ["wasefire-applet-api/multivalue"]
+test = []
