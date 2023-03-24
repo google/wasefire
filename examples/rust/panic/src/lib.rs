@@ -18,6 +18,7 @@
 //! leads to the applet trapping.
 
 #![no_std]
+wasefire::applet!();
 
 use core::slice;
 
@@ -30,8 +31,7 @@ fn flip() -> bool {
     x & 1 == 1
 }
 
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     while flip() {
         println("not yet ready to die");
         continue;

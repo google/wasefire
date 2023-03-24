@@ -18,8 +18,7 @@
 //! connecting on the USB serial.
 
 #![no_std]
-
-extern crate alloc;
+wasefire::applet!();
 
 use alloc::collections::VecDeque;
 use alloc::format;
@@ -29,15 +28,13 @@ use alloc::vec::Vec;
 use core::cell::{Cell, RefCell};
 
 use wasefire::usb::serial;
-use wasefire::{button, clock, led, scheduling, store};
 
 const TOUCH_TIMEOUT_MS: usize = 5_000;
 const BUTTON_TIMEOUT_MS: usize = 3_000;
 const LED_BLINK_MS: usize = 200;
 const MAX_ENTRIES: usize = 10;
 
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     let console = Rc::new(Console::default());
     // TODO: Maybe the whole concept of touch should be in the HighApi (either implement by the
     // scheduler on top of the LowApi, or in the LowApi too) or in the prelude.

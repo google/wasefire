@@ -19,15 +19,11 @@
 //! When a digit is received, a random values of the associated length is generated.
 
 #![no_std]
-
-extern crate alloc;
+wasefire::applet!();
 
 use alloc::{format, vec};
 
-use wasefire::*;
-
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     loop {
         let len = match usb::serial::read_byte().unwrap() {
             c @ b'1' ..= b'9' => c - b'0',

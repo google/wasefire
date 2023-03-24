@@ -15,16 +15,12 @@
 //! Tests that timers are working properly.
 
 #![no_std]
-
-extern crate alloc;
+wasefire::applet!();
 
 use alloc::rc::Rc;
 use core::cell::Cell;
 
-use wasefire::*;
-
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     test_oneshot();
     test_periodic(true);
     test_periodic(false);

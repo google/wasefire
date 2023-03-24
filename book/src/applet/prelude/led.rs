@@ -19,13 +19,11 @@
 
 //{ ANCHOR: all
 #![no_std]
+wasefire::applet!();
 
 use core::time::Duration;
 
-use wasefire::*;
-
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     //{ ANCHOR: count
     // Make sure there is at least one LED.
     let num_leds = led::count();
