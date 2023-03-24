@@ -21,6 +21,8 @@ host = ["dep:sealed"]
 wasm = []
 # Enables multivalue support (unstable).
 multivalue = ["wasefire-applet-api-macro/multivalue"]
+# Implements the API with panics.
+test = []
 
 [package.metadata.docs.rs]
 features = ["wasm"]

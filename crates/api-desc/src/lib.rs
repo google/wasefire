@@ -297,10 +297,15 @@ impl Fn {
                 #[repr(C)]
                 pub struct Results { #(#results,)* }
             }
+            #[cfg(not(feature = "test"))]
             extern "C" {
                 #(#[doc = #docs])*
                 #[link_name = #link]
                 pub fn #name(#fn_params) #fn_results;
+            }
+            #[cfg(feature = "test")]
+            pub unsafe fn #name(#fn_params) #fn_results {
+                panic!("Applet API is not linked in unit tests.");
             }
         }
     }
