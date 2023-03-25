@@ -31,7 +31,7 @@ for dir in $(find . -name test.sh -printf '%h\n' | sort); do
   ( cd $dir && ./test.sh )
 done
 
-for dir in $(find . -name Cargo.toml -printf '%h\n' | sort); do
+for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   sed -n '1{/^\[package\]$/!q1};/^publish =/q;/^$/q1' $dir/Cargo.toml \
     || e "Cargo.toml for $dir is missing the publish field"
   $(sed -n 's/^publish = //p;T;q' $dir/Cargo.toml) || continue
