@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,9 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![no_std]
+#![cfg_attr(not(feature = "test"), no_std)]
 wasefire::applet!();
 
+use alloc::boxed::Box;
+use core::cell::Cell;
+
 fn main() {
-    println!("hello world");
+    let byte = make();
+    usb::serial::write_all(&[byte.get()]).unwrap();
+}
+
+fn make() -> Box<Cell<u8>> {
+    Box::new(Cell::new(18))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_make() {
+        // We want to make sure types in core and alloc also work in tests.
+        assert_eq!(make().get(), 18);
+    }
 }
