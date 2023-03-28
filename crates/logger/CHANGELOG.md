@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.1.1
+
 ### Minor
 
 - Add `Display2Format` and `panic`

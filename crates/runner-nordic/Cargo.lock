@@ -689,7 +689,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "sealed",
  "wasefire-applet-api-macro",
@@ -697,7 +697,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -709,7 +709,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
@@ -717,7 +717,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "usb-device",
  "usbd-serial",
@@ -727,7 +727,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "num_enum",
  "paste",
@@ -735,14 +735,14 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "defmt",
 ]
 
 [[package]]
 name = "wasefire-scheduler"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "defmt",
  "wasefire-applet-api",
