@@ -43,7 +43,7 @@ edition = "2021"
 crate-type = ["cdylib"] # needed for building wasm
 
 [dependencies]
-wasefire = "0.1.0" # replace with the latest version
+wasefire = "*" # use the latest version
 ```
 
 The `crate-type` entry is needed to compile to Wasm. The `wasefire` dependency
