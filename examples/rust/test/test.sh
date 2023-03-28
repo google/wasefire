@@ -16,4 +16,4 @@
 set -ex
 
 cargo check --target=wasm32-unknown-unknown
-cargo test --features=wasefire/test
+cargo test --features=test
