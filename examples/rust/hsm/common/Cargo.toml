@@ -6,7 +6,7 @@ license = "Apache-2.0"
 edition = "2021"
 
 [dependencies]
-thiserror = { version = "1.0.38", optional = true }
+thiserror = { version = "1.0.40", optional = true }
 wasefire-applet-api = { path = "../../../../crates/api", optional = true }
 
 [features]

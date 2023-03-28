@@ -340,7 +340,7 @@ impl AppletOptions {
         if main.multivalue {
             opt.arg("--enable-multivalue");
         }
-        opt.args(["--enable-bulk-memory", &format!("-O{}", self.opt_level)]);
+        opt.args(["--enable-bulk-memory", "--enable-sign-ext", &format!("-O{}", self.opt_level)]);
         opt.args([wasm, "-o", wasm]);
         execute_command(&mut opt)?;
         if main.size {
