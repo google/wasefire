@@ -1,5 +1,10 @@
 # Changelog
 
+### Minor
+
+- Add `debug!` macro as a replacement for `println!`
+- Deprecate `println!` macro in favor of `debug!`
+
 ## 0.1.1
 
 ### Minor

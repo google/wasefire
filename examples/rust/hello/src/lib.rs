@@ -16,5 +16,5 @@
 wasefire::applet!();
 
 fn main() {
-    println!("hello world");
+    debug!("hello world");
 }

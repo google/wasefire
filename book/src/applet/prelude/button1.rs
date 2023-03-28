@@ -33,7 +33,7 @@ fn main() {
     //} ANCHOR_END: loop
         //{ ANCHOR: handler
         // We define a button handler printing the new state.
-        let handler = move |state| println!("Button {index} has been {state:?}.");
+        let handler = move |state| debug!("Button {index} has been {state:?}.");
         //} ANCHOR_END: handler
 
         //{ ANCHOR: listener

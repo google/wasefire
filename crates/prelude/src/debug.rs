@@ -32,11 +32,21 @@ pub fn println(msg: &str) {
 // We use an environment variable to avoid asking applets to forward features.
 pub const ENABLED: bool = option_env!("FIRWASM_DEBUG").is_some();
 
+#[deprecated(since = "0.1.2", note = "use debug! instead")]
+#[macro_export]
+macro_rules! println {
+    ($($args:tt)*) => {
+        if $crate::debug::ENABLED {
+            $crate::debug::println(&alloc::format!($($args)*));
+        }
+    };
+}
+
 /// Prints a line to the debug output.
 ///
 /// This is similar to the standard `std::println!()` macro and supports the same formatting.
 #[macro_export]
-macro_rules! println {
+macro_rules! debug {
     ($($args:tt)*) => {
         if $crate::debug::ENABLED {
             $crate::debug::println(&alloc::format!($($args)*));

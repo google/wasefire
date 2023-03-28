@@ -46,8 +46,6 @@ pub mod scheduling;
 pub mod store;
 pub mod usb;
 
-pub use debug::println;
-
 /// Defines the entry point of an applet.
 ///
 /// This macro brings all items of this crate into scope and makes sure `main()` is the entry point
@@ -92,6 +90,6 @@ macro_rules! applet {
 #[cfg(not(feature = "test"))]
 #[panic_handler]
 fn handle_panic(info: &core::panic::PanicInfo) -> ! {
-    println!("{}", info);
+    debug!("{}", info);
     core::arch::wasm32::unreachable()
 }

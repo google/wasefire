@@ -27,7 +27,7 @@ fn main() {
     // For each button on the board.
     for index in 0 .. count {
         // We define a button handler printing the new state.
-        let handler = move |state| println!("Button {index} has been {state:?}.");
+        let handler = move |state| debug!("Button {index} has been {state:?}.");
 
         // We start listening for state changes with the handler.
         let listener = button::Listener::new(index, handler);
