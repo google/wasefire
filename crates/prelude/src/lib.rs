@@ -60,7 +60,7 @@ pub mod usb;
 /// wasefire::applet!();
 ///
 /// fn main() {
-///     println!("Hello world!");
+///     debug!("Hello world!");
 /// }
 /// ```
 #[cfg(not(feature = "test"))]
