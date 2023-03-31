@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.1.3
+
 ### Patch
 
 - Update documentation with 0.1.2 change
