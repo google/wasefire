@@ -57,7 +57,7 @@ content:
 wasefire::applet!(); // imports the prelude and defines main as entry point
 
 fn main() {
-    println!("hello world");
+    debug!("hello world");
 }
 ```
 
