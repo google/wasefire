@@ -52,3 +52,5 @@ git diff --exit-code || e "TOML files are not well formatted"
 
 x ./scripts/sync.sh
 git diff --exit-code || e "Generated content is not in sync"
+
+d "All tests passed"
