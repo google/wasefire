@@ -2,6 +2,7 @@
 
 ### Patch
 
+- Test that link names are unique
 - Update dependencies
 
 ## 0.1.1
