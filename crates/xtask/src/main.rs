@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use std::cmp::Reverse;
-use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
+use std::collections::BinaryHeap;
 use std::fmt::Display;
 use std::num::ParseIntError;
 use std::os::unix::prelude::CommandExt;
@@ -62,15 +62,6 @@ enum MainCommand {
 
     /// Compiles a runner.
     Runner(Runner),
-
-    /// Lists the available applets.
-    ListApplets,
-
-    /// Compiles all applets.
-    BuildApplets,
-
-    /// Compiles all runners.
-    BuildRunners,
 
     /// Updates the applet API for all languages.
     UpdateApis,
@@ -208,44 +199,6 @@ impl Flags {
         match self.command {
             MainCommand::Applet(applet) => applet.execute(&self.options)?,
             MainCommand::Runner(runner) => runner.execute(&self.options)?,
-            MainCommand::ListApplets => {
-                for (lang, applets) in get_applets()? {
-                    println!("{lang}:");
-                    for applet in applets {
-                        println!("- {applet}");
-                    }
-                }
-            }
-            MainCommand::BuildApplets => {
-                for (lang, applets) in get_applets()? {
-                    for name in applets {
-                        let applet = Applet {
-                            options: AppletOptions {
-                                lang: lang.clone(),
-                                name,
-                                profile: "release".to_string(),
-                                ..AppletOptions::default()
-                            },
-                            command: None,
-                        };
-                        applet.execute(&self.options)?;
-                    }
-                }
-            }
-            MainCommand::BuildRunners => {
-                for runner in std::fs::read_dir("crates")? {
-                    let name = runner?.file_name().to_string_lossy().into_owned();
-                    if let Some(name) = name.strip_prefix("runner-") {
-                        let runner = Runner {
-                            options: RunnerOptions {
-                                name: name.to_string(),
-                                ..RunnerOptions::default()
-                            },
-                        };
-                        runner.execute(&self.options)?;
-                    }
-                }
-            }
             MainCommand::UpdateApis => {
                 let (lang, ext) = ("assemblyscript", "ts");
                 let mut cargo = Command::new("cargo");
@@ -568,32 +521,6 @@ impl RunnerOptions {
 
 fn wasm_target(name: &str) -> String {
     format!("target/wasm32-unknown-unknown/release/{name}.wasm")
-}
-
-fn get_applets() -> Result<BTreeMap<String, BTreeSet<String>>> {
-    let mut result = BTreeMap::new();
-    for lang in std::fs::read_dir("examples")? {
-        let lang = lang?;
-        let lang_name = lang.file_name().to_string_lossy().into_owned();
-        if !lang.file_type()?.is_dir() {
-            log::warn!("Non-directory {lang_name} in examples.");
-            continue;
-        }
-        let result: &mut BTreeSet<_> = result.entry(lang_name.clone()).or_default();
-        for applet in std::fs::read_dir(lang.path())? {
-            let applet = applet?;
-            let applet_name = applet.file_name().to_string_lossy().into_owned();
-            if matches!(applet_name.as_str(), ".gitignore" | "api.ts" | "node_modules") {
-                continue;
-            }
-            if !applet.file_type()?.is_dir() {
-                log::warn!("Non-directory {applet_name} in examples/{lang_name}.");
-                continue;
-            }
-            result.insert(applet_name);
-        }
-    }
-    Ok(result)
 }
 
 fn execute_command(command: &mut Command) -> Result<()> {
