@@ -584,3 +584,23 @@ fn write_items<T>(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+
+    #[test]
+    fn link_names_are_unique() {
+        let mut seen = HashSet::new();
+        let Api(mut todo) = Api::default();
+        while let Some(item) = todo.pop() {
+            match item {
+                Item::Enum(_) => (),
+                Item::Fn(Fn { link, .. }) => assert_eq!(seen.replace(link), None),
+                Item::Mod(Mod { items, .. }) => todo.extend(items),
+            }
+        }
+    }
+}
