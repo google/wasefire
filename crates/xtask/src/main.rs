@@ -223,6 +223,7 @@ impl Flags {
                             options: AppletOptions {
                                 lang: lang.clone(),
                                 name,
+                                profile: "release".to_string(),
                                 ..AppletOptions::default()
                             },
                             command: None,
