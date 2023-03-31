@@ -14,12 +14,9 @@
 # limitations under the License.
 
 set -e
+. scripts/log.sh
 
 # This script runs the continuous integration tests.
-
-x() { ( set -x; "$@"; ); }
-i() { echo "[1;36mInfo:[m $*"; }
-e() { echo "[1;31mError:[m $*"; exit 1; }
 
 x cargo xtask build-applets
 x cargo xtask --release build-applets

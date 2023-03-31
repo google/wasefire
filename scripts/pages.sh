@@ -14,13 +14,12 @@
 # limitations under the License.
 
 set -e
+. scripts/log.sh
 
 # This script synchronizes the gh-pages branch from a clean main.
 
-fail() { echo "Error: $1"; exit 1; }
-
-[ -z "$(git status -s)" ] || fail 'not clean'
-[ "$(git symbolic-ref -q HEAD)" = refs/heads/main ] || fail 'not main'
+[ -z "$(git status -s)" ] || e 'not clean'
+[ "$(git symbolic-ref -q HEAD)" = refs/heads/main ] || e 'not main'
 
 ( cd book
   mdbook build 2>/dev/null )
