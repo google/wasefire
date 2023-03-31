@@ -18,10 +18,20 @@ set -e
 
 # This script runs the continuous integration tests.
 
-x cargo xtask build-applets
-x cargo xtask --release build-applets
-x cargo xtask build-runners
-x cargo xtask --release build-runners
+for lang in $(ls examples); do
+  for name in $(ls examples/$lang); do
+    [ $lang = assemblyscript -a $name = node_modules ] && continue
+    [ $lang = assemblyscript -a $name = api.ts ] && continue
+    x cargo xtask applet $lang $name
+    x cargo xtask --release applet $lang $name
+  done
+done
+for crate in $(ls crates); do
+  name=${crate#runner-}
+  [ $crate = $name ] && continue
+  x cargo xtask runner $name
+  x cargo xtask --release runner $name
+done
 
 for dir in $(find . -name test.sh -printf '%h\n' | sort); do
   i "Run tests in $dir"
