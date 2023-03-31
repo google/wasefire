@@ -93,6 +93,14 @@ struct AppletOptions {
     /// Applet name or path (if starts with dot or slash).
     name: String,
 
+    /// Cargo profile.
+    #[clap(long, default_value = "release")]
+    profile: String,
+
+    /// Cargo features.
+    #[clap(long)]
+    features: Vec<String>,
+
     /// Optimization level (0, 1, 2, 3, s, z).
     #[clap(long, short = 'O', default_value_t)]
     opt_level: OptLevel,
@@ -215,6 +223,7 @@ impl Flags {
                             options: AppletOptions {
                                 lang: lang.clone(),
                                 name,
+                                profile: "release".to_string(),
                                 ..AppletOptions::default()
                             },
                             command: None,
@@ -294,7 +303,11 @@ impl AppletOptions {
         if main.multivalue {
             rustflags.push("-C target-feature=+multivalue".to_string());
         }
-        cargo.args(["build", "--target=wasm32-unknown-unknown", "--release"]);
+        cargo.args(["build", "--target=wasm32-unknown-unknown"]);
+        cargo.arg(format!("--profile={}", self.profile));
+        for features in &self.features {
+            cargo.arg(format!("--features={features}"));
+        }
         if main.release {
             cargo.args(["-Zbuild-std=core,alloc", "-Zbuild-std-features=panic_immediate_abort"]);
         } else {
