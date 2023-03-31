@@ -21,6 +21,9 @@ set -e
 [ -z "$(git status -s)" ] || e 'not clean'
 [ "$(git symbolic-ref -q HEAD)" = refs/heads/main ] || e 'not main'
 
+git diff --quiet "$(git log --pretty=format:%f origin/gh-pages)".. -- book \
+  && d "origin/gh-pages is already up-to-date"
+
 ( cd book
   mdbook build 2>/dev/null )
 mv book/book html
@@ -34,3 +37,4 @@ rmdir html
 git add .
 git commit -qm"$(git rev-parse -q --verify main)"
 git checkout -q main
+d "gh-pages has been updated"
