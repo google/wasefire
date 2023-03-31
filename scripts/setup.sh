@@ -71,6 +71,7 @@ ensure_bin cargo-binutils rust-size
 ensure_bin cargo-bloat cargo-bloat
 ensure_bin probe-run probe-run
 ensure_bin taplo-cli taplo
+ensure_bin mdbook mdbook
 
 if [ -n "$MISSING" ]; then
   ( set -x
