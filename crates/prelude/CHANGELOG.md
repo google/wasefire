@@ -1,5 +1,9 @@
 # Changelog
 
+### Patch
+
+- Update documentation with 0.1.2 change
+
 ## 0.1.2
 
 ### Minor
