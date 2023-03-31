@@ -21,14 +21,14 @@ set -e
 [ -z "$(git status -s)" ] || e 'not clean'
 [ "$(git symbolic-ref -q HEAD)" = refs/heads/main ] || e 'not main'
 
-if git show-ref -q --verify refs/heads/gh-pages; then
-  git diff --quiet "$(git log --pretty=format:%f gh-pages)".. -- book \
-    && d "gh-pages is already up-to-date"
-  git branch -qD gh-pages
-fi
+git diff --quiet "$(git log --pretty=format:%f origin/gh-pages)".. -- book \
+  && d "origin/gh-pages is already up-to-date"
+
 ( cd book
   mdbook build 2>/dev/null )
 mv book/book html
+
+git show-ref -q --verify refs/heads/gh-pages && git branch -qD gh-pages
 git checkout -q --orphan gh-pages
 git rm -qrf .
 git clean -qfxde/html
