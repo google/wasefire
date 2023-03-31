@@ -24,11 +24,11 @@ set -e
 if git show-ref -q --verify refs/heads/gh-pages; then
   git diff --quiet "$(git log --pretty=format:%f gh-pages)".. -- book \
     && d "gh-pages is already up-to-date"
-  ( cd book
-    mdbook build 2>/dev/null )
-  mv book/book html
   git branch -qD gh-pages
 fi
+( cd book
+  mdbook build 2>/dev/null )
+mv book/book html
 git checkout -q --orphan gh-pages
 git rm -qrf .
 git clean -qfxde/html
