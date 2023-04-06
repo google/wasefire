@@ -1,4 +1,5 @@
 # Changelog
+TODO(skip-changelog): Remove this line before releasing.
 
 ### Patch
 

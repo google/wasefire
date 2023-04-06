@@ -2,6 +2,7 @@
 
 ### Patch
 
+- Replace usage of `num_enum` deprecated function
 - Update dependencies
 
 ## 0.1.1

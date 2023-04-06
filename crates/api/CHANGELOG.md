@@ -1,9 +1,5 @@
 # Changelog
-
-### Patch
-
-- Update Cargo.lock file (it is packaged due to
-  https://github.com/rust-lang/cargo/issues/11557 although examples are not)
+TODO(skip-changelog): Remove this line before releasing.
 
 ## 0.1.2
 
