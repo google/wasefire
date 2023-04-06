@@ -1,5 +1,9 @@
 # Changelog
 
+### Minor
+
+- Use `atomic-polyfill` to support RV32IMC
+
 ### Patch
 
 - Update dependencies
