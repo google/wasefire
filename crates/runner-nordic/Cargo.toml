@@ -7,12 +7,12 @@ publish = false
 edition = "2021"
 
 [dependencies]
-alloc-cortex-m = "0.4.4"
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7.3"
 critical-section = "1.1.1"
 defmt = { version = "0.3.2", optional = true }
 defmt-rtt = { version = "0.4.0", optional = true }
+embedded-alloc = "0.5.0"
 embedded-hal = "0.2.7"
 embedded-storage = "0.3.0"
 nrf52840-hal = "0.16.0"
