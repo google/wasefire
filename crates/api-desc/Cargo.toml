@@ -13,10 +13,10 @@ categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
 anyhow = "1.0.70"
-clap = { version = "4.1.14", features = ["derive"] }
+clap = { version = "4.2.1", features = ["derive"] }
 data-encoding = "2.3.3"
 data-encoding-macro = "0.1.12"
-proc-macro2 = "1.0.54"
+proc-macro2 = "1.0.56"
 quote = "1.0.26"
 
 [features]
