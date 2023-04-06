@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloc_cortex_m::CortexMHeap;
+use embedded_alloc::Heap;
 
 #[global_allocator]
-static ALLOCATOR: CortexMHeap = CortexMHeap::empty();
+static ALLOCATOR: Heap = Heap::empty();
 
 pub fn init() {
     extern "C" {
