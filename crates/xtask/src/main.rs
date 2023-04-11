@@ -296,13 +296,15 @@ impl AppletOptions {
         if main.size {
             println!("Initial applet size: {}", std::fs::metadata(wasm)?.len());
         }
-        let mut strip = Command::new("wasm-strip");
+        let mut strip = Command::new("./scripts/wrapper.sh");
+        strip.arg("wasm-strip");
         strip.arg(wasm);
         execute_command(&mut strip)?;
         if main.size {
             println!("Stripped applet size: {}", std::fs::metadata(wasm)?.len());
         }
-        let mut opt = Command::new("wasm-opt");
+        let mut opt = Command::new("./scripts/wrapper.sh");
+        opt.arg("wasm-opt");
         if main.multivalue {
             opt.arg("--enable-multivalue");
         }
@@ -405,7 +407,8 @@ impl RunnerOptions {
             execute_command(&mut cargo)?;
         }
         if self.measure_bloat {
-            let mut bloat = Command::new(cargo.get_program());
+            let mut bloat = Command::new("./scripts/wrapper.sh");
+            bloat.arg(cargo.get_program());
             if let Some(dir) = cargo.get_current_dir() {
                 bloat.current_dir(dir);
             }
@@ -427,7 +430,8 @@ impl RunnerOptions {
         }
         let elf = self.board_target();
         if main.size {
-            let mut size = Command::new("rust-size");
+            let mut size = Command::new("./scripts/wrapper.sh");
+            size.arg("rust-size");
             size.arg(&elf);
             execute_command(&mut size)?;
         }
@@ -475,7 +479,8 @@ impl RunnerOptions {
             println!("JLinkGDBServer -device {chip} -if swd -speed 4000 -port 2331");
             println!("gdb-multiarch -ex 'file {elf}' -ex 'target remote localhost:2331'");
         }
-        let mut probe_run = Command::new("probe-run");
+        let mut probe_run = Command::new("./scripts/wrapper.sh");
+        probe_run.arg("probe-run");
         probe_run.arg(format!("--chip={chip}"));
         if main.release {
             probe_run.arg("--backtrace=never");
