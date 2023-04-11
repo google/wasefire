@@ -26,6 +26,11 @@ ROOT="${ROOT%/scripts}"
 
 CARGO_ROOT="$ROOT/.root"
 
+run() {
+  [ "$WASEFIRE_WRAPPER_EXEC" = n ] && exit 0
+  exec "$@"
+}
+
 ensure_cargo() {
   if ! cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2:\$"; then
     x cargo install --root="$CARGO_ROOT" "$1@$2"
@@ -47,13 +52,13 @@ case "$1" in
     ;;
   *) IS_CARGO=n ;;
 esac
-[ $IS_CARGO = y ] && PATH="$CARGO_ROOT/bin:$PATH" exec "$@"
+[ $IS_CARGO = y ] && PATH="$CARGO_ROOT/bin:$PATH" run "$@"
 
 has_bin() {
   which "$1" >/dev/null 2>&1
 }
 
-has_bin "$1" && exec "$@"
+has_bin "$1" && run "$@"
 
 has_bin apt-get || e 'Wrapper only supports apt-get.'
 
@@ -67,4 +72,4 @@ case "$1" in
   wasm-opt) ensure_bin binaryen ;;
   *) e "Wrapper does not support '$1'." ;;
 esac
-exec "$@"
+run "$@"

@@ -407,8 +407,11 @@ impl RunnerOptions {
             execute_command(&mut cargo)?;
         }
         if self.measure_bloat {
-            let mut bloat = Command::new("./scripts/wrapper.sh");
-            bloat.arg(cargo.get_program());
+            let mut ensure_bloat = Command::new("./scripts/wrapper.sh");
+            ensure_bloat.args(["cargo", "bloat"]);
+            ensure_bloat.env("WASEFIRE_WRAPPER_EXEC", "n");
+            execute_command(&mut ensure_bloat)?;
+            let mut bloat = Command::new(cargo.get_program());
             if let Some(dir) = cargo.get_current_dir() {
                 bloat.current_dir(dir);
             }
