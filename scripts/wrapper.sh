@@ -33,7 +33,7 @@ run() {
 
 ensure_cargo() {
   if ! cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2:\$"; then
-    x cargo install --root="$CARGO_ROOT" "$1@$2"
+    PATH="$CARGO_ROOT/bin:$PATH" x cargo install --root="$CARGO_ROOT" "$1@$2"
   fi
 }
 
