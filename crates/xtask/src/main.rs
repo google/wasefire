@@ -275,6 +275,13 @@ impl AppletOptions {
 
     fn execute_assemblyscript(&self, main: &MainOptions) -> Result<()> {
         let dir = format!("examples/{}", self.lang);
+        if !Path::new("examples/assemblyscript/node_modules/.bin/asc").exists() {
+            ensure_command(&["npm"])?;
+            let mut npm = Command::new("../../scripts/wrapper.sh");
+            npm.args(["npm", "install", "--no-save", "assemblyscript"]);
+            npm.current_dir(&dir);
+            execute_command(&mut npm)?;
+        }
         let mut asc = Command::new("./node_modules/.bin/asc");
         asc.args(["-o", "../../target/applet.wasm"]);
         asc.arg(format!("-O{}", self.opt_level));
@@ -407,10 +414,7 @@ impl RunnerOptions {
             execute_command(&mut cargo)?;
         }
         if self.measure_bloat {
-            let mut ensure_bloat = Command::new("./scripts/wrapper.sh");
-            ensure_bloat.args(["cargo", "bloat"]);
-            ensure_bloat.env("WASEFIRE_WRAPPER_EXEC", "n");
-            execute_command(&mut ensure_bloat)?;
+            ensure_command(&["cargo", "bloat"])?;
             let mut bloat = Command::new(cargo.get_program());
             if let Some(dir) = cargo.get_current_dir() {
                 bloat.current_dir(dir);
@@ -551,6 +555,13 @@ fn read_output_line(command: &mut Command) -> Result<String> {
     assert!(output.stderr.is_empty());
     assert_eq!(output.stdout.pop(), Some(b'\n'));
     Ok(String::from_utf8(output.stdout)?)
+}
+
+fn ensure_command(cmd: &[&str]) -> Result<()> {
+    let mut ensure_bloat = Command::new("./scripts/wrapper.sh");
+    ensure_bloat.args(cmd);
+    ensure_bloat.env("WASEFIRE_WRAPPER_EXEC", "n");
+    execute_command(&mut ensure_bloat)
 }
 
 fn main() -> Result<()> {
