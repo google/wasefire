@@ -58,6 +58,12 @@ use wasefire_board_api::usb::serial::Serial;
 use wasefire_scheduler::Scheduler;
 use {wasefire_board_api as board, wasefire_logger as logger};
 
+#[cfg(feature = "debug")]
+#[defmt::panic_handler]
+fn panic() -> ! {
+    panic_probe::hard_fault();
+}
+
 type Clocks = clocks::Clocks<ExternalOscillator, Internal, LfOscStopped>;
 
 struct State {
