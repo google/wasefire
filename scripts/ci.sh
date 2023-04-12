@@ -51,8 +51,9 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
     [ -n "$ref" ] || e "CHANGELOG.md for $dir is not tracked"
     git diff --quiet $ref.. -- $(cargo package --list) \
       || e "CHANGELOG.md for $dir is not up-to-date"
-    [ "$(sed -n 's/^version = //p;T;q' Cargo.toml | tr -d \")" \
-      = "$(sed -n 's/^## //p;T;q' CHANGELOG.md)" ] \
+    ver="$(sed -n '3s/^## //p' CHANGELOG.md)"
+    [ -n "$ver" ] || e "CHANGELOG.md for $dir does not start with version"
+    [ "$(sed -n 's/^version = //p;T;q' Cargo.toml | tr -d \")" = "$ver" ] \
       || e "CHANGELOG.md and Cargo.toml for $dir have different versions"
   )
 done
