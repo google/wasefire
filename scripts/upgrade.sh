@@ -38,3 +38,5 @@ update_crate() {
 for crate in $(get_crates); do
   update_crate "$crate" "$(get_latest "$crate")"
 done
+
+d "All dependencies have been upgraded"

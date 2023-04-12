@@ -12,7 +12,7 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-defmt = { version = "0.3.2", optional = true }
+defmt = { version = "0.3.4", optional = true }
 wasefire-applet-api = { version = "0.1.3-git", path = "../api", features = ["host"] }
 wasefire-board-api = { version = "0.1.3-git", path = "../board" }
 wasefire-logger = { version = "0.1.1", path = "../logger" }
