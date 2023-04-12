@@ -15,6 +15,7 @@
 
 set -ex
 
+touch ../../target/applet.wasm
 cargo check --features=debug
 cargo check --features=release
 cargo fmt -- --check

@@ -15,6 +15,7 @@
 
 set -ex
 
+touch ../../target/applet.wasm
 cargo check --target=thumbv7em-none-eabi --features=debug
 cargo check --target=thumbv7em-none-eabi --features=release
 cargo fmt -- --check

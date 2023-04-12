@@ -56,6 +56,10 @@ impl Api for Board {
         self.receiver.blocking_recv().unwrap()
     }
 
+    fn breakpoint(&mut self) {
+        unsafe { std::intrinsics::breakpoint() };
+    }
+
     fn take_storage(&mut self) -> Option<Self::Storage> {
         self.state.lock().unwrap().storage.take()
     }
