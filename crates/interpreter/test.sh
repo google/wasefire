@@ -18,4 +18,5 @@ set -ex
 cargo check
 cargo fmt -- --check
 cargo clippy -- --deny=warnings
+[ -e ../../third_party/WebAssembly/spec/.git ] || git submodule update --init
 cargo test --features=debug,toctou,float-types,vector-types

@@ -18,12 +18,6 @@ set -e
 # This script installs any missing dependency on a best effort basis. It is
 # idempotent and may be run to check whether everything is set up.
 
-if [ ! -e third_party/WebAssembly/spec/.git ]; then
-  ( set -x
-    git submodule update --init
-  )
-fi
-
 has_bin() {
   if which $1 >/dev/null 2>&1; then
     echo y
