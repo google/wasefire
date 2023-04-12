@@ -6,6 +6,10 @@
 
 - Add breakpoint in Api
 
+### Patch
+
+- Update dependencies
+
 ## 0.1.2
 
 ### Patch

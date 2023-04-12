@@ -42,22 +42,7 @@ i "Build the book"
 WASEFIRE_WRAPPER_EXEC=n ./scripts/wrapper.sh mdbook
 ( cd book && ../scripts/wrapper.sh mdbook build 2>/dev/null )
 
-for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
-  sed -n '1{/^\[package\]$/!q1};/^publish =/q;/^$/q1' $dir/Cargo.toml \
-    || e "Cargo.toml for $dir is missing the publish field"
-  $(sed -n 's/^publish = //p;T;q' $dir/Cargo.toml) || continue
-  [ -e $dir/CHANGELOG.md ] || e "CHANGELOG.md for $dir is missing"
-  ( cd $dir
-    ref=$(git log --first-parent -n1 --pretty=format:%H -- CHANGELOG.md)
-    [ -n "$ref" ] || e "CHANGELOG.md for $dir is not tracked"
-    git diff --quiet $ref.. -- $(cargo package --list) \
-      || e "CHANGELOG.md for $dir is not up-to-date"
-    ver="$(sed -n '3s/^## //p' CHANGELOG.md)"
-    [ -n "$ver" ] || e "CHANGELOG.md for $dir does not start with version"
-    [ "$(sed -n 's/^version = //p;T;q' Cargo.toml | tr -d \")" = "$ver" ] \
-      || e "CHANGELOG.md and Cargo.toml for $dir have different versions"
-  )
-done
+./scripts/ci-changelog.sh
 
 git diff --exit-code \
   || e "Tracked files were modified and/or untracked files were created"

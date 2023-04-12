@@ -6,6 +6,10 @@
 
 - Support scheduling::breakpoint
 
+### Patch
+
+- Update dependencies
+
 ## 0.1.1
 
 ### Patch

@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Fix use of deprecated function
 - Update dependencies
 
 ## 0.1.1
