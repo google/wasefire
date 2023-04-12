@@ -49,14 +49,21 @@ pub trait Api {
     fn disable(&mut self, button: usize) -> Result<(), Error>;
 }
 
-/// Helper trait for boards without buttons.
-///
-/// Types implementing this trait will automatically implement [`Api`] with an [`Api::count()`] of
-/// zero. Accordingly, the [`Api::enable()`] and [`Api::disable()`] functions return a user error on
-/// any input.
-pub trait Unavailable {}
+impl Api for ! {
+    fn count(&mut self) -> usize {
+        unreachable!()
+    }
 
-impl<T: Unavailable> Api for T {
+    fn enable(&mut self, _: usize) -> Result<(), Error> {
+        unreachable!()
+    }
+
+    fn disable(&mut self, _: usize) -> Result<(), Error> {
+        unreachable!()
+    }
+}
+
+impl Api for () {
     fn count(&mut self) -> usize {
         0
     }

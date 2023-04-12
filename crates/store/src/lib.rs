@@ -357,6 +357,7 @@
 //! is checked not to crash.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![feature(never_type)]
 
 #[macro_use]
 extern crate alloc;

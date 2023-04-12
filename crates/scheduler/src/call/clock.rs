@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use wasefire_applet_api::clock::{self as api, Api};
-use wasefire_board_api::timer::{Api as Bpi, Command};
+use wasefire_board_api::timer::{Api as _, Command};
 use wasefire_board_api::Api as Board;
 
 use crate::event::timer::Key;
@@ -55,7 +55,7 @@ fn start<B: Board>(mut call: SchedulerCall<B, api::start::Sig>) {
         let periodic = matches!(api::Mode::try_from(*mode)?, api::Mode::Periodic);
         let duration_ms = *duration_ms as usize;
         let command = Command { periodic, duration_ms };
-        <B as Bpi>::arm(&mut call.scheduler().board, timer, &command).map_err(|_| Trap)?;
+        call.scheduler().board.timer().arm(timer, &command).map_err(|_| Trap)?;
         api::start::Results {}
     };
     call.reply(results);
@@ -66,7 +66,7 @@ fn stop<B: Board>(mut call: SchedulerCall<B, api::stop::Sig>) {
     let timer = *id as usize;
     let results = try {
         get_timer(call.scheduler(), timer)?;
-        <B as Bpi>::disarm(&mut call.scheduler().board, timer).map_err(|_| Trap)?;
+        call.scheduler().board.timer().disarm(timer).map_err(|_| Trap)?;
         api::stop::Results {}
     };
     call.reply(results);

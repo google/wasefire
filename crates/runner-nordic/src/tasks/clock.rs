@@ -21,7 +21,7 @@ use nrf52840_hal::timer::{Instance, OneShot, Periodic};
 use nrf52840_hal::Timer;
 use {wasefire_board_api as board, wasefire_logger as logger};
 
-impl board::timer::Api for crate::tasks::Board {
+impl board::timer::Api for &mut crate::tasks::Board {
     fn count(&mut self) -> usize {
         critical_section::with(|cs| self.0.borrow_ref(cs).timers.0.len())
     }

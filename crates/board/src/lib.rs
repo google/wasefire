@@ -18,6 +18,7 @@
 //! support triggering [events][Event].
 
 #![no_std]
+#![feature(never_type)]
 
 use core::fmt::Debug;
 
@@ -31,9 +32,12 @@ pub mod timer;
 pub mod usb;
 
 /// Board interface.
-pub trait Api: button::Api + crypto::Api + led::Api + rng::Api + timer::Api + usb::Api {
-    type Storage: store::Storage;
-
+///
+/// Associated types have predefined implementations:
+/// - `!` (the never type) implements an API by panicking (the accessor function cannot be
+///   implemented and must itself panic)
+/// - `()` (the unit type) implements an API for something countable by using zero.
+pub trait Api {
     /// Returns the oldest triggered event, if any.
     ///
     /// This function is non-blocking. See [`Self::wait_event()`] for a blocking version.
@@ -48,10 +52,37 @@ pub trait Api: button::Api + crypto::Api + led::Api + rng::Api + timer::Api + us
     /// Executes a breakpoint.
     fn breakpoint(&mut self);
 
+    /// Storage type.
+    type Storage: store::Storage;
+
     /// Takes the storage from the board.
     ///
     /// This function returns `Some` at most once and if it does, it does so on the first call.
     fn take_storage(&mut self) -> Option<Self::Storage>;
+
+    type Button<'a>: button::Api
+    where Self: 'a;
+    fn button(&mut self) -> Self::Button<'_>;
+
+    type Crypto<'a>: crypto::Api
+    where Self: 'a;
+    fn crypto(&mut self) -> Self::Crypto<'_>;
+
+    type Led<'a>: led::Api
+    where Self: 'a;
+    fn led(&mut self) -> Self::Led<'_>;
+
+    type Rng<'a>: rng::Api
+    where Self: 'a;
+    fn rng(&mut self) -> Self::Rng<'_>;
+
+    type Timer<'a>: timer::Api
+    where Self: 'a;
+    fn timer(&mut self) -> Self::Timer<'_>;
+
+    type Usb<'a>: usb::Api
+    where Self: 'a;
+    fn usb(&mut self) -> Self::Usb<'_>;
 }
 
 /// Events that interfaces may trigger.
@@ -83,4 +114,62 @@ pub enum Error {
 
     /// The world made an error.
     World,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_impl() {
+        struct Empty;
+        impl Api for Empty {
+            fn try_event(&mut self) -> Option<Event> {
+                todo!()
+            }
+
+            fn wait_event(&mut self) -> Event {
+                todo!()
+            }
+
+            fn breakpoint(&mut self) {
+                todo!()
+            }
+
+            type Storage = !;
+            fn take_storage(&mut self) -> Option<Self::Storage> {
+                todo!()
+            }
+
+            type Button<'a> = ();
+            fn button(&mut self) -> Self::Button<'_> {
+                ()
+            }
+
+            type Crypto<'a> = !;
+            fn crypto(&mut self) -> Self::Crypto<'_> {
+                todo!()
+            }
+
+            type Led<'a> = ();
+            fn led(&mut self) -> Self::Led<'_> {
+                ()
+            }
+
+            type Rng<'a> = !;
+            fn rng(&mut self) -> Self::Rng<'_> {
+                todo!()
+            }
+
+            type Timer<'a> = ();
+            fn timer(&mut self) -> Self::Timer<'_> {
+                ()
+            }
+
+            type Usb<'a> = !;
+            fn usb(&mut self) -> Self::Usb<'_> {
+                todo!()
+            }
+        }
+    }
 }

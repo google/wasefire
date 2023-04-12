@@ -12,13 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use board::usb::serial::{HasSerial, WithSerial};
 use usbip_device::UsbIpBus;
 use wasefire_board_api as board;
 use wasefire_board_api::usb::serial::Serial;
 
-impl board::usb::Api for crate::board::Board {}
+use crate::board::Board;
 
-impl board::usb::serial::HasSerial for crate::board::Board {
+impl board::usb::Api for &mut Board {
+    type Serial<'a> = WithSerial<&'a mut Board>
+    where Self: 'a;
+    fn serial(&mut self) -> Self::Serial<'_> {
+        WithSerial(self)
+    }
+}
+
+impl HasSerial for &mut Board {
     type UsbBus = UsbIpBus;
 
     fn with_serial<R>(&mut self, f: impl FnOnce(&mut Serial<Self::UsbBus>) -> R) -> R {

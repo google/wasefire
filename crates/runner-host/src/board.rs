@@ -46,8 +46,6 @@ pub struct Board {
 }
 
 impl Api for Board {
-    type Storage = FileStorage;
-
     fn try_event(&mut self) -> Option<Event> {
         self.receiver.try_recv().ok()
     }
@@ -60,8 +58,39 @@ impl Api for Board {
         unsafe { std::intrinsics::breakpoint() };
     }
 
+    type Storage = FileStorage;
     fn take_storage(&mut self) -> Option<Self::Storage> {
         self.state.lock().unwrap().storage.take()
+    }
+
+    type Button<'a> = &'a mut Self;
+    fn button(&mut self) -> Self::Button<'_> {
+        self
+    }
+
+    type Crypto<'a> = &'a mut Self;
+    fn crypto(&mut self) -> Self::Crypto<'_> {
+        self
+    }
+
+    type Led<'a> = &'a mut Self;
+    fn led(&mut self) -> Self::Led<'_> {
+        self
+    }
+
+    type Rng<'a> = &'a mut Self;
+    fn rng(&mut self) -> Self::Rng<'_> {
+        self
+    }
+
+    type Timer<'a> = &'a mut Self;
+    fn timer(&mut self) -> Self::Timer<'_> {
+        self
+    }
+
+    type Usb<'a> = &'a mut Self;
+    fn usb(&mut self) -> Self::Usb<'_> {
+        self
     }
 }
 

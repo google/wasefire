@@ -21,3 +21,9 @@ pub trait Api {
     /// Fills a buffer with random bytes uniformly.
     fn fill_bytes(&mut self, buffer: &mut [u8]) -> Result<(), Error>;
 }
+
+impl Api for ! {
+    fn fill_bytes(&mut self, _: &mut [u8]) -> Result<(), Error> {
+        unreachable!()
+    }
+}

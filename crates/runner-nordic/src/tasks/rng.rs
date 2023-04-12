@@ -14,7 +14,7 @@
 
 use wasefire_board_api as board;
 
-impl board::rng::Api for crate::tasks::Board {
+impl board::rng::Api for &mut crate::tasks::Board {
     fn fill_bytes(&mut self, buffer: &mut [u8]) -> Result<(), board::Error> {
         critical_section::with(|cs| self.0.borrow_ref_mut(cs).rng.random(buffer));
         Ok(())

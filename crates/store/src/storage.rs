@@ -90,6 +90,40 @@ pub trait Storage {
     fn erase_page(&mut self, page: usize) -> StorageResult<()>;
 }
 
+impl Storage for ! {
+    fn word_size(&self) -> usize {
+        unreachable!()
+    }
+
+    fn page_size(&self) -> usize {
+        unreachable!()
+    }
+
+    fn num_pages(&self) -> usize {
+        unreachable!()
+    }
+
+    fn max_word_writes(&self) -> usize {
+        unreachable!()
+    }
+
+    fn max_page_erases(&self) -> usize {
+        unreachable!()
+    }
+
+    fn read_slice(&self, _: StorageIndex, _: usize) -> StorageResult<Cow<[u8]>> {
+        unreachable!()
+    }
+
+    fn write_slice(&mut self, _: StorageIndex, _: &[u8]) -> StorageResult<()> {
+        unreachable!()
+    }
+
+    fn erase_page(&mut self, _: usize) -> StorageResult<()> {
+        unreachable!()
+    }
+}
+
 impl StorageIndex {
     /// Whether a slice fits in a storage page.
     fn is_valid(self, length: usize, storage: &impl Storage) -> bool {

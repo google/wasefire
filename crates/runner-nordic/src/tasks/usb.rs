@@ -14,13 +14,20 @@
 
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 use wasefire_board_api as board;
-use wasefire_board_api::usb::serial::Serial;
+use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
+
+use crate::tasks::Board;
 
 pub type Usb = Usbd<UsbPeripheral<'static>>;
 
-impl board::usb::Api for crate::tasks::Board {}
+impl board::usb::Api for &mut Board {
+    type Serial<'a> = WithSerial<&'a mut Board> where Self: 'a;
+    fn serial(&mut self) -> Self::Serial<'_> {
+        WithSerial(self)
+    }
+}
 
-impl board::usb::serial::HasSerial for crate::tasks::Board {
+impl HasSerial for &mut Board {
     type UsbBus = Usb;
 
     fn with_serial<R>(&mut self, f: impl FnOnce(&mut Serial<Self::UsbBus>) -> R) -> R {

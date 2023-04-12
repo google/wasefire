@@ -18,7 +18,7 @@ use wasefire_board_api::Error;
 
 use crate::board::{Board, State};
 
-impl Api for Board {
+impl Api for &mut Board {
     fn count(&mut self) -> usize {
         1
     }

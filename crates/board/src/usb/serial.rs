@@ -59,14 +59,38 @@ pub trait Api {
     fn disable(&mut self, event: &Event) -> Result<(), Error>;
 }
 
+impl Api for ! {
+    fn read(&mut self, _: &mut [u8]) -> Result<usize, Error> {
+        unreachable!()
+    }
+
+    fn write(&mut self, _: &[u8]) -> Result<usize, Error> {
+        unreachable!()
+    }
+
+    fn flush(&mut self) -> Result<(), Error> {
+        unreachable!()
+    }
+
+    fn enable(&mut self, _: &Event) -> Result<(), Error> {
+        unreachable!()
+    }
+
+    fn disable(&mut self, _: &Event) -> Result<(), Error> {
+        unreachable!()
+    }
+}
+
 /// Helper trait for boards using the `usbd_serial` crate.
-///
-/// Types implementing this trait will automatically implement [`Api`].
 pub trait HasSerial {
     type UsbBus: UsbBus;
 
     fn with_serial<R>(&mut self, f: impl FnOnce(&mut Serial<Self::UsbBus>) -> R) -> R;
 }
+
+/// Wrapper type for boards using the `usbd_serial` crate.
+#[repr(transparent)]
+pub struct WithSerial<T: HasSerial>(pub T);
 
 /// Helper struct for boards using the `usbd_serial` crate.
 pub struct Serial<'a, T: UsbBus> {
@@ -102,9 +126,9 @@ impl<'a, T: UsbBus> Serial<'a, T> {
     }
 }
 
-impl<T: HasSerial> Api for T {
+impl<T: HasSerial> Api for WithSerial<T> {
     fn read(&mut self, output: &mut [u8]) -> Result<usize, Error> {
-        match self.with_serial(|serial| serial.port.read(output)) {
+        match self.0.with_serial(|serial| serial.port.read(output)) {
             Ok(len) => {
                 logger::trace!("{}{:?} = read({})", len, &output[.. len], output.len());
                 Ok(len)
@@ -118,11 +142,11 @@ impl<T: HasSerial> Api for T {
     }
 
     fn write(&mut self, input: &[u8]) -> Result<usize, Error> {
-        if !self.with_serial(|serial| serial.port.dtr()) {
+        if !self.0.with_serial(|serial| serial.port.dtr()) {
             // Data terminal is not ready.
             return Ok(0);
         }
-        match self.with_serial(|serial| serial.port.write(input)) {
+        match self.0.with_serial(|serial| serial.port.write(input)) {
             Ok(len) => {
                 logger::trace!("{} = write({}{:?})", len, input.len(), input);
                 Ok(len)
@@ -136,7 +160,7 @@ impl<T: HasSerial> Api for T {
     }
 
     fn flush(&mut self) -> Result<(), Error> {
-        match self.with_serial(|serial| serial.port.flush()) {
+        match self.0.with_serial(|serial| serial.port.flush()) {
             Ok(()) => {
                 logger::trace!("flush()");
                 Ok(())
@@ -149,12 +173,12 @@ impl<T: HasSerial> Api for T {
     }
 
     fn enable(&mut self, event: &Event) -> Result<(), Error> {
-        self.with_serial(|serial| serial.set(event, true));
+        self.0.with_serial(|serial| serial.set(event, true));
         Ok(())
     }
 
     fn disable(&mut self, event: &Event) -> Result<(), Error> {
-        self.with_serial(|serial| serial.set(event, false));
+        self.0.with_serial(|serial| serial.set(event, false));
         Ok(())
     }
 }
