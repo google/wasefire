@@ -26,7 +26,7 @@ has_bin() {
   fi
 }
 
-if [ $(has_bin cargo) = n ]; then
+if [ $(has_bin rustup) = n ]; then
   echo "Install rustup from https://rustup.rs"
   exit 1
 fi
@@ -52,11 +52,4 @@ if [ -n "$MISSING" ]; then
     echo "Install the following packages:$MISSING"
     exit 1
   fi
-fi
-
-if [ ! -e examples/assemblyscript/node_modules ]; then
-  ( set -x
-    cd examples/assemblyscript
-    ../../scripts/wrapper.sh npm install --no-save assemblyscript
-  )
 fi
