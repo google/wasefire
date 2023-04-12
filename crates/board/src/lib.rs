@@ -45,6 +45,9 @@ pub trait Api: button::Api + crypto::Api + led::Api + rng::Api + timer::Api + us
     /// available, this function blocks and enters a power-saving state until an event triggers.
     fn wait_event(&mut self) -> Event;
 
+    /// Executes a breakpoint.
+    fn breakpoint(&mut self);
+
     /// Takes the storage from the board.
     ///
     /// This function returns `Some` at most once and if it does, it does so on the first call.

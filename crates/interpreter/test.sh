@@ -20,4 +20,5 @@ cargo check --target=thumbv7em-none-eabi
 cargo check --target=riscv32imc-unknown-none-elf
 cargo fmt -- --check
 cargo clippy -- --deny=warnings
+[ -e ../../third_party/WebAssembly/spec/.git ] || git submodule update --init
 cargo test --features=debug,toctou,float-types,vector-types

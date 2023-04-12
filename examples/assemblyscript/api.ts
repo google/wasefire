@@ -259,6 +259,11 @@
   export declare function scheduling_num_pending_callbacks(
   // How many callbacks are pending.
   ): usize
+
+  // Executes a breakpoint.
+  @external("env", "sb")
+  export declare function scheduling_breakpoint(
+  ): void
 // END OF MODULE scheduling
 
 // START OF MODULE store

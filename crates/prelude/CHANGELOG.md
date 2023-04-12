@@ -1,5 +1,9 @@
 # Changelog
 
+### Minor
+
+- Add scheduling::breakpoint
+
 ## 0.1.3
 
 ### Patch
@@ -21,3 +25,5 @@
 - Add applet!() macro
 
 ## 0.1.0
+
+<!-- Update PR number to skip CHANGELOG.md test: #0 -->

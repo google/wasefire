@@ -275,6 +275,13 @@ impl AppletOptions {
 
     fn execute_assemblyscript(&self, main: &MainOptions) -> Result<()> {
         let dir = format!("examples/{}", self.lang);
+        if !Path::new("examples/assemblyscript/node_modules/.bin/asc").exists() {
+            ensure_command(&["npm"])?;
+            let mut npm = Command::new("../../scripts/wrapper.sh");
+            npm.args(["npm", "install", "--no-save", "assemblyscript"]);
+            npm.current_dir(&dir);
+            execute_command(&mut npm)?;
+        }
         let mut asc = Command::new("./node_modules/.bin/asc");
         asc.args(["-o", "../../target/applet.wasm"]);
         asc.arg(format!("-O{}", self.opt_level));
@@ -296,13 +303,15 @@ impl AppletOptions {
         if main.size {
             println!("Initial applet size: {}", std::fs::metadata(wasm)?.len());
         }
-        let mut strip = Command::new("wasm-strip");
+        let mut strip = Command::new("./scripts/wrapper.sh");
+        strip.arg("wasm-strip");
         strip.arg(wasm);
         execute_command(&mut strip)?;
         if main.size {
             println!("Stripped applet size: {}", std::fs::metadata(wasm)?.len());
         }
-        let mut opt = Command::new("wasm-opt");
+        let mut opt = Command::new("./scripts/wrapper.sh");
+        opt.arg("wasm-opt");
         if main.multivalue {
             opt.arg("--enable-multivalue");
         }
@@ -405,6 +414,7 @@ impl RunnerOptions {
             execute_command(&mut cargo)?;
         }
         if self.measure_bloat {
+            ensure_command(&["cargo", "bloat"])?;
             let mut bloat = Command::new(cargo.get_program());
             if let Some(dir) = cargo.get_current_dir() {
                 bloat.current_dir(dir);
@@ -427,7 +437,8 @@ impl RunnerOptions {
         }
         let elf = self.board_target();
         if main.size {
-            let mut size = Command::new("rust-size");
+            let mut size = Command::new("./scripts/wrapper.sh");
+            size.arg("rust-size");
             size.arg(&elf);
             execute_command(&mut size)?;
         }
@@ -475,7 +486,8 @@ impl RunnerOptions {
             println!("JLinkGDBServer -device {chip} -if swd -speed 4000 -port 2331");
             println!("gdb-multiarch -ex 'file {elf}' -ex 'target remote localhost:2331'");
         }
-        let mut probe_run = Command::new("probe-run");
+        let mut probe_run = Command::new("./scripts/wrapper.sh");
+        probe_run.arg("probe-run");
         probe_run.arg(format!("--chip={chip}"));
         if main.release {
             probe_run.arg("--backtrace=never");
@@ -543,6 +555,13 @@ fn read_output_line(command: &mut Command) -> Result<String> {
     assert!(output.stderr.is_empty());
     assert_eq!(output.stdout.pop(), Some(b'\n'));
     Ok(String::from_utf8(output.stdout)?)
+}
+
+fn ensure_command(cmd: &[&str]) -> Result<()> {
+    let mut ensure_bloat = Command::new("./scripts/wrapper.sh");
+    ensure_bloat.args(cmd);
+    ensure_bloat.env("WASEFIRE_WRAPPER_EXEC", "n");
+    execute_command(&mut ensure_bloat)
 }
 
 fn main() -> Result<()> {
