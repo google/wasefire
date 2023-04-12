@@ -19,3 +19,5 @@
 - Build `docs.rs` with `wasm` feature on `thumbv7em-none-eabi` target
 
 ## 0.1.0
+
+<!-- Update PR number to skip CHANGELOG.md test: #0 -->
