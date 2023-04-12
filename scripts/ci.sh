@@ -39,7 +39,7 @@ for dir in $(find . -name test.sh -printf '%h\n' | sort); do
 done
 
 i "Build the book"
-( cd book && mdbook build 2>/dev/null )
+( cd book && ../scripts/wrapper.sh mdbook build 2>/dev/null )
 
 for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   sed -n '1{/^\[package\]$/!q1};/^publish =/q;/^$/q1' $dir/Cargo.toml \
@@ -60,7 +60,7 @@ done
 git diff --exit-code \
   || e "Tracked files were modified and/or untracked files were created"
 
-x taplo format
+x ./scripts/wrapper.sh taplo format
 git diff --exit-code || e "TOML files are not well formatted"
 
 x ./scripts/sync.sh

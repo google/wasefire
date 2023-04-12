@@ -41,18 +41,12 @@ MISSING=
 add_missing() {
   MISSING="$MISSING $1"
 }
-ensure_bin() {
-  [ $(has_bin $2) = y ] || add_missing $1
-}
 ensure_pkg() {
   pkg-config --exists $2 || add_missing $1
 }
 
 ensure_pkg libudev-dev libudev
 ensure_pkg libusb-1.0-0-dev libusb-1.0
-ensure_bin npm npm
-ensure_bin wabt wasm-strip
-ensure_bin binaryen wasm-opt
 
 if [ -n "$MISSING" ]; then
   if [ $(has_bin apt-get) = y ]; then
@@ -66,22 +60,9 @@ if [ -n "$MISSING" ]; then
   fi
 fi
 
-MISSING=
-ensure_bin cargo-binutils rust-size
-ensure_bin cargo-bloat cargo-bloat
-ensure_bin probe-run probe-run
-ensure_bin taplo-cli taplo
-ensure_bin mdbook mdbook
-
-if [ -n "$MISSING" ]; then
-  ( set -x
-    cargo install$MISSING
-  )
-fi
-
 if [ ! -e examples/assemblyscript/node_modules ]; then
   ( set -x
     cd examples/assemblyscript
-    npm install --no-save assemblyscript
+    ../../scripts/wrapper.sh npm install --no-save assemblyscript
   )
 fi

@@ -25,7 +25,7 @@ git diff --quiet "$(git log --pretty=format:%f origin/gh-pages)".. -- book \
   && d "origin/gh-pages is already up-to-date"
 
 ( cd book
-  mdbook build 2>/dev/null )
+  ../scripts/wrapper.sh mdbook build 2>/dev/null )
 mv book/book html
 
 git show-ref -q --verify refs/heads/gh-pages && git branch -qD gh-pages
