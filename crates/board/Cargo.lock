@@ -192,4 +192,4 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.1.2-git"
+version = "0.1.1"

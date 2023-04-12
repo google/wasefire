@@ -15,7 +15,7 @@ categories = ["embedded", "no-std"]
 usb-device = "0.2.9"
 usbd-serial = "0.1.1"
 wasefire-logger = { version = "0.1.2-git", path = "../logger" }
-wasefire-store = { version = "0.1.2-git", path = "../store" }
+wasefire-store = { version = "0.1.1", path = "../store" }
 
 [features]
 defmt = ["wasefire-logger/defmt"]
