@@ -47,7 +47,7 @@ case "$1" in
   cargo)
     case "$2" in
       bloat) ensure_cargo cargo-bloat 0.11.1 ;;
-      *) e "Wrapper does not support 'cargo $2'." ;;
+      *) e "Wrapper does not support 'cargo $2'" ;;
     esac
     ;;
   *) IS_CARGO=n ;;
@@ -70,6 +70,6 @@ case "$1" in
   npm) ensure_bin npm ;;
   wasm-strip) ensure_bin wabt ;;
   wasm-opt) ensure_bin binaryen ;;
-  *) e "Wrapper does not support '$1'." ;;
+  *) e "Wrapper does not support '$1'" ;;
 esac
 run "$@"
