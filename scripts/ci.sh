@@ -13,44 +13,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -e
+. scripts/log.sh
 
 # This script runs the continuous integration tests.
 
-# External tests are passing.
-cargo xtask build-applets
-cargo xtask --release build-applets
-cargo xtask build-runners
-cargo xtask --release build-runners
+for lang in $(ls examples); do
+  for name in $(ls examples/$lang); do
+    [ $lang = assemblyscript -a $name = node_modules ] && continue
+    [ $lang = assemblyscript -a $name = api.ts ] && continue
+    x cargo xtask applet $lang $name
+    x cargo xtask --release applet $lang $name
+  done
+done
+for crate in $(ls crates); do
+  name=${crate#runner-}
+  [ $crate = $name ] && continue
+  x cargo xtask runner $name
+  x cargo xtask --release runner $name
+done
 
-# Internal tests are passing.
 for dir in $(find . -name test.sh -printf '%h\n' | sort); do
+  i "Run tests in $dir"
   ( cd $dir && ./test.sh )
 done
 
-# All crates specify whether they are published.
-for dir in $(find . -name Cargo.toml -printf '%h\n' | sort); do
-  sed -n '1{/^\[package\]$/!q1};/^publish =/q;/^$/q1' $dir/Cargo.toml
+i "Build the book"
+WASEFIRE_WRAPPER_EXEC=n ./scripts/wrapper.sh mdbook
+( cd book && ../scripts/wrapper.sh mdbook build 2>/dev/null )
 
-  # All published crates have an up-to-date CHANGELOG.md.
-  $(sed -n 's/^publish = //p;T;q' $dir/Cargo.toml) || continue
-  [ -e $dir/CHANGELOG.md ]
-  ( cd $dir
-    ref=$(git log --first-parent -n1 --pretty=format:%H -- CHANGELOG.md)
-    [ -n "$ref" ]
-    git diff --quiet $ref.. -- $(cargo package --list)
-    [ "$(sed -n 's/^version = //p;T;q' Cargo.toml | tr -d \")" \
-      = "$(sed -n 's/^## //p;T;q' CHANGELOG.md)" ]
-  )
-done
+./scripts/ci-changelog.sh
 
-# No tracked files were modified and no untracked files were created.
-git diff --exit-code
+git diff --exit-code \
+  || e "Tracked files were modified and/or untracked files were created"
 
-# TOML files are well-formatted.
-taplo format
-git diff --exit-code
+x ./scripts/wrapper.sh taplo format
+git diff --exit-code || e "TOML files are not well formatted"
 
-# Generated content is in sync.
-./scripts/sync.sh
-git diff --exit-code
+x ./scripts/sync.sh
+git diff --exit-code || e "Generated content is not in sync"
+
+d "All tests passed"

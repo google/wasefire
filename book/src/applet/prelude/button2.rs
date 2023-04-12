@@ -22,16 +22,12 @@
 
 //{ ANCHOR: all
 #![no_std]
-
-extern crate alloc;
+wasefire::applet!();
 
 use alloc::boxed::Box;
 use core::cell::Cell;
 
-use wasefire::*;
-
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     //{ ANCHOR: setup
     // Make sure there is at least one button.
     let num_buttons = button::count();

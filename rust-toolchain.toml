@@ -1,4 +1,4 @@
 [toolchain]
-channel = "nightly-2023-02-23"
+channel = "nightly-2023-04-12"
 components = ["clippy", "llvm-tools-preview", "rust-src", "rustfmt"]
-targets = ["thumbv7em-none-eabi", "wasm32-unknown-unknown"]
+targets = ["riscv32imc-unknown-none-elf", "thumbv7em-none-eabi", "wasm32-unknown-unknown"]

@@ -18,13 +18,9 @@
 
 //{ ANCHOR: all
 #![no_std]
+wasefire::applet!();
 
-extern crate alloc;
-
-use wasefire::*;
-
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     //{ ANCHOR: count
     // Make sure there is at least one button.
     let count = button::count();
@@ -37,7 +33,7 @@ pub extern "C" fn main() {
     //} ANCHOR_END: loop
         //{ ANCHOR: handler
         // We define a button handler printing the new state.
-        let handler = move |state| println!("Button {index} has been {state:?}.");
+        let handler = move |state| debug!("Button {index} has been {state:?}.");
         //} ANCHOR_END: handler
 
         //{ ANCHOR: listener

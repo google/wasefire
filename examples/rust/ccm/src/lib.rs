@@ -21,8 +21,7 @@
 //! created. That value is first encrypted then decrypted.
 
 #![no_std]
-
-extern crate alloc;
+wasefire::applet!();
 
 use alloc::{format, vec};
 
@@ -30,8 +29,7 @@ use wasefire::crypto::ccm;
 use wasefire::rng::fill_bytes;
 use wasefire::usb::serial::{read_byte, write_all};
 
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     loop {
         let mut key = [0; 16];
         fill_bytes(&mut key);

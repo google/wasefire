@@ -1,9 +1,9 @@
 # Create a new applet
 
-This step will eventually be a simple `cargo wasefire new <applet-name>` command
-out of tree. But for now we will build the applet within the project repository
-as an example applet. We'll use `tutorial` as the applet name throughout this
-tutorial.
+This step will [eventually](https://github.com/google/wasefire/issues/38) be a
+simple `wasefire new <applet-name>` command out of tree. But for now we will
+build the applet within the project repository as an example applet. We'll use
+`tutorial` as the applet name throughout this tutorial.
 
 You have 2 options to create and populate the applet directory. We'll go over
 both for pedagogical reasons.
@@ -40,62 +40,25 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib"] # needed for building wasm
 
 [dependencies]
-prelude = { path = "../../../crates/prelude" }
+wasefire = "*" # use the latest version
 ```
 
-The `crate-type` entry is needed to compile to Wasm. The `prelude` dependency
-provides a high-level interface to the Applet API. Eventually, this dependency
-will released on `crates.io` and you will be able to develop out-of-tree.
+The `crate-type` entry is needed to compile to Wasm. The `wasefire` dependency
+provides a high-level interface to the Applet API.
 
 Then create the `src/lib.rs` file in the created directory with the following
 content:
 
 ```rust,no_run
-{{#include create.rs:all}}
+#![no_std] // needed for building wasm (without wasi)
+wasefire::applet!(); // imports the prelude and defines main as entry point
+
+fn main() {
+    debug!("hello world");
+}
 ```
 
-Let's go over and explain each line.
-
-```rust,no_run,noplayground
-{{#include create.rs:nostd}}
-```
-
-The applet must be no-std to prevent accidental dependency on `std` which is not
-supported for the `wasm32-unknown-unknown` target. Note that using WASI with the
-`wasm32-wasi` target is not a workaround because the Applet API doesn't (yet?)
-provide WASI.
-
-```rust,no_run,noplayground
-{{#include create.rs:alloc}}
-```
-
-If the applet uses the global allocator, then it must re-enable allocation
-support (which was disabled by the no-std line before). The prelude provides the
-global allocator but this line is still needed because it must be in the binary.
-
-Note that because of those 2 lines, you need to use `core` or `alloc` instead of
-`std`.
-
-```rust,no_run,noplayground
-{{#include create.rs:prelude}}
-```
-
-This line is for convenience and imports everything the prelude defines. You can
-instead import the items you need manually.
-
-```rust,no_run,noplayground
-{{#include create.rs:nomangle}}
-```
-
-Rust mangles the name of all functions. But we want the `main` function to have
-a predictible name such that the scheduler can find and call it when loading the
-applet. This line disables mangling.
-
-```rust,no_run,noplayground
-{{#include create.rs:externc}}
-```
-
-This line ensures the `main` function has a correct foreign function interface.
+Note that because you need to use `core` or `alloc` instead of `std`.

@@ -3,12 +3,11 @@ name = "host"
 version = "0.1.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
-publish = false
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.69"
-clap = { version = "4.1.6", features = ["derive"] }
+anyhow = "1.0.70"
+clap = { version = "4.2.1", features = ["derive"] }
 common = { path = "../common", features = ["std"] }
 env_logger = "0.10.0"
 log = "0.4.17"

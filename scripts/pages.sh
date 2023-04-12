@@ -14,16 +14,18 @@
 # limitations under the License.
 
 set -e
+. scripts/log.sh
 
 # This script synchronizes the gh-pages branch from a clean main.
 
-fail() { echo "Error: $1"; exit 1; }
+[ -z "$(git status -s)" ] || e 'not clean'
+[ "$(git symbolic-ref -q HEAD)" = refs/heads/main ] || e 'not main'
 
-[ -z "$(git status -s)" ] || fail 'not clean'
-[ "$(git symbolic-ref -q HEAD)" = refs/heads/main ] || fail 'not main'
+git diff --quiet "$(git log --pretty=format:%f origin/gh-pages)".. -- book \
+  && d "origin/gh-pages is already up-to-date"
 
 ( cd book
-  mdbook build 2>/dev/null )
+  ../scripts/wrapper.sh mdbook build 2>/dev/null )
 mv book/book html
 
 git show-ref -q --verify refs/heads/gh-pages && git branch -qD gh-pages
@@ -35,3 +37,4 @@ rmdir html
 git add .
 git commit -qm"$(git rev-parse -q --verify main)"
 git checkout -q main
+d "gh-pages has been updated"

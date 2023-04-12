@@ -297,10 +297,15 @@ impl Fn {
                 #[repr(C)]
                 pub struct Results { #(#results,)* }
             }
+            #[cfg(not(feature = "test"))]
             extern "C" {
                 #(#[doc = #docs])*
                 #[link_name = #link]
                 pub fn #name(#fn_params) #fn_results;
+            }
+            #[cfg(feature = "test")]
+            pub unsafe fn #name(#fn_params) #fn_results {
+                panic!("Applet API is not linked in unit tests.");
             }
         }
     }
@@ -578,4 +583,24 @@ fn write_items<T>(
         write(output, item)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+
+    #[test]
+    fn link_names_are_unique() {
+        let mut seen = HashSet::new();
+        let Api(mut todo) = Api::default();
+        while let Some(item) = todo.pop() {
+            match item {
+                Item::Enum(_) => (),
+                Item::Fn(Fn { link, .. }) => assert_eq!(seen.replace(link), None),
+                Item::Mod(Mod { items, .. }) => todo.extend(items),
+            }
+        }
+    }
 }

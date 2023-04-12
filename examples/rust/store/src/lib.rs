@@ -18,17 +18,13 @@
 //! USB serial.
 
 #![no_std]
-
-extern crate alloc;
+wasefire::applet!();
 
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use wasefire::*;
-
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     writeln(b"Usage: insert <key> <value>");
     writeln(b"Usage: find <key>");
     writeln(b"Usage: remove <key>");

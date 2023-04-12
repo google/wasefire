@@ -34,6 +34,30 @@ optimized for speed. The interpreter is also designed to have minimal RAM
 overhead. However, most optimizations (for both performance and overhead) are
 not yet implemented, which may increase the binary size.
 
+### Why implement a new interpreter?
+
+The following runtimes have been quickly rejected:
+- `wasmtime` and `wasmer` don't support no-std
+- `wasmi` consumes too much RAM for embedded
+
+`wasm3` has been used during the initial phase of the project but got eventually
+replaced with a custom interpreter for the following reasons:
+- It doesn't perform validation
+  [yet](https://github.com/wasm3/wasm3/issues/344). We probably need proper
+  validation.
+- It only compiles to RAM (not flash). We want to be able to preprocess a module
+  and persist the pre-computation in flash such that it is only done when a
+  module is installed and not each time it is instantiated.
+- It takes control of the execution flow. All runtimes I'm aware of behave like
+  that. To simplify scheduling, we want the interpreter to give back control
+  when asked or when a host function is called.
+- It is written in C. Although the code has tests and fuzzing, we want
+  additional security provided by the language.
+
+The interpreter we implemented is written in Rust, doesn't take control of the
+execution thread, doesn't pre-compute anything yet (but will be able to
+pre-compute to flash), and performs validation.
+
 ### Applet footprint compared to native code?
 
 WebAssembly byte-code is compact so there should be a footprint benefit compared

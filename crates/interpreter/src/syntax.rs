@@ -820,7 +820,7 @@ macro_rules! impl_from_byte {
     ($name:ident) => {
         impl UnsafeFromByte for $name {
             unsafe fn from_byte_unchecked(byte: u8) -> Self {
-                unsafe { Self::from_unchecked(byte) }
+                unsafe { Self::unchecked_transmute_from(byte) }
             }
         }
         impl TryFromByte for $name {

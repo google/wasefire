@@ -33,6 +33,7 @@
 
 extern crate alloc;
 
+#[cfg(not(feature = "test"))]
 mod allocator;
 pub mod button;
 mod callback;
@@ -45,10 +46,50 @@ pub mod scheduling;
 pub mod store;
 pub mod usb;
 
-pub use debug::println;
+/// Defines the entry point of an applet.
+///
+/// This macro brings all items of this crate into scope and makes sure `main()` is the entry point
+/// of this applet.
+///
+/// # Examples
+///
+/// A typical applet looks like:
+///
+/// ```rust
+/// #![no_std]
+/// wasefire::applet!();
+///
+/// fn main() {
+///     debug!("Hello world!");
+/// }
+/// ```
+#[cfg(not(feature = "test"))]
+#[macro_export]
+macro_rules! applet {
+    () => {
+        extern crate alloc;
 
+        use wasefire::*;
+
+        #[export_name = "main"]
+        extern "C" fn _main() {
+            main();
+        }
+    };
+}
+#[cfg(feature = "test")]
+#[macro_export]
+macro_rules! applet {
+    () => {
+        extern crate alloc;
+
+        use wasefire::*;
+    };
+}
+
+#[cfg(not(feature = "test"))]
 #[panic_handler]
 fn handle_panic(info: &core::panic::PanicInfo) -> ! {
-    println!("{}", info);
+    debug!("{}", info);
     core::arch::wasm32::unreachable()
 }

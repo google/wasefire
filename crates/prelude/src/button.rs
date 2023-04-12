@@ -64,7 +64,7 @@ impl<H: Handler> Listener<H> {
     /// # Examples
     ///
     /// ```
-    /// Listener::new(index, |state| println!("Button has been {state:?}"))
+    /// Listener::new(index, |state| debug!("Button has been {state:?}"))
     /// ```
     pub fn new(button: usize, handler: H) -> Self {
         let handler_func = Self::call;

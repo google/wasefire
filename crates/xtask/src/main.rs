@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use std::cmp::Reverse;
-use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
+use std::collections::BinaryHeap;
 use std::fmt::Display;
 use std::num::ParseIntError;
 use std::os::unix::prelude::CommandExt;
@@ -63,15 +63,6 @@ enum MainCommand {
     /// Compiles a runner.
     Runner(Runner),
 
-    /// Lists the available applets.
-    ListApplets,
-
-    /// Compiles all applets.
-    BuildApplets,
-
-    /// Compiles all runners.
-    BuildRunners,
-
     /// Updates the applet API for all languages.
     UpdateApis,
 }
@@ -92,6 +83,14 @@ struct AppletOptions {
 
     /// Applet name or path (if starts with dot or slash).
     name: String,
+
+    /// Cargo profile.
+    #[clap(long, default_value = "release")]
+    profile: String,
+
+    /// Cargo features.
+    #[clap(long)]
+    features: Vec<String>,
 
     /// Optimization level (0, 1, 2, 3, s, z).
     #[clap(long, short = 'O', default_value_t)]
@@ -200,43 +199,6 @@ impl Flags {
         match self.command {
             MainCommand::Applet(applet) => applet.execute(&self.options)?,
             MainCommand::Runner(runner) => runner.execute(&self.options)?,
-            MainCommand::ListApplets => {
-                for (lang, applets) in get_applets()? {
-                    println!("{lang}:");
-                    for applet in applets {
-                        println!("- {applet}");
-                    }
-                }
-            }
-            MainCommand::BuildApplets => {
-                for (lang, applets) in get_applets()? {
-                    for name in applets {
-                        let applet = Applet {
-                            options: AppletOptions {
-                                lang: lang.clone(),
-                                name,
-                                ..AppletOptions::default()
-                            },
-                            command: None,
-                        };
-                        applet.execute(&self.options)?;
-                    }
-                }
-            }
-            MainCommand::BuildRunners => {
-                for runner in std::fs::read_dir("crates")? {
-                    let name = runner?.file_name().to_string_lossy().into_owned();
-                    if let Some(name) = name.strip_prefix("runner-") {
-                        let runner = Runner {
-                            options: RunnerOptions {
-                                name: name.to_string(),
-                                ..RunnerOptions::default()
-                            },
-                        };
-                        runner.execute(&self.options)?;
-                    }
-                }
-            }
             MainCommand::UpdateApis => {
                 let (lang, ext) = ("assemblyscript", "ts");
                 let mut cargo = Command::new("cargo");
@@ -294,7 +256,11 @@ impl AppletOptions {
         if main.multivalue {
             rustflags.push("-C target-feature=+multivalue".to_string());
         }
-        cargo.args(["build", "--target=wasm32-unknown-unknown", "--release"]);
+        cargo.args(["build", "--target=wasm32-unknown-unknown"]);
+        cargo.arg(format!("--profile={}", self.profile));
+        for features in &self.features {
+            cargo.arg(format!("--features={features}"));
+        }
         if main.release {
             cargo.args(["-Zbuild-std=core,alloc", "-Zbuild-std-features=panic_immediate_abort"]);
         } else {
@@ -309,6 +275,13 @@ impl AppletOptions {
 
     fn execute_assemblyscript(&self, main: &MainOptions) -> Result<()> {
         let dir = format!("examples/{}", self.lang);
+        if !Path::new("examples/assemblyscript/node_modules/.bin/asc").exists() {
+            ensure_command(&["npm"])?;
+            let mut npm = Command::new("../../scripts/wrapper.sh");
+            npm.args(["npm", "install", "--no-save", "assemblyscript"]);
+            npm.current_dir(&dir);
+            execute_command(&mut npm)?;
+        }
         let mut asc = Command::new("./node_modules/.bin/asc");
         asc.args(["-o", "../../target/applet.wasm"]);
         asc.arg(format!("-O{}", self.opt_level));
@@ -330,17 +303,19 @@ impl AppletOptions {
         if main.size {
             println!("Initial applet size: {}", std::fs::metadata(wasm)?.len());
         }
-        let mut strip = Command::new("wasm-strip");
+        let mut strip = Command::new("./scripts/wrapper.sh");
+        strip.arg("wasm-strip");
         strip.arg(wasm);
         execute_command(&mut strip)?;
         if main.size {
             println!("Stripped applet size: {}", std::fs::metadata(wasm)?.len());
         }
-        let mut opt = Command::new("wasm-opt");
+        let mut opt = Command::new("./scripts/wrapper.sh");
+        opt.arg("wasm-opt");
         if main.multivalue {
             opt.arg("--enable-multivalue");
         }
-        opt.args(["--enable-bulk-memory", &format!("-O{}", self.opt_level)]);
+        opt.args(["--enable-bulk-memory", "--enable-sign-ext", &format!("-O{}", self.opt_level)]);
         opt.args([wasm, "-o", wasm]);
         execute_command(&mut opt)?;
         if main.size {
@@ -439,6 +414,7 @@ impl RunnerOptions {
             execute_command(&mut cargo)?;
         }
         if self.measure_bloat {
+            ensure_command(&["cargo", "bloat"])?;
             let mut bloat = Command::new(cargo.get_program());
             if let Some(dir) = cargo.get_current_dir() {
                 bloat.current_dir(dir);
@@ -461,7 +437,8 @@ impl RunnerOptions {
         }
         let elf = self.board_target();
         if main.size {
-            let mut size = Command::new("rust-size");
+            let mut size = Command::new("./scripts/wrapper.sh");
+            size.arg("rust-size");
             size.arg(&elf);
             execute_command(&mut size)?;
         }
@@ -509,7 +486,8 @@ impl RunnerOptions {
             println!("JLinkGDBServer -device {chip} -if swd -speed 4000 -port 2331");
             println!("gdb-multiarch -ex 'file {elf}' -ex 'target remote localhost:2331'");
         }
-        let mut probe_run = Command::new("probe-run");
+        let mut probe_run = Command::new("./scripts/wrapper.sh");
+        probe_run.arg("probe-run");
         probe_run.arg(format!("--chip={chip}"));
         if main.release {
             probe_run.arg("--backtrace=never");
@@ -557,32 +535,6 @@ fn wasm_target(name: &str) -> String {
     format!("target/wasm32-unknown-unknown/release/{name}.wasm")
 }
 
-fn get_applets() -> Result<BTreeMap<String, BTreeSet<String>>> {
-    let mut result = BTreeMap::new();
-    for lang in std::fs::read_dir("examples")? {
-        let lang = lang?;
-        let lang_name = lang.file_name().to_string_lossy().into_owned();
-        if !lang.file_type()?.is_dir() {
-            log::warn!("Non-directory {lang_name} in examples.");
-            continue;
-        }
-        let result: &mut BTreeSet<_> = result.entry(lang_name.clone()).or_default();
-        for applet in std::fs::read_dir(lang.path())? {
-            let applet = applet?;
-            let applet_name = applet.file_name().to_string_lossy().into_owned();
-            if matches!(applet_name.as_str(), ".gitignore" | "api.ts" | "node_modules") {
-                continue;
-            }
-            if !applet.file_type()?.is_dir() {
-                log::warn!("Non-directory {applet_name} in examples/{lang_name}.");
-                continue;
-            }
-            result.insert(applet_name);
-        }
-    }
-    Ok(result)
-}
-
 fn execute_command(command: &mut Command) -> Result<()> {
     eprintln!("{command:?}");
     let code = command.spawn()?.wait()?.code().expect("no error code");
@@ -603,6 +555,13 @@ fn read_output_line(command: &mut Command) -> Result<String> {
     assert!(output.stderr.is_empty());
     assert_eq!(output.stdout.pop(), Some(b'\n'));
     Ok(String::from_utf8(output.stdout)?)
+}
+
+fn ensure_command(cmd: &[&str]) -> Result<()> {
+    let mut ensure_bloat = Command::new("./scripts/wrapper.sh");
+    ensure_bloat.args(cmd);
+    ensure_bloat.env("WASEFIRE_WRAPPER_EXEC", "n");
+    execute_command(&mut ensure_bloat)
 }
 
 fn main() -> Result<()> {

@@ -19,14 +19,11 @@
 //! The companion program is self-documented with `cargo run -- help`.
 
 #![no_std]
-
-extern crate alloc;
+wasefire::applet!();
 
 use common::{Deserialize, Deserializer, Error, Request, Response, Serialize, Serializer};
-use wasefire::*;
 
-#[no_mangle]
-pub extern "C" fn main() {
+fn main() {
     loop {
         write(&process(read()));
     }

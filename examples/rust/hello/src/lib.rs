@@ -13,12 +13,8 @@
 // limitations under the License.
 
 #![no_std]
+wasefire::applet!();
 
-extern crate alloc;
-
-use wasefire::*;
-
-#[no_mangle]
-pub extern "C" fn main() {
-    println!("hello world");
+fn main() {
+    debug!("hello world");
 }
