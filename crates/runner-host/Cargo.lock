@@ -874,7 +874,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "lazy_static",
  "log",
@@ -893,7 +893,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.1.1"
+version = "0.1.2-git"
 
 [[package]]
 name = "wasi"
