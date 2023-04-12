@@ -37,8 +37,3 @@ debug = [
   "wasefire-scheduler/defmt",
 ]
 release = ["dep:panic-abort"]
-
-[patch.crates-io]
-defmt = { git = "https://github.com/knurling-rs/defmt" }
-defmt-rtt = { git = "https://github.com/knurling-rs/defmt" }
-panic-probe = { git = "https://github.com/knurling-rs/defmt" }
