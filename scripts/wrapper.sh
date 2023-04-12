@@ -40,16 +40,16 @@ ensure_cargo() {
 IS_CARGO=y
 # This list is read and modified by scripts/upgrade.sh.
 case "$1" in
-  rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
-  taplo) ensure_cargo taplo-cli 0.8.0 ;;
-  probe-run) ensure_cargo probe-run 0.3.6 ;;
-  mdbook) ensure_cargo mdbook 0.4.28 ;;
   cargo)
     case "$2" in
       bloat) ensure_cargo cargo-bloat 0.11.1 ;;
       *) e "Wrapper does not support 'cargo $2'" ;;
     esac
     ;;
+  mdbook) ensure_cargo mdbook 0.4.28 ;;
+  probe-run) ensure_cargo probe-run 0.3.6 ;;
+  rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
+  taplo) ensure_cargo taplo-cli 0.8.0 ;;
   *) IS_CARGO=n ;;
 esac
 [ $IS_CARGO = y ] && PATH="$CARGO_ROOT/bin:$PATH" run "$@"
@@ -68,8 +68,8 @@ ensure_bin() {
 
 case "$1" in
   npm) ensure_bin npm ;;
-  wasm-strip) ensure_bin wabt ;;
   wasm-opt) ensure_bin binaryen ;;
+  wasm-strip) ensure_bin wabt ;;
   *) e "Wrapper does not support '$1'" ;;
 esac
 run "$@"
