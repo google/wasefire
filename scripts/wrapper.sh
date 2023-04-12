@@ -47,7 +47,7 @@ case "$1" in
     esac
     ;;
   mdbook) ensure_cargo mdbook 0.4.28 ;;
-  probe-run) ensure_cargo probe-run 0.3.6 ;;
+  probe-run) ensure_cargo probe-run 0.3.8 ;;
   rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
   taplo) ensure_cargo taplo-cli 0.8.0 ;;
   *) IS_CARGO=n ;;

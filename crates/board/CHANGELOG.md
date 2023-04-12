@@ -6,6 +6,10 @@
 
 - Add breakpoint in Api
 
+### Patch
+
+- Update dependencies
+
 ## 0.1.2
 
 ### Patch
@@ -20,4 +24,4 @@
 
 ## 0.1.0
 
-<!-- Update PR number to skip CHANGELOG.md test: #0 -->
+<!-- Update PR number to skip CHANGELOG.md test: #112 -->

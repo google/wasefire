@@ -8,8 +8,8 @@
 
 ### Patch
 
-- Test that link names are unique
 - Update dependencies
+- Test that link names are unique
 
 ## 0.1.1
 
