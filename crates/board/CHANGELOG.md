@@ -1,5 +1,9 @@
 # Changelog
 
+### Minor
+
+- Add breakpoint in Api
+
 ## 0.1.2
 
 ### Patch

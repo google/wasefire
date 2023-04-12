@@ -1,5 +1,9 @@
 # Changelog
 
+### Minor
+
+- Add scheduling::breakpoint
+
 ## 0.1.3
 
 ### Patch

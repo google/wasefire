@@ -1,5 +1,9 @@
 # Changelog
 
+### Minor
+
+- Add scheduling::breakpoint
+
 ### Patch
 
 - Test that link names are unique
