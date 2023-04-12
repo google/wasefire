@@ -26,17 +26,20 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 }
 
 fn wait_for_callback<B: Board>(mut call: SchedulerCall<B, api::wait_for_callback::Sig>) {
+    let api::wait_for_callback::Params {} = call.read();
     if call.scheduler().process_event() {
         call.reply(Ok(api::wait_for_callback::Results {}));
     }
 }
 
 fn num_pending_callbacks<B: Board>(mut call: SchedulerCall<B, api::num_pending_callbacks::Sig>) {
+    let api::num_pending_callbacks::Params {} = call.read();
     let count = (call.applet().len() as u32).into();
     call.reply(Ok(api::num_pending_callbacks::Results { count }));
 }
 
 fn breakpoint<B: Board>(mut call: SchedulerCall<B, api::breakpoint::Sig>) {
+    let api::breakpoint::Params {} = call.read();
     call.scheduler().board.breakpoint();
     call.reply(Ok(api::breakpoint::Results {}));
 }
