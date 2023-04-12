@@ -22,16 +22,18 @@ pub(crate) fn new() -> Item {
             /// Waits until a callback is scheduled.
             ///
             /// This can be used as power management, since the CPU will sleep while waiting.
-            // TODO: This should only be visible for the Applet API. The Board API doesn't need it.
             fn wait_for_callback "sw" {} -> {}
         },
         item! {
             /// Returns how many callbacks are pending.
-            // TODO: This should only be visible for the Applet API. The Board API doesn't need it.
             fn num_pending_callbacks "sh" {} -> {
                 /// How many callbacks are pending.
                 count: usize,
             }
+        },
+        item! {
+            /// Executes a breakpoint.
+            fn breakpoint "sb" {} -> {}
         },
     ];
     Item::Mod(Mod { docs, name, items })

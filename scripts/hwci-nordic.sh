@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2022 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,10 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -e
+. scripts/log.sh
 
-touch ../../target/applet.wasm
-cargo check --target=thumbv7em-none-eabi --features=debug
-cargo check --target=thumbv7em-none-eabi --features=release
-cargo fmt -- --check
-cargo clippy --target=thumbv7em-none-eabi --features=debug -- --deny=warnings
+# This script needs a nordic dev board and runs the continuous integration
+# tests specific to that device.
+
+x cargo xtask applet rust timer_test runner nordic
+x cargo xtask --release applet rust timer_test runner nordic
+
+d "All tests passed"

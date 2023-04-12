@@ -28,6 +28,7 @@ fn main() {
     test_periodic_cancel();
     test_cancel_callback();
     debug!("End of tests.");
+    scheduling::breakpoint();
 }
 
 fn test_periodic(explicit_stop: bool) {
