@@ -22,6 +22,7 @@ x sed -i 's/^\(channel = "nightly-\)[^"]*"$/\1'$(date +%F)'"/' \
   rust-toolchain.toml
 x git submodule foreach 'git fetch -p origin && git checkout origin/main'
 x find . -name Cargo.toml -print -execdir cargo upgrade --incompatible \;
+x find . -name Cargo.toml -print -execdir cargo update \;
 
 get_crates() {
   sed -n 's/^.*ensure_cargo \([^ ]\+\) .*$/\1/p' scripts/wrapper.sh
