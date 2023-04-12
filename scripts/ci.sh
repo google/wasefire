@@ -39,6 +39,7 @@ for dir in $(find . -name test.sh -printf '%h\n' | sort); do
 done
 
 i "Build the book"
+WASEFIRE_WRAPPER_EXEC=n ./scripts/wrapper.sh mdbook
 ( cd book && ../scripts/wrapper.sh mdbook build 2>/dev/null )
 
 for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
