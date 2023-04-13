@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `Events::is_empty()`
 - Support scheduling::breakpoint
 
 ### Patch
