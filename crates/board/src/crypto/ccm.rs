@@ -34,3 +34,13 @@ pub trait Api {
         &mut self, key: &[u8], iv: &[u8], cipher: &[u8], clear: &mut [u8],
     ) -> Result<(), Error>;
 }
+
+impl Api for ! {
+    fn encrypt(&mut self, _: &[u8], _: &[u8], _: &[u8], _: &mut [u8]) -> Result<(), Error> {
+        unreachable!()
+    }
+
+    fn decrypt(&mut self, _: &[u8], _: &[u8], _: &[u8], _: &mut [u8]) -> Result<(), Error> {
+        unreachable!()
+    }
+}

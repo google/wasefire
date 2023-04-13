@@ -20,7 +20,7 @@ use wasefire_board_api as board;
 
 type NordicCcm = Ccm<Aes128, consts::U4, consts::U13>;
 
-impl board::crypto::ccm::Api for crate::board::Board {
+impl board::crypto::ccm::Api for &mut crate::board::Board {
     fn encrypt(
         &mut self, key: &[u8], iv: &[u8], clear: &[u8], cipher: &mut [u8],
     ) -> Result<(), board::Error> {

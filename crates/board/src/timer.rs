@@ -47,23 +47,21 @@ pub trait Api {
     fn disarm(&mut self, timer: usize) -> Result<(), Error>;
 }
 
-#[derive(Debug, Clone)]
-pub struct Command {
-    /// Whether the timer should periodically trigger.
-    pub periodic: bool,
+impl Api for ! {
+    fn count(&mut self) -> usize {
+        unreachable!()
+    }
 
-    /// Duration in milliseconds after which the timer should trigger.
-    pub duration_ms: usize,
+    fn arm(&mut self, _: usize, _: &Command) -> Result<(), Error> {
+        unreachable!()
+    }
+
+    fn disarm(&mut self, _: usize) -> Result<(), Error> {
+        unreachable!()
+    }
 }
 
-/// Helper trait for boards without timers.
-///
-/// Types implementing this trait will automatically implement [`Api`] with an [`Api::count()`] of
-/// zero. Accordingly, the [`Api::arm()`] and [`Api::disarm()`] functions return a user error on any
-/// input.
-pub trait Unavailable {}
-
-impl<T: Unavailable> Api for T {
+impl Api for () {
     fn count(&mut self) -> usize {
         0
     }
@@ -75,4 +73,13 @@ impl<T: Unavailable> Api for T {
     fn disarm(&mut self, _: usize) -> Result<(), Error> {
         Err(Error::User)
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct Command {
+    /// Whether the timer should periodically trigger.
+    pub periodic: bool,
+
+    /// Duration in milliseconds after which the timer should trigger.
+    pub duration_ms: usize,
 }

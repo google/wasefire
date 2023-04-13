@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-board-api"
-version = "0.1.3-git"
+version = "0.2.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true

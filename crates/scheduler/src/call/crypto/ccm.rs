@@ -13,7 +13,8 @@
 // limitations under the License.
 
 use wasefire_applet_api::crypto::ccm::{self as api, Api};
-use wasefire_board_api::crypto::ccm::Api as Bpi;
+use wasefire_board_api::crypto::ccm::Api as _;
+use wasefire_board_api::crypto::Api as _;
 use wasefire_board_api::Api as Board;
 
 use crate::{DispatchSchedulerCall, SchedulerCall};
@@ -34,7 +35,7 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
         let iv = memory.get(*iv, 8)?;
         let clear = memory.get(*clear, *len)?;
         let cipher = memory.get_mut(*cipher, *len + 4)?;
-        let res = match <B as Bpi>::encrypt(&mut scheduler.board, key, iv, clear, cipher) {
+        let res = match scheduler.board.crypto().ccm().encrypt(key, iv, clear, cipher) {
             Ok(()) => 0u32.into(),
             // TODO: The errors could be improved maybe.
             Err(_) => u32::MAX.into(),
@@ -53,7 +54,7 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         let iv = memory.get(*iv, 8)?;
         let cipher = memory.get(*cipher, *len + 4)?;
         let clear = memory.get_mut(*clear, *len)?;
-        let res = match <B as Bpi>::decrypt(&mut scheduler.board, key, iv, cipher, clear) {
+        let res = match scheduler.board.crypto().ccm().decrypt(key, iv, cipher, clear) {
             Ok(()) => 0u32.into(),
             // TODO: The errors could be improved maybe.
             Err(_) => u32::MAX.into(),

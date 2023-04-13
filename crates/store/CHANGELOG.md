@@ -2,6 +2,10 @@
 
 ## 0.1.1
 
+### Minor
+
+- Implement `Storage` for `!` (never type)
+
 ### Patch
 
 - Build `docs.rs` with `std` feature

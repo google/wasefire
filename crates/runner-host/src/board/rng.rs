@@ -15,7 +15,7 @@
 use rand::RngCore;
 use wasefire_board_api as board;
 
-impl board::rng::Api for crate::board::Board {
+impl board::rng::Api for &mut crate::board::Board {
     fn fill_bytes(&mut self, buffer: &mut [u8]) -> Result<(), board::Error> {
         rand::thread_rng().fill_bytes(buffer);
         Ok(())

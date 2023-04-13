@@ -32,14 +32,21 @@ pub trait Api {
     fn set(&mut self, led: usize, on: bool) -> Result<(), Error>;
 }
 
-/// Helper trait for boards without LEDs.
-///
-/// Types implementing this trait will automatically implement [`Api`] with an [`Api::count()`] of
-/// zero. Accordingly, the [`Api::get()`] and [`Api::set()`] functions return a user error on any
-/// input.
-pub trait Unavailable {}
+impl Api for ! {
+    fn count(&mut self) -> usize {
+        unreachable!()
+    }
 
-impl<T: Unavailable> Api for T {
+    fn get(&mut self, _: usize) -> Result<bool, Error> {
+        unreachable!()
+    }
+
+    fn set(&mut self, _: usize, _: bool) -> Result<(), Error> {
+        unreachable!()
+    }
+}
+
+impl Api for () {
     fn count(&mut self) -> usize {
         0
     }

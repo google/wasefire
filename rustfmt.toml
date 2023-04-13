@@ -5,3 +5,4 @@ imports_granularity = "Module"
 normalize_comments = true
 spaces_around_ranges = true
 use_small_heuristics = "Max"
+where_single_line = true

@@ -15,7 +15,7 @@
 use nrf52840_hal::prelude::{OutputPin, StatefulOutputPin};
 use wasefire_board_api as board;
 
-impl board::led::Api for crate::tasks::Board {
+impl board::led::Api for &mut crate::tasks::Board {
     fn count(&mut self) -> usize {
         critical_section::with(|cs| self.0.borrow_ref(cs).leds.len())
     }

@@ -13,7 +13,8 @@
 // limitations under the License.
 
 use wasefire_applet_api::usb::serial::{self as api, Api};
-use wasefire_board_api::usb::serial::{Api as Bpi, Event};
+use wasefire_board_api::usb::serial::{Api as _, Event};
+use wasefire_board_api::usb::Api as _;
 use wasefire_board_api::Api as Board;
 
 use crate::event::usb::serial::Key;
@@ -36,7 +37,7 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let memory = scheduler.applet.memory();
     let results = try {
         let output = memory.get_mut(*ptr, *len)?;
-        let len = match <B as Bpi>::read(&mut scheduler.board, output) {
+        let len = match scheduler.board.usb().serial().read(output) {
             Ok(len) => (len as u32).into(),
             Err(_) => u32::MAX.into(),
         };
@@ -51,7 +52,7 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let memory = scheduler.applet.memory();
     let results = try {
         let input = memory.get(*ptr, *len)?;
-        let len = match <B as Bpi>::write(&mut scheduler.board, input) {
+        let len = match scheduler.board.usb().serial().write(input) {
             Ok(len) => (len as u32).into(),
             Err(_) => u32::MAX.into(),
         };
@@ -72,7 +73,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
             func: *handler_func,
             data: *handler_data,
         })?;
-        <B as Bpi>::enable(&mut scheduler.board, &event).map_err(|_| Trap)?;
+        scheduler.board.usb().serial().enable(&event).map_err(|_| Trap)?;
         api::register::Results {}
     };
     call.reply(results);
@@ -83,7 +84,7 @@ fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let scheduler = call.scheduler();
     let results = try {
         let event = convert_event(*event)?;
-        <B as Bpi>::disable(&mut scheduler.board, &event).map_err(|_| Trap)?;
+        scheduler.board.usb().serial().disable(&event).map_err(|_| Trap)?;
         scheduler.disable_event(Key::from(&event).into())?;
         api::unregister::Results {}
     };
@@ -94,7 +95,7 @@ fn flush<B: Board>(mut call: SchedulerCall<B, api::flush::Sig>) {
     let api::flush::Params {} = call.read();
     let scheduler = call.scheduler();
     let results = try {
-        let res = match <B as Bpi>::flush(&mut scheduler.board) {
+        let res = match scheduler.board.usb().serial().flush() {
             Ok(()) => 0.into(),
             Err(_) => u32::MAX.into(),
         };

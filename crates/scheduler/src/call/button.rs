@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use wasefire_applet_api::button::{self as api, Api};
-use wasefire_board_api::button::Api as Bpi;
+use wasefire_board_api::button::Api as _;
 use wasefire_board_api::Api as Board;
 
 use crate::event::button::Key;
@@ -30,7 +30,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 
 fn count<B: Board>(mut call: SchedulerCall<B, api::count::Sig>) {
     let api::count::Params {} = call.read();
-    let count = <B as Bpi>::count(&mut call.scheduler().board) as u32;
+    let count = call.scheduler().board.button().count() as u32;
     call.reply(Ok(api::count::Results { cnt: count.into() }));
 }
 
@@ -45,7 +45,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
             func: *handler_func,
             data: *handler_data,
         })?;
-        <B as Bpi>::enable(&mut call.scheduler().board, button).map_err(|_| Trap)?;
+        call.scheduler().board.button().enable(button).map_err(|_| Trap)?;
         api::register::Results {}
     };
     call.reply(results);
@@ -55,7 +55,7 @@ fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { button } = call.read();
     let button = *button as usize;
     let results = try {
-        <B as Bpi>::disable(&mut call.scheduler().board, button).map_err(|_| Trap)?;
+        call.scheduler().board.button().disable(button).map_err(|_| Trap)?;
         call.scheduler().disable_event(Key { button }.into())?;
         api::unregister::Results {}
     };

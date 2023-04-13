@@ -133,9 +133,7 @@ mod tests {
     #[test]
     fn mode_check() {
         fn test<M: Mode>(eval: bool, cond: bool, result: MResult<(), M>)
-        where
-            M::Error: core::fmt::Debug + PartialEq,
-        {
+        where M::Error: core::fmt::Debug + PartialEq {
             let mut run = false;
             assert_eq!(
                 M::check(|| {

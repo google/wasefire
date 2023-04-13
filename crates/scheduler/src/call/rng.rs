@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use wasefire_applet_api::rng::{self as api, Api};
-use wasefire_board_api::rng::Api as Bpi;
+use wasefire_board_api::rng::Api as _;
 use wasefire_board_api::Api as Board;
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
@@ -30,7 +30,7 @@ fn fill_bytes<B: Board>(mut call: SchedulerCall<B, api::fill_bytes::Sig>) {
     let memory = scheduler.applet.memory();
     let results = try {
         let output = memory.get_mut(*ptr, *len)?;
-        <B as Bpi>::fill_bytes(&mut scheduler.board, output).map_err(|_| Trap)?;
+        scheduler.board.rng().fill_bytes(output).map_err(|_| Trap)?;
         api::fill_bytes::Results {}
     };
     call.reply(results);

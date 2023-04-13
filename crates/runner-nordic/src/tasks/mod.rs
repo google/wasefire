@@ -31,8 +31,6 @@ impl core::fmt::Debug for Board {
 }
 
 impl board::Api for Board {
-    type Storage = crate::storage::Storage;
-
     fn try_event(&mut self) -> Option<board::Event> {
         critical_section::with(|cs| self.0.borrow_ref_mut(cs).events.pop())
     }
@@ -50,8 +48,39 @@ impl board::Api for Board {
         cortex_m::asm::bkpt();
     }
 
+    type Storage = crate::storage::Storage;
     fn take_storage(&mut self) -> Option<Self::Storage> {
         critical_section::with(|cs| self.0.borrow_ref_mut(cs).storage.take())
+    }
+
+    type Button<'a> = &'a mut Self;
+    fn button(&mut self) -> Self::Button<'_> {
+        self
+    }
+
+    type Crypto<'a> = &'a mut Self;
+    fn crypto(&mut self) -> Self::Crypto<'_> {
+        self
+    }
+
+    type Led<'a> = &'a mut Self;
+    fn led(&mut self) -> Self::Led<'_> {
+        self
+    }
+
+    type Rng<'a> = &'a mut Self;
+    fn rng(&mut self) -> Self::Rng<'_> {
+        self
+    }
+
+    type Timer<'a> = &'a mut Self;
+    fn timer(&mut self) -> Self::Timer<'_> {
+        self
+    }
+
+    type Usb<'a> = &'a mut Self;
+    fn usb(&mut self) -> Self::Usb<'_> {
+        self
     }
 }
 

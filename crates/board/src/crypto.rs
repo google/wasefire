@@ -17,4 +17,15 @@
 pub mod ccm;
 
 /// Cryptography interface.
-pub trait Api: ccm::Api {}
+pub trait Api {
+    type Ccm<'a>: ccm::Api
+    where Self: 'a;
+    fn ccm(&mut self) -> Self::Ccm<'_>;
+}
+
+impl Api for ! {
+    type Ccm<'a> = !;
+    fn ccm(&mut self) -> Self::Ccm<'_> {
+        unreachable!()
+    }
+}

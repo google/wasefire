@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.1.3-git
+## 0.2.0-git
+
+### Major
+
+- Use composition intead of trait inheritance
 
 ### Minor
 

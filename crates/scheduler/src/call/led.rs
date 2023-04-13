@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use wasefire_applet_api::led::{self as api, Api};
-use wasefire_board_api::led::Api as Bpi;
+use wasefire_board_api::led::Api as _;
 use wasefire_board_api::Api as Board;
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
@@ -28,18 +28,17 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 
 fn count<B: Board>(mut call: SchedulerCall<B, api::count::Sig>) {
     let api::count::Params {} = call.read();
-    let count = <B as Bpi>::count(&mut call.scheduler().board) as u32;
+    let count = call.scheduler().board.led().count() as u32;
     call.reply(Ok(api::count::Results { cnt: count.into() }));
 }
 
 fn get<B: Board>(mut call: SchedulerCall<B, api::get::Sig>) {
     let api::get::Params { led } = call.read();
     let results = try {
-        let status =
-            match <B as Bpi>::get(&mut call.scheduler().board, *led as usize).map_err(|_| Trap)? {
-                false => api::Status::Off.into(),
-                true => api::Status::On.into(),
-            };
+        let status = match call.scheduler().board.led().get(*led as usize).map_err(|_| Trap)? {
+            false => api::Status::Off.into(),
+            true => api::Status::On.into(),
+        };
         api::get::Results { status }
     };
     call.reply(results);
@@ -49,7 +48,7 @@ fn set<B: Board>(mut call: SchedulerCall<B, api::set::Sig>) {
     let api::set::Params { led, status } = call.read();
     let results = try {
         let on = matches!(api::Status::try_from(*status)?, api::Status::On);
-        <B as Bpi>::set(&mut call.scheduler().board, *led as usize, on).map_err(|_| Trap)?;
+        call.scheduler().board.led().set(*led as usize, on).map_err(|_| Trap)?;
         api::set::Results {}
     };
     call.reply(results);

@@ -18,7 +18,7 @@ use nrf52840_hal::gpio::{Input, Pin, PullUp};
 use nrf52840_hal::gpiote::{Gpiote, GpioteChannel};
 use wasefire_board_api as board;
 
-impl board::button::Api for crate::tasks::Board {
+impl board::button::Api for &mut crate::tasks::Board {
     fn count(&mut self) -> usize {
         critical_section::with(|cs| self.0.borrow_ref_mut(cs).buttons.len())
     }

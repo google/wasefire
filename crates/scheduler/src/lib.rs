@@ -28,6 +28,7 @@ use core::ops::Range;
 use event::Key;
 use stores::{Applet, EventAction};
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature};
+use wasefire_board_api::timer::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
 use wasefire_interpreter::{
     self as interpreter, Call, Error, InstId, Module, RunAnswer, RunResult, Store, Val,
@@ -186,7 +187,7 @@ impl<B: Board> Scheduler<B> {
             let d = f.descriptor();
             store.link_func("env", d.name, d.params, d.results).unwrap();
         }
-        let timers = vec![None; <B as board::timer::Api>::count(&mut board)];
+        let timers = vec![None; board.timer().count()];
         let store = store::Store::new(board.take_storage().unwrap()).ok().unwrap();
         Self { board, store, host_funcs, applet, timers }
     }

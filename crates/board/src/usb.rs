@@ -30,4 +30,15 @@ impl From<Event> for crate::Event {
 }
 
 /// USB interface.
-pub trait Api: serial::Api {}
+pub trait Api {
+    type Serial<'a>: serial::Api
+    where Self: 'a;
+    fn serial(&mut self) -> Self::Serial<'_>;
+}
+
+impl Api for ! {
+    type Serial<'a> = !;
+    fn serial(&mut self) -> Self::Serial<'_> {
+        unreachable!()
+    }
+}
