@@ -44,6 +44,10 @@ mod stores;
 pub struct Events(VecDeque<board::Event>);
 
 impl Events {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub fn push(&mut self, event: board::Event) {
         const MAX_EVENTS: usize = 10;
         if self.0.contains(&event) {
