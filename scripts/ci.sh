@@ -29,7 +29,7 @@ done
 for crate in $(ls crates); do
   name=${crate#runner-}
   [ $crate = $name ] && continue
-  x cargo xtask runner $name
+  x cargo xtask runner $name --log=trace
   x cargo xtask --release runner $name
 done
 

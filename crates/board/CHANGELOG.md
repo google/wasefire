@@ -12,6 +12,7 @@
 
 ### Patch
 
+- Add missing `defmt` dependency for trace and debug levels
 - Update dependencies
 
 ## 0.1.2
