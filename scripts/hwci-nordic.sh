@@ -19,7 +19,9 @@ set -e
 # This script needs a nordic dev board and runs the continuous integration
 # tests specific to that device.
 
-x cargo xtask applet rust timer_test runner nordic
-x cargo xtask --release applet rust timer_test runner nordic
+for name in rng timer; do
+  x cargo xtask applet rust ${name}_test runner nordic
+  x cargo xtask --release applet rust ${name}_test runner nordic
+done
 
 d "All tests passed"
