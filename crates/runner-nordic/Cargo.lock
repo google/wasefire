@@ -810,6 +810,7 @@ dependencies = [
 name = "wasefire-board-api"
 version = "0.2.0-git"
 dependencies = [
+ "defmt",
  "usb-device",
  "usbd-serial",
  "wasefire-logger",
