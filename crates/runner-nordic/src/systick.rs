@@ -23,9 +23,9 @@ const TICK_TO_MICRO: u32 = 1_000_000u32 / TICK_FREQ;
 
 /// Number of ticks since boot.
 static COUNT: AtomicU32 = AtomicU32::new(0);
+defmt::timestamp!("{=u32:us}", TICK_TO_MICRO.wrapping_mul(COUNT.load(Ordering::SeqCst)));
 
 pub fn init(mut syst: SYST) {
-    defmt::timestamp!("{=u32:us}", TICK_TO_MICRO.wrapping_mul(COUNT.load(Ordering::SeqCst)));
     // The minus one at the end is by definition of reload value. The added 0.5 is to avoid biasing
     // through truncation.
     let reload = (CLOCK_FREQ + TICK_FREQ / 2) / TICK_FREQ - 1;
