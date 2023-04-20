@@ -16,7 +16,7 @@ use wasefire_applet_api::rng::{self as api, Api};
 use wasefire_board_api::rng::Api as _;
 use wasefire_board_api::Api as Board;
 
-use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
+use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
@@ -30,8 +30,11 @@ fn fill_bytes<B: Board>(mut call: SchedulerCall<B, api::fill_bytes::Sig>) {
     let memory = scheduler.applet.memory();
     let results = try {
         let output = memory.get_mut(*ptr, *len)?;
-        scheduler.board.rng().fill_bytes(output).map_err(|_| Trap)?;
-        api::fill_bytes::Results {}
+        let res = match scheduler.board.rng().fill_bytes(output) {
+            Ok(_) => 0,
+            Err(_) => u32::MAX,
+        };
+        api::fill_bytes::Results { res: res.into() }
     };
     call.reply(results);
 }

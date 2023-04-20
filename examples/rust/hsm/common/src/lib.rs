@@ -19,9 +19,6 @@ extern crate alloc;
 use alloc::vec;
 use alloc::vec::Vec;
 
-#[cfg(feature = "api")]
-use wasefire_applet_api as api;
-
 pub type KeyHandle = usize;
 
 #[derive(Debug)]
@@ -55,6 +52,8 @@ pub enum Error {
     BadFormat,
     #[cfg_attr(feature = "std", error("crypto error"))]
     CryptoError,
+    #[cfg_attr(feature = "std", error("rng error"))]
+    RngError,
     #[cfg_attr(feature = "std", error("store error"))]
     StoreError,
     #[cfg_attr(feature = "std", error("usb error"))]
@@ -62,16 +61,23 @@ pub enum Error {
 }
 
 #[cfg(feature = "api")]
-impl From<api::store::Error> for Error {
-    fn from(_: api::store::Error) -> Self {
-        Error::StoreError
+impl From<wasefire::crypto::Error> for Error {
+    fn from(_: wasefire::crypto::Error) -> Self {
+        Error::CryptoError
     }
 }
 
 #[cfg(feature = "api")]
-impl From<api::crypto::Error> for Error {
-    fn from(_: api::crypto::Error) -> Self {
-        Error::CryptoError
+impl From<wasefire::rng::Error> for Error {
+    fn from(_: wasefire::rng::Error) -> Self {
+        Error::RngError
+    }
+}
+
+#[cfg(feature = "api")]
+impl From<wasefire::store::Error> for Error {
+    fn from(_: wasefire::store::Error) -> Self {
+        Error::StoreError
     }
 }
 
@@ -280,8 +286,9 @@ impl Serialize for Error {
             Error::BadHandle => 1,
             Error::BadFormat => 2,
             Error::CryptoError => 3,
-            Error::StoreError => 4,
-            Error::UsbError => 5,
+            Error::RngError => 4,
+            Error::StoreError => 5,
+            Error::UsbError => 6,
         };
         tag.serialize(serializer)
     }
@@ -295,8 +302,9 @@ impl Deserialize for Error {
             1 => Error::BadHandle,
             2 => Error::BadFormat,
             3 => Error::CryptoError,
-            4 => Error::StoreError,
-            5 => Error::UsbError,
+            4 => Error::RngError,
+            5 => Error::StoreError,
+            6 => Error::UsbError,
             _ => return Err(Error::BadFormat),
         })
     }

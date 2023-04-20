@@ -15,6 +15,7 @@
 
 set -ex
 
-cargo check
+cargo check --features=std
+cargo check --target=wasm32-unknown-unknown --features=api
 cargo fmt -- --check
 cargo clippy -- --deny=warnings

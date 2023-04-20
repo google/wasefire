@@ -27,7 +27,12 @@ pub(crate) fn new() -> Item {
 
             /// The length of the slice.
             len: usize,
-        } -> {}
+        } -> {
+            /// Error code: 0 on success, -1 on error
+            ///
+            /// The buffer may be modified on error and should not be used.
+            res: isize
+        }
     }];
     Item::Mod(Mod { docs, name, items })
 }

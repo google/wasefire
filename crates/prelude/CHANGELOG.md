@@ -4,7 +4,8 @@
 
 ### Minor
 
-- Add scheduling::breakpoint
+- Add return code to `rng::fill_bytes()`
+- Add `scheduling::breakpoint()`
 
 ## 0.1.3
 
