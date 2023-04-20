@@ -243,7 +243,10 @@
 
     // The length of the slice.
     len: usize,
-  ): void
+  // Error code: 0 on success, -1 on error
+  //
+  // The buffer may be modified on error and should not be used.
+  ): isize
 // END OF MODULE rng
 
 // START OF MODULE scheduling

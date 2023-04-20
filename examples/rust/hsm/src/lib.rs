@@ -33,7 +33,7 @@ fn process(request: Request) -> Result<Response, Error> {
     match request {
         Request::GenerateKey { key } => {
             let mut secret = [0; 16];
-            rng::fill_bytes(&mut secret);
+            rng::fill_bytes(&mut secret)?;
             store::insert(key, &secret)?;
             Ok(Response::GenerateKey)
         }

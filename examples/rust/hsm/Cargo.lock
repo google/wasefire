@@ -118,7 +118,7 @@ checksum = "4f0807fb6f644c83f3e4ec014fec9858c1c8b26a7db8eb5f0bde5817df9c1df7"
 name = "common"
 version = "0.1.0"
 dependencies = [
- "wasefire-applet-api",
+ "wasefire",
 ]
 
 [[package]]

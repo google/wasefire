@@ -4,8 +4,9 @@
 
 ### Minor
 
+- Support `rng::fill_bytes()` return code
 - Add `Events::is_empty()`
-- Support scheduling::breakpoint
+- Support `scheduling::breakpoint()`
 
 ### Patch
 

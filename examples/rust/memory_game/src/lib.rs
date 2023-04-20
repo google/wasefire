@@ -38,7 +38,7 @@ fn main() {
 
         // Generate a question for this level.
         let mut question = vec![0; level];
-        rng::fill_bytes(&mut question);
+        rng::fill_bytes(&mut question).unwrap();
         for byte in &mut question {
             const BASE32: [u8; 32] = *b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
             *byte = BASE32[(*byte & 0x1f) as usize];

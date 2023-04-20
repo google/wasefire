@@ -31,7 +31,7 @@ fn main() {
             _ => continue,
         };
         let mut buf = vec![0; len as usize];
-        rng::fill_bytes(&mut buf);
+        rng::fill_bytes(&mut buf).unwrap();
         usb::serial::write_all(format!("{buf:02x?}\r\n").as_bytes()).unwrap();
     }
 }

@@ -7,8 +7,8 @@ edition = "2021"
 
 [dependencies]
 thiserror = { version = "1.0.40", optional = true }
-wasefire-applet-api = { path = "../../../../crates/api", optional = true }
+wasefire = { path = "../../../../crates/prelude", optional = true }
 
 [features]
-api = ["dep:wasefire-applet-api"]
+api = ["dep:wasefire"]
 std = ["dep:thiserror"]

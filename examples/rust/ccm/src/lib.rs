@@ -32,10 +32,10 @@ use wasefire::usb::serial::{read_byte, write_all};
 fn main() {
     loop {
         let mut key = [0; 16];
-        fill_bytes(&mut key);
+        fill_bytes(&mut key).unwrap();
         write_hex("key", &key);
         let mut iv = [0; 8];
-        fill_bytes(&mut iv);
+        fill_bytes(&mut iv).unwrap();
         write_hex("iv", &iv);
 
         let len = match read_byte().unwrap() {
@@ -44,7 +44,7 @@ fn main() {
             _ => continue,
         } as usize;
         let mut clear = vec![0; len];
-        fill_bytes(&mut clear);
+        fill_bytes(&mut clear).unwrap();
         write_hex("clear", &clear);
 
         let cipher = ccm::encrypt(&key, &iv, &clear).unwrap();

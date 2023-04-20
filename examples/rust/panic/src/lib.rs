@@ -27,7 +27,7 @@ use wasefire::rng::fill_bytes;
 
 fn flip() -> bool {
     let mut x = 0u8;
-    fill_bytes(slice::from_mut(&mut x));
+    fill_bytes(slice::from_mut(&mut x)).unwrap();
     x & 1 == 1
 }
 
