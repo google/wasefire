@@ -566,7 +566,9 @@ fn ensure_command(cmd: &[&str]) -> Result<()> {
     execute_command(&mut ensure_bloat)
 }
 
-/// Copy a file if newer than the destination and returns whether the copy took place.
+/// Copies a file if newer than the destination.
+///
+/// Returns whether the copy took place.
 fn copy_if_newer(src: &str, dst: &str) -> Result<bool> {
     let newer = std::fs::metadata(dst)?.modified()? < std::fs::metadata(src)?.modified()?;
     if newer {
