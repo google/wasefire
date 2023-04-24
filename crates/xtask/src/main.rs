@@ -269,8 +269,10 @@ impl AppletOptions {
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(dir);
         execute_command(&mut cargo)?;
-        std::fs::copy(wasm, "target/applet.wasm")?;
-        self.execute_wasm(main)
+        if copy_if_newer(&wasm, "target/applet.wasm")? {
+            self.execute_wasm(main)?;
+        }
+        Ok(())
     }
 
     fn execute_assemblyscript(&self, main: &MainOptions) -> Result<()> {
@@ -562,6 +564,15 @@ fn ensure_command(cmd: &[&str]) -> Result<()> {
     ensure_bloat.args(cmd);
     ensure_bloat.env("WASEFIRE_WRAPPER_EXEC", "n");
     execute_command(&mut ensure_bloat)
+}
+
+/// Copy a file if newer than the destination and returns whether the copy took place.
+fn copy_if_newer(src: &str, dst: &str) -> Result<bool> {
+    let newer = std::fs::metadata(dst)?.modified()? < std::fs::metadata(src)?.modified()?;
+    if newer {
+        std::fs::copy(src, dst)?;
+    }
+    Ok(newer)
 }
 
 fn main() -> Result<()> {
