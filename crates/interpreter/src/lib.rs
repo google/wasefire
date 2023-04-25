@@ -89,6 +89,20 @@
 //! }
 //! # }
 //! ```
+//!
+//! # Atomic support
+//!
+//! This crate uses atomic operations and relies on the `portable-atomic` crate to support
+//! architectures without atomic operations. Depending on your architecture, you may need one of the
+//! following:
+//!
+//! - Enable the `portable-atomic/critical-section` feature (possibly adding a direct dependency on
+//! `portable-atomic`).
+//!
+//! - Set the `--cfg=portable_atomic_unsafe_assume_single_core` rustc flag.
+//!
+//! You can find more information in the `portable-atomic`
+//! [documentation](https://docs.rs/portable-atomic/latest/portable_atomic).
 
 #![cfg_attr(not(feature = "debug"), no_std)]
 #![cfg_attr(not(feature = "toctou"), feature(slice_split_at_unchecked))]
