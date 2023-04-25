@@ -17,7 +17,10 @@ set -ex
 
 cargo check
 cargo check --target=thumbv7em-none-eabi
-cargo check --target=riscv32imc-unknown-none-elf
+cargo check --target=riscv32imc-unknown-none-elf \
+  --features=portable-atomic/critical-section
+RUSTFLAGS=--cfg=portable_atomic_unsafe_assume_single_core \
+  cargo check --target=riscv32imc-unknown-none-elf
 cargo fmt -- --check
 cargo clippy -- --deny=warnings
 [ -e ../../third_party/WebAssembly/spec/.git ] || git submodule update --init

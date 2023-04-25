@@ -4,7 +4,7 @@
 
 ### Minor
 
-- Use `atomic-polyfill` to support RV32IMC
+- Use `portable-atomic` to support RV32IMC
 
 ### Patch
 
