@@ -13,6 +13,7 @@
 // limitations under the License.
 
 mod ccm;
+mod gcm;
 
 use wasefire_applet_api::crypto::Api;
 use wasefire_board_api::Api as Board;
@@ -22,5 +23,6 @@ use crate::DispatchSchedulerCall;
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Ccm(call) => ccm::process(call),
+        Api::Gcm(call) => gcm::process(call),
     }
 }

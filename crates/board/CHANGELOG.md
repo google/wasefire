@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add AES-256-GCM support
 - Add breakpoint in Api
 
 ### Patch
