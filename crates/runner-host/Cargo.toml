@@ -8,6 +8,7 @@ edition = "2021"
 
 [dependencies]
 aes = "0.8.2"
+aes-gcm = { version = "0.10.1", features = ["std"] }
 anyhow = "1.0.70"
 ccm = { version = "0.5.0", features = ["std"] }
 env_logger = "0.10.0"

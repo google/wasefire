@@ -15,6 +15,7 @@
 //! Provides API for cryptography.
 
 pub mod ccm;
+pub mod gcm;
 
 /// Errors returned by cryptographic operations.
 pub use wasefire_applet_api::crypto::Error;

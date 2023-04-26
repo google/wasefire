@@ -15,17 +15,27 @@
 //! Cryptography interface.
 
 pub mod ccm;
+pub mod gcm;
 
 /// Cryptography interface.
 pub trait Api {
     type Ccm<'a>: ccm::Api
     where Self: 'a;
     fn ccm(&mut self) -> Self::Ccm<'_>;
+
+    type Gcm<'a>: gcm::Api
+    where Self: 'a;
+    fn gcm(&mut self) -> Self::Gcm<'_>;
 }
 
 impl Api for ! {
     type Ccm<'a> = !;
     fn ccm(&mut self) -> Self::Ccm<'_> {
+        unreachable!()
+    }
+
+    type Gcm<'a> = !;
+    fn gcm(&mut self) -> Self::Gcm<'_> {
         unreachable!()
     }
 }
