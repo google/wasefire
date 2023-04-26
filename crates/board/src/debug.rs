@@ -16,6 +16,7 @@
 
 /// Debugging and testing interface.
 pub trait Api {
+    /// Exits the platform with a success/failure result.
     fn exit(&mut self, success: bool) -> !;
 }
 
