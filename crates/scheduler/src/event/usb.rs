@@ -14,8 +14,6 @@
 
 pub mod serial;
 
-use alloc::vec::Vec;
-
 use wasefire_board_api::usb::Event;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -37,8 +35,8 @@ impl<'a> From<&'a Event> for Key {
     }
 }
 
-pub fn process(event: Event, params: &mut Vec<u32>) {
+pub fn process(event: Event) {
     match event {
-        Event::Serial(event) => serial::process(event, params),
+        Event::Serial(_) => serial::process(),
     }
 }

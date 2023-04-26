@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2022 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
 
 set -ex
 
-cargo check --target=thumbv7em-none-eabi
-cargo check --target=thumbv7em-none-eabi --features=defmt
-cargo check --features=log
+cargo check
 cargo fmt -- --check
 cargo clippy -- --deny=warnings

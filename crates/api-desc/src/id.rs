@@ -44,7 +44,7 @@ impl Name {
 
     fn from_bytes(name: &[u8]) -> Option<Self> {
         let len = name.len();
-        if (len < 1 || 5 < len || name[0].is_ascii_digit())
+        if (!(1 ..= 5).contains(&len) || name[0].is_ascii_digit())
             || !name.iter().all(|&x| x.is_ascii_alphanumeric() || x == b'_')
         {
             return None;

@@ -10,6 +10,7 @@
 
 ### Patch
 
+- Fix clippy warnings
 - Update dependencies
 - Test that link names are unique
 
