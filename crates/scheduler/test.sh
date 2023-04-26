@@ -19,3 +19,5 @@ cargo check --features=std
 cargo check --features=std,log
 cargo check --target=thumbv7em-none-eabi
 cargo check --target=thumbv7em-none-eabi --features=defmt
+cargo fmt -- --check
+cargo clippy -- --deny=warnings

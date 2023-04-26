@@ -14,5 +14,6 @@ lazy_static = "1.4.0"
 log = "0.4.17"
 probe-rs = "0.18.0"
 rustc-demangle = "0.1.22"
+sha2 = "0.10.6"
 stack-sizes = "0.5.0"
 strum = { version = "0.24.1", features = ["derive"] }

@@ -27,6 +27,7 @@ use lazy_static::lazy_static;
 use probe_rs::config::TargetSelector;
 use probe_rs::{flashing, Permissions, Session};
 use rustc_demangle::demangle;
+use sha2::{Digest, Sha256};
 use strum::{Display, EnumString};
 
 #[derive(Parser)]
@@ -269,7 +270,7 @@ impl AppletOptions {
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(dir);
         execute_command(&mut cargo)?;
-        if copy_if_newer(&wasm, "target/applet.wasm")? {
+        if copy_if_changed(&wasm, "target/applet.wasm")? {
             self.execute_wasm(main)?;
         }
         Ok(())
@@ -566,15 +567,18 @@ fn ensure_command(cmd: &[&str]) -> Result<()> {
     execute_command(&mut ensure_bloat)
 }
 
-/// Copies a file if newer than the destination.
+/// Copies a file if its destination .hash changed.
 ///
 /// Returns whether the copy took place.
-fn copy_if_newer(src: &str, dst: &str) -> Result<bool> {
-    let newer = std::fs::metadata(dst)?.modified()? < std::fs::metadata(src)?.modified()?;
-    if newer {
+fn copy_if_changed(src: &str, dst: &str) -> Result<bool> {
+    let dst_file = format!("{dst}.hash");
+    let src_hash = Sha256::digest(std::fs::read(src)?);
+    let changed = !Path::new(&dst_file).exists() || std::fs::read(&dst_file)? != *src_hash;
+    if changed {
         std::fs::copy(src, dst)?;
+        std::fs::write(&dst_file, src_hash)?;
     }
-    Ok(newer)
+    Ok(changed)
 }
 
 fn main() -> Result<()> {

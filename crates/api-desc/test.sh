@@ -17,3 +17,5 @@ set -ex
 
 cargo check
 cargo test
+cargo fmt -- --check
+cargo clippy -- --deny=warnings
