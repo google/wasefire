@@ -12,26 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Tests that the random number generator is working properly.
+//! Debugging and testing interface.
 
-#![no_std]
-wasefire::applet!();
-
-fn main() {
-    test_non_constant();
-    debug::exit(true);
+/// Debugging and testing interface.
+pub trait Api {
+    /// Exits the platform with a success/failure result.
+    fn exit(&mut self, success: bool) -> !;
 }
 
-fn test_non_constant() {
-    debug!("test_non_constant(): This should generate 5 different buffers.");
-    let mut buffers = [[0; 8]; 5];
-    for buffer in buffers.iter_mut() {
-        rng::fill_bytes(buffer).unwrap();
-        debug!("- {buffer:02x?}");
-    }
-    for i in 1 .. buffers.len() {
-        for j in 0 .. i {
-            debug::assert(buffers[j] != buffers[i]);
-        }
+impl Api for ! {
+    fn exit(&mut self, _: bool) -> ! {
+        unreachable!()
     }
 }

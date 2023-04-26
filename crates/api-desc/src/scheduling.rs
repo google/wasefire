@@ -31,10 +31,6 @@ pub(crate) fn new() -> Item {
                 count: usize,
             }
         },
-        item! {
-            /// Executes a breakpoint.
-            fn breakpoint "sb" {} -> {}
-        },
     ];
     Item::Mod(Mod { docs, name, items })
 }

@@ -9,7 +9,7 @@
 ### Minor
 
 - Add AES-256-GCM support
-- Add breakpoint in Api
+- Add `debug::exit()`
 
 ### Patch
 

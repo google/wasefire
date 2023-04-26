@@ -21,7 +21,6 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::WaitForCallback(call) => wait_for_callback(call),
         Api::NumPendingCallbacks(call) => num_pending_callbacks(call),
-        Api::Breakpoint(call) => breakpoint(call),
     }
 }
 
@@ -36,10 +35,4 @@ fn num_pending_callbacks<B: Board>(mut call: SchedulerCall<B, api::num_pending_c
     let api::num_pending_callbacks::Params {} = call.read();
     let count = (call.applet().len() as u32).into();
     call.reply(Ok(api::num_pending_callbacks::Results { count }));
-}
-
-fn breakpoint<B: Board>(mut call: SchedulerCall<B, api::breakpoint::Sig>) {
-    let api::breakpoint::Params {} = call.read();
-    call.scheduler().board.breakpoint();
-    call.reply(Ok(api::breakpoint::Results {}));
 }

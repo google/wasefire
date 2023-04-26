@@ -53,3 +53,28 @@ macro_rules! debug {
         }
     };
 }
+
+/// Exits the platform indicating success of failure.
+pub fn exit(success: bool) -> ! {
+    let params = api::exit::Params { code: if success { 0 } else { 1 } };
+    unsafe { api::exit(params) };
+    unreachable!()
+}
+
+/// Asserts that a condition holds and exits with an error otherwise.
+#[track_caller]
+pub fn assert(condition: bool) {
+    if !condition {
+        debug!("Assertion failed at {}", core::panic::Location::caller());
+        exit(false);
+    }
+}
+
+/// Asserts that an equality holds and exits with an error otherwise.
+#[track_caller]
+pub fn assert_eq<T: ?Sized + Eq + core::fmt::Debug>(x: &T, y: &T) {
+    if x != y {
+        debug!("{x:?} != {y:?} at {}", core::panic::Location::caller());
+        exit(false);
+    }
+}

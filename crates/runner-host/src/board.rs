@@ -14,6 +14,7 @@
 
 pub mod button;
 mod crypto;
+mod debug;
 mod led;
 mod rng;
 pub mod timer;
@@ -52,10 +53,6 @@ impl Api for Board {
         self.receiver.blocking_recv().unwrap()
     }
 
-    fn breakpoint(&mut self) {
-        unsafe { std::intrinsics::breakpoint() };
-    }
-
     type Storage = FileStorage;
     fn take_storage(&mut self) -> Option<Self::Storage> {
         self.state.lock().unwrap().storage.take()
@@ -68,6 +65,11 @@ impl Api for Board {
 
     type Crypto<'a> = &'a mut Self;
     fn crypto(&mut self) -> Self::Crypto<'_> {
+        self
+    }
+
+    type Debug<'a> = &'a mut Self;
+    fn debug(&mut self) -> Self::Debug<'_> {
         self
     }
 

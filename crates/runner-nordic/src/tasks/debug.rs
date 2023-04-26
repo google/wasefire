@@ -12,26 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Tests that the random number generator is working properly.
+use wasefire_board_api as board;
 
-#![no_std]
-wasefire::applet!();
+use crate::tasks::Board;
 
-fn main() {
-    test_non_constant();
-    debug::exit(true);
-}
-
-fn test_non_constant() {
-    debug!("test_non_constant(): This should generate 5 different buffers.");
-    let mut buffers = [[0; 8]; 5];
-    for buffer in buffers.iter_mut() {
-        rng::fill_bytes(buffer).unwrap();
-        debug!("- {buffer:02x?}");
-    }
-    for i in 1 .. buffers.len() {
-        for j in 0 .. i {
-            debug::assert(buffers[j] != buffers[i]);
+impl board::debug::Api for &mut Board {
+    fn exit(&mut self, success: bool) -> ! {
+        if success {
+            loop {
+                cortex_m::asm::bkpt();
+            }
+        } else {
+            #[cfg(feature = "debug")]
+            panic_probe::hard_fault();
+            #[cfg(feature = "release")]
+            panic!();
         }
     }
 }

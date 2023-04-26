@@ -19,19 +19,31 @@ pub(crate) fn new() -> Item {
         /// Debugging operations.
     };
     let name = "debug".into();
-    let items = vec![item! {
-        /// Prints a message to the debug output.
-        ///
-        /// If debug output is disabled then this is a no-op.
-        fn println "dp" {
-            /// The message to print.
+    let items = vec![
+        item! {
+            /// Prints a message to the debug output.
             ///
-            /// Traps if the message is not valid UTF-8.
-            ptr: *const u8,
+            /// If debug output is disabled then this is a no-op.
+            fn println "dp" {
+                /// The message to print.
+                ///
+                /// Traps if the message is not valid UTF-8.
+                ptr: *const u8,
 
-            /// The length of the message in bytes.
-            len: usize,
-        } -> {}
-    }];
+                /// The length of the message in bytes.
+                len: usize,
+            } -> {}
+        },
+        item! {
+            /// Exits the platform with an error code.
+            ///
+            /// This is used by test applets to terminate the platform and propagate the test
+            /// result.
+            fn exit "de" {
+                /// 0 for success, 1 for failure
+                code: usize,
+            } -> {}
+        },
+    ];
     Item::Mod(Mod { docs, name, items })
 }

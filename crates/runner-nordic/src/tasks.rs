@@ -20,6 +20,7 @@ use crate::Board;
 pub mod button;
 pub mod clock;
 mod crypto;
+mod debug;
 mod led;
 mod rng;
 pub mod usb;
@@ -44,10 +45,6 @@ impl board::Api for Board {
         }
     }
 
-    fn breakpoint(&mut self) {
-        cortex_m::asm::bkpt();
-    }
-
     type Storage = crate::storage::Storage;
     fn take_storage(&mut self) -> Option<Self::Storage> {
         critical_section::with(|cs| self.0.borrow_ref_mut(cs).storage.take())
@@ -60,6 +57,11 @@ impl board::Api for Board {
 
     type Crypto<'a> = &'a mut Self;
     fn crypto(&mut self) -> Self::Crypto<'_> {
+        self
+    }
+
+    type Debug<'a> = &'a mut Self;
+    fn debug(&mut self) -> Self::Debug<'_> {
         self
     }
 

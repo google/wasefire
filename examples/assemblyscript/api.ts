@@ -258,6 +258,16 @@
     // The length of the message in bytes.
     len: usize,
   ): void
+
+  // Exits the platform with an error code.
+  //
+  // This is used by test applets to terminate the platform and propagate the test
+  // result.
+  @external("env", "de")
+  export declare function debug_exit(
+    // 0 for success, 1 for failure
+    code: usize,
+  ): void
 // END OF MODULE debug
 
 // START OF MODULE led
@@ -325,11 +335,6 @@
   export declare function scheduling_num_pending_callbacks(
   // How many callbacks are pending.
   ): usize
-
-  // Executes a breakpoint.
-  @external("env", "sb")
-  export declare function scheduling_breakpoint(
-  ): void
 // END OF MODULE scheduling
 
 // START OF MODULE store

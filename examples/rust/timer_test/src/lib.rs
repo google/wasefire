@@ -27,8 +27,7 @@ fn main() {
     test_oneshot_cancel();
     test_periodic_cancel();
     test_cancel_callback();
-    debug!("End of tests.");
-    scheduling::breakpoint();
+    debug::exit(true);
 }
 
 fn test_periodic(explicit_stop: bool) {
@@ -51,7 +50,7 @@ fn test_periodic(explicit_stop: bool) {
         debug!("+ stop timer");
         timer.stop();
     }
-    assert_eq!(i.get(), 5);
+    debug::assert_eq(&i.get(), &5);
 }
 
 fn test_oneshot() {
@@ -67,7 +66,7 @@ fn test_oneshot() {
     debug!("+ start timer");
     timer.start_ms(clock::Oneshot, 1000);
     scheduling::wait_until(|| done.get());
-    assert!(done.get());
+    debug::assert(done.get());
 }
 
 fn test_oneshot_cancel() {
@@ -83,7 +82,7 @@ fn test_oneshot_cancel() {
     clock::sleep_ms(1000);
     debug!("+ stop timer");
     timer.stop();
-    assert!(!done.get());
+    debug::assert(!done.get());
 }
 
 fn test_periodic_cancel() {
@@ -102,7 +101,7 @@ fn test_periodic_cancel() {
     clock::sleep_ms(3500);
     debug!("+ stop timer");
     timer.stop();
-    assert_eq!(i.get(), 3);
+    debug::assert_eq(&i.get(), &3);
 }
 
 fn test_cancel_callback() {
@@ -116,6 +115,6 @@ fn test_cancel_callback() {
     while scheduling::num_pending_callbacks() == 0 {}
     debug!("- callback scheduled");
     drop(first);
-    assert_eq!(scheduling::num_pending_callbacks(), 0);
-    assert!(!has_run.get());
+    debug::assert_eq(&scheduling::num_pending_callbacks(), &0);
+    debug::assert(!has_run.get());
 }
