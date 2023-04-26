@@ -26,6 +26,7 @@ for lang in $(ls examples); do
     x cargo xtask --release applet $lang $name
   done
 done
+
 for crate in $(ls crates); do
   name=${crate#runner-}
   [ $crate = $name ] && continue
@@ -36,6 +37,13 @@ done
 for dir in $(find . -name test.sh -printf '%h\n' | sort); do
   i "Run tests in $dir"
   ( cd $dir && ./test.sh )
+done
+
+for name in $(find examples/rust -maxdepth 1 -name '*_test' -printf '%P\n' \
+  | sort)
+do
+  x cargo xtask applet rust $name runner host
+  x cargo xtask --release applet rust $name runner host
 done
 
 i "Build the book"

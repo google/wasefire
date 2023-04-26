@@ -46,8 +46,3 @@ pub fn wait_indefinitely() -> ! {
         wait_for_callback();
     }
 }
-
-/// Executes a breakpoint.
-pub fn breakpoint() {
-    unsafe { api::breakpoint() };
-}

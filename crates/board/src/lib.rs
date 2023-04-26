@@ -26,6 +26,7 @@ use wasefire_store as store;
 
 pub mod button;
 pub mod crypto;
+pub mod debug;
 pub mod led;
 pub mod rng;
 pub mod timer;
@@ -49,9 +50,6 @@ pub trait Api {
     /// available, this function blocks and enters a power-saving state until an event triggers.
     fn wait_event(&mut self) -> Event;
 
-    /// Executes a breakpoint.
-    fn breakpoint(&mut self);
-
     /// Storage type.
     type Storage: store::Storage;
 
@@ -67,6 +65,10 @@ pub trait Api {
     type Crypto<'a>: crypto::Api
     where Self: 'a;
     fn crypto(&mut self) -> Self::Crypto<'_>;
+
+    type Debug<'a>: debug::Api
+    where Self: 'a;
+    fn debug(&mut self) -> Self::Debug<'_>;
 
     type Led<'a>: led::Api
     where Self: 'a;
@@ -132,10 +134,6 @@ mod tests {
                 todo!()
             }
 
-            fn breakpoint(&mut self) {
-                todo!()
-            }
-
             type Storage = !;
             fn take_storage(&mut self) -> Option<Self::Storage> {
                 todo!()
@@ -148,6 +146,11 @@ mod tests {
 
             type Crypto<'a> = !;
             fn crypto(&mut self) -> Self::Crypto<'_> {
+                todo!()
+            }
+
+            type Debug<'a> = !;
+            fn debug(&mut self) -> Self::Debug<'_> {
                 todo!()
             }
 
