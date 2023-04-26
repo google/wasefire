@@ -23,4 +23,9 @@ impl board::crypto::Api for &mut Board {
     fn ccm(&mut self) -> Self::Ccm<'_> {
         self
     }
+
+    type Gcm<'a> = ! where Self: 'a;
+    fn gcm(&mut self) -> Self::Gcm<'_> {
+        unreachable!()
+    }
 }

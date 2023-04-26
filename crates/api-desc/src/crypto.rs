@@ -15,6 +15,7 @@
 use crate::*;
 
 mod ccm;
+mod gcm;
 
 pub(crate) fn new() -> Item {
     let docs = docs! {
@@ -33,6 +34,7 @@ pub(crate) fn new() -> Item {
             }
         },
         ccm::new(),
+        gcm::new(),
     ];
     Item::Mod(Mod { docs, name, items })
 }

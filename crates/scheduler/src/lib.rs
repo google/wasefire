@@ -343,6 +343,10 @@ impl<'a> Memory<'a> {
         <[u8]>::get(unsafe { self.data() }, range).ok_or(Trap)
     }
 
+    pub fn get_array<const LEN: usize>(&self, ptr: u32) -> Result<&[u8; LEN], Trap> {
+        self.get(ptr, LEN as u32).map(|x| x.try_into().unwrap())
+    }
+
     pub fn get_mut(&self, ptr: u32, len: u32) -> Result<&mut [u8], Trap> {
         let ptr = ptr as usize;
         let len = len as usize;
@@ -351,6 +355,10 @@ impl<'a> Memory<'a> {
         let data = unsafe { self.data() };
         let data = unsafe { core::slice::from_raw_parts_mut(data.as_ptr() as *mut u8, data.len()) };
         <[u8]>::get_mut(data, range).ok_or(Trap)
+    }
+
+    pub fn get_array_mut<const LEN: usize>(&self, ptr: u32) -> Result<&mut [u8; LEN], Trap> {
+        self.get_mut(ptr, LEN as u32).map(|x| x.try_into().unwrap())
     }
 
     pub fn alloc(&mut self, size: u32, align: u32) -> u32 {
