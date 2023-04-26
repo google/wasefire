@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_applet_api::crypto::ccm::{self as api, Api};
-use wasefire_board_api::crypto::ccm::Api as _;
+use wasefire_applet_api::crypto::gcm::{self as api, Api};
+use wasefire_board_api::crypto::gcm::Api as _;
 use wasefire_board_api::crypto::Api as _;
 use wasefire_board_api::Api as Board;
 
@@ -27,15 +27,17 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 }
 
 fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
-    let api::encrypt::Params { key, iv, len, clear, cipher } = call.read();
+    let api::encrypt::Params { key, iv, aad, aad_len, length, clear, cipher, tag } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
-        let key = memory.get(*key, 16)?;
-        let iv = memory.get(*iv, 8)?;
-        let clear = memory.get(*clear, *len)?;
-        let cipher = memory.get_mut(*cipher, *len + 4)?;
-        let res = match scheduler.board.crypto().ccm().encrypt(key, iv, clear, cipher) {
+        let key = memory.get_array::<32>(*key)?;
+        let iv = memory.get_array::<12>(*iv)?;
+        let aad = memory.get(*aad, *aad_len)?;
+        let clear = memory.get(*clear, *length)?;
+        let cipher = memory.get_mut(*cipher, *length)?;
+        let tag = memory.get_array_mut::<16>(*tag)?;
+        let res = match scheduler.board.crypto().gcm().encrypt(key, iv, aad, clear, cipher, tag) {
             Ok(()) => 0u32.into(),
             Err(_) => u32::MAX.into(),
         };
@@ -45,15 +47,17 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
 }
 
 fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
-    let api::decrypt::Params { key, iv, len, cipher, clear } = call.read();
+    let api::decrypt::Params { key, iv, aad, aad_len, tag, length, cipher, clear } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
-        let key = memory.get(*key, 16)?;
-        let iv = memory.get(*iv, 8)?;
-        let cipher = memory.get(*cipher, *len + 4)?;
-        let clear = memory.get_mut(*clear, *len)?;
-        let res = match scheduler.board.crypto().ccm().decrypt(key, iv, cipher, clear) {
+        let key = memory.get_array::<32>(*key)?;
+        let iv = memory.get_array::<12>(*iv)?;
+        let aad = memory.get(*aad, *aad_len)?;
+        let tag = memory.get_array::<16>(*tag)?;
+        let cipher = memory.get(*cipher, *length)?;
+        let clear = memory.get_mut(*clear, *length)?;
+        let res = match scheduler.board.crypto().gcm().decrypt(key, iv, aad, tag, cipher, clear) {
             Ok(()) => 0u32.into(),
             Err(_) => u32::MAX.into(),
         };

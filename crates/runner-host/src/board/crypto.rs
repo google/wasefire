@@ -17,11 +17,18 @@ use wasefire_board_api as board;
 use crate::board::Board;
 
 mod ccm;
+mod gcm;
 
 impl board::crypto::Api for &mut Board {
     type Ccm<'a> = &'a mut Board
     where Self: 'a;
     fn ccm(&mut self) -> Self::Ccm<'_> {
+        self
+    }
+
+    type Gcm<'a> = &'a mut Board
+    where Self: 'a;
+    fn gcm(&mut self) -> Self::Gcm<'_> {
         self
     }
 }

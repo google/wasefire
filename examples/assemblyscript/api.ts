@@ -178,6 +178,69 @@
     // otherwise.
     ): isize
   // END OF MODULE crypto_ccm
+
+  // START OF MODULE crypto_gcm
+  // AES-256-GCM.
+    // Encrypts and authenticates a clear text with associated data given a key and IV.
+    @external("env", "cge")
+    export declare function crypto_gcm_encrypt(
+      // The 32 bytes key.
+      key: usize,
+
+      // The 12 bytes IV.
+      iv: usize,
+
+      // The additional authenticated data.
+      aad: usize,
+
+      // The length of the additional authenticated data.
+      aad_len: usize,
+
+      // The length of the clear (and cipher) text.
+      length: usize,
+
+      // The clear text.
+      clear: usize,
+
+      // The cipher text.
+      cipher: usize,
+
+      // The 16 bytes authentication tag.
+      tag: usize,
+    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
+    // otherwise.
+    ): isize
+
+    // Decrypts and authenticates a cipher text with associated data given a key and IV.
+    @external("env", "cgd")
+    export declare function crypto_gcm_decrypt(
+      // The 32 bytes key.
+      key: usize,
+
+      // The 12 bytes IV.
+      iv: usize,
+
+      // The additional authenticated data.
+      aad: usize,
+
+      // The length of the additional authenticated data.
+      aad_len: usize,
+
+      // The 16 bytes authentication tag.
+      tag: usize,
+
+      // The length of the cipher (and clear) text.
+      length: usize,
+
+      // The cipher text.
+      cipher: usize,
+
+      // The clear text.
+      clear: usize,
+    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
+    // otherwise.
+    ): isize
+  // END OF MODULE crypto_gcm
 // END OF MODULE crypto
 
 // START OF MODULE debug
