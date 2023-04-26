@@ -37,7 +37,6 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
         let cipher = memory.get_mut(*cipher, *len + 4)?;
         let res = match scheduler.board.crypto().ccm().encrypt(key, iv, clear, cipher) {
             Ok(()) => 0u32.into(),
-            // TODO: The errors could be improved maybe.
             Err(_) => u32::MAX.into(),
         };
         api::encrypt::Results { res }
@@ -56,7 +55,6 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         let clear = memory.get_mut(*clear, *len)?;
         let res = match scheduler.board.crypto().ccm().decrypt(key, iv, cipher, clear) {
             Ok(()) => 0u32.into(),
-            // TODO: The errors could be improved maybe.
             Err(_) => u32::MAX.into(),
         };
         api::decrypt::Results { res }
