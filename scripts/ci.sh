@@ -42,8 +42,8 @@ done
 for name in $(find examples/rust -maxdepth 1 -name '*_test' -printf '%P\n' \
   | sort)
 do
-  x cargo xtask applet rust $name runner host
-  x cargo xtask --release applet rust $name runner host
+  x cargo xtask applet rust $name runner host --no-default-features
+  x cargo xtask --release applet rust $name runner host --no-default-features
 done
 
 i "Build the book"
