@@ -72,7 +72,7 @@ pub fn assert(condition: bool) {
 
 /// Asserts that an equality holds and exits with an error otherwise.
 #[track_caller]
-pub fn assert_eq<T: Eq + core::fmt::Debug>(x: &T, y: &T) {
+pub fn assert_eq<T: ?Sized + Eq + core::fmt::Debug>(x: &T, y: &T) {
     if x != y {
         debug!("{x:?} != {y:?} at {}", core::panic::Location::caller());
         exit(false);

@@ -20,8 +20,7 @@ wasefire::applet!();
 fn main() {
     test_encrypt();
     test_decrypt();
-    debug!("End of tests.");
-    scheduling::breakpoint();
+    debug::exit(true);
 }
 
 fn test_encrypt() {
@@ -29,8 +28,8 @@ fn test_encrypt() {
     for &Vector { key, iv, aad, clear, cipher, tag } in TEST_VECTORS {
         debug!("- {} bytes", clear.len());
         let result = crypto::gcm::encrypt(key, iv, aad, clear).unwrap();
-        assert_eq!(result.text, cipher);
-        assert_eq!(&result.tag, tag);
+        debug::assert_eq(&result.text[..], cipher);
+        debug::assert_eq(&result.tag, tag);
     }
 }
 
@@ -40,7 +39,7 @@ fn test_decrypt() {
         debug!("- {} bytes", clear.len());
         let cipher = crypto::gcm::Cipher { text: cipher.to_vec(), tag: *tag };
         let result = crypto::gcm::decrypt(key, iv, aad, &cipher).unwrap();
-        assert_eq!(result, clear);
+        debug::assert_eq(&result[..], clear);
     }
 }
 
