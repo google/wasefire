@@ -15,6 +15,7 @@
 
 set -ex
 
+touch ../../target/applet.wasm
 cargo check --features=std
 cargo check --features=std,log
 cargo check --target=thumbv7em-none-eabi
