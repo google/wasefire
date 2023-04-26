@@ -18,14 +18,12 @@ mod debug;
 mod led;
 mod rng;
 pub mod timer;
-mod usb;
+#[cfg(feature = "usb")]
+pub mod usb;
 
 use std::sync::{Arc, Mutex};
 
 use tokio::sync::mpsc::{Receiver, Sender};
-use usb_device::prelude::UsbDevice;
-use usbip_device::UsbIpBus;
-use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Api, Event};
 use wasefire_store::FileStorage;
 
@@ -36,8 +34,8 @@ pub struct State {
     pub button: bool, // whether interrupts are enabled
     pub led: bool,
     pub timers: Timers,
-    pub serial: Serial<'static, UsbIpBus>,
-    pub usb_dev: UsbDevice<'static, UsbIpBus>,
+    #[cfg(feature = "usb")]
+    pub usb: usb::Usb,
     pub storage: Option<FileStorage>,
 }
 
@@ -90,14 +88,16 @@ impl Api for Board {
         self
     }
 
+    #[cfg(feature = "usb")]
     type Usb<'a> = &'a mut Self;
+    #[cfg(feature = "usb")]
     fn usb(&mut self) -> Self::Usb<'_> {
         self
     }
-}
-
-impl State {
-    pub fn poll(&mut self) -> bool {
-        self.usb_dev.poll(&mut [self.serial.port()])
+    #[cfg(not(feature = "usb"))]
+    type Usb<'a> = !;
+    #[cfg(not(feature = "usb"))]
+    fn usb(&mut self) -> Self::Usb<'_> {
+        unreachable!()
     }
 }
