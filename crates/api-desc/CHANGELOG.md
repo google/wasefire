@@ -6,7 +6,7 @@
 
 - Add AES-256-GCM in `crypto::gcm`
 - Add return code to `rng::fill_bytes()`
-- Add `scheduling::breakpoint()`
+- Add `debug::exit()`
 
 ### Patch
 
