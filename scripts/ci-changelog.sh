@@ -24,8 +24,8 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   $(sed -n 's/^publish = //p;T;q' $dir/Cargo.toml) || continue
   [ -e $dir/CHANGELOG.md ] || e "CHANGELOG.md for $dir is missing"
   ( cd $dir
-    ref=$(git log --first-parent -n1 --pretty=format:%H -- CHANGELOG.md)
-    [ -n "$ref" ] || e "CHANGELOG.md for $dir is not tracked"
+    ref=$(git log -n1 --pretty=format:%H origin/main.. -- CHANGELOG.md)
+    [ -n "$ref" ] || ref=origin/main
     git diff --quiet $ref.. -- $(cargo package --list) \
       || e "CHANGELOG.md for $dir is not up-to-date"
     ver="$(sed -n '3s/^## //p' CHANGELOG.md)"
