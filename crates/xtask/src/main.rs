@@ -125,6 +125,14 @@ struct RunnerOptions {
     /// Runner name.
     name: String,
 
+    /// Cargo no-default-features.
+    #[clap(long)]
+    no_default_features: bool,
+
+    /// Cargo features.
+    #[clap(long)]
+    features: Vec<String>,
+
     /// Optimization level (0, 1, 2, 3, s, z).
     #[clap(long, short = 'O', default_value_t)]
     opt_level: OptLevel,
@@ -397,6 +405,12 @@ impl RunnerOptions {
             cargo.arg("--features=release");
         } else {
             cargo.arg("--features=debug");
+        }
+        if self.no_default_features {
+            cargo.arg("--no-default-features");
+        }
+        for features in &self.features {
+            cargo.arg(format!("--features={features}"));
         }
         if let Some(log) = &self.log {
             cargo.env(self.log_env(), log);

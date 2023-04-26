@@ -14,9 +14,9 @@ ccm = { version = "0.5.0", features = ["std"] }
 env_logger = "0.10.0"
 rand = "0.8.5"
 tokio = { version = "1.27.0", features = ["full"] }
-usb-device = "0.2.9"
-usbd-serial = "0.1.1"
-usbip-device = "0.1.5"
+usb-device = { version = "0.2.9", optional = true }
+usbd-serial = { version = "0.1.1", optional = true }
+usbip-device = { version = "0.1.5", optional = true }
 wasefire-applet-api = { path = "../api", features = ["host"] }
 wasefire-board-api = { path = "../board", features = ["std"] }
 wasefire-interpreter = { path = "../interpreter" }
@@ -26,4 +26,6 @@ wasefire-store = { path = "../store", features = ["std"] }
 
 [features]
 debug = ["wasefire-logger/log", "wasefire-scheduler/log"]
+default = ["usb"]
 release = []
+usb = ["dep:usb-device", "dep:usbd-serial", "dep:usbip-device"]

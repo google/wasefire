@@ -18,6 +18,7 @@ set -ex
 touch ../../target/applet.wasm
 cargo check --features=debug
 cargo check --features=release
+cargo check --no-default-features --features=debug
 cargo fmt -- --check
 cargo clippy --features=debug -- --deny=warnings
 cargo test --features=debug
