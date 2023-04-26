@@ -11,6 +11,7 @@
 
 ### Patch
 
+- Fix clippy warnings
 - Update dependencies
 
 ## 0.1.1

@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloc::vec::Vec;
-
 use wasefire_board_api::timer::Event;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -33,4 +31,4 @@ impl<'a> From<&'a Event> for Key {
     }
 }
 
-pub fn process(_event: Event, _params: &mut Vec<u32>) {}
+pub fn process() {}

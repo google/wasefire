@@ -90,8 +90,8 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event) {
     let mut params = vec![*func, *data];
     match event {
         Event::Button(event) => button::process(event, &mut params),
-        Event::Timer(event) => timer::process(event, &mut params),
-        Event::Usb(event) => usb::process(event, &mut params),
+        Event::Timer(_) => timer::process(),
+        Event::Usb(event) => usb::process(event),
     }
     let name = match params.len() - 2 {
         0 => "cb0",

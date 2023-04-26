@@ -138,7 +138,7 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
         self.call().inst()
     }
 
-    pub fn memory<'b>(&'b mut self) -> Memory<'b> {
+    pub fn memory(&mut self) -> Memory {
         Memory::new(self.store())
     }
 
@@ -164,7 +164,7 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
         self.applet().store_mut()
     }
 
-    fn call<'b>(&'b mut self) -> Call<'b, 'static> {
+    fn call(&mut self) -> Call<'_, 'static> {
         self.store().last_call().unwrap()
     }
 }
@@ -235,12 +235,15 @@ impl<B: Board> Scheduler<B> {
     fn process_applet(&mut self) {
         let call = match self.applet.store_mut().last_call() {
             Some(x) => x,
-            None => return drop(self.process_event()),
+            None => {
+                self.process_event();
+                return;
+            }
         };
         let api_id = self.host_funcs[call.index()].id();
         let args = call.args();
         debug_assert_eq!(args.len(), api_id.descriptor().params);
-        let args = args.into_iter().map(|x| x.unwrap_i32()).collect();
+        let args = args.iter().map(|x| x.unwrap_i32()).collect();
         let erased = SchedulerCallT { scheduler: self, args };
         let call = api_id.merge(erased);
         debug!("Calling {}", Debug2Format(&call.id()));
@@ -300,6 +303,7 @@ impl<'a> Memory<'a> {
         Self { store, lifetime: PhantomData, borrow: RefCell::new(Vec::new()) }
     }
 
+    #[allow(clippy::mut_from_ref)]
     unsafe fn data(&self) -> &mut [u8] {
         unsafe { &mut *self.store }.last_call().unwrap().mem()
     }
@@ -316,7 +320,10 @@ impl<'a> Memory<'a> {
     fn borrow_impl(&self, y: (bool, Range<usize>)) -> Result<(), Trap> {
         let mut borrow = self.borrow.borrow_mut();
         let i = match borrow.iter().position(|x| y.1.start < x.1.end) {
-            None => return Ok(borrow.push(y)),
+            None => {
+                borrow.push(y);
+                return Ok(());
+            }
             Some(x) => x,
         };
         let j = match borrow[i ..].iter().position(|x| y.1.end <= x.1.start) {
@@ -324,7 +331,8 @@ impl<'a> Memory<'a> {
             Some(x) => i + x,
         };
         if i == j {
-            return Ok(borrow.insert(i, y));
+            borrow.insert(i, y);
+            return Ok(());
         }
         if y.0 || borrow[i .. j].iter().any(|x| x.0) {
             return Err(Trap);
@@ -364,7 +372,7 @@ impl<'a> Memory<'a> {
     pub fn alloc(&mut self, size: u32, align: u32) -> u32 {
         self.borrow.borrow_mut().clear();
         let store = unsafe { &mut *self.store };
-        let args = vec![Val::I32(size as u32), Val::I32(align as u32)];
+        let args = vec![Val::I32(size), Val::I32(align)];
         let inst = store.last_call().unwrap().inst();
         let result: Result<Val, Error> = try {
             match store.invoke(inst, "alloc", args)? {
