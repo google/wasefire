@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0-git
+
+### Major
+
+- Change `Scheduler::run()` to take the module as argument (fix #132)
+
 ## 0.1.2
 
 ### Minor

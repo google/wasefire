@@ -149,7 +149,8 @@ fn main() -> ! {
         unsafe { NVIC::unmask(interrupt) };
     }
     logger::debug!("Runner is initialized.");
-    Scheduler::run(Board(state))
+    const WASM: &[u8] = include_bytes!("../../../target/applet.wasm");
+    Scheduler::run(Board(state), WASM)
 }
 
 macro_rules! interrupts {
