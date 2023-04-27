@@ -44,14 +44,37 @@ published_crates() {
 diff <(listed_crates) <(published_crates) \
   || e 'Listed and published crates do not match (see diff above)'
 
-i "Remove all -git suffixes and commit"
+i "Remove all -git suffixes"
 find . \( -name Cargo.toml -or -name Cargo.lock -or -name CHANGELOG.md \) \
   -exec sed -i 's/-git//' {} \;
-git commit -aqm'Release all crates'
+if [ -n "$(git status -s)" ]; then
+  i "Commit release"
+  git commit -aqm'Release all crates'
+fi
+
+get_string() {
+  sed -n 's/^'"$1"' = "\(.*\)"$/\1/p;T;q' Cargo.toml
+}
+
+get_latest() {
+  name="$(get_string name)"
+  cargo search "$name" | sed -n '1s/^'"$name"' = "\([0-9.]*\)".*$/\1/p'
+}
 
 for crate in "${TOPOLOGICAL_ORDER[@]}"; do
-  i "Publish $crate"
   ( cd crates/$crate
-    eval "$(sed -n 's/^cargo check/cargo publish/p;T;q' test.sh)"
+    current="$(get_string version)"
+    latest="$(get_latest)"
+    if [ "$current" = "$latest" ]; then
+      i "Skipping $crate already published at $latest"
+      exit
+    fi
+    i "Publish $crate from $latest to $current"
+    # TODO(#132): Remove this corner case.
+    if [ $crate = scheduler ]; then
+      cargo publish --no-verify
+    else
+      eval "$(sed -n 's/^cargo check/cargo publish/p;T;q' test.sh)"
+    fi
   )
 done

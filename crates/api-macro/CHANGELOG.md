@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0-git
+## 0.2.0
 
 ### Major
 
