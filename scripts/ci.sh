@@ -39,12 +39,7 @@ for dir in $(find . -name test.sh -printf '%h\n' | sort); do
   ( cd $dir && ./test.sh )
 done
 
-for name in $(find examples/rust -maxdepth 1 -name '*_test' -printf '%P\n' \
-  | sort)
-do
-  x cargo xtask applet rust $name runner host --no-default-features
-  x cargo xtask --release applet rust $name runner host --no-default-features
-done
+./scripts/hwci.sh host --no-default-features
 
 i "Build the book"
 WASEFIRE_WRAPPER_EXEC=n ./scripts/wrapper.sh mdbook
@@ -60,5 +55,3 @@ git diff --exit-code || e "TOML files are not well formatted"
 
 x ./scripts/sync.sh
 git diff --exit-code || e "Generated content is not in sync"
-
-d "All tests passed"
