@@ -16,12 +16,18 @@
 set -e
 . scripts/log.sh
 
-# This script needs a nordic dev board and runs the continuous integration
-# tests specific to that device.
+# This script runs the test applets and thus needs an appropriate board. It
+# takes the name of the runner as argument as well an any runner flags.
 
-for name in rng timer; do
-  x cargo xtask applet rust ${name}_test runner nordic
-  x cargo xtask --release applet rust ${name}_test runner nordic
+[ $# -gt 0 ] || e "Usage: $0 <runner name> [<runner flags>..]"
+
+list() {
+  find examples/rust -maxdepth 1 -name '*_test' -printf '%P\n' | sort
+}
+
+for name in $(list); do
+  x cargo xtask applet rust $name runner "$@"
 done
-
-d "All tests passed"
+for name in $(list); do
+  x cargo xtask --release applet rust $name runner "$@"
+done
