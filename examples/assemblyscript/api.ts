@@ -122,6 +122,12 @@
 
   // START OF MODULE crypto_ccm
   // AES-CCM according to Bluetooth.
+    // Whether AES-CCM is supported.
+    @external("env", "ccs")
+    export declare function crypto_ccm_is_supported(
+    // 1 if supported, 0 otherwise.
+    ): usize
+
     // Encrypts a clear text given a key and IV.
     @external("env", "cce")
     export declare function crypto_ccm_encrypt(
@@ -181,6 +187,12 @@
 
   // START OF MODULE crypto_gcm
   // AES-256-GCM.
+    // Whether AES-256-GCM is supported.
+    @external("env", "cgs")
+    export declare function crypto_gcm_is_supported(
+    // 1 if supported, 0 otherwise.
+    ): usize
+
     // Encrypts and authenticates a clear text with associated data given a key and IV.
     @external("env", "cge")
     export declare function crypto_gcm_encrypt(
