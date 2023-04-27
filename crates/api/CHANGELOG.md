@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.1.3-git
+## 0.2.0-git
+
+### Major
+
+- Update `wasefire-applet-api-macro` version
 
 ### Patch
 
@@ -11,7 +15,7 @@
 
 ### Minor
 
-- Update wasefire-applet-api-macro version
+- Update `wasefire-applet-api-macro` version
 - Add test feature panicking on applet API calls
 
 ## 0.1.1
