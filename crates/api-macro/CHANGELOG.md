@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.1.2-git
+## 0.2.0-git
+
+### Major
+
+- Update `wasefire-applet-api-desc` version
 
 ### Patch
 
@@ -10,7 +14,7 @@
 
 ### Minor
 
-- Update wasefire-applet-api-desc version
+- Update `wasefire-applet-api-desc` version
 
 ## 0.1.0
 

@@ -317,7 +317,7 @@ checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.1.3-git"
+version = "0.2.0-git"
 dependencies = [
  "sealed",
  "wasefire-applet-api-macro",
@@ -337,7 +337,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.1.2-git"
+version = "0.2.0-git"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
