@@ -17,7 +17,7 @@ set -e
 . scripts/log.sh
 
 # This script runs the test applets and thus needs an appropriate board. It
-# takes the name of the runner as argument as well an any runner flags.
+# takes the name of the runner as argument and any runner flags, if any.
 
 [ $# -gt 0 ] || e "Usage: $0 <runner name> [<runner flags>..]"
 
