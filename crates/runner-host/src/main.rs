@@ -67,5 +67,7 @@ async fn main() -> Result<()> {
         }
     });
     println!("Running.");
-    Handle::current().spawn_blocking(|| Scheduler::run(board::Board { receiver, state })).await?
+    let board = board::Board { receiver, state };
+    const WASM: &[u8] = include_bytes!("../../../target/applet.wasm");
+    Handle::current().spawn_blocking(|| Scheduler::run(board, WASM)).await?
 }

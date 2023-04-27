@@ -170,10 +170,10 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
 }
 
 impl<B: Board> Scheduler<B> {
-    pub fn run(board: B) -> ! {
+    pub fn run(board: B, wasm: &'static [u8]) -> ! {
         let mut scheduler = Scheduler::new(board);
         debug!("Loading applet.");
-        scheduler.load(include_bytes!("../../../target/applet.wasm"));
+        scheduler.load(wasm);
         loop {
             scheduler.flush_events();
             scheduler.process_applet();
