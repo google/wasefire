@@ -14,7 +14,7 @@
 
 //! Random number generator interface.
 
-use crate::Error;
+use crate::{Error, Unimplemented, Unsupported};
 
 /// Random number generator interface.
 pub trait Api {
@@ -22,8 +22,14 @@ pub trait Api {
     fn fill_bytes(&mut self, buffer: &mut [u8]) -> Result<(), Error>;
 }
 
-impl Api for ! {
+impl Api for Unimplemented {
     fn fill_bytes(&mut self, _: &mut [u8]) -> Result<(), Error> {
         unreachable!()
+    }
+}
+
+impl Api for Unsupported {
+    fn fill_bytes(&mut self, _: &mut [u8]) -> Result<(), Error> {
+        Err(Error::User)
     }
 }

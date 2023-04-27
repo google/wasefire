@@ -16,7 +16,7 @@ defmt = { version = "0.3.4", optional = true }
 usb-device = "0.2.9"
 usbd-serial = "0.1.1"
 wasefire-logger = { version = "0.1.2-git", path = "../logger" }
-wasefire-store = { version = "0.1.1", path = "../store" }
+wasefire-store = { version = "0.2.0-git", path = "../store" }
 
 [features]
 defmt = ["dep:defmt", "wasefire-logger/defmt"]

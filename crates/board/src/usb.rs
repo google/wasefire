@@ -14,6 +14,8 @@
 
 //! USB interface.
 
+use crate::{Unimplemented, Unsupported};
+
 pub mod serial;
 
 /// USB event.
@@ -36,9 +38,16 @@ pub trait Api {
     fn serial(&mut self) -> Self::Serial<'_>;
 }
 
-impl Api for ! {
-    type Serial<'a> = !;
+impl Api for Unimplemented {
+    type Serial<'a> = Unimplemented;
     fn serial(&mut self) -> Self::Serial<'_> {
         unreachable!()
+    }
+}
+
+impl Api for Unsupported {
+    type Serial<'a> = Unsupported;
+    fn serial(&mut self) -> Self::Serial<'_> {
+        Unsupported
     }
 }

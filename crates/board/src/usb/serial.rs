@@ -19,7 +19,7 @@ use usb_device::UsbError;
 use usbd_serial::SerialPort;
 use wasefire_logger as logger;
 
-use crate::Error;
+use crate::{Error, Unimplemented, Unsupported};
 
 /// USB serial event.
 #[derive(Debug, PartialEq, Eq)]
@@ -59,7 +59,7 @@ pub trait Api {
     fn disable(&mut self, event: &Event) -> Result<(), Error>;
 }
 
-impl Api for ! {
+impl Api for Unimplemented {
     fn read(&mut self, _: &mut [u8]) -> Result<usize, Error> {
         unreachable!()
     }
@@ -78,6 +78,28 @@ impl Api for ! {
 
     fn disable(&mut self, _: &Event) -> Result<(), Error> {
         unreachable!()
+    }
+}
+
+impl Api for Unsupported {
+    fn read(&mut self, _: &mut [u8]) -> Result<usize, Error> {
+        Err(Error::User)
+    }
+
+    fn write(&mut self, _: &[u8]) -> Result<usize, Error> {
+        Err(Error::User)
+    }
+
+    fn flush(&mut self) -> Result<(), Error> {
+        Err(Error::User)
+    }
+
+    fn enable(&mut self, _: &Event) -> Result<(), Error> {
+        Err(Error::User)
+    }
+
+    fn disable(&mut self, _: &Event) -> Result<(), Error> {
+        Err(Error::User)
     }
 }
 

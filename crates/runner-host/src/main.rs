@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #![feature(core_intrinsics)]
-#![feature(never_type)]
 #![feature(try_blocks)]
 
 use std::io::BufRead;

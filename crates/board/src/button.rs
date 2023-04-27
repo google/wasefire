@@ -17,7 +17,7 @@
 //! A button is an input interface with 2 states: pressed and released. Buttons must support
 //! triggering events when changing state. Events may be enabled or disabled per button.
 
-use crate::Error;
+use crate::{Error, Unimplemented, Unsupported};
 
 /// Button event.
 #[derive(Debug, PartialEq, Eq)]
@@ -49,7 +49,7 @@ pub trait Api {
     fn disable(&mut self, button: usize) -> Result<(), Error>;
 }
 
-impl Api for ! {
+impl Api for Unimplemented {
     fn count(&mut self) -> usize {
         unreachable!()
     }
@@ -63,7 +63,7 @@ impl Api for ! {
     }
 }
 
-impl Api for () {
+impl Api for Unsupported {
     fn count(&mut self) -> usize {
         0
     }
