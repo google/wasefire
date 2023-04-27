@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `is_supported` to `crypto` modules
 - Add AES-256-GCM in `crypto::gcm`
 - Add return code to `rng::fill_bytes()`
 - Add `debug::exit()`

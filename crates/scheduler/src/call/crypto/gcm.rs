@@ -21,9 +21,16 @@ use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
+        Api::IsSupported(call) => is_supported(call),
         Api::Encrypt(call) => encrypt(call),
         Api::Decrypt(call) => decrypt(call),
     }
+}
+
+fn is_supported<B: Board>(mut call: SchedulerCall<B, api::is_supported::Sig>) {
+    let api::is_supported::Params {} = call.read();
+    let supported = call.scheduler().board.crypto().gcm().is_supported() as u32;
+    call.reply(Ok(api::is_supported::Results { supported: supported.into() }))
 }
 
 fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {

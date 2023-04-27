@@ -18,6 +18,9 @@ use crate::Error;
 
 /// AES-256-GCM interface.
 pub trait Api {
+    /// Whether AES-256-GCM is supported.
+    fn is_supported(&mut self) -> bool;
+
     /// Encrypts and authenticates a clear text with associated data given a key and IV.
     ///
     /// The clear- and cipher-texts must have the same length.
@@ -36,6 +39,10 @@ pub trait Api {
 }
 
 impl Api for ! {
+    fn is_supported(&mut self) -> bool {
+        unreachable!()
+    }
+
     fn encrypt(
         &mut self, _: &[u8; 32], _: &[u8; 12], _: &[u8], _: &[u8], _: &mut [u8], _: &mut [u8; 16],
     ) -> Result<(), Error> {
@@ -46,5 +53,23 @@ impl Api for ! {
         &mut self, _: &[u8; 32], _: &[u8; 12], _: &[u8], _: &[u8; 16], _: &[u8], _: &mut [u8],
     ) -> Result<(), Error> {
         unreachable!()
+    }
+}
+
+impl Api for () {
+    fn is_supported(&mut self) -> bool {
+        false
+    }
+
+    fn encrypt(
+        &mut self, _: &[u8; 32], _: &[u8; 12], _: &[u8], _: &[u8], _: &mut [u8], _: &mut [u8; 16],
+    ) -> Result<(), Error> {
+        Err(Error::User)
+    }
+
+    fn decrypt(
+        &mut self, _: &[u8; 32], _: &[u8; 12], _: &[u8], _: &[u8; 16], _: &[u8], _: &mut [u8],
+    ) -> Result<(), Error> {
+        Err(Error::User)
     }
 }

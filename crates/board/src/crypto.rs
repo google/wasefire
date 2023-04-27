@@ -39,3 +39,11 @@ impl Api for ! {
         unreachable!()
     }
 }
+
+impl Api for () {
+    type Ccm<'a> = ();
+    fn ccm(&mut self) -> Self::Ccm<'_> {}
+
+    type Gcm<'a> = ();
+    fn gcm(&mut self) -> Self::Gcm<'_> {}
+}

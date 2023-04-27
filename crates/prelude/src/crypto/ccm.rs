@@ -21,6 +21,12 @@ use wasefire_applet_api::crypto::ccm as api;
 
 use super::Error;
 
+/// Whether AES-CCM is supported.
+pub fn is_supported() -> bool {
+    let api::is_supported::Results { supported } = unsafe { api::is_supported() };
+    supported != 0
+}
+
 /// Returns the ciphertext given a cleartext, a key, and a nonce.
 pub fn encrypt(key: &[u8; 16], nonce: &[u8; 8], clear: &[u8]) -> Result<Vec<u8>, Error> {
     let len = clear.len();

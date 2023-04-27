@@ -21,6 +21,14 @@ pub(crate) fn new() -> Item {
     let name = "gcm".into();
     let items = vec![
         item! {
+            /// Whether AES-256-GCM is supported.
+            fn is_supported "cgs" {
+            } -> {
+                /// 1 if supported, 0 otherwise.
+                supported: usize,
+            }
+        },
+        item! {
             /// Encrypts and authenticates a clear text with associated data given a key and IV.
             fn encrypt "cge" {
                 /// The 32 bytes key.
