@@ -21,15 +21,8 @@ jobs:
       - uses: actions/cache@v3
         if: github.event_name != 'schedule'
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            .root/
-            target/
-          key: ${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ hashFiles('rust-toolchain.toml') }}
+          path: .root/
+          key: ${{ hashFiles('rust-toolchain.toml', 'scripts/wrapper.sh') }}
       - run: sudo apt-get update
       - run: ./scripts/setup.sh
       - run: ./scripts/ci.sh
