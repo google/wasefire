@@ -16,7 +16,7 @@
 //!
 //! A LED is an output interface with 2 states: on and off.
 
-use crate::Error;
+use crate::{Error, Unimplemented, Unsupported};
 
 /// LED interface.
 pub trait Api {
@@ -32,7 +32,7 @@ pub trait Api {
     fn set(&mut self, led: usize, on: bool) -> Result<(), Error>;
 }
 
-impl Api for ! {
+impl Api for Unimplemented {
     fn count(&mut self) -> usize {
         unreachable!()
     }
@@ -46,7 +46,7 @@ impl Api for ! {
     }
 }
 
-impl Api for () {
+impl Api for Unsupported {
     fn count(&mut self) -> usize {
         0
     }

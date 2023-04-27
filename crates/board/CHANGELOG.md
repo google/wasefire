@@ -4,10 +4,8 @@
 
 ### Major
 
+- Add `Unimplemented` and `Unsupported` interface implementations
 - Use composition intead of trait inheritance
-
-### Minor
-
 - Add `is_supported` to crypto APIs
 - Add AES-256-GCM support
 - Add `debug::exit()`

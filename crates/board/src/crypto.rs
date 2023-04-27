@@ -14,6 +14,8 @@
 
 //! Cryptography interface.
 
+use crate::{Unimplemented, Unsupported};
+
 pub mod ccm;
 pub mod gcm;
 
@@ -28,22 +30,26 @@ pub trait Api {
     fn gcm(&mut self) -> Self::Gcm<'_>;
 }
 
-impl Api for ! {
-    type Ccm<'a> = !;
+impl Api for Unimplemented {
+    type Ccm<'a> = Unimplemented;
     fn ccm(&mut self) -> Self::Ccm<'_> {
         unreachable!()
     }
 
-    type Gcm<'a> = !;
+    type Gcm<'a> = Unimplemented;
     fn gcm(&mut self) -> Self::Gcm<'_> {
         unreachable!()
     }
 }
 
-impl Api for () {
-    type Ccm<'a> = ();
-    fn ccm(&mut self) -> Self::Ccm<'_> {}
+impl Api for Unsupported {
+    type Ccm<'a> = Unsupported;
+    fn ccm(&mut self) -> Self::Ccm<'_> {
+        Unsupported
+    }
 
-    type Gcm<'a> = ();
-    fn gcm(&mut self) -> Self::Gcm<'_> {}
+    type Gcm<'a> = Unsupported;
+    fn gcm(&mut self) -> Self::Gcm<'_> {
+        Unsupported
+    }
 }

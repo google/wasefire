@@ -14,14 +14,22 @@
 
 //! Debugging and testing interface.
 
+use crate::{Unimplemented, Unsupported};
+
 /// Debugging and testing interface.
 pub trait Api {
     /// Exits the platform with a success/failure result.
     fn exit(&mut self, success: bool) -> !;
 }
 
-impl Api for ! {
+impl Api for Unimplemented {
     fn exit(&mut self, _: bool) -> ! {
         unreachable!()
+    }
+}
+
+impl Api for Unsupported {
+    fn exit(&mut self, _: bool) -> ! {
+        panic!()
     }
 }

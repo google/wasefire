@@ -18,17 +18,19 @@
 //! support triggering [events][Event].
 
 #![no_std]
-#![feature(never_type)]
+
+extern crate alloc;
 
 use core::fmt::Debug;
 
-use wasefire_store as store;
+use wasefire_store::Storage;
 
 pub mod button;
 pub mod crypto;
 pub mod debug;
 pub mod led;
 pub mod rng;
+pub mod storage;
 pub mod timer;
 pub mod usb;
 
@@ -51,7 +53,7 @@ pub trait Api {
     fn wait_event(&mut self) -> Event;
 
     /// Storage type.
-    type Storage: store::Storage;
+    type Storage: Storage;
 
     /// Takes the storage from the board.
     ///
@@ -118,14 +120,25 @@ pub enum Error {
     World,
 }
 
+/// Unimplemented interface.
+///
+/// This is similar to the never type (`!`) and can only be produced by panicking, for example using
+/// the `unimplemented!()` or `todo!()` macros.
+pub enum Unimplemented {}
+
+/// Unsupported interface.
+///
+/// This is similar to the unit type (`()`) and can always be produced.
+pub struct Unsupported;
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn empty_impl() {
-        struct Empty;
-        impl Api for Empty {
+    fn unimplemented() {
+        struct Test;
+        impl Api for Test {
             fn try_event(&mut self) -> Option<Event> {
                 todo!()
             }
@@ -134,44 +147,98 @@ mod tests {
                 todo!()
             }
 
-            type Storage = !;
+            type Storage = Unimplemented;
             fn take_storage(&mut self) -> Option<Self::Storage> {
                 todo!()
             }
 
-            type Button<'a> = ();
+            type Button<'a> = Unimplemented;
             fn button(&mut self) -> Self::Button<'_> {
-                ()
+                todo!()
             }
 
-            type Crypto<'a> = !;
+            type Crypto<'a> = Unimplemented;
             fn crypto(&mut self) -> Self::Crypto<'_> {
                 todo!()
             }
 
-            type Debug<'a> = !;
+            type Debug<'a> = Unimplemented;
             fn debug(&mut self) -> Self::Debug<'_> {
                 todo!()
             }
 
-            type Led<'a> = ();
+            type Led<'a> = Unimplemented;
             fn led(&mut self) -> Self::Led<'_> {
-                ()
+                todo!()
             }
 
-            type Rng<'a> = !;
+            type Rng<'a> = Unimplemented;
             fn rng(&mut self) -> Self::Rng<'_> {
                 todo!()
             }
 
-            type Timer<'a> = ();
+            type Timer<'a> = Unimplemented;
             fn timer(&mut self) -> Self::Timer<'_> {
-                ()
+                todo!()
             }
 
-            type Usb<'a> = !;
+            type Usb<'a> = Unimplemented;
             fn usb(&mut self) -> Self::Usb<'_> {
                 todo!()
+            }
+        }
+    }
+
+    #[test]
+    fn unsupported() {
+        struct Test;
+        impl Api for Test {
+            fn try_event(&mut self) -> Option<Event> {
+                todo!()
+            }
+
+            fn wait_event(&mut self) -> Event {
+                todo!()
+            }
+
+            type Storage = Unsupported;
+            fn take_storage(&mut self) -> Option<Self::Storage> {
+                None
+            }
+
+            type Button<'a> = Unsupported;
+            fn button(&mut self) -> Self::Button<'_> {
+                Unsupported
+            }
+
+            type Crypto<'a> = Unsupported;
+            fn crypto(&mut self) -> Self::Crypto<'_> {
+                Unsupported
+            }
+
+            type Debug<'a> = Unsupported;
+            fn debug(&mut self) -> Self::Debug<'_> {
+                Unsupported
+            }
+
+            type Led<'a> = Unsupported;
+            fn led(&mut self) -> Self::Led<'_> {
+                Unsupported
+            }
+
+            type Rng<'a> = Unsupported;
+            fn rng(&mut self) -> Self::Rng<'_> {
+                Unsupported
+            }
+
+            type Timer<'a> = Unsupported;
+            fn timer(&mut self) -> Self::Timer<'_> {
+                Unsupported
+            }
+
+            type Usb<'a> = Unsupported;
+            fn usb(&mut self) -> Self::Usb<'_> {
+                Unsupported
             }
         }
     }

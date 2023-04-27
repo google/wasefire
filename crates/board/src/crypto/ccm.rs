@@ -14,7 +14,7 @@
 
 //! AES-CCM according to Bluetooth.
 
-use crate::Error;
+use crate::{Error, Unimplemented, Unsupported};
 
 /// AES-CCM interface (according to Bluetooth).
 pub trait Api {
@@ -38,7 +38,7 @@ pub trait Api {
     ) -> Result<(), Error>;
 }
 
-impl Api for ! {
+impl Api for Unimplemented {
     fn is_supported(&mut self) -> bool {
         unreachable!()
     }
@@ -52,7 +52,7 @@ impl Api for ! {
     }
 }
 
-impl Api for () {
+impl Api for Unsupported {
     fn is_supported(&mut self) -> bool {
         false
     }

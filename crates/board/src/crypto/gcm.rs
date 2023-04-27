@@ -14,7 +14,7 @@
 
 //! AES-256-GCM.
 
-use crate::Error;
+use crate::{Error, Unimplemented, Unsupported};
 
 /// AES-256-GCM interface.
 pub trait Api {
@@ -38,7 +38,7 @@ pub trait Api {
     ) -> Result<(), Error>;
 }
 
-impl Api for ! {
+impl Api for Unimplemented {
     fn is_supported(&mut self) -> bool {
         unreachable!()
     }
@@ -56,7 +56,7 @@ impl Api for ! {
     }
 }
 
-impl Api for () {
+impl Api for Unsupported {
     fn is_supported(&mut self) -> bool {
         false
     }

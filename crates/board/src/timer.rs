@@ -16,7 +16,7 @@
 //!
 //! A timer triggers an event after a given amount of time (possibly periodically).
 
-use crate::Error;
+use crate::{Error, Unimplemented, Unsupported};
 
 /// Timer event.
 #[derive(Debug, PartialEq, Eq)]
@@ -47,7 +47,7 @@ pub trait Api {
     fn disarm(&mut self, timer: usize) -> Result<(), Error>;
 }
 
-impl Api for ! {
+impl Api for Unimplemented {
     fn count(&mut self) -> usize {
         unreachable!()
     }
@@ -61,7 +61,7 @@ impl Api for ! {
     }
 }
 
-impl Api for () {
+impl Api for Unsupported {
     fn count(&mut self) -> usize {
         0
     }

@@ -95,9 +95,9 @@ impl Api for Board {
         self
     }
     #[cfg(not(feature = "usb"))]
-    type Usb<'a> = !;
+    type Usb<'a> = wasefire_board_api::Unsupported;
     #[cfg(not(feature = "usb"))]
     fn usb(&mut self) -> Self::Usb<'_> {
-        unreachable!()
+        wasefire_board_api::Unsupported
     }
 }

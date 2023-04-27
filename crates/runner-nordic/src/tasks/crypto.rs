@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use board::Unsupported;
 use wasefire_board_api as board;
 
 use crate::tasks::Board;
@@ -24,6 +25,8 @@ impl board::crypto::Api for &mut Board {
         self
     }
 
-    type Gcm<'a> = () where Self: 'a;
-    fn gcm(&mut self) -> Self::Gcm<'_> {}
+    type Gcm<'a> = Unsupported where Self: 'a;
+    fn gcm(&mut self) -> Self::Gcm<'_> {
+        Unsupported
+    }
 }
