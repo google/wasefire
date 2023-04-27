@@ -52,6 +52,6 @@ git commit -aqm'Release all crates'
 for crate in "${TOPOLOGICAL_ORDER[@]}"; do
   i "Publish $crate"
   ( cd crates/$crate
-    eval "$(sed -n 's/^cargo check/cargo publish --dry-run/p;T;q' test.sh)"
+    eval "$(sed -n 's/^cargo check/cargo publish/p;T;q' test.sh)"
   )
 done
