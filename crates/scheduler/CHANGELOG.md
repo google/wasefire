@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `is_supported()` support in crypto
 - Add AES-256-GCM support
 - Support `rng::fill_bytes()` return code
 - Add `Events::is_empty()`

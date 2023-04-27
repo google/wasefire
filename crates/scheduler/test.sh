@@ -15,7 +15,10 @@
 
 set -ex
 
-touch ../../target/applet.wasm
+if [ ! -e ../../target/applet.wasm ]; then
+  mkdir -p ../../target
+  touch ../../target/applet.wasm
+fi
 cargo check --features=std
 cargo check --features=std,log
 cargo check --target=thumbv7em-none-eabi

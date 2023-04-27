@@ -21,6 +21,14 @@ pub(crate) fn new() -> Item {
     let name = "ccm".into();
     let items = vec![
         item! {
+            /// Whether AES-CCM is supported.
+            fn is_supported "ccs" {
+            } -> {
+                /// 1 if supported, 0 otherwise.
+                supported: usize,
+            }
+        },
+        item! {
             /// Encrypts a clear text given a key and IV.
             fn encrypt "cce" {
                 /// The 16 bytes key to encrypt with.

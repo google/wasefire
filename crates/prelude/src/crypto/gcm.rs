@@ -26,6 +26,12 @@ pub struct Cipher {
     pub tag: [u8; 16],
 }
 
+/// Whether AES-256-GCM is supported.
+pub fn is_supported() -> bool {
+    let api::is_supported::Results { supported } = unsafe { api::is_supported() };
+    supported != 0
+}
+
 /// Encrypts and authenticates a cleartext.
 pub fn encrypt(key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: &[u8]) -> Result<Cipher, Error> {
     let mut cipher = Cipher { text: vec![0; clear.len()], tag: [0; 16] };

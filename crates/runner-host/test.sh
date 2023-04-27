@@ -15,7 +15,10 @@
 
 set -ex
 
-touch ../../target/applet.wasm
+if [ ! -e ../../target/applet.wasm ]; then
+  mkdir -p ../../target
+  touch ../../target/applet.wasm
+fi
 cargo check --features=debug
 cargo check --features=release
 cargo check --no-default-features --features=debug

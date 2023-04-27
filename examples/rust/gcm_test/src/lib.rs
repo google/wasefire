@@ -18,8 +18,10 @@
 wasefire::applet!();
 
 fn main() {
-    test_encrypt();
-    test_decrypt();
+    if crypto::gcm::is_supported() {
+        test_encrypt();
+        test_decrypt();
+    }
     debug::exit(true);
 }
 

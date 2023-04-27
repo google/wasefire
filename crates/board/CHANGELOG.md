@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `is_supported` to crypto APIs
 - Add AES-256-GCM support
 - Add `debug::exit()`
 

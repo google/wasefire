@@ -18,6 +18,9 @@ use crate::Error;
 
 /// AES-CCM interface (according to Bluetooth).
 pub trait Api {
+    /// Whether AES-CCM is supported.
+    fn is_supported(&mut self) -> bool;
+
     /// Encrypts a clear-text to a cipher-text given a key and IV.
     ///
     /// The key must be 16 bytes. The IV must be 8 bytes. The cipher-text must be 4 bytes longer
@@ -36,11 +39,29 @@ pub trait Api {
 }
 
 impl Api for ! {
+    fn is_supported(&mut self) -> bool {
+        unreachable!()
+    }
+
     fn encrypt(&mut self, _: &[u8], _: &[u8], _: &[u8], _: &mut [u8]) -> Result<(), Error> {
         unreachable!()
     }
 
     fn decrypt(&mut self, _: &[u8], _: &[u8], _: &[u8], _: &mut [u8]) -> Result<(), Error> {
         unreachable!()
+    }
+}
+
+impl Api for () {
+    fn is_supported(&mut self) -> bool {
+        false
+    }
+
+    fn encrypt(&mut self, _: &[u8], _: &[u8], _: &[u8], _: &mut [u8]) -> Result<(), Error> {
+        Err(Error::User)
+    }
+
+    fn decrypt(&mut self, _: &[u8], _: &[u8], _: &[u8], _: &mut [u8]) -> Result<(), Error> {
+        Err(Error::User)
     }
 }

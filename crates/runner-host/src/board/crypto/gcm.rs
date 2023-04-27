@@ -16,6 +16,10 @@ use aes_gcm::{AeadInPlace, Aes256Gcm, KeyInit};
 use wasefire_board_api as board;
 
 impl board::crypto::gcm::Api for &mut crate::board::Board {
+    fn is_supported(&mut self) -> bool {
+        true
+    }
+
     fn encrypt(
         &mut self, key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: &[u8], cipher: &mut [u8],
         tag: &mut [u8; 16],

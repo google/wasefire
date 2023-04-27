@@ -18,6 +18,10 @@ use nrf52840_hal::ccm::CcmData;
 use wasefire_board_api as board;
 
 impl board::crypto::ccm::Api for &mut crate::tasks::Board {
+    fn is_supported(&mut self) -> bool {
+        true
+    }
+
     fn encrypt(
         &mut self, key: &[u8], iv: &[u8], clear: &[u8], cipher: &mut [u8],
     ) -> Result<(), board::Error> {
