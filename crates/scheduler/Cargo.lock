@@ -500,7 +500,7 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.2.0-git"
+version = "0.2.0"
 dependencies = [
  "sealed",
  "wasefire-applet-api-macro",
@@ -508,7 +508,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.1.2-git"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -520,7 +520,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.2.0-git"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
@@ -528,7 +528,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.2.0-git"
+version = "0.2.0"
 dependencies = [
  "defmt",
  "usb-device",
@@ -539,7 +539,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.1.2-git"
+version = "0.1.2"
 dependencies = [
  "num_enum",
  "paste",
@@ -548,7 +548,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.2-git"
+version = "0.1.2"
 dependencies = [
  "defmt",
  "lazy_static",
@@ -557,7 +557,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-scheduler"
-version = "0.1.2-git"
+version = "0.1.2"
 dependencies = [
  "defmt",
  "wasefire-applet-api",
@@ -569,7 +569,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.2.0-git"
+version = "0.2.0"
 
 [[package]]
 name = "windows-sys"
