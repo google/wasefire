@@ -16,6 +16,7 @@ use crate::*;
 
 mod ccm;
 mod gcm;
+mod hash;
 
 pub(crate) fn new() -> Item {
     let docs = docs! {
@@ -35,6 +36,7 @@ pub(crate) fn new() -> Item {
         },
         ccm::new(),
         gcm::new(),
+        hash::new(),
     ];
     Item::Mod(Mod { docs, name, items })
 }

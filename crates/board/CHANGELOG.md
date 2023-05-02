@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0-git
+
+### Major
+
+- Add the `Types` trait for `Api` associated types
+- Add SHA-256 support in crypto
+
+### Minor
+
+- Add `software_crypto*` features
+
 ## 0.2.0
 
 ### Major

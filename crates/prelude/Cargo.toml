@@ -1,6 +1,6 @@
 [package]
 name = "wasefire"
-version = "0.1.5-dev"
+version = "0.1.5-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -15,7 +15,7 @@ categories = ["embedded", "no-std", "wasm"]
 const-default = "1.0.0"
 portable-atomic = { version = "1.2.0", default-features = false }
 rlsf = "0.2.1"
-wasefire-applet-api = { version = "0.2.0", path = "../api", features = ["wasm"] }
+wasefire-applet-api = { version = "0.3.0-git", path = "../api", features = ["wasm"] }
 
 [features]
 multivalue = ["wasefire-applet-api/multivalue"]

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3-git
+
+### Minor
+
+- Add `hash` module with SHA-256 algorithm
+
 ## 0.1.2
 
 ### Minor

@@ -24,3 +24,12 @@ impl Not for crate::led::Status {
         }
     }
 }
+
+impl crate::crypto::hash::Algorithm {
+    /// Returns the length in bytes of the algorithm digest.
+    pub fn digest_len(self) -> usize {
+        match self {
+            crate::crypto::hash::Algorithm::Sha256 => 32,
+        }
+    }
+}

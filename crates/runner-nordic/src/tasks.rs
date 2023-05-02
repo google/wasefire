@@ -31,6 +31,10 @@ impl core::fmt::Debug for Board {
     }
 }
 
+impl board::Types for Board {
+    type Crypto = Board;
+}
+
 impl board::Api for Board {
     fn try_event(&mut self) -> Option<board::Event> {
         critical_section::with(|cs| self.0.borrow_ref_mut(cs).events.pop())
@@ -56,7 +60,7 @@ impl board::Api for Board {
     }
 
     type Crypto<'a> = &'a mut Self;
-    fn crypto(&mut self) -> Self::Crypto<'_> {
+    fn crypto(&mut self) -> <Self as board::Api>::Crypto<'_> {
         self
     }
 

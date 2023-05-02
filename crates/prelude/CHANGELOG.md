@@ -1,9 +1,10 @@
 # Changelog
 
-## 0.1.5-dev
+## 0.1.5-git
 
 ### Minor
 
+- Add SHA-256 in `crypto::hash`
 - Add `sync` module for mutex and atomics support
 
 ## 0.1.4

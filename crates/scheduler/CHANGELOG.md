@@ -5,6 +5,11 @@
 ### Major
 
 - Change `Scheduler::run()` to take the module as argument (fix #132)
+- Update `wasefire-board-api` to 0.3.0
+
+### Minor
+
+- Update `wasefire-applet-api` to 0.3.0
 
 ## 0.1.2
 
