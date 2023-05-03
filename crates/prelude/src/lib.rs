@@ -29,6 +29,7 @@
 #![no_std]
 #![feature(alloc_error_handler)]
 #![feature(macro_metavar_expr)]
+#![feature(negative_impls)]
 #![feature(vec_into_raw_parts)]
 
 extern crate alloc;
@@ -44,6 +45,7 @@ pub mod led;
 pub mod rng;
 pub mod scheduling;
 pub mod store;
+pub mod sync;
 pub mod usb;
 
 /// Defines the entry point of an applet.
