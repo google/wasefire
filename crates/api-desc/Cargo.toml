@@ -12,8 +12,8 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-anyhow = "1.0.70"
-clap = { version = "4.2.1", features = ["derive"] }
+anyhow = "1.0.71"
+clap = { version = "4.2.7", features = ["derive"] }
 data-encoding = "2.3.3"
 data-encoding-macro = "0.1.12"
 proc-macro2 = "1.0.56"

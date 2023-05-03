@@ -9,11 +9,11 @@ edition = "2021"
 [dependencies]
 aes = "0.8.2"
 aes-gcm = { version = "0.10.1", features = ["std"] }
-anyhow = "1.0.70"
+anyhow = "1.0.71"
 ccm = { version = "0.5.0", features = ["std"] }
 env_logger = "0.10.0"
 rand = "0.8.5"
-tokio = { version = "1.27.0", features = ["full"] }
+tokio = { version = "1.28.0", features = ["full"] }
 usb-device = { version = "0.2.9", optional = true }
 usbd-serial = { version = "0.1.1", optional = true }
 usbip-device = { version = "0.1.5", optional = true }
