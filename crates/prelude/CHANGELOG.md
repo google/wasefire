@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5-dev
+
+### Minor
+
+- Add `sync` module for mutex and atomics support
+
 ## 0.1.4
 
 ### Minor
