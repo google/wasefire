@@ -19,12 +19,17 @@ use wasefire_applet_api::crypto::hash as api;
 pub use self::api::Algorithm;
 use super::Error;
 
+/// Hashing context.
 pub struct Digest {
+    /// The hashing context identifier.
     id: usize,
+
+    /// The digest length in bytes.
     len: usize,
 }
 
 impl Digest {
+    /// Creates a new hashing context for the specified algorithm.
     pub fn new(algorithm: Algorithm) -> Result<Self, Error> {
         if !is_supported(algorithm) {
             return Err(Error::Unsupported);
@@ -36,11 +41,13 @@ impl Digest {
         Ok(Self { id, len })
     }
 
+    /// Updates the hashing context with the provided data.
     pub fn update(&mut self, data: &[u8]) {
         let params = api::update::Params { id: self.id, data: data.as_ptr(), length: data.len() };
         unsafe { api::update(params) };
     }
 
+    /// Finalizes the hashing context and writes the associated digest.
     pub fn finalize(self, digest: &mut [u8]) -> Result<(), Error> {
         if digest.len() != self.len {
             return Err(Error::InvalidArgument);
@@ -50,6 +57,7 @@ impl Digest {
         Error::to_result(res).map(|_| ())
     }
 
+    /// Writes the hash of the data for the given algorithm in the digest.
     pub fn digest(algorithm: Algorithm, data: &[u8], digest: &mut [u8]) -> Result<(), Error> {
         let mut context = Self::new(algorithm)?;
         context.update(data);
@@ -57,6 +65,7 @@ impl Digest {
     }
 }
 
+/// Returns the SHA-256 of the provided data.
 pub fn sha256(data: &[u8]) -> Result<[u8; 32], Error> {
     let mut digest = [0; 32];
     Digest::digest(Algorithm::Sha256, data, &mut digest)?;
