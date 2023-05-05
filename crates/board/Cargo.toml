@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-board-api"
-version = "0.2.0"
+version = "0.3.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -11,8 +11,12 @@ include = ["/src"]
 keywords = ["embedded", "framework", "no-std"]
 categories = ["embedded", "no-std"]
 
+[package.metadata.docs.rs]
+features = ["std"]
+
 [dependencies]
 defmt = { version = "0.3.4", optional = true }
+sha2 = { version = "0.10.6", default-features = false, optional = true }
 usb-device = "0.2.9"
 usbd-serial = "0.1.1"
 wasefire-logger = { version = "0.1.2", path = "../logger" }
@@ -21,7 +25,6 @@ wasefire-store = { version = "0.2.0", path = "../store" }
 [features]
 defmt = ["dep:defmt", "wasefire-logger/defmt"]
 log = ["wasefire-logger/log"]
+software-crypto = ["software-crypto-sha256"]
+software-crypto-sha256 = ["dep:sha2"]
 std = ["wasefire-store/std"]
-
-[package.metadata.docs.rs]
-features = ["std"]

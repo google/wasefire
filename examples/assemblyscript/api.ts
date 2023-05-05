@@ -253,6 +253,67 @@
     // otherwise.
     ): isize
   // END OF MODULE crypto_gcm
+
+  // START OF MODULE crypto_hash
+  // Hash functions.
+    // Hash algorithm.
+    enum crypto_hash_Algorithm {
+      // SHA-256.
+      Sha256,
+    }
+
+    // Whether the algorithm is supported.
+    @external("env", "chs")
+    export declare function crypto_hash_is_supported(
+      // The hash algorithm.
+      algorithm: usize,
+    // 1 if supported, 0 otherwise.
+    ): usize
+
+    // Initializes a hash.
+    @external("env", "chi")
+    export declare function crypto_hash_initialize(
+      // The hash algorithm.
+      algorithm: usize,
+    // A non-negative identifier on success, bitwise complement of
+    // [`Error`](crate::crypto::Error) otherwise.
+    ): isize
+
+    // Updates a hash.
+    //
+    // Errors are surfaced in the [`finalize()`] call.
+    @external("env", "chu")
+    export declare function crypto_hash_update(
+      // The identifier returned by the associated [`initialize()`] call.
+      id: usize,
+
+      // The pointer to the data to hash.
+      data: usize,
+
+      // The length of the data to hash.
+      length: usize,
+    ): void
+
+    // Finalizes a hash.
+    @external("env", "chf")
+    export declare function crypto_hash_finalize(
+      // The identifier returned by the associated [`initialize()`] call.
+      //
+      // This is consumed and invalidated by this call regardless of the return value.
+      id: usize,
+
+      // The pointer to the buffer where the digest must be written.
+      //
+      // Its length is defined by the algorithm:
+      // - 32 bytes for SHA-256.
+      //
+      // The pointer may be null, in which case this function deallocates the identifier
+      // without computing the digest.
+      digest: usize,
+    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
+    // otherwise.
+    ): isize
+  // END OF MODULE crypto_hash
 // END OF MODULE crypto
 
 // START OF MODULE debug

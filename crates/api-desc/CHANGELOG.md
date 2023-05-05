@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3-git
+
+### Minor
+
+- Add `hash` module with SHA-256 algorithm
+
 ## 0.1.2
 
 ### Minor
@@ -24,4 +30,4 @@
 
 ## 0.1.0
 
-<!-- Update PR number to skip CHANGELOG.md test: #139 -->
+<!-- Update PR number to skip CHANGELOG.md test: #140 -->

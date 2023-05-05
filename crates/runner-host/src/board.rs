@@ -24,7 +24,7 @@ pub mod usb;
 use std::sync::{Arc, Mutex};
 
 use tokio::sync::mpsc::{Receiver, Sender};
-use wasefire_board_api::{Api, Event};
+use wasefire_board_api::{Api, Event, Types};
 use wasefire_store::FileStorage;
 
 use self::timer::Timers;
@@ -42,6 +42,10 @@ pub struct State {
 pub struct Board {
     pub receiver: Receiver<Event>,
     pub state: Arc<Mutex<State>>,
+}
+
+impl Types for Board {
+    type Crypto = Board;
 }
 
 impl Api for Board {
@@ -64,7 +68,7 @@ impl Api for Board {
     }
 
     type Crypto<'a> = &'a mut Self;
-    fn crypto(&mut self) -> Self::Crypto<'_> {
+    fn crypto(&mut self) -> &mut Self {
         self
     }
 

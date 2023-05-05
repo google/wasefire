@@ -14,16 +14,16 @@
 
 use alloc::collections::{BTreeSet, VecDeque};
 
-use wasefire_board_api::Event;
+use wasefire_board_api::{self as board, Event};
 use wasefire_interpreter::Store;
-use wasefire_logger as logger;
+use wasefire_logger as log;
 
 use crate::event::{Handler, Key};
 use crate::{Memory, Trap};
 
-#[derive(Debug, Default)]
-pub struct Applet {
-    store: Store<'static>,
+#[derive(Debug)]
+pub struct Applet<B: board::Types> {
+    pub store: AppletStore,
 
     /// Pending events.
     events: VecDeque<Event>,
@@ -32,15 +32,71 @@ pub struct Applet {
     done: bool,
 
     handlers: BTreeSet<Handler>,
+
+    pub hashes: AppletHashes<B>,
 }
 
-impl Applet {
+// We have to implement manually because derive is not able to find the correct bounds.
+impl<B: board::Types> Default for Applet<B> {
+    fn default() -> Self {
+        Self {
+            store: Default::default(),
+            events: Default::default(),
+            done: Default::default(),
+            handlers: Default::default(),
+            hashes: Default::default(),
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct AppletStore(Store<'static>);
+
+impl AppletStore {
+    pub fn memory(&mut self) -> Memory {
+        Memory::new(&mut self.0)
+    }
+}
+
+/// Currently alive hash contexts.
+#[derive(Debug)]
+pub struct AppletHashes<B: board::Types>([Option<HashContext<B>>; 4]);
+
+// We have to implement manually because derive is not able to find the correct bounds.
+impl<B: board::Types> Default for AppletHashes<B> {
+    fn default() -> Self {
+        Self([None, None, None, None])
+    }
+}
+
+#[derive(Debug)]
+pub enum HashContext<B: board::Types> {
+    Sha256(board::crypto::sha256::Context<B>),
+}
+
+impl<B: board::Types> AppletHashes<B> {
+    pub fn insert(&mut self, hash: HashContext<B>) -> Result<usize, Trap> {
+        let id = self.0.iter().position(|x| x.is_none()).ok_or(Trap)?;
+        self.0[id] = Some(hash);
+        Ok(id)
+    }
+
+    pub fn get_mut(&mut self, id: usize) -> Result<&mut HashContext<B>, Trap> {
+        self.0.get_mut(id).ok_or(Trap)?.as_mut().ok_or(Trap)
+    }
+
+    pub fn take(&mut self, id: usize) -> Result<HashContext<B>, Trap> {
+        self.0.get_mut(id).ok_or(Trap)?.take().ok_or(Trap)
+    }
+}
+
+impl<B: board::Types> Applet<B> {
     pub fn store_mut(&mut self) -> &mut Store<'static> {
-        &mut self.store
+        &mut self.store.0
     }
 
     pub fn memory(&mut self) -> Memory {
-        Memory::new(&mut self.store)
+        Memory::new(self.store_mut())
     }
 
     pub fn push(&mut self, event: Event) {
@@ -48,14 +104,14 @@ impl Applet {
         if !self.handlers.contains(&Key::from(&event)) {
             // This can happen after an event is disabled and the event queue of the board is
             // flushed.
-            logger::trace!("Discarding {}", logger::Debug2Format(&event));
+            log::trace!("Discarding {}", log::Debug2Format(&event));
         } else if self.events.contains(&event) {
-            logger::trace!("Merging {}", logger::Debug2Format(&event));
+            log::trace!("Merging {}", log::Debug2Format(&event));
         } else if self.events.len() < MAX_EVENTS {
-            logger::debug!("Pushing {}", logger::Debug2Format(&event));
+            log::debug!("Pushing {}", log::Debug2Format(&event));
             self.events.push_back(event);
         } else {
-            logger::warn!("Dropping {}", logger::Debug2Format(&event));
+            log::warn!("Dropping {}", log::Debug2Format(&event));
         }
     }
 
@@ -78,7 +134,7 @@ impl Applet {
         match self.handlers.insert(handler) {
             true => Ok(()),
             false => {
-                logger::warn!("Tried to overwrite existing handler");
+                log::warn!("Tried to overwrite existing handler");
                 Err(Trap)
             }
         }
@@ -89,7 +145,7 @@ impl Applet {
         match self.handlers.remove(&key) {
             true => Ok(()),
             false => {
-                logger::warn!("Tried to remove non-existing handler");
+                log::warn!("Tried to remove non-existing handler");
                 Err(Trap)
             }
         }

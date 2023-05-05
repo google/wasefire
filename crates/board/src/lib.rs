@@ -34,13 +34,23 @@ pub mod storage;
 pub mod timer;
 pub mod usb;
 
+// For consistency.
+type Get<B> = B;
+
+/// Associated types of [`Api`].
+///
+/// This is done separately to avoid lifetimes in associated types paths.
+pub trait Types {
+    type Crypto: crypto::Types;
+}
+
 /// Board interface.
 ///
 /// Associated types have predefined implementations:
 /// - `!` (the never type) implements an API by panicking (the accessor function cannot be
 ///   implemented and must itself panic)
 /// - `()` (the unit type) implements an API for something countable by using zero.
-pub trait Api {
+pub trait Api: Types {
     /// Returns the oldest triggered event, if any.
     ///
     /// This function is non-blocking. See [`Self::wait_event()`] for a blocking version.
@@ -64,9 +74,9 @@ pub trait Api {
     where Self: 'a;
     fn button(&mut self) -> Self::Button<'_>;
 
-    type Crypto<'a>: crypto::Api
+    type Crypto<'a>: crypto::Api<<Self as Types>::Crypto>
     where Self: 'a;
-    fn crypto(&mut self) -> Self::Crypto<'_>;
+    fn crypto(&mut self) -> <Self as Api>::Crypto<'_>;
 
     type Debug<'a>: debug::Api
     where Self: 'a;
@@ -124,11 +134,13 @@ pub enum Error {
 ///
 /// This is similar to the never type (`!`) and can only be produced by panicking, for example using
 /// the `unimplemented!()` or `todo!()` macros.
+#[derive(Debug)]
 pub enum Unimplemented {}
 
 /// Unsupported interface.
 ///
 /// This is similar to the unit type (`()`) and can always be produced.
+#[derive(Debug, Default)]
 pub struct Unsupported;
 
 #[cfg(test)]
@@ -138,6 +150,9 @@ mod tests {
     #[test]
     fn unimplemented() {
         struct Test;
+        impl Types for Test {
+            type Crypto = Unimplemented;
+        }
         impl Api for Test {
             fn try_event(&mut self) -> Option<Event> {
                 todo!()
@@ -158,7 +173,7 @@ mod tests {
             }
 
             type Crypto<'a> = Unimplemented;
-            fn crypto(&mut self) -> Self::Crypto<'_> {
+            fn crypto(&mut self) -> Unimplemented {
                 todo!()
             }
 
@@ -192,6 +207,9 @@ mod tests {
     #[test]
     fn unsupported() {
         struct Test;
+        impl Types for Test {
+            type Crypto = Unsupported;
+        }
         impl Api for Test {
             fn try_event(&mut self) -> Option<Event> {
                 todo!()
@@ -212,7 +230,7 @@ mod tests {
             }
 
             type Crypto<'a> = Unsupported;
-            fn crypto(&mut self) -> Self::Crypto<'_> {
+            fn crypto(&mut self) -> Unsupported {
                 Unsupported
             }
 

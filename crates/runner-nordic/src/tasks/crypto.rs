@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use board::Unsupported;
-use wasefire_board_api as board;
+use wasefire_board_api::crypto::{Api, Types};
+use wasefire_board_api::Unsupported;
 
 use crate::tasks::Board;
 
 mod ccm;
 
-impl board::crypto::Api for &mut Board {
+impl Types for Board {
+    type Sha256 = Unsupported;
+}
+
+impl Api<Board> for &mut Board {
     type Ccm<'a> = &'a mut Board where Self: 'a;
     fn ccm(&mut self) -> Self::Ccm<'_> {
         self
@@ -27,6 +31,11 @@ impl board::crypto::Api for &mut Board {
 
     type Gcm<'a> = Unsupported where Self: 'a;
     fn gcm(&mut self) -> Self::Gcm<'_> {
+        Unsupported
+    }
+
+    type Sha256<'a> = Unsupported where Self: 'a;
+    fn sha256(&mut self) -> Unsupported {
         Unsupported
     }
 }

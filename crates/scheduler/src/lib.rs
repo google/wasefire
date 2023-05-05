@@ -69,7 +69,7 @@ pub struct Scheduler<B: Board> {
     board: B,
     store: store::Store<B::Storage>,
     host_funcs: Vec<Api<Id>>,
-    applet: Applet,
+    applet: Applet<B>,
     timers: Vec<Option<Timer>>,
 }
 
@@ -106,8 +106,8 @@ impl<'a, B: Board, T> core::fmt::Debug for SchedulerCall<'a, B, T> {
     }
 }
 
-pub struct DispatchSchedulerCall<'a, Board> {
-    phantom: PhantomData<&'a Board>,
+pub struct DispatchSchedulerCall<'a, B> {
+    phantom: PhantomData<&'a B>,
 }
 
 pub enum SchedulerResult<'a, B: Board> {
@@ -156,7 +156,7 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
         }
     }
 
-    fn applet(&mut self) -> &mut Applet {
+    fn applet(&mut self) -> &mut Applet<B> {
         &mut self.erased.scheduler.applet
     }
 
