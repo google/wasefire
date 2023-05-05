@@ -306,6 +306,9 @@
       //
       // Its length is defined by the algorithm:
       // - 32 bytes for SHA-256.
+      //
+      // The pointer may be null, in which case this function deallocates the identifier
+      // without computing the digest.
       digest: usize,
     // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
     // otherwise.
