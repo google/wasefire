@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use wasefire_applet_api::crypto::ccm::{self as api, Api};
-use wasefire_board_api::crypto::ccm::Api as _;
+use wasefire_board_api::crypto::aes128_ccm::Api as _;
 use wasefire_board_api::crypto::Api as _;
 use wasefire_board_api::Api as Board;
 
@@ -29,7 +29,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 
 fn is_supported<B: Board>(mut call: SchedulerCall<B, api::is_supported::Sig>) {
     let api::is_supported::Params {} = call.read();
-    let supported = call.scheduler().board.crypto().ccm().is_supported() as u32;
+    let supported = call.scheduler().board.crypto().aes128_ccm().is_supported() as u32;
     call.reply(Ok(api::is_supported::Results { supported: supported.into() }))
 }
 
@@ -42,7 +42,7 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
         let iv = memory.get(*iv, 8)?;
         let clear = memory.get(*clear, *len)?;
         let cipher = memory.get_mut(*cipher, *len + 4)?;
-        let res = match scheduler.board.crypto().ccm().encrypt(key, iv, clear, cipher) {
+        let res = match scheduler.board.crypto().aes128_ccm().encrypt(key, iv, clear, cipher) {
             Ok(()) => 0u32.into(),
             Err(_) => u32::MAX.into(),
         };
@@ -60,7 +60,7 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         let iv = memory.get(*iv, 8)?;
         let cipher = memory.get(*cipher, *len + 4)?;
         let clear = memory.get_mut(*clear, *len)?;
-        let res = match scheduler.board.crypto().ccm().decrypt(key, iv, cipher, clear) {
+        let res = match scheduler.board.crypto().aes128_ccm().decrypt(key, iv, cipher, clear) {
             Ok(()) => 0u32.into(),
             Err(_) => u32::MAX.into(),
         };

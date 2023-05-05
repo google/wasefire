@@ -52,7 +52,7 @@ impl Api for Unimplemented {
     }
 }
 
-#[cfg(not(feature = "software-crypto-aes128ccm"))]
+#[cfg(not(feature = "software-crypto-aes128-ccm"))]
 mod unsupported {
     use super::*;
 
@@ -71,7 +71,7 @@ mod unsupported {
     }
 }
 
-#[cfg(feature = "software-crypto-aes128ccm")]
+#[cfg(feature = "software-crypto-aes128-ccm")]
 mod unsupported {
     use aes::cipher::generic_array::GenericArray;
     use aes::Aes128;

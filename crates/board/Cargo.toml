@@ -29,11 +29,11 @@ wasefire-store = { version = "0.2.0", path = "../store" }
 defmt = ["dep:defmt", "wasefire-logger/defmt"]
 log = ["wasefire-logger/log"]
 software-crypto = [
-  "software-crypto-aes128ccm",
-  "software-crypto-aes256gcm",
+  "software-crypto-aes128-ccm",
+  "software-crypto-aes256-gcm",
   "software-crypto-sha256",
 ]
-software-crypto-aes128ccm = ["dep:aes", "dep:ccm"]
-software-crypto-aes256gcm = ["dep:aes-gcm"]
+software-crypto-aes128-ccm = ["dep:aes", "dep:ccm"]
+software-crypto-aes256-gcm = ["dep:aes-gcm"]
 software-crypto-sha256 = ["dep:sha2"]
 std = ["wasefire-store/std"]

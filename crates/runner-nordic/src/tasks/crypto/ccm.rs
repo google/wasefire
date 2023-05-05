@@ -17,7 +17,7 @@ use alloc::vec;
 use nrf52840_hal::ccm::CcmData;
 use wasefire_board_api as board;
 
-impl board::crypto::ccm::Api for &mut crate::tasks::Board {
+impl board::crypto::aes128_ccm::Api for &mut crate::tasks::Board {
     fn is_supported(&mut self) -> bool {
         true
     }

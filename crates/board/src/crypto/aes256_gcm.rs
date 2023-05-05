@@ -56,7 +56,7 @@ impl Api for Unimplemented {
     }
 }
 
-#[cfg(not(feature = "software-crypto-aes256gcm"))]
+#[cfg(not(feature = "software-crypto-aes256-gcm"))]
 mod unsupported {
     use super::*;
 
@@ -80,7 +80,7 @@ mod unsupported {
     }
 }
 
-#[cfg(feature = "software-crypto-aes256gcm")]
+#[cfg(feature = "software-crypto-aes256-gcm")]
 mod unsupported {
     use aes_gcm::{AeadInPlace, Aes256Gcm, KeyInit};
 

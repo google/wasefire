@@ -24,13 +24,13 @@ impl Types for Board {
 }
 
 impl Api<Board> for &mut Board {
-    type Ccm<'a> = &'a mut Board where Self: 'a;
-    fn ccm(&mut self) -> Self::Ccm<'_> {
+    type Aes128Ccm<'a> = &'a mut Board where Self: 'a;
+    fn aes128_ccm(&mut self) -> &mut Board {
         self
     }
 
-    type Gcm<'a> = Unsupported where Self: 'a;
-    fn gcm(&mut self) -> Self::Gcm<'_> {
+    type Aes256Gcm<'a> = Unsupported where Self: 'a;
+    fn aes256_gcm(&mut self) -> Unsupported {
         Unsupported
     }
 
