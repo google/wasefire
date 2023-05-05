@@ -95,7 +95,7 @@ mod unsupported {
 }
 
 #[cfg(feature = "software_crypto_sha256")]
-mod software {
+mod unsupported {
     use sha2::{Digest, Sha256};
 
     use super::*;
