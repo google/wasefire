@@ -664,7 +664,6 @@ dependencies = [
  "ccm",
  "env_logger",
  "rand",
- "sha2",
  "tokio",
  "usb-device",
  "usbd-serial",
