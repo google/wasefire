@@ -59,7 +59,7 @@ fn initialize<B: Board>(mut call: SchedulerCall<B, api::initialize::Sig>) {
 fn update<B: Board>(mut call: SchedulerCall<B, api::update::Sig>) {
     let api::update::Params { id, data, length } = call.read();
     let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory.get();
+    let memory = scheduler.applet.store.memory();
     let results = try {
         let data = memory.get(*data, *length)?;
         match scheduler.applet.hashes.get_mut(*id as usize)? {
@@ -75,7 +75,7 @@ fn update<B: Board>(mut call: SchedulerCall<B, api::update::Sig>) {
 fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
     let api::finalize::Params { id, digest } = call.read();
     let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory.get();
+    let memory = scheduler.applet.store.memory();
     let results = try {
         let context = scheduler.applet.hashes.take(*id as usize)?;
         let res = match context {

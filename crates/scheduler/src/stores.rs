@@ -23,7 +23,7 @@ use crate::{Memory, Trap};
 
 #[derive(Debug)]
 pub struct Applet<B: board::Types> {
-    pub memory: AppletMemory,
+    pub store: AppletStore,
 
     /// Pending events.
     events: VecDeque<Event>,
@@ -40,7 +40,7 @@ pub struct Applet<B: board::Types> {
 impl<B: board::Types> Default for Applet<B> {
     fn default() -> Self {
         Self {
-            memory: Default::default(),
+            store: Default::default(),
             events: Default::default(),
             done: Default::default(),
             handlers: Default::default(),
@@ -50,13 +50,11 @@ impl<B: board::Types> Default for Applet<B> {
 }
 
 #[derive(Debug, Default)]
-pub struct AppletMemory {
-    store: Store<'static>,
-}
+pub struct AppletStore(Store<'static>);
 
-impl AppletMemory {
-    pub fn get(&mut self) -> Memory {
-        Memory::new(&mut self.store)
+impl AppletStore {
+    pub fn memory(&mut self) -> Memory {
+        Memory::new(&mut self.0)
     }
 }
 
@@ -94,7 +92,7 @@ impl<B: board::Types> AppletHashes<B> {
 
 impl<B: board::Types> Applet<B> {
     pub fn store_mut(&mut self) -> &mut Store<'static> {
-        &mut self.memory.store
+        &mut self.store.0
     }
 
     pub fn memory(&mut self) -> Memory {
