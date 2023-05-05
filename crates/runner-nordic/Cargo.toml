@@ -21,7 +21,7 @@ panic-probe = { version = "0.3.1", optional = true, features = ["print-defmt"] }
 usb-device = "0.2.9"
 usbd-serial = "0.1.1"
 wasefire-applet-api = { path = "../api" }
-wasefire-board-api = { path = "../board", features = ["software_crypto_sha256"] }
+wasefire-board-api = { path = "../board" }
 wasefire-interpreter = { path = "../interpreter" }
 wasefire-logger = { path = "../logger" }
 wasefire-scheduler = { path = "../scheduler" }
@@ -37,3 +37,4 @@ debug = [
   "wasefire-scheduler/defmt",
 ]
 release = ["dep:panic-abort"]
+software_crypto_sha256 = ["wasefire-board-api/software_crypto_sha256"]

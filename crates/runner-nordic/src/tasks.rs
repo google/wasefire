@@ -60,7 +60,7 @@ impl board::Api for Board {
     }
 
     type Crypto<'a> = &'a mut Self;
-    fn crypto(&mut self) -> <Self as board::Api>::Crypto<'_> {
+    fn crypto(&mut self) -> &mut Self {
         self
     }
 
