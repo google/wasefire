@@ -30,10 +30,12 @@ pub trait Types {
 
 /// Cryptography interface.
 pub trait Api<T: Types> {
+    // TODO: Rename to Aes128Ccm.
     type Ccm<'a>: ccm::Api
     where Self: 'a;
     fn ccm(&mut self) -> Self::Ccm<'_>;
 
+    // TODO: Rename to Aes256Gcm.
     type Gcm<'a>: gcm::Api
     where Self: 'a;
     fn gcm(&mut self) -> Self::Gcm<'_>;

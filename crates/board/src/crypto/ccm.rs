@@ -52,16 +52,69 @@ impl Api for Unimplemented {
     }
 }
 
-impl Api for Unsupported {
-    fn is_supported(&mut self) -> bool {
-        false
-    }
+#[cfg(not(feature = "software-crypto-aes128ccm"))]
+mod unsupported {
+    use super::*;
 
-    fn encrypt(&mut self, _: &[u8], _: &[u8], _: &[u8], _: &mut [u8]) -> Result<(), Error> {
-        Err(Error::User)
-    }
+    impl Api for Unsupported {
+        fn is_supported(&mut self) -> bool {
+            false
+        }
 
-    fn decrypt(&mut self, _: &[u8], _: &[u8], _: &[u8], _: &mut [u8]) -> Result<(), Error> {
-        Err(Error::User)
+        fn encrypt(&mut self, _: &[u8], _: &[u8], _: &[u8], _: &mut [u8]) -> Result<(), Error> {
+            Err(Error::User)
+        }
+
+        fn decrypt(&mut self, _: &[u8], _: &[u8], _: &[u8], _: &mut [u8]) -> Result<(), Error> {
+            Err(Error::User)
+        }
+    }
+}
+
+#[cfg(feature = "software-crypto-aes128ccm")]
+mod unsupported {
+    use aes::cipher::generic_array::GenericArray;
+    use aes::Aes128;
+    use ccm::aead::{consts, AeadInPlace};
+    use ccm::{Ccm, KeyInit};
+
+    use super::*;
+
+    type NordicCcm = Ccm<Aes128, consts::U4, consts::U13>;
+
+    impl Api for Unsupported {
+        fn is_supported(&mut self) -> bool {
+            true
+        }
+
+        fn encrypt(
+            &mut self, key: &[u8], iv: &[u8], clear: &[u8], cipher: &mut [u8],
+        ) -> Result<(), Error> {
+            let key = GenericArray::from_slice(key);
+            cipher[.. clear.len()].copy_from_slice(clear);
+            let mut nonce = [0; 13];
+            nonce[5 ..].copy_from_slice(iv);
+            let ccm = NordicCcm::new(key);
+            match ccm.encrypt_in_place_detached(&nonce.into(), &[0], &mut cipher[.. clear.len()]) {
+                Ok(tag) => {
+                    cipher[clear.len() ..].copy_from_slice(&tag);
+                    Ok(())
+                }
+                Err(_) => Err(Error::World),
+            }
+        }
+
+        fn decrypt(
+            &mut self, key: &[u8], iv: &[u8], cipher: &[u8], clear: &mut [u8],
+        ) -> Result<(), Error> {
+            let key = GenericArray::from_slice(key);
+            clear.copy_from_slice(&cipher[.. clear.len()]);
+            let mut nonce = [0; 13];
+            nonce[5 ..].copy_from_slice(iv);
+            let tag = &cipher[clear.len() ..];
+            let ccm = NordicCcm::new(key);
+            ccm.decrypt_in_place_detached(&nonce.into(), &[0], clear, tag.into())
+                .map_err(|_| Error::World)
+        }
     }
 }
