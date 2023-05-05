@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use wasefire_applet_api::crypto::gcm::{self as api, Api};
-use wasefire_board_api::crypto::gcm::Api as _;
+use wasefire_board_api::crypto::aes256_gcm::Api as _;
 use wasefire_board_api::crypto::Api as _;
 use wasefire_board_api::Api as Board;
 
@@ -29,7 +29,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 
 fn is_supported<B: Board>(mut call: SchedulerCall<B, api::is_supported::Sig>) {
     let api::is_supported::Params {} = call.read();
-    let supported = call.scheduler().board.crypto().gcm().is_supported() as u32;
+    let supported = call.scheduler().board.crypto().aes256_gcm().is_supported() as u32;
     call.reply(Ok(api::is_supported::Results { supported: supported.into() }))
 }
 
@@ -44,10 +44,11 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
         let clear = memory.get(*clear, *length)?;
         let cipher = memory.get_mut(*cipher, *length)?;
         let tag = memory.get_array_mut::<16>(*tag)?;
-        let res = match scheduler.board.crypto().gcm().encrypt(key, iv, aad, clear, cipher, tag) {
-            Ok(()) => 0u32.into(),
-            Err(_) => u32::MAX.into(),
-        };
+        let res =
+            match scheduler.board.crypto().aes256_gcm().encrypt(key, iv, aad, clear, cipher, tag) {
+                Ok(()) => 0u32.into(),
+                Err(_) => u32::MAX.into(),
+            };
         api::encrypt::Results { res }
     };
     call.reply(results);
@@ -64,10 +65,11 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         let tag = memory.get_array::<16>(*tag)?;
         let cipher = memory.get(*cipher, *length)?;
         let clear = memory.get_mut(*clear, *length)?;
-        let res = match scheduler.board.crypto().gcm().decrypt(key, iv, aad, tag, cipher, clear) {
-            Ok(()) => 0u32.into(),
-            Err(_) => u32::MAX.into(),
-        };
+        let res =
+            match scheduler.board.crypto().aes256_gcm().decrypt(key, iv, aad, tag, cipher, clear) {
+                Ok(()) => 0u32.into(),
+                Err(_) => u32::MAX.into(),
+            };
         api::decrypt::Results { res }
     };
     call.reply(results);

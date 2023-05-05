@@ -13,7 +13,6 @@
 // limitations under the License.
 
 pub mod button;
-mod crypto;
 mod debug;
 mod led;
 mod rng;
@@ -24,7 +23,7 @@ pub mod usb;
 use std::sync::{Arc, Mutex};
 
 use tokio::sync::mpsc::{Receiver, Sender};
-use wasefire_board_api::{Api, Event, Types};
+use wasefire_board_api::{Api, Event, Types, Unsupported};
 use wasefire_store::FileStorage;
 
 use self::timer::Timers;
@@ -45,7 +44,7 @@ pub struct Board {
 }
 
 impl Types for Board {
-    type Crypto = Board;
+    type Crypto = Unsupported;
 }
 
 impl Api for Board {
@@ -67,9 +66,9 @@ impl Api for Board {
         self
     }
 
-    type Crypto<'a> = &'a mut Self;
-    fn crypto(&mut self) -> &mut Self {
-        self
+    type Crypto<'a> = Unsupported;
+    fn crypto(&mut self) -> Unsupported {
+        Unsupported
     }
 
     type Debug<'a> = &'a mut Self;
