@@ -22,6 +22,8 @@ use super::Error;
 /// Hashing context.
 pub struct Digest {
     /// The hashing context identifier.
+    ///
+    /// Finalized when -1 (as usize). This is used to know whether Drop should finalize.
     id: usize,
 
     /// The digest length in bytes.
@@ -48,12 +50,13 @@ impl Digest {
     }
 
     /// Finalizes the hashing context and writes the associated digest.
-    pub fn finalize(self, digest: &mut [u8]) -> Result<(), Error> {
+    pub fn finalize(mut self, digest: &mut [u8]) -> Result<(), Error> {
         if digest.len() != self.len {
             return Err(Error::InvalidArgument);
         }
         let params = api::finalize::Params { id: self.id, digest: digest.as_mut_ptr() };
         let api::finalize::Results { res } = unsafe { api::finalize(params) };
+        self.id = usize::MAX;
         Error::to_result(res).map(|_| ())
     }
 
@@ -62,6 +65,17 @@ impl Digest {
         let mut context = Self::new(algorithm)?;
         context.update(data);
         context.finalize(digest)
+    }
+}
+
+impl Drop for Digest {
+    fn drop(&mut self) {
+        if self.id == usize::MAX {
+            // Already finalized.
+            return;
+        }
+        let params = api::finalize::Params { id: self.id, digest: core::ptr::null_mut() };
+        unsafe { api::finalize(params) };
     }
 }
 

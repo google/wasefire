@@ -77,7 +77,9 @@ fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory.get();
     let results = try {
-        let res = match scheduler.applet.hashes.take(*id as usize)? {
+        let context = scheduler.applet.hashes.take(*id as usize)?;
+        let res = match context {
+            _ if *digest == 0 => Ok(()),
             HashContext::Sha256(context) => {
                 let digest = memory.get_array_mut::<32>(*digest)?;
                 scheduler.board.crypto().sha256().finalize(context, digest)
