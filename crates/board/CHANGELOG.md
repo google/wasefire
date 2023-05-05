@@ -6,6 +6,7 @@
 
 - Add the `Types` trait for `Api` associated types
 - Add SHA-256 support in crypto
+- Rename AES-128-CCM and AES-256-GCM types
 
 ### Minor
 
@@ -40,4 +41,4 @@
 
 ## 0.1.0
 
-<!-- Update PR number to skip CHANGELOG.md test: #112 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->
