@@ -17,7 +17,7 @@ set -ex
 
 cargo check --features=std
 cargo check --target=thumbv7em-none-eabi
-cargo check --target=thumbv7em-none-eabi --features=software_crypto
+cargo check --target=thumbv7em-none-eabi --features=software-crypto
 cargo fmt -- --check
 cargo clippy --features=std -- --deny=warnings
 cargo test --features=std

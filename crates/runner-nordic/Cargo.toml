@@ -37,4 +37,4 @@ debug = [
   "wasefire-scheduler/defmt",
 ]
 release = ["dep:panic-abort"]
-software_crypto_sha256 = ["wasefire-board-api/software_crypto_sha256"]
+software-crypto-sha256 = ["wasefire-board-api/software-crypto-sha256"]

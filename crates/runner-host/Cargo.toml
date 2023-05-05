@@ -18,7 +18,7 @@ usb-device = { version = "0.2.9", optional = true }
 usbd-serial = { version = "0.1.1", optional = true }
 usbip-device = { version = "0.1.5", optional = true }
 wasefire-applet-api = { path = "../api", features = ["host"] }
-wasefire-board-api = { path = "../board", features = ["software_crypto", "std"] }
+wasefire-board-api = { path = "../board", features = ["software-crypto", "std"] }
 wasefire-interpreter = { path = "../interpreter" }
 wasefire-logger = { path = "../logger" }
 wasefire-scheduler = { path = "../scheduler", features = ["std"] }

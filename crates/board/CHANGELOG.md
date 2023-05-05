@@ -9,7 +9,7 @@
 
 ### Minor
 
-- Add `software_crypto*` features
+- Add `software-crypto*` features
 
 ## 0.2.0
 

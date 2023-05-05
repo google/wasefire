@@ -67,7 +67,7 @@ impl Api<Unimplemented> for Unimplemented {
     }
 }
 
-#[cfg(not(feature = "software_crypto_sha256"))]
+#[cfg(not(feature = "software-crypto-sha256"))]
 mod unsupported {
     use super::*;
 
@@ -94,7 +94,7 @@ mod unsupported {
     }
 }
 
-#[cfg(feature = "software_crypto_sha256")]
+#[cfg(feature = "software-crypto-sha256")]
 mod unsupported {
     use sha2::{Digest, Sha256};
 

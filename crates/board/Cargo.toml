@@ -25,6 +25,6 @@ wasefire-store = { version = "0.2.0", path = "../store" }
 [features]
 defmt = ["dep:defmt", "wasefire-logger/defmt"]
 log = ["wasefire-logger/log"]
-software_crypto = ["software_crypto_sha256"]
-software_crypto_sha256 = ["dep:sha2"]
+software-crypto = ["software-crypto-sha256"]
+software-crypto-sha256 = ["dep:sha2"]
 std = ["wasefire-store/std"]
