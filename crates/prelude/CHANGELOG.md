@@ -7,6 +7,10 @@
 - Add SHA-256 in `crypto::hash`
 - Add `sync` module for mutex and atomics support
 
+### Patch
+
+- Fix clippy warnings
+
 ## 0.1.4
 
 ### Minor

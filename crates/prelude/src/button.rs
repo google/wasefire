@@ -63,7 +63,7 @@ impl<H: Handler> Listener<H> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// Listener::new(index, |state| debug!("Button has been {state:?}"))
     /// ```
     pub fn new(button: usize, handler: H) -> Self {
