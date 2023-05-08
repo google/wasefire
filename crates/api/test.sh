@@ -19,3 +19,4 @@ cargo check --features=host
 cargo check --features=wasm --target=thumbv7em-none-eabi
 cargo fmt -- --check
 cargo clippy -- --deny=warnings
+cargo test --features=host

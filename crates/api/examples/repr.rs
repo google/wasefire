@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use api::*;
+use wasefire_applet_api::*;
 
 fn main() {
     const LEN: usize = std::mem::size_of::<Api<Id>>();
-    for x in API {
-        let ptr = x as *const Api<Id> as *const u8;
+    Api::<Id>::iter(&mut Vec::new(), |x| {
+        let ptr = &x as *const Api<Id> as *const u8;
         let repr = unsafe { core::slice::from_raw_parts(ptr, LEN) };
         let Descriptor { name, params, results } = x.descriptor();
         println!("{repr:02x?} {name}: {params} -> {results}");
-    }
+    });
 }

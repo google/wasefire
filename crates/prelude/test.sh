@@ -17,3 +17,6 @@ set -ex
 
 cargo check --target=wasm32-unknown-unknown
 cargo check --features=test
+cargo fmt -- --check
+cargo clippy --target=wasm32-unknown-unknown -- --deny=warnings
+cargo test --features=test

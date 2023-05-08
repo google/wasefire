@@ -57,7 +57,7 @@ pub mod usb;
 ///
 /// A typical applet looks like:
 ///
-/// ```rust
+/// ```ignore
 /// #![no_std]
 /// wasefire::applet!();
 ///

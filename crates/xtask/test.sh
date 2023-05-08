@@ -18,3 +18,4 @@ set -ex
 cargo check
 cargo fmt -- --check
 cargo clippy -- --deny=warnings
+cargo test
