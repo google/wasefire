@@ -50,6 +50,7 @@ case "$1" in
   probe-run) ensure_cargo probe-run 0.3.8 ;;
   rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
   taplo) ensure_cargo taplo-cli 0.8.0 ;;
+  twiggy) ensure_cargo twiggy 0.7.0 ;;
   *) IS_CARGO=n ;;
 esac
 [ $IS_CARGO = y ] && PATH="$CARGO_ROOT/bin:$PATH" run "$@"
