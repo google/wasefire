@@ -50,6 +50,26 @@ pub fn encrypt(key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: &[u8]) -> Resul
     Ok(cipher)
 }
 
+/// Encrypts and authenticates a buffer in place.
+pub fn encrypt_in_place(
+    key: &[u8; 32], iv: &[u8; 12], aad: &[u8], buffer: &mut [u8],
+) -> Result<[u8; 16], Error> {
+    let mut tag = [0; 16];
+    let params = api::encrypt::Params {
+        key: key.as_ptr(),
+        iv: iv.as_ptr(),
+        aad: aad.as_ptr(),
+        aad_len: aad.len(),
+        length: buffer.len(),
+        clear: core::ptr::null(),
+        cipher: buffer.as_mut_ptr(),
+        tag: tag.as_mut_ptr(),
+    };
+    let api::encrypt::Results { res } = unsafe { api::encrypt(params) };
+    Error::to_result(res)?;
+    Ok(tag)
+}
+
 /// Decrypts and authenticates a ciphertext.
 pub fn decrypt(
     key: &[u8; 32], iv: &[u8; 12], aad: &[u8], cipher: &Cipher,
@@ -68,4 +88,23 @@ pub fn decrypt(
     let api::decrypt::Results { res } = unsafe { api::decrypt(params) };
     Error::to_result(res)?;
     Ok(clear)
+}
+
+/// Decrypts and authenticates a ciphertext.
+pub fn decrypt_in_place(
+    key: &[u8; 32], iv: &[u8; 12], aad: &[u8], tag: &[u8; 16], buffer: &mut [u8],
+) -> Result<(), Error> {
+    let params = api::decrypt::Params {
+        key: key.as_ptr(),
+        iv: iv.as_ptr(),
+        aad: aad.as_ptr(),
+        aad_len: aad.len(),
+        tag: tag.as_ptr(),
+        length: buffer.len(),
+        cipher: core::ptr::null(),
+        clear: buffer.as_mut_ptr(),
+    };
+    let api::decrypt::Results { res } = unsafe { api::decrypt(params) };
+    Error::to_result(res)?;
+    Ok(())
 }

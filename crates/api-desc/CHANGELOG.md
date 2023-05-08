@@ -5,6 +5,7 @@
 ### Minor
 
 - Add `hash` module with SHA-256 algorithm
+- Support in-place AES-256-GCM by accepting null pointers
 
 ## 0.1.2
 

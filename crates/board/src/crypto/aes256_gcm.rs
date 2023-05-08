@@ -23,18 +23,20 @@ pub trait Api {
 
     /// Encrypts and authenticates a clear text with associated data given a key and IV.
     ///
-    /// The clear- and cipher-texts must have the same length.
+    /// The clear- and cipher-texts must have the same length. If the clear text is omitted, then
+    /// the cipher text is encrypted in place.
     fn encrypt(
-        &mut self, key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: &[u8], cipher: &mut [u8],
-        tag: &mut [u8; 16],
+        &mut self, key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: Option<&[u8]>,
+        cipher: &mut [u8], tag: &mut [u8; 16],
     ) -> Result<(), Error>;
 
     /// Decrypts and authenticates a cipher text with associated data given a key and IV.
     ///
-    /// The cipher- and clear-texts must have the same length.
+    /// The cipher- and clear-texts must have the same length. If the cipher text is omitted, then
+    /// the clear text is decrypted in place.
     fn decrypt(
-        &mut self, key: &[u8; 32], iv: &[u8; 12], aad: &[u8], tag: &[u8; 16], cipher: &[u8],
-        clear: &mut [u8],
+        &mut self, key: &[u8; 32], iv: &[u8; 12], aad: &[u8], tag: &[u8; 16],
+        cipher: Option<&[u8]>, clear: &mut [u8],
     ) -> Result<(), Error>;
 }
 
@@ -44,13 +46,15 @@ impl Api for Unimplemented {
     }
 
     fn encrypt(
-        &mut self, _: &[u8; 32], _: &[u8; 12], _: &[u8], _: &[u8], _: &mut [u8], _: &mut [u8; 16],
+        &mut self, _: &[u8; 32], _: &[u8; 12], _: &[u8], _: Option<&[u8]>, _: &mut [u8],
+        _: &mut [u8; 16],
     ) -> Result<(), Error> {
         unreachable!()
     }
 
     fn decrypt(
-        &mut self, _: &[u8; 32], _: &[u8; 12], _: &[u8], _: &[u8; 16], _: &[u8], _: &mut [u8],
+        &mut self, _: &[u8; 32], _: &[u8; 12], _: &[u8], _: &[u8; 16], _: Option<&[u8]>,
+        _: &mut [u8],
     ) -> Result<(), Error> {
         unreachable!()
     }
@@ -66,14 +70,15 @@ mod unsupported {
         }
 
         fn encrypt(
-            &mut self, _: &[u8; 32], _: &[u8; 12], _: &[u8], _: &[u8], _: &mut [u8],
+            &mut self, _: &[u8; 32], _: &[u8; 12], _: &[u8], _: Option<&[u8]>, _: &mut [u8],
             _: &mut [u8; 16],
         ) -> Result<(), Error> {
             Err(Error::User)
         }
 
         fn decrypt(
-            &mut self, _: &[u8; 32], _: &[u8; 12], _: &[u8], _: &[u8; 16], _: &[u8], _: &mut [u8],
+            &mut self, _: &[u8; 32], _: &[u8; 12], _: &[u8], _: &[u8; 16], _: Option<&[u8]>,
+            _: &mut [u8],
         ) -> Result<(), Error> {
             Err(Error::User)
         }
@@ -92,11 +97,13 @@ mod unsupported {
         }
 
         fn encrypt(
-            &mut self, key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: &[u8], cipher: &mut [u8],
-            tag: &mut [u8; 16],
+            &mut self, key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: Option<&[u8]>,
+            cipher: &mut [u8], tag: &mut [u8; 16],
         ) -> Result<(), Error> {
             let gcm = Aes256Gcm::new(key.into());
-            cipher.copy_from_slice(clear);
+            if let Some(clear) = clear {
+                cipher.copy_from_slice(clear);
+            }
             tag.copy_from_slice(
                 &gcm.encrypt_in_place_detached(iv.into(), aad, cipher).map_err(|_| Error::World)?,
             );
@@ -104,11 +111,13 @@ mod unsupported {
         }
 
         fn decrypt(
-            &mut self, key: &[u8; 32], iv: &[u8; 12], aad: &[u8], tag: &[u8; 16], cipher: &[u8],
-            clear: &mut [u8],
+            &mut self, key: &[u8; 32], iv: &[u8; 12], aad: &[u8], tag: &[u8; 16],
+            cipher: Option<&[u8]>, clear: &mut [u8],
         ) -> Result<(), Error> {
             let gcm = Aes256Gcm::new(key.into());
-            clear.copy_from_slice(cipher);
+            if let Some(cipher) = cipher {
+                clear.copy_from_slice(cipher);
+            }
             gcm.decrypt_in_place_detached(iv.into(), aad, clear, tag.into())
                 .map_err(|_| Error::World)
         }

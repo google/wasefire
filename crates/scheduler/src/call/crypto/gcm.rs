@@ -41,7 +41,7 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
         let key = memory.get_array::<32>(*key)?;
         let iv = memory.get_array::<12>(*iv)?;
         let aad = memory.get(*aad, *aad_len)?;
-        let clear = memory.get(*clear, *length)?;
+        let clear = memory.get_opt(*clear, *length)?;
         let cipher = memory.get_mut(*cipher, *length)?;
         let tag = memory.get_array_mut::<16>(*tag)?;
         let res =
@@ -63,7 +63,7 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         let iv = memory.get_array::<12>(*iv)?;
         let aad = memory.get(*aad, *aad_len)?;
         let tag = memory.get_array::<16>(*tag)?;
-        let cipher = memory.get(*cipher, *length)?;
+        let cipher = memory.get_opt(*cipher, *length)?;
         let clear = memory.get_mut(*clear, *length)?;
         let res =
             match scheduler.board.crypto().aes256_gcm().decrypt(key, iv, aad, tag, cipher, clear) {

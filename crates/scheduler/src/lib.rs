@@ -351,6 +351,13 @@ impl<'a> Memory<'a> {
         <[u8]>::get(unsafe { self.data() }, range).ok_or(Trap)
     }
 
+    pub fn get_opt(&self, ptr: u32, len: u32) -> Result<Option<&[u8]>, Trap> {
+        Ok(match ptr {
+            0 => None,
+            _ => Some(self.get(ptr, len)?),
+        })
+    }
+
     pub fn get_array<const LEN: usize>(&self, ptr: u32) -> Result<&[u8; LEN], Trap> {
         self.get(ptr, LEN as u32).map(|x| x.try_into().unwrap())
     }

@@ -47,6 +47,9 @@ pub(crate) fn new() -> Item {
                 length: usize,
 
                 /// The clear text.
+                ///
+                /// A null pointer indicates that the clear text is in the cipher text and should be
+                /// encrypted in place.
                 clear: *const u8,
 
                 /// The cipher text.
@@ -82,6 +85,9 @@ pub(crate) fn new() -> Item {
                 length: usize,
 
                 /// The cipher text.
+                ///
+                /// A null pointer indicates that the cipher text is in the clear text and should be
+                /// decrypted in place.
                 cipher: *const u8,
 
                 /// The clear text.
