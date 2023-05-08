@@ -17,7 +17,15 @@
 #![no_std]
 wasefire::applet!();
 
+#[cfg(feature = "rust-crypto")]
+use aead::{Aead, AeadInPlace, KeyInit, Payload};
+#[cfg(not(feature = "rust-crypto"))]
+use wasefire::crypto::gcm::{decrypt, decrypt_in_place, encrypt, encrypt_in_place, Cipher};
+#[cfg(feature = "rust-crypto")]
+use wasefire::crypto::gcm::{Aes256Gcm, Aes256GcmInPlace};
+
 fn main() {
+    debug!("Use RustCrypto API: {}", cfg!(feature = "rust-crypto"));
     if crypto::gcm::is_supported() {
         test_encrypt();
         test_encrypt_in_place();
@@ -31,9 +39,18 @@ fn test_encrypt() {
     debug!("test_encrypt(): Encrypts the test vectors.");
     for &Vector { key, iv, aad, clear, cipher, tag } in TEST_VECTORS {
         debug!("- {} bytes", clear.len());
-        let result = crypto::gcm::encrypt(key, iv, aad, clear).unwrap();
-        debug::assert_eq(&result.text[..], cipher);
-        debug::assert_eq(&result.tag, tag);
+        #[cfg(feature = "rust-crypto")]
+        let (cipher_, tag_) = {
+            let key = Aes256Gcm::new(key.into());
+            let mut cipher_ = key.encrypt(iv.into(), Payload { msg: clear, aad }).unwrap();
+            let tag_ = cipher_[clear.len() ..].try_into().unwrap();
+            cipher_.truncate(clear.len());
+            (cipher_, tag_)
+        };
+        #[cfg(not(feature = "rust-crypto"))]
+        let Cipher { text: cipher_, tag: tag_ } = encrypt(key, iv, aad, clear).unwrap();
+        debug::assert_eq(&cipher_[..], cipher);
+        debug::assert_eq(&tag_, tag);
     }
 }
 
@@ -42,7 +59,13 @@ fn test_encrypt_in_place() {
     for &Vector { key, iv, aad, clear, cipher, tag } in TEST_VECTORS {
         debug!("- {} bytes", clear.len());
         let mut cipher_ = clear.to_vec();
-        let tag_ = crypto::gcm::encrypt_in_place(key, iv, aad, &mut cipher_).unwrap();
+        #[cfg(feature = "rust-crypto")]
+        let tag_ = {
+            let key = Aes256GcmInPlace::new(key.into());
+            key.encrypt_in_place_detached(iv.into(), aad, &mut cipher_).unwrap().into()
+        };
+        #[cfg(not(feature = "rust-crypto"))]
+        let tag_ = encrypt_in_place(key, iv, aad, &mut cipher_).unwrap();
         debug::assert_eq(&cipher_[..], cipher);
         debug::assert_eq(&tag_, tag);
     }
@@ -52,9 +75,19 @@ fn test_decrypt() {
     debug!("test_decrypt(): Decrypts the test vectors.");
     for &Vector { key, iv, aad, clear, cipher, tag } in TEST_VECTORS {
         debug!("- {} bytes", clear.len());
-        let cipher = crypto::gcm::Cipher { text: cipher.to_vec(), tag: *tag };
-        let result = crypto::gcm::decrypt(key, iv, aad, &cipher).unwrap();
-        debug::assert_eq(&result[..], clear);
+        #[cfg(feature = "rust-crypto")]
+        let clear_ = {
+            let key = Aes256Gcm::new(key.into());
+            let mut msg = cipher.to_vec();
+            msg.extend_from_slice(tag);
+            key.decrypt(iv.into(), Payload { msg: &msg, aad }).unwrap()
+        };
+        #[cfg(not(feature = "rust-crypto"))]
+        let clear_ = {
+            let cipher = Cipher { text: cipher.to_vec(), tag: *tag };
+            decrypt(key, iv, aad, &cipher).unwrap()
+        };
+        debug::assert_eq(&clear_[..], clear);
     }
 }
 
@@ -63,7 +96,12 @@ fn test_decrypt_in_place() {
     for &Vector { key, iv, aad, clear, cipher, tag } in TEST_VECTORS {
         debug!("- {} bytes", clear.len());
         let mut clear_ = cipher.to_vec();
-        crypto::gcm::decrypt_in_place(key, iv, aad, tag, &mut clear_).unwrap();
+        #[cfg(feature = "rust-crypto")]
+        Aes256GcmInPlace::new(key.into())
+            .decrypt_in_place_detached(iv.into(), aad, &mut clear_, tag.into())
+            .unwrap();
+        #[cfg(not(feature = "rust-crypto"))]
+        decrypt_in_place(key, iv, aad, tag, &mut clear_).unwrap();
         debug::assert_eq(&clear_[..], clear);
     }
 }

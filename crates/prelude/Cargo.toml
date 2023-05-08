@@ -12,6 +12,7 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
+aead = { version = "0.5.2", default-features = false, features = ["alloc"], optional = true }
 const-default = "1.0.0"
 portable-atomic = { version = "1.2.0", default-features = false }
 rlsf = "0.2.1"
@@ -19,4 +20,5 @@ wasefire-applet-api = { version = "0.3.0-git", path = "../api", features = ["was
 
 [features]
 multivalue = ["wasefire-applet-api/multivalue"]
+rust-crypto = ["aead"]
 test = ["wasefire-applet-api/test"]

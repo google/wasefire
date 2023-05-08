@@ -17,6 +17,8 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
+#[cfg(feature = "rust-crypto")]
+pub use rust_crypto::*;
 use wasefire_applet_api::crypto::gcm as api;
 
 use super::Error;
@@ -54,7 +56,19 @@ pub fn support() -> Support {
 
 /// Encrypts and authenticates a cleartext.
 pub fn encrypt(key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: &[u8]) -> Result<Cipher, Error> {
-    let mut cipher = Cipher { text: vec![0; clear.len()], tag: [0; 16] };
+    let mut text = vec![0; clear.len()];
+    let tag = encrypt_mut(key, iv, aad, clear, &mut text)?;
+    Ok(Cipher { text, tag })
+}
+
+/// Encrypts and authenticates a cleartext to a ciphertext.
+pub fn encrypt_mut(
+    key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: &[u8], cipher: &mut [u8],
+) -> Result<[u8; 16], Error> {
+    if clear.len() != cipher.len() {
+        return Err(Error::InvalidArgument);
+    }
+    let mut tag = [0; 16];
     let params = api::encrypt::Params {
         key: key.as_ptr(),
         iv: iv.as_ptr(),
@@ -62,12 +76,12 @@ pub fn encrypt(key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: &[u8]) -> Resul
         aad_len: aad.len(),
         length: clear.len(),
         clear: clear.as_ptr(),
-        cipher: cipher.text.as_mut_ptr(),
-        tag: cipher.tag.as_mut_ptr(),
+        cipher: cipher.as_mut_ptr(),
+        tag: tag.as_mut_ptr(),
     };
     let api::encrypt::Results { res } = unsafe { api::encrypt(params) };
     Error::to_result(res)?;
-    Ok(cipher)
+    Ok(tag)
 }
 
 /// Encrypts and authenticates a buffer in place.
@@ -95,19 +109,30 @@ pub fn decrypt(
     key: &[u8; 32], iv: &[u8; 12], aad: &[u8], cipher: &Cipher,
 ) -> Result<Vec<u8>, Error> {
     let mut clear = vec![0; cipher.text.len()];
+    decrypt_mut(key, iv, aad, &cipher.tag, &cipher.text, &mut clear)?;
+    Ok(clear)
+}
+
+/// Decrypts and authenticates a ciphertext to a cleartext.
+pub fn decrypt_mut(
+    key: &[u8; 32], iv: &[u8; 12], aad: &[u8], tag: &[u8; 16], cipher: &[u8], clear: &mut [u8],
+) -> Result<(), Error> {
+    if cipher.len() != clear.len() {
+        return Err(Error::InvalidArgument);
+    }
     let params = api::decrypt::Params {
         key: key.as_ptr(),
         iv: iv.as_ptr(),
         aad: aad.as_ptr(),
         aad_len: aad.len(),
-        tag: cipher.tag.as_ptr(),
-        length: cipher.text.len(),
-        cipher: cipher.text.as_ptr(),
+        tag: tag.as_ptr(),
+        length: cipher.len(),
+        cipher: cipher.as_ptr(),
         clear: clear.as_mut_ptr(),
     };
     let api::decrypt::Results { res } = unsafe { api::decrypt(params) };
     Error::to_result(res)?;
-    Ok(clear)
+    Ok(())
 }
 
 /// Decrypts and authenticates a ciphertext.
@@ -127,4 +152,96 @@ pub fn decrypt_in_place(
     let api::decrypt::Results { res } = unsafe { api::decrypt(params) };
     Error::to_result(res)?;
     Ok(())
+}
+
+#[cfg(feature = "rust-crypto")]
+mod rust_crypto {
+    use super::*;
+
+    /// AES-256-GCM key parametric over in-place flavor.
+    ///
+    /// Prefer using [`Aes256Gcm`] or [`Aes256GcmInPlace`] instead.
+    pub struct Key<const IN_PLACE: bool> {
+        key: [u8; 32],
+    }
+
+    /// AES-256-GCM key to be used with the `Aead` trait.
+    pub type Aes256Gcm = Key<false>;
+
+    /// AES-256-GCM key to be used with the `AeadInPlace` trait.
+    pub type Aes256GcmInPlace = Key<true>;
+
+    impl<const IN_PLACE: bool> aead::KeySizeUser for Key<IN_PLACE> {
+        type KeySize = aead::consts::U32;
+    }
+
+    impl<const IN_PLACE: bool> aead::KeyInit for Key<IN_PLACE> {
+        fn new(key: &aead::Key<Self>) -> Self {
+            Self { key: (*key).into() }
+        }
+    }
+
+    impl<const IN_PLACE: bool> aead::AeadCore for Key<IN_PLACE> {
+        type NonceSize = aead::consts::U12;
+        type TagSize = aead::consts::U16;
+        type CiphertextOverhead = aead::consts::U0;
+    }
+
+    impl aead::Aead for Key<false> {
+        fn encrypt<'msg, 'aad>(
+            &self, nonce: &aead::Nonce<Self>, plaintext: impl Into<aead::Payload<'msg, 'aad>>,
+        ) -> aead::Result<Vec<u8>> {
+            let payload = plaintext.into();
+            let len = payload.msg.len();
+            let mut result = vec![0; len + 16];
+            let tag = encrypt_mut(
+                &self.key,
+                nonce.as_ref(),
+                payload.aad,
+                payload.msg,
+                &mut result[.. len],
+            )
+            .map_err(|_| aead::Error)?;
+            result[len ..].copy_from_slice(tag.as_ref());
+            Ok(result)
+        }
+
+        fn decrypt<'msg, 'aad>(
+            &self, nonce: &aead::Nonce<Self>, ciphertext: impl Into<aead::Payload<'msg, 'aad>>,
+        ) -> aead::Result<Vec<u8>> {
+            let payload: aead::Payload = ciphertext.into();
+            let len = payload.msg.len().checked_sub(16).ok_or(aead::Error)?;
+            let (cipher, tag) = payload.msg.split_at(len);
+            let mut clear = vec![0; len];
+            decrypt_mut(
+                &self.key,
+                nonce.as_ref(),
+                payload.aad,
+                tag.try_into().unwrap(),
+                cipher,
+                &mut clear,
+            )
+            .map_err(|_| aead::Error)?;
+            Ok(clear)
+        }
+    }
+
+    impl aead::AeadInPlace for Key<true> {
+        fn encrypt_in_place_detached(
+            &self, nonce: &aead::Nonce<Self>, associated_data: &[u8], buffer: &mut [u8],
+        ) -> aead::Result<aead::Tag<Self>> {
+            encrypt_in_place(&self.key, nonce.as_ref(), associated_data, buffer)
+                .map(|x| x.into())
+                .map_err(|_| aead::Error)
+        }
+
+        fn decrypt_in_place_detached(
+            &self, nonce: &aead::Nonce<Self>, associated_data: &[u8], buffer: &mut [u8],
+            tag: &aead::Tag<Self>,
+        ) -> aead::Result<()> {
+            decrypt_in_place(&self.key, nonce.as_ref(), associated_data, tag.as_ref(), buffer)
+                .map(|x| x.into())
+                .map_err(|_| aead::Error)
+        }
+    }
 }

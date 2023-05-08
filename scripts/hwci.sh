@@ -25,8 +25,15 @@ list() {
   find examples/rust -maxdepth 1 -name '*_test' -printf '%P\n' | sort
 }
 
+features() {
+  sed -n '/^\[features\]$/,/^$/{s/ = .*$//p}' examples/rust/$1/Cargo.toml
+}
+
 for name in $(list); do
   x cargo xtask applet rust $name runner "$@"
+  for feature in $(features $name); do
+    x cargo xtask applet rust $name --features=$feature runner "$@"
+  done
 done
 for name in $(list); do
   x cargo xtask --release applet rust $name runner "$@"
