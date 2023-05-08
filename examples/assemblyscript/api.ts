@@ -212,6 +212,9 @@
       length: usize,
 
       // The clear text.
+      //
+      // A null pointer indicates that the clear text is in the cipher text and should be
+      // encrypted in place.
       clear: usize,
 
       // The cipher text.
@@ -245,6 +248,9 @@
       length: usize,
 
       // The cipher text.
+      //
+      // A null pointer indicates that the cipher text is in the clear text and should be
+      // decrypted in place.
       cipher: usize,
 
       // The clear text.
