@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::cell::Cell;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::fmt::Display;
@@ -100,6 +101,14 @@ struct AppletOptions {
     /// Stack size.
     #[clap(long, default_value_t)]
     stack_size: StackSize,
+
+    /// Whether to call wasm-strip on the applet.
+    #[clap(skip = Cell::new(true))]
+    strip: Cell<bool>,
+
+    /// Whether to call wasm-opt on the applet.
+    #[clap(skip = Cell::new(true))]
+    opt: Cell<bool>,
 }
 
 #[derive(clap::Subcommand)]
@@ -108,6 +117,11 @@ enum AppletCommand {
     Runner(RunnerOptions),
 
     /// Runs twiggy on the applet.
+    ///
+    /// If an argument is "APPLET", then it is replaced with the applet path. At most one argument
+    /// may be "APPLET". If none are used, the applet path is appended at the end.
+    ///
+    /// A typical example would be `cargo xtask applet lang name twiggy -- top`.
     Twiggy {
         #[clap(last = true)]
         args: Vec<String>,
@@ -223,6 +237,13 @@ impl Flags {
 
 impl Applet {
     fn execute(&self, main: &MainOptions) -> Result<()> {
+        if matches!(self.command, Some(AppletCommand::Twiggy { .. })) {
+            self.options.strip.set(false);
+            // TODO(https://github.com/rustwasm/twiggy/issues/326): Twiggy returns "should not parse
+            // the same key into multiple items" when using wasm-opt. Ideally we would be able to
+            // use twiggy on the wasm-opt output.
+            self.options.opt.set(false);
+        }
         self.options.execute(main)?;
         if let Some(command) = &self.command {
             command.execute(main)?;
@@ -314,23 +335,31 @@ impl AppletOptions {
         if main.size {
             println!("Initial applet size: {}", std::fs::metadata(wasm)?.len());
         }
-        let mut strip = Command::new("./scripts/wrapper.sh");
-        strip.arg("wasm-strip");
-        strip.arg(wasm);
-        execute_command(&mut strip)?;
-        if main.size {
-            println!("Stripped applet size: {}", std::fs::metadata(wasm)?.len());
+        if self.strip.get() {
+            let mut strip = Command::new("./scripts/wrapper.sh");
+            strip.arg("wasm-strip");
+            strip.arg(wasm);
+            execute_command(&mut strip)?;
+            if main.size {
+                println!("Stripped applet size: {}", std::fs::metadata(wasm)?.len());
+            }
         }
-        let mut opt = Command::new("./scripts/wrapper.sh");
-        opt.arg("wasm-opt");
-        if main.multivalue {
-            opt.arg("--enable-multivalue");
-        }
-        opt.args(["--enable-bulk-memory", "--enable-sign-ext", &format!("-O{}", self.opt_level)]);
-        opt.args([wasm, "-o", wasm]);
-        execute_command(&mut opt)?;
-        if main.size {
-            println!("Optimized applet size: {}", std::fs::metadata(wasm)?.len());
+        if self.opt.get() {
+            let mut opt = Command::new("./scripts/wrapper.sh");
+            opt.arg("wasm-opt");
+            if main.multivalue {
+                opt.arg("--enable-multivalue");
+            }
+            opt.args([
+                "--enable-bulk-memory",
+                "--enable-sign-ext",
+                &format!("-O{}", self.opt_level),
+            ]);
+            opt.args([wasm, "-o", wasm]);
+            execute_command(&mut opt)?;
+            if main.size {
+                println!("Optimized applet size: {}", std::fs::metadata(wasm)?.len());
+            }
         }
         Ok(())
     }
@@ -341,18 +370,16 @@ impl AppletCommand {
         match self {
             AppletCommand::Runner(runner) => runner.execute(main, true),
             AppletCommand::Twiggy { args } => {
-                let mut twiggy = Command::new("twiggy");
+                let mut twiggy = Command::new("./scripts/wrapper.sh");
+                twiggy.arg("twiggy");
                 let mut wasm = Some("target/applet.wasm");
                 for arg in args {
-                    if arg == "APPLET" {
-                        twiggy.arg(wasm.take().unwrap());
-                    } else {
-                        twiggy.arg(arg);
-                    }
+                    let _ = match arg.as_str() {
+                        "APPLET" => twiggy.arg(wasm.take().unwrap()),
+                        _ => twiggy.arg(arg),
+                    };
                 }
-                if let Some(wasm) = wasm {
-                    twiggy.arg(wasm);
-                }
+                wasm.map(|x| twiggy.arg(x));
                 execute_command(&mut twiggy)
             }
         }
@@ -587,7 +614,9 @@ fn ensure_command(cmd: &[&str]) -> Result<()> {
 fn copy_if_changed(src: &str, dst: &str) -> Result<bool> {
     let dst_file = format!("{dst}.hash");
     let src_hash = Sha256::digest(std::fs::read(src)?);
-    let changed = !Path::new(&dst_file).exists() || std::fs::read(&dst_file)? != *src_hash;
+    let changed = !Path::new(dst).exists()
+        || !Path::new(&dst_file).exists()
+        || std::fs::read(&dst_file)? != *src_hash;
     if changed {
         std::fs::copy(src, dst)?;
         std::fs::write(&dst_file, src_hash)?;
