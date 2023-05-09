@@ -26,12 +26,12 @@ list() {
 }
 
 features() {
-  sed -n '/^\[features\]$/,/^$/{s/ = .*$//p}' examples/rust/$1/Cargo.toml
+  sed -n '/^\[features]$/,/^$/{s/ = .*$//p}' Cargo.toml | grep -v human
 }
 
 for name in $(list); do
   x cargo xtask applet rust $name runner "$@"
-  for feature in $(features $name); do
+  for feature in $(cd examples/rust/$name && features); do
     x cargo xtask applet rust $name --features=$feature runner "$@"
   done
 done
