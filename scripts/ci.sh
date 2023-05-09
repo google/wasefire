@@ -45,8 +45,6 @@ i "Build the book"
 WASEFIRE_WRAPPER_EXEC=n ./scripts/wrapper.sh mdbook
 ( cd book && ../scripts/wrapper.sh mdbook build 2>/dev/null )
 
-./scripts/ci-changelog.sh
-
 git diff --exit-code \
   || e "Tracked files were modified and/or untracked files were created"
 

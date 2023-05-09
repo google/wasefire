@@ -15,6 +15,7 @@
 
 set -e
 . scripts/log.sh
+. scripts/package.sh
 
 # This script publishes all crates.
 
@@ -52,18 +53,14 @@ if [ -n "$(git status -s)" ]; then
   git commit -aqm'Release all crates'
 fi
 
-get_string() {
-  sed -n 's/^'"$1"' = "\(.*\)"$/\1/p;T;q' Cargo.toml
-}
-
 get_latest() {
-  name="$(get_string name)"
+  name="$(package_name)"
   cargo search "$name" | sed -n '1s/^'"$name"' = "\([0-9.]*\)".*$/\1/p'
 }
 
 for crate in "${TOPOLOGICAL_ORDER[@]}"; do
   ( cd crates/$crate
-    current="$(get_string version)"
+    current="$(package_version)"
     latest="$(get_latest)"
     if [ "$current" = "$latest" ]; then
       i "Skipping $crate already published at $latest"

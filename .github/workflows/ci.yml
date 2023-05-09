@@ -11,13 +11,18 @@ on:
     - cron: 45 3 * * 2 # every Tuesday at 3:45 UTC
 
 jobs:
-  ubuntu:
+  changelog:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
-          # This is needed to ensure CHANGELOG.md are up-to-date.
           fetch-depth: 0
+      - run: ./scripts/ci-changelog.sh
+  ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
       - uses: actions/cache@v3
         if: github.event_name != 'schedule'
         with:
