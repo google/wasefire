@@ -20,7 +20,9 @@ wasefire::applet!();
 fn main() {
     if crypto::gcm::is_supported() {
         test_encrypt();
+        test_encrypt_in_place();
         test_decrypt();
+        test_decrypt_in_place();
     }
     debug::exit(true);
 }
@@ -35,13 +37,34 @@ fn test_encrypt() {
     }
 }
 
+fn test_encrypt_in_place() {
+    debug!("test_encrypt_in_place(): Encrypts the test vectors in place.");
+    for &Vector { key, iv, aad, clear, cipher, tag } in TEST_VECTORS {
+        debug!("- {} bytes", clear.len());
+        let mut cipher_ = clear.to_vec();
+        let tag_ = crypto::gcm::encrypt_in_place(key, iv, aad, &mut cipher_).unwrap();
+        debug::assert_eq(&cipher_[..], cipher);
+        debug::assert_eq(&tag_, tag);
+    }
+}
+
 fn test_decrypt() {
-    debug!("test_encrypt(): Decrypts the test vectors.");
+    debug!("test_decrypt(): Decrypts the test vectors.");
     for &Vector { key, iv, aad, clear, cipher, tag } in TEST_VECTORS {
         debug!("- {} bytes", clear.len());
         let cipher = crypto::gcm::Cipher { text: cipher.to_vec(), tag: *tag };
         let result = crypto::gcm::decrypt(key, iv, aad, &cipher).unwrap();
         debug::assert_eq(&result[..], clear);
+    }
+}
+
+fn test_decrypt_in_place() {
+    debug!("test_decrypt_in_place(): Decrypts the test vectors in place.");
+    for &Vector { key, iv, aad, clear, cipher, tag } in TEST_VECTORS {
+        debug!("- {} bytes", clear.len());
+        let mut clear_ = cipher.to_vec();
+        crypto::gcm::decrypt_in_place(key, iv, aad, tag, &mut clear_).unwrap();
+        debug::assert_eq(&clear_[..], clear);
     }
 }
 

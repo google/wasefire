@@ -187,10 +187,23 @@
 
   // START OF MODULE crypto_gcm
   // AES-256-GCM.
-    // Whether AES-256-GCM is supported.
+    // Bit-shift for the supported bit-flags.
+    enum crypto_gcm_Support {
+      // The [`encrypt()`] and [`decrypt()`] functions are supported without copy when
+      // the input pointer is non-null, i.e. the function uses different buffers for
+      // input and output.
+      NoCopy,
+
+      // The [`encrypt()`] and [`decrypt()`] functions are supported without copy when
+      // the input pointer is null, i.e. the function operates in-place in the same
+      // buffer.
+      InPlaceNoCopy,
+    }
+
+    // Describes how AES-256-GCM is supported.
     @external("env", "cgs")
-    export declare function crypto_gcm_is_supported(
-    // 1 if supported, 0 otherwise.
+    export declare function crypto_gcm_support(
+    // Bit-flag as described by [`super::Support`].
     ): usize
 
     // Encrypts and authenticates a clear text with associated data given a key and IV.
@@ -212,6 +225,9 @@
       length: usize,
 
       // The clear text.
+      //
+      // A null pointer indicates that the clear text is in the cipher text and should be
+      // encrypted in place.
       clear: usize,
 
       // The cipher text.
@@ -245,6 +261,9 @@
       length: usize,
 
       // The cipher text.
+      //
+      // A null pointer indicates that the cipher text is in the clear text and should be
+      // decrypted in place.
       cipher: usize,
 
       // The clear text.
