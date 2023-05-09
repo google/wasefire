@@ -15,22 +15,26 @@
 
 set -e
 . scripts/log.sh
+. scripts/package.sh
 
 # This script checks that CHANGELOG.md files are correct.
 
 for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
-  sed -n '1{/^\[package\]$/!q1};/^publish =/q;/^$/q1' $dir/Cargo.toml \
-    || e "Cargo.toml for $dir is missing the publish field"
-  $(sed -n 's/^publish = //p;T;q' $dir/Cargo.toml) || continue
-  [ -e $dir/CHANGELOG.md ] || e "CHANGELOG.md for $dir is missing"
   ( cd $dir
+    publish="$(package_publish)"
+    [ -n "$publish" ] || e "Cargo.toml for $dir is missing the publish field"
+    $publish || exit 0
+    [ -e CHANGELOG.md ] || e "CHANGELOG.md for $dir is missing"
+    [ "$(package_include)" = '["/src"]' ] \
+      || e "Cargo.toml should only include the src directory"
+    [ -z "$(package_exclude)" ] || e "Cargo.toml should not exclude anything"
     ref=$(git log -n1 --pretty=format:%H origin/main.. -- CHANGELOG.md)
     [ -n "$ref" ] || ref=origin/main
-    git diff --quiet $ref.. -- $(cargo package --list) \
+    git diff --quiet $ref -- Cargo.toml src \
       || e "CHANGELOG.md for $dir is not up-to-date"
     ver="$(sed -n '3s/^## //p' CHANGELOG.md)"
     [ -n "$ver" ] || e "CHANGELOG.md for $dir does not start with version"
-    [ "$(sed -n 's/^version = //p;T;q' Cargo.toml | tr -d \")" = "$ver" ] \
+    [ "$(package_version)" = "$ver" ] \
       || e "CHANGELOG.md and Cargo.toml for $dir have different versions"
   )
 done

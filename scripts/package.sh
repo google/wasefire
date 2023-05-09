@@ -12,7 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-x() { ( set -x; "$@"; ); }
-i() { echo "[1;36mInfo:[m $*"; }
-d() { echo "[1;32mDone:[m $*"; exit 0; }
-e() { echo "[1;31mError:[m $*"; exit 1; }
+package__raw() {
+  sed -n '/^\[package]$/,/^$/{s/^'"$1"' = //p}' Cargo.toml
+}
+
+package__string() {
+  package__raw "$1" | sed 's/^"\(.*\)"$/\1/'
+}
+
+package_name() {
+  package__string name
+}
+
+package_version() {
+  package__string version
+}
+
+package_publish() {
+  package__raw publish
+}
+
+package_include() {
+  package__raw include
+}
+
+package_exclude() {
+  package__raw exclude
+}
