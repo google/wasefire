@@ -7,6 +7,7 @@
 - Add SHA-256 in `crypto::hash`
 - Add `sync` module for mutex and atomics support
 - Add in-place variants for AES-256-GCM
+- Implement RustCrypto API for AES-256-GCM
 
 ### Patch
 

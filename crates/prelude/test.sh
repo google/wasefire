@@ -16,6 +16,7 @@
 set -ex
 
 cargo check --target=wasm32-unknown-unknown
+cargo check --target=wasm32-unknown-unknown --features=rust-crypto
 cargo check --features=test
 cargo fmt -- --check
 cargo clippy --target=wasm32-unknown-unknown -- --deny=warnings
