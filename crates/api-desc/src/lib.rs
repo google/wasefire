@@ -306,7 +306,7 @@ impl Fn {
             }
             #[cfg(feature = "test")]
             pub unsafe fn #name(#fn_params) #fn_results {
-                panic!("Applet API is not linked in unit tests.");
+                panic!("applet API is not linked in unit tests");
             }
         }
     }
@@ -588,7 +588,7 @@ fn write_items<T>(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
+    use std::collections::{HashMap, HashSet};
 
     use super::*;
 
@@ -600,6 +600,25 @@ mod tests {
             match item {
                 Item::Enum(_) => (),
                 Item::Fn(Fn { link, .. }) => assert_eq!(seen.replace(link), None),
+                Item::Mod(Mod { items, .. }) => todo.extend(items),
+            }
+        }
+    }
+
+    #[test]
+    fn enum_values_are_unique() {
+        let Api(mut todo) = Api::default();
+        while let Some(item) = todo.pop() {
+            match item {
+                Item::Enum(Enum { variants, .. }) => {
+                    let mut seen = HashMap::new();
+                    for Variant { name, value, .. } in variants {
+                        if let Some(other) = seen.insert(value, name.clone()) {
+                            panic!("duplicate enum value {value} between {name} and {other}");
+                        }
+                    }
+                }
+                Item::Fn(_) => (),
                 Item::Mod(Mod { items, .. }) => todo.extend(items),
             }
         }
