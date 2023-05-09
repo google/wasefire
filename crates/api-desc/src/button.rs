@@ -24,9 +24,10 @@ pub(crate) fn new() -> Item {
             /// Describes the state of a button.
             enum State {
                 /// The button is released.
-                Released,
+                Released = 0,
+
                 /// The button is pressed.
-                Pressed,
+                Pressed = 1,
             }
         },
         item! {

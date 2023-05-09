@@ -17,10 +17,10 @@
   // Describes the state of a button.
   enum button_State {
     // The button is released.
-    Released,
+    Released = 0,
 
     // The button is pressed.
-    Pressed,
+    Pressed = 1,
   }
 
   // Returns how many buttons are on the device.
@@ -57,10 +57,10 @@
   // Whether a timer should periodically trigger.
   enum clock_Mode {
     // The timer fires only once.
-    Oneshot,
+    Oneshot = 0,
 
     // The timer fires periodically.
-    Periodic,
+    Periodic = 1,
   }
 
   // Allocates a timer (initially stopped).
@@ -114,10 +114,10 @@
   // Describes errors on cryptographic operations.
   enum crypto_Error {
     // A function pre-condition was broken.
-    InvalidArgument,
+    InvalidArgument = 0,
 
     // An operation is unsupported.
-    Unsupported,
+    Unsupported = 1,
   }
 
   // START OF MODULE crypto_ccm
@@ -192,12 +192,12 @@
       // The [`encrypt()`] and [`decrypt()`] functions are supported without copy when
       // the input pointer is non-null, i.e. the function uses different buffers for
       // input and output.
-      NoCopy,
+      NoCopy = 0,
 
       // The [`encrypt()`] and [`decrypt()`] functions are supported without copy when
       // the input pointer is null, i.e. the function operates in-place in the same
       // buffer.
-      InPlaceNoCopy,
+      InPlaceNoCopy = 1,
     }
 
     // Describes how AES-256-GCM is supported.
@@ -278,7 +278,7 @@
     // Hash algorithm.
     enum crypto_hash_Algorithm {
       // SHA-256.
-      Sha256,
+      Sha256 = 0,
     }
 
     // Whether the algorithm is supported.
@@ -373,10 +373,10 @@
   // Describes the state of a LED.
   enum led_Status {
     // The LED is off.
-    Off,
+    Off = 0,
 
     // The LED is on.
-    On,
+    On = 1,
   }
 
   // Returns a LED status.
@@ -434,19 +434,19 @@
   // Describes errors interacting with the store.
   enum store_Error {
     // A function pre-condition was broken.
-    InvalidArgument,
+    InvalidArgument = 0,
 
     // The store is full.
-    NoCapacity,
+    NoCapacity = 1,
 
     // The store reached its end of life.
-    NoLifetime,
+    NoLifetime = 2,
 
     // An operation to the underlying storage failed.
-    StorageError,
+    StorageError = 3,
 
     // The underlying storage doesn't match the store invariant.
-    InvalidStorage,
+    InvalidStorage = 4,
   }
 
   // Inserts an entry in the store.
@@ -499,7 +499,7 @@
 // USB operations.
   // Describes errors on USB operations.
   enum usb_Error {
-    Unknown,
+    Unknown = 0,
   }
 
   // START OF MODULE usb_serial
@@ -532,10 +532,10 @@
     // USB serial events.
     enum usb_serial_Event {
       // Ready for read.
-      Read,
+      Read = 0,
 
       // Ready for write.
-      Write,
+      Write = 1,
     }
 
     // Registers a callback when USB serial is ready.

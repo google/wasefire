@@ -24,7 +24,7 @@ pub(crate) fn new() -> Item {
             /// Hash algorithm.
             enum Algorithm {
                 /// SHA-256.
-                Sha256,
+                Sha256 = 0,
             }
         },
         item! {
