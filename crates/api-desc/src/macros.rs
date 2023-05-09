@@ -34,10 +34,12 @@ macro_rules! docs {
 macro_rules! variants {
     ($input:tt) => (variants!($input []));
 
-    ({ $(#[doc = $doc:literal])* $name:ident, $($input:tt)* } [$($output:tt)*]) => (variants! {
+    ({ $(#[doc = $doc:literal])* $name:ident = $value:expr, $($input:tt)* }
+     [$($output:tt)*]) => (variants! {
         { $($input)* } [$($output)* Variant {
             docs: vec![$($doc.into()),*],
             name: stringify!($name).into(),
+            value: $value,
         },]
     });
 

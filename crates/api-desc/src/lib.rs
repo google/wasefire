@@ -103,6 +103,7 @@ struct Enum {
 struct Variant {
     docs: Vec<String>,
     name: String,
+    value: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -514,16 +515,16 @@ impl Type {
 
 impl Variant {
     fn wasm_rust(&self) -> TokenStream {
-        let Variant { docs, name } = self;
+        let Variant { docs, name, value } = self;
         let name = format_ident!("{}", name);
-        quote!(#(#[doc = #docs])* #name)
+        quote!(#(#[doc = #docs])* #name = #value)
     }
 
     fn wasm_assemblyscript(&self, output: &mut dyn Write, path: &Path) -> std::io::Result<()> {
-        let Variant { docs, name } = self;
+        let Variant { docs, name, value } = self;
         let path = Path::Mod { name: "", prev: path };
         write_docs(output, docs, &path)?;
-        writeln!(output, "{path:#}{name},")
+        writeln!(output, "{path:#}{name} = {value},")
     }
 }
 

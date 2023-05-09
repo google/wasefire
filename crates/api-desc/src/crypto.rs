@@ -28,10 +28,10 @@ pub(crate) fn new() -> Item {
             /// Describes errors on cryptographic operations.
             enum Error {
                 /// A function pre-condition was broken.
-                InvalidArgument,
+                InvalidArgument = 0,
 
                 /// An operation is unsupported.
-                Unsupported,
+                Unsupported = 1,
             }
         },
         ccm::new(),

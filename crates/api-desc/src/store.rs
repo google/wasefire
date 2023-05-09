@@ -24,19 +24,19 @@ pub(crate) fn new() -> Item {
             /// Describes errors interacting with the store.
             enum Error {
                 /// A function pre-condition was broken.
-                InvalidArgument,
+                InvalidArgument = 0,
 
                 /// The store is full.
-                NoCapacity,
+                NoCapacity = 1,
 
                 /// The store reached its end of life.
-                NoLifetime,
+                NoLifetime = 2,
 
                 /// An operation to the underlying storage failed.
-                StorageError,
+                StorageError = 3,
 
                 /// The underlying storage doesn't match the store invariant.
-                InvalidStorage,
+                InvalidStorage = 4,
             }
         },
         item! {

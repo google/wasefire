@@ -7,6 +7,10 @@
 - Add `hash` module with SHA-256 algorithm
 - Support in-place AES-256-GCM by accepting null pointers
 
+### Patch
+
+- Require enum values to be specified (fix #137)
+
 ## 0.1.2
 
 ### Minor

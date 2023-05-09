@@ -31,10 +31,10 @@ pub(crate) fn new() -> Item {
             /// Describes the state of a LED.
             enum Status {
                 /// The LED is off.
-                Off,
+                Off = 0,
 
                 /// The LED is on.
-                On,
+                On = 1,
             }
         },
         item! {

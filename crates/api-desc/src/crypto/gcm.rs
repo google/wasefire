@@ -26,12 +26,12 @@ pub(crate) fn new() -> Item {
                 /// The [`encrypt()`] and [`decrypt()`] functions are supported without copy when
                 /// the input pointer is non-null, i.e. the function uses different buffers for
                 /// input and output.
-                NoCopy,
+                NoCopy = 0,
 
                 /// The [`encrypt()`] and [`decrypt()`] functions are supported without copy when
                 /// the input pointer is null, i.e. the function operates in-place in the same
                 /// buffer.
-                InPlaceNoCopy,
+                InPlaceNoCopy = 1,
             }
         },
         item! {

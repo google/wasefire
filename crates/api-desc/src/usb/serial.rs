@@ -52,9 +52,9 @@ pub(crate) fn new() -> Item {
             /// USB serial events.
             enum Event {
                 /// Ready for read.
-                Read,
+                Read = 0,
                 /// Ready for write.
-                Write,
+                Write = 1,
             }
         },
         item! {

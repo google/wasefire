@@ -25,7 +25,7 @@ pub(crate) fn new() -> Item {
         item! {
             /// Describes errors on USB operations.
             enum Error {
-                Unknown,
+                Unknown = 0,
             }
         },
         serial::new(),

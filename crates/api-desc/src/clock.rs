@@ -24,10 +24,10 @@ pub(crate) fn new() -> Item {
             /// Whether a timer should periodically trigger.
             enum Mode {
                 /// The timer fires only once.
-                Oneshot,
+                Oneshot = 0,
 
                 /// The timer fires periodically.
-                Periodic,
+                Periodic = 1,
             }
         },
         item! {
