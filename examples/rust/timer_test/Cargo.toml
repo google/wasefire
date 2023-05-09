@@ -10,3 +10,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wasefire = { path = "../../../crates/prelude" }
+
+[features]
+human = []

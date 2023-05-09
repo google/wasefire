@@ -20,7 +20,14 @@ wasefire::applet!();
 use alloc::rc::Rc;
 use core::cell::Cell;
 
+#[cfg(feature = "human")]
+const SECOND_MS: usize = 1000;
+#[cfg(not(feature = "human"))]
+const SECOND_MS: usize = 100;
+
 fn main() {
+    #[cfg(not(feature = "human"))]
+    debug!("Running at 10x speed (use --features=human to run at normal speed).");
     test_oneshot();
     test_periodic(true);
     test_periodic(false);
@@ -42,7 +49,7 @@ fn test_periodic(explicit_stop: bool) {
         }
     });
     debug!("+ start timer");
-    timer.start_ms(clock::Periodic, 1000);
+    timer.start_ms(clock::Periodic, SECOND_MS);
     while i.get() < 5 {
         scheduling::wait_for_callback();
     }
@@ -64,7 +71,7 @@ fn test_oneshot() {
         }
     });
     debug!("+ start timer");
-    timer.start_ms(clock::Oneshot, 1000);
+    timer.start_ms(clock::Oneshot, SECOND_MS);
     scheduling::wait_until(|| done.get());
     debug::assert(done.get());
 }
@@ -77,9 +84,9 @@ fn test_oneshot_cancel() {
         move || done.set(true)
     });
     debug!("+ start timer");
-    timer.start_ms(clock::Oneshot, 5000);
+    timer.start_ms(clock::Oneshot, 5 * SECOND_MS);
     debug!("+ sleep");
-    clock::sleep_ms(1000);
+    clock::sleep_ms(SECOND_MS);
     debug!("+ stop timer");
     timer.stop();
     debug::assert(!done.get());
@@ -97,8 +104,8 @@ fn test_periodic_cancel() {
         }
     });
     debug!("+ start timer");
-    timer.start_ms(clock::Periodic, 1000);
-    clock::sleep_ms(3500);
+    timer.start_ms(clock::Periodic, SECOND_MS);
+    clock::sleep_ms(7 * SECOND_MS / 2);
     debug!("+ stop timer");
     timer.stop();
     debug::assert_eq(&i.get(), &3);
@@ -111,7 +118,7 @@ fn test_cancel_callback() {
         let has_run = has_run.clone();
         move || has_run.set(true)
     });
-    first.start_ms(clock::Oneshot, 1000);
+    first.start_ms(clock::Oneshot, SECOND_MS);
     while scheduling::num_pending_callbacks() == 0 {}
     debug!("- callback scheduled");
     drop(first);
