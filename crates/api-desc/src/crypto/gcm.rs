@@ -21,11 +21,25 @@ pub(crate) fn new() -> Item {
     let name = "gcm".into();
     let items = vec![
         item! {
-            /// Whether AES-256-GCM is supported.
-            fn is_supported "cgs" {
+            /// Bit-shift for the supported bit-flags.
+            enum Support {
+                /// The [`encrypt()`] and [`decrypt()`] functions are supported without copy when
+                /// the input pointer is non-null, i.e. the function uses different buffers for
+                /// input and output.
+                NoCopy,
+
+                /// The [`encrypt()`] and [`decrypt()`] functions are supported without copy when
+                /// the input pointer is null, i.e. the function operates in-place in the same
+                /// buffer.
+                InPlaceNoCopy,
+            }
+        },
+        item! {
+            /// Describes how AES-256-GCM is supported.
+            fn support "cgs" {
             } -> {
-                /// 1 if supported, 0 otherwise.
-                supported: usize,
+                /// Bit-flag as described by [`super::Support`].
+                support: usize,
             }
         },
         item! {

@@ -21,6 +21,17 @@ use wasefire_applet_api::crypto::gcm as api;
 
 use super::Error;
 
+/// Describes AES-256-GCM support.
+pub struct Support {
+    /// The [`encrypt`] and [`decrypt`] functions are supported without copy when the input pointer
+    /// is non-null, i.e. the function uses different buffers for input and output.
+    pub no_copy: bool,
+
+    /// The [`encrypt`] and [`decrypt`] functions are supported without copy when the input pointer
+    /// is null, i.e. the function operates in-place in the same buffer.
+    pub in_place_no_copy: bool,
+}
+
 pub struct Cipher {
     pub text: Vec<u8>,
     pub tag: [u8; 16],
@@ -28,8 +39,17 @@ pub struct Cipher {
 
 /// Whether AES-256-GCM is supported.
 pub fn is_supported() -> bool {
-    let api::is_supported::Results { supported } = unsafe { api::is_supported() };
-    supported != 0
+    let api::support::Results { support } = unsafe { api::support() };
+    support != 0
+}
+
+/// Describes how AES-256-GCM is supported.
+pub fn support() -> Support {
+    let api::support::Results { support } = unsafe { api::support() };
+    Support {
+        no_copy: (support & 1 << api::Support::NoCopy as u32) != 0,
+        in_place_no_copy: (support & 1 << api::Support::InPlaceNoCopy as u32) != 0,
+    }
 }
 
 /// Encrypts and authenticates a cleartext.

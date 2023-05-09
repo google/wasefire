@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_applet_api::crypto::gcm::{self as api, Api};
+use wasefire_applet_api::crypto::gcm::{self as api, Api, Support};
 use wasefire_board_api::crypto::aes256_gcm::Api as _;
 use wasefire_board_api::crypto::Api as _;
 use wasefire_board_api::Api as Board;
@@ -21,16 +21,18 @@ use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
-        Api::IsSupported(call) => is_supported(call),
+        Api::Support(call) => support(call),
         Api::Encrypt(call) => encrypt(call),
         Api::Decrypt(call) => decrypt(call),
     }
 }
 
-fn is_supported<B: Board>(mut call: SchedulerCall<B, api::is_supported::Sig>) {
-    let api::is_supported::Params {} = call.read();
-    let supported = call.scheduler().board.crypto().aes256_gcm().is_supported() as u32;
-    call.reply(Ok(api::is_supported::Results { supported: supported.into() }))
+fn support<B: Board>(mut call: SchedulerCall<B, api::support::Sig>) {
+    let api::support::Params {} = call.read();
+    let support = call.scheduler().board.crypto().aes256_gcm().support();
+    let support = (support.no_copy as u32) << Support::NoCopy as u32
+        | (support.in_place_no_copy as u32) << Support::InPlaceNoCopy as u32;
+    call.reply(Ok(api::support::Results { support: support.into() }))
 }
 
 fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {

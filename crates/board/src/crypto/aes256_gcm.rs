@@ -16,10 +16,16 @@
 
 use crate::{Error, Unimplemented, Unsupported};
 
+#[derive(Default, Copy, Clone)]
+pub struct Support {
+    pub no_copy: bool,
+    pub in_place_no_copy: bool,
+}
+
 /// AES-256-GCM interface.
 pub trait Api {
-    /// Whether AES-256-GCM is supported.
-    fn is_supported(&mut self) -> bool;
+    /// Describes how AES-256-GCM is supported.
+    fn support(&mut self) -> Support;
 
     /// Encrypts and authenticates a clear text with associated data given a key and IV.
     ///
@@ -41,7 +47,7 @@ pub trait Api {
 }
 
 impl Api for Unimplemented {
-    fn is_supported(&mut self) -> bool {
+    fn support(&mut self) -> Support {
         unreachable!()
     }
 
@@ -65,8 +71,8 @@ mod unsupported {
     use super::*;
 
     impl Api for Unsupported {
-        fn is_supported(&mut self) -> bool {
-            false
+        fn support(&mut self) -> Support {
+            Support::default()
         }
 
         fn encrypt(
@@ -92,8 +98,8 @@ mod unsupported {
     use super::*;
 
     impl Api for Unsupported {
-        fn is_supported(&mut self) -> bool {
-            true
+        fn support(&mut self) -> Support {
+            Support { no_copy: false, in_place_no_copy: true }
         }
 
         fn encrypt(
