@@ -15,6 +15,7 @@
 use crate::*;
 
 mod ccm;
+mod ec;
 mod gcm;
 mod hash;
 
@@ -35,6 +36,7 @@ pub(crate) fn new() -> Item {
             }
         },
         ccm::new(),
+        ec::new(),
         gcm::new(),
         hash::new(),
     ];

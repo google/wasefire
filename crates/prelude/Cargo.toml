@@ -14,8 +14,10 @@ categories = ["embedded", "no-std", "wasm"]
 [dependencies]
 aead = { version = "0.5.2", default-features = false, features = ["alloc"], optional = true }
 const-default = "1.0.0"
+generic-array = "0.14.7"
 portable-atomic = { version = "1.2.0", default-features = false }
 rlsf = "0.2.1"
+typenum = "1.16.0"
 wasefire-applet-api = { version = "0.3.0-git", path = "../api", features = ["wasm"] }
 
 [features]

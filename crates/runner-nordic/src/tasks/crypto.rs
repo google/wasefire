@@ -34,6 +34,16 @@ impl Api<Board> for &mut Board {
         Unsupported
     }
 
+    type P256<'a> = Unsupported where Self: 'a;
+    fn p256(&mut self) -> Unsupported {
+        Unsupported
+    }
+
+    type P384<'a> = Unsupported where Self: 'a;
+    fn p384(&mut self) -> Unsupported {
+        Unsupported
+    }
+
     type Sha256<'a> = Unsupported where Self: 'a;
     fn sha256(&mut self) -> Unsupported {
         Unsupported

@@ -400,8 +400,10 @@ version = "0.1.5-git"
 dependencies = [
  "aead",
  "const-default",
+ "generic-array",
  "portable-atomic",
  "rlsf",
+ "typenum",
  "wasefire-applet-api",
 ]
 

@@ -6,6 +6,10 @@
 
 - Update `wasefire-applet-api-macro` version
 
+### Minor
+
+- Add `Curve::int_len()`
+
 ## 0.2.0
 
 ### Major

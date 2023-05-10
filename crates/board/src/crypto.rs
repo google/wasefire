@@ -18,6 +18,8 @@ use crate::{Unimplemented, Unsupported};
 
 pub mod aes128_ccm;
 pub mod aes256_gcm;
+pub mod p256;
+pub mod p384;
 pub mod sha256;
 
 /// Returns this [`Types`] given a [`crate::Types`].
@@ -37,6 +39,14 @@ pub trait Api<T: Types> {
     type Aes256Gcm<'a>: aes256_gcm::Api
     where Self: 'a;
     fn aes256_gcm(&mut self) -> Self::Aes256Gcm<'_>;
+
+    type P256<'a>: p256::Api
+    where Self: 'a;
+    fn p256(&mut self) -> Self::P256<'_>;
+
+    type P384<'a>: p384::Api
+    where Self: 'a;
+    fn p384(&mut self) -> Self::P384<'_>;
 
     type Sha256<'a>: sha256::Api<T::Sha256>
     where Self: 'a;
@@ -58,6 +68,16 @@ impl Api<Unimplemented> for Unimplemented {
         unreachable!()
     }
 
+    type P256<'a> = Unimplemented;
+    fn p256(&mut self) -> Self::P256<'_> {
+        unreachable!()
+    }
+
+    type P384<'a> = Unimplemented;
+    fn p384(&mut self) -> Self::P384<'_> {
+        unreachable!()
+    }
+
     type Sha256<'a> = Unimplemented;
     fn sha256(&mut self) -> Self::Sha256<'_> {
         unreachable!()
@@ -76,6 +96,16 @@ impl Api<Unsupported> for Unsupported {
 
     type Aes256Gcm<'a> = Unsupported;
     fn aes256_gcm(&mut self) -> Self::Aes256Gcm<'_> {
+        Unsupported
+    }
+
+    type P256<'a> = Unsupported;
+    fn p256(&mut self) -> Self::P256<'_> {
+        Unsupported
+    }
+
+    type P384<'a> = Unsupported;
+    fn p384(&mut self) -> Self::P384<'_> {
         Unsupported
     }
 

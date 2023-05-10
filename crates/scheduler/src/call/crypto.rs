@@ -13,6 +13,7 @@
 // limitations under the License.
 
 mod ccm;
+mod ec;
 mod gcm;
 mod hash;
 
@@ -24,6 +25,7 @@ use crate::DispatchSchedulerCall;
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Ccm(call) => ccm::process(call),
+        Api::Ec(call) => ec::process(call),
         Api::Gcm(call) => gcm::process(call),
         Api::Hash(call) => hash::process(call),
     }
