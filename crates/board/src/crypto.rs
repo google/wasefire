@@ -18,6 +18,7 @@ use crate::{Unimplemented, Unsupported};
 
 pub mod aes128_ccm;
 pub mod aes256_gcm;
+pub mod hmac_sha256;
 pub mod p256;
 pub mod p384;
 pub mod sha256;
@@ -27,6 +28,7 @@ pub type Get<B> = <super::Get<B> as super::Types>::Crypto;
 
 /// Associated types of [`Api`].
 pub trait Types {
+    type HmacSha256: hmac_sha256::Types;
     type Sha256: sha256::Types;
 }
 
@@ -39,6 +41,10 @@ pub trait Api<T: Types> {
     type Aes256Gcm<'a>: aes256_gcm::Api
     where Self: 'a;
     fn aes256_gcm(&mut self) -> Self::Aes256Gcm<'_>;
+
+    type HmacSha256<'a>: hmac_sha256::Api<T::HmacSha256>
+    where Self: 'a;
+    fn hmac_sha256(&mut self) -> Self::HmacSha256<'_>;
 
     type P256<'a>: p256::Api
     where Self: 'a;
@@ -54,6 +60,7 @@ pub trait Api<T: Types> {
 }
 
 impl Types for Unimplemented {
+    type HmacSha256 = Unimplemented;
     type Sha256 = Unimplemented;
 }
 
@@ -65,6 +72,11 @@ impl Api<Unimplemented> for Unimplemented {
 
     type Aes256Gcm<'a> = Unimplemented;
     fn aes256_gcm(&mut self) -> Self::Aes256Gcm<'_> {
+        unreachable!()
+    }
+
+    type HmacSha256<'a> = Unimplemented;
+    fn hmac_sha256(&mut self) -> Self::HmacSha256<'_> {
         unreachable!()
     }
 
@@ -85,6 +97,7 @@ impl Api<Unimplemented> for Unimplemented {
 }
 
 impl Types for Unsupported {
+    type HmacSha256 = Unsupported;
     type Sha256 = Unsupported;
 }
 
@@ -96,6 +109,11 @@ impl Api<Unsupported> for Unsupported {
 
     type Aes256Gcm<'a> = Unsupported;
     fn aes256_gcm(&mut self) -> Self::Aes256Gcm<'_> {
+        Unsupported
+    }
+
+    type HmacSha256<'a> = Unsupported;
+    fn hmac_sha256(&mut self) -> Self::HmacSha256<'_> {
         Unsupported
     }
 

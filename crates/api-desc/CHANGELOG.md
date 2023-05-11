@@ -5,7 +5,7 @@
 ### Minor
 
 - Add `ec` module with elliptic curve operations
-- Add `hash` module with SHA-256 algorithm
+- Add `hash` module with SHA-256 and HMAC-SHA-256 algorithms
 - Support in-place AES-256-GCM by accepting null pointers
 
 ### Patch

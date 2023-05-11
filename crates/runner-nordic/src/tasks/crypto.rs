@@ -20,6 +20,7 @@ use crate::tasks::Board;
 mod ccm;
 
 impl Types for Board {
+    type HmacSha256 = Unsupported;
     type Sha256 = Unsupported;
 }
 
@@ -31,6 +32,11 @@ impl Api<Board> for &mut Board {
 
     type Aes256Gcm<'a> = Unsupported where Self: 'a;
     fn aes256_gcm(&mut self) -> Unsupported {
+        Unsupported
+    }
+
+    type HmacSha256<'a> = Unsupported where Self: 'a;
+    fn hmac_sha256(&mut self) -> Unsupported {
         Unsupported
     }
 

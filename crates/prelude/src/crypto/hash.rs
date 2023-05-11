@@ -79,6 +79,73 @@ impl Drop for Digest {
     }
 }
 
+/// Hmac context.
+pub struct Hmac {
+    /// The hmac context identifier.
+    ///
+    /// Finalized when -1 (as usize). This is used to know whether Drop should finalize.
+    id: usize,
+
+    /// The hmac length in bytes.
+    len: usize,
+}
+
+impl Hmac {
+    /// Creates a new hmac context for the specified algorithm.
+    pub fn new(algorithm: Algorithm, key: &[u8]) -> Result<Self, Error> {
+        if !is_hmac_supported(algorithm) {
+            return Err(Error::Unsupported);
+        }
+        let params = api::hmac_initialize::Params {
+            algorithm: algorithm as usize,
+            key: key.as_ptr(),
+            key_len: key.len(),
+        };
+        let api::hmac_initialize::Results { id } = unsafe { api::hmac_initialize(params) };
+        let id = Error::to_result(id)?;
+        let len = algorithm.digest_len();
+        Ok(Self { id, len })
+    }
+
+    /// Updates the hmac context with the provided data.
+    pub fn update(&mut self, data: &[u8]) {
+        let params =
+            api::hmac_update::Params { id: self.id, data: data.as_ptr(), length: data.len() };
+        unsafe { api::hmac_update(params) };
+    }
+
+    /// Finalizes the hmac context and writes the associated hmac.
+    pub fn finalize(mut self, hmac: &mut [u8]) -> Result<(), Error> {
+        if hmac.len() != self.len {
+            return Err(Error::InvalidArgument);
+        }
+        let params = api::hmac_finalize::Params { id: self.id, hmac: hmac.as_mut_ptr() };
+        let api::hmac_finalize::Results { res } = unsafe { api::hmac_finalize(params) };
+        self.id = usize::MAX;
+        Error::to_result(res).map(|_| ())
+    }
+
+    /// Writes the hmac of the data for the given algorithm.
+    pub fn hmac(
+        algorithm: Algorithm, key: &[u8], data: &[u8], hmac: &mut [u8],
+    ) -> Result<(), Error> {
+        let mut context = Self::new(algorithm, key)?;
+        context.update(data);
+        context.finalize(hmac)
+    }
+}
+
+impl Drop for Hmac {
+    fn drop(&mut self) {
+        if self.id == usize::MAX {
+            // Already finalized.
+            return;
+        }
+        let params = api::hmac_finalize::Params { id: self.id, hmac: core::ptr::null_mut() };
+        unsafe { api::hmac_finalize(params) };
+    }
+}
+
 /// Returns the SHA-256 of the provided data.
 pub fn sha256(data: &[u8]) -> Result<[u8; 32], Error> {
     let mut digest = [0; 32];
@@ -86,9 +153,23 @@ pub fn sha256(data: &[u8]) -> Result<[u8; 32], Error> {
     Ok(digest)
 }
 
+/// Returns the HMAC-SHA-256 of the provided data.
+pub fn hmac_sha256(key: &[u8], data: &[u8]) -> Result<[u8; 32], Error> {
+    let mut hmac = [0; 32];
+    Hmac::hmac(Algorithm::Sha256, key, data, &mut hmac)?;
+    Ok(hmac)
+}
+
 /// Whether a hash algorithm is supported.
 pub fn is_supported(algorithm: Algorithm) -> bool {
     let params = api::is_supported::Params { algorithm: algorithm as usize };
     let api::is_supported::Results { supported } = unsafe { api::is_supported(params) };
+    supported != 0
+}
+
+/// Whether a hash algorithm is supported for HMAC.
+pub fn is_hmac_supported(algorithm: Algorithm) -> bool {
+    let params = api::is_hmac_supported::Params { algorithm: algorithm as usize };
+    let api::is_hmac_supported::Results { supported } = unsafe { api::is_hmac_supported(params) };
     supported != 0
 }
