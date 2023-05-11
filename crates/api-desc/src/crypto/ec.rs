@@ -72,10 +72,10 @@ pub(crate) fn new() -> Item {
                 in_y: *const u8,
 
                 /// The x coordinate of the output point in SEC1 encoding.
-                out_x: *const u8,
+                out_x: *mut u8,
 
                 /// The y coordinate of the output point in SEC1 encoding.
-                out_y: *const u8,
+                out_y: *mut u8,
             } -> {
                 /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
                 /// otherwise.

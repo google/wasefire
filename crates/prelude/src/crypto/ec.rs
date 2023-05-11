@@ -20,6 +20,8 @@ use wasefire_applet_api::crypto::ec as api;
 use super::Error;
 
 /// Computes the shared secret of an ECDH key agreement.
+///
+/// The curve integers are in SEC1 encoding.
 pub fn ecdh<C: Curve>(
     private: &Int<C>, public_x: &Int<C>, public_y: &Int<C>, shared: &mut Int<C>,
 ) -> Result<(), Error> {
@@ -28,6 +30,10 @@ pub fn ecdh<C: Curve>(
 }
 
 /// Curve API.
+///
+/// This trait should only be implemented by the prelude and is thus sealed. Its purpose is to
+/// provide curve-parametric algorithms.
+#[sealed::sealed]
 pub trait Curve {
     /// Integer type.
     type N: ArrayLength<u8>;
@@ -47,6 +53,7 @@ pub trait Curve {
     ) -> Result<(), Error>;
 }
 
+/// Array representing a curve integer in SEC1 encoding.
 pub type Int<C> = GenericArray<u8, <C as Curve>::N>;
 
 /// P-256 curve.
@@ -55,21 +62,26 @@ pub struct P256;
 /// P-384 curve.
 pub struct P384;
 
+/// Internal helper trait to implement the `Curve` trait.
+#[sealed::sealed]
 pub trait InternalHelper {
     type N: ArrayLength<u8>;
     const C: api::Curve;
 }
 
+#[sealed::sealed]
 impl InternalHelper for P256 {
     type N = typenum::consts::U32;
     const C: api::Curve = api::Curve::P256;
 }
 
+#[sealed::sealed]
 impl InternalHelper for P384 {
     type N = typenum::consts::U48;
     const C: api::Curve = api::Curve::P384;
 }
 
+#[sealed::sealed]
 impl<T: InternalHelper> Curve for T {
     type N = T::N;
 
