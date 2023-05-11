@@ -37,6 +37,37 @@ pub(crate) fn new() -> Item {
             }
         },
         item! {
+            /// Returns whether a scalar is valid.
+            ///
+            /// A scalar is valid if smaller than the field's modulus.
+            fn is_valid_scalar "cet" {
+                /// The curve.
+                curve: usize,
+
+                /// The scalar in SEC1 encoding.
+                n: *const u8,
+            } -> {
+                /// 1 if valid, 0 otherwise.
+                valid: isize,
+            }
+        },
+        item! {
+            /// Returns whether a point is valid.
+            fn is_valid_point "ceq" {
+                /// The curve.
+                curve: usize,
+
+                /// The x-coordinate in SEC1 encoding.
+                x: *const u8,
+
+                /// The y-coordinate in SEC1 encoding.
+                y: *const u8,
+            } -> {
+                /// 1 if valid, 0 otherwise.
+                valid: isize,
+            }
+        },
+        item! {
             /// Performs base point multiplication.
             fn base_point_mul "ceb" {
                 /// The curve.

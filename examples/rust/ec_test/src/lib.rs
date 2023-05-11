@@ -17,11 +17,13 @@
 #![no_std]
 wasefire::applet!();
 
-use wasefire::crypto::ec::{ecdh, Curve, Int, P256, P384};
+use wasefire::crypto::ec::{Curve, EcdhPrivate, EcdhPublic, Int, P256, P384};
 
 fn main() {
     test_ecdh::<P256>("p256", P256_ECDH_VECTORS);
     test_ecdh::<P384>("p384", P384_ECDH_VECTORS);
+    test_ecdh_random::<P256>("p256");
+    test_ecdh_random::<P384>("p384");
     debug::exit(true);
 }
 
@@ -29,9 +31,27 @@ fn test_ecdh<C: Curve>(name: &str, vectors: &[EcdhVector]) {
     debug!("test_ecdh_{name}(): Computes ECDH on the test vectors.");
     for &EcdhVector { tc_id, private, public_x, public_y, shared } in vectors {
         debug!("- {tc_id}");
-        let mut shared_ = Int::<C>::default();
-        ecdh::<C>(private.into(), public_x.into(), public_y.into(), &mut shared_).unwrap();
-        debug::assert_eq(shared_.as_slice(), shared);
+        let private =
+            EcdhPrivate::<C>::from_non_zero_scalar(Int::<C>::clone_from_slice(private)).unwrap();
+        let public = EcdhPublic::<C>::from_coordinates(
+            Int::<C>::clone_from_slice(public_x),
+            Int::<C>::clone_from_slice(public_y),
+        )
+        .unwrap();
+        let shared_ = private.diffie_hellman(&public);
+        debug::assert_eq(shared_.raw_bytes().as_slice(), shared);
+    }
+}
+
+fn test_ecdh_random<C: Curve>(name: &str) {
+    debug!("test_ecdh_{name}_random(): Computes ECDH with random private keys.");
+    for _ in 0 .. 5 {
+        let k1 = EcdhPrivate::<C>::random().unwrap();
+        let k2 = EcdhPrivate::<C>::random().unwrap();
+        let s1 = k1.diffie_hellman(&k2.public_key());
+        let s2 = k2.diffie_hellman(&k1.public_key());
+        debug::assert_eq(s1.raw_bytes().as_slice(), s2.raw_bytes());
+        debug!("- {:02x?}", &s1.raw_bytes()[.. 8]);
     }
 }
 

@@ -19,14 +19,97 @@ use wasefire_applet_api::crypto::ec as api;
 
 use super::Error;
 
-/// Computes the shared secret of an ECDH key agreement.
-///
-/// The curve integers are in SEC1 encoding.
-pub fn ecdh<C: Curve>(
-    private: &Int<C>, public_x: &Int<C>, public_y: &Int<C>, shared: &mut Int<C>,
-) -> Result<(), Error> {
-    let mut y = Int::<C>::default();
-    C::point_mul(private, public_x, public_y, shared, &mut y)
+/// ECDH private key.
+pub struct EcdhPrivate<C: Curve>(Int<C>);
+
+/// ECDH public key.
+pub struct EcdhPublic<C: Curve> {
+    x: Int<C>,
+    y: Int<C>,
+}
+
+/// ECDH shared secret.
+pub struct EcdhShared<C: Curve>(Int<C>);
+
+impl<C: Curve> EcdhPrivate<C> {
+    /// Returns a random (with uniform distribution) ECDH private key.
+    pub fn random() -> Result<Self, Error> {
+        let mut scalar = Int::<C>::default();
+        loop {
+            crate::rng::fill_bytes(&mut scalar).map_err(|_| Error::RngFailure)?;
+            if is_zero_scalar::<C>(&scalar) {
+                // The probability is very low for this to happen during normal operation.
+                return Err(Error::RngFailure);
+            }
+            if C::is_valid_scalar(&scalar) {
+                return Ok(Self(scalar));
+            }
+        }
+    }
+
+    /// Creates a private key from its non-zero scalar SEC1 encoding.
+    pub fn from_non_zero_scalar(n: Int<C>) -> Result<Self, Error> {
+        if is_zero_scalar::<C>(&n) || !C::is_valid_scalar(&n) {
+            return Err(Error::InvalidArgument);
+        }
+        Ok(Self(n))
+    }
+
+    /// Returns the public key associated to this private key.
+    pub fn public_key(&self) -> EcdhPublic<C> {
+        EcdhPublic::new(self)
+    }
+
+    /// Returns the shared secret associated to this private key and a public key.
+    pub fn diffie_hellman(&self, public: &EcdhPublic<C>) -> EcdhShared<C> {
+        EcdhShared::new(self, public)
+    }
+}
+
+impl<C: Curve> EcdhPublic<C> {
+    /// Returns the public key associated to a private key.
+    pub fn new(private: &EcdhPrivate<C>) -> Self {
+        let mut x = Int::<C>::default();
+        let mut y = Int::<C>::default();
+        C::base_point_mul(&private.0, &mut x, &mut y).unwrap();
+        Self { x, y }
+    }
+
+    /// Creates a public key from its coordinates in SEC1 encoding.
+    pub fn from_coordinates(x: Int<C>, y: Int<C>) -> Result<Self, Error> {
+        if !C::is_valid_point(&x, &y) {
+            return Err(Error::InvalidArgument);
+        }
+        Ok(Self { x, y })
+    }
+
+    /// Returns the x-coordinate of the public key.
+    pub fn x(&self) -> &Int<C> {
+        &self.x
+    }
+
+    /// Returns the y-coordinate of the public key.
+    pub fn y(&self) -> &Int<C> {
+        &self.y
+    }
+}
+
+impl<C: Curve> EcdhShared<C> {
+    /// Returns the shared secret associated to a private and public key.
+    pub fn new(private: &EcdhPrivate<C>, public: &EcdhPublic<C>) -> Self {
+        let mut x = Int::<C>::default();
+        let mut y = Int::<C>::default();
+        C::point_mul(&private.0, &public.x, &public.y, &mut x, &mut y).unwrap();
+        Self(x)
+    }
+
+    /// Returns the shared secret as an integer.
+    ///
+    /// This is not uniformly random. An HKDF should be used to extract entropy from this shared
+    /// secret.
+    pub fn raw_bytes(&self) -> &Int<C> {
+        &self.0
+    }
 }
 
 /// Curve API.
@@ -41,7 +124,11 @@ pub trait Curve {
     /// Whether the curve is supported.
     fn is_supported() -> bool;
 
-    // TODO: Add a is_valid_scalar.
+    /// Whether a scalar is valid, i.e. smaller than the field's modulus.
+    fn is_valid_scalar(n: &Int<Self>) -> bool;
+
+    /// Whether a point given by coordinates is valid.
+    fn is_valid_point(x: &Int<Self>, y: &Int<Self>) -> bool;
 
     /// Performs base point multiplication.
     fn base_point_mul(n: &Int<Self>, x: &mut Int<Self>, y: &mut Int<Self>) -> Result<(), Error>;
@@ -91,6 +178,19 @@ impl<T: InternalHelper> Curve for T {
         support != 0
     }
 
+    fn is_valid_scalar(n: &Int<Self>) -> bool {
+        let params = api::is_valid_scalar::Params { curve: T::C as usize, n: n.as_ptr() };
+        let api::is_valid_scalar::Results { valid } = unsafe { api::is_valid_scalar(params) };
+        valid != 0
+    }
+
+    fn is_valid_point(x: &Int<Self>, y: &Int<Self>) -> bool {
+        let params =
+            api::is_valid_point::Params { curve: T::C as usize, x: x.as_ptr(), y: y.as_ptr() };
+        let api::is_valid_point::Results { valid } = unsafe { api::is_valid_point(params) };
+        valid != 0
+    }
+
     fn base_point_mul(n: &Int<Self>, x: &mut Int<Self>, y: &mut Int<Self>) -> Result<(), Error> {
         let params = api::base_point_mul::Params {
             curve: T::C as usize,
@@ -119,4 +219,8 @@ impl<T: InternalHelper> Curve for T {
         Error::to_result(res)?;
         Ok(())
     }
+}
+
+fn is_zero_scalar<C: Curve>(n: &Int<C>) -> bool {
+    n.iter().all(|&x| x == 0)
 }

@@ -21,6 +21,12 @@ pub trait Api {
     /// Returns whether P384 is supported.
     fn is_supported(&mut self) -> bool;
 
+    /// Returns whether a scalar is valid.
+    fn is_valid_scalar(&mut self, n: &[u8; 48]) -> bool;
+
+    /// Returns whether a point is valid.
+    fn is_valid_point(&mut self, x: &[u8; 48], y: &[u8; 48]) -> bool;
+
     /// Base point multiplication.
     fn base_point_mul(
         &mut self, n: &[u8; 48], x: &mut [u8; 48], y: &mut [u8; 48],
@@ -35,6 +41,14 @@ pub trait Api {
 
 impl Api for Unimplemented {
     fn is_supported(&mut self) -> bool {
+        unreachable!()
+    }
+
+    fn is_valid_scalar(&mut self, _: &[u8; 48]) -> bool {
+        unreachable!()
+    }
+
+    fn is_valid_point(&mut self, _: &[u8; 48], _: &[u8; 48]) -> bool {
         unreachable!()
     }
 
@@ -57,6 +71,14 @@ mod unsupported {
 
     impl Api for Unsupported {
         fn is_supported(&mut self) -> bool {
+            false
+        }
+
+        fn is_valid_scalar(&mut self, _: &[u8; 48]) -> bool {
+            false
+        }
+
+        fn is_valid_point(&mut self, _: &[u8; 48], _: &[u8; 48]) -> bool {
             false
         }
 
@@ -85,6 +107,14 @@ mod unsupported {
     impl Api for Unsupported {
         fn is_supported(&mut self) -> bool {
             true
+        }
+
+        fn is_valid_scalar(&mut self, n: &[u8; 48]) -> bool {
+            scalar_from_slice(n).is_ok()
+        }
+
+        fn is_valid_point(&mut self, x: &[u8; 48], y: &[u8; 48]) -> bool {
+            point_from_slices(x, y).is_ok()
         }
 
         fn base_point_mul(

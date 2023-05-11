@@ -23,6 +23,8 @@ use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::IsSupported(call) => is_supported(call),
+        Api::IsValidScalar(call) => is_valid_scalar(call),
+        Api::IsValidPoint(call) => is_valid_point(call),
         Api::BasePointMul(call) => base_point_mul(call),
         Api::PointMul(call) => point_mul(call),
     }
@@ -36,6 +38,48 @@ fn is_supported<B: Board>(mut call: SchedulerCall<B, api::is_supported::Sig>) {
             Curve::P384 => call.scheduler().board.crypto().p384().is_supported(),
         };
         api::is_supported::Results { support: (support as u32).into() }
+    };
+    call.reply(results)
+}
+
+fn is_valid_scalar<B: Board>(mut call: SchedulerCall<B, api::is_valid_scalar::Sig>) {
+    let api::is_valid_scalar::Params { curve, n } = call.read();
+    let scheduler = call.scheduler();
+    let memory = scheduler.applet.memory();
+    let results = try {
+        let valid = match convert_curve(*curve)? {
+            Curve::P256 => {
+                let n = memory.get_array::<32>(*n)?;
+                scheduler.board.crypto().p256().is_valid_scalar(n)
+            }
+            Curve::P384 => {
+                let n = memory.get_array::<48>(*n)?;
+                scheduler.board.crypto().p384().is_valid_scalar(n)
+            }
+        };
+        api::is_valid_scalar::Results { valid: (valid as u32).into() }
+    };
+    call.reply(results)
+}
+
+fn is_valid_point<B: Board>(mut call: SchedulerCall<B, api::is_valid_point::Sig>) {
+    let api::is_valid_point::Params { curve, x, y } = call.read();
+    let scheduler = call.scheduler();
+    let memory = scheduler.applet.memory();
+    let results = try {
+        let valid = match convert_curve(*curve)? {
+            Curve::P256 => {
+                let x = memory.get_array::<32>(*x)?;
+                let y = memory.get_array::<32>(*y)?;
+                scheduler.board.crypto().p256().is_valid_point(x, y)
+            }
+            Curve::P384 => {
+                let x = memory.get_array::<48>(*x)?;
+                let y = memory.get_array::<48>(*y)?;
+                scheduler.board.crypto().p384().is_valid_point(x, y)
+            }
+        };
+        api::is_valid_point::Results { valid: (valid as u32).into() }
     };
     call.reply(results)
 }

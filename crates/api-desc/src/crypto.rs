@@ -33,6 +33,9 @@ pub(crate) fn new() -> Item {
 
                 /// An operation is unsupported.
                 Unsupported = 1,
+
+                /// An RNG operation failed.
+                RngFailure = 2,
             }
         },
         ccm::new(),
