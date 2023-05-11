@@ -215,7 +215,7 @@
       // The scalar in SEC1 encoding.
       n: usize,
     // 1 if valid, 0 otherwise.
-    ): isize
+    ): usize
 
     // Returns whether a point is valid.
     @external("env", "ceq")
@@ -229,7 +229,7 @@
       // The y-coordinate in SEC1 encoding.
       y: usize,
     // 1 if valid, 0 otherwise.
-    ): isize
+    ): usize
 
     // Performs base point multiplication.
     @external("env", "ceb")
