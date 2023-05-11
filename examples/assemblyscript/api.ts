@@ -118,6 +118,9 @@
 
     // An operation is unsupported.
     Unsupported = 1,
+
+    // An RNG operation failed.
+    RngFailure = 2,
   }
 
   // START OF MODULE crypto_ccm
@@ -200,6 +203,33 @@
       curve: usize,
     // 1 when supported, 0 otherwise.
     ): usize
+
+    // Returns whether a scalar is valid.
+    //
+    // A scalar is valid if smaller than the field's modulus.
+    @external("env", "cet")
+    export declare function crypto_ec_is_valid_scalar(
+      // The curve.
+      curve: usize,
+
+      // The scalar in SEC1 encoding.
+      n: usize,
+    // 1 if valid, 0 otherwise.
+    ): isize
+
+    // Returns whether a point is valid.
+    @external("env", "ceq")
+    export declare function crypto_ec_is_valid_point(
+      // The curve.
+      curve: usize,
+
+      // The x-coordinate in SEC1 encoding.
+      x: usize,
+
+      // The y-coordinate in SEC1 encoding.
+      y: usize,
+    // 1 if valid, 0 otherwise.
+    ): isize
 
     // Performs base point multiplication.
     @external("env", "ceb")
