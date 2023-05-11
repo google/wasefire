@@ -48,7 +48,7 @@ pub(crate) fn new() -> Item {
                 n: *const u8,
             } -> {
                 /// 1 if valid, 0 otherwise.
-                valid: isize,
+                valid: usize,
             }
         },
         item! {
@@ -64,7 +64,7 @@ pub(crate) fn new() -> Item {
                 y: *const u8,
             } -> {
                 /// 1 if valid, 0 otherwise.
-                valid: isize,
+                valid: usize,
             }
         },
         item! {
