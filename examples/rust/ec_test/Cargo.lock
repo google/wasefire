@@ -162,6 +162,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ec_test"
+version = "0.1.0"
+dependencies = [
+ "wasefire",
+]
+
+[[package]]
 name = "errno"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -244,13 +251,6 @@ name = "once_cell"
 version = "1.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
-
-[[package]]
-name = "panic"
-version = "0.1.0"
-dependencies = [
- "wasefire",
-]
 
 [[package]]
 name = "portable-atomic"

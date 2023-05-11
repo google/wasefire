@@ -11,6 +11,10 @@ include = ["/src"]
 keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
+[package.metadata.docs.rs]
+features = ["wasm"]
+targets = ["riscv32imc-unknown-none-elf", "thumbv7em-none-eabi"]
+
 [dependencies]
 sealed = { version = "0.5.0", optional = true }
 wasefire-applet-api-macro = { version = "0.3.0-git", path = "../api-macro" }
@@ -23,7 +27,3 @@ wasm = []
 multivalue = ["wasefire-applet-api-macro/multivalue"]
 # Implements the API with panics.
 test = []
-
-[package.metadata.docs.rs]
-features = ["wasm"]
-targets = ["thumbv7em-none-eabi"]

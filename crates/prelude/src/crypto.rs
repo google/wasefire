@@ -15,6 +15,7 @@
 //! Provides API for cryptography.
 
 pub mod ccm;
+pub mod ec;
 pub mod gcm;
 pub mod hash;
 

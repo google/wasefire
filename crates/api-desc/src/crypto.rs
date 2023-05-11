@@ -15,6 +15,7 @@
 use crate::*;
 
 mod ccm;
+mod ec;
 mod gcm;
 mod hash;
 
@@ -32,9 +33,13 @@ pub(crate) fn new() -> Item {
 
                 /// An operation is unsupported.
                 Unsupported = 1,
+
+                /// An RNG operation failed.
+                RngFailure = 2,
             }
         },
         ccm::new(),
+        ec::new(),
         gcm::new(),
         hash::new(),
     ];

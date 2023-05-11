@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add P256 and P384 support in crypto
 - Add the `Types` trait for `Api` associated types
 - Add SHA-256 support in crypto
 - Rename AES-128-CCM and AES-256-GCM types
@@ -42,4 +43,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 1 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->

@@ -19,6 +19,8 @@ aes = { version = "0.8.2", optional = true }
 aes-gcm = { version = "0.10.1", default-features = false, features = ["aes"], optional = true }
 ccm = { version = "0.5.0", default-features = false, optional = true }
 defmt = { version = "0.3.4", optional = true }
+p256 = { version = "0.13.2", default-features = false, optional = true, features = ["arithmetic"] }
+p384 = { version = "0.13.0", default-features = false, optional = true, features = ["arithmetic"] }
 sha2 = { version = "0.10.6", default-features = false, optional = true }
 usb-device = "0.2.9"
 usbd-serial = "0.1.1"
@@ -31,9 +33,13 @@ log = ["wasefire-logger/log"]
 software-crypto = [
   "software-crypto-aes128-ccm",
   "software-crypto-aes256-gcm",
+  "software-crypto-p256",
+  "software-crypto-p384",
   "software-crypto-sha256",
 ]
 software-crypto-aes128-ccm = ["dep:aes", "dep:ccm"]
 software-crypto-aes256-gcm = ["dep:aes-gcm"]
+software-crypto-p256 = ["dep:p256"]
+software-crypto-p384 = ["dep:p384"]
 software-crypto-sha256 = ["dep:sha2"]
 std = ["wasefire-store/std"]

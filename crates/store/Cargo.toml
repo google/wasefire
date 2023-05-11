@@ -11,11 +11,11 @@ include = ["/src"]
 keywords = ["embedded", "no-std"]
 categories = ["embedded", "no-std"]
 
+[package.metadata.docs.rs]
+features = ["std"]
+
 [dev-dependencies]
 tempfile = "3.5.0"
 
 [features]
 std = []
-
-[package.metadata.docs.rs]
-features = ["std"]

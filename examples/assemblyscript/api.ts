@@ -118,6 +118,9 @@
 
     // An operation is unsupported.
     Unsupported = 1,
+
+    // An RNG operation failed.
+    RngFailure = 2,
   }
 
   // START OF MODULE crypto_ccm
@@ -184,6 +187,92 @@
     // otherwise.
     ): isize
   // END OF MODULE crypto_ccm
+
+  // START OF MODULE crypto_ec
+  // Elliptic curves.
+    enum crypto_ec_Curve {
+      P256 = 0,
+
+      P384 = 1,
+    }
+
+    // Whether a curve is supported.
+    @external("env", "ces")
+    export declare function crypto_ec_is_supported(
+      // The enum value of the [curve][super::Curve].
+      curve: usize,
+    // 1 when supported, 0 otherwise.
+    ): usize
+
+    // Returns whether a scalar is valid.
+    //
+    // A scalar is valid if smaller than the field's modulus.
+    @external("env", "cet")
+    export declare function crypto_ec_is_valid_scalar(
+      // The curve.
+      curve: usize,
+
+      // The scalar in SEC1 encoding.
+      n: usize,
+    // 1 if valid, 0 otherwise.
+    ): usize
+
+    // Returns whether a point is valid.
+    @external("env", "ceq")
+    export declare function crypto_ec_is_valid_point(
+      // The curve.
+      curve: usize,
+
+      // The x-coordinate in SEC1 encoding.
+      x: usize,
+
+      // The y-coordinate in SEC1 encoding.
+      y: usize,
+    // 1 if valid, 0 otherwise.
+    ): usize
+
+    // Performs base point multiplication.
+    @external("env", "ceb")
+    export declare function crypto_ec_base_point_mul(
+      // The curve.
+      curve: usize,
+
+      // The scalar in SEC1 encoding.
+      n: usize,
+
+      // The x coordinate in SEC1 encoding.
+      x: usize,
+
+      // The y coordinate in SEC1 encoding.
+      y: usize,
+    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
+    // otherwise.
+    ): isize
+
+    // Performs point multiplication.
+    @external("env", "cep")
+    export declare function crypto_ec_point_mul(
+      // The curve.
+      curve: usize,
+
+      // The scalar in SEC1 encoding.
+      n: usize,
+
+      // The x coordinate of the input point in SEC1 encoding.
+      in_x: usize,
+
+      // The y coordinate of the input point in SEC1 encoding.
+      in_y: usize,
+
+      // The x coordinate of the output point in SEC1 encoding.
+      out_x: usize,
+
+      // The y coordinate of the output point in SEC1 encoding.
+      out_y: usize,
+    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
+    // otherwise.
+    ): isize
+  // END OF MODULE crypto_ec
 
   // START OF MODULE crypto_gcm
   // AES-256-GCM.
