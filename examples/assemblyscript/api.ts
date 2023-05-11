@@ -421,6 +421,66 @@
     // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
     // otherwise.
     ): isize
+
+    // Whether the algorithm is supported for hmac.
+    @external("env", "cht")
+    export declare function crypto_hash_is_hmac_supported(
+      // The hash algorithm.
+      algorithm: usize,
+    // 1 if supported, 0 otherwise.
+    ): usize
+
+    // Initializes an hmac.
+    @external("env", "chj")
+    export declare function crypto_hash_hmac_initialize(
+      // The hash algorithm.
+      algorithm: usize,
+
+      // The pointer to the key.
+      key: usize,
+
+      // The length of the key.
+      //
+      // If greater than 64 bytes, the key will be itself hashed.
+      key_len: usize,
+    // A non-negative identifier on success, bitwise complement of
+    // [`Error`](crate::crypto::Error) otherwise.
+    ): isize
+
+    // Updates an hmac.
+    //
+    // Errors are surfaced in the [`hmac_finalize()`] call.
+    @external("env", "chv")
+    export declare function crypto_hash_hmac_update(
+      // The identifier returned by the associated [`hmac_initialize()`] call.
+      id: usize,
+
+      // The pointer to the data to hmac.
+      data: usize,
+
+      // The length of the data to hmac.
+      length: usize,
+    ): void
+
+    // Finalizes an hmac.
+    @external("env", "chg")
+    export declare function crypto_hash_hmac_finalize(
+      // The identifier returned by the associated [`hmac_initialize()`] call.
+      //
+      // This is consumed and invalidated by this call regardless of the return value.
+      id: usize,
+
+      // The pointer to the buffer where the hmac must be written.
+      //
+      // Its length is defined by the algorithm:
+      // - 32 bytes for SHA-256.
+      //
+      // The pointer may be null, in which case this function deallocates the identifier
+      // without computing the hmac.
+      hmac: usize,
+    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
+    // otherwise.
+    ): isize
   // END OF MODULE crypto_hash
 // END OF MODULE crypto
 

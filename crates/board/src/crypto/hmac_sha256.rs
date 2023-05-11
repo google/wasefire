@@ -12,37 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! SHA-256 interface.
+//! HMAC-SHA-256 interface.
 
 use core::fmt::Debug;
 
 use crate::{Error, Unimplemented, Unsupported};
 
 /// Returns this [`Types`] given a [`crate::Types`].
-pub type Get<B> = <super::Get<B> as super::Types>::Sha256;
+pub type Get<B> = <super::Get<B> as super::Types>::HmacSha256;
 
 /// Returns the [`Types::Context`] associated type given a [`crate::Types`].
 pub type Context<B> = <Get<B> as Types>::Context;
 
 /// Associated types of [`Api`].
 pub trait Types {
-    /// Hashing context.
+    /// Hmac context.
     type Context: Debug;
 }
 
-/// SHA-256 interface.
+/// HMAC-SHA-256 interface.
 pub trait Api<T: Types> {
-    /// Whether SHA-256 is supported.
+    /// Whether HMAC-SHA-256 is supported.
     fn is_supported(&mut self) -> bool;
 
-    /// Creates a new SHA-256 hashing context.
-    fn initialize(&mut self) -> Result<T::Context, Error>;
+    /// Creates a new HMAC-SHA-256 hmac context.
+    fn initialize(&mut self, key: &[u8]) -> Result<T::Context, Error>;
 
-    /// Updates a hashing context.
+    /// Updates a hmac context.
     fn update(&mut self, context: &mut T::Context, data: &[u8]) -> Result<(), Error>;
 
-    /// Finalizes a hash.
-    fn finalize(&mut self, context: T::Context, digest: &mut [u8; 32]) -> Result<(), Error>;
+    /// Finalizes an hmac.
+    fn finalize(&mut self, context: T::Context, hmac: &mut [u8; 32]) -> Result<(), Error>;
 }
 
 impl Types for Unimplemented {
@@ -54,7 +54,7 @@ impl Api<Unimplemented> for Unimplemented {
         unreachable!()
     }
 
-    fn initialize(&mut self) -> Result<Unimplemented, Error> {
+    fn initialize(&mut self, _: &[u8]) -> Result<Unimplemented, Error> {
         unreachable!()
     }
 
@@ -67,7 +67,7 @@ impl Api<Unimplemented> for Unimplemented {
     }
 }
 
-#[cfg(not(feature = "software-crypto-sha256"))]
+#[cfg(not(feature = "software-crypto-hmac-sha256"))]
 mod unsupported {
     use super::*;
 
@@ -80,7 +80,7 @@ mod unsupported {
             false
         }
 
-        fn initialize(&mut self) -> Result<Unsupported, Error> {
+        fn initialize(&mut self, _: &[u8]) -> Result<Unsupported, Error> {
             Err(Error::User)
         }
 
@@ -94,15 +94,16 @@ mod unsupported {
     }
 }
 
-#[cfg(feature = "software-crypto-sha256")]
+#[cfg(feature = "software-crypto-hmac-sha256")]
 mod unsupported {
-    use sha2::digest::{FixedOutput, Update};
+    use hmac::digest::{FixedOutput, KeyInit, Update};
+    use hmac::Hmac;
     use sha2::Sha256;
 
     use super::*;
 
     impl Types for Unsupported {
-        type Context = Sha256;
+        type Context = Hmac<Sha256>;
     }
 
     impl Api<Unsupported> for Unsupported {
@@ -110,17 +111,17 @@ mod unsupported {
             true
         }
 
-        fn initialize(&mut self) -> Result<Sha256, Error> {
-            Ok(Sha256::default())
+        fn initialize(&mut self, key: &[u8]) -> Result<Hmac<Sha256>, Error> {
+            Hmac::new_from_slice(key).map_err(|_| Error::World)
         }
 
-        fn update(&mut self, context: &mut Sha256, data: &[u8]) -> Result<(), Error> {
+        fn update(&mut self, context: &mut Hmac<Sha256>, data: &[u8]) -> Result<(), Error> {
             context.update(data);
             Ok(())
         }
 
-        fn finalize(&mut self, context: Sha256, digest: &mut [u8; 32]) -> Result<(), Error> {
-            context.finalize_into(digest.into());
+        fn finalize(&mut self, context: Hmac<Sha256>, hmac: &mut [u8; 32]) -> Result<(), Error> {
+            context.finalize_into(hmac.into());
             Ok(())
         }
     }

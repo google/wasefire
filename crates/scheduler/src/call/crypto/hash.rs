@@ -14,6 +14,7 @@
 
 use wasefire_applet_api::crypto as crypto_api;
 use wasefire_applet_api::crypto::hash::{self as api, Algorithm, Api};
+use wasefire_board_api::crypto::hmac_sha256::Api as _;
 use wasefire_board_api::crypto::sha256::Api as _;
 use wasefire_board_api::crypto::Api as _;
 use wasefire_board_api::Api as Board;
@@ -27,6 +28,10 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Initialize(call) => initialize(call),
         Api::Update(call) => update(call),
         Api::Finalize(call) => finalize(call),
+        Api::IsHmacSupported(call) => is_hmac_supported(call),
+        Api::HmacInitialize(call) => hmac_initialize(call),
+        Api::HmacUpdate(call) => hmac_update(call),
+        Api::HmacFinalize(call) => hmac_finalize(call),
     }
 }
 
@@ -66,6 +71,7 @@ fn update<B: Board>(mut call: SchedulerCall<B, api::update::Sig>) {
             HashContext::Sha256(context) => {
                 scheduler.board.crypto().sha256().update(context, data).map_err(|_| Trap)?;
             }
+            _ => Err(Trap)?,
         }
         api::update::Results {}
     };
@@ -84,12 +90,81 @@ fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
                 let digest = memory.get_array_mut::<32>(*digest)?;
                 scheduler.board.crypto().sha256().finalize(context, digest)
             }
+            _ => Err(Trap)?,
         };
         let res = match res {
             Ok(()) => 0.into(),
             Err(_) => crypto_api::Error::InvalidArgument.into(),
         };
         api::finalize::Results { res }
+    };
+    call.reply(results);
+}
+
+fn is_hmac_supported<B: Board>(mut call: SchedulerCall<B, api::is_hmac_supported::Sig>) {
+    let api::is_hmac_supported::Params { algorithm } = call.read();
+    let results = try {
+        let supported = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
+            Algorithm::Sha256 => call.scheduler().board.crypto().sha256().is_supported(),
+        };
+        api::is_hmac_supported::Results { supported: (supported as u32).into() }
+    };
+    call.reply(results)
+}
+
+fn hmac_initialize<B: Board>(mut call: SchedulerCall<B, api::hmac_initialize::Sig>) {
+    let api::hmac_initialize::Params { algorithm, key, key_len } = call.read();
+    let scheduler = call.scheduler();
+    let memory = scheduler.applet.store.memory();
+    let results = try {
+        let key = memory.get(*key, *key_len)?;
+        let context = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
+            Algorithm::Sha256 => HashContext::HmacSha256(
+                scheduler.board.crypto().hmac_sha256().initialize(key).map_err(|_| Trap)?,
+            ),
+        };
+        let id = scheduler.applet.hashes.insert(context)? as u32;
+        api::hmac_initialize::Results { id: id.into() }
+    };
+    call.reply(results);
+}
+
+fn hmac_update<B: Board>(mut call: SchedulerCall<B, api::hmac_update::Sig>) {
+    let api::hmac_update::Params { id, data, length } = call.read();
+    let scheduler = call.scheduler();
+    let memory = scheduler.applet.store.memory();
+    let results = try {
+        let data = memory.get(*data, *length)?;
+        match scheduler.applet.hashes.get_mut(*id as usize)? {
+            HashContext::HmacSha256(context) => {
+                scheduler.board.crypto().hmac_sha256().update(context, data).map_err(|_| Trap)?;
+            }
+            _ => Err(Trap)?,
+        }
+        api::hmac_update::Results {}
+    };
+    call.reply(results);
+}
+
+fn hmac_finalize<B: Board>(mut call: SchedulerCall<B, api::hmac_finalize::Sig>) {
+    let api::hmac_finalize::Params { id, hmac } = call.read();
+    let scheduler = call.scheduler();
+    let memory = scheduler.applet.store.memory();
+    let results = try {
+        let context = scheduler.applet.hashes.take(*id as usize)?;
+        let res = match context {
+            _ if *hmac == 0 => Ok(()),
+            HashContext::HmacSha256(context) => {
+                let hmac = memory.get_array_mut::<32>(*hmac)?;
+                scheduler.board.crypto().hmac_sha256().finalize(context, hmac)
+            }
+            _ => Err(Trap)?,
+        };
+        let res = match res {
+            Ok(()) => 0.into(),
+            Err(_) => crypto_api::Error::InvalidArgument.into(),
+        };
+        api::hmac_finalize::Results { res }
     };
     call.reply(results);
 }
