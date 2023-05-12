@@ -16,7 +16,9 @@
 
 use generic_array::{ArrayLength, GenericArray};
 use wasefire_applet_api::crypto::ec as api;
+use wasefire_applet_api::crypto::hash::Algorithm;
 
+use super::hash::hkdf;
 use super::Error;
 
 /// ECDH private key.
@@ -103,10 +105,16 @@ impl<C: Curve> EcdhShared<C> {
         Self(x)
     }
 
+    /// Derives a key material from the shared secret using HKDF.
+    pub fn derive(
+        &self, algorithm: Algorithm, salt: Option<&[u8]>, info: &[u8], okm: &mut [u8],
+    ) -> Result<(), Error> {
+        hkdf(algorithm, salt, self.raw_bytes(), info, okm)
+    }
+
     /// Returns the shared secret as an integer.
     ///
-    /// This is not uniformly random. An HKDF should be used to extract entropy from this shared
-    /// secret.
+    /// This is not uniformly random. Prefer using [`Self::derive()`].
     pub fn raw_bytes(&self) -> &Int<C> {
         &self.0
     }
