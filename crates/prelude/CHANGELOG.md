@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Implement RustCrypto API for SHA-256 and HMAC-SHA-256
 - Add ECDH in `crypto::ec`
 - Add SHA-256 and HMAC-SHA-256 in `crypto::hash`
 - Add `sync` module for mutex and atomics support

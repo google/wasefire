@@ -17,11 +17,19 @@
 #![no_std]
 wasefire::applet!();
 
+#[cfg(not(feature = "rust-crypto"))]
 use alloc::vec;
 
-use wasefire::crypto::hash::{Algorithm, Digest, Hmac};
+#[cfg(feature = "rust-crypto")]
+use digest::{Digest, Mac};
+use wasefire::crypto::hash::Algorithm;
+#[cfg(not(feature = "rust-crypto"))]
+use wasefire::crypto::hash::{Digest, Hmac};
+#[cfg(feature = "rust-crypto")]
+use wasefire::crypto::hash::{HmacSha256, Sha256};
 
 fn main() {
+    debug!("Use RustCrypto API: {}", cfg!(feature = "rust-crypto"));
     test("sha256", Algorithm::Sha256, SHA256_VECTORS);
     test_hmac("sha256", Algorithm::Sha256, HMAC_SHA256_VECTORS);
     debug::exit(true);
@@ -35,9 +43,15 @@ fn test(name: &str, algorithm: Algorithm, vectors: &[Vector]) {
     }
     for &Vector { message, digest } in vectors {
         debug!("- {} bytes", message.len());
-        let mut result = vec![0; algorithm.digest_len()];
-        Digest::digest(algorithm, message, &mut result).unwrap();
-        debug::assert_eq(&result[..], digest);
+        #[cfg(feature = "rust-crypto")]
+        let digest_ = Sha256::digest(message);
+        #[cfg(not(feature = "rust-crypto"))]
+        let digest_ = {
+            let mut digest = vec![0; algorithm.digest_len()];
+            Digest::digest(algorithm, message, &mut digest).unwrap();
+            digest
+        };
+        debug::assert_eq(&digest_[..], digest);
     }
 }
 
@@ -49,9 +63,16 @@ fn test_hmac(name: &str, algorithm: Algorithm, vectors: &[HmacVector]) {
     }
     for &HmacVector { count, key, msg, mac } in vectors {
         debug!("- {count}");
-        let mut result = vec![0; algorithm.digest_len()];
-        Hmac::hmac(algorithm, key, msg, &mut result).unwrap();
-        debug::assert_eq(&result[..], mac);
+        #[cfg(feature = "rust-crypto")]
+        let mac_ =
+            HmacSha256::new_from_slice(key).unwrap().chain_update(msg).finalize().into_bytes();
+        #[cfg(not(feature = "rust-crypto"))]
+        let mac_ = {
+            let mut mac = vec![0; algorithm.digest_len()];
+            Hmac::hmac(algorithm, key, msg, &mut mac).unwrap();
+            mac
+        };
+        debug::assert_eq(&mac_[..], mac);
     }
 }
 

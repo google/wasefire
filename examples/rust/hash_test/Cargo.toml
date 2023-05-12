@@ -9,4 +9,8 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
+digest = { version = "0.10.6", default-features = false, optional = true }
 wasefire = { path = "../../../crates/prelude" }
+
+[features]
+rust-crypto = ["dep:digest", "wasefire/rust-crypto"]
