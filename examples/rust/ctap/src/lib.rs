@@ -98,7 +98,7 @@ impl<'a> Cmd<'a> {
             x => return Err(format!("Unrecognized command {x}.")),
         };
         if !input.is_empty() {
-            return Err(format!("Trailing arguments."));
+            return Err("Trailing arguments.".to_string());
         }
         Ok(cmd)
     }
@@ -329,16 +329,10 @@ impl<'a> Store<'a> {
     fn list(&self) {
         let mut empty = true;
         for key in (0 .. 2 * MAX_ENTRIES).step_by(2) {
-            match store::find(key).unwrap() {
-                Some(x) => {
-                    empty = false;
-                    let x = match core::str::from_utf8(&x) {
-                        Ok(x) => x,
-                        Err(_) => "(corrupted)",
-                    };
-                    self.console.write(&format!("- {x}"));
-                }
-                None => (),
+            if let Some(x) = store::find(key).unwrap() {
+                empty = false;
+                let x = core::str::from_utf8(&x).unwrap_or("(corrupted)");
+                self.console.write(&format!("- {x}"));
             }
         }
         if empty {

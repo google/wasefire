@@ -26,7 +26,7 @@ fn main() {
         let len = usb::serial::read_any(&mut data).unwrap();
         let data = &mut data[.. len];
         data.iter_mut().for_each(switch_case);
-        usb::serial::write_all(&data).unwrap();
+        usb::serial::write_all(data).unwrap();
     }
 }
 

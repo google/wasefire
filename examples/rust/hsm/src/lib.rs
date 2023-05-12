@@ -38,20 +38,18 @@ fn process(request: Request) -> Result<Response, Error> {
             Ok(Response::GenerateKey)
         }
         Request::DeleteKey { key } => {
-            store::remove(key as usize)?;
+            store::remove(key)?;
             Ok(Response::DeleteKey)
         }
         Request::Encrypt { key, nonce, data } => {
-            let key = store::find(key as usize)?.ok_or(Error::BadHandle)?;
+            let key = store::find(key)?.ok_or(Error::BadHandle)?;
             let key = <&[u8] as TryInto<_>>::try_into(&key).unwrap();
-            // TODO: Fragment the message if needed.
             let data = crypto::ccm::encrypt(key, &nonce, &data)?;
             Ok(Response::Encrypt { data })
         }
         Request::Decrypt { key, nonce, data } => {
-            let key = store::find(key as usize)?.ok_or(Error::BadHandle)?;
+            let key = store::find(key)?.ok_or(Error::BadHandle)?;
             let key = <&[u8] as TryInto<_>>::try_into(&key).unwrap();
-            // TODO: Fragment the message if needed.
             let data = crypto::ccm::decrypt(key, &nonce, &data)?;
             Ok(Response::Decrypt { data })
         }
