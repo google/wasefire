@@ -14,6 +14,8 @@
 
 //! Provides hash functions.
 
+#[cfg(feature = "rust-crypto")]
+pub use rust_crypto::*;
 use wasefire_applet_api::crypto::hash as api;
 
 pub use self::api::Algorithm;
@@ -172,4 +174,74 @@ pub fn is_hmac_supported(algorithm: Algorithm) -> bool {
     let params = api::is_hmac_supported::Params { algorithm: algorithm as usize };
     let api::is_hmac_supported::Results { supported } = unsafe { api::is_hmac_supported(params) };
     supported != 0
+}
+
+#[cfg(feature = "rust-crypto")]
+mod rust_crypto {
+    use crypto_common::{KeyInit, KeySizeUser};
+    use digest::{FixedOutput, HashMarker, MacMarker, OutputSizeUser, Update};
+
+    use super::*;
+
+    /// SHA-256 implementing RustCrypto traits like `Digest`.
+    pub struct Sha256(Digest);
+
+    /// HMAC-SHA-256 implementing RustCrypto traits like `Mac`.
+    pub struct HmacSha256(Hmac);
+
+    impl HashMarker for Sha256 {}
+
+    impl Default for Sha256 {
+        fn default() -> Self {
+            Self(Digest::new(Algorithm::Sha256).unwrap())
+        }
+    }
+
+    impl Update for Sha256 {
+        fn update(&mut self, data: &[u8]) {
+            self.0.update(data);
+        }
+    }
+
+    impl OutputSizeUser for Sha256 {
+        type OutputSize = digest::consts::U32;
+    }
+
+    impl FixedOutput for Sha256 {
+        fn finalize_into(self, out: &mut digest::Output<Self>) {
+            self.0.finalize(out).unwrap();
+        }
+    }
+
+    impl MacMarker for HmacSha256 {}
+
+    impl KeySizeUser for HmacSha256 {
+        type KeySize = digest::consts::U64;
+    }
+
+    impl KeyInit for HmacSha256 {
+        fn new(key: &digest::Key<Self>) -> Self {
+            Self::new_from_slice(key).unwrap()
+        }
+
+        fn new_from_slice(key: &[u8]) -> Result<Self, crypto_common::InvalidLength> {
+            Ok(Self(Hmac::new(Algorithm::Sha256, key).unwrap()))
+        }
+    }
+
+    impl Update for HmacSha256 {
+        fn update(&mut self, data: &[u8]) {
+            self.0.update(data);
+        }
+    }
+
+    impl OutputSizeUser for HmacSha256 {
+        type OutputSize = digest::consts::U32;
+    }
+
+    impl FixedOutput for HmacSha256 {
+        fn finalize_into(self, out: &mut digest::Output<Self>) {
+            self.0.finalize(out).unwrap()
+        }
+    }
 }

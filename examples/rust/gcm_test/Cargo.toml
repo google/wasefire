@@ -9,8 +9,8 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-aead = { version = "0.5.2", default-features = false, features = ["alloc"] }
+aead = { version = "0.5.2", default-features = false, features = ["alloc"], optional = true }
 wasefire = { path = "../../../crates/prelude" }
 
 [features]
-rust-crypto = ["wasefire/rust-crypto"]
+rust-crypto = ["dep:aead", "wasefire/rust-crypto"]

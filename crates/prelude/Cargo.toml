@@ -14,6 +14,8 @@ categories = ["embedded", "no-std", "wasm"]
 [dependencies]
 aead = { version = "0.5.2", default-features = false, features = ["alloc"], optional = true }
 const-default = "1.0.0"
+crypto-common = { version = "0.1.6", default-features = false, optional = true }
+digest = { version = "0.10.6", default-features = false, features = ["mac"], optional = true }
 generic-array = "0.14.7"
 portable-atomic = { version = "1.2.0", default-features = false }
 rlsf = "0.2.1"
@@ -23,5 +25,5 @@ wasefire-applet-api = { version = "0.3.0-git", path = "../api", features = ["was
 
 [features]
 multivalue = ["wasefire-applet-api/multivalue"]
-rust-crypto = ["aead"]
+rust-crypto = ["dep:aead", "dep:crypto-common", "dep:digest"]
 test = ["wasefire-applet-api/test"]
