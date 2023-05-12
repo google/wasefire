@@ -24,6 +24,12 @@ for lang in $(ls examples); do
     [ $lang = assemblyscript -a $name = api.ts ] && continue
     x cargo xtask applet $lang $name
     x cargo xtask --release applet $lang $name
+    [ $lang = rust ] || continue
+    i "Run lints for applet $name"
+    ( cd examples/rust/$name
+      x cargo fmt -- --check
+      x cargo clippy --target=wasm32-unknown-unknown -- --deny=warnings
+    )
   done
 done
 
