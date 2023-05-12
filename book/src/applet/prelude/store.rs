@@ -80,10 +80,10 @@ enum Command<'a> {
 //{ ANCHOR: impl_parse
 impl<'a> Command<'a> {
     fn parse(input: &'a str) -> Option<Self> {
-        Some(match input.split_whitespace().collect::<Vec<_>>().as_slice() {
-            &["insert", key, value] => Command::Insert { key: key.parse().ok()?, value },
-            &["find", key] => Command::Find { key: key.parse().ok()? },
-            &["remove", key] => Command::Remove { key: key.parse().ok()? },
+        Some(match *input.split_whitespace().collect::<Vec<_>>().as_slice() {
+            ["insert", key, value] => Command::Insert { key: key.parse().ok()?, value },
+            ["find", key] => Command::Find { key: key.parse().ok()? },
+            ["remove", key] => Command::Remove { key: key.parse().ok()? },
             _ => return None,
         })
     }
