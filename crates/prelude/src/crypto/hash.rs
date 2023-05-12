@@ -14,6 +14,9 @@
 
 //! Provides hash functions.
 
+use alloc::borrow::Cow;
+use alloc::vec;
+
 #[cfg(feature = "rust-crypto")]
 pub use rust_crypto::*;
 use wasefire_applet_api::crypto::hash as api;
@@ -162,6 +165,43 @@ pub fn hmac_sha256(key: &[u8], data: &[u8]) -> Result<[u8; 32], Error> {
     Ok(hmac)
 }
 
+/// Derives a key according to HKDF.
+pub fn hkdf(
+    algorithm: Algorithm, salt: Option<&[u8]>, ikm: &[u8], info: &[u8], okm: &mut [u8],
+) -> Result<(), Error> {
+    let mut prk = vec![0; algorithm.digest_len()];
+    hkdf_extract(algorithm, salt, ikm, &mut prk)?;
+    hkdf_expand(algorithm, &prk, info, okm)
+}
+
+/// The extract operation of HKDF.
+pub fn hkdf_extract(
+    algorithm: Algorithm, salt: Option<&[u8]>, ikm: &[u8], prk: &mut [u8],
+) -> Result<(), Error> {
+    let salt = match salt {
+        Some(x) => Cow::Borrowed(x),
+        None => Cow::Owned(vec![0; algorithm.digest_len()]),
+    };
+    Hmac::hmac(algorithm, &salt, ikm, prk)
+}
+
+/// The expand operation of HKDF.
+pub fn hkdf_expand(
+    algorithm: Algorithm, prk: &[u8], info: &[u8], okm: &mut [u8],
+) -> Result<(), Error> {
+    let params = api::hkdf_expand::Params {
+        algorithm: algorithm as usize,
+        prk: prk.as_ptr(),
+        prk_len: prk.len(),
+        info: info.as_ptr(),
+        info_len: info.len(),
+        okm: okm.as_mut_ptr(),
+        okm_len: okm.len(),
+    };
+    let api::hkdf_expand::Results { res } = unsafe { api::hkdf_expand(params) };
+    Error::to_result(res).map(|_| ())
+}
+
 /// Whether a hash algorithm is supported.
 pub fn is_supported(algorithm: Algorithm) -> bool {
     let params = api::is_supported::Params { algorithm: algorithm as usize };
@@ -173,6 +213,13 @@ pub fn is_supported(algorithm: Algorithm) -> bool {
 pub fn is_hmac_supported(algorithm: Algorithm) -> bool {
     let params = api::is_hmac_supported::Params { algorithm: algorithm as usize };
     let api::is_hmac_supported::Results { supported } = unsafe { api::is_hmac_supported(params) };
+    supported != 0
+}
+
+/// Whether a hash algorithm is supported for HKDF.
+pub fn is_hkdf_supported(algorithm: Algorithm) -> bool {
+    let params = api::is_hkdf_supported::Params { algorithm: algorithm as usize };
+    let api::is_hkdf_supported::Results { supported } = unsafe { api::is_hkdf_supported(params) };
     supported != 0
 }
 

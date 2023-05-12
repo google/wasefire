@@ -35,7 +35,7 @@ pub trait Api<T: Types> {
     /// Whether HMAC-SHA-256 is supported.
     fn is_supported(&mut self) -> bool;
 
-    /// Creates a new HMAC-SHA-256 hmac context.
+    /// Creates a new hmac context.
     fn initialize(&mut self, key: &[u8]) -> Result<T::Context, Error>;
 
     /// Updates a hmac context.

@@ -481,6 +481,49 @@
     // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
     // otherwise.
     ): isize
+
+    // Whether the algorithm is supported for hkdf.
+    @external("env", "chr")
+    export declare function crypto_hash_is_hkdf_supported(
+      // The hash algorithm.
+      algorithm: usize,
+    // 1 if supported, 0 otherwise.
+    ): usize
+
+    // Expands with RFC5869 HKDF.
+    @external("env", "che")
+    export declare function crypto_hash_hkdf_expand(
+      // The hash algorithm.
+      algorithm: usize,
+
+      // The pointer to the pseudo random key.
+      prk: usize,
+
+      // The length of the pseudo random key.
+      //
+      // Must be at least the length of the hash algorithm output.
+      prk_len: usize,
+
+      // The pointer to the info.
+      //
+      // May be null if [`info_len`] is null.
+      info: usize,
+
+      // The length of the info.
+      //
+      // May be zero.
+      info_len: usize,
+
+      // The pointer to the output key material.
+      okm: usize,
+
+      // The length of the output key material.
+      //
+      // Must be at most 255 times the output length of the hash algorithm.
+      okm_len: usize,
+    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
+    // otherwise.
+    ): isize
   // END OF MODULE crypto_hash
 // END OF MODULE crypto
 
