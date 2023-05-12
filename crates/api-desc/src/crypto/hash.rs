@@ -151,6 +151,54 @@ pub(crate) fn new() -> Item {
                 res: isize,
             }
         },
+        item! {
+            /// Whether the algorithm is supported for hkdf.
+            fn is_hkdf_supported "chr" {
+                /// The hash algorithm.
+                algorithm: usize,
+            } -> {
+                /// 1 if supported, 0 otherwise.
+                supported: usize,
+            }
+        },
+        item! {
+            /// Expands with RFC5869 HKDF.
+            fn hkdf_expand "che" {
+                /// The hash algorithm.
+                algorithm: usize,
+
+                /// The pointer to the pseudo random key.
+                prk: *const u8,
+
+                /// The length of the pseudo random key.
+                ///
+                /// Must be at least the length of the hash algorithm output.
+                prk_len: usize,
+
+                /// The pointer to the info.
+                ///
+                /// May be null if [`info_len`] is null.
+                info: *const u8,
+
+                /// The length of the info.
+                ///
+                /// May be zero.
+                info_len: usize,
+
+                /// The pointer to the output key material.
+                okm: *mut u8,
+
+                /// The length of the output key material.
+                ///
+                /// Must be at most 255 times the output length of the hash algorithm.
+                okm_len: usize,
+
+            } -> {
+                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
+                /// otherwise.
+                res: isize,
+            }
+        },
     ];
     Item::Mod(Mod { docs, name, items })
 }
