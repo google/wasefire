@@ -29,6 +29,10 @@ fn main() {
 
 fn test_ecdh<C: Curve>(name: &str, vectors: &[EcdhVector]) {
     debug!("test_ecdh_{name}(): Computes ECDH on the test vectors.");
+    if !C::is_supported() {
+        debug!("- not supported");
+        return;
+    }
     for &EcdhVector { tc_id, private, public_x, public_y, shared } in vectors {
         debug!("- {tc_id}");
         let private =
@@ -45,6 +49,10 @@ fn test_ecdh<C: Curve>(name: &str, vectors: &[EcdhVector]) {
 
 fn test_ecdh_random<C: Curve>(name: &str) {
     debug!("test_ecdh_{name}_random(): Computes ECDH with random private keys.");
+    if !C::is_supported() {
+        debug!("- not supported");
+        return;
+    }
     for _ in 0 .. 5 {
         let k1 = EcdhPrivate::<C>::random().unwrap();
         let k2 = EcdhPrivate::<C>::random().unwrap();
