@@ -15,16 +15,16 @@ categories = ["embedded", "no-std"]
 features = ["std"]
 
 [dependencies]
-aes = { version = "0.8.2", optional = true }
+aes = { version = "0.8.2", default-features = false, optional = true }
 aes-gcm = { version = "0.10.1", default-features = false, features = ["aes"], optional = true }
 ccm = { version = "0.5.0", default-features = false, optional = true }
-defmt = { version = "0.3.4", optional = true }
-hmac = { version = "0.12.1", optional = true }
+defmt = { version = "0.3.4", default-features = false, optional = true }
+hmac = { version = "0.12.1", default-features = false, optional = true }
 p256 = { version = "0.13.2", default-features = false, optional = true, features = ["arithmetic"] }
 p384 = { version = "0.13.0", default-features = false, optional = true, features = ["arithmetic"] }
 sha2 = { version = "0.10.6", default-features = false, optional = true }
-usb-device = "0.2.9"
-usbd-serial = "0.1.1"
+usb-device = { version = "0.2.9", default-features = false }
+usbd-serial = { version = "0.1.1", default-features = false }
 wasefire-logger = { version = "0.1.2", path = "../logger" }
 wasefire-store = { version = "0.2.0", path = "../store" }
 

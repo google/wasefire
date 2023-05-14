@@ -12,12 +12,12 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-anyhow = "1.0.71"
-clap = { version = "4.2.7", features = ["derive"] }
-data-encoding = "2.3.3"
-data-encoding-macro = "0.1.12"
-proc-macro2 = "1.0.56"
-quote = "1.0.26"
+anyhow = { version = "1.0.71", default-features = false, features = ["std"] }
+clap = { version = "4.2.7", default-features = false, features = ["derive", "std"] }
+data-encoding = { version = "2.3.3", default-features = false }
+data-encoding-macro = { version = "0.1.12", default-features = false }
+proc-macro2 = { version = "1.0.56", default-features = false }
+quote = { version = "1.0.26", default-features = false }
 
 [features]
 multivalue = []

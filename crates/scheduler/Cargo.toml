@@ -12,16 +12,12 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-defmt = { version = "0.3.4", optional = true }
+defmt = { version = "0.3.4", default-features = false, optional = true }
 wasefire-applet-api = { version = "0.3.0-git", path = "../api", features = ["host"] }
 wasefire-board-api = { version = "0.3.0-git", path = "../board" }
+wasefire-interpreter = { version = "0.1.2", path = "../interpreter", features = ["toctou"] }
 wasefire-logger = { version = "0.1.2", path = "../logger" }
 wasefire-store = { version = "0.2.0", path = "../store" }
-
-[dependencies.wasefire-interpreter]
-version = "0.1.2"
-path = "../interpreter"
-features = ["toctou"]
 
 [features]
 defmt = ["dep:defmt", "wasefire-board-api/defmt", "wasefire-logger/defmt"]
