@@ -16,7 +16,7 @@ features = ["wasm"]
 targets = ["riscv32imc-unknown-none-elf", "thumbv7em-none-eabi"]
 
 [dependencies]
-sealed = { version = "0.5.0", optional = true }
+sealed = { version = "0.5.0", default-features = false, optional = true }
 wasefire-applet-api-macro = { version = "0.3.0-git", path = "../api-macro" }
 
 [features]

@@ -17,7 +17,7 @@ set -e
 . scripts/log.sh
 . scripts/package.sh
 
-# This script checks that CHANGELOG.md files are correct.
+# This script checks that Cargo.toml and CHANGELOG.md files are correct.
 
 for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   ( cd $dir
@@ -36,5 +36,12 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
     [ -n "$ver" ] || e "CHANGELOG.md for $dir does not start with version"
     [ "$(package_version)" = "$ver" ] \
       || e "CHANGELOG.md and Cargo.toml for $dir have different versions"
+    [ -z "$(sed -n '/^\[features]$/,/^$/{/^default =/p}' Cargo.toml)" ] \
+      || e "Cargo.toml for $dir has default features"
+    grep '^\[dependencies\.' Cargo.toml && \
+      e "Cargo.toml for $dir has out-of-line dependency"
+    sed '/^\[dependencies]$/,/^$/{/^wasefire-/d;/^[a-z]/!d;'\
+'/default-features = false/d;q1};d' Cargo.toml \
+      || e "Cargo.toml for $dir doesn't disable default-features"
   )
 done
