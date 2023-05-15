@@ -21,7 +21,9 @@ mod ccm;
 
 impl Types for Board {
     type HmacSha256 = Unsupported;
+    type HmacSha384 = Unsupported;
     type Sha256 = Unsupported;
+    type Sha384 = Unsupported;
 }
 
 impl Api<Board> for &mut Board {
@@ -40,6 +42,11 @@ impl Api<Board> for &mut Board {
         Unsupported
     }
 
+    type HmacSha384<'a> = Unsupported where Self: 'a;
+    fn hmac_sha384(&mut self) -> Unsupported {
+        Unsupported
+    }
+
     type P256<'a> = Unsupported where Self: 'a;
     fn p256(&mut self) -> Unsupported {
         Unsupported
@@ -52,6 +59,11 @@ impl Api<Board> for &mut Board {
 
     type Sha256<'a> = Unsupported where Self: 'a;
     fn sha256(&mut self) -> Unsupported {
+        Unsupported
+    }
+
+    type Sha384<'a> = Unsupported where Self: 'a;
+    fn sha384(&mut self) -> Unsupported {
         Unsupported
     }
 }

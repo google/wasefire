@@ -4,9 +4,9 @@
 
 ### Major
 
-- Add P256 and P384 support in crypto
+- Add ECDH and ECDSA support for P256 and P384
 - Add the `Types` trait for `Api` associated types
-- Add SHA-256 and HMAC-SHA-256 support in crypto
+- Add SHA-256, SHA-384, and HMAC support in crypto
 - Rename AES-128-CCM and AES-256-GCM types
 - Support in-place AES-256-GCM
 

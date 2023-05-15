@@ -30,6 +30,7 @@ impl crate::crypto::hash::Algorithm {
     pub const fn digest_len(self) -> usize {
         match self {
             crate::crypto::hash::Algorithm::Sha256 => 32,
+            crate::crypto::hash::Algorithm::Sha384 => 48,
         }
     }
 }
