@@ -272,6 +272,51 @@
     // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
     // otherwise.
     ): isize
+
+    // Signs a message with ECDSA.
+    @external("env", "cei")
+    export declare function crypto_ec_ecdsa_sign(
+      // The curve.
+      curve: usize,
+
+      // The private key scalar in SEC1 encoding.
+      key: usize,
+
+      // The integer message in SEC1 encoding.
+      message: usize,
+
+      // The r signature component in SEC1 encoding.
+      r: usize,
+
+      // The s signature component in SEC1 encoding.
+      s: usize,
+    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
+    // otherwise.
+    ): isize
+
+    // Verifies an ECDSA signature.
+    @external("env", "cev")
+    export declare function crypto_ec_ecdsa_verify(
+      // The curve.
+      curve: usize,
+
+      // The integer message in SEC1 encoding.
+      message: usize,
+
+      // The x-coordinate in SEC1 encoding.
+      x: usize,
+
+      // The y-coordinate in SEC1 encoding.
+      y: usize,
+
+      // The r signature component in SEC1 encoding.
+      r: usize,
+
+      // The s signature component in SEC1 encoding.
+      s: usize,
+    // 1 if the signature is valid, 0 if invalid, and bitwise complement of
+    // [`Error`](crate::crypto::Error) otherwise.
+    ): isize
   // END OF MODULE crypto_ec
 
   // START OF MODULE crypto_gcm
@@ -368,6 +413,9 @@
     enum crypto_hash_Algorithm {
       // SHA-256.
       Sha256 = 0,
+
+      // SHA-384.
+      Sha384 = 1,
     }
 
     // Whether the algorithm is supported.

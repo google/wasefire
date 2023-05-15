@@ -20,9 +20,10 @@ aes-gcm = { version = "0.10.1", default-features = false, features = ["aes"], op
 ccm = { version = "0.5.0", default-features = false, optional = true }
 defmt = { version = "0.3.4", default-features = false, optional = true }
 hmac = { version = "0.12.1", default-features = false, optional = true }
-p256 = { version = "0.13.2", default-features = false, optional = true, features = ["arithmetic"] }
-p384 = { version = "0.13.0", default-features = false, optional = true, features = ["arithmetic"] }
+p256 = { version = "0.13.2", default-features = false, optional = true, features = ["ecdsa"] }
+p384 = { version = "0.13.0", default-features = false, optional = true, features = ["ecdsa"] }
 sha2 = { version = "0.10.6", default-features = false, optional = true }
+signature = { version = "2.1.0", default-features = false, optional = true }
 usb-device = { version = "0.2.9", default-features = false }
 usbd-serial = { version = "0.1.1", default-features = false }
 wasefire-logger = { version = "0.1.2", path = "../logger" }
@@ -38,11 +39,13 @@ software-crypto = [
   "software-crypto-p256",
   "software-crypto-p384",
   "software-crypto-sha256",
+  "software-crypto-sha384",
 ]
 software-crypto-aes128-ccm = ["dep:aes", "dep:ccm"]
 software-crypto-aes256-gcm = ["dep:aes-gcm"]
 software-crypto-hmac-sha256 = ["dep:hmac", "dep:sha2"]
-software-crypto-p256 = ["dep:p256"]
-software-crypto-p384 = ["dep:p384"]
+software-crypto-p256 = ["dep:p256", "dep:signature"]
+software-crypto-p384 = ["dep:p384", "dep:signature"]
 software-crypto-sha256 = ["dep:sha2"]
+software-crypto-sha384 = ["dep:sha2"]
 std = ["wasefire-store/std"]

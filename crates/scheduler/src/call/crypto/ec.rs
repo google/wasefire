@@ -27,6 +27,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::IsValidPoint(call) => is_valid_point(call),
         Api::BasePointMul(call) => base_point_mul(call),
         Api::PointMul(call) => point_mul(call),
+        Api::EcdsaSign(call) => ecdsa_sign(call),
+        Api::EcdsaVerify(call) => ecdsa_verify(call),
     }
 }
 
@@ -144,6 +146,74 @@ fn point_mul<B: Board>(mut call: SchedulerCall<B, api::point_mul::Sig>) {
             }
         };
         api::point_mul::Results { res: res.into() }
+    };
+    call.reply(results);
+}
+
+fn ecdsa_sign<B: Board>(mut call: SchedulerCall<B, api::ecdsa_sign::Sig>) {
+    let api::ecdsa_sign::Params { curve, key, message, r, s } = call.read();
+    let scheduler = call.scheduler();
+    let memory = scheduler.applet.memory();
+    let results = try {
+        let res = match convert_curve(*curve)? {
+            Curve::P256 => {
+                let key = memory.get_array::<32>(*key)?;
+                let message = memory.get_array::<32>(*message)?;
+                let r = memory.get_array_mut::<32>(*r)?;
+                let s = memory.get_array_mut::<32>(*s)?;
+                match scheduler.board.crypto().p256().ecdsa_sign(key, message, r, s) {
+                    Ok(()) => 0u32,
+                    Err(_) => u32::MAX,
+                }
+            }
+            Curve::P384 => {
+                let key = memory.get_array::<48>(*key)?;
+                let message = memory.get_array::<48>(*message)?;
+                let r = memory.get_array_mut::<48>(*r)?;
+                let s = memory.get_array_mut::<48>(*s)?;
+                match scheduler.board.crypto().p384().ecdsa_sign(key, message, r, s) {
+                    Ok(()) => 0u32,
+                    Err(_) => u32::MAX,
+                }
+            }
+        };
+        api::ecdsa_sign::Results { res: res.into() }
+    };
+    call.reply(results);
+}
+
+fn ecdsa_verify<B: Board>(mut call: SchedulerCall<B, api::ecdsa_verify::Sig>) {
+    let api::ecdsa_verify::Params { curve, message, x, y, r, s } = call.read();
+    let scheduler = call.scheduler();
+    let memory = scheduler.applet.memory();
+    let results = try {
+        let res = match convert_curve(*curve)? {
+            Curve::P256 => {
+                let message = memory.get_array::<32>(*message)?;
+                let x = memory.get_array::<32>(*x)?;
+                let y = memory.get_array::<32>(*y)?;
+                let r = memory.get_array::<32>(*r)?;
+                let s = memory.get_array::<32>(*s)?;
+                match scheduler.board.crypto().p256().ecdsa_verify(message, x, y, r, s) {
+                    Ok(true) => 1u32,
+                    Ok(false) => 0u32,
+                    Err(_) => u32::MAX,
+                }
+            }
+            Curve::P384 => {
+                let message = memory.get_array::<48>(*message)?;
+                let x = memory.get_array::<48>(*x)?;
+                let y = memory.get_array::<48>(*y)?;
+                let r = memory.get_array::<48>(*r)?;
+                let s = memory.get_array::<48>(*s)?;
+                match scheduler.board.crypto().p384().ecdsa_verify(message, x, y, r, s) {
+                    Ok(true) => 1u32,
+                    Ok(false) => 0u32,
+                    Err(_) => u32::MAX,
+                }
+            }
+        };
+        api::ecdsa_verify::Results { res: res.into() }
     };
     call.reply(results);
 }

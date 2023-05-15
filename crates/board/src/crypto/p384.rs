@@ -37,6 +37,16 @@ pub trait Api {
         &mut self, n: &[u8; 48], in_x: &[u8; 48], in_y: &[u8; 48], out_x: &mut [u8; 48],
         out_y: &mut [u8; 48],
     ) -> Result<(), Error>;
+
+    /// ECDSA signature.
+    fn ecdsa_sign(
+        &mut self, d: &[u8; 48], m: &[u8; 48], r: &mut [u8; 48], s: &mut [u8; 48],
+    ) -> Result<(), Error>;
+
+    /// ECDSA verification.
+    fn ecdsa_verify(
+        &mut self, m: &[u8; 48], x: &[u8; 48], y: &[u8; 48], r: &[u8; 48], s: &[u8; 48],
+    ) -> Result<bool, Error>;
 }
 
 impl Api for Unimplemented {
@@ -61,6 +71,18 @@ impl Api for Unimplemented {
     fn point_mul(
         &mut self, _: &[u8; 48], _: &[u8; 48], _: &[u8; 48], _: &mut [u8; 48], _: &mut [u8; 48],
     ) -> Result<(), Error> {
+        unreachable!()
+    }
+
+    fn ecdsa_sign(
+        &mut self, _: &[u8; 48], _: &[u8; 48], _: &mut [u8; 48], _: &mut [u8; 48],
+    ) -> Result<(), Error> {
+        unreachable!()
+    }
+
+    fn ecdsa_verify(
+        &mut self, _: &[u8; 48], _: &[u8; 48], _: &[u8; 48], _: &[u8; 48], _: &[u8; 48],
+    ) -> Result<bool, Error> {
         unreachable!()
     }
 }
@@ -93,14 +115,28 @@ mod unsupported {
         ) -> Result<(), Error> {
             Err(Error::User)
         }
+
+        fn ecdsa_sign(
+            &mut self, _: &[u8; 48], _: &[u8; 48], _: &mut [u8; 48], _: &mut [u8; 48],
+        ) -> Result<(), Error> {
+            Err(Error::User)
+        }
+
+        fn ecdsa_verify(
+            &mut self, _: &[u8; 48], _: &[u8; 48], _: &[u8; 48], _: &[u8; 48], _: &[u8; 48],
+        ) -> Result<bool, Error> {
+            Err(Error::User)
+        }
     }
 }
 
 #[cfg(feature = "software-crypto-p384")]
 mod unsupported {
+    use p384::ecdsa::{Signature, SigningKey, VerifyingKey};
     use p384::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
     use p384::elliptic_curve::PrimeField;
     use p384::{AffinePoint, EncodedPoint, ProjectivePoint, Scalar};
+    use signature::hazmat::PrehashVerifier;
 
     use super::*;
 
@@ -130,6 +166,25 @@ mod unsupported {
         ) -> Result<(), Error> {
             let r = point_from_slices(in_x, in_y)? * scalar_from_slice(n)?;
             point_to_slices(&r.to_affine(), out_x, out_y)
+        }
+
+        fn ecdsa_sign(
+            &mut self, d: &[u8; 48], m: &[u8; 48], r: &mut [u8; 48], s: &mut [u8; 48],
+        ) -> Result<(), Error> {
+            let d = SigningKey::from_bytes(d.into()).map_err(|_| Error::User)?;
+            let (signature, _) = d.sign_prehash_recoverable(m).map_err(|_| Error::World)?;
+            r.copy_from_slice(&signature.r().to_bytes());
+            s.copy_from_slice(&signature.s().to_bytes());
+            Ok(())
+        }
+
+        fn ecdsa_verify(
+            &mut self, m: &[u8; 48], x: &[u8; 48], y: &[u8; 48], r: &[u8; 48], s: &[u8; 48],
+        ) -> Result<bool, Error> {
+            let p = EncodedPoint::from_affine_coordinates(x.into(), y.into(), false);
+            let p = VerifyingKey::from_encoded_point(&p).map_err(|_| Error::User)?;
+            let signature = Signature::from_scalars(*r, *s).map_err(|_| Error::User)?;
+            Ok(p.verify_prehash(m, &signature).is_ok())
         }
     }
 

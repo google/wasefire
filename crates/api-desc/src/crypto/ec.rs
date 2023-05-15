@@ -113,6 +113,55 @@ pub(crate) fn new() -> Item {
                 res: isize,
             }
         },
+        item! {
+            /// Signs a message with ECDSA.
+            fn ecdsa_sign "cei" {
+                /// The curve.
+                curve: usize,
+
+                /// The private key scalar in SEC1 encoding.
+                key: *const u8,
+
+                /// The integer message in SEC1 encoding.
+                message: *const u8,
+
+                /// The r signature component in SEC1 encoding.
+                r: *mut u8,
+
+                /// The s signature component in SEC1 encoding.
+                s: *mut u8,
+            } -> {
+                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
+                /// otherwise.
+                res: isize,
+            }
+        },
+        item! {
+            /// Verifies an ECDSA signature.
+            fn ecdsa_verify "cev" {
+                /// The curve.
+                curve: usize,
+
+                /// The integer message in SEC1 encoding.
+                message: *const u8,
+
+                /// The x-coordinate in SEC1 encoding.
+                x: *const u8,
+
+                /// The y-coordinate in SEC1 encoding.
+                y: *const u8,
+
+                /// The r signature component in SEC1 encoding.
+                r: *const u8,
+
+                /// The s signature component in SEC1 encoding.
+                s: *const u8,
+            } -> {
+                /// 1 if the signature is valid, 0 if invalid, and bitwise complement of
+                /// [`Error`](crate::crypto::Error) otherwise.
+                res: isize,
+            }
+        },
     ];
     Item::Mod(Mod { docs, name, items })
 }

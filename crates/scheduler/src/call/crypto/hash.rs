@@ -15,7 +15,9 @@
 use wasefire_applet_api::crypto as crypto_api;
 use wasefire_applet_api::crypto::hash::{self as api, Algorithm, Api};
 use wasefire_board_api::crypto::hmac_sha256::{self, Api as _};
+use wasefire_board_api::crypto::hmac_sha384::{self, Api as _};
 use wasefire_board_api::crypto::sha256::Api as _;
+use wasefire_board_api::crypto::sha384::Api as _;
 use wasefire_board_api::crypto::Api as _;
 use wasefire_board_api::Api as Board;
 
@@ -42,6 +44,7 @@ fn is_supported<B: Board>(mut call: SchedulerCall<B, api::is_supported::Sig>) {
     let results = try {
         let supported = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
             Algorithm::Sha256 => call.scheduler().board.crypto().sha256().is_supported(),
+            Algorithm::Sha384 => call.scheduler().board.crypto().sha384().is_supported(),
         };
         api::is_supported::Results { supported: (supported as u32).into() }
     };
@@ -55,6 +58,9 @@ fn initialize<B: Board>(mut call: SchedulerCall<B, api::initialize::Sig>) {
         let context = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
             Algorithm::Sha256 => HashContext::Sha256(
                 scheduler.board.crypto().sha256().initialize().map_err(|_| Trap)?,
+            ),
+            Algorithm::Sha384 => HashContext::Sha384(
+                scheduler.board.crypto().sha384().initialize().map_err(|_| Trap)?,
             ),
         };
         let id = scheduler.applet.hashes.insert(context)? as u32;
@@ -72,6 +78,9 @@ fn update<B: Board>(mut call: SchedulerCall<B, api::update::Sig>) {
         match scheduler.applet.hashes.get_mut(*id as usize)? {
             HashContext::Sha256(context) => {
                 scheduler.board.crypto().sha256().update(context, data).map_err(|_| Trap)?;
+            }
+            HashContext::Sha384(context) => {
+                scheduler.board.crypto().sha384().update(context, data).map_err(|_| Trap)?;
             }
             _ => Err(Trap)?,
         }
@@ -92,6 +101,10 @@ fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
                 let digest = memory.get_array_mut::<32>(*digest)?;
                 scheduler.board.crypto().sha256().finalize(context, digest)
             }
+            HashContext::Sha384(context) => {
+                let digest = memory.get_array_mut::<48>(*digest)?;
+                scheduler.board.crypto().sha384().finalize(context, digest)
+            }
             _ => Err(Trap)?,
         };
         let res = match res {
@@ -108,6 +121,7 @@ fn is_hmac_supported<B: Board>(mut call: SchedulerCall<B, api::is_hmac_supported
     let results = try {
         let supported = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
             Algorithm::Sha256 => call.scheduler().board.crypto().sha256().is_supported(),
+            Algorithm::Sha384 => call.scheduler().board.crypto().sha384().is_supported(),
         };
         api::is_hmac_supported::Results { supported: (supported as u32).into() }
     };
@@ -123,6 +137,9 @@ fn hmac_initialize<B: Board>(mut call: SchedulerCall<B, api::hmac_initialize::Si
         let context = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
             Algorithm::Sha256 => HashContext::HmacSha256(
                 scheduler.board.crypto().hmac_sha256().initialize(key).map_err(|_| Trap)?,
+            ),
+            Algorithm::Sha384 => HashContext::HmacSha384(
+                scheduler.board.crypto().hmac_sha384().initialize(key).map_err(|_| Trap)?,
             ),
         };
         let id = scheduler.applet.hashes.insert(context)? as u32;
@@ -140,6 +157,9 @@ fn hmac_update<B: Board>(mut call: SchedulerCall<B, api::hmac_update::Sig>) {
         match scheduler.applet.hashes.get_mut(*id as usize)? {
             HashContext::HmacSha256(context) => {
                 scheduler.board.crypto().hmac_sha256().update(context, data).map_err(|_| Trap)?;
+            }
+            HashContext::HmacSha384(context) => {
+                scheduler.board.crypto().hmac_sha384().update(context, data).map_err(|_| Trap)?;
             }
             _ => Err(Trap)?,
         }
@@ -160,6 +180,10 @@ fn hmac_finalize<B: Board>(mut call: SchedulerCall<B, api::hmac_finalize::Sig>) 
                 let hmac = memory.get_array_mut::<32>(*hmac)?;
                 scheduler.board.crypto().hmac_sha256().finalize(context, hmac)
             }
+            HashContext::HmacSha384(context) => {
+                let hmac = memory.get_array_mut::<48>(*hmac)?;
+                scheduler.board.crypto().hmac_sha384().finalize(context, hmac)
+            }
             _ => Err(Trap)?,
         };
         let res = match res {
@@ -176,6 +200,7 @@ fn is_hkdf_supported<B: Board>(mut call: SchedulerCall<B, api::is_hkdf_supported
     let results = try {
         let supported = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
             Algorithm::Sha256 => call.scheduler().board.crypto().sha256().is_supported(),
+            Algorithm::Sha384 => call.scheduler().board.crypto().sha384().is_supported(),
         };
         api::is_hkdf_supported::Results { supported: (supported as u32).into() }
     };
@@ -195,6 +220,9 @@ fn hkdf_expand<B: Board>(mut call: SchedulerCall<B, api::hkdf_expand::Sig>) {
             Algorithm::Sha256 => {
                 hkdf_sha256(scheduler.board.crypto().hmac_sha256(), prk, info, okm)
             }
+            Algorithm::Sha384 => {
+                hkdf_sha384(scheduler.board.crypto().hmac_sha384(), prk, info, okm)
+            }
         };
         let res = match res {
             Ok(()) => 0.into(),
@@ -213,6 +241,27 @@ fn hkdf_sha256<T: hmac_sha256::Types>(
     }
     let mut output = [0; 32];
     for (chunk, i) in okm.chunks_mut(32).zip(1u8 ..) {
+        let mut hmac = board.initialize(prk).map_err(|_| crypto_api::Error::InvalidArgument)?;
+        if 1 < i {
+            board.update(&mut hmac, &output).map_err(|_| crypto_api::Error::InvalidArgument)?;
+        }
+        board.update(&mut hmac, info).map_err(|_| crypto_api::Error::InvalidArgument)?;
+        board.update(&mut hmac, &[i]).map_err(|_| crypto_api::Error::InvalidArgument)?;
+        board.finalize(hmac, &mut output).map_err(|_| crypto_api::Error::InvalidArgument)?;
+        chunk.copy_from_slice(&output[.. chunk.len()]);
+    }
+    Ok(())
+}
+
+// TODO(#164): Merge this with hkdf_sha256 into a unified hkdf function.
+fn hkdf_sha384<T: hmac_sha384::Types>(
+    mut board: impl hmac_sha384::Api<T>, prk: &[u8], info: &[u8], okm: &mut [u8],
+) -> Result<(), crypto_api::Error> {
+    if 255 * 48 < okm.len() {
+        return Err(crypto_api::Error::InvalidArgument);
+    }
+    let mut output = [0; 48];
+    for (chunk, i) in okm.chunks_mut(48).zip(1u8 ..) {
         let mut hmac = board.initialize(prk).map_err(|_| crypto_api::Error::InvalidArgument)?;
         if 1 < i {
             board.update(&mut hmac, &output).map_err(|_| crypto_api::Error::InvalidArgument)?;

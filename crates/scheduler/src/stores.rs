@@ -72,7 +72,9 @@ impl<B: board::Types> Default for AppletHashes<B> {
 #[derive(Debug)]
 pub enum HashContext<B: board::Types> {
     HmacSha256(board::crypto::hmac_sha256::Context<B>),
+    HmacSha384(board::crypto::hmac_sha384::Context<B>),
     Sha256(board::crypto::sha256::Context<B>),
+    Sha384(board::crypto::sha384::Context<B>),
 }
 
 impl<B: board::Types> AppletHashes<B> {
