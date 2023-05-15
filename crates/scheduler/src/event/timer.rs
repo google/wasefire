@@ -12,21 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use derivative::Derivative;
 use wasefire_board_api::timer::Event;
+use wasefire_board_api::{self as board, Api as Board, Id};
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Key {
-    pub timer: usize,
+#[derive(Derivative)]
+#[derivative(Debug(bound = ""), Copy(bound = ""), Clone(bound = ""), Hash(bound = ""))]
+#[derivative(PartialEq(bound = ""), Eq(bound = ""), PartialOrd(bound = ""), Ord(bound = ""))]
+pub struct Key<B: Board> {
+    pub timer: Id<board::Timer<B>>,
 }
 
-impl From<Key> for crate::event::Key {
-    fn from(key: Key) -> Self {
+impl<B: Board> From<Key<B>> for crate::event::Key<B> {
+    fn from(key: Key<B>) -> Self {
         crate::event::Key::Timer(key)
     }
 }
 
-impl<'a> From<&'a Event> for Key {
-    fn from(event: &'a Event) -> Self {
+impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
+    fn from(event: &'a Event<B>) -> Self {
         Key { timer: event.timer }
     }
 }

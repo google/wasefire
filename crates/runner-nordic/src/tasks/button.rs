@@ -12,32 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use core::ops::DerefMut;
-
 use nrf52840_hal::gpio::{Input, Pin, PullUp};
 use nrf52840_hal::gpiote::{Gpiote, GpioteChannel};
-use wasefire_board_api as board;
+use wasefire_board_api::button::Api;
+use wasefire_board_api::{Error, Id, Support};
 
-impl board::button::Api for &mut crate::tasks::Board {
-    fn count(&mut self) -> usize {
-        critical_section::with(|cs| self.0.borrow_ref_mut(cs).buttons.len())
-    }
+use crate::with_state;
 
-    fn enable(&mut self, i: usize) -> Result<(), board::Error> {
-        critical_section::with(|cs| try {
-            let mut state = self.0.borrow_ref_mut(cs);
-            let state = state.deref_mut();
-            let button = state.buttons.get_mut(i).ok_or(board::Error::User)?;
-            channel(&state.gpiote, i).input_pin(&button.pin).toggle().enable_interrupt();
+pub enum Impl {}
+
+impl Support<usize> for Impl {
+    const SUPPORT: usize = 4;
+}
+
+impl Api for Impl {
+    fn enable(id: Id<Self>) -> Result<(), Error> {
+        with_state(|state| {
+            let pin = &state.buttons[*id].pin;
+            channel(&state.gpiote, id).input_pin(pin).toggle().enable_interrupt();
+            Ok(())
         })
     }
 
-    fn disable(&mut self, i: usize) -> Result<(), board::Error> {
-        critical_section::with(|cs| try {
-            let mut state = self.0.borrow_ref_mut(cs);
-            let state = state.deref_mut();
-            let button = state.buttons.get_mut(i).ok_or(board::Error::User)?;
-            channel(&state.gpiote, i).input_pin(&button.pin).disable_interrupt();
+    fn disable(id: Id<Self>) -> Result<(), Error> {
+        with_state(|state| {
+            let pin = &state.buttons[*id].pin;
+            channel(&state.gpiote, id).input_pin(pin).disable_interrupt();
+            Ok(())
         })
     }
 }
@@ -53,8 +54,8 @@ impl Button {
     }
 }
 
-pub fn channel(gpiote: &Gpiote, i: usize) -> GpioteChannel {
-    match i {
+pub fn channel(gpiote: &Gpiote, i: Id<Impl>) -> GpioteChannel {
+    match *i {
         0 => gpiote.channel0(),
         1 => gpiote.channel1(),
         2 => gpiote.channel2(),

@@ -16,20 +16,20 @@ pub mod button;
 mod debug;
 mod led;
 mod rng;
+mod storage;
 pub mod timer;
 #[cfg(feature = "usb")]
 pub mod usb;
 
-use std::sync::{Arc, Mutex};
-
-use tokio::sync::mpsc::{Receiver, Sender};
-use wasefire_board_api::{Api, Event, Types, Unsupported};
+use tokio::sync::mpsc::Sender;
+use wasefire_board_api::{Api, Event, Unsupported};
 use wasefire_store::FileStorage;
 
 use self::timer::Timers;
+use crate::RECEIVER;
 
 pub struct State {
-    pub sender: Sender<Event>,
+    pub sender: Sender<Event<Board>>,
     pub button: bool, // whether interrupts are enabled
     pub led: bool,
     pub timers: Timers,
@@ -38,69 +38,26 @@ pub struct State {
     pub storage: Option<FileStorage>,
 }
 
-pub struct Board {
-    pub receiver: Receiver<Event>,
-    pub state: Arc<Mutex<State>>,
-}
-
-impl Types for Board {
-    type Crypto = Unsupported;
-}
+pub enum Board {}
 
 impl Api for Board {
-    fn try_event(&mut self) -> Option<Event> {
-        self.receiver.try_recv().ok()
+    fn try_event() -> Option<Event<Board>> {
+        RECEIVER.lock().unwrap().as_mut().unwrap().try_recv().ok()
     }
 
-    fn wait_event(&mut self) -> Event {
-        self.receiver.blocking_recv().unwrap()
+    fn wait_event() -> Event<Board> {
+        RECEIVER.lock().unwrap().as_mut().unwrap().blocking_recv().unwrap()
     }
 
-    type Storage = FileStorage;
-    fn take_storage(&mut self) -> Option<Self::Storage> {
-        self.state.lock().unwrap().storage.take()
-    }
-
-    type Button<'a> = &'a mut Self;
-    fn button(&mut self) -> Self::Button<'_> {
-        self
-    }
-
-    type Crypto<'a> = Unsupported;
-    fn crypto(&mut self) -> Unsupported {
-        Unsupported
-    }
-
-    type Debug<'a> = &'a mut Self;
-    fn debug(&mut self) -> Self::Debug<'_> {
-        self
-    }
-
-    type Led<'a> = &'a mut Self;
-    fn led(&mut self) -> Self::Led<'_> {
-        self
-    }
-
-    type Rng<'a> = &'a mut Self;
-    fn rng(&mut self) -> Self::Rng<'_> {
-        self
-    }
-
-    type Timer<'a> = &'a mut Self;
-    fn timer(&mut self) -> Self::Timer<'_> {
-        self
-    }
-
+    type Button = button::Impl;
+    type Crypto = Unsupported;
+    type Debug = debug::Impl;
+    type Led = led::Impl;
+    type Rng = rng::Impl;
+    type Storage = storage::Impl;
+    type Timer = timer::Impl;
     #[cfg(feature = "usb")]
-    type Usb<'a> = &'a mut Self;
-    #[cfg(feature = "usb")]
-    fn usb(&mut self) -> Self::Usb<'_> {
-        self
-    }
+    type Usb = usb::Impl;
     #[cfg(not(feature = "usb"))]
-    type Usb<'a> = wasefire_board_api::Unsupported;
-    #[cfg(not(feature = "usb"))]
-    fn usb(&mut self) -> Self::Usb<'_> {
-        wasefire_board_api::Unsupported
-    }
+    type Usb = Unsupported;
 }

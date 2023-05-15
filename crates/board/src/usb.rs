@@ -14,7 +14,7 @@
 
 //! USB interface.
 
-use crate::{Unimplemented, Unsupported};
+use crate::Unsupported;
 
 pub mod serial;
 
@@ -25,7 +25,7 @@ pub enum Event {
     Serial(serial::Event),
 }
 
-impl From<Event> for crate::Event {
+impl<B: crate::Api> From<Event> for crate::Event<B> {
     fn from(event: Event) -> Self {
         crate::Event::Usb(event)
     }
@@ -33,21 +33,11 @@ impl From<Event> for crate::Event {
 
 /// USB interface.
 pub trait Api {
-    type Serial<'a>: serial::Api
-    where Self: 'a;
-    fn serial(&mut self) -> Self::Serial<'_>;
+    type Serial: serial::Api;
 }
 
-impl Api for Unimplemented {
-    type Serial<'a> = Unimplemented;
-    fn serial(&mut self) -> Self::Serial<'_> {
-        unreachable!()
-    }
-}
+pub type Serial<B> = <super::Usb<B> as Api>::Serial;
 
 impl Api for Unsupported {
-    type Serial<'a> = Unsupported;
-    fn serial(&mut self) -> Self::Serial<'_> {
-        Unsupported
-    }
+    type Serial = Unsupported;
 }

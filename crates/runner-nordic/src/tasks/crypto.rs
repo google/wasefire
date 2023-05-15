@@ -12,58 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::crypto::{Api, Types};
+use wasefire_board_api::crypto::Api;
 use wasefire_board_api::Unsupported;
-
-use crate::tasks::Board;
 
 mod ccm;
 
-impl Types for Board {
+pub enum Impl {}
+
+impl Api for Impl {
+    type Aes128Ccm = ccm::Impl;
+    type Aes256Gcm = Unsupported;
     type HmacSha256 = Unsupported;
     type HmacSha384 = Unsupported;
+    type P256 = Unsupported;
+    type P384 = Unsupported;
     type Sha256 = Unsupported;
     type Sha384 = Unsupported;
-}
-
-impl Api<Board> for &mut Board {
-    type Aes128Ccm<'a> = &'a mut Board where Self: 'a;
-    fn aes128_ccm(&mut self) -> &mut Board {
-        self
-    }
-
-    type Aes256Gcm<'a> = Unsupported where Self: 'a;
-    fn aes256_gcm(&mut self) -> Unsupported {
-        Unsupported
-    }
-
-    type HmacSha256<'a> = Unsupported where Self: 'a;
-    fn hmac_sha256(&mut self) -> Unsupported {
-        Unsupported
-    }
-
-    type HmacSha384<'a> = Unsupported where Self: 'a;
-    fn hmac_sha384(&mut self) -> Unsupported {
-        Unsupported
-    }
-
-    type P256<'a> = Unsupported where Self: 'a;
-    fn p256(&mut self) -> Unsupported {
-        Unsupported
-    }
-
-    type P384<'a> = Unsupported where Self: 'a;
-    fn p384(&mut self) -> Unsupported {
-        Unsupported
-    }
-
-    type Sha256<'a> = Unsupported where Self: 'a;
-    fn sha256(&mut self) -> Unsupported {
-        Unsupported
-    }
-
-    type Sha384<'a> = Unsupported where Self: 'a;
-    fn sha384(&mut self) -> Unsupported {
-        Unsupported
-    }
 }

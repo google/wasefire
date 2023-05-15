@@ -14,8 +14,8 @@
 
 use alloc::vec;
 use core::borrow::Borrow;
-use core::cmp::Ordering;
 
+use derivative::Derivative;
 use wasefire_board_api::{Api as Board, Event};
 use wasefire_interpreter::InstId;
 use wasefire_logger as logger;
@@ -27,15 +27,18 @@ pub mod timer;
 pub mod usb;
 
 // TODO: This could be encoded into a u32 for performance/footprint.
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Key {
-    Button(button::Key),
-    Timer(timer::Key),
+#[derive(Derivative)]
+#[derivative(Debug(bound = ""), Copy(bound = ""), Clone(bound = ""), Hash(bound = ""))]
+#[derivative(PartialEq(bound = ""), Eq(bound = ""), PartialOrd(bound = ""), Ord(bound = ""))]
+#[derivative(PartialOrd = "feature_allow_slow_enum", Ord = "feature_allow_slow_enum")]
+pub enum Key<B: Board> {
+    Button(button::Key<B>),
+    Timer(timer::Key<B>),
     Usb(usb::Key),
 }
 
-impl<'a> From<&'a Event> for Key {
-    fn from(event: &'a Event) -> Self {
+impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
+    fn from(event: &'a Event<B>) -> Self {
         match event {
             Event::Button(event) => Key::Button(event.into()),
             Event::Timer(event) => Key::Timer(event.into()),
@@ -44,41 +47,24 @@ impl<'a> From<&'a Event> for Key {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Handler {
-    pub key: Key,
+#[derive(Derivative)]
+#[derivative(Debug(bound = ""), Clone(bound = ""))]
+#[derivative(PartialEq(bound = ""), Eq(bound = ""), PartialOrd(bound = ""), Ord(bound = ""))]
+#[derivative(PartialOrd = "feature_allow_slow_enum", Ord = "feature_allow_slow_enum")]
+pub struct Handler<B: Board> {
+    pub key: Key<B>,
     pub inst: InstId,
     pub func: u32,
     pub data: u32,
 }
 
-impl PartialEq for Handler {
-    fn eq(&self, other: &Self) -> bool {
-        matches!(self.cmp(other), Ordering::Equal)
-    }
-}
-
-impl Eq for Handler {}
-
-impl PartialOrd for Handler {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Handler {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.key.cmp(&other.key)
-    }
-}
-
-impl Borrow<Key> for Handler {
-    fn borrow(&self) -> &Key {
+impl<B: Board> Borrow<Key<B>> for Handler<B> {
+    fn borrow(&self) -> &Key<B> {
         &self.key
     }
 }
 
-pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event) {
+pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
     let Handler { inst, func, data, .. } = match scheduler.applet.get(Key::from(&event)) {
         Some(x) => x,
         None => {

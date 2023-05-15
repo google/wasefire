@@ -13,10 +13,13 @@
 // limitations under the License.
 
 use rand::RngCore;
-use wasefire_board_api as board;
+use wasefire_board_api::rng::Api;
+use wasefire_board_api::Error;
 
-impl board::rng::Api for &mut crate::board::Board {
-    fn fill_bytes(&mut self, buffer: &mut [u8]) -> Result<(), board::Error> {
+pub enum Impl {}
+
+impl Api for Impl {
+    fn fill_bytes(buffer: &mut [u8]) -> Result<(), Error> {
         rand::thread_rng().fill_bytes(buffer);
         Ok(())
     }

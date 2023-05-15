@@ -14,7 +14,7 @@
 
 use wasefire_applet_api::led::{self as api, Api};
 use wasefire_board_api::led::Api as _;
-use wasefire_board_api::Api as Board;
+use wasefire_board_api::{self as board, Api as Board, Id, Support};
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
@@ -26,16 +26,17 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     }
 }
 
-fn count<B: Board>(mut call: SchedulerCall<B, api::count::Sig>) {
+fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     let api::count::Params {} = call.read();
-    let count = call.scheduler().board.led().count() as u32;
+    let count = board::Led::<B>::SUPPORT as u32;
     call.reply(Ok(api::count::Results { cnt: count.into() }));
 }
 
-fn get<B: Board>(mut call: SchedulerCall<B, api::get::Sig>) {
+fn get<B: Board>(call: SchedulerCall<B, api::get::Sig>) {
     let api::get::Params { led } = call.read();
     let results = try {
-        let status = match call.scheduler().board.led().get(*led as usize).map_err(|_| Trap)? {
+        let id = Id::new(*led as usize).ok_or(Trap)?;
+        let status = match board::Led::<B>::get(id).map_err(|_| Trap)? {
             false => api::Status::Off.into(),
             true => api::Status::On.into(),
         };
@@ -44,11 +45,12 @@ fn get<B: Board>(mut call: SchedulerCall<B, api::get::Sig>) {
     call.reply(results);
 }
 
-fn set<B: Board>(mut call: SchedulerCall<B, api::set::Sig>) {
+fn set<B: Board>(call: SchedulerCall<B, api::set::Sig>) {
     let api::set::Params { led, status } = call.read();
     let results = try {
+        let id = Id::new(*led as usize).ok_or(Trap)?;
         let on = matches!(api::Status::try_from(*status)?, api::Status::On);
-        call.scheduler().board.led().set(*led as usize, on).map_err(|_| Trap)?;
+        board::Led::<B>::set(id, on).map_err(|_| Trap)?;
         api::set::Results {}
     };
     call.reply(results);

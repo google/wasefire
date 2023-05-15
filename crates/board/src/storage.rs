@@ -14,74 +14,40 @@
 
 use alloc::borrow::Cow;
 
-use wasefire_store::{Storage, StorageError, StorageIndex, StorageResult};
+use wasefire_store::{Storage, StorageIndex, StorageResult};
 
-use crate::{Unimplemented, Unsupported};
-
-impl Storage for Unimplemented {
-    fn word_size(&self) -> usize {
-        unreachable!()
-    }
-
-    fn page_size(&self) -> usize {
-        unreachable!()
-    }
-
-    fn num_pages(&self) -> usize {
-        unreachable!()
-    }
-
-    fn max_word_writes(&self) -> usize {
-        unreachable!()
-    }
-
-    fn max_page_erases(&self) -> usize {
-        unreachable!()
-    }
-
-    fn read_slice(&self, _: StorageIndex, _: usize) -> StorageResult<Cow<[u8]>> {
-        unreachable!()
-    }
-
-    fn write_slice(&mut self, _: StorageIndex, _: &[u8]) -> StorageResult<()> {
-        unreachable!()
-    }
-
-    fn erase_page(&mut self, _: usize) -> StorageResult<()> {
-        unreachable!()
-    }
-}
+use crate::Unsupported;
 
 impl Storage for Unsupported {
     fn word_size(&self) -> usize {
-        0
+        unreachable!()
     }
 
     fn page_size(&self) -> usize {
-        0
+        unreachable!()
     }
 
     fn num_pages(&self) -> usize {
-        0
+        unreachable!()
     }
 
     fn max_word_writes(&self) -> usize {
-        0
+        unreachable!()
     }
 
     fn max_page_erases(&self) -> usize {
-        0
+        unreachable!()
     }
 
     fn read_slice(&self, _: StorageIndex, _: usize) -> StorageResult<Cow<[u8]>> {
-        Err(StorageError::CustomError)
+        unreachable!()
     }
 
     fn write_slice(&mut self, _: StorageIndex, _: &[u8]) -> StorageResult<()> {
-        Err(StorageError::CustomError)
+        unreachable!()
     }
 
     fn erase_page(&mut self, _: usize) -> StorageResult<()> {
-        Err(StorageError::CustomError)
+        unreachable!()
     }
 }

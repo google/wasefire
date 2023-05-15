@@ -14,22 +14,16 @@
 
 //! Random number generator interface.
 
-use crate::{Error, Unimplemented, Unsupported};
+use crate::{Error, Unsupported};
 
 /// Random number generator interface.
 pub trait Api {
     /// Fills a buffer with random bytes uniformly.
-    fn fill_bytes(&mut self, buffer: &mut [u8]) -> Result<(), Error>;
-}
-
-impl Api for Unimplemented {
-    fn fill_bytes(&mut self, _: &mut [u8]) -> Result<(), Error> {
-        unreachable!()
-    }
+    fn fill_bytes(buffer: &mut [u8]) -> Result<(), Error>;
 }
 
 impl Api for Unsupported {
-    fn fill_bytes(&mut self, _: &mut [u8]) -> Result<(), Error> {
-        Err(Error::User)
+    fn fill_bytes(_: &mut [u8]) -> Result<(), Error> {
+        Err(Error::World)
     }
 }

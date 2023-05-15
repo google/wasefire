@@ -13,10 +13,8 @@
 // limitations under the License.
 
 use wasefire_applet_api::crypto::ec::{self as api, Api, Curve};
-use wasefire_board_api::crypto::p256::Api as _;
-use wasefire_board_api::crypto::p384::Api as _;
-use wasefire_board_api::crypto::Api as _;
-use wasefire_board_api::Api as Board;
+use wasefire_board_api::crypto::ecc::Api as _;
+use wasefire_board_api::{self as board, Api as Board, Support};
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
@@ -32,12 +30,12 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     }
 }
 
-fn is_supported<B: Board>(mut call: SchedulerCall<B, api::is_supported::Sig>) {
+fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
     let api::is_supported::Params { curve } = call.read();
     let results = try {
         let support = match convert_curve(*curve)? {
-            Curve::P256 => call.scheduler().board.crypto().p256().is_supported(),
-            Curve::P384 => call.scheduler().board.crypto().p384().is_supported(),
+            Curve::P256 => board::crypto::P256::<B>::SUPPORT,
+            Curve::P384 => board::crypto::P384::<B>::SUPPORT,
         };
         api::is_supported::Results { support: (support as u32).into() }
     };
@@ -51,12 +49,12 @@ fn is_valid_scalar<B: Board>(mut call: SchedulerCall<B, api::is_valid_scalar::Si
     let results = try {
         let valid = match convert_curve(*curve)? {
             Curve::P256 => {
-                let n = memory.get_array::<32>(*n)?;
-                scheduler.board.crypto().p256().is_valid_scalar(n)
+                let n = memory.get_array::<32>(*n)?.into();
+                board::crypto::P256::<B>::is_valid_scalar(n)
             }
             Curve::P384 => {
-                let n = memory.get_array::<48>(*n)?;
-                scheduler.board.crypto().p384().is_valid_scalar(n)
+                let n = memory.get_array::<48>(*n)?.into();
+                board::crypto::P384::<B>::is_valid_scalar(n)
             }
         };
         api::is_valid_scalar::Results { valid: (valid as u32).into() }
@@ -71,14 +69,14 @@ fn is_valid_point<B: Board>(mut call: SchedulerCall<B, api::is_valid_point::Sig>
     let results = try {
         let valid = match convert_curve(*curve)? {
             Curve::P256 => {
-                let x = memory.get_array::<32>(*x)?;
-                let y = memory.get_array::<32>(*y)?;
-                scheduler.board.crypto().p256().is_valid_point(x, y)
+                let x = memory.get_array::<32>(*x)?.into();
+                let y = memory.get_array::<32>(*y)?.into();
+                board::crypto::P256::<B>::is_valid_point(x, y)
             }
             Curve::P384 => {
-                let x = memory.get_array::<48>(*x)?;
-                let y = memory.get_array::<48>(*y)?;
-                scheduler.board.crypto().p384().is_valid_point(x, y)
+                let x = memory.get_array::<48>(*x)?.into();
+                let y = memory.get_array::<48>(*y)?.into();
+                board::crypto::P384::<B>::is_valid_point(x, y)
             }
         };
         api::is_valid_point::Results { valid: (valid as u32).into() }
@@ -93,19 +91,19 @@ fn base_point_mul<B: Board>(mut call: SchedulerCall<B, api::base_point_mul::Sig>
     let results = try {
         let res = match convert_curve(*curve)? {
             Curve::P256 => {
-                let n = memory.get_array::<32>(*n)?;
-                let x = memory.get_array_mut::<32>(*x)?;
-                let y = memory.get_array_mut::<32>(*y)?;
-                match scheduler.board.crypto().p256().base_point_mul(n, x, y) {
+                let n = memory.get_array::<32>(*n)?.into();
+                let x = memory.get_array_mut::<32>(*x)?.into();
+                let y = memory.get_array_mut::<32>(*y)?.into();
+                match board::crypto::P256::<B>::base_point_mul(n, x, y) {
                     Ok(()) => 0u32,
                     Err(_) => u32::MAX,
                 }
             }
             Curve::P384 => {
-                let n = memory.get_array::<48>(*n)?;
-                let x = memory.get_array_mut::<48>(*x)?;
-                let y = memory.get_array_mut::<48>(*y)?;
-                match scheduler.board.crypto().p384().base_point_mul(n, x, y) {
+                let n = memory.get_array::<48>(*n)?.into();
+                let x = memory.get_array_mut::<48>(*x)?.into();
+                let y = memory.get_array_mut::<48>(*y)?.into();
+                match board::crypto::P384::<B>::base_point_mul(n, x, y) {
                     Ok(()) => 0u32,
                     Err(_) => u32::MAX,
                 }
@@ -123,23 +121,23 @@ fn point_mul<B: Board>(mut call: SchedulerCall<B, api::point_mul::Sig>) {
     let results = try {
         let res = match convert_curve(*curve)? {
             Curve::P256 => {
-                let n = memory.get_array::<32>(*n)?;
-                let in_x = memory.get_array::<32>(*in_x)?;
-                let in_y = memory.get_array::<32>(*in_y)?;
-                let out_x = memory.get_array_mut::<32>(*out_x)?;
-                let out_y = memory.get_array_mut::<32>(*out_y)?;
-                match scheduler.board.crypto().p256().point_mul(n, in_x, in_y, out_x, out_y) {
+                let n = memory.get_array::<32>(*n)?.into();
+                let in_x = memory.get_array::<32>(*in_x)?.into();
+                let in_y = memory.get_array::<32>(*in_y)?.into();
+                let out_x = memory.get_array_mut::<32>(*out_x)?.into();
+                let out_y = memory.get_array_mut::<32>(*out_y)?.into();
+                match board::crypto::P256::<B>::point_mul(n, in_x, in_y, out_x, out_y) {
                     Ok(()) => 0u32,
                     Err(_) => u32::MAX,
                 }
             }
             Curve::P384 => {
-                let n = memory.get_array::<48>(*n)?;
-                let in_x = memory.get_array::<48>(*in_x)?;
-                let in_y = memory.get_array::<48>(*in_y)?;
-                let out_x = memory.get_array_mut::<48>(*out_x)?;
-                let out_y = memory.get_array_mut::<48>(*out_y)?;
-                match scheduler.board.crypto().p384().point_mul(n, in_x, in_y, out_x, out_y) {
+                let n = memory.get_array::<48>(*n)?.into();
+                let in_x = memory.get_array::<48>(*in_x)?.into();
+                let in_y = memory.get_array::<48>(*in_y)?.into();
+                let out_x = memory.get_array_mut::<48>(*out_x)?.into();
+                let out_y = memory.get_array_mut::<48>(*out_y)?.into();
+                match board::crypto::P384::<B>::point_mul(n, in_x, in_y, out_x, out_y) {
                     Ok(()) => 0u32,
                     Err(_) => u32::MAX,
                 }
@@ -157,21 +155,21 @@ fn ecdsa_sign<B: Board>(mut call: SchedulerCall<B, api::ecdsa_sign::Sig>) {
     let results = try {
         let res = match convert_curve(*curve)? {
             Curve::P256 => {
-                let key = memory.get_array::<32>(*key)?;
-                let message = memory.get_array::<32>(*message)?;
-                let r = memory.get_array_mut::<32>(*r)?;
-                let s = memory.get_array_mut::<32>(*s)?;
-                match scheduler.board.crypto().p256().ecdsa_sign(key, message, r, s) {
+                let key = memory.get_array::<32>(*key)?.into();
+                let message = memory.get_array::<32>(*message)?.into();
+                let r = memory.get_array_mut::<32>(*r)?.into();
+                let s = memory.get_array_mut::<32>(*s)?.into();
+                match board::crypto::P256::<B>::ecdsa_sign(key, message, r, s) {
                     Ok(()) => 0u32,
                     Err(_) => u32::MAX,
                 }
             }
             Curve::P384 => {
-                let key = memory.get_array::<48>(*key)?;
-                let message = memory.get_array::<48>(*message)?;
-                let r = memory.get_array_mut::<48>(*r)?;
-                let s = memory.get_array_mut::<48>(*s)?;
-                match scheduler.board.crypto().p384().ecdsa_sign(key, message, r, s) {
+                let key = memory.get_array::<48>(*key)?.into();
+                let message = memory.get_array::<48>(*message)?.into();
+                let r = memory.get_array_mut::<48>(*r)?.into();
+                let s = memory.get_array_mut::<48>(*s)?.into();
+                match board::crypto::P384::<B>::ecdsa_sign(key, message, r, s) {
                     Ok(()) => 0u32,
                     Err(_) => u32::MAX,
                 }
@@ -189,24 +187,24 @@ fn ecdsa_verify<B: Board>(mut call: SchedulerCall<B, api::ecdsa_verify::Sig>) {
     let results = try {
         let res = match convert_curve(*curve)? {
             Curve::P256 => {
-                let message = memory.get_array::<32>(*message)?;
-                let x = memory.get_array::<32>(*x)?;
-                let y = memory.get_array::<32>(*y)?;
-                let r = memory.get_array::<32>(*r)?;
-                let s = memory.get_array::<32>(*s)?;
-                match scheduler.board.crypto().p256().ecdsa_verify(message, x, y, r, s) {
+                let message = memory.get_array::<32>(*message)?.into();
+                let x = memory.get_array::<32>(*x)?.into();
+                let y = memory.get_array::<32>(*y)?.into();
+                let r = memory.get_array::<32>(*r)?.into();
+                let s = memory.get_array::<32>(*s)?.into();
+                match board::crypto::P256::<B>::ecdsa_verify(message, x, y, r, s) {
                     Ok(true) => 1u32,
                     Ok(false) => 0u32,
                     Err(_) => u32::MAX,
                 }
             }
             Curve::P384 => {
-                let message = memory.get_array::<48>(*message)?;
-                let x = memory.get_array::<48>(*x)?;
-                let y = memory.get_array::<48>(*y)?;
-                let r = memory.get_array::<48>(*r)?;
-                let s = memory.get_array::<48>(*s)?;
-                match scheduler.board.crypto().p384().ecdsa_verify(message, x, y, r, s) {
+                let message = memory.get_array::<48>(*message)?.into();
+                let x = memory.get_array::<48>(*x)?.into();
+                let y = memory.get_array::<48>(*y)?.into();
+                let r = memory.get_array::<48>(*r)?.into();
+                let s = memory.get_array::<48>(*s)?.into();
+                match board::crypto::P384::<B>::ecdsa_verify(message, x, y, r, s) {
                     Ok(true) => 1u32,
                     Ok(false) => 0u32,
                     Err(_) => u32::MAX,

@@ -14,22 +14,18 @@
 
 //! Debugging and testing interface.
 
-use crate::{Unimplemented, Unsupported};
+use wasefire_logger as log;
+
+use crate::Unsupported;
 
 /// Debugging and testing interface.
 pub trait Api {
     /// Exits the platform with a success/failure result.
-    fn exit(&mut self, success: bool) -> !;
-}
-
-impl Api for Unimplemented {
-    fn exit(&mut self, _: bool) -> ! {
-        unreachable!()
-    }
+    fn exit(success: bool) -> !;
 }
 
 impl Api for Unsupported {
-    fn exit(&mut self, _: bool) -> ! {
-        panic!()
+    fn exit(success: bool) -> ! {
+        log::panic!("exit({}) called", success)
     }
 }

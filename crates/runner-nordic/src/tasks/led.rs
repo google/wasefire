@@ -13,30 +13,33 @@
 // limitations under the License.
 
 use nrf52840_hal::prelude::{OutputPin, StatefulOutputPin};
-use wasefire_board_api as board;
+use wasefire_board_api::led::Api;
+use wasefire_board_api::{Error, Id, Support};
 
-impl board::led::Api for &mut crate::tasks::Board {
-    fn count(&mut self) -> usize {
-        critical_section::with(|cs| self.0.borrow_ref(cs).leds.len())
-    }
+use crate::with_state;
 
-    fn get(&mut self, i: usize) -> Result<bool, board::Error> {
-        critical_section::with(|cs| {
-            let leds = &mut self.0.borrow_ref_mut(cs).leds;
-            let led = leds.get_mut(i).ok_or(board::Error::User)?;
-            led.is_set_low().map_err(|_| board::Error::World)
+pub enum Impl {}
+
+impl Support<usize> for Impl {
+    const SUPPORT: usize = 4;
+}
+
+impl Api for Impl {
+    fn get(id: Id<Self>) -> Result<bool, Error> {
+        with_state(|state| {
+            let led = &mut state.leds[*id];
+            led.is_set_low().map_err(|_| Error::World)
         })
     }
 
-    fn set(&mut self, i: usize, on: bool) -> Result<(), board::Error> {
-        critical_section::with(|cs| {
-            let leds = &mut self.0.borrow_ref_mut(cs).leds;
-            let led = leds.get_mut(i).ok_or(board::Error::User)?;
+    fn set(id: Id<Self>, on: bool) -> Result<(), Error> {
+        with_state(|state| {
+            let led = &mut state.leds[*id];
             match on {
                 false => led.set_high(),
                 true => led.set_low(),
             }
-            .map_err(|_| board::Error::World)
+            .map_err(|_| Error::World)
         })
     }
 }

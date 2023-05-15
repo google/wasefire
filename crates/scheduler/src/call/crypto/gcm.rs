@@ -13,9 +13,8 @@
 // limitations under the License.
 
 use wasefire_applet_api::crypto::gcm::{self as api, Api, Support};
-use wasefire_board_api::crypto::aes256_gcm::Api as _;
-use wasefire_board_api::crypto::Api as _;
-use wasefire_board_api::Api as Board;
+use wasefire_board_api::crypto::aead::Api as _;
+use wasefire_board_api::{self as board, Api as Board, Support as _};
 
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
@@ -27,9 +26,9 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     }
 }
 
-fn support<B: Board>(mut call: SchedulerCall<B, api::support::Sig>) {
+fn support<B: Board>(call: SchedulerCall<B, api::support::Sig>) {
     let api::support::Params {} = call.read();
-    let support = call.scheduler().board.crypto().aes256_gcm().support();
+    let support = board::crypto::Aes256Gcm::<B>::SUPPORT;
     let support = (support.no_copy as u32) << Support::NoCopy as u32
         | (support.in_place_no_copy as u32) << Support::InPlaceNoCopy as u32;
     call.reply(Ok(api::support::Results { support: support.into() }))
@@ -40,17 +39,16 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
-        let key = memory.get_array::<32>(*key)?;
-        let iv = memory.get_array::<12>(*iv)?;
+        let key = memory.get_array::<32>(*key)?.into();
+        let iv = memory.get_array::<12>(*iv)?.into();
         let aad = memory.get(*aad, *aad_len)?;
         let clear = memory.get_opt(*clear, *length)?;
         let cipher = memory.get_mut(*cipher, *length)?;
-        let tag = memory.get_array_mut::<16>(*tag)?;
-        let res =
-            match scheduler.board.crypto().aes256_gcm().encrypt(key, iv, aad, clear, cipher, tag) {
-                Ok(()) => 0u32.into(),
-                Err(_) => u32::MAX.into(),
-            };
+        let tag = memory.get_array_mut::<16>(*tag)?.into();
+        let res = match board::crypto::Aes256Gcm::<B>::encrypt(key, iv, aad, clear, cipher, tag) {
+            Ok(()) => 0u32.into(),
+            Err(_) => u32::MAX.into(),
+        };
         api::encrypt::Results { res }
     };
     call.reply(results);
@@ -61,17 +59,16 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
-        let key = memory.get_array::<32>(*key)?;
-        let iv = memory.get_array::<12>(*iv)?;
+        let key = memory.get_array::<32>(*key)?.into();
+        let iv = memory.get_array::<12>(*iv)?.into();
         let aad = memory.get(*aad, *aad_len)?;
-        let tag = memory.get_array::<16>(*tag)?;
+        let tag = memory.get_array::<16>(*tag)?.into();
         let cipher = memory.get_opt(*cipher, *length)?;
         let clear = memory.get_mut(*clear, *length)?;
-        let res =
-            match scheduler.board.crypto().aes256_gcm().decrypt(key, iv, aad, tag, cipher, clear) {
-                Ok(()) => 0u32.into(),
-                Err(_) => u32::MAX.into(),
-            };
+        let res = match board::crypto::Aes256Gcm::<B>::decrypt(key, iv, aad, cipher, tag, clear) {
+            Ok(()) => 0u32.into(),
+            Err(_) => u32::MAX.into(),
+        };
         api::decrypt::Results { res }
     };
     call.reply(results);

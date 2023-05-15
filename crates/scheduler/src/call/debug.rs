@@ -14,7 +14,7 @@
 
 use wasefire_applet_api::debug::{self as api, Api};
 use wasefire_board_api::debug::Api as _;
-use wasefire_board_api::Api as Board;
+use wasefire_board_api::{self as board, Api as Board};
 use wasefire_logger as logger;
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
@@ -36,7 +36,7 @@ fn println<B: Board>(mut call: SchedulerCall<B, api::println::Sig>) {
     call.reply(results)
 }
 
-fn exit<B: Board>(mut call: SchedulerCall<B, api::exit::Sig>) {
+fn exit<B: Board>(call: SchedulerCall<B, api::exit::Sig>) {
     let api::exit::Params { code } = call.read();
-    call.scheduler().board.debug().exit(*code == 0);
+    board::Debug::<B>::exit(*code == 0);
 }

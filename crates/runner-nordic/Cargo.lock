@@ -341,6 +341,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "derivative"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -764,6 +775,7 @@ dependencies = [
  "nrf52840-hal",
  "panic-abort",
  "panic-probe",
+ "typenum",
  "usb-device",
  "usbd-serial",
  "wasefire-applet-api",
@@ -996,15 +1008,23 @@ dependencies = [
 name = "wasefire-board-api"
 version = "0.3.0-git"
 dependencies = [
+ "aead",
  "aes",
  "aes-gcm",
  "ccm",
+ "crypto-common",
  "defmt",
+ "derivative",
+ "digest",
+ "ecdsa",
+ "elliptic-curve",
+ "generic-array",
  "hmac",
  "p256",
  "p384",
  "sha2",
  "signature",
+ "typenum",
  "usb-device",
  "usbd-serial",
  "wasefire-logger",
@@ -1032,6 +1052,10 @@ name = "wasefire-scheduler"
 version = "0.2.0-git"
 dependencies = [
  "defmt",
+ "derivative",
+ "digest",
+ "generic-array",
+ "typenum",
  "wasefire-applet-api",
  "wasefire-board-api",
  "wasefire-interpreter",

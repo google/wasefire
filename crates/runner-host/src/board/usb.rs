@@ -13,33 +13,30 @@
 // limitations under the License.
 
 use std::process::{Child, Command};
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use board::usb::serial::{HasSerial, WithSerial};
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
 use usb_device::UsbError;
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 use usbip_device::UsbIpBus;
-use wasefire_board_api as board;
-use wasefire_board_api::usb::serial::Serial;
+use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
+use wasefire_board_api::usb::Api;
 
-use crate::board::{Board, State};
+use crate::board::State;
+use crate::with_state;
 
-impl board::usb::Api for &mut Board {
-    type Serial<'a> = WithSerial<&'a mut Board>
-    where Self: 'a;
-    fn serial(&mut self) -> Self::Serial<'_> {
-        WithSerial(self)
-    }
+pub enum Impl {}
+
+impl Api for Impl {
+    type Serial = WithSerial<Impl>;
 }
 
-impl HasSerial for &mut Board {
+impl HasSerial for Impl {
     type UsbBus = UsbIpBus;
 
-    fn with_serial<R>(&mut self, f: impl FnOnce(&mut Serial<Self::UsbBus>) -> R) -> R {
-        f(&mut self.state.lock().unwrap().usb.serial)
+    fn with_serial<R>(f: impl FnOnce(&mut Serial<Self::UsbBus>) -> R) -> R {
+        with_state(|state| f(&mut state.usb.serial))
     }
 }
 
@@ -61,11 +58,11 @@ impl Default for Usb {
 }
 
 impl Usb {
-    pub fn init(state: Arc<Mutex<State>>) {
+    pub fn init() {
         assert_eq!(spawn(&["sudo", "modprobe", "vhci-hcd"]).wait().unwrap().code().unwrap(), 0);
         let mut usbip = spawn(&["sudo", "usbip", "attach", "-r", "localhost", "-b", "1-1"]);
         loop {
-            state.lock().unwrap().usb.poll();
+            with_state(|state| state.usb.poll());
             match usbip.try_wait().unwrap() {
                 None => continue,
                 Some(e) => assert_eq!(e.code().unwrap(), 0),
@@ -76,14 +73,15 @@ impl Usb {
             async move {
                 loop {
                     tokio::time::sleep(Duration::from_millis(1)).await;
-                    let mut state = state.lock().unwrap();
-                    let polled = state.usb.poll()
-                        && !matches!(
-                            state.usb.serial.port().read(&mut []),
-                            Err(UsbError::WouldBlock)
-                        );
-                    let State { sender, usb: Usb { serial, .. }, .. } = &mut *state;
-                    serial.tick(polled, |event| drop(sender.try_send(event.into())));
+                    with_state(|state| {
+                        let polled = state.usb.poll()
+                            && !matches!(
+                                state.usb.serial.port().read(&mut []),
+                                Err(UsbError::WouldBlock)
+                            );
+                        let State { sender, usb: Usb { serial, .. }, .. } = state;
+                        serial.tick(polled, |event| drop(sender.try_send(event.into())));
+                    });
                 }
             }
         });

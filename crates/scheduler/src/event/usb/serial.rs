@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use wasefire_board_api::usb::serial::Event;
+use wasefire_board_api::Api as Board;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
@@ -20,7 +21,7 @@ pub enum Key {
     Write,
 }
 
-impl From<Key> for crate::event::Key {
+impl<B: Board> From<Key> for crate::event::Key<B> {
     fn from(key: Key) -> Self {
         super::Key::Serial(key).into()
     }

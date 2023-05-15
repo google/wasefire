@@ -12,94 +12,59 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::{self as board, Event};
+use wasefire_board_api::{self as board, Event, Singleton};
 use wasefire_scheduler as scheduler;
 
-use crate::Board;
+use crate::{with_state, Board};
 
 pub mod button;
 pub mod clock;
 mod crypto;
 mod debug;
-mod led;
+pub mod led;
 mod rng;
 pub mod usb;
 
-impl core::fmt::Debug for Board {
-    fn fmt(&self, _: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        Ok(())
-    }
-}
-
-impl board::Types for Board {
-    type Crypto = Board;
-}
-
 impl board::Api for Board {
-    fn try_event(&mut self) -> Option<board::Event> {
-        critical_section::with(|cs| self.0.borrow_ref_mut(cs).events.pop())
+    fn try_event() -> Option<board::Event<Board>> {
+        with_state(|state| state.events.pop())
     }
 
-    fn wait_event(&mut self) -> board::Event {
+    fn wait_event() -> board::Event<Board> {
         loop {
-            match self.try_event() {
+            match Self::try_event() {
                 None => Events::wait(),
                 Some(event) => break event,
             }
         }
     }
 
+    type Button = button::Impl;
+    type Crypto = crypto::Impl;
+    type Debug = debug::Impl;
+    type Led = led::Impl;
+    type Rng = rng::Impl;
     type Storage = crate::storage::Storage;
-    fn take_storage(&mut self) -> Option<Self::Storage> {
-        critical_section::with(|cs| self.0.borrow_ref_mut(cs).storage.take())
-    }
+    type Timer = clock::Impl;
+    type Usb = usb::Impl;
+}
 
-    type Button<'a> = &'a mut Self;
-    fn button(&mut self) -> Self::Button<'_> {
-        self
-    }
-
-    type Crypto<'a> = &'a mut Self;
-    fn crypto(&mut self) -> &mut Self {
-        self
-    }
-
-    type Debug<'a> = &'a mut Self;
-    fn debug(&mut self) -> Self::Debug<'_> {
-        self
-    }
-
-    type Led<'a> = &'a mut Self;
-    fn led(&mut self) -> Self::Led<'_> {
-        self
-    }
-
-    type Rng<'a> = &'a mut Self;
-    fn rng(&mut self) -> Self::Rng<'_> {
-        self
-    }
-
-    type Timer<'a> = &'a mut Self;
-    fn timer(&mut self) -> Self::Timer<'_> {
-        self
-    }
-
-    type Usb<'a> = &'a mut Self;
-    fn usb(&mut self) -> Self::Usb<'_> {
-        self
+impl Singleton for crate::storage::Storage {
+    fn take() -> Option<Self> {
+        with_state(|state| state.storage.take())
     }
 }
 
 #[derive(Default)]
-pub struct Events(scheduler::Events);
+pub struct Events(scheduler::Events<Board>);
 
 impl Events {
-    pub fn push(&mut self, event: Event) {
+    pub fn push(&mut self, event: Event<Board>) {
         self.0.push(event);
         cortex_m::asm::sev();
     }
 
-    fn pop(&mut self) -> Option<Event> {
+    fn pop(&mut self) -> Option<Event<Board>> {
         self.0.pop()
     }
 

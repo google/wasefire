@@ -16,62 +16,42 @@
 //!
 //! A timer triggers an event after a given amount of time (possibly periodically).
 
-use crate::{Error, Unimplemented, Unsupported};
+use derivative::Derivative;
+
+use crate::{Error, Id, Support, Unsupported};
 
 /// Timer event.
-#[derive(Debug, PartialEq, Eq)]
-pub struct Event {
+#[derive(Derivative)]
+#[derivative(Debug(bound = ""), PartialEq(bound = ""), Eq(bound = ""))]
+pub struct Event<B: crate::Api + ?Sized> {
     /// The timer that triggered the event.
-    pub timer: usize,
+    pub timer: Id<crate::Timer<B>>,
 }
 
-impl From<Event> for crate::Event {
-    fn from(event: Event) -> Self {
+impl<B: crate::Api> From<Event<B>> for crate::Event<B> {
+    fn from(event: Event<B>) -> Self {
         crate::Event::Timer(event)
     }
 }
 
 /// Timer interface.
-pub trait Api {
-    /// Returns how many timers are available.
-    ///
-    /// Timers are identified by an integer smaller than this value.
-    fn count(&mut self) -> usize;
-
+pub trait Api: Support<usize> {
     /// Arms a timer to trigger according to a command.
-    fn arm(&mut self, timer: usize, command: &Command) -> Result<(), Error>;
+    fn arm(timer: Id<Self>, command: &Command) -> Result<(), Error>;
 
     /// Disarms a timer regardless of whether it already triggered.
     ///
     /// The timer won't trigger further events.
-    fn disarm(&mut self, timer: usize) -> Result<(), Error>;
-}
-
-impl Api for Unimplemented {
-    fn count(&mut self) -> usize {
-        unreachable!()
-    }
-
-    fn arm(&mut self, _: usize, _: &Command) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn disarm(&mut self, _: usize) -> Result<(), Error> {
-        unreachable!()
-    }
+    fn disarm(timer: Id<Self>) -> Result<(), Error>;
 }
 
 impl Api for Unsupported {
-    fn count(&mut self) -> usize {
-        0
+    fn arm(_: Id<Self>, _: &Command) -> Result<(), Error> {
+        unreachable!()
     }
 
-    fn arm(&mut self, _: usize, _: &Command) -> Result<(), Error> {
-        Err(Error::User)
-    }
-
-    fn disarm(&mut self, _: usize) -> Result<(), Error> {
-        Err(Error::User)
+    fn disarm(_: Id<Self>) -> Result<(), Error> {
+        unreachable!()
     }
 }
 

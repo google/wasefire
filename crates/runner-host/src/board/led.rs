@@ -12,28 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const NUM_LEDS: usize = 1;
+use wasefire_board_api::led::Api;
+use wasefire_board_api::{Error, Id, Support};
 
-use wasefire_board_api as board;
+use crate::with_state;
 
-impl board::led::Api for &mut crate::board::Board {
-    fn count(&mut self) -> usize {
-        NUM_LEDS
+pub enum Impl {}
+
+impl Support<usize> for Impl {
+    const SUPPORT: usize = 1;
+}
+
+impl Api for Impl {
+    fn get(id: Id<Self>) -> Result<bool, Error> {
+        assert_eq!(*id, 0);
+        with_state(|state| Ok(state.led))
     }
 
-    fn get(&mut self, led: usize) -> Result<bool, board::Error> {
-        if NUM_LEDS <= led {
-            return Err(board::Error::User);
-        }
-        Ok(self.state.lock().unwrap().led)
-    }
-
-    fn set(&mut self, led: usize, on: bool) -> Result<(), board::Error> {
-        if NUM_LEDS <= led {
-            return Err(board::Error::User);
-        }
-        println!("Led {led} is {}", if on { "on" } else { "off" });
-        self.state.lock().unwrap().led = on;
+    fn set(id: Id<Self>, on: bool) -> Result<(), Error> {
+        assert_eq!(*id, 0);
+        println!("Led is {}", if on { "on" } else { "off" });
+        with_state(|state| state.led = on);
         Ok(())
     }
 }

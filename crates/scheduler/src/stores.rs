@@ -14,30 +14,29 @@
 
 use alloc::collections::{BTreeSet, VecDeque};
 
-use wasefire_board_api::{self as board, Event};
+use wasefire_board_api::{self as board, Api as Board, Event};
 use wasefire_interpreter::Store;
 use wasefire_logger as log;
 
 use crate::event::{Handler, Key};
 use crate::{Memory, Trap};
 
-#[derive(Debug)]
-pub struct Applet<B: board::Types> {
+pub struct Applet<B: Board> {
     pub store: AppletStore,
 
     /// Pending events.
-    events: VecDeque<Event>,
+    events: VecDeque<Event<B>>,
 
     /// Whether we returned from a callback.
     done: bool,
 
-    handlers: BTreeSet<Handler>,
+    handlers: BTreeSet<Handler<B>>,
 
     pub hashes: AppletHashes<B>,
 }
 
 // We have to implement manually because derive is not able to find the correct bounds.
-impl<B: board::Types> Default for Applet<B> {
+impl<B: Board> Default for Applet<B> {
     fn default() -> Self {
         Self {
             store: Default::default(),
@@ -59,25 +58,23 @@ impl AppletStore {
 }
 
 /// Currently alive hash contexts.
-#[derive(Debug)]
-pub struct AppletHashes<B: board::Types>([Option<HashContext<B>>; 4]);
+pub struct AppletHashes<B: Board>([Option<HashContext<B>>; 4]);
 
 // We have to implement manually because derive is not able to find the correct bounds.
-impl<B: board::Types> Default for AppletHashes<B> {
+impl<B: Board> Default for AppletHashes<B> {
     fn default() -> Self {
         Self([None, None, None, None])
     }
 }
 
-#[derive(Debug)]
-pub enum HashContext<B: board::Types> {
-    HmacSha256(board::crypto::hmac_sha256::Context<B>),
-    HmacSha384(board::crypto::hmac_sha384::Context<B>),
-    Sha256(board::crypto::sha256::Context<B>),
-    Sha384(board::crypto::sha384::Context<B>),
+pub enum HashContext<B: Board> {
+    HmacSha256(board::crypto::HmacSha256<B>),
+    HmacSha384(board::crypto::HmacSha384<B>),
+    Sha256(board::crypto::Sha256<B>),
+    Sha384(board::crypto::Sha384<B>),
 }
 
-impl<B: board::Types> AppletHashes<B> {
+impl<B: Board> AppletHashes<B> {
     pub fn insert(&mut self, hash: HashContext<B>) -> Result<usize, Trap> {
         let id = self.0.iter().position(|x| x.is_none()).ok_or(Trap)?;
         self.0[id] = Some(hash);
@@ -93,7 +90,7 @@ impl<B: board::Types> AppletHashes<B> {
     }
 }
 
-impl<B: board::Types> Applet<B> {
+impl<B: Board> Applet<B> {
     pub fn store_mut(&mut self) -> &mut Store<'static> {
         &mut self.store.0
     }
@@ -102,7 +99,7 @@ impl<B: board::Types> Applet<B> {
         Memory::new(self.store_mut())
     }
 
-    pub fn push(&mut self, event: Event) {
+    pub fn push(&mut self, event: Event<B>) {
         const MAX_EVENTS: usize = 5;
         if !self.handlers.contains(&Key::from(&event)) {
             // This can happen after an event is disabled and the event queue of the board is
@@ -119,7 +116,7 @@ impl<B: board::Types> Applet<B> {
     }
 
     /// Returns the next event action.
-    pub fn pop(&mut self) -> EventAction {
+    pub fn pop(&mut self) -> EventAction<B> {
         if core::mem::replace(&mut self.done, false) {
             return EventAction::Reply;
         }
@@ -133,7 +130,7 @@ impl<B: board::Types> Applet<B> {
         self.done = true;
     }
 
-    pub fn enable(&mut self, handler: Handler) -> Result<(), Trap> {
+    pub fn enable(&mut self, handler: Handler<B>) -> Result<(), Trap> {
         match self.handlers.insert(handler) {
             true => Ok(()),
             false => {
@@ -143,7 +140,7 @@ impl<B: board::Types> Applet<B> {
         }
     }
 
-    pub fn disable(&mut self, key: Key) -> Result<(), Trap> {
+    pub fn disable(&mut self, key: Key<B>) -> Result<(), Trap> {
         self.events.retain(|x| Key::from(x) != key);
         match self.handlers.remove(&key) {
             true => Ok(()),
@@ -154,7 +151,7 @@ impl<B: board::Types> Applet<B> {
         }
     }
 
-    pub fn get(&self, key: Key) -> Option<&Handler> {
+    pub fn get(&self, key: Key<B>) -> Option<&Handler<B>> {
         self.handlers.get(&key)
     }
 
@@ -165,9 +162,9 @@ impl<B: board::Types> Applet<B> {
 
 /// Action when waiting for callbacks.
 #[derive(Debug)]
-pub enum EventAction {
+pub enum EventAction<B: Board> {
     /// Should handle the event.
-    Handle(Event),
+    Handle(Event<B>),
 
     /// Should resume execution (we handled at least one event).
     Reply,

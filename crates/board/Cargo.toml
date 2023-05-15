@@ -15,15 +15,23 @@ categories = ["embedded", "no-std"]
 features = ["std"]
 
 [dependencies]
+aead = { version = "0.5.2", default-features = false, optional = true }
 aes = { version = "0.8.2", default-features = false, optional = true }
-aes-gcm = { version = "0.10.1", default-features = false, features = ["aes"], optional = true }
+aes-gcm = { version = "0.10.1", default-features = false, optional = true }
 ccm = { version = "0.5.0", default-features = false, optional = true }
+crypto-common = { version = "0.1.6", default-features = false }
 defmt = { version = "0.3.4", default-features = false, optional = true }
+derivative = { version = "2.2.0", default-features = false, features = ["use_core"] }
+digest = { version = "0.10.6", default-features = false, features = ["mac"] }
+ecdsa = { version = "0.16.7", default-features = false, optional = true }
+elliptic-curve = { version = "0.13.4", default-features = false, optional = true }
+generic-array = { version = "0.14.7", default-features = false }
 hmac = { version = "0.12.1", default-features = false, optional = true }
-p256 = { version = "0.13.2", default-features = false, optional = true, features = ["ecdsa"] }
-p384 = { version = "0.13.0", default-features = false, optional = true, features = ["ecdsa"] }
+p256 = { version = "0.13.2", default-features = false, optional = true }
+p384 = { version = "0.13.0", default-features = false, optional = true }
 sha2 = { version = "0.10.6", default-features = false, optional = true }
 signature = { version = "2.1.0", default-features = false, optional = true }
+typenum = { version = "1.16.0", default-features = false }
 usb-device = { version = "0.2.9", default-features = false }
 usbd-serial = { version = "0.1.1", default-features = false }
 wasefire-logger = { version = "0.1.2", path = "../logger" }
@@ -31,21 +39,35 @@ wasefire-store = { version = "0.2.0", path = "../store" }
 
 [features]
 defmt = ["dep:defmt", "wasefire-logger/defmt"]
+internal-aead = ["dep:aead"]
+internal-ecc = [
+  "dep:ecdsa",
+  "dep:elliptic-curve",
+  "dep:signature",
+  "ecdsa?/arithmetic",
+  "ecdsa?/signing",
+  "ecdsa?/verifying",
+  "elliptic-curve?/arithmetic",
+  "elliptic-curve?/sec1",
+]
+internal-hmac = ["dep:hmac"]
 log = ["wasefire-logger/log"]
 software-crypto = [
   "software-crypto-aes128-ccm",
   "software-crypto-aes256-gcm",
   "software-crypto-hmac-sha256",
+  "software-crypto-hmac-sha384",
   "software-crypto-p256",
   "software-crypto-p384",
   "software-crypto-sha256",
   "software-crypto-sha384",
 ]
-software-crypto-aes128-ccm = ["dep:aes", "dep:ccm"]
-software-crypto-aes256-gcm = ["dep:aes-gcm"]
-software-crypto-hmac-sha256 = ["dep:hmac", "dep:sha2"]
-software-crypto-p256 = ["dep:p256", "dep:signature"]
-software-crypto-p384 = ["dep:p384", "dep:signature"]
+software-crypto-aes128-ccm = ["dep:aes", "dep:ccm", "internal-aead"]
+software-crypto-aes256-gcm = ["aes-gcm?/aes", "dep:aes-gcm", "internal-aead"]
+software-crypto-hmac-sha256 = ["internal-hmac"]
+software-crypto-hmac-sha384 = ["internal-hmac"]
+software-crypto-p256 = ["dep:p256", "internal-ecc", "p256?/arithmetic", "p256?/ecdsa"]
+software-crypto-p384 = ["dep:p384", "internal-ecc", "p384?/arithmetic", "p384?/ecdsa"]
 software-crypto-sha256 = ["dep:sha2"]
 software-crypto-sha384 = ["dep:sha2"]
 std = ["wasefire-store/std"]
