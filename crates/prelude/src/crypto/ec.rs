@@ -25,13 +25,10 @@ use super::hash::hkdf;
 use super::Error;
 
 /// ECDSA private key.
-pub struct EcdsaPrivate<C: Curve>(Int<C>);
+pub struct EcdsaPrivate<C: Curve>(Private<C>);
 
 /// ECDSA public key.
-pub struct EcdsaPublic<C: Curve> {
-    x: Int<C>,
-    y: Int<C>,
-}
+pub struct EcdsaPublic<C: Curve>(Public<C>);
 
 /// ECDSA signature.
 pub struct EcdsaSignature<C: Curve> {
@@ -42,13 +39,12 @@ pub struct EcdsaSignature<C: Curve> {
 impl<C: Curve> EcdsaPrivate<C> {
     /// Returns a random (with uniform distribution) ECDSA private key.
     pub fn random() -> Result<Self, Error> {
-        Ok(Self(random_private_key::<C>()?))
+        Ok(Self(Private::random()?))
     }
 
     /// Creates a private key from its non-zero scalar SEC1 encoding.
     pub fn from_non_zero_scalar(n: Int<C>) -> Result<Self, Error> {
-        ensure_non_zero_scalar::<C>(&n)?;
-        Ok(Self(n))
+        Ok(Self(Private::from_non_zero_scalar(n)?))
     }
 
     /// Returns the public key associated to this private key.
@@ -70,26 +66,22 @@ impl<C: Curve> EcdsaPrivate<C> {
 impl<C: Curve> EcdsaPublic<C> {
     /// Returns the public key associated to a private key.
     pub fn new(private: &EcdsaPrivate<C>) -> Self {
-        let mut x = Int::<C>::default();
-        let mut y = Int::<C>::default();
-        C::base_point_mul(&private.0, &mut x, &mut y).unwrap();
-        Self { x, y }
+        Self(Public::new(&private.0))
     }
 
     /// Creates a public key from its coordinates in SEC1 encoding.
     pub fn from_coordinates(x: Int<C>, y: Int<C>) -> Result<Self, Error> {
-        ensure_valid_point::<C>(&x, &y)?;
-        Ok(Self { x, y })
+        Ok(Self(Public::from_coordinates(x, y)?))
     }
 
     /// Returns the x-coordinate of the public key.
     pub fn x(&self) -> &Int<C> {
-        &self.x
+        self.0.x()
     }
 
     /// Returns the y-coordinate of the public key.
     pub fn y(&self) -> &Int<C> {
-        &self.y
+        self.0.y()
     }
 
     /// Verifies the signature of a message.
@@ -115,7 +107,7 @@ impl<C: Curve> EcdsaSignature<C> {
     pub fn new_prehash(private: &EcdsaPrivate<C>, prehash: &Int<C>) -> Result<Self, Error> {
         let mut r = Int::<C>::default();
         let mut s = Int::<C>::default();
-        C::ecdsa_sign(&private.0, prehash, &mut r, &mut s)?;
+        C::ecdsa_sign(&private.0 .0, prehash, &mut r, &mut s)?;
         Ok(Self { r, s })
     }
 
@@ -141,18 +133,15 @@ impl<C: Curve> EcdsaSignature<C> {
 
     /// Verifies a signature.
     pub fn verify_prehash(&self, public: &EcdsaPublic<C>, prehash: &Int<C>) -> Result<bool, Error> {
-        C::ecdsa_verify(prehash, &public.x, &public.y, &self.r, &self.s)
+        C::ecdsa_verify(prehash, public.x(), public.y(), &self.r, &self.s)
     }
 }
 
 /// ECDH private key.
-pub struct EcdhPrivate<C: Curve>(Int<C>);
+pub struct EcdhPrivate<C: Curve>(Private<C>);
 
 /// ECDH public key.
-pub struct EcdhPublic<C: Curve> {
-    x: Int<C>,
-    y: Int<C>,
-}
+pub struct EcdhPublic<C: Curve>(Public<C>);
 
 /// ECDH shared secret.
 pub struct EcdhShared<C: Curve>(Int<C>);
@@ -160,13 +149,12 @@ pub struct EcdhShared<C: Curve>(Int<C>);
 impl<C: Curve> EcdhPrivate<C> {
     /// Returns a random (with uniform distribution) ECDH private key.
     pub fn random() -> Result<Self, Error> {
-        Ok(Self(random_private_key::<C>()?))
+        Ok(Self(Private::random()?))
     }
 
     /// Creates a private key from its non-zero scalar SEC1 encoding.
     pub fn from_non_zero_scalar(n: Int<C>) -> Result<Self, Error> {
-        ensure_non_zero_scalar::<C>(&n)?;
-        Ok(Self(n))
+        Ok(Self(Private::from_non_zero_scalar(n)?))
     }
 
     /// Returns the public key associated to this private key.
@@ -183,26 +171,22 @@ impl<C: Curve> EcdhPrivate<C> {
 impl<C: Curve> EcdhPublic<C> {
     /// Returns the public key associated to a private key.
     pub fn new(private: &EcdhPrivate<C>) -> Self {
-        let mut x = Int::<C>::default();
-        let mut y = Int::<C>::default();
-        C::base_point_mul(&private.0, &mut x, &mut y).unwrap();
-        Self { x, y }
+        Self(Public::new(&private.0))
     }
 
     /// Creates a public key from its coordinates in SEC1 encoding.
     pub fn from_coordinates(x: Int<C>, y: Int<C>) -> Result<Self, Error> {
-        ensure_valid_point::<C>(&x, &y)?;
-        Ok(Self { x, y })
+        Ok(Self(Public::from_coordinates(x, y)?))
     }
 
     /// Returns the x-coordinate of the public key.
     pub fn x(&self) -> &Int<C> {
-        &self.x
+        self.0.x()
     }
 
     /// Returns the y-coordinate of the public key.
     pub fn y(&self) -> &Int<C> {
-        &self.y
+        self.0.y()
     }
 }
 
@@ -211,7 +195,7 @@ impl<C: Curve> EcdhShared<C> {
     pub fn new(private: &EcdhPrivate<C>, public: &EcdhPublic<C>) -> Self {
         let mut x = Int::<C>::default();
         let mut y = Int::<C>::default();
-        C::point_mul(&private.0, &public.x, &public.y, &mut x, &mut y).unwrap();
+        C::point_mul(&private.0 .0, public.x(), public.y(), &mut x, &mut y).unwrap();
         Self(x)
     }
 
@@ -386,38 +370,71 @@ impl<T: InternalHelper> Curve for T {
     }
 }
 
+/// Private key.
+struct Private<C: Curve>(Int<C>);
+
+/// Public key.
+struct Public<C: Curve> {
+    x: Int<C>,
+    y: Int<C>,
+}
+
+impl<C: Curve> Private<C> {
+    /// Returns a random (with uniform distribution) private key.
+    fn random() -> Result<Self, Error> {
+        let mut scalar = Int::<C>::default();
+        loop {
+            // TODO(#163): Use a DRBG (possibly taking it as argument).
+            crate::rng::fill_bytes(&mut scalar).map_err(|_| Error::RngFailure)?;
+            if is_zero_scalar::<C>(&scalar) {
+                // The probability is very low for this to happen during normal operation.
+                return Err(Error::RngFailure);
+            }
+            if C::is_valid_scalar(&scalar) {
+                return Ok(Self(scalar));
+            }
+        }
+    }
+
+    /// Creates a private key from its non-zero scalar SEC1 encoding.
+    fn from_non_zero_scalar(n: Int<C>) -> Result<Self, Error> {
+        if is_zero_scalar::<C>(&n) || !C::is_valid_scalar(&n) {
+            return Err(Error::InvalidArgument);
+        }
+        Ok(Self(n))
+    }
+}
+
+impl<C: Curve> Public<C> {
+    /// Returns the public key associated to a private key.
+    fn new(private: &Private<C>) -> Self {
+        let mut x = Int::<C>::default();
+        let mut y = Int::<C>::default();
+        C::base_point_mul(&private.0, &mut x, &mut y).unwrap();
+        Self { x, y }
+    }
+
+    /// Creates a public key from its coordinates in SEC1 encoding.
+    fn from_coordinates(x: Int<C>, y: Int<C>) -> Result<Self, Error> {
+        if !C::is_valid_point(&x, &y) {
+            return Err(Error::InvalidArgument);
+        }
+        Ok(Self { x, y })
+    }
+
+    /// Returns the x-coordinate of the public key.
+    fn x(&self) -> &Int<C> {
+        &self.x
+    }
+
+    /// Returns the y-coordinate of the public key.
+    fn y(&self) -> &Int<C> {
+        &self.y
+    }
+}
+
 fn is_zero_scalar<C: Curve>(n: &Int<C>) -> bool {
     n.iter().all(|&x| x == 0)
-}
-
-/// Returns a random (with uniform distribution) private key.
-fn random_private_key<C: Curve>() -> Result<Int<C>, Error> {
-    let mut scalar = Int::<C>::default();
-    loop {
-        // TODO(#163): Use a DRBG (possibly taking it as argument).
-        crate::rng::fill_bytes(&mut scalar).map_err(|_| Error::RngFailure)?;
-        if is_zero_scalar::<C>(&scalar) {
-            // The probability is very low for this to happen during normal operation.
-            return Err(Error::RngFailure);
-        }
-        if C::is_valid_scalar(&scalar) {
-            return Ok(scalar);
-        }
-    }
-}
-
-fn ensure_non_zero_scalar<C: Curve>(n: &Int<C>) -> Result<(), Error> {
-    if is_zero_scalar::<C>(n) || !C::is_valid_scalar(n) {
-        return Err(Error::InvalidArgument);
-    }
-    Ok(())
-}
-
-fn ensure_valid_point<C: Curve>(x: &Int<C>, y: &Int<C>) -> Result<(), Error> {
-    if !C::is_valid_point(x, y) {
-        return Err(Error::InvalidArgument);
-    }
-    Ok(())
 }
 
 fn prehash<C: Curve>(message: &[u8]) -> Result<Vec<u8>, Error> {
