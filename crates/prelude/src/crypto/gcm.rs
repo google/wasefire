@@ -161,6 +161,7 @@ mod rust_crypto {
     /// AES-256-GCM key parametric over in-place flavor.
     ///
     /// Prefer using [`Aes256Gcm`] or [`Aes256GcmInPlace`] instead.
+    #[derive(zeroize::Zeroize, zeroize::ZeroizeOnDrop)]
     pub struct Key<const IN_PLACE: bool> {
         key: [u8; 32],
     }
