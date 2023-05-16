@@ -4,12 +4,11 @@
 
 ### Minor
 
-- Implement RustCrypto API for SHA and HMAC
+- Implement RustCrypto API for SHA, HMAC, and AES-256-GCM
 - Add ECDH and ECDSA in `crypto::ec`
 - Add SHA-256, SHA-384, HMAC, and HKDF in `crypto::hash`
 - Add `sync` module for mutex and atomics support
 - Add in-place variants for AES-256-GCM
-- Implement RustCrypto API for AES-256-GCM
 
 ### Patch
 
