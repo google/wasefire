@@ -28,8 +28,6 @@ use digest::{FixedOutputReset, HashMarker};
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
 use crate::Support;
 
-use wasefire_error::Error;
-
 #[cfg(feature = "internal-api-crypto-aead")]
 pub mod aead;
 #[cfg(feature = "internal-api-crypto-ecc")]
@@ -37,79 +35,119 @@ pub mod ecc;
 
 /// Cryptography interface.
 pub trait Api: Send {
+    /// AES-128-CCM interface.
     #[cfg(feature = "api-crypto-aes128-ccm")]
-    type Aes128Ccm: aead::Api<typenum::U16, typenum::U13, Tag=typenum::U4>;
+    type Aes128Ccm: aead::Api<typenum::U16, typenum::U13, Tag = typenum::U4>;
+
+    /// AES-256-GCM interface.
     #[cfg(feature = "api-crypto-aes256-gcm")]
     type Aes256Gcm: aead::Api<typenum::U32, typenum::U12>;
 
+    /// HMAC-SHA-256 interface.
     #[cfg(feature = "api-crypto-hmac-sha256")]
-    type HmacSha256: Hmac<KeySize=typenum::U64, OutputSize=typenum::U32>;
-    #[cfg(feature = "api-crypto-hmac-sha384")]
-    type HmacSha384: Hmac<KeySize=typenum::U128, OutputSize=typenum::U48>;
+    type HmacSha256: Hmac<KeySize = typenum::U64, OutputSize = typenum::U32>;
 
+    /// HMAC-SHA-384 interface.
+    #[cfg(feature = "api-crypto-hmac-sha384")]
+    type HmacSha384: Hmac<KeySize = typenum::U128, OutputSize = typenum::U48>;
+
+    /// P-256 interface.
     #[cfg(feature = "api-crypto-p256")]
     type P256: ecc::Api<typenum::U32>;
+
+    /// P-384 interface.
     #[cfg(feature = "api-crypto-p384")]
     type P384: ecc::Api<typenum::U48>;
 
+    /// SHA-256 interface.
     #[cfg(feature = "api-crypto-sha256")]
-    type Sha256: Hash<BlockSize=typenum::U64, OutputSize=typenum::U32>;
+    type Sha256: Hash<BlockSize = typenum::U64, OutputSize = typenum::U32>;
+
+    /// SHA-384 interface.
     #[cfg(feature = "api-crypto-sha384")]
-    type Sha384: Hash<BlockSize=typenum::U128, OutputSize=typenum::U48>;
+    type Sha384: Hash<BlockSize = typenum::U128, OutputSize = typenum::U48>;
 }
 
-pub trait LastError {
-    fn last_error(&self) -> Result<(), Error>;
-}
-
+/// Hash interface.
 #[cfg(feature = "internal-api-crypto-hash")]
 pub trait Hash:
-Support<bool> + Send + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker + LastError
-{}
-
+    Support<bool> + Send + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker
+{
+}
+/// HMAC interface.
 #[cfg(feature = "internal-api-crypto-hmac")]
-pub trait Hmac: Support<bool> + Send + KeyInit + Update + FixedOutputReset + MacMarker + LastError {}
+pub trait Hmac: Support<bool> + Send + KeyInit + Update + FixedOutput + MacMarker {}
 
 #[cfg(feature = "internal-api-crypto-hash")]
 impl<
-    T: Support<bool> + Send + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker + LastError,
-> Hash for T
-{}
-
+        T: Support<bool> + Send + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker,
+    > Hash for T
+{
+}
 #[cfg(feature = "internal-api-crypto-hmac")]
-impl<T: Support<bool> + Send + KeyInit + Update + FixedOutputReset + MacMarker + LastError> Hmac for T {}
+impl<T: Support<bool> + Send + KeyInit + Update + FixedOutput + MacMarker> Hmac for T {}
 
+/// AES-128-CCM interface.
 #[cfg(feature = "api-crypto-aes128-ccm")]
 pub type Aes128Ccm<B> = <super::Crypto<B> as Api>::Aes128Ccm;
+
+/// AES-256-GCM interface.
 #[cfg(feature = "api-crypto-aes256-gcm")]
 pub type Aes256Gcm<B> = <super::Crypto<B> as Api>::Aes256Gcm;
+
+/// HMAC-SHA-256 interface.
 #[cfg(feature = "api-crypto-hmac-sha256")]
 pub type HmacSha256<B> = <super::Crypto<B> as Api>::HmacSha256;
+
+/// HMAC-SHA-384 interface.
 #[cfg(feature = "api-crypto-hmac-sha384")]
 pub type HmacSha384<B> = <super::Crypto<B> as Api>::HmacSha384;
+
+/// P-256 interface.
 #[cfg(feature = "api-crypto-p256")]
 pub type P256<B> = <super::Crypto<B> as Api>::P256;
+
+/// P-384 interface.
 #[cfg(feature = "api-crypto-p384")]
 pub type P384<B> = <super::Crypto<B> as Api>::P384;
+
+/// SHA-256 interface.
 #[cfg(feature = "api-crypto-sha256")]
 pub type Sha256<B> = <super::Crypto<B> as Api>::Sha256;
+
+/// SHA-384 interface.
 #[cfg(feature = "api-crypto-sha384")]
 pub type Sha384<B> = <super::Crypto<B> as Api>::Sha384;
 
+/// AES-128-CCM interface.
 #[cfg(feature = "software-crypto-aes128-ccm")]
 pub type SoftwareAes128Ccm = ccm::Ccm<aes::Aes128, typenum::U4, typenum::U13>;
+
+/// AES-256-GCM interface.
 #[cfg(feature = "software-crypto-aes256-gcm")]
 pub type SoftwareAes256Gcm = aes_gcm::Aes256Gcm;
+
+/// HMAC-SHA-256 interface.
 #[cfg(feature = "software-crypto-hmac-sha256")]
 pub type SoftwareHmacSha256<T> = hmac::SimpleHmac<<T as Api>::Sha256>;
+
+/// HMAC-SHA-384 interface.
 #[cfg(feature = "software-crypto-hmac-sha384")]
 pub type SoftwareHmacSha384<T> = hmac::SimpleHmac<<T as Api>::Sha384>;
+
+/// P-256 interface.
 #[cfg(feature = "software-crypto-p256")]
 pub type SoftwareP256<T> = ecc::Software<p256::NistP256, <T as Api>::Sha256>;
+
+/// P-384 interface.
 #[cfg(feature = "software-crypto-p384")]
 pub type SoftwareP384<T> = ecc::Software<p384::NistP384, <T as Api>::Sha384>;
+
+/// SHA-256 interface.
 #[cfg(feature = "software-crypto-sha256")]
 pub type SoftwareSha256 = sha2::Sha256;
+
+/// SHA-384 interface.
 #[cfg(feature = "software-crypto-sha384")]
 pub type SoftwareSha384 = sha2::Sha384;
 
@@ -121,7 +159,7 @@ impl crate::Supported for sha2::Sha384 {}
 
 #[cfg(feature = "internal-software-crypto-hmac")]
 impl<D: Support<bool> + Default + BlockSizeUser + Update + FixedOutput + HashMarker> Support<bool>
-for hmac::SimpleHmac<D>
+    for hmac::SimpleHmac<D>
 {
     const SUPPORT: bool = D::SUPPORT;
 }

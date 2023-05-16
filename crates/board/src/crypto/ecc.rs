@@ -67,6 +67,7 @@ mod software {
     use super::*;
     use crate::Support;
 
+    /// Generic elliptic-curve software implementation.
     pub struct Software<C, D> {
         curve: PhantomData<C>,
         digest: PhantomData<D>,

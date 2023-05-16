@@ -65,8 +65,10 @@ pub trait Api: Send {
 
 /// Helper trait for boards using the `usbd_serial` crate.
 pub trait HasSerial: Send {
+    /// USB bus type.
     type UsbBus: UsbBus;
 
+    /// Provides scoped access to the serial type.
     fn with_serial<R>(f: impl FnOnce(&mut Serial<Self::UsbBus>) -> R) -> R;
 }
 
@@ -84,10 +86,12 @@ pub struct Serial<'a, T: UsbBus> {
 }
 
 impl<'a, T: UsbBus> Serial<'a, T> {
+    /// Creates a new serial from a port.
     pub fn new(port: SerialPort<'a, T>) -> Self {
         Self { port, read_enabled: false, write_enabled: false }
     }
 
+    /// Accesses the port of a serial.
     pub fn port(&mut self) -> &mut SerialPort<'a, T> {
         &mut self.port
     }

@@ -33,9 +33,11 @@ impl<B: crate::Api> From<Event> for crate::Event<B> {
 
 /// USB interface.
 pub trait Api: Send {
+    /// USB serial interface.
     #[cfg(feature = "api-usb-serial")]
     type Serial: serial::Api;
 }
 
+/// USB serial interface.
 #[cfg(feature = "api-usb-serial")]
 pub type Serial<B> = <super::Usb<B> as Api>::Serial;

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1-git
+
+### Patch
+
+- Document all public API
+
 ## 0.6.0
 
 ### Major
