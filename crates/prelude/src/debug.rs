@@ -30,7 +30,7 @@ pub fn println(msg: &str) {
 
 /// Whether debugging is enabled.
 // We use an environment variable to avoid asking applets to forward features.
-pub const ENABLED: bool = option_env!("FIRWASM_DEBUG").is_some();
+pub const ENABLED: bool = option_env!("WASEFIRE_DEBUG").is_some();
 
 #[deprecated(since = "0.1.2", note = "use debug! instead")]
 #[macro_export]
