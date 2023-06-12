@@ -294,7 +294,7 @@ impl AppletOptions {
         if main.release {
             cargo.args(["-Zbuild-std=core,alloc", "-Zbuild-std-features=panic_immediate_abort"]);
         } else {
-            cargo.env("FIRWASM_DEBUG", "");
+            cargo.env("WASEFIRE_DEBUG", "");
         }
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(dir);
