@@ -220,6 +220,7 @@ name = "test"
 version = "0.1.0"
 dependencies = [
  "wasefire",
+ "wasefire-applet-api",
 ]
 
 [[package]]

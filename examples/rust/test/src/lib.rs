@@ -36,4 +36,18 @@ mod tests {
         // We want to make sure types in core and alloc also work in tests.
         assert_eq!(make().get(), 18);
     }
+
+    #[test]
+    fn test_rng() {
+        use wasefire_applet_api::rng::fill_bytes::{Params, Results};
+        #[no_mangle]
+        unsafe extern "C" fn rb(params: Params) -> Results {
+            let Params { ptr, len } = params;
+            std::slice::from_raw_parts_mut(ptr, len).fill(42);
+            Results { res: 0 }
+        }
+        let mut buf = [0];
+        rng::fill_bytes(&mut buf).unwrap();
+        assert_eq!(buf, [42]);
+    }
 }

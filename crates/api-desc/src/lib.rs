@@ -305,8 +305,10 @@ impl Fn {
                 pub fn #name(#fn_params) #fn_results;
             }
             #[cfg(feature = "test")]
-            pub unsafe fn #name(#fn_params) #fn_results {
-                panic!("applet API is not linked in unit tests");
+            #[export_name = #link]
+            #[linkage = "weak"]
+            pub unsafe extern "C" fn #name(#fn_params) #fn_results {
+                panic!("{:?} is not defined", #link);
             }
         }
     }
