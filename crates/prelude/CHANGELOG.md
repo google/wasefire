@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.1.5-git
+## 0.2.0-git
+
+### Major
+
+- Rename environment debug flag to `WASEFIRE_DEBUG`
 
 ### Minor
 
