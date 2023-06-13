@@ -4,6 +4,7 @@
 
 ### Major
 
+- Rename `test` feature to `native`
 - Rename environment debug flag to `WASEFIRE_DEBUG`
 
 ### Minor

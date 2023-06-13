@@ -4,6 +4,7 @@
 
 ### Major
 
+- Rename the `test` feature to `native`
 - Update `wasefire-applet-api-macro` version
 
 ### Minor

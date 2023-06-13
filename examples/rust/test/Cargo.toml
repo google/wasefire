@@ -13,4 +13,4 @@ wasefire = { path = "../../../crates/prelude" }
 wasefire-applet-api = { path = "../../../crates/api", optional = true }
 
 [features]
-test = ["dep:wasefire-applet-api", "wasefire/test"]
+test = ["dep:wasefire-applet-api", "wasefire/native"]
