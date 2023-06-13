@@ -15,6 +15,7 @@
 #![cfg_attr(feature = "host", doc = "Platform-side of the applet API.")]
 #![cfg_attr(feature = "wasm", doc = include_str!("wasm.md"))]
 #![no_std]
+#![cfg_attr(all(feature = "wasm", feature = "test"), feature(linkage))]
 
 extern crate alloc;
 

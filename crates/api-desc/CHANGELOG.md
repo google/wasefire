@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support defining API functions in tests
 - Add `ec` module with elliptic curve operations
 - Add `hash` module with SHA-256, SHA-384, HMAC, and HKDF algorithms
 - Support in-place AES-256-GCM by accepting null pointers
