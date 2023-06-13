@@ -26,7 +26,8 @@ list() {
 }
 
 features() {
-  sed -n '/^\[features]$/,/^$/{s/ = .*$//p}' Cargo.toml | grep -v human
+  sed -n '/^\[features]$/,/^$/{s/ = .*$//p}' Cargo.toml \
+    | grep -v -e human -e test
 }
 
 for name in $(list); do

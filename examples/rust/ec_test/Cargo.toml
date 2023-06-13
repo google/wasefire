@@ -10,3 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wasefire = { path = "../../../crates/prelude" }
+wasefire-stub = { path = "../../../crates/stub", optional = true }
+
+[features]
+test = ["dep:wasefire-stub", "wasefire/native"]

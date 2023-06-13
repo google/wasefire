@@ -817,3 +817,50 @@ const P384_ECDSA_VECTORS: &[EcdsaVector] = &[
         v: false,
     },
 ];
+
+#[cfg(test)]
+mod tests {
+    use wasefire_stub as _;
+
+    use super::*;
+
+    #[test]
+    fn test_ecdh_p256() {
+        test_ecdh::<P256>("p256", P256_ECDH_VECTORS);
+    }
+
+    #[test]
+    fn test_ecdh_p384() {
+        test_ecdh::<P384>("p384", P384_ECDH_VECTORS);
+    }
+
+    #[test]
+    fn test_ecdh_random_p256() {
+        test_ecdh_random::<P256>("p256");
+    }
+
+    #[test]
+    fn test_ecdh_random_p384() {
+        test_ecdh_random::<P384>("p384");
+    }
+
+    #[test]
+    fn test_ecdsa_p256() {
+        test_ecdsa::<P256>("p256", P256_ECDSA_VECTORS);
+    }
+
+    #[test]
+    fn test_ecdsa_p384() {
+        test_ecdsa::<P384>("p384", P384_ECDSA_VECTORS);
+    }
+
+    #[test]
+    fn test_ecdsa_random_p256() {
+        test_ecdsa_random::<P256>("p256");
+    }
+
+    #[test]
+    fn test_ecdsa_random_p384() {
+        test_ecdsa_random::<P384>("p384");
+    }
+}
