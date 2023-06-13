@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![cfg_attr(not(feature = "test"), no_std)]
+#![no_std]
 wasefire::applet!();
 
 use alloc::boxed::Box;
@@ -43,7 +43,7 @@ mod tests {
         #[no_mangle]
         unsafe extern "C" fn rb(params: Params) -> Results {
             let Params { ptr, len } = params;
-            std::slice::from_raw_parts_mut(ptr, len).fill(42);
+            core::slice::from_raw_parts_mut(ptr, len).fill(42);
             Results { res: 0 }
         }
         let mut buf = [0];

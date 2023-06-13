@@ -34,7 +34,7 @@
 
 extern crate alloc;
 
-#[cfg(not(feature = "test"))]
+#[cfg(not(feature = "native"))]
 mod allocator;
 pub mod button;
 mod callback;
@@ -65,7 +65,7 @@ pub mod usb;
 ///     debug!("Hello world!");
 /// }
 /// ```
-#[cfg(not(feature = "test"))]
+#[cfg(not(feature = "native"))]
 #[macro_export]
 macro_rules! applet {
     () => {
@@ -79,7 +79,7 @@ macro_rules! applet {
         }
     };
 }
-#[cfg(feature = "test")]
+#[cfg(feature = "native")]
 #[macro_export]
 macro_rules! applet {
     () => {
@@ -89,7 +89,7 @@ macro_rules! applet {
     };
 }
 
-#[cfg(not(feature = "test"))]
+#[cfg(not(feature = "native"))]
 #[panic_handler]
 fn handle_panic(info: &core::panic::PanicInfo) -> ! {
     debug!("{}", info);

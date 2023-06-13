@@ -4,7 +4,8 @@
 
 ### Minor
 
-- Support defining API functions in tests
+- Support overwriting API functions with `native`
+- Rename `test` feature to `native`
 - Add `ec` module with elliptic curve operations
 - Add `hash` module with SHA-256, SHA-384, HMAC, and HKDF algorithms
 - Support in-place AES-256-GCM by accepting null pointers

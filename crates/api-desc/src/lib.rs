@@ -298,13 +298,13 @@ impl Fn {
                 #[repr(C)]
                 pub struct Results { #(#results,)* }
             }
-            #[cfg(not(feature = "test"))]
+            #[cfg(not(feature = "native"))]
             extern "C" {
                 #(#[doc = #docs])*
                 #[link_name = #link]
                 pub fn #name(#fn_params) #fn_results;
             }
-            #[cfg(feature = "test")]
+            #[cfg(feature = "native")]
             #[export_name = #link]
             #[linkage = "weak"]
             pub unsafe extern "C" fn #name(#fn_params) #fn_results {

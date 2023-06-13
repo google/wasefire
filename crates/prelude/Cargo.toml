@@ -28,6 +28,9 @@ wasefire-applet-api = { version = "0.3.0-git", path = "../api", features = ["was
 zeroize = { version = "1.6.0", default-features = false, features = ["derive"], optional = true }
 
 [features]
+# Uses multiple return values instead of output parameters (experimental).
 multivalue = ["wasefire-applet-api/multivalue"]
+# Implements RustCrypto traits.
 rust-crypto = ["dep:aead", "dep:crypto-common", "dep:digest", "dep:zeroize"]
-test = ["wasefire-applet-api/test"]
+# Builds for native library usage instead of Wasm binary.
+native = ["wasefire-applet-api/native"]
