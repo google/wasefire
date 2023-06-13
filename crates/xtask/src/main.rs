@@ -448,6 +448,10 @@ impl RunnerOptions {
         }
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(format!("crates/runner-{}", self.name));
+        if !Path::new("target/applet.wasm").exists() {
+            std::fs::create_dir_all("target")?;
+            std::fs::write("target/applet.wasm", "")?;
+        }
         if run && self.name == "host" {
             let path = Path::new("target/storage.bin");
             if self.erase_flash && path.exists() {
