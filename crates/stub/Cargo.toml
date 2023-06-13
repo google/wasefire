@@ -1,0 +1,16 @@
+[package]
+name = "wasefire-stub"
+version = "0.1.0-git"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = true
+edition = "2021"
+description = "Stubs for the Wasefire applet API"
+repository = "https://github.com/google/wasefire"
+include = ["/src"]
+keywords = ["framework"]
+categories = []
+
+[dependencies]
+sha2 = { version = "0.10.6", default-features = false }
+wasefire-applet-api = { version = "0.3.0-git", path = "../api", features = ["native", "wasm"] }
