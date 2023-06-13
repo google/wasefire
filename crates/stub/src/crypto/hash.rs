@@ -67,7 +67,7 @@ unsafe extern "C" fn chi(params: api::initialize::Params) -> api::initialize::Re
 #[no_mangle]
 unsafe extern "C" fn chu(params: api::update::Params) {
     let api::update::Params { id, data, length } = params;
-    let data = core::slice::from_raw_parts(data, length);
+    let data = unsafe { std::slice::from_raw_parts(data, length) };
     match CONTEXTS.lock().unwrap().get(id) {
         Context::Sha256(x) => x.update(data),
         Context::Sha384(x) => x.update(data),
@@ -77,7 +77,7 @@ unsafe extern "C" fn chu(params: api::update::Params) {
 #[no_mangle]
 unsafe extern "C" fn chf(params: api::finalize::Params) -> api::finalize::Results {
     let api::finalize::Params { id, digest } = params;
-    let data = |length| core::slice::from_raw_parts_mut(digest, length);
+    let data = |length| unsafe { std::slice::from_raw_parts_mut(digest, length) };
     match CONTEXTS.lock().unwrap().take(id) {
         Context::Sha256(x) => x.finalize_into(data(32).into()),
         Context::Sha384(x) => x.finalize_into(data(48).into()),

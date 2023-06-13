@@ -12,19 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! This crate provides stubs for parts of the applet API.
-//!
-//! By default, when using the applet API with the `native` feature, all calls to the applet API
-//! will panic. This crate provides a working implementation for some parts of the API (like the
-//! crypto module).
-//!
-//! Note that this crate doesn't expose anything. To use it, you just need to link it:
-//!
-//! ```
-//! use wasefire_stub as _;
-//! ```
-#![deny(unsafe_op_in_unsafe_fn)]
+use rand::RngCore;
+use wasefire_applet_api::rng as api;
 
-mod crypto;
-mod debug;
-mod rng;
+#[no_mangle]
+unsafe extern "C" fn rb(params: api::fill_bytes::Params) -> api::fill_bytes::Results {
+    let api::fill_bytes::Params { ptr, len } = params;
+    let buf = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
+    rand::thread_rng().fill_bytes(buf);
+    api::fill_bytes::Results { res: 0 }
+}
