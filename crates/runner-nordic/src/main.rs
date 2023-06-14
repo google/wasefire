@@ -49,7 +49,7 @@ use storage::Storage;
 use tasks::button::{channel, Button};
 use tasks::clock::Timers;
 use tasks::usb::Usb;
-use tasks::{button, clock, led, Events};
+use tasks::{button, led, Events};
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
@@ -154,11 +154,11 @@ macro_rules! interrupts {
 
 interrupts! {
     GPIOTE = gpiote(),
-    TIMER0 = timer(Id::new(0).unwrap()),
-    TIMER1 = timer(Id::new(1).unwrap()),
-    TIMER2 = timer(Id::new(2).unwrap()),
-    TIMER3 = timer(Id::new(3).unwrap()),
-    TIMER4 = timer(Id::new(4).unwrap()),
+    TIMER0 = timer(0),
+    TIMER1 = timer(1),
+    TIMER2 = timer(2),
+    TIMER3 = timer(3),
+    TIMER4 = timer(4),
     USBD = usbd(),
 }
 
@@ -175,7 +175,8 @@ fn gpiote() {
     });
 }
 
-fn timer(timer: Id<clock::Impl>) {
+fn timer(timer: usize) {
+    let timer = Id::new(timer).unwrap();
     with_state(|state| {
         state.events.push(board::timer::Event { timer }.into());
         state.timers.tick(*timer);
