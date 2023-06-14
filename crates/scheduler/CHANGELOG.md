@@ -4,6 +4,7 @@
 
 ### Major
 
+- Change `Scheduler::run()` to take the board as type
 - Change `Scheduler::run()` to take the module as argument (fix #132)
 - Update `wasefire-board-api` to 0.3.0
 

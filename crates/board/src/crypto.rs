@@ -14,157 +14,133 @@
 
 //! Cryptography interface.
 
-use crate::{Unimplemented, Unsupported};
+use crypto_common::{BlockSizeUser, Key, KeyInit, KeySizeUser, Output, OutputSizeUser};
+use digest::{FixedOutput, HashMarker, MacMarker, Update};
+use typenum::{U0, U12, U13, U16, U32, U4, U48};
 
-pub mod aes128_ccm;
-pub mod aes256_gcm;
-pub mod hmac_sha256;
-pub mod hmac_sha384;
-pub mod p256;
-pub mod p384;
-pub mod sha256;
-pub mod sha384;
+use crate::{Support, Unsupported};
 
-/// Returns this [`Types`] given a [`crate::Types`].
-pub type Get<B> = <super::Get<B> as super::Types>::Crypto;
-
-/// Associated types of [`Api`].
-pub trait Types {
-    type HmacSha256: hmac_sha256::Types;
-    type HmacSha384: hmac_sha384::Types;
-    type Sha256: sha256::Types;
-    type Sha384: sha384::Types;
-}
+pub mod aead;
+pub mod ecc;
 
 /// Cryptography interface.
-pub trait Api<T: Types> {
-    type Aes128Ccm<'a>: aes128_ccm::Api
-    where Self: 'a;
-    fn aes128_ccm(&mut self) -> Self::Aes128Ccm<'_>;
+pub trait Api {
+    type Aes128Ccm: aead::Api<U16, U13, U4>;
+    type Aes256Gcm: aead::Api<U32, U12, U16>;
 
-    type Aes256Gcm<'a>: aes256_gcm::Api
-    where Self: 'a;
-    fn aes256_gcm(&mut self) -> Self::Aes256Gcm<'_>;
+    type HmacSha256: Support<bool> + KeyInit + Update + FixedOutput + MacMarker;
+    type HmacSha384: Support<bool> + KeyInit + Update + FixedOutput + MacMarker;
 
-    type HmacSha256<'a>: hmac_sha256::Api<T::HmacSha256>
-    where Self: 'a;
-    fn hmac_sha256(&mut self) -> Self::HmacSha256<'_>;
+    type P256: Support<bool> + ecc::Api<U32>;
+    type P384: Support<bool> + ecc::Api<U48>;
 
-    type HmacSha384<'a>: hmac_sha384::Api<T::HmacSha384>
-    where Self: 'a;
-    fn hmac_sha384(&mut self) -> Self::HmacSha384<'_>;
-
-    type P256<'a>: p256::Api
-    where Self: 'a;
-    fn p256(&mut self) -> Self::P256<'_>;
-
-    type P384<'a>: p384::Api
-    where Self: 'a;
-    fn p384(&mut self) -> Self::P384<'_>;
-
-    type Sha256<'a>: sha256::Api<T::Sha256>
-    where Self: 'a;
-    fn sha256(&mut self) -> Self::Sha256<'_>;
-
-    type Sha384<'a>: sha384::Api<T::Sha384>
-    where Self: 'a;
-    fn sha384(&mut self) -> Self::Sha384<'_>;
+    type Sha256: Support<bool> + Default + BlockSizeUser + Update + FixedOutput + HashMarker;
+    type Sha384: Support<bool> + Default + BlockSizeUser + Update + FixedOutput + HashMarker;
 }
 
-impl Types for Unimplemented {
-    type HmacSha256 = Unimplemented;
-    type HmacSha384 = Unimplemented;
-    type Sha256 = Unimplemented;
-    type Sha384 = Unimplemented;
+pub type Aes128Ccm<B> = <super::Crypto<B> as Api>::Aes128Ccm;
+pub type Aes256Gcm<B> = <super::Crypto<B> as Api>::Aes256Gcm;
+pub type HmacSha256<B> = <super::Crypto<B> as Api>::HmacSha256;
+pub type HmacSha384<B> = <super::Crypto<B> as Api>::HmacSha384;
+pub type P256<B> = <super::Crypto<B> as Api>::P256;
+pub type P384<B> = <super::Crypto<B> as Api>::P384;
+pub type Sha256<B> = <super::Crypto<B> as Api>::Sha256;
+pub type Sha384<B> = <super::Crypto<B> as Api>::Sha384;
+
+macro_rules! software {
+    (#[cfg(feature = $feature:literal)] type $Name:ident = $impl:ty;) => {
+        #[cfg(feature = $feature)]
+        type $Name = $impl;
+        #[cfg(not(feature = $feature))]
+        type $Name = Unsupported;
+    };
 }
 
-impl Api<Unimplemented> for Unimplemented {
-    type Aes128Ccm<'a> = Unimplemented;
-    fn aes128_ccm(&mut self) -> Self::Aes128Ccm<'_> {
-        unreachable!()
+impl Api for Unsupported {
+    software! {
+        #[cfg(feature = "software-crypto-aes128-ccm")]
+        type Aes128Ccm = ccm::Ccm<aes::Aes128, U4, U13>;
+    }
+    software! {
+        #[cfg(feature = "software-crypto-aes256-gcm")]
+        type Aes256Gcm = aes_gcm::Aes256Gcm;
     }
 
-    type Aes256Gcm<'a> = Unimplemented;
-    fn aes256_gcm(&mut self) -> Self::Aes256Gcm<'_> {
-        unreachable!()
+    software! {
+        #[cfg(feature = "software-crypto-hmac-sha256")]
+        type HmacSha256 = hmac::SimpleHmac<Self::Sha256>;
+    }
+    software! {
+        #[cfg(feature = "software-crypto-hmac-sha384")]
+        type HmacSha384 = hmac::SimpleHmac<Self::Sha384>;
     }
 
-    type HmacSha256<'a> = Unimplemented;
-    fn hmac_sha256(&mut self) -> Self::HmacSha256<'_> {
-        unreachable!()
+    software! {
+        #[cfg(feature = "software-crypto-p256")]
+        type P256 = ecc::Software<p256::NistP256, Self::Sha256>;
+    }
+    software! {
+        #[cfg(feature = "software-crypto-p384")]
+        type P384 = ecc::Software<p384::NistP384, Self::Sha384>;
     }
 
-    type HmacSha384<'a> = Unimplemented;
-    fn hmac_sha384(&mut self) -> Self::HmacSha384<'_> {
-        unreachable!()
+    software! {
+        #[cfg(feature = "software-crypto-sha256")]
+        type Sha256 = sha2::Sha256;
     }
-
-    type P256<'a> = Unimplemented;
-    fn p256(&mut self) -> Self::P256<'_> {
-        unreachable!()
-    }
-
-    type P384<'a> = Unimplemented;
-    fn p384(&mut self) -> Self::P384<'_> {
-        unreachable!()
-    }
-
-    type Sha256<'a> = Unimplemented;
-    fn sha256(&mut self) -> Self::Sha256<'_> {
-        unreachable!()
-    }
-
-    type Sha384<'a> = Unimplemented;
-    fn sha384(&mut self) -> Self::Sha384<'_> {
-        unreachable!()
+    software! {
+        #[cfg(feature = "software-crypto-sha384")]
+        type Sha384 = sha2::Sha384;
     }
 }
 
-impl Types for Unsupported {
-    type HmacSha256 = Unsupported;
-    type HmacSha384 = Unsupported;
-    type Sha256 = Unsupported;
-    type Sha384 = Unsupported;
+impl BlockSizeUser for Unsupported {
+    type BlockSize = U0;
 }
 
-impl Api<Unsupported> for Unsupported {
-    type Aes128Ccm<'a> = Unsupported;
-    fn aes128_ccm(&mut self) -> Self::Aes128Ccm<'_> {
-        Unsupported
-    }
+impl KeySizeUser for Unsupported {
+    type KeySize = U0;
+}
 
-    type Aes256Gcm<'a> = Unsupported;
-    fn aes256_gcm(&mut self) -> Self::Aes256Gcm<'_> {
-        Unsupported
-    }
+impl OutputSizeUser for Unsupported {
+    type OutputSize = U0;
+}
 
-    type HmacSha256<'a> = Unsupported;
-    fn hmac_sha256(&mut self) -> Self::HmacSha256<'_> {
-        Unsupported
-    }
+impl HashMarker for Unsupported {}
+impl MacMarker for Unsupported {}
 
-    type HmacSha384<'a> = Unsupported;
-    fn hmac_sha384(&mut self) -> Self::HmacSha384<'_> {
-        Unsupported
+impl Default for Unsupported {
+    fn default() -> Self {
+        unreachable!()
     }
+}
 
-    type P256<'a> = Unsupported;
-    fn p256(&mut self) -> Self::P256<'_> {
-        Unsupported
+impl KeyInit for Unsupported {
+    fn new(_: &Key<Self>) -> Self {
+        unreachable!()
     }
+}
 
-    type P384<'a> = Unsupported;
-    fn p384(&mut self) -> Self::P384<'_> {
-        Unsupported
+impl Update for Unsupported {
+    fn update(&mut self, _: &[u8]) {
+        unreachable!()
     }
+}
 
-    type Sha256<'a> = Unsupported;
-    fn sha256(&mut self) -> Self::Sha256<'_> {
-        Unsupported
+impl FixedOutput for Unsupported {
+    fn finalize_into(self, _: &mut Output<Self>) {
+        unreachable!()
     }
+}
 
-    type Sha384<'a> = Unsupported;
-    fn sha384(&mut self) -> Self::Sha384<'_> {
-        Unsupported
-    }
+#[cfg(feature = "software-crypto-sha256")]
+impl crate::Supported for sha2::Sha256 {}
+
+#[cfg(feature = "software-crypto-sha384")]
+impl crate::Supported for sha2::Sha384 {}
+
+#[cfg(feature = "internal-hmac")]
+impl<D: Default + BlockSizeUser + Update + FixedOutput + HashMarker> crate::Supported
+    for hmac::SimpleHmac<D>
+{
 }

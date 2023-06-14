@@ -19,35 +19,40 @@ use embedded_hal::timer::Cancel;
 use nrf52840_hal::pac::{TIMER0, TIMER1, TIMER2, TIMER3, TIMER4};
 use nrf52840_hal::timer::{Instance, OneShot, Periodic};
 use nrf52840_hal::Timer;
-use {wasefire_board_api as board, wasefire_logger as logger};
+use wasefire_board_api::timer::{Api, Command};
+use wasefire_board_api::{Error, Id, Support};
+use wasefire_logger as logger;
 
-impl board::timer::Api for &mut crate::tasks::Board {
-    fn count(&mut self) -> usize {
-        critical_section::with(|cs| self.0.borrow_ref(cs).timers.0.len())
-    }
+use crate::with_state;
 
-    fn arm(&mut self, i: usize, command: &board::timer::Command) -> Result<(), board::Error> {
-        critical_section::with(|cs| try {
-            let timers = &mut self.0.borrow_ref_mut(cs).timers;
-            let timer = timers.0.get_mut(i).ok_or(board::Error::User)?;
+pub enum Impl {}
+
+impl Support<usize> for Impl {
+    const SUPPORT: usize = 5;
+}
+
+impl Api for Impl {
+    fn arm(id: Id<Self>, command: &Command) -> Result<(), Error> {
+        with_state(|state| {
+            let timer = &mut state.timers.0[*id];
             match command.periodic {
                 true => timer.slot.set_periodic(),
                 false => timer.slot.set_oneshot(),
             }
             timer.slot.start(command.duration_ms as u32 * 1000);
+            Ok(())
         })
     }
 
-    fn disarm(&mut self, i: usize) -> Result<(), board::Error> {
-        critical_section::with(|cs| try {
-            let timers = &mut self.0.borrow_ref_mut(cs).timers;
-            let timer = timers.0.get_mut(i).ok_or(board::Error::User)?;
-            timer.slot.cancel();
+    fn disarm(id: Id<Self>) -> Result<(), Error> {
+        with_state(|state| {
+            state.timers.0[*id].slot.cancel();
+            Ok(())
         })
     }
 }
 
-pub struct Timers([ErasedTimer; 5]);
+pub struct Timers([ErasedTimer; <Impl as Support<usize>>::SUPPORT]);
 
 impl Timers {
     pub fn new(t0: TIMER0, t1: TIMER1, t2: TIMER2, t3: TIMER3, t4: TIMER4) -> Self {

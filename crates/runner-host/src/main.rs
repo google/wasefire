@@ -17,17 +17,26 @@
 
 use std::io::BufRead;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use anyhow::Result;
+use board::Board;
 use tokio::runtime::Handle;
-use tokio::sync::mpsc::channel;
+use tokio::sync::mpsc::{channel, Receiver};
+use wasefire_board_api::Event;
 use wasefire_scheduler::Scheduler;
 use wasefire_store::{FileOptions, FileStorage};
 
 use crate::board::timer::Timers;
 
 mod board;
+
+static STATE: Mutex<Option<board::State>> = Mutex::new(None);
+static RECEIVER: Mutex<Option<Receiver<Event<Board>>>> = Mutex::new(None);
+
+fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
+    f(STATE.lock().unwrap().as_mut().unwrap())
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -37,7 +46,8 @@ async fn main() -> Result<()> {
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
     let storage = Some(FileStorage::new(Path::new(STORAGE), options).unwrap());
     let (sender, receiver) = channel(10);
-    let state = Arc::new(Mutex::new(board::State {
+    *RECEIVER.lock().unwrap() = Some(receiver);
+    *STATE.lock().unwrap() = Some(board::State {
         sender,
         button: false,
         led: false,
@@ -45,11 +55,10 @@ async fn main() -> Result<()> {
         #[cfg(feature = "usb")]
         usb: board::usb::Usb::default(),
         storage,
-    }));
+    });
     #[cfg(feature = "usb")]
-    board::usb::Usb::init(state.clone());
+    board::usb::Usb::init();
     tokio::spawn({
-        let state = state.clone();
         async move {
             for line in std::io::stdin().lock().lines() {
                 let pressed = match line.unwrap().as_str() {
@@ -61,13 +70,11 @@ async fn main() -> Result<()> {
                         continue;
                     }
                 };
-                let mut state = state.lock().unwrap();
-                board::button::event(&mut state, pressed);
+                with_state(|state| board::button::event(state, pressed));
             }
         }
     });
     println!("Running.");
-    let board = board::Board { receiver, state };
     const WASM: &[u8] = include_bytes!("../../../target/applet.wasm");
-    Handle::current().spawn_blocking(|| Scheduler::run(board, WASM)).await?
+    Handle::current().spawn_blocking(|| Scheduler::<board::Board>::run(WASM)).await?
 }

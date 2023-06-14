@@ -25,11 +25,11 @@ use core::cell::RefCell;
 use core::marker::PhantomData;
 use core::ops::Range;
 
+use derivative::Derivative;
 use event::Key;
 use stores::{Applet, EventAction};
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature};
-use wasefire_board_api::timer::Api as _;
-use wasefire_board_api::{self as board, Api as Board};
+use wasefire_board_api::{self as board, Api as Board, Singleton, Support};
 use wasefire_interpreter::{
     self as interpreter, Call, Error, InstId, Module, RunAnswer, RunResult, Store, Val,
 };
@@ -40,15 +40,16 @@ mod call;
 mod event;
 mod stores;
 
-#[derive(Default)]
-pub struct Events(VecDeque<board::Event>);
+#[derive(Derivative)]
+#[derivative(Default(bound = ""))]
+pub struct Events<B: Board>(VecDeque<board::Event<B>>);
 
-impl Events {
+impl<B: Board> Events<B> {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
-    pub fn push(&mut self, event: board::Event) {
+    pub fn push(&mut self, event: board::Event<B>) {
         const MAX_EVENTS: usize = 10;
         if self.0.contains(&event) {
             trace!("Merging {}", Debug2Format(&event));
@@ -60,13 +61,12 @@ impl Events {
         }
     }
 
-    pub fn pop(&mut self) -> Option<board::Event> {
+    pub fn pop(&mut self) -> Option<board::Event<B>> {
         self.0.pop_front().inspect(|event| debug!("Popping {}", Debug2Format(&event)))
     }
 }
 
 pub struct Scheduler<B: Board> {
-    board: B,
     store: store::Store<B::Storage>,
     host_funcs: Vec<Api<Id>>,
     applet: Applet<B>,
@@ -170,8 +170,8 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
 }
 
 impl<B: Board> Scheduler<B> {
-    pub fn run(board: B, wasm: &'static [u8]) -> ! {
-        let mut scheduler = Scheduler::new(board);
+    pub fn run(wasm: &'static [u8]) -> ! {
+        let mut scheduler = Self::new();
         debug!("Loading applet.");
         scheduler.load(wasm);
         loop {
@@ -180,7 +180,7 @@ impl<B: Board> Scheduler<B> {
         }
     }
 
-    fn new(mut board: B) -> Self {
+    fn new() -> Self {
         let mut host_funcs = Vec::new();
         Api::<Id>::iter(&mut host_funcs, |x| x);
         host_funcs.sort_by_key(|x| x.descriptor().name);
@@ -191,9 +191,9 @@ impl<B: Board> Scheduler<B> {
             let d = f.descriptor();
             store.link_func("env", d.name, d.params, d.results).unwrap();
         }
-        let timers = vec![None; board.timer().count()];
-        let store = store::Store::new(board.take_storage().unwrap()).ok().unwrap();
-        Self { board, store, host_funcs, applet, timers }
+        let store = store::Store::new(board::Storage::<B>::take().unwrap()).ok().unwrap();
+        let timers = vec![None; board::Timer::<B>::SUPPORT];
+        Self { store, host_funcs, applet, timers }
     }
 
     fn load(&mut self, wasm: &'static [u8]) {
@@ -214,7 +214,7 @@ impl<B: Board> Scheduler<B> {
     }
 
     fn flush_events(&mut self) {
-        while let Some(event) = self.board.try_event() {
+        while let Some(event) = B::try_event() {
             self.applet.push(event);
         }
     }
@@ -224,7 +224,7 @@ impl<B: Board> Scheduler<B> {
         let event = loop {
             match self.applet.pop() {
                 EventAction::Handle(event) => break event,
-                EventAction::Wait => self.applet.push(self.board.wait_event()),
+                EventAction::Wait => self.applet.push(B::wait_event()),
                 EventAction::Reply => return true,
             }
         };
@@ -250,7 +250,7 @@ impl<B: Board> Scheduler<B> {
         call::process(call);
     }
 
-    fn disable_event(&mut self, key: Key) -> Result<(), Trap> {
+    fn disable_event(&mut self, key: Key<B>) -> Result<(), Trap> {
         self.applet.disable(key)?;
         self.flush_events();
         Ok(())

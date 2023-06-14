@@ -45,7 +45,7 @@ pub fn encrypt(key: &[u8; 16], nonce: &[u8; 8], clear: &[u8]) -> Result<Vec<u8>,
 
 /// Returns the cleartext given a ciphertext, a key, and a nonce.
 pub fn decrypt(key: &[u8; 16], nonce: &[u8; 8], cipher: &[u8]) -> Result<Vec<u8>, Error> {
-    let len = cipher.len() - 4;
+    let len = cipher.len().checked_sub(4).ok_or(Error::InvalidArgument)?;
     let mut clear = vec![0; len];
     let params = api::decrypt::Params {
         key: key.as_ptr(),

@@ -13,24 +13,23 @@
 // limitations under the License.
 
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
-use wasefire_board_api as board;
 use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
+use wasefire_board_api::usb::Api;
 
-use crate::tasks::Board;
+use crate::with_state;
 
 pub type Usb = Usbd<UsbPeripheral<'static>>;
 
-impl board::usb::Api for &mut Board {
-    type Serial<'a> = WithSerial<&'a mut Board> where Self: 'a;
-    fn serial(&mut self) -> Self::Serial<'_> {
-        WithSerial(self)
-    }
+pub enum Impl {}
+
+impl Api for Impl {
+    type Serial = WithSerial<Impl>;
 }
 
-impl HasSerial for &mut Board {
+impl HasSerial for Impl {
     type UsbBus = Usb;
 
-    fn with_serial<R>(&mut self, f: impl FnOnce(&mut Serial<Self::UsbBus>) -> R) -> R {
-        critical_section::with(|cs| f(&mut self.0.borrow_ref_mut(cs).serial))
+    fn with_serial<R>(f: impl FnOnce(&mut Serial<Self::UsbBus>) -> R) -> R {
+        with_state(|state| f(&mut state.serial))
     }
 }

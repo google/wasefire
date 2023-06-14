@@ -14,10 +14,10 @@
 
 use wasefire_board_api as board;
 
-use crate::board::Board;
+pub enum Impl {}
 
-impl board::debug::Api for &mut Board {
-    fn exit(&mut self, success: bool) -> ! {
+impl board::debug::Api for Impl {
+    fn exit(success: bool) -> ! {
         std::process::exit(if success { 0 } else { 1 })
     }
 }

@@ -14,102 +14,89 @@
 
 //! Board interface.
 //!
-//! A board provides multiple interfaces under a single [`Api`] trait. Some of these interfaces
+//! A board provides hierarchy of interfaces under the root [`Api`] trait. Some of these interfaces
 //! support triggering [events][Event].
 
 #![no_std]
+#![feature(never_type)]
 
 extern crate alloc;
 
-use core::fmt::Debug;
+use core::marker::PhantomData;
+use core::ops::Deref;
 
-use wasefire_store::Storage;
+use derivative::Derivative;
 
 pub mod button;
 pub mod crypto;
 pub mod debug;
 pub mod led;
 pub mod rng;
-pub mod storage;
+mod storage;
 pub mod timer;
 pub mod usb;
 
-// For consistency.
-type Get<B> = B;
-
-/// Associated types of [`Api`].
-///
-/// This is done separately to avoid lifetimes in associated types paths.
-pub trait Types {
-    type Crypto: crypto::Types;
-}
-
 /// Board interface.
 ///
-/// Associated types have predefined implementations:
-/// - `!` (the never type) implements an API by panicking (the accessor function cannot be
-///   implemented and must itself panic)
-/// - `()` (the unit type) implements an API for something countable by using zero.
-pub trait Api: Types {
+/// This is essentially a type hierarchy. The implementation is responsible for handling a possible
+/// explicit global state. The type implementing this API may be equivalent to the never type (e.g.
+/// an empty enum) because it is never used, i.e. there are no functions which take `self`.
+///
+/// All interfaces are implemented by [`Unsupported`]. This can be used for interfaces that don't
+/// have hardware support, are not yet implemented, or should use a software implementation.
+pub trait Api {
     /// Returns the oldest triggered event, if any.
     ///
     /// This function is non-blocking. See [`Self::wait_event()`] for a blocking version.
-    fn try_event(&mut self) -> Option<Event>;
+    fn try_event() -> Option<Event<Self>>;
 
     /// Returns the oldest triggered event, possibly waiting until one triggers.
     ///
     /// This function is non-blocking if an event already triggered. However, if there are no event
     /// available, this function blocks and enters a power-saving state until an event triggers.
-    fn wait_event(&mut self) -> Event;
+    fn wait_event() -> Event<Self>;
 
-    /// Storage type.
-    type Storage: Storage;
+    type Button: button::Api;
+    type Crypto: crypto::Api;
+    type Debug: debug::Api;
+    type Led: led::Api;
+    type Rng: rng::Api;
+    type Storage: Singleton + wasefire_store::Storage;
+    type Timer: timer::Api;
+    type Usb: usb::Api;
+}
 
-    /// Takes the storage from the board.
+/// Describes how an API is supported.
+///
+/// The `Value` type parameter is usually `bool`. It may also be `usize` for APIs that have multiple
+/// similar things like buttons, leds, and timers.
+pub trait Support<Value> {
+    const SUPPORT: Value;
+}
+
+/// Marker trait for supported API.
+pub trait Supported {}
+
+/// Provides access to a (possibly unsupported) singleton API.
+pub trait Singleton: Sized {
+    /// Returns the singleton.
     ///
-    /// This function returns `Some` at most once and if it does, it does so on the first call.
-    fn take_storage(&mut self) -> Option<Self::Storage>;
-
-    type Button<'a>: button::Api
-    where Self: 'a;
-    fn button(&mut self) -> Self::Button<'_>;
-
-    type Crypto<'a>: crypto::Api<<Self as Types>::Crypto>
-    where Self: 'a;
-    fn crypto(&mut self) -> <Self as Api>::Crypto<'_>;
-
-    type Debug<'a>: debug::Api
-    where Self: 'a;
-    fn debug(&mut self) -> Self::Debug<'_>;
-
-    type Led<'a>: led::Api
-    where Self: 'a;
-    fn led(&mut self) -> Self::Led<'_>;
-
-    type Rng<'a>: rng::Api
-    where Self: 'a;
-    fn rng(&mut self) -> Self::Rng<'_>;
-
-    type Timer<'a>: timer::Api
-    where Self: 'a;
-    fn timer(&mut self) -> Self::Timer<'_>;
-
-    type Usb<'a>: usb::Api
-    where Self: 'a;
-    fn usb(&mut self) -> Self::Usb<'_>;
+    /// Returns `None` if the API is not supported. Returns `None` if called more than once.
+    fn take() -> Option<Self>;
 }
 
 /// Events that interfaces may trigger.
 ///
 /// Events are de-duplicated if the previous one was not processed yet, because some events may
 /// trigger repeatedly.
-#[derive(Debug, PartialEq, Eq)]
-pub enum Event {
+#[derive(Derivative)]
+#[derivative(Debug(bound = ""), PartialEq(bound = ""), Eq(bound = ""))]
+pub enum Event<B: Api + ?Sized> {
     /// Button event.
-    Button(button::Event),
+    Button(button::Event<B>),
 
     /// Timer event.
-    Timer(timer::Event),
+    Timer(timer::Event<B>),
 
     /// USB event.
     Usb(usb::Event),
@@ -130,134 +117,85 @@ pub enum Error {
     World,
 }
 
-/// Unimplemented interface.
-///
-/// This is similar to the never type (`!`) and can only be produced by panicking, for example using
-/// the `unimplemented!()` or `todo!()` macros.
-#[derive(Debug)]
-pub enum Unimplemented {}
+pub type Button<B> = <B as Api>::Button;
+pub type Crypto<B> = <B as Api>::Crypto;
+pub type Debug<B> = <B as Api>::Debug;
+pub type Led<B> = <B as Api>::Led;
+pub type Rng<B> = <B as Api>::Rng;
+pub type Storage<B> = <B as Api>::Storage;
+pub type Timer<B> = <B as Api>::Timer;
+pub type Usb<B> = <B as Api>::Usb;
 
 /// Unsupported interface.
-///
-/// This is similar to the unit type (`()`) and can always be produced.
-#[derive(Debug, Default)]
-pub struct Unsupported;
+#[derive(Debug)]
+pub enum Unsupported {}
+
+/// Valid identifier for a countable API.
+#[derive(Derivative)]
+#[derivative(Debug(bound = ""), Copy(bound = ""), Clone(bound = ""), Hash(bound = ""))]
+#[derivative(PartialEq(bound = ""), Eq(bound = ""), PartialOrd(bound = ""), Ord(bound = ""))]
+pub struct Id<T: Support<usize> + ?Sized> {
+    // Invariant: value < T::SUPPORT
+    value: usize,
+    count: PhantomData<T>,
+}
+
+impl<T: Support<usize>> Id<T> {
+    pub fn new(value: usize) -> Option<Self> {
+        (value < T::SUPPORT).then_some(Self { value, count: PhantomData })
+    }
+}
+
+impl<T: Support<usize>> Deref for Id<T> {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl Support<bool> for Unsupported {
+    const SUPPORT: bool = false;
+}
+
+impl Support<usize> for Unsupported {
+    const SUPPORT: usize = 0;
+}
+
+impl<T: Supported> Support<bool> for T {
+    const SUPPORT: bool = true;
+}
+
+impl Singleton for Unsupported {
+    fn take() -> Option<Self> {
+        None
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn unimplemented() {
-        struct Test;
-        impl Types for Test {
-            type Crypto = Unimplemented;
-        }
-        impl Api for Test {
-            fn try_event(&mut self) -> Option<Event> {
-                todo!()
-            }
-
-            fn wait_event(&mut self) -> Event {
-                todo!()
-            }
-
-            type Storage = Unimplemented;
-            fn take_storage(&mut self) -> Option<Self::Storage> {
-                todo!()
-            }
-
-            type Button<'a> = Unimplemented;
-            fn button(&mut self) -> Self::Button<'_> {
-                todo!()
-            }
-
-            type Crypto<'a> = Unimplemented;
-            fn crypto(&mut self) -> Unimplemented {
-                todo!()
-            }
-
-            type Debug<'a> = Unimplemented;
-            fn debug(&mut self) -> Self::Debug<'_> {
-                todo!()
-            }
-
-            type Led<'a> = Unimplemented;
-            fn led(&mut self) -> Self::Led<'_> {
-                todo!()
-            }
-
-            type Rng<'a> = Unimplemented;
-            fn rng(&mut self) -> Self::Rng<'_> {
-                todo!()
-            }
-
-            type Timer<'a> = Unimplemented;
-            fn timer(&mut self) -> Self::Timer<'_> {
-                todo!()
-            }
-
-            type Usb<'a> = Unimplemented;
-            fn usb(&mut self) -> Self::Usb<'_> {
-                todo!()
-            }
-        }
-    }
-
-    #[test]
     fn unsupported() {
-        struct Test;
-        impl Types for Test {
-            type Crypto = Unsupported;
-        }
+        enum Test {}
         impl Api for Test {
-            fn try_event(&mut self) -> Option<Event> {
+            fn try_event() -> Option<Event<Self>> {
                 todo!()
             }
 
-            fn wait_event(&mut self) -> Event {
+            fn wait_event() -> Event<Self> {
                 todo!()
             }
 
+            type Button = Unsupported;
+            type Crypto = Unsupported;
+            type Debug = Unsupported;
+            type Led = Unsupported;
+            type Rng = Unsupported;
             type Storage = Unsupported;
-            fn take_storage(&mut self) -> Option<Self::Storage> {
-                None
-            }
-
-            type Button<'a> = Unsupported;
-            fn button(&mut self) -> Self::Button<'_> {
-                Unsupported
-            }
-
-            type Crypto<'a> = Unsupported;
-            fn crypto(&mut self) -> Unsupported {
-                Unsupported
-            }
-
-            type Debug<'a> = Unsupported;
-            fn debug(&mut self) -> Self::Debug<'_> {
-                Unsupported
-            }
-
-            type Led<'a> = Unsupported;
-            fn led(&mut self) -> Self::Led<'_> {
-                Unsupported
-            }
-
-            type Rng<'a> = Unsupported;
-            fn rng(&mut self) -> Self::Rng<'_> {
-                Unsupported
-            }
-
-            type Timer<'a> = Unsupported;
-            fn timer(&mut self) -> Self::Timer<'_> {
-                Unsupported
-            }
-
-            type Usb<'a> = Unsupported;
-            fn usb(&mut self) -> Self::Usb<'_> {
-                Unsupported
-            }
+            type Timer = Unsupported;
+            type Usb = Unsupported;
         }
     }
 }

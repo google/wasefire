@@ -17,6 +17,7 @@
 
 ### Patch
 
+- Fix missing parameter check in `crypto::ccm::decrypt()`
 - Fix clippy warnings
 
 ## 0.1.4

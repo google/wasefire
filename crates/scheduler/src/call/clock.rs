@@ -14,7 +14,7 @@
 
 use wasefire_applet_api::clock::{self as api, Api};
 use wasefire_board_api::timer::{Api as _, Command};
-use wasefire_board_api::Api as Board;
+use wasefire_board_api::{self as board, Api as Board, Id};
 
 use crate::event::timer::Key;
 use crate::event::Handler;
@@ -37,7 +37,7 @@ fn allocate<B: Board>(mut call: SchedulerCall<B, api::allocate::Sig>) {
         let timer = timers.iter().position(|x| x.is_none()).ok_or(Trap)?;
         timers[timer] = Some(Timer {});
         call.scheduler().applet.enable(Handler {
-            key: Key { timer }.into(),
+            key: Key { timer: Id::new(timer).unwrap() }.into(),
             inst,
             func: *handler_func,
             data: *handler_data,
@@ -51,11 +51,11 @@ fn start<B: Board>(mut call: SchedulerCall<B, api::start::Sig>) {
     let api::start::Params { id, mode, duration_ms } = call.read();
     let timer = *id as usize;
     let results = try {
-        get_timer(call.scheduler(), timer)?;
+        let id = get_timer(call.scheduler(), timer)?;
         let periodic = matches!(api::Mode::try_from(*mode)?, api::Mode::Periodic);
         let duration_ms = *duration_ms as usize;
         let command = Command { periodic, duration_ms };
-        call.scheduler().board.timer().arm(timer, &command).map_err(|_| Trap)?;
+        board::Timer::<B>::arm(id, &command).map_err(|_| Trap)?;
         api::start::Results {}
     };
     call.reply(results);
@@ -65,8 +65,8 @@ fn stop<B: Board>(mut call: SchedulerCall<B, api::stop::Sig>) {
     let api::stop::Params { id } = call.read();
     let timer = *id as usize;
     let results = try {
-        get_timer(call.scheduler(), timer)?;
-        call.scheduler().board.timer().disarm(timer).map_err(|_| Trap)?;
+        let id = get_timer(call.scheduler(), timer)?;
+        board::Timer::<B>::disarm(id).map_err(|_| Trap)?;
         api::stop::Results {}
     };
     call.reply(results);
@@ -76,18 +76,21 @@ fn free<B: Board>(mut call: SchedulerCall<B, api::free::Sig>) {
     let api::free::Params { id } = call.read();
     let timer = *id as usize;
     let results = try {
-        get_timer(call.scheduler(), timer)?;
+        let timer = get_timer(call.scheduler(), timer)?;
         call.scheduler().disable_event(Key { timer }.into())?;
-        call.scheduler().timers[timer] = None;
+        call.scheduler().timers[*timer] = None;
         api::free::Results {}
     };
     call.reply(results);
 }
 
 // TODO: Should also check that the timer belongs to the calling applet.
-fn get_timer<B: Board>(scheduler: &mut Scheduler<B>, timer: usize) -> Result<&mut Timer, Trap> {
-    match scheduler.timers.get_mut(timer) {
-        Some(Some(x)) => Ok(x),
-        _ => Err(Trap),
+fn get_timer<B: Board>(
+    scheduler: &mut Scheduler<B>, timer: usize,
+) -> Result<Id<board::Timer<B>>, Trap> {
+    let id = Id::new(timer).ok_or(Trap)?;
+    if scheduler.timers[timer].is_none() {
+        return Err(Trap);
     }
+    Ok(id)
 }

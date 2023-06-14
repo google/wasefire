@@ -12,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api as board;
+use wasefire_board_api::rng::Api;
+use wasefire_board_api::Error;
 
-impl board::rng::Api for &mut crate::tasks::Board {
-    fn fill_bytes(&mut self, buffer: &mut [u8]) -> Result<(), board::Error> {
-        critical_section::with(|cs| self.0.borrow_ref_mut(cs).rng.random(buffer));
+use crate::with_state;
+
+pub enum Impl {}
+
+impl Api for Impl {
+    fn fill_bytes(buffer: &mut [u8]) -> Result<(), Error> {
+        with_state(|state| state.rng.random(buffer));
         Ok(())
     }
 }

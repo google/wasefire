@@ -15,13 +15,14 @@
 pub mod serial;
 
 use wasefire_board_api::usb::Event;
+use wasefire_board_api::Api as Board;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
     Serial(serial::Key),
 }
 
-impl From<Key> for crate::event::Key {
+impl<B: Board> From<Key> for crate::event::Key<B> {
     fn from(key: Key) -> Self {
         crate::event::Key::Usb(key)
     }

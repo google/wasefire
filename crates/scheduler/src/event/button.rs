@@ -14,25 +14,29 @@
 
 use alloc::vec::Vec;
 
+use derivative::Derivative;
 use wasefire_board_api::button::Event;
+use wasefire_board_api::{self as board, Api as Board, Id};
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Key {
-    pub button: usize,
+#[derive(Derivative)]
+#[derivative(Debug(bound = ""), Copy(bound = ""), Clone(bound = ""), Hash(bound = ""))]
+#[derivative(PartialEq(bound = ""), Eq(bound = ""), PartialOrd(bound = ""), Ord(bound = ""))]
+pub struct Key<B: Board> {
+    pub button: Id<board::Button<B>>,
 }
 
-impl From<Key> for crate::event::Key {
-    fn from(key: Key) -> Self {
+impl<B: Board> From<Key<B>> for crate::event::Key<B> {
+    fn from(key: Key<B>) -> Self {
         crate::event::Key::Button(key)
     }
 }
 
-impl<'a> From<&'a Event> for Key {
-    fn from(event: &'a Event) -> Self {
+impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
+    fn from(event: &'a Event<B>) -> Self {
         Key { button: event.button }
     }
 }
 
-pub fn process(event: Event, params: &mut Vec<u32>) {
+pub fn process<B: Board>(event: Event<B>, params: &mut Vec<u32>) {
     params.push(event.pressed as u32);
 }

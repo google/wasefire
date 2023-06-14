@@ -17,56 +17,60 @@ use std::time::Duration;
 
 use tokio::task::JoinHandle;
 use wasefire_board_api::timer::{Api, Command, Event};
-use wasefire_board_api::Error;
+use wasefire_board_api::{Error, Id, Support};
 
-use crate::board::Board;
+use crate::with_state;
 
-impl Api for &mut Board {
-    fn count(&mut self) -> usize {
-        self.state.lock().unwrap().timers.0.len()
-    }
+pub enum Impl {}
 
-    fn arm(&mut self, i: usize, command: &Command) -> Result<(), Error> {
-        let mut state = self.state.lock().unwrap();
-        let sender = state.sender.clone();
-        let state = state.deref_mut();
-        let timer = state.timers.0.get_mut(i).ok_or(Error::User)?;
-        if timer.handle.is_some() {
-            return Err(Error::User);
-        }
-        let duration = Duration::from_millis(command.duration_ms as u64);
-        if command.periodic {
-            timer.handle = Some(tokio::spawn(async move {
-                let mut interval = tokio::time::interval(duration);
-                interval.tick().await;
-                loop {
+impl Support<usize> for Impl {
+    const SUPPORT: usize = 5;
+}
+
+impl Api for Impl {
+    fn arm(id: Id<Self>, command: &Command) -> Result<(), Error> {
+        with_state(|mut state| {
+            let sender = state.sender.clone();
+            let state = state.deref_mut();
+            let timer = &mut state.timers.0[*id];
+            if timer.handle.is_some() {
+                return Err(Error::User);
+            }
+            let duration = Duration::from_millis(command.duration_ms as u64);
+            if command.periodic {
+                timer.handle = Some(tokio::spawn(async move {
+                    let mut interval = tokio::time::interval(duration);
                     interval.tick().await;
-                    let _ = sender.try_send(Event { timer: i }.into());
-                }
-            }));
-        } else {
-            timer.handle = Some(tokio::spawn(async move {
-                tokio::time::sleep(duration).await;
-                let _ = sender.try_send(Event { timer: i }.into());
-            }));
-        }
-        Ok(())
+                    loop {
+                        interval.tick().await;
+                        let _ = sender.try_send(Event { timer: id }.into());
+                    }
+                }));
+            } else {
+                timer.handle = Some(tokio::spawn(async move {
+                    tokio::time::sleep(duration).await;
+                    let _ = sender.try_send(Event { timer: id }.into());
+                }));
+            }
+            Ok(())
+        })
     }
 
-    fn disarm(&mut self, i: usize) -> Result<(), Error> {
-        let mut state = self.state.lock().unwrap();
-        let timer = state.timers.0.get_mut(i).ok_or(Error::User)?;
-        match &timer.handle {
-            Some(handle) => handle.abort(),
-            None => return Err(Error::User),
-        }
-        timer.handle = None;
-        Ok(())
+    fn disarm(id: Id<Self>) -> Result<(), Error> {
+        with_state(|state| {
+            let timer = &mut state.timers.0[*id];
+            match &timer.handle {
+                Some(handle) => handle.abort(),
+                None => return Err(Error::User),
+            }
+            timer.handle = None;
+            Ok(())
+        })
     }
 }
 
 #[derive(Default)]
-pub struct Timers([Timer; 5]);
+pub struct Timers([Timer; <Impl as Support<usize>>::SUPPORT]);
 
 #[derive(Default)]
 pub struct Timer {

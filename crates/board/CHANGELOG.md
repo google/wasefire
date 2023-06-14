@@ -4,6 +4,7 @@
 
 ### Major
 
+- Change API to assume a global state
 - Add ECDH and ECDSA support for P256 and P384
 - Add the `Types` trait for `Api` associated types
 - Add SHA-256, SHA-384, and HMAC support in crypto

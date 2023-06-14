@@ -14,10 +14,10 @@
 
 use wasefire_board_api as board;
 
-use crate::tasks::Board;
+pub enum Impl {}
 
-impl board::debug::Api for &mut Board {
-    fn exit(&mut self, success: bool) -> ! {
+impl board::debug::Api for Impl {
+    fn exit(success: bool) -> ! {
         if success {
             loop {
                 cortex_m::asm::bkpt();

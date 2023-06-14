@@ -17,62 +17,42 @@
 //! A button is an input interface with 2 states: pressed and released. Buttons must support
 //! triggering events when changing state. Events may be enabled or disabled per button.
 
-use crate::{Error, Unimplemented, Unsupported};
+use derivative::Derivative;
+
+use crate::{Error, Id, Support, Unsupported};
 
 /// Button event.
-#[derive(Debug, PartialEq, Eq)]
-pub struct Event {
+#[derive(Derivative)]
+#[derivative(Debug(bound = ""), PartialEq(bound = ""), Eq(bound = ""))]
+pub struct Event<B: crate::Api + ?Sized> {
     /// The button that triggered the event.
-    pub button: usize,
+    pub button: Id<crate::Button<B>>,
 
     /// Whether the event was a button press or release.
     pub pressed: bool,
 }
 
-impl From<Event> for crate::Event {
-    fn from(event: Event) -> Self {
+impl<B: crate::Api> From<Event<B>> for crate::Event<B> {
+    fn from(event: Event<B>) -> Self {
         crate::Event::Button(event)
     }
 }
 
 /// Button interface.
-pub trait Api {
-    /// Returns how many buttons are available.
-    ///
-    /// Buttons are identified by an integer smaller than this value.
-    fn count(&mut self) -> usize;
-
+pub trait Api: Support<usize> {
     /// Enables events for a given button.
-    fn enable(&mut self, button: usize) -> Result<(), Error>;
+    fn enable(button: Id<Self>) -> Result<(), Error>;
 
     /// Disables events for a given button.
-    fn disable(&mut self, button: usize) -> Result<(), Error>;
-}
-
-impl Api for Unimplemented {
-    fn count(&mut self) -> usize {
-        unreachable!()
-    }
-
-    fn enable(&mut self, _: usize) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn disable(&mut self, _: usize) -> Result<(), Error> {
-        unreachable!()
-    }
+    fn disable(button: Id<Self>) -> Result<(), Error>;
 }
 
 impl Api for Unsupported {
-    fn count(&mut self) -> usize {
-        0
+    fn enable(_: Id<Self>) -> Result<(), Error> {
+        unreachable!()
     }
 
-    fn enable(&mut self, _: usize) -> Result<(), Error> {
-        Err(Error::User)
-    }
-
-    fn disable(&mut self, _: usize) -> Result<(), Error> {
-        Err(Error::User)
+    fn disable(_: Id<Self>) -> Result<(), Error> {
+        unreachable!()
     }
 }

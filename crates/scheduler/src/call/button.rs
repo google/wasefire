@@ -14,7 +14,7 @@
 
 use wasefire_applet_api::button::{self as api, Api};
 use wasefire_board_api::button::Api as _;
-use wasefire_board_api::Api as Board;
+use wasefire_board_api::{self as board, Api as Board, Id, Support};
 
 use crate::event::button::Key;
 use crate::event::Handler;
@@ -28,24 +28,24 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     }
 }
 
-fn count<B: Board>(mut call: SchedulerCall<B, api::count::Sig>) {
+fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     let api::count::Params {} = call.read();
-    let count = call.scheduler().board.button().count() as u32;
+    let count = board::Button::<B>::SUPPORT as u32;
     call.reply(Ok(api::count::Results { cnt: count.into() }));
 }
 
 fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { button, handler_func, handler_data } = call.read();
-    let button = *button as usize;
     let inst = call.inst();
     let results = try {
+        let button = Id::new(*button as usize).ok_or(Trap)?;
         call.scheduler().applet.enable(Handler {
             key: Key { button }.into(),
             inst,
             func: *handler_func,
             data: *handler_data,
         })?;
-        call.scheduler().board.button().enable(button).map_err(|_| Trap)?;
+        board::Button::<B>::enable(button).map_err(|_| Trap)?;
         api::register::Results {}
     };
     call.reply(results);
@@ -53,9 +53,9 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
 
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { button } = call.read();
-    let button = *button as usize;
     let results = try {
-        call.scheduler().board.button().disable(button).map_err(|_| Trap)?;
+        let button = Id::new(*button as usize).ok_or(Trap)?;
+        board::Button::<B>::disable(button).map_err(|_| Trap)?;
         call.scheduler().disable_event(Key { button }.into())?;
         api::unregister::Results {}
     };

@@ -15,66 +15,84 @@
 use alloc::vec;
 
 use nrf52840_hal::ccm::CcmData;
-use wasefire_board_api as board;
+use typenum::{U13, U16, U4};
+use wasefire_board_api::crypto::aead::{AeadSupport, Api, Array};
+use wasefire_board_api::{Error, Support};
 
-impl board::crypto::aes128_ccm::Api for &mut crate::tasks::Board {
-    fn is_supported(&mut self) -> bool {
-        true
-    }
+use crate::with_state;
 
+pub enum Impl {}
+
+impl Support<AeadSupport> for Impl {
+    const SUPPORT: AeadSupport = AeadSupport { no_copy: true, in_place_no_copy: true };
+}
+
+impl Api<U16, U13, U4> for Impl {
     fn encrypt(
-        &mut self, key: &[u8], iv: &[u8], clear: &[u8], cipher: &mut [u8],
-    ) -> Result<(), board::Error> {
-        let key = key.try_into().map_err(|_| board::Error::User)?;
-        let iv = iv.try_into().map_err(|_| board::Error::User)?;
-        if 251 < clear.len() || cipher.len() != clear.len() + 4 {
-            return Err(board::Error::User);
+        key: &Array<U16>, iv: &Array<U13>, aad: &[u8], clear: Option<&[u8]>, cipher: &mut [u8],
+        tag: &mut Array<U4>,
+    ) -> Result<(), Error> {
+        if aad != [0] {
+            return Err(Error::User);
         }
-        let mut ccm_data = CcmData::new(key, iv);
-        let mut clear_packet = vec![0; 3 + clear.len()];
-        clear_packet[1] = clear.len() as u8;
+        let clear = match clear {
+            Some(x) => x,
+            None => cipher,
+        };
+        if 251 < clear.len() || cipher.len() != clear.len() {
+            return Err(Error::User);
+        }
+        let len = clear.len();
+        let mut ccm_data = CcmData::new((*key).into(), truncate_iv(iv));
+        let mut clear_packet = vec![0; 3 + len];
+        clear_packet[1] = len as u8;
         clear_packet[3 ..].copy_from_slice(clear);
-        let mut cipher_packet = vec![0; 3 + clear.len() + 4];
-        let mut scratch = vec![0; core::cmp::max(43, 16 + clear.len())];
-        match critical_section::with(|cs| {
-            self.0.borrow_ref_mut(cs).ccm.encrypt_packet(
-                &mut ccm_data,
-                &clear_packet,
-                &mut cipher_packet,
-                &mut scratch,
-            )
+        let mut cipher_packet = vec![0; 3 + len + 4];
+        let mut scratch = vec![0; core::cmp::max(43, 16 + len)];
+        match with_state(|state| {
+            state.ccm.encrypt_packet(&mut ccm_data, &clear_packet, &mut cipher_packet, &mut scratch)
         }) {
-            Ok(()) => cipher.copy_from_slice(&cipher_packet[3 ..]),
-            Err(_) => return Err(board::Error::World),
+            Ok(()) => {
+                cipher.copy_from_slice(&cipher_packet[3 ..][.. len]);
+                tag.copy_from_slice(&cipher_packet[3 + len ..]);
+            }
+            Err(_) => return Err(Error::World),
         }
         Ok(())
     }
 
     fn decrypt(
-        &mut self, key: &[u8], iv: &[u8], cipher: &[u8], clear: &mut [u8],
-    ) -> Result<(), board::Error> {
-        let key = key.try_into().map_err(|_| board::Error::User)?;
-        let iv = iv.try_into().map_err(|_| board::Error::User)?;
-        if 251 < clear.len() || cipher.len() != clear.len() + 4 {
-            return Err(board::Error::User);
+        key: &Array<U16>, iv: &Array<U13>, aad: &[u8], cipher: Option<&[u8]>, tag: &Array<U4>,
+        clear: &mut [u8],
+    ) -> Result<(), Error> {
+        if aad != [0] {
+            return Err(Error::User);
         }
-        let mut ccm_data = CcmData::new(key, iv);
-        let mut cipher_packet = vec![0; 3 + clear.len() + 4];
-        cipher_packet[1] = clear.len() as u8 + 4;
-        cipher_packet[3 ..].copy_from_slice(cipher);
-        let mut clear_packet = vec![0; 3 + clear.len()];
-        let mut scratch = vec![0; core::cmp::max(43, 16 + clear.len() + 4)];
-        match critical_section::with(|cs| {
-            self.0.borrow_ref_mut(cs).ccm.decrypt_packet(
-                &mut ccm_data,
-                &mut clear_packet,
-                &cipher_packet,
-                &mut scratch,
-            )
+        let cipher = match cipher {
+            Some(x) => x,
+            None => clear,
+        };
+        if 251 < clear.len() || cipher.len() != clear.len() {
+            return Err(Error::User);
+        }
+        let len = clear.len();
+        let mut ccm_data = CcmData::new((*key).into(), truncate_iv(iv));
+        let mut cipher_packet = vec![0; 3 + len + 4];
+        cipher_packet[1] = len as u8 + 4;
+        cipher_packet[3 ..][.. len].copy_from_slice(cipher);
+        cipher_packet[3 + len ..].copy_from_slice(tag);
+        let mut clear_packet = vec![0; 3 + len];
+        let mut scratch = vec![0; core::cmp::max(43, 16 + len + 4)];
+        match with_state(|state| {
+            state.ccm.decrypt_packet(&mut ccm_data, &mut clear_packet, &cipher_packet, &mut scratch)
         }) {
             Ok(()) => clear.copy_from_slice(&clear_packet[3 ..]),
-            Err(_) => return Err(board::Error::World),
+            Err(_) => return Err(Error::World),
         }
         Ok(())
     }
+}
+
+fn truncate_iv(iv: &Array<U13>) -> [u8; 8] {
+    core::array::from_fn(|i| iv[5 + i])
 }

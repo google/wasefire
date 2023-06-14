@@ -24,9 +24,8 @@ mod storage;
 mod systick;
 mod tasks;
 
-use core::cell::{Cell, RefCell};
+use core::cell::RefCell;
 use core::mem::MaybeUninit;
-use core::ops::DerefMut;
 
 use cortex_m::peripheral::NVIC;
 use cortex_m_rt::entry;
@@ -50,11 +49,12 @@ use storage::Storage;
 use tasks::button::{channel, Button};
 use tasks::clock::Timers;
 use tasks::usb::Usb;
-use tasks::Events;
+use tasks::{button, led, Events};
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 use wasefire_board_api::usb::serial::Serial;
+use wasefire_board_api::{Id, Support};
 use wasefire_scheduler::Scheduler;
 use {wasefire_board_api as board, wasefire_logger as logger};
 
@@ -68,31 +68,29 @@ type Clocks = clocks::Clocks<ExternalOscillator, Internal, LfOscStopped>;
 
 struct State {
     events: Events,
-    buttons: [Button; 4],
+    buttons: [Button; <button::Impl as Support<usize>>::SUPPORT],
     gpiote: Gpiote,
     serial: Serial<'static, Usb>,
     timers: Timers,
     ccm: Ccm,
-    leds: [Pin<Output<PushPull>>; 4],
+    leds: [Pin<Output<PushPull>>; <led::Impl as Support<usize>>::SUPPORT],
     rng: Rng,
     storage: Option<Storage>,
     usb_dev: UsbDevice<'static, Usb>,
 }
 
-#[derive(Copy, Clone)]
-struct Board(&'static Mutex<RefCell<State>>);
+pub enum Board {}
 
-static BOARD: Mutex<Cell<Option<Board>>> = Mutex::new(Cell::new(None));
+static STATE: Mutex<RefCell<Option<State>>> = Mutex::new(RefCell::new(None));
 
-fn get_board() -> Board {
-    critical_section::with(|cs| BOARD.borrow(cs).get()).unwrap()
+fn with_state<R>(f: impl FnOnce(&mut State) -> R) -> R {
+    critical_section::with(|cs| f(STATE.borrow_ref_mut(cs).as_mut().unwrap()))
 }
 
 #[entry]
 fn main() -> ! {
     static mut CLOCKS: MaybeUninit<Clocks> = MaybeUninit::uninit();
     static mut USB_BUS: MaybeUninit<UsbBusAllocator<Usb>> = MaybeUninit::uninit();
-    static mut STATE: MaybeUninit<Mutex<RefCell<State>>> = MaybeUninit::uninit();
 
     #[cfg(feature = "debug")]
     let c = nrf52840_hal::pac::CorePeripherals::take().unwrap();
@@ -130,74 +128,62 @@ fn main() -> ! {
     let ccm = Ccm::init(p.CCM, p.AAR, DataRate::_1Mbit);
     let storage = Some(Storage::new(p.NVMC));
     let events = Events::default();
-    let state = STATE.write(Mutex::new(RefCell::new(State {
-        events,
-        buttons,
-        gpiote,
-        serial,
-        timers,
-        ccm,
-        leds,
-        rng,
-        storage,
-        usb_dev,
-    })));
+    let state = State { events, buttons, gpiote, serial, timers, ccm, leds, rng, storage, usb_dev };
     // We first set the board and then enable interrupts so that interrupts may assume the board is
     // always present.
-    critical_section::with(|cs| BOARD.borrow(cs).set(Some(Board(state))));
+    critical_section::with(|cs| STATE.replace(cs, Some(state)));
     for &interrupt in INTERRUPTS {
         unsafe { NVIC::unmask(interrupt) };
     }
     logger::debug!("Runner is initialized.");
     const WASM: &[u8] = include_bytes!("../../../target/applet.wasm");
-    Scheduler::run(Board(state), WASM)
+    Scheduler::<Board>::run(WASM)
 }
 
 macro_rules! interrupts {
-    ($($name:ident = $func:ident$(($($arg:expr),*$(,)?))?),*$(,)?) => {
+    ($($name:ident = $func:ident($($arg:expr),*$(,)?)),*$(,)?) => {
         const INTERRUPTS: &[Interrupt] = &[$(Interrupt::$name),*];
         $(
             #[interrupt]
             fn $name() {
-                $func(get_board()$($(, $arg)*)?);
+                $func($($arg),*);
             }
         )*
     };
 }
 
 interrupts! {
-    GPIOTE = gpiote,
+    GPIOTE = gpiote(),
     TIMER0 = timer(0),
     TIMER1 = timer(1),
     TIMER2 = timer(2),
     TIMER3 = timer(3),
     TIMER4 = timer(4),
-    USBD = usbd,
+    USBD = usbd(),
 }
 
-fn gpiote(board: Board) {
-    critical_section::with(|cs| {
-        let mut state = board.0.borrow_ref_mut(cs);
-        let state = state.deref_mut();
+fn gpiote() {
+    with_state(|state| {
         for (i, button) in state.buttons.iter_mut().enumerate() {
-            if channel(&state.gpiote, i).is_event_triggered() {
+            let id = Id::new(i).unwrap();
+            if channel(&state.gpiote, id).is_event_triggered() {
                 let pressed = button.pin.is_low().unwrap();
-                state.events.push(board::button::Event { button: i, pressed }.into());
+                state.events.push(board::button::Event { button: id, pressed }.into());
             }
         }
         state.gpiote.reset_events();
     });
 }
 
-fn timer(board: Board, timer: usize) {
-    critical_section::with(|cs| {
-        let mut state = board.0.borrow_ref_mut(cs);
+fn timer(timer: usize) {
+    let timer = Id::new(timer).unwrap();
+    with_state(|state| {
         state.events.push(board::timer::Event { timer }.into());
-        state.timers.tick(timer);
+        state.timers.tick(*timer);
     })
 }
 
-fn usbd(board: Board) {
+fn usbd() {
     #[cfg(feature = "debug")]
     {
         use core::sync::atomic::AtomicU32;
@@ -218,9 +204,7 @@ fn usbd(board: Board) {
             MASK.store(0, SeqCst);
         }
     }
-    critical_section::with(|cs| {
-        let mut state = board.0.borrow_ref_mut(cs);
-        let state = state.deref_mut();
+    with_state(|state| {
         let polled = state.usb_dev.poll(&mut [state.serial.port()]);
         state.serial.tick(polled, |event| state.events.push(event.into()));
     });

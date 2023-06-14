@@ -526,7 +526,7 @@ impl RunnerOptions {
                 TargetSelector::Unspecified(chip.to_string()),
                 Permissions::default(),
             )?;
-            eprintln!("Erasing the flash of {}", session.target().name);
+            println!("Erasing the flash of {}", session.target().name);
             flashing::erase_all(&mut session, None)?;
         }
         if self.gdb {
@@ -544,6 +544,7 @@ impl RunnerOptions {
             probe_run.arg("--measure-stack");
         }
         probe_run.arg(elf);
+        println!("Add --no-flash to the following command to rerun:");
         replace_command(probe_run);
     }
 
@@ -584,7 +585,7 @@ fn wasm_target(name: &str) -> String {
 }
 
 fn execute_command(command: &mut Command) -> Result<()> {
-    eprintln!("{command:?}");
+    println!("{command:?}");
     let code = command.spawn()?.wait()?.code().expect("no error code");
     if code != 0 {
         std::process::exit(code);
@@ -593,7 +594,7 @@ fn execute_command(command: &mut Command) -> Result<()> {
 }
 
 fn replace_command(mut command: Command) -> ! {
-    eprintln!("{command:?}");
+    println!("{command:?}");
     panic!("{}", command.exec());
 }
 
