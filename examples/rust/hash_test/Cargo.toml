@@ -9,7 +9,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-digest = { version = "0.10.6", default-features = false, optional = true }
+digest = { version = "0.10.7", default-features = false, optional = true }
 wasefire = { path = "../../../crates/prelude" }
 wasefire-stub = { path = "../../../crates/stub", optional = true }
 

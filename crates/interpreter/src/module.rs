@@ -188,7 +188,7 @@ impl<'m> Module<'m> {
             if i == x as usize {
                 return parser;
             }
-            parser.parse_elem(&mut SkipElem::default()).into_ok();
+            parser.parse_elem(&mut SkipElem).into_ok();
         }
         unreachable!()
     }
@@ -211,7 +211,7 @@ impl<'m> Module<'m> {
             if i == x as usize {
                 return parser;
             }
-            parser.parse_data(&mut SkipData::default()).into_ok();
+            parser.parse_data(&mut SkipData).into_ok();
         }
         unreachable!()
     }

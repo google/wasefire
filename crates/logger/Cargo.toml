@@ -14,7 +14,7 @@ categories = ["embedded", "no-std", "wasm"]
 [dependencies]
 defmt = { version = "0.3.4", default-features = false, optional = true }
 lazy_static = { version = "1.4.0", default-features = false, optional = true }
-log = { version = "0.4.17", default-features = false, optional = true }
+log = { version = "0.4.19", default-features = false, optional = true }
 
 [features]
 defmt = ["dep:defmt"]

@@ -604,7 +604,6 @@ pub enum ElemMode<'a, 'm, M: Mode> {
     Declarative,
 }
 
-#[derive(Default)]
 pub struct SkipElem;
 
 impl<'m, M: Mode> ParseElem<'m, M> for SkipElem {}
@@ -629,7 +628,6 @@ pub enum DataMode<'a, 'm, M: Mode> {
     Active { memory: MemIdx, offset: &'a mut Parser<'m, M> },
 }
 
-#[derive(Default)]
 pub struct SkipData;
 
 impl<'m, M: Mode> ParseData<'m, M> for SkipData {}

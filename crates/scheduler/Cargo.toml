@@ -14,7 +14,7 @@ categories = ["embedded", "no-std", "wasm"]
 [dependencies]
 defmt = { version = "0.3.4", default-features = false, optional = true }
 derivative = { version = "2.2.0", default-features = false, features = ["use_core"] }
-digest = { version = "0.10.6", default-features = false, features = ["mac"] }
+digest = { version = "0.10.7", default-features = false, features = ["mac"] }
 generic-array = { version = "0.14.7", default-features = false }
 typenum = { version = "1.16.0", default-features = false }
 wasefire-applet-api = { version = "0.3.0-git", path = "../api", features = ["host"] }
