@@ -45,6 +45,10 @@ mod stores;
 pub struct Events<B: Board>(VecDeque<board::Event<B>>);
 
 impl<B: Board> Events<B> {
+    pub const fn new() -> Self {
+        Self(VecDeque::new())
+    }
+
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
