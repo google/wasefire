@@ -47,6 +47,11 @@ impl<C: Curve> EcdsaPrivate<C> {
         Ok(Self(Private::from_non_zero_scalar(n)?))
     }
 
+    /// Returns the SEC1 encoding of the private key.
+    pub fn private_key(&self) -> &Int<C> {
+        self.0.key()
+    }
+
     /// Returns the public key associated to this private key.
     pub fn public_key(&self) -> EcdsaPublic<C> {
         EcdsaPublic::new(self)
@@ -155,6 +160,11 @@ impl<C: Curve> EcdhPrivate<C> {
     /// Creates a private key from its non-zero scalar SEC1 encoding.
     pub fn from_non_zero_scalar(n: Int<C>) -> Result<Self, Error> {
         Ok(Self(Private::from_non_zero_scalar(n)?))
+    }
+
+    /// Returns the SEC1 encoding of the private key.
+    pub fn private_key(&self) -> &Int<C> {
+        self.0.key()
     }
 
     /// Returns the public key associated to this private key.
@@ -402,6 +412,11 @@ impl<C: Curve> Private<C> {
             return Err(Error::InvalidArgument);
         }
         Ok(Self(n))
+    }
+
+    /// Returns the SEC1 encoding of the private key.
+    fn key(&self) -> &Int<C> {
+        &self.0
     }
 }
 
