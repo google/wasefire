@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0-git
+## 0.3.0
 
 ### Major
 
