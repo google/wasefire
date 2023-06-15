@@ -5,8 +5,5 @@ authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 edition = "2021"
 
-[lib]
-crate-type = ["cdylib"]
-
 [dependencies]
 wasefire = { path = "../../../crates/prelude" }

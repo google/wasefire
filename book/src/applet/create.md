@@ -39,15 +39,11 @@ name = "tutorial"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-crate-type = ["cdylib"] # needed for building wasm
-
 [dependencies]
 wasefire = "*" # use the latest version
 ```
 
-The `crate-type` entry is needed to compile to Wasm. The `wasefire` dependency
-provides a high-level interface to the Applet API.
+The `wasefire` dependency provides a high-level interface to the Applet API.
 
 Then create the `src/lib.rs` file in the created directory with the following
 content:
