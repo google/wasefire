@@ -10,6 +10,7 @@
 
 ### Minor
 
+- Add `const fn Events::new()` for compile-time construction
 - Update `wasefire-applet-api` to 0.3.0
 
 ## 0.1.2
