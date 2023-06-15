@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1-git
+
+### Minor
+
+- Add access to SEC1 encoding of ECDSA and ECDH private keys
+
 ## 0.2.0
 
 ### Major
