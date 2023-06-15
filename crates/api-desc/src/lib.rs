@@ -226,6 +226,9 @@ impl Enum {
                     }
                 }
             }
+            impl From<#name> for isize {
+                fn from(x: #name) -> Self { !(x as usize) as isize }
+            }
         }
     }
 
