@@ -7,8 +7,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.71"
-clap = { version = "4.2.7", features = ["derive"] }
+clap = { version = "4.3.4", features = ["derive"] }
 common = { path = "../common", features = ["std"] }
 env_logger = "0.10.0"
-log = "0.4.17"
-serialport = "4.2.0"
+log = "0.4.19"
+serialport = "4.2.1"

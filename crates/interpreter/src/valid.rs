@@ -489,7 +489,8 @@ impl<'a, 'm> Expr<'a, 'm> {
                 _ => return Err(invalid()),
             }
         }
-        #[allow(clippy::drop_copy)] // TODO: Remove when not needed.
+        // TODO(https://github.com/rust-lang/rust/issues/112653): Remove when fixed.
+        #[allow(dropping_copy_types)]
         match instr {
             Unreachable => self.stack_polymorphic(),
             Nop => (),

@@ -46,8 +46,8 @@ case "$1" in
       *) e "Wrapper does not support 'cargo $2'" ;;
     esac
     ;;
-  mdbook) ensure_cargo mdbook 0.4.28 ;;
-  probe-run) ensure_cargo probe-run 0.3.8 ;;
+  mdbook) ensure_cargo mdbook 0.4.30 ;;
+  probe-run) ensure_cargo probe-run 0.3.9 ;;
   rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
   taplo) ensure_cargo taplo-cli 0.8.0 ;;
   twiggy) ensure_cargo twiggy 0.7.0 ;;

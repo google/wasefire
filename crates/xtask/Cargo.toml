@@ -8,10 +8,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.71"
-clap = { version = "4.2.7", features = ["derive"] }
+clap = { version = "4.3.4", features = ["derive"] }
 env_logger = "0.10.0"
 lazy_static = "1.4.0"
-log = "0.4.17"
+log = "0.4.19"
 probe-rs = "0.18.0"
 rustc-demangle = "0.1.23"
 sha2 = "0.10.6"

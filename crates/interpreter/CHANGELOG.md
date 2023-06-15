@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Fix new lints
 - Fix use of deprecated function
 - Update dependencies
 

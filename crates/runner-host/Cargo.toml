@@ -10,7 +10,7 @@ edition = "2021"
 anyhow = "1.0.71"
 env_logger = "0.10.0"
 rand = "0.8.5"
-tokio = { version = "1.28.0", features = ["full"] }
+tokio = { version = "1.28.2", features = ["full"] }
 usb-device = { version = "0.2.9", optional = true }
 usbd-serial = { version = "0.1.1", optional = true }
 usbip-device = { version = "0.1.5", optional = true }
