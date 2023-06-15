@@ -29,6 +29,7 @@ TOPOLOGICAL_ORDER=(
   api-desc
   api-macro
   api
+  stub
   prelude
   board
   scheduler
@@ -42,8 +43,26 @@ published_crates() {
   find crates -name CHANGELOG.md -printf '%h\n' | sed 's#^crates/##' | sort
 }
 
+dependencies() {
+  sed -n 's#^wasefire-.*path = "../\([a-z-]*\)".*$#\1#p' crates/$1/Cargo.toml
+}
+
+occurs_before() {
+  for x in "${TOPOLOGICAL_ORDER[@]}"; do
+    [ $x = $1 ] && return
+    [ $x = $2 ] && return 1
+  done
+  return 2
+}
+
 diff <(listed_crates) <(published_crates) \
   || e 'Listed and published crates do not match (see diff above)'
+
+for crate in "${TOPOLOGICAL_ORDER[@]}"; do
+  for name in $(dependencies $crate); do
+    occurs_before $name $crate || e "$crate depends on $name but occurs before"
+  done
+done
 
 i "Remove all -git suffixes"
 find . \( -name Cargo.toml -or -name Cargo.lock -or -name CHANGELOG.md \) \
@@ -67,11 +86,6 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
       exit
     fi
     i "Publish $crate from $latest to $current"
-    # TODO(#132): Remove this corner case.
-    if [ $crate = scheduler ]; then
-      cargo publish --no-verify
-    else
-      eval "$(sed -n 's/^cargo check/cargo publish/p;T;q' test.sh)"
-    fi
+    eval "$(sed -n 's/^cargo check/cargo publish/p;T;q' test.sh)"
   )
 done
