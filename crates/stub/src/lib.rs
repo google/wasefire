@@ -23,6 +23,8 @@
 //! ```
 //! use wasefire_stub as _;
 //! ```
+
+#![feature(try_blocks)]
 #![deny(unsafe_op_in_unsafe_fn)]
 
 mod crypto;

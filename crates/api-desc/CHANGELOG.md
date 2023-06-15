@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add conversion from enums to `isize`
 - Support overwriting API functions with `native`
 - Rename `test` feature to `native`
 - Add `ec` module with elliptic curve operations

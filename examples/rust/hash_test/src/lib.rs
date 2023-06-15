@@ -424,3 +424,26 @@ const HKDF_SHA256_VECTORS: &[HkdfVector] = &[
         ],
     },
 ];
+
+#[cfg(test)]
+mod tests {
+    use wasefire_stub as _;
+
+    use super::*;
+
+    #[test]
+    fn test_sha256() {
+        test("sha256", Algorithm::Sha256, SHA256_VECTORS);
+    }
+
+    #[test]
+    fn test_hmac_sha256() {
+        test_hmac("sha256", Algorithm::Sha256, HMAC_SHA256_VECTORS);
+    }
+
+    #[cfg(not(feature = "rust-crypto"))]
+    #[test]
+    fn test_hkdf_sha256() {
+        test_hkdf("sha256", Algorithm::Sha256, HKDF_SHA256_VECTORS);
+    }
+}
