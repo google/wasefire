@@ -286,7 +286,7 @@ impl AppletOptions {
         if main.multivalue {
             rustflags.push("-C target-feature=+multivalue".to_string());
         }
-        cargo.args(["rustc", "--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
+        cargo.args(["rustc", "--lib", "--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
         cargo.arg(format!("--profile={}", self.profile));
         for features in &self.features {
             cargo.arg(format!("--features={features}"));

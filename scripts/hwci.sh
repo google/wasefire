@@ -15,6 +15,7 @@
 
 set -e
 . scripts/log.sh
+. scripts/package.sh
 
 # This script runs the test applets and thus needs an appropriate board. It
 # takes the name of the runner as argument and any runner flags, if any.
@@ -26,8 +27,7 @@ list() {
 }
 
 features() {
-  sed -n '/^\[features]$/,/^$/{s/ = .*$//p}' Cargo.toml \
-    | grep -v -e human -e test
+  package_features | grep -v -e human -e native
 }
 
 for name in $(list); do
