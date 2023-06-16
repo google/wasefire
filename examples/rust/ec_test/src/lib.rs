@@ -24,7 +24,7 @@ use wasefire::crypto::ec::{
     Curve, EcdhPrivate, EcdhPublic, EcdsaPrivate, EcdsaPublic, EcdsaSignature, Int, P256, P384,
 };
 
-fn main() {
+pub fn main() -> ! {
     test_ecdh::<P256>("p256", P256_ECDH_VECTORS);
     test_ecdh::<P384>("p384", P384_ECDH_VECTORS);
     test_ecdh_random::<P256>("p256");

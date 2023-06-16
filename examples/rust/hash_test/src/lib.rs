@@ -30,7 +30,7 @@ use wasefire::crypto::hash::{Digest, Hmac};
 #[cfg(feature = "rust-crypto")]
 use wasefire::crypto::hash::{HmacSha256, Sha256};
 
-fn main() {
+pub fn main() -> ! {
     debug!("Use RustCrypto API: {}", cfg!(feature = "rust-crypto"));
     test("sha256", Algorithm::Sha256, SHA256_VECTORS);
     test_hmac("sha256", Algorithm::Sha256, HMAC_SHA256_VECTORS);

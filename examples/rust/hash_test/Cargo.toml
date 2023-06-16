@@ -11,5 +11,5 @@ wasefire = { path = "../../../crates/prelude" }
 wasefire-stub = { path = "../../../crates/stub", optional = true }
 
 [features]
+native = ["dep:wasefire-stub", "wasefire/native"]
 rust-crypto = ["dep:digest", "wasefire/rust-crypto"]
-test = ["dep:wasefire-stub", "wasefire/native"]
