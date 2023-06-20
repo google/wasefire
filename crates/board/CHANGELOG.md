@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1-git
+
+### Patch
+
+- Fix `WithSerial` helper to flush all data
+
 ## 0.3.0
 
 ### Major
@@ -44,4 +50,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 6 -->
+<!-- Increment to skip CHANGELOG.md test: 8 -->

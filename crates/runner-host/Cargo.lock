@@ -1019,7 +1019,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.3.0"
+version = "0.3.1-git"
 dependencies = [
  "aead",
  "aes",
@@ -1062,7 +1062,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-scheduler"
-version = "0.2.0"
+version = "0.2.1-git"
 dependencies = [
  "derivative",
  "digest",
