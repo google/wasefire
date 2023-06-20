@@ -171,7 +171,7 @@ impl<T: HasSerial> Api for WithSerial<T> {
                 Err(UsbError::WouldBlock) => {
                     logger::debug!("flush() didn't flush all data, retrying");
                     continue;
-                },
+                }
                 Err(e) => {
                     logger::debug!("{} = flush()", logger::Debug2Format(&e));
                     break Err(Error::World);
