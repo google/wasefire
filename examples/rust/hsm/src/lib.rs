@@ -42,27 +42,29 @@ fn process(request: Request) -> Result<Response, Error> {
             Ok(Response::DeleteKey)
         }
         Request::Encrypt { key, nonce, data } => {
-            let key = store::find(key)?.ok_or(Error::BadHandle)?;
-            let key = <&[u8] as TryInto<_>>::try_into(&key).unwrap();
-            let data = crypto::ccm::encrypt(key, &nonce, &data)?;
+            let data = crypto::ccm::encrypt(&find(key)?, &nonce, &data)?;
             Ok(Response::Encrypt { data })
         }
         Request::Decrypt { key, nonce, data } => {
-            let key = store::find(key)?.ok_or(Error::BadHandle)?;
-            let key = <&[u8] as TryInto<_>>::try_into(&key).unwrap();
-            let data = crypto::ccm::decrypt(key, &nonce, &data)?;
+            let data = crypto::ccm::decrypt(&find(key)?, &nonce, &data)?;
             Ok(Response::Decrypt { data })
         }
         Request::ImportKey { key, secret } => {
             store::insert(key, &secret)?;
             Ok(Response::ImportKey)
         }
-        Request::ExportKey { key } => {
-            let secret = store::find(key)?.ok_or(Error::BadHandle)?;
-            let secret = <&[u8] as TryInto<_>>::try_into(&secret).unwrap();
-            Ok(Response::ExportKey { secret })
-        }
+        Request::ExportKey { key } => Ok(Response::ExportKey { secret: find(key)? }),
     }
+}
+
+fn find(key: usize) -> Result<[u8; 16], Error> {
+    let mut result = [0; 16];
+    let key = store::find(key)?.ok_or(Error::BadHandle)?;
+    if key.len() != result.len() {
+        return Err(Error::BadHandle);
+    }
+    result.copy_from_slice(&key);
+    Ok(result)
 }
 
 fn read<T: Deserialize>() -> T {
