@@ -162,14 +162,19 @@ impl<T: HasSerial> Api for WithSerial<T> {
     }
 
     fn flush() -> Result<(), Error> {
-        match T::with_serial(|serial| serial.port.flush()) {
-            Ok(()) => {
-                logger::trace!("flush()");
-                Ok(())
-            }
-            Err(e) => {
-                logger::debug!("{} = flush()", logger::Debug2Format(&e));
-                Err(Error::World)
+        // SerialPort::flush() returns WouldBlock if it didn't flush all the data. We retry until
+        // all data is flushed.
+        loop {
+            match T::with_serial(|serial| serial.port.flush()) {
+                Ok(()) => {
+                    logger::trace!("flush()");
+                    break Ok(());
+                }
+                Err(UsbError::WouldBlock) => continue,
+                Err(e) => {
+                    logger::debug!("{} = flush()", logger::Debug2Format(&e));
+                    break Err(Error::World);
+                }
             }
         }
     }

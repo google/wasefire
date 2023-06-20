@@ -413,7 +413,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.3.0"
+version = "0.3.1-git"
 dependencies = [
  "crypto-common",
  "defmt",
@@ -447,7 +447,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-scheduler"
-version = "0.2.0"
+version = "0.2.1-git"
 dependencies = [
  "defmt",
  "derivative",
