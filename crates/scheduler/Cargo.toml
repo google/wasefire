@@ -20,7 +20,7 @@ typenum = { version = "1.16.0", default-features = false }
 wasefire-applet-api = { version = "0.3.0", path = "../api", features = ["host"] }
 wasefire-board-api = { version = "0.3.1-git", path = "../board" }
 wasefire-interpreter = { version = "0.1.2", path = "../interpreter", features = ["toctou"] }
-wasefire-logger = { version = "0.1.2", path = "../logger" }
+wasefire-logger = { version = "0.1.3-git", path = "../logger" }
 wasefire-store = { version = "0.2.0", path = "../store" }
 
 [features]

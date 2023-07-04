@@ -34,7 +34,7 @@ signature = { version = "2.1.0", default-features = false, optional = true }
 typenum = { version = "1.16.0", default-features = false }
 usb-device = { version = "0.2.9", default-features = false }
 usbd-serial = { version = "0.1.1", default-features = false }
-wasefire-logger = { version = "0.1.2", path = "../logger" }
+wasefire-logger = { version = "0.1.3-git", path = "../logger" }
 wasefire-store = { version = "0.2.0", path = "../store" }
 
 [features]

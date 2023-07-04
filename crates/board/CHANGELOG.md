@@ -5,6 +5,7 @@
 ### Patch
 
 - Fix `WithSerial` helper to flush all data
+- Update dependencies
 
 ## 0.3.0
 
