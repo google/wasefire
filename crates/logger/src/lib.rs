@@ -37,32 +37,32 @@ mod no_defmt {
 mod custom {
     #[macro_export]
     macro_rules! println {
-        ($($args: expr),*) => { if false { $(let _ = $args;)* } };
+        ($($args: expr),*$(,)?) => { if false { $(let _ = $args;)* } };
     }
 
     #[macro_export]
     macro_rules! trace {
-        ($($args: expr),*) => { if false { $(let _ = $args;)* } };
+        ($($args: expr),*$(,)?) => { if false { $(let _ = $args;)* } };
     }
 
     #[macro_export]
     macro_rules! debug {
-        ($($args: expr),*) => { if false { $(let _ = $args;)* } };
+        ($($args: expr),*$(,)?) => { if false { $(let _ = $args;)* } };
     }
 
     #[macro_export]
     macro_rules! info {
-        ($($args: expr),*) => { if false { $(let _ = $args;)* } };
+        ($($args: expr),*$(,)?) => { if false { $(let _ = $args;)* } };
     }
 
     #[macro_export]
     macro_rules! warn {
-        ($($args: expr),*) => { if false { $(let _ = $args;)* } };
+        ($($args: expr),*$(,)?) => { if false { $(let _ = $args;)* } };
     }
 
     #[macro_export]
     macro_rules! error {
-        ($($args: expr),*) => { if false { $(let _ = $args;)* } };
+        ($($args: expr),*$(,)?) => { if false { $(let _ = $args;)* } };
     }
 }
 
