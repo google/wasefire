@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Fix missing feature forward on dependencies
 - Update dependencies
 
 ## 0.2.0
