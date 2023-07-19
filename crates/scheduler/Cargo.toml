@@ -25,5 +25,5 @@ wasefire-store = { version = "0.2.0", path = "../store" }
 
 [features]
 defmt = ["dep:defmt", "wasefire-board-api/defmt", "wasefire-logger/defmt"]
-log = ["wasefire-logger/log"]
-std = ["wasefire-store/std"]
+log = ["wasefire-board-api/log", "wasefire-logger/log"]
+std = ["wasefire-board-api/std", "wasefire-store/std"]
