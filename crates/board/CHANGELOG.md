@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.3.1-git
+## 0.4.0-git
+
+### Major
+
+- Change crypto API to support self-reference
+- Add `UnsupportedCrypto` for partially implemented crypto
 
 ### Patch
 
