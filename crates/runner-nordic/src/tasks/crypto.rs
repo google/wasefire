@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::crypto::Api;
-use wasefire_board_api::Unsupported;
+use wasefire_board_api::crypto::{Api, UnsupportedCrypto};
 
 mod ccm;
 
@@ -21,11 +20,11 @@ pub enum Impl {}
 
 impl Api for Impl {
     type Aes128Ccm = ccm::Impl;
-    type Aes256Gcm = Unsupported;
-    type HmacSha256 = Unsupported;
-    type HmacSha384 = Unsupported;
-    type P256 = Unsupported;
-    type P384 = Unsupported;
-    type Sha256 = Unsupported;
-    type Sha384 = Unsupported;
+    type Aes256Gcm = <UnsupportedCrypto<Self> as Api>::Aes256Gcm;
+    type HmacSha256 = <UnsupportedCrypto<Self> as Api>::HmacSha256;
+    type HmacSha384 = <UnsupportedCrypto<Self> as Api>::HmacSha384;
+    type P256 = <UnsupportedCrypto<Self> as Api>::P256;
+    type P384 = <UnsupportedCrypto<Self> as Api>::P384;
+    type Sha256 = <UnsupportedCrypto<Self> as Api>::Sha256;
+    type Sha384 = <UnsupportedCrypto<Self> as Api>::Sha384;
 }

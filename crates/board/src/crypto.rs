@@ -14,9 +14,10 @@
 
 //! Cryptography interface.
 
-use crypto_common::{BlockSizeUser, Key, KeyInit, KeySizeUser, Output, OutputSizeUser};
-use digest::{FixedOutput, HashMarker, MacMarker, Update};
-use typenum::{U0, U12, U13, U16, U32, U4, U48};
+use crypto_common::{BlockSizeUser, Key, KeyInit, KeySizeUser, Output, OutputSizeUser, Reset};
+use digest::{FixedOutput, FixedOutputReset, HashMarker, MacMarker, Update};
+use generic_array::ArrayLength;
+use typenum::{U12, U128, U13, U16, U32, U4, U48, U64};
 
 use crate::{Support, Unsupported};
 
@@ -28,14 +29,31 @@ pub trait Api {
     type Aes128Ccm: aead::Api<U16, U13, U4>;
     type Aes256Gcm: aead::Api<U32, U12, U16>;
 
-    type HmacSha256: Support<bool> + KeyInit + Update + FixedOutput + MacMarker;
-    type HmacSha384: Support<bool> + KeyInit + Update + FixedOutput + MacMarker;
+    type HmacSha256: Support<bool> + Hmac<KeySize = U64, OutputSize = U32>;
+    type HmacSha384: Support<bool> + Hmac<KeySize = U128, OutputSize = U48>;
 
     type P256: Support<bool> + ecc::Api<U32>;
     type P384: Support<bool> + ecc::Api<U48>;
 
-    type Sha256: Support<bool> + Default + BlockSizeUser + Update + FixedOutput + HashMarker;
-    type Sha384: Support<bool> + Default + BlockSizeUser + Update + FixedOutput + HashMarker;
+    type Sha256: Support<bool> + Hash<BlockSize = U64, OutputSize = U32>;
+    type Sha384: Support<bool> + Hash<BlockSize = U128, OutputSize = U48>;
+}
+
+pub trait Hash: Default + BlockSizeUser + Update + FixedOutputReset + HashMarker {}
+pub trait Hmac: KeyInit + Update + FixedOutput + MacMarker {}
+
+impl<T: Default + BlockSizeUser + Update + FixedOutputReset + HashMarker> Hash for T {}
+impl<T: KeyInit + Update + FixedOutput + MacMarker> Hmac for T {}
+
+pub struct UnsupportedHash<Block: ArrayLength<u8> + 'static, Output: ArrayLength<u8> + 'static> {
+    _never: !,
+    _block: Block,
+    _output: Output,
+}
+pub struct UnsupportedHmac<Key: ArrayLength<u8> + 'static, Output: ArrayLength<u8> + 'static> {
+    _never: !,
+    _key: Key,
+    _output: Output,
 }
 
 pub type Aes128Ccm<B> = <super::Crypto<B> as Api>::Aes128Ccm;
@@ -47,90 +65,206 @@ pub type P384<B> = <super::Crypto<B> as Api>::P384;
 pub type Sha256<B> = <super::Crypto<B> as Api>::Sha256;
 pub type Sha384<B> = <super::Crypto<B> as Api>::Sha384;
 
+pub struct UnsupportedCrypto<T: Api>(T);
+
 macro_rules! software {
-    (#[cfg(feature = $feature:literal)] type $Name:ident = $impl:ty;) => {
+    (#[cfg(feature = $feature:literal)] type $Name:ident = $impl:ty | $Unsupported:ty;) => {
         #[cfg(feature = $feature)]
         type $Name = $impl;
         #[cfg(not(feature = $feature))]
-        type $Name = Unsupported;
+        type $Name = $Unsupported;
     };
 }
 
-impl Api for Unsupported {
+impl<T: Api> Api for UnsupportedCrypto<T> {
     software! {
         #[cfg(feature = "software-crypto-aes128-ccm")]
-        type Aes128Ccm = ccm::Ccm<aes::Aes128, U4, U13>;
+        type Aes128Ccm = ccm::Ccm<aes::Aes128, U4, U13> | Unsupported;
     }
     software! {
         #[cfg(feature = "software-crypto-aes256-gcm")]
-        type Aes256Gcm = aes_gcm::Aes256Gcm;
+        type Aes256Gcm = aes_gcm::Aes256Gcm | Unsupported;
     }
 
     software! {
         #[cfg(feature = "software-crypto-hmac-sha256")]
-        type HmacSha256 = hmac::SimpleHmac<Self::Sha256>;
+        type HmacSha256 = hmac::SimpleHmac<T::Sha256> | UnsupportedHmac<U64, U32>;
     }
     software! {
         #[cfg(feature = "software-crypto-hmac-sha384")]
-        type HmacSha384 = hmac::SimpleHmac<Self::Sha384>;
+        type HmacSha384 = hmac::SimpleHmac<T::Sha384> | UnsupportedHmac<U128, U48>;
     }
 
     software! {
         #[cfg(feature = "software-crypto-p256")]
-        type P256 = ecc::Software<p256::NistP256, Self::Sha256>;
+        type P256 = ecc::Software<p256::NistP256, T::Sha256> | Unsupported;
     }
     software! {
         #[cfg(feature = "software-crypto-p384")]
-        type P384 = ecc::Software<p384::NistP384, Self::Sha384>;
+        type P384 = ecc::Software<p384::NistP384, T::Sha384> | Unsupported;
     }
 
     software! {
         #[cfg(feature = "software-crypto-sha256")]
-        type Sha256 = sha2::Sha256;
+        type Sha256 = sha2::Sha256 | UnsupportedHash<U64, U32>;
     }
     software! {
         #[cfg(feature = "software-crypto-sha384")]
-        type Sha384 = sha2::Sha384;
+        type Sha384 = sha2::Sha384 | UnsupportedHash<U128, U48>;
     }
 }
 
-impl BlockSizeUser for Unsupported {
-    type BlockSize = U0;
+impl Api for Unsupported {
+    type Aes128Ccm = <UnsupportedCrypto<Self> as Api>::Aes128Ccm;
+    type Aes256Gcm = <UnsupportedCrypto<Self> as Api>::Aes256Gcm;
+    type HmacSha256 = <UnsupportedCrypto<Self> as Api>::HmacSha256;
+    type HmacSha384 = <UnsupportedCrypto<Self> as Api>::HmacSha384;
+    type P256 = <UnsupportedCrypto<Self> as Api>::P256;
+    type P384 = <UnsupportedCrypto<Self> as Api>::P384;
+    type Sha256 = <UnsupportedCrypto<Self> as Api>::Sha256;
+    type Sha384 = <UnsupportedCrypto<Self> as Api>::Sha384;
 }
 
-impl KeySizeUser for Unsupported {
-    type KeySize = U0;
+impl<B, O> BlockSizeUser for UnsupportedHash<B, O>
+where
+    B: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+    type BlockSize = B;
 }
 
-impl OutputSizeUser for Unsupported {
-    type OutputSize = U0;
+impl<B, O> OutputSizeUser for UnsupportedHash<B, O>
+where
+    B: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+    type OutputSize = O;
 }
 
-impl HashMarker for Unsupported {}
-impl MacMarker for Unsupported {}
+impl<B, O> HashMarker for UnsupportedHash<B, O>
+where
+    B: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+}
 
-impl Default for Unsupported {
+impl<B, O> Default for UnsupportedHash<B, O>
+where
+    B: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
     fn default() -> Self {
         unreachable!()
     }
 }
 
-impl KeyInit for Unsupported {
-    fn new(_: &Key<Self>) -> Self {
-        unreachable!()
-    }
-}
-
-impl Update for Unsupported {
+impl<B, O> Update for UnsupportedHash<B, O>
+where
+    B: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
     fn update(&mut self, _: &[u8]) {
         unreachable!()
     }
 }
 
-impl FixedOutput for Unsupported {
+impl<B, O> FixedOutput for UnsupportedHash<B, O>
+where
+    B: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
     fn finalize_into(self, _: &mut Output<Self>) {
         unreachable!()
     }
+}
+
+impl<B, O> FixedOutputReset for UnsupportedHash<B, O>
+where
+    B: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+    fn finalize_into_reset(&mut self, _: &mut Output<Self>) {
+        unreachable!()
+    }
+}
+
+impl<B, O> Reset for UnsupportedHash<B, O>
+where
+    B: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+    fn reset(&mut self) {
+        unreachable!()
+    }
+}
+
+impl<B, O> Support<bool> for UnsupportedHash<B, O>
+where
+    B: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+    const SUPPORT: bool = false;
+}
+
+impl<K, O> KeySizeUser for UnsupportedHmac<K, O>
+where
+    K: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+    type KeySize = K;
+}
+
+impl<K, O> OutputSizeUser for UnsupportedHmac<K, O>
+where
+    K: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+    type OutputSize = O;
+}
+
+impl<K, O> MacMarker for UnsupportedHmac<K, O>
+where
+    K: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+}
+
+impl<K, O> KeyInit for UnsupportedHmac<K, O>
+where
+    K: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+    fn new(_: &Key<Self>) -> Self {
+        unreachable!()
+    }
+}
+
+impl<K, O> Update for UnsupportedHmac<K, O>
+where
+    K: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+    fn update(&mut self, _: &[u8]) {
+        unreachable!()
+    }
+}
+
+impl<K, O> FixedOutput for UnsupportedHmac<K, O>
+where
+    K: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+    fn finalize_into(self, _: &mut Output<Self>) {
+        unreachable!()
+    }
+}
+
+impl<K, O> Support<bool> for UnsupportedHmac<K, O>
+where
+    K: ArrayLength<u8> + 'static,
+    O: ArrayLength<u8> + 'static,
+{
+    const SUPPORT: bool = false;
 }
 
 #[cfg(feature = "software-crypto-sha256")]
