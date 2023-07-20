@@ -4,7 +4,10 @@
 
 ### Major
 
-- Change crypto API to support self-reference
+- Change crypto API to mention `Keysize`, `BlockSize`, and `OutputSize`
+
+### Minor
+
 - Add `UnsupportedCrypto` for partially implemented crypto
 
 ### Patch
