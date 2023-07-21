@@ -44,7 +44,7 @@ where
     /// Encrypts and authenticates a clear text with associated data given a key and IV.
     ///
     /// The clear- and cipher-texts must have the same length. If the clear text is omitted, then
-    /// the cipher text is encrypted in place. The tag must be `TAG_LEN` bytes long.
+    /// the cipher text is encrypted in place.
     fn encrypt(
         key: &Array<Key>, iv: &Array<Iv>, aad: &[u8], clear: Option<&[u8]>, cipher: &mut [u8],
         tag: &mut Array<Self::Tag>,
