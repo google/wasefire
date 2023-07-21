@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4-git
+
+### Patch
+
+- Use `*const u8` instead of `*mut u8` for opaque data
+
 ## 0.1.3
 
 ### Minor

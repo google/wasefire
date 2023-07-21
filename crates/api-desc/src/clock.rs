@@ -34,10 +34,10 @@ pub(crate) fn new() -> Item {
             /// Allocates a timer (initially stopped).
             fn allocate "ta" {
                 /// Function called when the timer triggers.
-                handler_func: fn { data: *mut u8 },
+                handler_func: fn { data: *const u8 },
 
                 /// The opaque data to use when calling the handler function.
-                handler_data: *mut u8,
+                handler_data: *const u8,
             } -> {
                 /// Identifier for this timer.
                 id: usize,

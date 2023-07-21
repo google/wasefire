@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-applet-api"
-version = "0.3.0"
+version = "0.4.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -17,7 +17,7 @@ targets = ["riscv32imc-unknown-none-elf", "thumbv7em-none-eabi"]
 
 [dependencies]
 sealed = { version = "0.5.0", default-features = false, optional = true }
-wasefire-applet-api-macro = { version = "0.3.0", path = "../api-macro" }
+wasefire-applet-api-macro = { version = "0.4.0-git", path = "../api-macro" }
 
 [features]
 # Compiles for host or wasm (choose exactly one).

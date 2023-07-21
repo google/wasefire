@@ -16,8 +16,8 @@ macro_rules! define {
     ($n:ident $(, $x:ident)*) => {
         #[no_mangle]
         pub extern "C" fn $n(
-            ptr: extern "C" fn(*mut u8 $(, usize ${ignore(x)})*),
-            this: *mut u8 $(, $x: usize)*
+            ptr: extern "C" fn(*const u8 $(, usize ${ignore(x)})*),
+            this: *const u8 $(, $x: usize)*
         ) {
             ptr(this $(, $x)*);
         }
