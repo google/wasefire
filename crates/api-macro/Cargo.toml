@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-applet-api-macro"
-version = "0.3.1-git"
+version = "0.4.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -16,7 +16,7 @@ proc-macro = true
 
 [dependencies]
 proc-macro2 = { version = "1.0.60", default-features = false }
-wasefire-applet-api-desc = { version = "=0.2.0-git", path = "../api-desc" }
+wasefire-applet-api-desc = { version = "=0.1.4-git", path = "../api-desc" }
 
 [features]
 multivalue = ["wasefire-applet-api-desc/multivalue"]

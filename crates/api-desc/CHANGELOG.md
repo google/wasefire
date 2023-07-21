@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.2.0-git
+## 0.1.4-git
 
-### Major
+### Patch
 
 - Use `*const u8` instead of `*mut u8` for opaque data
 

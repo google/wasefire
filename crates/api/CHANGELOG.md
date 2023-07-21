@@ -1,10 +1,10 @@
 # Changelog
 
-## 0.3.1-git
+## 0.4.0-git
 
-### Patch
+### Major
 
-- Update dependencies
+- Update `wasefire-applet-api-macro` version
 
 ## 0.3.0
 
