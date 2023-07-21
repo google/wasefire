@@ -21,6 +21,7 @@ use crate::{DispatchSchedulerCall, SchedulerCall};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Support(call) => support(call),
+        Api::TagLength(call) => tag_length(call),
         Api::Encrypt(call) => encrypt(call),
         Api::Decrypt(call) => decrypt(call),
     }
@@ -34,6 +35,12 @@ fn support<B: Board>(call: SchedulerCall<B, api::support::Sig>) {
     call.reply(Ok(api::support::Results { support: support.into() }))
 }
 
+fn tag_length<B: Board>(call: SchedulerCall<B, api::tag_length::Sig>) {
+    let api::tag_length::Params {} = call.read();
+    let len = (tag_len::<B>() as u32).into();
+    call.reply(Ok(api::tag_length::Results { len }))
+}
+
 fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
     let api::encrypt::Params { key, iv, aad, aad_len, length, clear, cipher, tag } = call.read();
     let scheduler = call.scheduler();
@@ -44,7 +51,8 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
         let aad = memory.get(*aad, *aad_len)?;
         let clear = memory.get_opt(*clear, *length)?;
         let cipher = memory.get_mut(*cipher, *length)?;
-        let tag = memory.get_array_mut::<16>(*tag)?.into();
+        let tag_len = tag_len::<B>() as u32;
+        let tag = memory.get_mut(*tag, tag_len)?.into();
         let res = match board::crypto::Aes256Gcm::<B>::encrypt(key, iv, aad, clear, cipher, tag) {
             Ok(()) => 0u32.into(),
             Err(_) => u32::MAX.into(),
@@ -62,7 +70,8 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         let key = memory.get_array::<32>(*key)?.into();
         let iv = memory.get_array::<12>(*iv)?.into();
         let aad = memory.get(*aad, *aad_len)?;
-        let tag = memory.get_array::<16>(*tag)?.into();
+        let tag_len = tag_len::<B>() as u32;
+        let tag = memory.get(*tag, tag_len)?.into();
         let cipher = memory.get_opt(*cipher, *length)?;
         let clear = memory.get_mut(*clear, *length)?;
         let res = match board::crypto::Aes256Gcm::<B>::decrypt(key, iv, aad, cipher, tag, clear) {
@@ -72,4 +81,9 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         api::decrypt::Results { res }
     };
     call.reply(results);
+}
+
+const fn tag_len<B: Board>() -> usize {
+    use typenum::Unsigned;
+    <board::crypto::Aes256Gcm<B> as board::crypto::aead::Api<_, _>>::Tag::USIZE
 }

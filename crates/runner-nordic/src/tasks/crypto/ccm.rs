@@ -27,7 +27,9 @@ impl Support<AeadSupport> for Impl {
     const SUPPORT: AeadSupport = AeadSupport { no_copy: true, in_place_no_copy: true };
 }
 
-impl Api<U16, U13, U4> for Impl {
+impl Api<U16, U13> for Impl {
+    type Tag = U4;
+
     fn encrypt(
         key: &Array<U16>, iv: &Array<U13>, aad: &[u8], clear: Option<&[u8]>, cipher: &mut [u8],
         tag: &mut Array<U4>,

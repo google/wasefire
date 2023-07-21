@@ -26,8 +26,8 @@ pub mod ecc;
 
 /// Cryptography interface.
 pub trait Api {
-    type Aes128Ccm: aead::Api<U16, U13, U4>;
-    type Aes256Gcm: aead::Api<U32, U12, U16>;
+    type Aes128Ccm: aead::Api<U16, U13, Tag = U4>;
+    type Aes256Gcm: aead::Api<U32, U12>;
 
     type HmacSha256: Support<bool> + Hmac<KeySize = U64, OutputSize = U32>;
     type HmacSha384: Support<bool> + Hmac<KeySize = U128, OutputSize = U48>;
@@ -79,11 +79,11 @@ macro_rules! software {
 impl<T: Api> Api for UnsupportedCrypto<T> {
     software! {
         #[cfg(feature = "software-crypto-aes128-ccm")]
-        type Aes128Ccm = ccm::Ccm<aes::Aes128, U4, U13> | Unsupported;
+        type Aes128Ccm = ccm::Ccm<aes::Aes128, U4, U13> | aead::Unsupported<U4>;
     }
     software! {
         #[cfg(feature = "software-crypto-aes256-gcm")]
-        type Aes256Gcm = aes_gcm::Aes256Gcm | Unsupported;
+        type Aes256Gcm = aes_gcm::Aes256Gcm | aead::Unsupported<U16>;
     }
 
     software! {

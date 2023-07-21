@@ -2,8 +2,9 @@
 
 ## 0.1.4-git
 
-### Patch
+### Minor
 
+- Add `crypto::gcm::tag_length()` function
 - Use `*const u8` instead of `*mut u8` for opaque data
 
 ## 0.1.3
