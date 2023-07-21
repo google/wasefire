@@ -26,8 +26,8 @@ pub mod ecc;
 
 /// Cryptography interface.
 pub trait Api {
-    type Aes128Ccm: aead::Api<U16, U13, U4>;
-    type Aes256Gcm: aead::Api<U32, U12, U16>;
+    type Aes128Ccm: aead::Api<U16, U13, Tag = U4>;
+    type Aes256Gcm: aead::Api<U32, U12>;
 
     type HmacSha256: Support<bool> + Hmac<KeySize = U64, OutputSize = U32>;
     type HmacSha384: Support<bool> + Hmac<KeySize = U128, OutputSize = U48>;
@@ -45,12 +45,12 @@ pub trait Hmac: KeyInit + Update + FixedOutput + MacMarker {}
 impl<T: Default + BlockSizeUser + Update + FixedOutputReset + HashMarker> Hash for T {}
 impl<T: KeyInit + Update + FixedOutput + MacMarker> Hmac for T {}
 
-pub struct UnsupportedHash<Block: ArrayLength<u8> + 'static, Output: ArrayLength<u8> + 'static> {
+pub struct UnsupportedHash<Block: ArrayLength<u8>, Output: ArrayLength<u8>> {
     _never: !,
     _block: Block,
     _output: Output,
 }
-pub struct UnsupportedHmac<Key: ArrayLength<u8> + 'static, Output: ArrayLength<u8> + 'static> {
+pub struct UnsupportedHmac<Key: ArrayLength<u8>, Output: ArrayLength<u8>> {
     _never: !,
     _key: Key,
     _output: Output,
@@ -79,11 +79,11 @@ macro_rules! software {
 impl<T: Api> Api for UnsupportedCrypto<T> {
     software! {
         #[cfg(feature = "software-crypto-aes128-ccm")]
-        type Aes128Ccm = ccm::Ccm<aes::Aes128, U4, U13> | Unsupported;
+        type Aes128Ccm = ccm::Ccm<aes::Aes128, U4, U13> | aead::Unsupported<U4>;
     }
     software! {
         #[cfg(feature = "software-crypto-aes256-gcm")]
-        type Aes256Gcm = aes_gcm::Aes256Gcm | Unsupported;
+        type Aes256Gcm = aes_gcm::Aes256Gcm | aead::Unsupported<U16>;
     }
 
     software! {
@@ -127,31 +127,31 @@ impl Api for Unsupported {
 
 impl<B, O> BlockSizeUser for UnsupportedHash<B, O>
 where
-    B: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    B: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     type BlockSize = B;
 }
 
 impl<B, O> OutputSizeUser for UnsupportedHash<B, O>
 where
-    B: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    B: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     type OutputSize = O;
 }
 
 impl<B, O> HashMarker for UnsupportedHash<B, O>
 where
-    B: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    B: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
 }
 
 impl<B, O> Default for UnsupportedHash<B, O>
 where
-    B: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    B: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     fn default() -> Self {
         unreachable!()
@@ -160,8 +160,8 @@ where
 
 impl<B, O> Update for UnsupportedHash<B, O>
 where
-    B: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    B: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     fn update(&mut self, _: &[u8]) {
         unreachable!()
@@ -170,8 +170,8 @@ where
 
 impl<B, O> FixedOutput for UnsupportedHash<B, O>
 where
-    B: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    B: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     fn finalize_into(self, _: &mut Output<Self>) {
         unreachable!()
@@ -180,8 +180,8 @@ where
 
 impl<B, O> FixedOutputReset for UnsupportedHash<B, O>
 where
-    B: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    B: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     fn finalize_into_reset(&mut self, _: &mut Output<Self>) {
         unreachable!()
@@ -190,8 +190,8 @@ where
 
 impl<B, O> Reset for UnsupportedHash<B, O>
 where
-    B: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    B: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     fn reset(&mut self) {
         unreachable!()
@@ -200,39 +200,39 @@ where
 
 impl<B, O> Support<bool> for UnsupportedHash<B, O>
 where
-    B: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    B: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     const SUPPORT: bool = false;
 }
 
 impl<K, O> KeySizeUser for UnsupportedHmac<K, O>
 where
-    K: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    K: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     type KeySize = K;
 }
 
 impl<K, O> OutputSizeUser for UnsupportedHmac<K, O>
 where
-    K: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    K: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     type OutputSize = O;
 }
 
 impl<K, O> MacMarker for UnsupportedHmac<K, O>
 where
-    K: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    K: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
 }
 
 impl<K, O> KeyInit for UnsupportedHmac<K, O>
 where
-    K: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    K: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     fn new(_: &Key<Self>) -> Self {
         unreachable!()
@@ -241,8 +241,8 @@ where
 
 impl<K, O> Update for UnsupportedHmac<K, O>
 where
-    K: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    K: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     fn update(&mut self, _: &[u8]) {
         unreachable!()
@@ -251,8 +251,8 @@ where
 
 impl<K, O> FixedOutput for UnsupportedHmac<K, O>
 where
-    K: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    K: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     fn finalize_into(self, _: &mut Output<Self>) {
         unreachable!()
@@ -261,8 +261,8 @@ where
 
 impl<K, O> Support<bool> for UnsupportedHmac<K, O>
 where
-    K: ArrayLength<u8> + 'static,
-    O: ArrayLength<u8> + 'static,
+    K: ArrayLength<u8>,
+    O: ArrayLength<u8>,
 {
     const SUPPORT: bool = false;
 }

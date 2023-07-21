@@ -36,7 +36,7 @@ pub struct Support {
 
 pub struct Cipher {
     pub text: Vec<u8>,
-    pub tag: [u8; 16],
+    pub tag: Vec<u8>,
 }
 
 /// Whether AES-256-GCM is supported.
@@ -54,21 +54,27 @@ pub fn support() -> Support {
     }
 }
 
+/// Returns the supported tag length.
+pub fn tag_length() -> usize {
+    let api::tag_length::Results { len } = unsafe { api::tag_length() };
+    len
+}
+
 /// Encrypts and authenticates a cleartext.
 pub fn encrypt(key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: &[u8]) -> Result<Cipher, Error> {
     let mut text = vec![0; clear.len()];
-    let tag = encrypt_mut(key, iv, aad, clear, &mut text)?;
+    let mut tag = vec![0; tag_length()];
+    encrypt_mut(key, iv, aad, clear, &mut text, &mut tag)?;
     Ok(Cipher { text, tag })
 }
 
 /// Encrypts and authenticates a cleartext to a ciphertext.
 pub fn encrypt_mut(
-    key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: &[u8], cipher: &mut [u8],
-) -> Result<[u8; 16], Error> {
-    if clear.len() != cipher.len() {
+    key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: &[u8], cipher: &mut [u8], tag: &mut [u8],
+) -> Result<(), Error> {
+    if clear.len() != cipher.len() || tag.len() != tag_length() {
         return Err(Error::InvalidArgument);
     }
-    let mut tag = [0; 16];
     let params = api::encrypt::Params {
         key: key.as_ptr(),
         iv: iv.as_ptr(),
@@ -81,14 +87,16 @@ pub fn encrypt_mut(
     };
     let api::encrypt::Results { res } = unsafe { api::encrypt(params) };
     Error::to_result(res)?;
-    Ok(tag)
+    Ok(())
 }
 
 /// Encrypts and authenticates a buffer in place.
 pub fn encrypt_in_place(
-    key: &[u8; 32], iv: &[u8; 12], aad: &[u8], buffer: &mut [u8],
-) -> Result<[u8; 16], Error> {
-    let mut tag = [0; 16];
+    key: &[u8; 32], iv: &[u8; 12], aad: &[u8], buffer: &mut [u8], tag: &mut [u8],
+) -> Result<(), Error> {
+    if tag.len() != tag_length() {
+        return Err(Error::InvalidArgument);
+    }
     let params = api::encrypt::Params {
         key: key.as_ptr(),
         iv: iv.as_ptr(),
@@ -101,7 +109,7 @@ pub fn encrypt_in_place(
     };
     let api::encrypt::Results { res } = unsafe { api::encrypt(params) };
     Error::to_result(res)?;
-    Ok(tag)
+    Ok(())
 }
 
 /// Decrypts and authenticates a ciphertext.
@@ -115,9 +123,9 @@ pub fn decrypt(
 
 /// Decrypts and authenticates a ciphertext to a cleartext.
 pub fn decrypt_mut(
-    key: &[u8; 32], iv: &[u8; 12], aad: &[u8], tag: &[u8; 16], cipher: &[u8], clear: &mut [u8],
+    key: &[u8; 32], iv: &[u8; 12], aad: &[u8], tag: &[u8], cipher: &[u8], clear: &mut [u8],
 ) -> Result<(), Error> {
-    if cipher.len() != clear.len() {
+    if cipher.len() != clear.len() || tag.len() != tag_length() {
         return Err(Error::InvalidArgument);
     }
     let params = api::decrypt::Params {
@@ -137,8 +145,11 @@ pub fn decrypt_mut(
 
 /// Decrypts and authenticates a ciphertext.
 pub fn decrypt_in_place(
-    key: &[u8; 32], iv: &[u8; 12], aad: &[u8], tag: &[u8; 16], buffer: &mut [u8],
+    key: &[u8; 32], iv: &[u8; 12], aad: &[u8], tag: &[u8], buffer: &mut [u8],
 ) -> Result<(), Error> {
+    if tag.len() != tag_length() {
+        return Err(Error::InvalidArgument);
+    }
     let params = api::decrypt::Params {
         key: key.as_ptr(),
         iv: iv.as_ptr(),
@@ -184,6 +195,8 @@ mod rust_crypto {
 
     impl<const IN_PLACE: bool> aead::AeadCore for Key<IN_PLACE> {
         type NonceSize = aead::consts::U12;
+        // This is the maximum tag size. We can't know at compile-time the actual supported tag
+        // length. This means we pad with zeros the tag. The user must truncate the tag.
         type TagSize = aead::consts::U16;
         type CiphertextOverhead = aead::consts::U0;
     }
@@ -195,12 +208,14 @@ mod rust_crypto {
             let payload = plaintext.into();
             let len = payload.msg.len();
             let mut result = vec![0; len + 16];
-            let tag = encrypt_mut(
+            let mut tag = [0; 16];
+            encrypt_mut(
                 &self.key,
                 nonce.as_ref(),
                 payload.aad,
                 payload.msg,
                 &mut result[.. len],
+                &mut tag[.. tag_length()],
             )
             .map_err(|_| aead::Error)?;
             result[len ..].copy_from_slice(tag.as_ref());
@@ -218,7 +233,7 @@ mod rust_crypto {
                 &self.key,
                 nonce.as_ref(),
                 payload.aad,
-                tag.try_into().unwrap(),
+                &tag[.. tag_length()],
                 cipher,
                 &mut clear,
             )
@@ -231,18 +246,30 @@ mod rust_crypto {
         fn encrypt_in_place_detached(
             &self, nonce: &aead::Nonce<Self>, associated_data: &[u8], buffer: &mut [u8],
         ) -> aead::Result<aead::Tag<Self>> {
-            encrypt_in_place(&self.key, nonce.as_ref(), associated_data, buffer)
-                .map(|x| x.into())
-                .map_err(|_| aead::Error)
+            let mut tag = [0; 16];
+            encrypt_in_place(
+                &self.key,
+                nonce.as_ref(),
+                associated_data,
+                buffer,
+                &mut tag[.. tag_length()],
+            )
+            .map_err(|_| aead::Error)?;
+            Ok(tag.into())
         }
 
         fn decrypt_in_place_detached(
             &self, nonce: &aead::Nonce<Self>, associated_data: &[u8], buffer: &mut [u8],
             tag: &aead::Tag<Self>,
         ) -> aead::Result<()> {
-            decrypt_in_place(&self.key, nonce.as_ref(), associated_data, tag.as_ref(), buffer)
-                .map(|x| x.into())
-                .map_err(|_| aead::Error)
+            decrypt_in_place(
+                &self.key,
+                nonce.as_ref(),
+                associated_data,
+                &tag[.. tag_length()],
+                buffer,
+            )
+            .map_err(|_| aead::Error)
         }
     }
 }

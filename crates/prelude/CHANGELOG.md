@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.2.1-git
+## 0.3.0-git
+
+### Major
+
+- Make the AES256-GCM tag variable length
 
 ### Minor
 

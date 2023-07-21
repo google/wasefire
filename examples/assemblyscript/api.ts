@@ -340,6 +340,13 @@
     // Bit-flag as described by [`super::Support`].
     ): usize
 
+    // Returns the supported tag length.
+    //
+    // The tag argument to [`encrypt()`] and [`decrypt()`] must be of that length.
+    @external("env", "cgt")
+    export declare function crypto_gcm_tag_length(
+    ): usize
+
     // Encrypts and authenticates a clear text with associated data given a key and IV.
     @external("env", "cge")
     export declare function crypto_gcm_encrypt(
@@ -367,7 +374,7 @@
       // The cipher text.
       cipher: usize,
 
-      // The 16 bytes authentication tag.
+      // The authentication tag (see [`super::tag_length()`]).
       tag: usize,
     // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
     // otherwise.
@@ -388,7 +395,7 @@
       // The length of the additional authenticated data.
       aad_len: usize,
 
-      // The 16 bytes authentication tag.
+      // The authentication tag (see [`super::tag_length()`]).
       tag: usize,
 
       // The length of the cipher (and clear) text.

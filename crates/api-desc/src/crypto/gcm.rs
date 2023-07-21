@@ -43,6 +43,12 @@ pub(crate) fn new() -> Item {
             }
         },
         item! {
+            /// Returns the supported tag length.
+            ///
+            /// The tag argument to [`encrypt()`] and [`decrypt()`] must be of that length.
+            fn tag_length "cgt" {} -> { len: usize }
+        },
+        item! {
             /// Encrypts and authenticates a clear text with associated data given a key and IV.
             fn encrypt "cge" {
                 /// The 32 bytes key.
@@ -69,7 +75,7 @@ pub(crate) fn new() -> Item {
                 /// The cipher text.
                 cipher: *mut u8,
 
-                /// The 16 bytes authentication tag.
+                /// The authentication tag (see [`super::tag_length()`]).
                 tag: *mut u8,
             } -> {
                 /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
@@ -92,7 +98,7 @@ pub(crate) fn new() -> Item {
                 /// The length of the additional authenticated data.
                 aad_len: usize,
 
-                /// The 16 bytes authentication tag.
+                /// The authentication tag (see [`super::tag_length()`]).
                 tag: *const u8,
 
                 /// The length of the cipher (and clear) text.
