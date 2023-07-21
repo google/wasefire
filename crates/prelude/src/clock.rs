@@ -43,7 +43,7 @@ impl<F: Fn() + 'static> Handler for F {
 pub struct Timer<H: Handler> {
     id: usize,
     running: Cell<bool>,
-    handler: *mut H,
+    handler: *const H,
 }
 
 impl<H: Handler> Timer<H> {
@@ -56,7 +56,7 @@ impl<H: Handler> Timer<H> {
     pub fn new(handler: H) -> Self {
         let handler_func = Self::call;
         let handler = Box::into_raw(Box::new(handler));
-        let handler_data = handler as *mut u8;
+        let handler_data = handler as *const u8;
         let params = api::allocate::Params { handler_func, handler_data };
         let api::allocate::Results { id } = unsafe { api::allocate(params) };
         Timer { id, running: Cell::new(false), handler }
@@ -101,8 +101,8 @@ impl<H: Handler> Timer<H> {
         core::mem::forget(self);
     }
 
-    extern "C" fn call(data: *mut u8) {
-        let handler = unsafe { &mut *(data as *mut H) };
+    extern "C" fn call(data: *const u8) {
+        let handler = unsafe { &*(data as *const H) };
         handler.event();
     }
 }
@@ -114,7 +114,7 @@ impl<H: Handler> Drop for Timer<H> {
         }
         let params = api::free::Params { id: self.id };
         unsafe { api::free(params) };
-        unsafe { Box::from_raw(self.handler) };
+        unsafe { Box::from_raw(self.handler as *mut H) };
     }
 }
 

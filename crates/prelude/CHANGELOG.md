@@ -6,6 +6,10 @@
 
 - Add access to SEC1 encoding of ECDSA and ECDH private keys
 
+### Patch
+
+- Update dependencies
+
 ## 0.2.0
 
 ### Major

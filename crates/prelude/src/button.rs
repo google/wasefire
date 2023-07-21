@@ -49,7 +49,7 @@ impl<F: Fn(State) + 'static> Handler for F {
 #[must_use]
 pub struct Listener<H: Handler> {
     button: usize,
-    handler: *mut H,
+    handler: *const H,
 }
 
 impl<H: Handler> Listener<H> {
@@ -69,7 +69,7 @@ impl<H: Handler> Listener<H> {
     pub fn new(button: usize, handler: H) -> Self {
         let handler_func = Self::call;
         let handler = Box::into_raw(Box::new(handler));
-        let handler_data = handler as *mut u8;
+        let handler_data = handler as *const u8;
         unsafe { api::register(api::register::Params { button, handler_func, handler_data }) };
         Listener { button, handler }
     }
@@ -90,8 +90,8 @@ impl<H: Handler> Listener<H> {
         core::mem::forget(self);
     }
 
-    extern "C" fn call(data: *mut u8, state: usize) {
-        let handler = unsafe { &mut *(data as *mut H) };
+    extern "C" fn call(data: *const u8, state: usize) {
+        let handler = unsafe { &*(data as *const H) };
         let state = state.into();
         handler.event(state);
     }
@@ -101,6 +101,6 @@ impl<H: Handler> Drop for Listener<H> {
     fn drop(&mut self) {
         let params = api::unregister::Params { button: self.button };
         unsafe { api::unregister(params) };
-        unsafe { Box::from_raw(self.handler) };
+        unsafe { Box::from_raw(self.handler as *mut H) };
     }
 }

@@ -160,7 +160,7 @@ impl<'a> Listener<'a> {
         if listener.is_registered() {
             let event = listener.kind.event() as usize;
             let handler_func = Self::call;
-            let handler_data = ready.as_ptr() as *mut u8;
+            let handler_data = ready.as_ptr() as *const u8;
             unsafe { api::register(api::register::Params { event, handler_func, handler_data }) };
         }
         let _ = listener.update();
@@ -204,8 +204,8 @@ impl<'a> Listener<'a> {
         unsafe { api::unregister(api::unregister::Params { event }) };
     }
 
-    extern "C" fn call(data: *mut u8) {
-        let ready = unsafe { &*(data as *mut Cell<bool>) };
+    extern "C" fn call(data: *const u8) {
+        let ready = unsafe { &*(data as *const Cell<bool>) };
         ready.set(true);
     }
 }

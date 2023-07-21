@@ -24,5 +24,5 @@ As such, they follow a precise convention:
   - `*const u8` and `*mut u8` for opaque/polymorphic pointers
   - `*const T` and `*mut T` for transparent pointers where `T` is recursively
     defined
-  - `extern "C" fn(data: *mut u8, ...)` for closures over some opaque data and
+  - `extern "C" fn(data: *const u8, ...)` for closures over some opaque data and
     possibly additional parameters

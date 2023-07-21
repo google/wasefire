@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1-git
+
+### Patch
+
+- Update dependencies
+
 ## 0.3.0
 
 ### Major
@@ -37,4 +43,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 4 -->
+<!-- Increment to skip CHANGELOG.md test: 5 -->
