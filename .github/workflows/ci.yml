@@ -28,7 +28,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - run: echo 'XXX ${{ vars.PERMISSIONS_CONFIG }}'
+      - name: DEBUG
+        env:
+          FOO: ${{ vars.PERMISSIONS_CONFIG }}
+        run: echo "XXX $FOO YYY"
       - uses: GitHubSecurityLab/actions-permissions/monitor@v1
         with:
           config: ${{ vars.PERMISSIONS_CONFIG }}
