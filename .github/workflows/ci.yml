@@ -25,6 +25,8 @@ jobs:
       - run: ./scripts/ci-changelog.sh
   ubuntu:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: GitHubSecurityLab/actions-permissions/monitor@v1
         with:
