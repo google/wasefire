@@ -14,6 +14,7 @@ jobs:
   changelog:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - uses: GitHubSecurityLab/actions-permissions/monitor@v1
         with:
@@ -29,6 +30,8 @@ jobs:
         with:
           config: ${{ vars.PERMISSIONS_CONFIG }}
       - uses: actions/checkout@v3
+        with:
+          submodules: true
       - uses: actions/cache@v3
         if: github.event_name != 'schedule'
         with:
