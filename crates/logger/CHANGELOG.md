@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Update dependencies
 - Support trailing comma when neither `log` nor `defmt` is used
 
 ## 0.1.2

@@ -101,6 +101,6 @@ impl<H: Handler> Drop for Listener<H> {
     fn drop(&mut self) {
         let params = api::unregister::Params { button: self.button };
         unsafe { api::unregister(params) };
-        unsafe { Box::from_raw(self.handler as *mut H) };
+        drop(unsafe { Box::from_raw(self.handler as *mut H) });
     }
 }

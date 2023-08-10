@@ -13,8 +13,9 @@
 
 ### Patch
 
-- Fix `WithSerial` helper to flush all data
+- Fix clippy lints
 - Update dependencies
+- Fix `WithSerial` helper to flush all data
 
 ## 0.3.0
 

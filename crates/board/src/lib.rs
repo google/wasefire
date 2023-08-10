@@ -132,12 +132,26 @@ pub enum Unsupported {}
 
 /// Valid identifier for a countable API.
 #[derive(Derivative)]
-#[derivative(Debug(bound = ""), Copy(bound = ""), Clone(bound = ""), Hash(bound = ""))]
-#[derivative(PartialEq(bound = ""), Eq(bound = ""), PartialOrd(bound = ""), Ord(bound = ""))]
+#[derivative(Debug(bound = ""), Copy(bound = ""), Hash(bound = ""))]
+#[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
 pub struct Id<T: Support<usize> + ?Sized> {
     // Invariant: value < T::SUPPORT
     value: usize,
     count: PhantomData<T>,
+}
+
+// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use Clone(bound = "") instead.
+impl<T: Support<usize> + ?Sized> Clone for Id<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use PartialOrd(bound = "") instead.
+impl<T: Support<usize> + ?Sized> PartialOrd for Id<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl<T: Support<usize>> Id<T> {

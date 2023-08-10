@@ -86,7 +86,7 @@ fn free<B: Board>(mut call: SchedulerCall<B, api::free::Sig>) {
 
 // TODO: Should also check that the timer belongs to the calling applet.
 fn get_timer<B: Board>(
-    scheduler: &mut Scheduler<B>, timer: usize,
+    scheduler: &Scheduler<B>, timer: usize,
 ) -> Result<Id<board::Timer<B>>, Trap> {
     let id = Id::new(timer).ok_or(Trap)?;
     if scheduler.timers[timer].is_none() {

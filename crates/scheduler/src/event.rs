@@ -28,13 +28,27 @@ pub mod usb;
 
 // TODO: This could be encoded into a u32 for performance/footprint.
 #[derive(Derivative)]
-#[derivative(Debug(bound = ""), Copy(bound = ""), Clone(bound = ""), Hash(bound = ""))]
-#[derivative(PartialEq(bound = ""), Eq(bound = ""), PartialOrd(bound = ""), Ord(bound = ""))]
-#[derivative(PartialOrd = "feature_allow_slow_enum", Ord = "feature_allow_slow_enum")]
+#[derivative(Debug(bound = ""), Copy(bound = ""), Hash(bound = ""))]
+#[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
+#[derivative(Ord = "feature_allow_slow_enum")]
 pub enum Key<B: Board> {
     Button(button::Key<B>),
     Timer(timer::Key<B>),
     Usb(usb::Key),
+}
+
+// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use Clone(bound = "") instead.
+impl<B: Board> Clone for Key<B> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use PartialOrd(bound = "") instead.
+impl<B: Board> PartialOrd for Key<B> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
@@ -49,13 +63,20 @@ impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
 
 #[derive(Derivative)]
 #[derivative(Debug(bound = ""), Clone(bound = ""))]
-#[derivative(PartialEq(bound = ""), Eq(bound = ""), PartialOrd(bound = ""), Ord(bound = ""))]
-#[derivative(PartialOrd = "feature_allow_slow_enum", Ord = "feature_allow_slow_enum")]
+#[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
+#[derivative(Ord = "feature_allow_slow_enum")]
 pub struct Handler<B: Board> {
     pub key: Key<B>,
     pub inst: InstId,
     pub func: u32,
     pub data: u32,
+}
+
+// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use PartialOrd(bound = "") instead.
+impl<B: Board> PartialOrd for Handler<B> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl<B: Board> Borrow<Key<B>> for Handler<B> {

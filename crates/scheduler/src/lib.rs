@@ -212,7 +212,7 @@ impl<B: Board> Scheduler<B> {
             Ok(RunResult::Done(x)) => assert!(x.is_empty()),
             Ok(RunResult::Host { .. }) => logger::panic!("init called into host"),
             Err(Error::NotFound) => (),
-            Err(e) => Err(e).unwrap(),
+            Err(e) => core::panic!("{e:?}"),
         }
         self.call(inst, "main", &[]);
     }
@@ -276,7 +276,7 @@ impl<B: Board> Scheduler<B> {
             }
             Ok(RunAnswer::Host) => (),
             Err(Error::Trap) => logger::panic!("Applet trapped in wasm."),
-            Err(e) => Err(e).unwrap(),
+            Err(e) => core::panic!("{e:?}"),
         }
     }
 }
