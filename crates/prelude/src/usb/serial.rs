@@ -215,7 +215,7 @@ impl<'a> Drop for Listener<'a> {
         if self.is_registered() {
             self.unregister();
         }
-        unsafe { Box::from_raw(self.ready.as_ptr()) };
+        drop(unsafe { Box::from_raw(self.ready.as_ptr()) });
     }
 }
 

@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Fix clippy lints
 - Fix missing feature forward on dependencies
 - Update dependencies
 
@@ -43,4 +44,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 14 -->
+<!-- Increment to skip CHANGELOG.md test: 15 -->

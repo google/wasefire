@@ -19,10 +19,24 @@ use wasefire_board_api::button::Event;
 use wasefire_board_api::{self as board, Api as Board, Id};
 
 #[derive(Derivative)]
-#[derivative(Debug(bound = ""), Copy(bound = ""), Clone(bound = ""), Hash(bound = ""))]
-#[derivative(PartialEq(bound = ""), Eq(bound = ""), PartialOrd(bound = ""), Ord(bound = ""))]
+#[derivative(Debug(bound = ""), Copy(bound = ""), Hash(bound = ""))]
+#[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
 pub struct Key<B: Board> {
     pub button: Id<board::Button<B>>,
+}
+
+// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use Clone(bound = "") instead.
+impl<B: Board> Clone for Key<B> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use PartialOrd(bound = "") instead.
+impl<B: Board> PartialOrd for Key<B> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl<B: Board> From<Key<B>> for crate::event::Key<B> {

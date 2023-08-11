@@ -114,7 +114,7 @@ impl<H: Handler> Drop for Timer<H> {
         }
         let params = api::free::Params { id: self.id };
         unsafe { api::free(params) };
-        unsafe { Box::from_raw(self.handler as *mut H) };
+        drop(unsafe { Box::from_raw(self.handler as *mut H) });
     }
 }
 

@@ -38,7 +38,7 @@ impl Api for Impl {
     }
 }
 
-pub fn event(state: &mut State, pressed: Option<bool>) {
+pub fn event(state: &State, pressed: Option<bool>) {
     if !state.button {
         return;
     }

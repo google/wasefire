@@ -6,9 +6,9 @@ license = "Apache-2.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.71"
-clap = { version = "4.3.4", features = ["derive"] }
+anyhow = "1.0.72"
+clap = { version = "4.3.21", features = ["derive"] }
 common = { path = "../common", features = ["std"] }
 env_logger = "0.10.0"
 log = "0.4.19"
-serialport = "4.2.1"
+serialport = "4.2.2"
