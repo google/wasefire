@@ -309,7 +309,7 @@ impl AppletOptions {
         let dir = format!("examples/{}", self.lang);
         if !Path::new("examples/assemblyscript/node_modules/.bin/asc").exists() {
             ensure_command(&["npm"])?;
-            let mut npm = Command::new("../../scripts/wrapper.sh");
+            let mut npm = wrap_command()?;
             npm.args(["npm", "install", "--no-save", "assemblyscript"]);
             npm.current_dir(&dir);
             execute_command(&mut npm)?;
@@ -336,7 +336,7 @@ impl AppletOptions {
             println!("Initial applet size: {}", std::fs::metadata(wasm)?.len());
         }
         if self.strip.get() {
-            let mut strip = Command::new("./scripts/wrapper.sh");
+            let mut strip = wrap_command()?;
             strip.arg("wasm-strip");
             strip.arg(wasm);
             execute_command(&mut strip)?;
@@ -345,7 +345,7 @@ impl AppletOptions {
             }
         }
         if self.opt.get() {
-            let mut opt = Command::new("./scripts/wrapper.sh");
+            let mut opt = wrap_command()?;
             opt.arg("wasm-opt");
             if main.multivalue {
                 opt.arg("--enable-multivalue");
@@ -370,7 +370,7 @@ impl AppletCommand {
         match self {
             AppletCommand::Runner(runner) => runner.execute(main, true),
             AppletCommand::Twiggy { args } => {
-                let mut twiggy = Command::new("./scripts/wrapper.sh");
+                let mut twiggy = wrap_command()?;
                 twiggy.arg("twiggy");
                 let mut wasm = Some("target/applet.wasm");
                 for arg in args {
@@ -463,7 +463,8 @@ impl RunnerOptions {
         }
         if self.measure_bloat {
             ensure_command(&["cargo", "bloat"])?;
-            let mut bloat = Command::new(cargo.get_program());
+            let mut bloat = wrap_command()?;
+            bloat.arg(cargo.get_program());
             if let Some(dir) = cargo.get_current_dir() {
                 bloat.current_dir(dir);
             }
@@ -485,7 +486,7 @@ impl RunnerOptions {
         }
         let elf = self.board_target();
         if main.size {
-            let mut size = Command::new("./scripts/wrapper.sh");
+            let mut size = wrap_command()?;
             size.arg("rust-size");
             size.arg(&elf);
             execute_command(&mut size)?;
@@ -534,7 +535,7 @@ impl RunnerOptions {
             println!("JLinkGDBServer -device {chip} -if swd -speed 4000 -port 2331");
             println!("gdb-multiarch -ex 'file {elf}' -ex 'target remote localhost:2331'");
         }
-        let mut probe_run = Command::new("./scripts/wrapper.sh");
+        let mut probe_run = wrap_command()?;
         probe_run.arg("probe-run");
         probe_run.arg(format!("--chip={chip}"));
         if main.release {
@@ -607,10 +608,14 @@ fn read_output_line(command: &mut Command) -> Result<String> {
 }
 
 fn ensure_command(cmd: &[&str]) -> Result<()> {
-    let mut ensure_bloat = Command::new("./scripts/wrapper.sh");
-    ensure_bloat.args(cmd);
-    ensure_bloat.env("WASEFIRE_WRAPPER_EXEC", "n");
-    execute_command(&mut ensure_bloat)
+    let mut wrapper = Command::new("./scripts/wrapper.sh");
+    wrapper.args(cmd);
+    wrapper.env("WASEFIRE_WRAPPER_EXEC", "n");
+    execute_command(&mut wrapper)
+}
+
+fn wrap_command() -> Result<Command> {
+    Ok(Command::new(std::fs::canonicalize("./scripts/wrapper.sh")?))
 }
 
 /// Copies a file if its destination .hash changed.
