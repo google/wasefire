@@ -21,7 +21,10 @@ set -e
 
 has_bin() { which $1 >/dev/null 2>&1; }
 
-has_bin rustup || e "Missing rustup. Install from https://rustup.rs"
+if ! has_bin rustup; then
+  i "Installing rustup according to https://rustup.rs"
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+fi
 
 MISSING=
 add_missing() {

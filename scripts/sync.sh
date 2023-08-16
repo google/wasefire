@@ -29,3 +29,11 @@ book_example button2 led
 book_example timer button_abort
 book_example usb memory_game
 book_example store store
+
+RUSTUP_CMD="$(curl -s https://rustup.rs \
+  | sed -n '/^<div id="platform-instructions-unix"/,/^<\/div>$/'\
+'{s#^ *<pre class="rustup-command">\(.*\)</pre>$#\1#p;T;q}'
+)"
+sed -i '\#^  i ".*https://rustup.rs"$#{n;i\
+'"  $RUSTUP_CMD"'
+;d}' scripts/setup.sh
