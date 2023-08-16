@@ -19,10 +19,10 @@ use std::fmt::Display;
 use std::num::ParseIntError;
 use std::os::unix::prelude::CommandExt;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Output};
 use std::str::FromStr;
 
-use anyhow::Result;
+use anyhow::{ensure, Context, Result};
 use clap::Parser;
 use lazy_static::lazy_static;
 use probe_rs::config::TargetSelector;
@@ -493,7 +493,7 @@ impl RunnerOptions {
         }
         if let Some(stack_sizes) = self.stack_sizes {
             let elf = std::fs::read(&elf)?;
-            let symbols = stack_sizes::analyze_executable(&elf).unwrap();
+            let symbols = stack_sizes::analyze_executable(&elf)?;
             assert!(symbols.have_32_bit_addresses);
             assert!(symbols.undefined.is_empty());
             let max_stack_sizes = stack_sizes.unwrap_or(10);
@@ -504,7 +504,7 @@ impl RunnerOptions {
                     Some(x) => x,
                 };
                 // Multiple symbols can have the same address. Just use the first name.
-                let name = *symbol.names().first().expect("missing symbol");
+                let name = *symbol.names().first().context("missing symbol")?;
                 top_stack_sizes.push((Reverse(stack), address, name));
                 if top_stack_sizes.len() > max_stack_sizes {
                     top_stack_sizes.pop();
@@ -587,10 +587,8 @@ fn wasm_target(name: &str) -> String {
 
 fn execute_command(command: &mut Command) -> Result<()> {
     println!("{command:?}");
-    let code = command.spawn()?.wait()?.code().expect("no error code");
-    if code != 0 {
-        std::process::exit(code);
-    }
+    let code = command.spawn()?.wait()?.code().context("no error code")?;
+    ensure!(code == 0, "failed with code {code}");
     Ok(())
 }
 
@@ -599,9 +597,15 @@ fn replace_command(mut command: Command) -> ! {
     panic!("{}", command.exec());
 }
 
+fn output_command(command: &mut Command) -> Result<Output> {
+    println!("{command:?}");
+    let output = command.output()?;
+    ensure!(output.status.success(), "failed with status {}", output.status);
+    Ok(output)
+}
+
 fn read_output_line(command: &mut Command) -> Result<String> {
-    let mut output = command.output()?;
-    assert!(output.status.success());
+    let mut output = output_command(command)?;
     assert!(output.stderr.is_empty());
     assert_eq!(output.stdout.pop(), Some(b'\n'));
     Ok(String::from_utf8(output.stdout)?)
