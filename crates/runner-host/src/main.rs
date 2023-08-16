@@ -74,7 +74,7 @@ async fn main() -> Result<()> {
             }
         }
     });
-    println!("Running.");
+    println!("Board initialized. Starting scheduler.");
     const WASM: &[u8] = include_bytes!("../../../target/applet.wasm");
     Handle::current().spawn_blocking(|| Scheduler::<board::Board>::run(WASM)).await?
 }

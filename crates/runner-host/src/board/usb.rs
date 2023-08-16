@@ -93,5 +93,6 @@ impl Usb {
 }
 
 fn spawn(cmd: &[&str]) -> Child {
+    println!("Executing: {}", cmd.join(" "));
     Command::new(cmd[0]).args(&cmd[1 ..]).spawn().unwrap()
 }
