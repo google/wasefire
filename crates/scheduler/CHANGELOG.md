@@ -2,6 +2,10 @@
 
 ## 0.2.1-git
 
+### Minor
+
+- Add `unsafe-skip-validation` feature
+
 ### Patch
 
 - Fix clippy lints

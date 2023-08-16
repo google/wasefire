@@ -204,7 +204,11 @@ impl<B: Board> Scheduler<B> {
         #[repr(align(16))]
         struct Memory([u8; 0x10000]);
         static mut MEMORY: Memory = Memory([0; 0x10000]);
+        #[cfg(not(feature = "unsafe-skip-validation"))]
         let module = Module::new(wasm).unwrap();
+        // SAFETY: The module is valid by the feature invariant.
+        #[cfg(feature = "unsafe-skip-validation")]
+        let module = unsafe { Module::new_unchecked(wasm) };
         let store = self.applet.store_mut();
         // SAFETY: This function is called once in `run()`.
         let inst = store.instantiate(module, unsafe { &mut MEMORY.0 }).unwrap();
