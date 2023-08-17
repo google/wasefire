@@ -12,6 +12,7 @@
 
 ### Patch
 
+- Update documentation
 - Fix clippy lints
 - Update dependencies
 
