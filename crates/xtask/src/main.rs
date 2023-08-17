@@ -22,7 +22,7 @@ use std::path::Path;
 use std::process::{Command, Output};
 use std::str::FromStr;
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use clap::Parser;
 use lazy_static::lazy_static;
 use probe_rs::config::TargetSelector;
@@ -257,7 +257,7 @@ impl AppletOptions {
         match self.lang.as_str() {
             "rust" => self.execute_rust(main),
             "assemblyscript" => self.execute_assemblyscript(main),
-            _ => panic!("unsupported language"),
+            x => bail!("unsupported language {x}"),
         }
     }
 
