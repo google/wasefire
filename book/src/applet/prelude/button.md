@@ -51,10 +51,10 @@ to leak it. This is equivalent to calling `core::mem::forget()`.
 {{#include button1.rs:leak}}
 ```
 
-Finally, we just endlessly wait for callbacks. This step will eventually not be
-needed. Waiting for callbacks indefinitely will be the implicit behavior when
-`main` exits, in which case `main` can be seen as a callback setup procedure.
-The `scheduling::wait_for_callback()` function puts the applet to sleep until a
+Finally, we just endlessly wait for callbacks. This step is optional: waiting
+for callbacks indefinitely is the implicit behavior when `main` exits. In some
+way, `main` can be seen as a callback setup procedure. The
+`scheduling::wait_for_callback()` function puts the applet to sleep until a
 callback is scheduled and `scheduled::wait_indefinitely()` is just an infinite
 loop around `wait_for_callback()`.
 

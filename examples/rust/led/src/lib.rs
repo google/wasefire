@@ -55,7 +55,4 @@ fn main() {
         // We indefinitely listen by creating and leaking a listener.
         button::Listener::new(button_index, handler).leak();
     }
-
-    // We indefinitely wait for callbacks.
-    scheduling::wait_indefinitely();
 }
