@@ -536,7 +536,8 @@ impl RunnerOptions {
             println!("gdb-multiarch -ex 'file {elf}' -ex 'target remote localhost:2331'");
         }
         let mut probe_run = wrap_command()?;
-        probe_run.arg("probe-run");
+        // TODO(https://github.com/knurling-rs/probe-run/issues/421): Use a simpler flag.
+        probe_run.args(["probe-run", "--log-format={t} {L} {s}\n└─ {m} @ {F}:{l}"]);
         probe_run.arg(format!("--chip={chip}"));
         if main.release {
             probe_run.arg("--backtrace=never");
