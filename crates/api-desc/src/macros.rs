@@ -14,8 +14,9 @@
 
 #[macro_export]
 macro_rules! type_ {
-    (usize) => (Type::Integer { signed: false });
-    (isize) => (Type::Integer { signed: true });
+    (usize) => (Type::Integer { signed: false, bits: None });
+    (isize) => (Type::Integer { signed: true, bits: None });
+    (u64) => (Type::Integer { signed: false, bits: Some(64) });
     (*const $($type:tt)*) => (type_!(*false $($type)*));
     (*mut $($type:tt)*) => (type_!(*true $($type)*));
     (*$mut:tt u8) => (Type::Pointer { mutable: $mut, type_: None });
@@ -86,6 +87,14 @@ macro_rules! item {
             docs: vec![$($doc.into()),*],
             name: stringify!($name).into(),
             variants: variants!($variants),
+        })
+    };
+
+    ($(#[doc = $doc:literal])* struct $name:ident $fields:tt) => {
+        Item::Struct(Struct {
+            docs: vec![$($doc.into()),*],
+            name: stringify!($name).into(),
+            fields: fields!($fields),
         })
     };
 

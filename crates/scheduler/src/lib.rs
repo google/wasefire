@@ -25,8 +25,10 @@ use core::cell::RefCell;
 use core::marker::PhantomData;
 use core::ops::Range;
 
+use bytemuck::{AnyBitPattern, NoUninit};
 use derivative::Derivative;
 use event::Key;
+use perf::Perf;
 use stores::{Applet, EventAction};
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature};
 use wasefire_board_api::{self as board, Api as Board, Singleton, Support};
@@ -38,6 +40,7 @@ use wasefire_store as store;
 
 mod call;
 mod event;
+mod perf;
 mod stores;
 
 #[derive(Derivative)]
@@ -75,6 +78,7 @@ pub struct Scheduler<B: Board> {
     host_funcs: Vec<Api<Id>>,
     applet: Applet<B>,
     timers: Vec<Option<Timer>>,
+    perf: Perf<B>,
 }
 
 #[derive(Clone)]
@@ -153,7 +157,9 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
     pub fn reply(mut self, results: Result<T::Results, Trap>) {
         match results.map(convert_results::<T>) {
             Ok(results) => {
+                self.scheduler().perf.record(perf::Slot::Platform);
                 let answer = self.call().resume(&results).map(|x| x.forget());
+                self.scheduler().perf.record(perf::Slot::Applets);
                 self.erased.scheduler.process_answer(answer);
             }
             Err(Trap) => logger::panic!("Applet trapped in host."),
@@ -197,7 +203,8 @@ impl<B: Board> Scheduler<B> {
         }
         let store = store::Store::new(board::Storage::<B>::take().unwrap()).ok().unwrap();
         let timers = vec![None; board::Timer::<B>::SUPPORT];
-        Self { store, host_funcs, applet, timers }
+        let perf = Perf::default();
+        Self { store, host_funcs, applet, timers, perf }
     }
 
     fn load(&mut self, wasm: &'static [u8]) {
@@ -212,12 +219,14 @@ impl<B: Board> Scheduler<B> {
         let store = self.applet.store_mut();
         // SAFETY: This function is called once in `run()`.
         let inst = store.instantiate(module, unsafe { &mut MEMORY.0 }).unwrap();
+        self.perf.record(perf::Slot::Platform);
         match store.invoke(inst, "init", vec![]) {
             Ok(RunResult::Done(x)) => assert!(x.is_empty()),
             Ok(RunResult::Host { .. }) => logger::panic!("init called into host"),
             Err(Error::NotFound) => (),
             Err(e) => core::panic!("{e:?}"),
         }
+        self.perf.record(perf::Slot::Applets);
         self.call(inst, "main", &[]);
     }
 
@@ -232,7 +241,12 @@ impl<B: Board> Scheduler<B> {
         let event = loop {
             match self.applet.pop() {
                 EventAction::Handle(event) => break event,
-                EventAction::Wait => self.applet.push(B::wait_event()),
+                EventAction::Wait => {
+                    self.perf.record(perf::Slot::Platform);
+                    let event = B::wait_event();
+                    self.perf.record(perf::Slot::Waiting);
+                    self.applet.push(event);
+                }
                 EventAction::Reply => return true,
             }
         };
@@ -267,7 +281,9 @@ impl<B: Board> Scheduler<B> {
     fn call(&mut self, inst: InstId, name: &'static str, args: &[u32]) {
         debug!("Schedule thread {}{:?}.", name, args);
         let args = args.iter().map(|&x| Val::I32(x)).collect();
+        self.perf.record(perf::Slot::Platform);
         let answer = self.applet.store_mut().invoke(inst, name, args).map(|x| x.forget());
+        self.perf.record(perf::Slot::Applets);
         self.process_answer(answer);
     }
 
@@ -384,12 +400,21 @@ impl<'a> Memory<'a> {
         self.get_mut(ptr, LEN as u32).map(|x| x.try_into().unwrap())
     }
 
+    pub fn from_bytes<T: AnyBitPattern>(&self, ptr: u32) -> Result<&T, Trap> {
+        Ok(bytemuck::from_bytes(self.get(ptr, core::mem::size_of::<T>() as u32)?))
+    }
+
+    pub fn from_bytes_mut<T: NoUninit + AnyBitPattern>(&self, ptr: u32) -> Result<&mut T, Trap> {
+        Ok(bytemuck::from_bytes_mut(self.get_mut(ptr, core::mem::size_of::<T>() as u32)?))
+    }
+
     pub fn alloc(&mut self, size: u32, align: u32) -> u32 {
         self.borrow.borrow_mut().clear();
         let store = unsafe { &mut *self.store };
         let args = vec![Val::I32(size), Val::I32(align)];
         let inst = store.last_call().unwrap().inst();
         let result: Result<Val, Error> = try {
+            // TODO: We should ideally account this to the applet performance time.
             match store.invoke(inst, "alloc", args)? {
                 RunResult::Done(x) if x.len() == 1 => x[0],
                 _ => Err(Error::Invalid)?,

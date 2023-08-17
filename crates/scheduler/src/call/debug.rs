@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_applet_api::debug::{self as api, Api};
+use wasefire_applet_api::debug::{self as api, Api, Perf};
 use wasefire_board_api::debug::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
 use wasefire_logger as logger;
@@ -23,6 +23,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Println(call) => println(call),
         Api::Time(call) => time(call),
+        Api::Perf(call) => perf(call),
         Api::Exit(call) => exit(call),
     }
 }
@@ -50,6 +51,17 @@ fn time<B: Board>(mut call: SchedulerCall<B, api::time::Sig>) {
             memory.get_mut(*ptr, 4)?.copy_from_slice(&high.to_le_bytes());
         }
         api::time::Results { res: low.into() }
+    };
+    call.reply(results)
+}
+
+fn perf<B: Board>(mut call: SchedulerCall<B, api::perf::Sig>) {
+    let api::perf::Params { ptr } = call.read();
+    let perf = call.scheduler().perf.read();
+    let memory = call.memory();
+    let results = try {
+        *memory.from_bytes_mut::<Perf>(*ptr)? = perf;
+        api::perf::Results {}
     };
     call.reply(results)
 }

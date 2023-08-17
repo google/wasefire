@@ -53,7 +53,7 @@ pub struct Descriptor {
     pub results: usize,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(transparent)]
 pub struct U32<T> {
     value: u32,

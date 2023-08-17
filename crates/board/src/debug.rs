@@ -20,9 +20,13 @@ use crate::Unsupported;
 
 /// Debugging and testing interface.
 pub trait Api {
+    /// Maximum value returned by [`Self::time()`] before wrapping.
+    const MAX_TIME: u64;
+
     /// Returns the time in micro-seconds since some initial event.
     ///
-    /// This may return zero if not supported. This may wrap before using all 64 bits.
+    /// This wraps once [`Self::MAX_TIME`] is reached. In particular, a maximum value of zero
+    /// equivalent to not supporting this API.
     fn time() -> u64;
 
     /// Exits the platform with a success/failure result.
@@ -30,6 +34,8 @@ pub trait Api {
 }
 
 impl Api for Unsupported {
+    const MAX_TIME: u64 = 0;
+
     fn time() -> u64 {
         0
     }

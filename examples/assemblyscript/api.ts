@@ -609,6 +609,33 @@
   // Lower 32-bits of the time.
   ): usize
 
+  // Time in micro-seconds since the scheduler started.
+  //
+  // Values may not be accurate for a few reasons:
+  // - Interrupts are accounted to the component they interrupt. Ideally it should be
+  // accounted to the platform only.
+  // - Allocation in the applet by the platform is accounted to the platform instead of
+  // the applet.
+  // - The board time is assumed to have a longer wrap period than any continuous
+  // component run time.
+  class debug_Perf {
+    // Time spent in the platform.
+    platform: u64;
+
+    // Time spent in applets.
+    applets: u64;
+
+    // Time spent waiting for events.
+    waiting: u64;
+  }
+
+  // Returns the time spent since some initial event, split by component.
+  @external("env", "dq")
+  export declare function debug_perf(
+    // Pointer to the output [`super::Perf`] struct.
+    ptr: usize,
+  ): void
+
   // Exits the platform with an error code.
   //
   // This is used by test applets to terminate the platform and propagate the test

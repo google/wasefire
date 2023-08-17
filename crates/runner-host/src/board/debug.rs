@@ -20,6 +20,8 @@ use wasefire_board_api as board;
 pub enum Impl {}
 
 impl board::debug::Api for Impl {
+    const MAX_TIME: u64 = u64::MAX;
+
     fn time() -> u64 {
         static ORIGIN: OnceLock<Instant> = OnceLock::new();
         let now = Instant::now();

@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Prints the debug time every second.
+//! Prints the debug time for each component every second. Alternate every second between being idle
+//! and busy.
 
 #![no_std]
 wasefire::applet!();
@@ -20,7 +21,15 @@ wasefire::applet!();
 use core::time::Duration;
 
 fn main() {
-    let timer = clock::Timer::new(|| debug!("{} micro-seconds", debug::time()));
+    let prev = sync::Mutex::new(debug::perf());
+    let idle = sync::AtomicBool::new(true);
+    let timer = clock::Timer::new(move || {
+        let next = debug::perf();
+        debug!("{:?}", next - core::mem::replace(&mut prev.lock(), next));
+        if idle.fetch_xor(true, sync::Ordering::SeqCst) {
+            while scheduling::num_pending_callbacks() == 0 {}
+        }
+    });
     timer.start(clock::Periodic, Duration::from_secs(1));
     timer.leak();
 }

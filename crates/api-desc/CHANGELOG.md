@@ -4,7 +4,9 @@
 
 ### Minor
 
-- Add `debug::time()` for simple performance measurement
+- Require the `U32` type to implement `bytemuck::Pod`.
+- Add `debug::time()`, `debug::perf()`, and `debug::Perf` for simple performance
+  measurement
 
 ### Patch
 
