@@ -6,6 +6,8 @@
     - [Terminology](overview/terminology.md)
     - [Features](overview/features.md)
 
+- [Quick start](quick/README.md)
+
 - [Applet user guide](applet/README.md)
     - [Setup](applet/setup.md)
     - [Create a new applet](applet/create.md)
