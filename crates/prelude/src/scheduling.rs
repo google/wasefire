@@ -41,6 +41,8 @@ pub fn wait_until(mut cond: impl FnMut() -> bool) {
 }
 
 /// Waits for callbacks indefinitely.
+///
+/// This is the default behavior when returning from `main()`.
 pub fn wait_indefinitely() -> ! {
     loop {
         wait_for_callback();

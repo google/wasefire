@@ -68,8 +68,5 @@ fn main() {
         button::Listener::new(button_index, handler).leak();
         //} ANCHOR_END: listener
     }
-
-    // We indefinitely wait for callbacks.
-    scheduling::wait_indefinitely();
 }
 //} ANCHOR_END: all
