@@ -30,12 +30,13 @@ MISSING=
 add_missing() {
   MISSING="$MISSING $1"
 }
-ensure_pkg() {
-  pkg-config --exists $2 || add_missing $1
+has_pkg() {
+  pkg-config --exists $1
 }
 
-ensure_pkg libudev-dev libudev
-ensure_pkg libusb-1.0-0-dev libusb-1.0
+has_pkg libudev    || add_missing libudev-dev
+has_pkg libusb-1.0 || add_missing libusb-1.0-0-dev
+has_bin usbip      || add_missing usbip
 
 if [ -n "$MISSING" ]; then
   has_bin apt-get || e "Unsupported system. Install:$MISSING"
