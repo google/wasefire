@@ -15,6 +15,7 @@
 use std::process::{Child, Command};
 use std::time::Duration;
 
+use anyhow::{ensure, Result};
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
 use usb_device::UsbError;
@@ -58,14 +59,17 @@ impl Default for Usb {
 }
 
 impl Usb {
-    pub fn init() {
-        assert_eq!(spawn(&["sudo", "modprobe", "vhci-hcd"]).wait().unwrap().code().unwrap(), 0);
+    pub fn init() -> Result<()> {
+        ensure!(
+            spawn(&["sudo", "modprobe", "vhci-hcd"]).wait().unwrap().code() == Some(0),
+            "failed to load kernel module for USB/IP"
+        );
         let mut usbip = spawn(&["sudo", "usbip", "attach", "-r", "localhost", "-b", "1-1"]);
         loop {
             with_state(|state| state.usb.poll());
             match usbip.try_wait().unwrap() {
                 None => continue,
-                Some(e) => assert_eq!(e.code().unwrap(), 0),
+                Some(e) => ensure!(e.code() == Some(0), "failed to attach remote USB/IP device"),
             }
             break;
         }
@@ -85,6 +89,7 @@ impl Usb {
                 }
             }
         });
+        Ok(())
     }
 
     pub fn poll(&mut self) -> bool {

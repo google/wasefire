@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
         storage,
     });
     #[cfg(feature = "usb")]
-    board::usb::Usb::init();
+    board::usb::Usb::init()?;
     tokio::spawn({
         async move {
             for line in std::io::stdin().lock().lines() {
