@@ -26,6 +26,13 @@ if ! has_bin rustup; then
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 fi
 
+apt_install() {
+  has_bin apt-get || e "Unsupported system. Install:$MISSING"
+  x sudo apt-get install "$@"
+}
+
+has_bin pkg-config || apt_install pkgconf
+
 MISSING=
 add_missing() {
   MISSING="$MISSING $1"
@@ -34,11 +41,9 @@ has_pkg() {
   pkg-config --exists $1
 }
 
+has_bin cc         || add_missing build-essential
+has_bin usbip      || add_missing usbip
 has_pkg libudev    || add_missing libudev-dev
 has_pkg libusb-1.0 || add_missing libusb-1.0-0-dev
-has_bin usbip      || add_missing usbip
 
-if [ -n "$MISSING" ]; then
-  has_bin apt-get || e "Unsupported system. Install:$MISSING"
-  x sudo apt-get install$MISSING
-fi
+[ -z "$MISSING" ] || apt_install$MISSING
