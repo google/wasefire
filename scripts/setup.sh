@@ -14,36 +14,35 @@
 # limitations under the License.
 
 set -e
+
+# This script installs the dependencies to run xtask. Any other dependencies
+# should be installed on first usage only.
+#
+# This script only supports apt-get systems at the moment. For other systems,
+# the script may fail with an error indicating the missing binary or library.
+# The user needs to manually install it and rerun the script again. This may
+# need to be repeated until the script exits successfully.
+#
+# This script is idempotent and may be cheaply run to check whether everything
+# is set up. It won't modify anything if that's the case.
+
 . scripts/log.sh
+. scripts/system.sh
 
-# This script installs any missing dependency on a best effort basis. It is
-# idempotent and may be run to check whether everything is set up.
+# Basic binaries used for all Unix systems.
+ensure bin curl
+ensure bin pkg-config
 
-has_bin() { which $1 >/dev/null 2>&1; }
-
-if ! has_bin rustup; then
+if ! has bin rustup; then
   i "Installing rustup according to https://rustup.rs"
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 fi
 
-apt_install() {
-  has_bin apt-get || e "Unsupported system. Install:$MISSING"
-  x sudo apt-get install "$@"
-}
+# Transitive dependencies of xtask.
+ensure bin cc
+ensure lib libudev
+ensure lib libusb-1.0
 
-has_bin pkg-config || apt_install pkgconf
-
-MISSING=
-add_missing() {
-  MISSING="$MISSING $1"
-}
-has_pkg() {
-  pkg-config --exists $1
-}
-
-has_bin cc         || add_missing build-essential
-has_bin usbip      || add_missing usbip
-has_pkg libudev    || add_missing libudev-dev
-has_pkg libusb-1.0 || add_missing libusb-1.0-0-dev
-
-[ -z "$MISSING" ] || apt_install$MISSING
+# Transitive dependencies of the host runner. This should ideally be installed
+# on demand by xtask.
+ensure bin usbip

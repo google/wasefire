@@ -17,6 +17,9 @@ set -e
 
 # This script runs the provided command possibly installing it if needed.
 
+. scripts/log.sh
+. scripts/system.sh
+
 ROOT="$(dirname "$0")"
 # We don't support running from the scripts directory itself.
 [ "${ROOT%scripts}" != "$ROOT" ]
@@ -55,22 +58,5 @@ case "$1" in
 esac
 [ $IS_CARGO = y ] && PATH="$CARGO_ROOT/bin:$PATH" run "$@"
 
-has_bin() {
-  which "$1" >/dev/null 2>&1
-}
-
-has_bin "$1" && run "$@"
-
-has_bin apt-get || e 'Wrapper only supports apt-get.'
-
-ensure_bin() {
-  x sudo apt-get install "$1"
-}
-
-case "$1" in
-  npm) ensure_bin npm ;;
-  wasm-opt) ensure_bin binaryen ;;
-  wasm-strip) ensure_bin wabt ;;
-  *) e "Wrapper does not support '$1'" ;;
-esac
+ensure bin "$1"
 run "$@"
