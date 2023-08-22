@@ -17,15 +17,13 @@ set -e
 
 # This script runs the provided command possibly installing it if needed.
 
-. scripts/log.sh
-. scripts/system.sh
-
 ROOT="$(dirname "$0")"
 # We don't support running from the scripts directory itself.
 [ "${ROOT%scripts}" != "$ROOT" ]
 ROOT="${ROOT%/scripts}"
 
 . "$ROOT/scripts/log.sh"
+. "$ROOT/scripts/system.sh"
 
 CARGO_ROOT="$ROOT/.root"
 

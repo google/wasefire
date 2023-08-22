@@ -43,6 +43,6 @@ ensure bin cc
 ensure lib libudev
 ensure lib libusb-1.0
 
-# Transitive dependencies of the host runner. This should ideally be installed
-# on demand by xtask.
+# Transitive dependencies of runner-host. This should ideally be installed on
+# demand by xtask.
 ensure bin usbip
