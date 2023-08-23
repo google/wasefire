@@ -10,12 +10,13 @@ cd wasefire
 ./scripts/setup.sh
 ```
 
-The setup script is best effort. When possible, it will directly invoke
-installation commands, possibly asking for sudo password. Otherwise, it will
-return an error and print a message about the next manual step. Once the problem
-is addressed, the script must be run again. The script will eventually return a
-success code indicating that no manual step is required and everything seems in
-order.
+The setup script is best effort and is only meant for Unix systems so far. On
+Debian-based Linux systems, the script will directly invoke installation
+commands, possibly asking for sudo password. On other systems, the script will
+return an error and print a message each time a binary or library must be
+installed. Once the package is installed, the script must be run again. The
+script will eventually print nothing and return a success code indicating that
+no manual step is required and everything seems in order.
 
 ## Run an applet
 
