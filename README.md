@@ -18,20 +18,14 @@ crates. Currently, all crates are considered **unstable**.
 
 ### Repository setup
 
-Clone the repository and run the setup script:
-
 ```sh
 git clone https://github.com/google/wasefire
 cd wasefire
 ./scripts/setup.sh
 ```
 
-The setup script is best effort. When possible, it will directly invoke
-installation commands, possibly asking for sudo password. Otherwise, it will
-return an error and print a message about the next manual step. Once the problem
-is addressed, the script must be run again. The script will eventually return a
-success code indicating that no manual step is required and everything seems in
-order.
+Please refer to <https://google.github.io/wasefire/quick> for details about the
+setup script.
 
 ### Running an applet
 
