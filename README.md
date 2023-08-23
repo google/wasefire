@@ -18,6 +18,8 @@ crates. Currently, all crates are considered **unstable**.
 
 ### Repository setup
 
+Clone the repository and run the setup script:
+
 ```sh
 git clone https://github.com/google/wasefire
 cd wasefire
