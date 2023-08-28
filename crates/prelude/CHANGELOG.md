@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `debug::time()` for simple performance measurement
 - Add access to SEC1 encoding of ECDSA and ECDH private keys
 
 ### Patch

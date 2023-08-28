@@ -22,6 +22,7 @@ use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Println(call) => println(call),
+        Api::Time(call) => time(call),
         Api::Exit(call) => exit(call),
     }
 }
@@ -30,8 +31,25 @@ fn println<B: Board>(mut call: SchedulerCall<B, api::println::Sig>) {
     let api::println::Params { ptr, len } = call.read();
     let memory = call.memory();
     let results = try {
-        logger::println!("{}", core::str::from_utf8(memory.get(*ptr, *len)?).map_err(|_| Trap)?);
+        let time = board::Debug::<B>::time();
+        let message = core::str::from_utf8(memory.get(*ptr, *len)?).map_err(|_| Trap)?;
+        logger::println!("{}.{:06}: {}", time / 1000000, time % 1000000, message);
         api::println::Results {}
+    };
+    call.reply(results)
+}
+
+fn time<B: Board>(mut call: SchedulerCall<B, api::time::Sig>) {
+    let api::time::Params { ptr } = call.read();
+    let memory = call.memory();
+    let results = try {
+        let time = board::Debug::<B>::time();
+        let high = (time >> 32) as u32;
+        let low = time as u32;
+        if *ptr != 0 {
+            memory.get_mut(*ptr, 4)?.copy_from_slice(&high.to_le_bytes());
+        }
+        api::time::Results { res: low.into() }
     };
     call.reply(results)
 }

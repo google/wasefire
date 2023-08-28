@@ -28,6 +28,16 @@ pub fn println(msg: &str) {
     }
 }
 
+/// Returns the time in micro-seconds since some initial event.
+///
+/// This may return zero if not supported. This may wrap before using all 64 bits.
+pub fn time() -> u64 {
+    let mut high: usize = 0;
+    let params = api::time::Params { ptr: &mut high as *mut _ };
+    let api::time::Results { res: low } = unsafe { api::time(params) };
+    (high as u64) << 32 | low as u64
+}
+
 /// Whether debugging is enabled.
 // We use an environment variable to avoid asking applets to forward features.
 pub const ENABLED: bool = option_env!("WASEFIRE_DEBUG").is_some();

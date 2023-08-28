@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Don't print timestamp with `log` for `println`
 - Update dependencies
 - Support trailing comma when neither `log` nor `defmt` is used
 

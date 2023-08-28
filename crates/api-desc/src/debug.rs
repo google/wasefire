@@ -35,6 +35,19 @@ pub(crate) fn new() -> Item {
             } -> {}
         },
         item! {
+            /// Returns the time spent since some initial event.
+            ///
+            /// The time is in micro-seconds and may wrap before using all 64 bits. In particular,
+            /// this function may constantly return zero if time is not supported.
+            fn time "dt" {
+                /// Pointer to the upper 32-bits (may be null).
+                ptr: *mut usize,
+            } -> {
+                /// Lower 32-bits of the time.
+                res: usize,
+            }
+        },
+        item! {
             /// Exits the platform with an error code.
             ///
             /// This is used by test applets to terminate the platform and propagate the test
