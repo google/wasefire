@@ -67,25 +67,9 @@ mod custom {
 }
 
 #[cfg(feature = "log")]
-mod custom {
-    use std::time::Instant;
+pub use std::println;
 
-    use lazy_static::lazy_static;
-
-    lazy_static! {
-        pub static ref ORIGIN: Instant = Instant::now();
-    }
-
-    #[macro_export]
-    macro_rules! println {
-        ($($arg:tt)*) => {
-            std::print!("{:09.3}: ", $crate::ORIGIN.elapsed().as_secs_f32());
-            std::println!($($arg)*);
-        };
-    }
-}
-
-#[cfg(not(feature = "defmt"))]
+#[cfg(not(any(feature = "log", feature = "defmt")))]
 pub use custom::*;
 #[cfg(feature = "defmt")]
 pub use defmt::{debug, error, info, panic, println, trace, warn, Debug2Format, Display2Format};

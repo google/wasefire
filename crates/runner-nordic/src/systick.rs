@@ -17,20 +17,41 @@ use core::sync::atomic::{AtomicU32, Ordering};
 use cortex_m::peripheral::SYST;
 use cortex_m_rt::exception;
 
-const CLOCK_FREQ: u32 = 64_000_000;
-const TICK_FREQ: u32 = 10_000;
-const TICK_TO_MICRO: u32 = 1_000_000u32 / TICK_FREQ;
+defmt::timestamp!("{=u32:us}", uptime_us() as u32);
 
-/// Number of ticks since boot.
+/// Returns the time in micro-seconds since [`init()`] was called.
+///
+/// This uses a 56 bits counter at 64MHz. So the granularity is actually better than micro-seconds.
+/// And the wrapping time is almost 2285 years.
+pub fn uptime_us() -> u64 {
+    // The frequency is 64MHz and we want micro-seconds.
+    ticks() >> 6
+}
+
 static COUNT: AtomicU32 = AtomicU32::new(0);
-defmt::timestamp!("{=u32:us}", TICK_TO_MICRO.wrapping_mul(COUNT.load(Ordering::SeqCst)));
+
+fn ticks() -> u64 {
+    let old_low = ticks_low();
+    let mut high = ticks_high();
+    let low = ticks_low();
+    if low < old_low {
+        // Time wrapped between both low measures.
+        high = ticks_high();
+    }
+    high | low
+}
+
+fn ticks_high() -> u64 {
+    // The counter wraps every 2^24 ticks (about 16.77 seconds).
+    (COUNT.load(Ordering::SeqCst) as u64) << 24
+}
+
+fn ticks_low() -> u64 {
+    (0xffffff - SYST::get_current()) as u64
+}
 
 pub fn init(mut syst: SYST) {
-    // The minus one at the end is by definition of reload value. The added 0.5 is to avoid biasing
-    // through truncation.
-    let reload = (CLOCK_FREQ + TICK_FREQ / 2) / TICK_FREQ - 1;
-    assert!((1 .. 0x10000).contains(&reload)); // SYST::set_reload() precondition
-    syst.set_reload(reload);
+    syst.set_reload(0xffffff);
     syst.clear_current();
     syst.enable_counter();
     syst.enable_interrupt();

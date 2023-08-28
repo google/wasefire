@@ -598,6 +598,16 @@
     len: usize,
   ): void
 
+  // Returns the time spent since some initial event.
+  //
+  // The time is in micro-seconds. This may return zero when not supported.
+  @external("env", "dt")
+  export declare function debug_time(
+    // Pointer to the upper 32-bits (may be null).
+    ptr: usize,
+  // Lower 32-bits of the time.
+  ): usize
+
   // Exits the platform with an error code.
   //
   // This is used by test applets to terminate the platform and propagate the test

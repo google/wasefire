@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add `debug::time()` for simple performance measurement
 - Make the tag length configurable for `crypto::aead::Api`
 - Change crypto API to mention `Keysize`, `BlockSize`, and `OutputSize`
 

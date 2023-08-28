@@ -2,6 +2,10 @@
 
 ## 0.1.4-git
 
+### Minor
+
+- Add `debug::time()` for simple performance measurement
+
 ### Patch
 
 - Update dependencies

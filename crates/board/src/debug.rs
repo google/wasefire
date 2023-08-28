@@ -20,11 +20,20 @@ use crate::Unsupported;
 
 /// Debugging and testing interface.
 pub trait Api {
+    /// Returns the time in micro-seconds since some initial event.
+    ///
+    /// This may return zero if not supported. This may wrap before using all 64 bits.
+    fn time() -> u64;
+
     /// Exits the platform with a success/failure result.
     fn exit(success: bool) -> !;
 }
 
 impl Api for Unsupported {
+    fn time() -> u64 {
+        0
+    }
+
     fn exit(success: bool) -> ! {
         log::panic!("exit({}) called", success)
     }

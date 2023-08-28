@@ -15,8 +15,8 @@
 
 set -ex
 
-cargo check --features=host
-cargo check --features=wasm --target=thumbv7em-none-eabi
+cargo check --features=host --target=thumbv7em-none-eabi
+cargo check --features=wasm --target=wasm32-unknown-unknown
 cargo fmt -- --check
 cargo clippy -- --deny=warnings
 cargo test --features=host

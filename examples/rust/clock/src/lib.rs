@@ -12,29 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api as board;
+//! Prints the debug time every second.
 
-pub enum Impl {}
+#![no_std]
 
-impl board::debug::Api for Impl {
-    fn time() -> u64 {
-        #[cfg(feature = "debug")]
-        let time = crate::systick::uptime_us();
-        #[cfg(feature = "release")]
-        let time = 0;
-        time
-    }
+use core::time::Duration;
+wasefire::applet!();
 
-    fn exit(success: bool) -> ! {
-        if success {
-            loop {
-                cortex_m::asm::bkpt();
-            }
-        } else {
-            #[cfg(feature = "debug")]
-            panic_probe::hard_fault();
-            #[cfg(feature = "release")]
-            panic!();
-        }
-    }
+fn main() {
+    let timer = clock::Timer::new(|| debug!("{} micro-seconds", debug::time()));
+    timer.start(clock::Periodic, Duration::from_secs(1));
+    timer.leak();
 }
