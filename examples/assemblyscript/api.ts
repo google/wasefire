@@ -600,7 +600,8 @@
 
   // Returns the time spent since some initial event.
   //
-  // The time is in micro-seconds. This may return zero when not supported.
+  // The time is in micro-seconds and may wrap before using all 64 bits. In particular,
+  // this function may constantly return zero if time is not supported.
   @external("env", "dt")
   export declare function debug_time(
     // Pointer to the upper 32-bits (may be null).
