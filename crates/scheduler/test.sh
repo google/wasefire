@@ -16,10 +16,10 @@
 set -ex
 
 cargo check --features=std
-cargo check --features=std,log --features=debug
+cargo check --features=std,log
 cargo check --target=thumbv7em-none-eabi
 cargo check --target=thumbv7em-none-eabi --features=defmt
 cargo fmt -- --check
 cargo clippy --features=std -- --deny=warnings
-cargo clippy --features=std,debug -- --deny=warnings
+cargo clippy --features=std,log -- --deny=warnings
 cargo test --features=std
