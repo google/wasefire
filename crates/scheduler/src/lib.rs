@@ -28,7 +28,6 @@ use core::ops::Range;
 use bytemuck::{AnyBitPattern, NoUninit};
 use derivative::Derivative;
 use event::Key;
-use perf::Perf;
 use stores::{Applet, EventAction};
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature};
 use wasefire_board_api::{self as board, Api as Board, Singleton, Support};
@@ -40,6 +39,7 @@ use wasefire_store as store;
 
 mod call;
 mod event;
+#[cfg(feature = "debug")]
 mod perf;
 mod stores;
 
@@ -78,7 +78,8 @@ pub struct Scheduler<B: Board> {
     host_funcs: Vec<Api<Id>>,
     applet: Applet<B>,
     timers: Vec<Option<Timer>>,
-    perf: Perf<B>,
+    #[cfg(feature = "debug")]
+    perf: perf::Perf<B>,
 }
 
 #[derive(Clone)]
@@ -157,8 +158,10 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
     pub fn reply(mut self, results: Result<T::Results, Trap>) {
         match results.map(convert_results::<T>) {
             Ok(results) => {
+                #[cfg(feature = "debug")]
                 self.scheduler().perf.record(perf::Slot::Platform);
                 let answer = self.call().resume(&results).map(|x| x.forget());
+                #[cfg(feature = "debug")]
                 self.scheduler().perf.record(perf::Slot::Applets);
                 self.erased.scheduler.process_answer(answer);
             }
@@ -201,10 +204,14 @@ impl<B: Board> Scheduler<B> {
             let d = f.descriptor();
             store.link_func("env", d.name, d.params, d.results).unwrap();
         }
-        let store = store::Store::new(board::Storage::<B>::take().unwrap()).ok().unwrap();
-        let timers = vec![None; board::Timer::<B>::SUPPORT];
-        let perf = Perf::default();
-        Self { store, host_funcs, applet, timers, perf }
+        Self {
+            store: store::Store::new(board::Storage::<B>::take().unwrap()).ok().unwrap(),
+            host_funcs,
+            applet,
+            timers: vec![None; board::Timer::<B>::SUPPORT],
+            #[cfg(feature = "debug")]
+            perf: perf::Perf::default(),
+        }
     }
 
     fn load(&mut self, wasm: &'static [u8]) {
@@ -219,6 +226,7 @@ impl<B: Board> Scheduler<B> {
         let store = self.applet.store_mut();
         // SAFETY: This function is called once in `run()`.
         let inst = store.instantiate(module, unsafe { &mut MEMORY.0 }).unwrap();
+        #[cfg(feature = "debug")]
         self.perf.record(perf::Slot::Platform);
         match store.invoke(inst, "init", vec![]) {
             Ok(RunResult::Done(x)) => assert!(x.is_empty()),
@@ -226,6 +234,7 @@ impl<B: Board> Scheduler<B> {
             Err(Error::NotFound) => (),
             Err(e) => core::panic!("{e:?}"),
         }
+        #[cfg(feature = "debug")]
         self.perf.record(perf::Slot::Applets);
         self.call(inst, "main", &[]);
     }
@@ -242,8 +251,10 @@ impl<B: Board> Scheduler<B> {
             match self.applet.pop() {
                 EventAction::Handle(event) => break event,
                 EventAction::Wait => {
+                    #[cfg(feature = "debug")]
                     self.perf.record(perf::Slot::Platform);
                     let event = B::wait_event();
+                    #[cfg(feature = "debug")]
                     self.perf.record(perf::Slot::Waiting);
                     self.applet.push(event);
                 }
@@ -281,8 +292,10 @@ impl<B: Board> Scheduler<B> {
     fn call(&mut self, inst: InstId, name: &'static str, args: &[u32]) {
         debug!("Schedule thread {}{:?}.", name, args);
         let args = args.iter().map(|&x| Val::I32(x)).collect();
+        #[cfg(feature = "debug")]
         self.perf.record(perf::Slot::Platform);
         let answer = self.applet.store_mut().invoke(inst, name, args).map(|x| x.forget());
+        #[cfg(feature = "debug")]
         self.perf.record(perf::Slot::Applets);
         self.process_answer(answer);
     }
