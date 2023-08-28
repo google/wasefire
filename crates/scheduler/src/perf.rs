@@ -41,7 +41,7 @@ impl<B: Board> Perf<B> {
             Slot::Waiting => &mut self.value.waiting,
         };
         *value +=
-            end.checked_sub(start).unwrap_or_else(|| board::Debug::<B>::MAX_TIME - start + end + 1);
+            if end < start { board::Debug::<B>::MAX_TIME - start + end + 1 } else { end - start };
     }
 
     pub fn read(&mut self) -> api::Perf {
