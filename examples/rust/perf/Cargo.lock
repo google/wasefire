@@ -134,13 +134,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 
 [[package]]
-name = "hello"
-version = "0.1.0"
-dependencies = [
- "wasefire",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.147"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -151,6 +144,13 @@ name = "once_cell"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
+
+[[package]]
+name = "perf"
+version = "0.1.0"
+dependencies = [
+ "wasefire",
+]
 
 [[package]]
 name = "portable-atomic"

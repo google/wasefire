@@ -19,6 +19,7 @@
 // completely excluded from release applets.
 
 use wasefire_applet_api::debug as api;
+pub use wasefire_applet_api::debug::Perf;
 
 /// Prints a line to the debug output.
 pub fn println(msg: &str) {
@@ -36,6 +37,14 @@ pub fn time() -> u64 {
     let params = api::time::Params { ptr: &mut high as *mut _ };
     let api::time::Results { res: low } = unsafe { api::time(params) };
     (high as u64) << 32 | low as u64
+}
+
+/// Returns the time in micro-seconds since some initial event, split by component.
+pub fn perf() -> Perf {
+    let mut result = Perf { platform: 0, applets: 0, waiting: 0 };
+    let params = api::perf::Params { ptr: &mut result as *mut Perf as *mut u8 };
+    unsafe { api::perf(params) };
+    result
 }
 
 /// Whether debugging is enabled.

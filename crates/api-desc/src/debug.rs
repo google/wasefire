@@ -48,6 +48,32 @@ pub(crate) fn new() -> Item {
             }
         },
         item! {
+            /// Time in micro-seconds since the scheduler started.
+            ///
+            /// Values may not be accurate for a few reasons:
+            /// - Interrupts are accounted to the component they interrupt. Ideally it should be
+            /// accounted to the platform only.
+            /// - Allocation in the applet by the platform is accounted to the platform instead of
+            /// the applet.
+            /// - The board time is assumed to have a longer wrap period than any continuous
+            /// component run time.
+            struct Perf {
+                /// Time spent in the platform.
+                platform: u64,
+                /// Time spent in applets.
+                applets: u64,
+                /// Time spent waiting for events.
+                waiting: u64,
+            }
+        },
+        item! {
+            /// Returns the time spent since some initial event, split by component.
+            fn perf "dq" {
+                /// Pointer to the output [`super::Perf`] struct.
+                ptr: *mut u8,
+            } -> {}
+        },
+        item! {
             /// Exits the platform with an error code.
             ///
             /// This is used by test applets to terminate the platform and propagate the test

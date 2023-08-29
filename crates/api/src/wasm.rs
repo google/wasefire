@@ -44,3 +44,23 @@ impl crate::crypto::ec::Curve {
         }
     }
 }
+
+impl core::ops::Sub for crate::debug::Perf {
+    type Output = crate::debug::Perf;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            platform: self.platform - rhs.platform,
+            applets: self.applets - rhs.applets,
+            waiting: self.waiting - rhs.waiting,
+        }
+    }
+}
+
+impl core::ops::SubAssign for crate::debug::Perf {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.platform -= rhs.platform;
+        self.applets -= rhs.applets;
+        self.waiting -= rhs.waiting;
+    }
+}

@@ -12,6 +12,7 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
+bytemuck = { version = "1.13.1", default-features = false }
 defmt = { version = "0.3.5", default-features = false, optional = true }
 derivative = { version = "2.2.0", default-features = false, features = ["use_core"] }
 digest = { version = "0.10.7", default-features = false, features = ["mac"] }
@@ -24,9 +25,11 @@ wasefire-logger = { version = "0.1.3-git", path = "../logger" }
 wasefire-store = { version = "0.2.1-git", path = "../store" }
 
 [features]
-defmt = ["dep:defmt", "wasefire-board-api/defmt", "wasefire-logger/defmt"]
-log = ["wasefire-board-api/log", "wasefire-logger/log"]
+defmt = ["debug", "dep:defmt", "wasefire-board-api/defmt", "wasefire-logger/defmt"]
+log = ["debug", "wasefire-board-api/log", "wasefire-logger/log"]
 std = ["wasefire-board-api/std", "wasefire-store/std"]
 # Assume WASM modules being loaded are valid and do not validate them. This is a
 # safety invariant.
 unsafe-skip-validation = []
+# Internal features:
+debug = []

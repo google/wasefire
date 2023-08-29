@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use std::io::Write;
+use std::ops;
 
 use clap::ValueEnum;
 use proc_macro2::{Ident, Span, TokenStream};
@@ -88,6 +89,7 @@ impl Api {
 #[derive(Debug, Clone)]
 enum Item {
     Enum(Enum),
+    Struct(Struct),
     Fn(Fn),
     Mod(Mod),
 }
@@ -97,6 +99,13 @@ struct Enum {
     docs: Vec<String>,
     name: String,
     variants: Vec<Variant>,
+}
+
+#[derive(Debug, Clone)]
+struct Struct {
+    docs: Vec<String>,
+    name: String,
+    fields: Vec<Field>,
 }
 
 #[derive(Debug, Clone)]
@@ -126,6 +135,7 @@ struct Field {
 enum Type {
     Integer {
         signed: bool,
+        bits: Option<usize>,
     },
     Pointer {
         mutable: bool,
@@ -149,6 +159,7 @@ impl Item {
     fn host(&self) -> TokenStream {
         match self {
             Item::Enum(x) => x.host(),
+            Item::Struct(x) => x.host(),
             Item::Fn(x) => x.host(),
             Item::Mod(x) => x.host(),
         }
@@ -157,6 +168,7 @@ impl Item {
     fn wasm_rust(&self) -> TokenStream {
         match self {
             Item::Enum(x) => x.wasm_rust(),
+            Item::Struct(x) => x.wasm_rust(),
             Item::Fn(x) => x.wasm_rust(),
             Item::Mod(x) => x.wasm_rust(),
         }
@@ -165,6 +177,7 @@ impl Item {
     fn wasm_assemblyscript(&self, output: &mut dyn Write, path: &Path) -> std::io::Result<()> {
         match self {
             Item::Enum(x) => x.wasm_assemblyscript(output, path),
+            Item::Struct(x) => x.wasm_assemblyscript(output, path),
             Item::Fn(x) => x.wasm_assemblyscript(output, path),
             Item::Mod(x) => x.wasm_assemblyscript(output, path),
         }
@@ -237,6 +250,36 @@ impl Enum {
         write_docs(output, docs, path)?;
         writeln!(output, "{path:#}enum {path}{name} {{")?;
         write_items(output, variants, |output, variant| variant.wasm_assemblyscript(output, path))?;
+        writeln!(output, "{path:#}}}")
+    }
+}
+
+impl Struct {
+    fn host(&self) -> TokenStream {
+        self.definition(|x| x.host())
+    }
+
+    fn wasm_rust(&self) -> TokenStream {
+        self.definition(|x| x.wasm_rust())
+    }
+
+    fn definition(&self, field: impl ops::Fn(&Field) -> TokenStream) -> TokenStream {
+        let Struct { docs, name, fields } = self;
+        let name = format_ident!("{}", name);
+        let fields: Vec<_> = fields.iter().map(field).collect();
+        quote! {
+            #(#[doc = #docs])*
+            #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+            #[repr(C)]
+            pub struct #name { #(#fields),* }
+        }
+    }
+
+    fn wasm_assemblyscript(&self, output: &mut dyn Write, path: &Path) -> std::io::Result<()> {
+        let Struct { docs, name, fields } = self;
+        write_docs(output, docs, path)?;
+        writeln!(output, "{path:#}class {path}{name} {{")?;
+        write_items(output, fields, |output, field| field.wasm_assemblyscript(output, path, ";"))?;
         writeln!(output, "{path:#}}}")
     }
 }
@@ -321,7 +364,7 @@ impl Fn {
         write_docs(output, docs, path)?;
         writeln!(output, r#"{path:#}@external("env", "{link}")"#)?;
         writeln!(output, "{path:#}export declare function {path}{name}(")?;
-        write_items(output, params, |output, param| param.wasm_assemblyscript(output, path))?;
+        write_items(output, params, |output, param| param.wasm_assemblyscript(output, path, ","))?;
         if let Some(result) = results.get(0) {
             write_docs(output, &result.docs, path)?;
         }
@@ -372,6 +415,7 @@ impl Mod {
         for item in items {
             match item {
                 Item::Enum(_) => (),
+                Item::Struct(_) => (),
                 Item::Fn(Fn { name, .. }) => {
                     let doc = format!("Selector for [`{name}`]({name}::Sig).");
                     let name_camel = camel(name);
@@ -456,16 +500,17 @@ impl Mod {
 
 impl Field {
     fn host(&self) -> TokenStream {
-        let Field { docs, name, type_ } = self;
-        let name = format_ident!("{}", name);
-        let type_ = type_.wasm_rust();
-        quote!(#(#[doc = #docs])* pub #name: crate::U32<#type_>)
+        self.definition(|x| x.host())
     }
 
     fn wasm_rust(&self) -> TokenStream {
+        self.definition(|x| x.wasm_rust())
+    }
+
+    fn definition(&self, quote_type: impl ops::Fn(&Type) -> TokenStream) -> TokenStream {
         let Field { docs, name, type_ } = self;
         let name = format_ident!("{}", name);
-        let type_ = type_.wasm_rust();
+        let type_ = quote_type(type_);
         quote!(#(#[doc = #docs])* pub #name: #type_)
     }
 
@@ -476,21 +521,52 @@ impl Field {
         quote!(#name: #type_)
     }
 
-    fn wasm_assemblyscript(&self, output: &mut dyn Write, path: &Path) -> std::io::Result<()> {
+    fn wasm_assemblyscript(
+        &self, output: &mut dyn Write, path: &Path, separator: &str,
+    ) -> std::io::Result<()> {
         let Field { docs, name, type_ } = self;
         let path = Path::Mod { name: "", prev: path };
         write_docs(output, docs, &path)?;
         write!(output, "{path:#}{name}: ")?;
         type_.wasm_assemblyscript(output)?;
-        writeln!(output, ",")
+        writeln!(output, "{separator}")
     }
 }
 
 impl Type {
+    #[cfg(test)]
+    fn is_param(&self) -> bool {
+        match self {
+            Type::Integer { bits: None, .. } => true,
+            Type::Integer { bits: Some(_), .. } => false,
+            Type::Pointer { .. } => true,
+            Type::Function { .. } => true,
+        }
+    }
+
+    fn needs_u32(&self) -> bool {
+        match self {
+            Type::Integer { bits: None, .. } => true,
+            Type::Integer { bits: Some(_), .. } => false,
+            Type::Pointer { .. } => true,
+            Type::Function { .. } => true,
+        }
+    }
+
+    fn host(&self) -> TokenStream {
+        let mut type_ = self.wasm_rust();
+        if self.needs_u32() {
+            type_ = quote!(crate::U32<#type_>);
+        }
+        type_
+    }
+
     fn wasm_rust(&self) -> TokenStream {
         match self {
-            Type::Integer { signed: true } => quote!(isize),
-            Type::Integer { signed: false } => quote!(usize),
+            Type::Integer { signed: true, bits: None } => quote!(isize),
+            Type::Integer { signed: false, bits: None } => quote!(usize),
+            Type::Integer { signed: false, bits: Some(64) } => quote!(u64),
+            Type::Integer { .. } => unimplemented!(),
             Type::Pointer { mutable, type_ } => {
                 let mutable = if *mutable { quote!(mut) } else { quote!(const) };
                 let type_ = match type_ {
@@ -508,8 +584,10 @@ impl Type {
 
     fn wasm_assemblyscript(&self, output: &mut dyn Write) -> std::io::Result<()> {
         match self {
-            Type::Integer { signed: true } => write!(output, "isize"),
-            Type::Integer { signed: false } => write!(output, "usize"),
+            Type::Integer { signed: true, bits: None } => write!(output, "isize"),
+            Type::Integer { signed: false, bits: None } => write!(output, "usize"),
+            Type::Integer { signed: false, bits: Some(64) } => write!(output, "u64"),
+            Type::Integer { .. } => unimplemented!(),
             // TODO: Is there a way to decorate this better?
             Type::Pointer { mutable: _, type_: _ } => write!(output, "usize"),
             // TODO: Is there a way to decorate this better?
@@ -604,6 +682,7 @@ mod tests {
         while let Some(item) = todo.pop() {
             match item {
                 Item::Enum(_) => (),
+                Item::Struct(_) => (),
                 Item::Fn(Fn { link, .. }) => assert_eq!(seen.replace(link), None),
                 Item::Mod(Mod { items, .. }) => todo.extend(items),
             }
@@ -623,7 +702,25 @@ mod tests {
                         }
                     }
                 }
+                Item::Struct(_) => (),
                 Item::Fn(_) => (),
+                Item::Mod(Mod { items, .. }) => todo.extend(items),
+            }
+        }
+    }
+
+    #[test]
+    fn params_and_results_are_u32() {
+        let Api(mut todo) = Api::default();
+        while let Some(item) = todo.pop() {
+            match item {
+                Item::Enum(_) => (),
+                Item::Struct(_) => (),
+                Item::Fn(Fn { name, params, results, .. }) => {
+                    for x in params.iter().chain(results.iter()) {
+                        assert!(x.type_.is_param(), "Param/result {} of {name} is not U32", x.name);
+                    }
+                }
                 Item::Mod(Mod { items, .. }) => todo.extend(items),
             }
         }

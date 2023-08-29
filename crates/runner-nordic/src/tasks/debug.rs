@@ -17,6 +17,11 @@ use wasefire_board_api as board;
 pub enum Impl {}
 
 impl board::debug::Api for Impl {
+    #[cfg(feature = "debug")]
+    const MAX_TIME: u64 = 0x00ffffff_ffffffff;
+    #[cfg(feature = "release")]
+    const MAX_TIME: u64 = 0;
+
     fn time() -> u64 {
         #[cfg(feature = "debug")]
         let time = crate::systick::uptime_us();
