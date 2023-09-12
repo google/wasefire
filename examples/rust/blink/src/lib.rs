@@ -14,8 +14,8 @@
 
 //! Demonstrates simple LED usage.
 //!
-//! The board must possess at least one LED and one timer. The applet blinks the first LED with a
-//! period of 1 second and 50% duty cycle.
+//! The board must possess at least one LED and one timer. The applet indefinitely cycles through
+//! all LEDs in order with a period of 1 second and blinks them for 500 milli-seconds.
 
 #![no_std]
 wasefire::applet!();
@@ -27,22 +27,15 @@ fn main() {
     let num_leds = led::count();
     assert!(num_leds > 0, "Board has no LEDs.");
 
-    // Initialize the first action.
-    let mut led_index = 0;
-    let mut led_status = led::On;
+    // Cycle indefinitely through all LEDs in order.
+    for led_index in (0 .. num_leds).cycle() {
+        // Turn on the current LED.
+        led::set(led_index, led::On);
+        // Wait before turning it off.
+        clock::sleep(Duration::from_millis(500));
 
-    // Loop indefinitely.
-    loop {
-        // Execute the action.
-        led::set(led_index, led_status);
-
-        // Prepare the next action.
-        led_status = !led_status;
-        if matches!(led_status, led::On) {
-            led_index = (led_index + 1) % num_leds;
-        }
-
-        // Wait before executing the next action.
+        // Turn it off and wait before turning on the next LED.
+        led::set(led_index, led::Off);
         clock::sleep(Duration::from_millis(500));
     }
 }

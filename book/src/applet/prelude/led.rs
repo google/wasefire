@@ -14,8 +14,8 @@
 
 //! Demonstrates simple LED usage.
 //!
-//! The board must possess at least one LED and one timer. The applet blinks the first LED with a
-//! period of 1 second and 50% duty cycle.
+//! The board must possess at least one LED and one timer. The applet indefinitely cycles through
+//! all LEDs in order with a period of 1 second and blinks them for 500 milli-seconds.
 
 //{ ANCHOR: all
 #![no_std]
@@ -30,33 +30,24 @@ fn main() {
     assert!(num_leds > 0, "Board has no LEDs.");
     //} ANCHOR_END: count
 
-    //{ ANCHOR: init
-    // Initialize the first action.
-    let mut led_index = 0;
-    let mut led_status = led::On;
-    //} ANCHOR_END: init
-
     //{ ANCHOR: loop
-    // Loop indefinitely.
-    loop {
+    // Cycle indefinitely through all LEDs in order.
+    for led_index in (0 .. num_leds).cycle() {
     //} ANCHOR_END: loop
-        //{ ANCHOR: action
-        // Execute the action.
-        led::set(led_index, led_status);
-        //} ANCHOR_END: action
-
-        //{ ANCHOR: update
-        // Prepare the next action.
-        led_status = !led_status;
-        if matches!(led_status, led::On) {
-            led_index = (led_index + 1) % num_leds;
-        }
-        //} ANCHOR_END: update
-
+        //{ ANCHOR: set
+        // Turn on the current LED.
+        led::set(led_index, led::On);
+        //} ANCHOR_END: set
         //{ ANCHOR: sleep
-        // Wait before executing the next action.
+        // Wait before turning it off.
         clock::sleep(Duration::from_millis(500));
         //} ANCHOR_END: sleep
+
+        //{ ANCHOR: repeat
+        // Turn it off and wait before turning on the next LED.
+        led::set(led_index, led::Off);
+        clock::sleep(Duration::from_millis(500));
+        //} ANCHOR_END: repeat
     }
 }
 //} ANCHOR_END: all
