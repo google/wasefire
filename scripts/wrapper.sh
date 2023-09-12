@@ -37,7 +37,7 @@ ensure_cargo() {
   g=
   c=
   if [ $# -eq 4 ]; then
-    g=" ($3?rev=$4#${4:0:8})"
+    g=" ($3?rev=$4#.\{8\})"
     c="--git=$3 --rev=$4"
   fi
   if ! cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2$g:\$"; then
