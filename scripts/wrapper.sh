@@ -26,6 +26,7 @@ ROOT="${ROOT%/scripts}"
 . "$ROOT/scripts/system.sh"
 
 CARGO_ROOT="$ROOT/.root"
+export PATH="$CARGO_ROOT/bin:$PATH"
 
 run() {
   [ "$WASEFIRE_WRAPPER_EXEC" = n ] && exit 0
@@ -33,8 +34,14 @@ run() {
 }
 
 ensure_cargo() {
-  if ! cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2:\$"; then
-    PATH="$CARGO_ROOT/bin:$PATH" x cargo install --root="$CARGO_ROOT" "$1@$2"
+  g=
+  c=
+  if [ $# -eq 4 ]; then
+    g=" ($3?rev=$4#.\{8\})"
+    c="--git=$3 --rev=$4"
+  fi
+  if ! cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2$g:\$"; then
+    x cargo install --locked --root="$CARGO_ROOT" "$1@$2" $c
   fi
 }
 
@@ -50,11 +57,13 @@ case "$1" in
   mdbook) ensure_cargo mdbook 0.4.34 ;;
   probe-run) ensure_cargo probe-run 0.3.10 ;;
   rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
-  taplo) ensure_cargo taplo-cli 0.8.1 ;;
+  taplo) ensure_cargo taplo-cli 0.8.1 \
+                      https://github.com/tamasfe/taplo.git \
+                      191852c018d142b99cd8f7b4987456a447b3afb7 ;;
   twiggy) ensure_cargo twiggy 0.7.0 ;;
   *) IS_CARGO=n ;;
 esac
-[ $IS_CARGO = y ] && PATH="$CARGO_ROOT/bin:$PATH" run "$@"
+[ $IS_CARGO = y ] && run "$@"
 
 ensure bin "$1"
 run "$@"
