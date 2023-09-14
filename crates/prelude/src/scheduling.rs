@@ -48,3 +48,10 @@ pub fn wait_indefinitely() -> ! {
         wait_for_callback();
     }
 }
+
+/// Aborts the applet.
+pub fn abort() -> ! {
+    unsafe { api::abort() };
+    // SAFETY: The platform guarantees that abort does not return.
+    unsafe { core::hint::unreachable_unchecked() };
+}

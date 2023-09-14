@@ -712,6 +712,13 @@
   export declare function scheduling_num_pending_callbacks(
   // How many callbacks are pending.
   ): usize
+
+  // Aborts the applet.
+  //
+  // This call doesn't return.
+  @external("env", "sa")
+  export declare function scheduling_abort(
+  ): void
 // END OF MODULE scheduling
 
 // START OF MODULE store

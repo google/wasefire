@@ -93,5 +93,5 @@ macro_rules! applet {
 #[panic_handler]
 fn handle_panic(info: &core::panic::PanicInfo) -> ! {
     debug!("{}", info);
-    core::arch::wasm32::unreachable()
+    scheduling::abort();
 }
