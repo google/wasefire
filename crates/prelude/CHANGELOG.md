@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `scheduling::abort()`
 - Add `debug::time()` and `debug::perf()` for simple performance measurement
 - Add access to SEC1 encoding of ECDSA and ECDH private keys
 

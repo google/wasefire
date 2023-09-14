@@ -63,5 +63,5 @@ unsafe impl GlobalAlloc for Allocator {
 #[alloc_error_handler]
 fn handle_oom(_: core::alloc::Layout) -> ! {
     println("OOM");
-    core::arch::wasm32::unreachable()
+    crate::scheduling::abort();
 }

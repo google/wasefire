@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support `scheduling::abort()`
 - Support `debug::perf()`
 - Support `debug::time()` and use it for `debug::println()`
 - Add `unsafe-skip-validation` feature

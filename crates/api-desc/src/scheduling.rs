@@ -31,6 +31,12 @@ pub(crate) fn new() -> Item {
                 count: usize,
             }
         },
+        item! {
+            /// Aborts the applet.
+            ///
+            /// This call doesn't return.
+            fn abort "sa" {} -> {}
+        },
     ];
     Item::Mod(Mod { docs, name, items })
 }
