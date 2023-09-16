@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package_name() { package__string name; }
-package_version() { package__string version; }
-package_publish() { package__raw publish; }
-package_include() { package__raw include; }
-package_exclude() { package__raw exclude; }
+package_name() { _package_string name; }
+package_version() { _package_string version; }
+package_publish() { _package_raw publish; }
+package_include() { _package_raw include; }
+package_exclude() { _package_raw exclude; }
 package_features() { sed -n '/^\[features]$/,/^$/{s/ = .*$//p}' Cargo.toml; }
 
 # Internal helpers
-package__raw() { sed -n '/^\[package]$/,/^$/{s/^'"$1"' = //p}' Cargo.toml; }
-package__string() { package__raw "$1" | sed 's/^"\(.*\)"$/\1/'; }
+_package_raw() { sed -n '/^\[package]$/,/^$/{s/^'"$1"' = //p}' Cargo.toml; }
+_package_string() { package__raw "$1" | sed 's/^"\(.*\)"$/\1/'; }
