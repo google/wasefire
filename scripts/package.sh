@@ -21,4 +21,4 @@ package_features() { sed -n '/^\[features]$/,/^$/{s/ = .*$//p}' Cargo.toml; }
 
 # Internal helpers
 _package_raw() { sed -n '/^\[package]$/,/^$/{s/^'"$1"' = //p}' Cargo.toml; }
-_package_string() { package__raw "$1" | sed 's/^"\(.*\)"$/\1/'; }
+_package_string() { _package_raw "$1" | sed 's/^"\(.*\)"$/\1/'; }
