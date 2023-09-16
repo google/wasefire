@@ -14,6 +14,7 @@
 
 has() {
   case "$1" in
+    apt) dpkg -l "$2" 2>/dev/null | grep "^ii  $2" >/dev/null ;;
     bin) which "$2" >/dev/null 2>&1 ;;
     lib) pkg-config --exists "$2" ;;
     *) e "Internal error: expected bin or lib, got $1" ;;
@@ -27,15 +28,12 @@ ensure() {
 install() {
   if has bin apt-get; then
     case "$1" in
+      apt) set "$2" ;;
       bin)
         case "$2" in
           cc) set build-essential ;;
           curl) set curl ;;
-          npm)
-            # AssemblyScript needs Node 16 or later.
-            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-            set nodejs
-            ;;
+          npm) _system_nodejs_setup ; set nodejs ;;
           pkg-config) set pkgconf ;;
           usbip) set usbip ;;
           wasm-opt) set binaryen ;;
@@ -53,4 +51,27 @@ install() {
   else
     e "Unsupported system. Install $1 '$2' and rerun the command."
   fi
+}
+
+# AssemblyScript needs Node 16 or later.
+_SYSTEM_NODEJS_MIN_VERSION=16
+_system_nodejs_setup() {
+  [ "$(_system_nodejs_version)" -ge $_SYSTEM_NODEJS_MIN_VERSION ] && return
+  # See https://github.com/nodesource/distributions#installation-instructions
+  ensure apt ca-certificates
+  ensure apt curl
+  ensure apt gnupg
+  ( set -x
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+      | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] \
+https://deb.nodesource.com/node_$_SYSTEM_NODEJS_MIN_VERSION.x nodistro main" \
+      | sudo tee /etc/apt/sources.list.d/nodesource.list
+    sudo apt-get update
+  )
+}
+
+_system_nodejs_version() {
+  apt-cache show nodejs | sed -n 's/^Version: \([0-9]\+\)\..*$/\1/p;T;q'
 }
