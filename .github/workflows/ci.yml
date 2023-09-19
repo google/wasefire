@@ -11,8 +11,8 @@ on:
     - cron: 45 3 * * 2 # every Tuesday at 3:45 UTC
 
 concurrency:
-  group: ci-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   changelog:
