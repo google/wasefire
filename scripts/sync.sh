@@ -40,6 +40,7 @@ RUSTUP_SCRIPT="$(curl -s https://rustup.rs \
 '{s#^ *<pre class="rustup-command">\(.*\)</pre>$#\1#p;T;q}'
 )"
 [ "$RUSTUP_SCRIPT" = "$RUSTUP_CURL | sh" ] || e "RUSTUP_CURL is out of sync"
+git submodule update --init third_party/rust-lang/rustup
 eval "$RUSTUP_CURL" \
   | diff - third_party/rust-lang/rustup/rustup-init.sh >/dev/null \
   || e 'rustup submodule is out of sync'
