@@ -3,4 +3,4 @@
 	url = https://github.com/WebAssembly/spec.git
 [submodule "third_party/rust-lang/rustup"]
 	path = third_party/rust-lang/rustup
-	url = git@github.com:rust-lang/rustup.git
+	url = https://github.com/rust-lang/rustup.git
