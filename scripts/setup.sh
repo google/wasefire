@@ -34,8 +34,8 @@ ensure bin curl
 ensure bin pkg-config
 
 if ! has bin rustup; then
-  i "Installing rustup according to https://rustup.rs"
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  x git submodule update --init third_party/rust-lang/rustup
+  x ./third_party/rust-lang/rustup/rustup-init.sh
 fi
 
 # Transitive dependencies of xtask.
