@@ -1,3 +1,5 @@
+exclude = ["third_party/**"]
+
 [formatting]
 column_width = 100
 reorder_arrays = true
