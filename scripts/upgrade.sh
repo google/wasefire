@@ -20,7 +20,13 @@ set -e
 
 x sed -i 's/^\(channel = "nightly-\)[^"]*"$/\1'$(date +%F)'"/' \
   rust-toolchain.toml
-x git submodule foreach 'git fetch -p origin && git checkout origin/main'
+for submodule in WebAssembly/spec; do
+  i "Upgrade $submodule"
+  ( cd $submodule
+    git fetch -p origin
+    git checkout origin/main
+  )
+done
 x find . -name Cargo.toml -print -execdir cargo upgrade --incompatible \;
 x find . -name Cargo.toml -print -execdir cargo update \;
 
