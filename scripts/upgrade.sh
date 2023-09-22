@@ -22,7 +22,7 @@ x sed -i 's/^\(channel = "nightly-\)[^"]*"$/\1'$(date +%F)'"/' \
   rust-toolchain.toml
 for submodule in WebAssembly/spec; do
   i "Upgrade $submodule"
-  ( cd $submodule
+  ( cd third_party/$submodule
     git fetch -p origin
     git checkout origin/main
   )
