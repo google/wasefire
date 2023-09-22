@@ -35,8 +35,7 @@ ensure bin pkg-config
 
 if ! has bin rustup; then
   x git submodule update --init third_party/rust-lang/rustup
-  x ./third_party/rust-lang/rustup/rustup-init.sh \
-    --default-toolchain=none --profile=minimal -y
+  x ./third_party/rust-lang/rustup/rustup-init.sh
 fi
 
 # Transitive dependencies of xtask.

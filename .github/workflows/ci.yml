@@ -29,9 +29,6 @@ jobs:
     permissions:
       contents: read
     steps:
-      # Do not rely on the pre-installed rustup. This also checks the rustup
-      # installation procedure of the setup script.
-      - run: rustup self uninstall -y
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
         if: github.event_name != 'schedule'
