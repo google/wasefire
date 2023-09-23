@@ -1,4 +1,5 @@
-exclude = ["third_party/**"]
+# Exclude .gitignore and submodules.
+exclude = [".root/**", "target/**", "third_party/**"]
 
 [formatting]
 column_width = 100

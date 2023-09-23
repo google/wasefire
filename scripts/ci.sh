@@ -14,6 +14,7 @@
 # limitations under the License.
 
 set -e
+. scripts/git.sh
 . scripts/log.sh
 . scripts/package.sh
 
@@ -46,7 +47,7 @@ for crate in $(ls crates); do
   x cargo xtask --release runner $name
 done
 
-for dir in $(find . -name test.sh -printf '%h\n' | sort); do
+for dir in $(git_find -name test.sh -printf '%h\n' | sort); do
   i "Run tests in $dir"
   ( cd $dir && ./test.sh )
 done
