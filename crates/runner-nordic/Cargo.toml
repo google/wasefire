@@ -18,7 +18,7 @@ embedded-storage = "0.3.0"
 nrf52840-hal = "0.16.0"
 panic-abort = { version = "0.3.2", optional = true }
 panic-probe = { version = "0.3.1", optional = true, features = ["print-defmt"] }
-typenum = { version = "1.16.0", default-features = false }
+typenum = { version = "1.17.0", default-features = false }
 usb-device = "0.2.9"
 usbd-serial = "0.1.1"
 wasefire-applet-api = { path = "../api" }

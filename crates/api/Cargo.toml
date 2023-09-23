@@ -16,7 +16,7 @@ features = ["wasm"]
 targets = ["riscv32imc-unknown-none-elf", "thumbv7em-none-eabi"]
 
 [dependencies]
-bytemuck = { version = "1.13.1", default-features = false, features = ["derive"] }
+bytemuck = { version = "1.14.0", default-features = false, features = ["derive"] }
 sealed = { version = "0.5.0", default-features = false, optional = true }
 wasefire-applet-api-macro = { version = "0.4.0-git", path = "../api-macro" }
 

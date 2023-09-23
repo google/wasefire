@@ -6,6 +6,10 @@
 
 - Update `wasefire-applet-api-macro` version
 
+### Patch
+
+- Update dependencies
+
 ## 0.3.0
 
 ### Major
