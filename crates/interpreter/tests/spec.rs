@@ -279,7 +279,7 @@ fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
             (Null(RefType::ExternRef), C(W::RefNull(None | Some(HeapType::Extern)))) => (),
             (Null(RefType::FuncRef), C(W::RefNull(None | Some(HeapType::Func)))) => (),
             (Ref(_), _) => unimplemented!(),
-            (RefExtern(x), C(W::RefExtern(y))) => assert_eq!(x, y as usize),
+            (RefExtern(x), C(W::RefExtern(Some(y)))) => assert_eq!(x, y as usize),
             (x, y) => panic!("{x:?} !~ {y:?}"),
         }
     }
