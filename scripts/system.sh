@@ -44,6 +44,7 @@ install() {
         case "$2" in
           libudev) set libudev-dev ;;
           libusb-1.0) set libusb-1.0-0-dev ;;
+          openssl) set libssl-dev ;;
           *) e "Internal error: _install_apt unimplemented for $*" ;;
         esac ;;
     esac
