@@ -51,6 +51,7 @@ case "$1" in
   cargo)
     case "$2" in
       bloat) ensure_cargo cargo-bloat 0.11.1 ;;
+      upgrade) ensure_cargo cargo-edit 0.12.2 ;;
       *) e "Wrapper does not support 'cargo $2'" ;;
     esac
     ;;
