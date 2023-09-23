@@ -34,13 +34,14 @@ run() {
 }
 
 ensure_cargo() {
-  g=
-  c=
+  local g
+  local c
   if [ $# -eq 4 ]; then
     g=" ($3?rev=$4#.\{8\})"
     c="--git=$3 --rev=$4"
   fi
   if ! cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2$g:\$"; then
+    [ "$1" = cargo-edit ] && ensure lib openssl
     x cargo install --locked --root="$CARGO_ROOT" "$1@$2" $c
   fi
 }
