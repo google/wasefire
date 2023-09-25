@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0-git
+## 0.4.0
 
 ### Major
 
