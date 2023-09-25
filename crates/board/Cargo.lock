@@ -569,7 +569,7 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.4.0-git"
+version = "0.4.0"
 dependencies = [
  "aead",
  "aes",
@@ -596,7 +596,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.3-git"
+version = "0.1.3"
 dependencies = [
  "defmt",
  "log",
@@ -604,7 +604,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.2.1-git"
+version = "0.2.1"
 
 [[package]]
 name = "zeroize"
