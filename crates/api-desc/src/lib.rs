@@ -711,15 +711,18 @@ mod tests {
 
     #[test]
     fn params_and_results_are_u32() {
+        fn test(link: &str, kind: &str, field: &Field) {
+            let name = &field.name;
+            assert!(field.type_.is_param(), "{kind} {name} of {link:?} is not U32");
+        }
         let Api(mut todo) = Api::default();
         while let Some(item) = todo.pop() {
             match item {
                 Item::Enum(_) => (),
                 Item::Struct(_) => (),
-                Item::Fn(Fn { name, params, results, .. }) => {
-                    for x in params.iter().chain(results.iter()) {
-                        assert!(x.type_.is_param(), "Param/result {} of {name} is not U32", x.name);
-                    }
+                Item::Fn(Fn { link, params, results, .. }) => {
+                    params.iter().for_each(|x| test(&link, "Param", x));
+                    results.iter().for_each(|x| test(&link, "Result", x));
                 }
                 Item::Mod(Mod { items, .. }) => todo.extend(items),
             }
@@ -734,8 +737,8 @@ mod tests {
             match item {
                 Item::Enum(_) => (),
                 Item::Struct(_) => (),
-                Item::Fn(Fn { name, results, .. }) => {
-                    assert!(results.len() <= 1, "More than one result for {name}");
+                Item::Fn(Fn { link, results, .. }) => {
+                    assert!(results.len() <= 1, "More than one result for {link:?}");
                 }
                 Item::Mod(Mod { items, .. }) => todo.extend(items),
             }
