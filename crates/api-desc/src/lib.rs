@@ -725,4 +725,20 @@ mod tests {
             }
         }
     }
+
+    #[cfg(not(feature = "multivalue"))]
+    #[test]
+    fn at_most_one_result() {
+        let Api(mut todo) = Api::default();
+        while let Some(item) = todo.pop() {
+            match item {
+                Item::Enum(_) => (),
+                Item::Struct(_) => (),
+                Item::Fn(Fn { name, results, .. }) => {
+                    assert!(results.len() <= 1, "More than one result for {name}");
+                }
+                Item::Mod(Mod { items, .. }) => todo.extend(items),
+            }
+        }
+    }
 }
