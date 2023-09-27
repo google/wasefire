@@ -23,5 +23,6 @@ RUSTFLAGS=--cfg=portable_atomic_unsafe_assume_single_core \
   cargo check --target=riscv32imc-unknown-none-elf
 cargo fmt -- --check
 cargo clippy -- --deny=warnings
-[ -e ../../third_party/WebAssembly/spec/.git ] || git submodule update --init
+[ -e ../../third_party/WebAssembly/spec/.git ] \
+  || git submodule update --init ../../third_party/WebAssembly/spec
 cargo test --features=debug,toctou,float-types,vector-types
