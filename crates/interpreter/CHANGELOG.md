@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4-git
+
+### Patch
+
+- Re-enable disabled lint due to false positive
+
 ## 0.1.3
 
 ### Patch
