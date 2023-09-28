@@ -536,7 +536,7 @@ impl RunnerOptions {
             println!("gdb-multiarch -ex 'file {elf}' -ex 'target remote localhost:2331'");
         }
         let mut probe_run = wrap_command()?;
-        // TODO(https://github.com/knurling-rs/probe-run/issues/421): Use a simpler flag.
+        // TODO(https://crates.io/crates/probe-run > 0.3.10): Use a simpler flag (or no flag).
         probe_run.args(["probe-run", "--log-format={t} {L} {s}\n└─ {m} @ {F}:{l}"]);
         probe_run.arg(format!("--chip={chip}"));
         if main.release {
