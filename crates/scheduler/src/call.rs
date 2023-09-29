@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_applet_api::Api;
+use wasefire_applet_api::{self as api, Api};
 use wasefire_board_api::Api as Board;
 
-use crate::DispatchSchedulerCall;
+use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
 mod button;
 mod clock;
@@ -37,7 +37,16 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Rng(call) => rng::process(call),
         Api::Scheduling(call) => scheduling::process(call),
         Api::Store(call) => store::process(call),
-        Api::Syscall(_) => todo!(),
+        Api::Syscall(call) => syscall(call),
         Api::Usb(call) => usb::process(call),
     }
+}
+
+fn syscall<B: Board>(call: SchedulerCall<B, api::syscall::Sig>) {
+    let api::syscall::Params { x1, x2, x3, x4 } = call.read();
+    let results = try {
+        let res = B::syscall(*x1, *x2, *x3, *x4).ok_or(Trap)?.into();
+        api::syscall::Results { res }
+    };
+    call.reply(results);
 }

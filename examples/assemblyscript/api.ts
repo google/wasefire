@@ -858,7 +858,7 @@
 
 // Board-specific syscalls.
 //
-// Those calls are forwarded by the scheduler.
+// Those calls are directly forwarded to the board by the scheduler.
 @external("env", "s")
 export declare function syscall(
   x1: usize,
@@ -868,4 +868,4 @@ export declare function syscall(
   x3: usize,
 
   x4: usize,
-): isize
+): usize

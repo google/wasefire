@@ -51,8 +51,8 @@ impl Default for Api {
             item! {
                 /// Board-specific syscalls.
                 ///
-                /// Those calls are forwarded by the scheduler.
-                fn syscall "s" { x1: usize, x2: usize, x3: usize, x4: usize } -> { res: isize }
+                /// Those calls are directly forwarded to the board by the scheduler.
+                fn syscall "s" { x1: usize, x2: usize, x3: usize, x4: usize } -> { res: usize }
             },
         ])
     }

@@ -56,6 +56,14 @@ pub trait Api {
     /// available, this function blocks and enters a power-saving state until an event triggers.
     fn wait_event() -> Event<Self>;
 
+    /// Board-specific syscalls.
+    ///
+    /// Those calls are directly forwarded from the applet by the scheduler. The default
+    /// implementation traps.
+    fn syscall(_x1: u32, _x2: u32, _x3: u32, _x4: u32) -> Option<u32> {
+        None
+    }
+
     type Button: button::Api;
     type Crypto: crypto::Api;
     type Debug: debug::Api;

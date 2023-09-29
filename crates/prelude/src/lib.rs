@@ -34,6 +34,8 @@
 
 extern crate alloc;
 
+use wasefire_applet_api as api;
+
 #[cfg(not(feature = "native"))]
 mod allocator;
 pub mod button;
@@ -47,6 +49,15 @@ pub mod scheduling;
 pub mod store;
 pub mod sync;
 pub mod usb;
+
+/// Board-specific syscalls.
+///
+/// Those calls are directly forwarded to the board by the scheduler.
+pub fn syscall(x1: usize, x2: usize, x3: usize, x4: usize) -> usize {
+    let params = api::syscall::Params { x1, x2, x3, x4 };
+    let api::syscall::Results { res } = unsafe { api::syscall(params) };
+    res
+}
 
 /// Defines the entry point of an applet.
 ///

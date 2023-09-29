@@ -985,7 +985,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.4.0"
+version = "0.5.0-git"
 dependencies = [
  "bytemuck",
  "sealed",
@@ -994,7 +994,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.1.4"
+version = "0.1.5-git"
 dependencies = [
  "anyhow",
  "clap",
@@ -1006,7 +1006,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.4.0"
+version = "0.5.0-git"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
@@ -1014,7 +1014,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.4.0"
+version = "0.4.1-git"
 dependencies = [
  "aead",
  "aes",
