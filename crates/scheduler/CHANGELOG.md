@@ -2,6 +2,10 @@
 
 ## 0.2.2-git
 
+### Minor
+
+- Support `syscall()`
+
 ### Patch
 
 - Update dependencies

@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-stub"
-version = "0.1.1"
+version = "0.1.2-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -24,4 +24,4 @@ p384 = { version = "0.13.0", default-features = false, features = ["ecdsa"] }
 rand = { version = "0.8.5", default-features = false, features = ["std", "std_rng"] }
 sha2 = { version = "0.10.7", default-features = false }
 signature = { version = "2.1.0", default-features = false }
-wasefire-applet-api = { version = "0.4.0", path = "../api", features = ["native", "wasm"] }
+wasefire-applet-api = { version = "0.5.0-git", path = "../api", features = ["native", "wasm"] }

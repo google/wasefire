@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1-git
+
+### Minor
+
+- Add optional `Api::syscall()` method
+
 ## 0.4.0
 
 ### Major

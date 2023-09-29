@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5-git
+
+### Minor
+
+- Change return type of `syscall` to unsigned
+
 ## 0.1.4
 
 ### Minor

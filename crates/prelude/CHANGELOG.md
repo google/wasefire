@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1-git
+
+### Minor
+
+- Add `syscall()` for board-specific syscalls
+
 ## 0.3.0
 
 ### Major
