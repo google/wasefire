@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Tests that the store is working properly.
+//! Tests that the board-specific syscall API is working properly.
 
 #![no_std]
 wasefire::applet!();
