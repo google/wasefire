@@ -6,6 +6,10 @@
 
 - Add `syscall()` for board-specific syscalls
 
+### Patch
+
+- Clean up allocator
+
 ## 0.3.0
 
 ### Major
