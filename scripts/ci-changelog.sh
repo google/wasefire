@@ -38,10 +38,9 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
       || e "CHANGELOG.md and Cargo.toml for $dir have different versions"
     package_features | grep -q '^default$' \
       && e "Cargo.toml for $dir has default features"
-    grep '^\[dependencies\.' Cargo.toml && \
-      e "Cargo.toml for $dir has out-of-line dependency"
-    sed '/^\[dependencies]$/,/^$/{/^wasefire-/d;/^[a-z]/!d;'\
-'/default-features = false/d;q1};d' Cargo.toml \
-      || e "Cargo.toml for $dir doesn't disable default-features"
+    sed -n '/^\[dependencies]$/,/^$/{/^wasefire-/d;/^[a-z]/!d;'\
+'/default-features = false/d;p;q1};/^\[dependencies\.wasefire-/d;'\
+'/^\[dependencies\./{h;:a;n;/default-features = false/d;/^$/{g;p;q1};ba}' \
+Cargo.toml || e "Cargo.toml for $dir doesn't disable default-features"
   )
 done
