@@ -68,17 +68,12 @@ enum Command<'a> {
     Remove { key: Key },
 }
 
-enum Key {
-    Exact(usize),
-    Range(Range<usize>),
-}
-
 impl<'a> Command<'a> {
     fn parse(input: &'a str) -> Option<Self> {
         Some(match *input.split_whitespace().collect::<Vec<_>>().as_slice() {
-            ["insert", key, value] => Command::Insert { key: key.parse().ok()?, value },
-            ["find", key] => Command::Find { key: key.parse().ok()? },
-            ["remove", key] => Command::Remove { key: key.parse().ok()? },
+            ["insert", key, value] => Command::Insert { key: Key::parse(key)?, value },
+            ["find", key] => Command::Find { key: Key::parse(key)? },
+            ["remove", key] => Command::Remove { key: Key::parse(key)? },
             _ => return None,
         })
     }
@@ -101,6 +96,11 @@ impl<'a> Command<'a> {
     }
 }
 
+enum Key {
+    Exact(usize),
+    Range(Range<usize>),
+}
+
 impl FromStr for Key {
     type Err = ParseIntError;
 
@@ -109,6 +109,20 @@ impl FromStr for Key {
             Some((start, end)) => Ok(Key::Range(start.parse()? .. end.parse()?)),
             None => Ok(Key::Exact(s.parse()?)),
         }
+    }
+}
+
+impl Key {
+    fn parse(key: &str) -> Option<Self> {
+        let key: Key = key.parse().ok()?;
+        let valid = match &key {
+            Key::Exact(key) => *key < 4096,
+            Key::Range(keys) => !keys.is_empty() && keys.end < 4096,
+        };
+        if !valid {
+            return None;
+        }
+        Some(key)
     }
 }
 
