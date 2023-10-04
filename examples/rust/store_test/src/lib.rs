@@ -23,6 +23,7 @@ fn main() {
     test_insert();
     test_remove();
     test_find();
+    test_fragment();
     debug::exit(true);
 }
 
@@ -65,6 +66,16 @@ fn test_find() {
         find(key, removed);
         find(reverse(key), removed);
     }
+}
+
+fn test_fragment() {
+    debug!("test_fragment(): Test fragmented entries.");
+    debug!("- insert then find");
+    store::fragment::insert(0 .. 2, &[0xca; 1500]).unwrap();
+    debug::assert_eq(&store::fragment::find(0 .. 2).unwrap().unwrap()[..], &[0xca; 1500][..]);
+    debug!("- remove then find");
+    store::fragment::remove(0 .. 2).unwrap();
+    debug::assert(store::fragment::find(0 .. 2).unwrap().is_none());
 }
 
 const INSERTED: &[usize] = &[0, 1, 2, 3, 100, 500, 1000, 2000];

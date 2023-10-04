@@ -5,6 +5,7 @@
 ### Minor
 
 - Add `syscall()` for board-specific syscalls
+- Add `store::fragment` for fragmented entries in the store
 
 ### Patch
 

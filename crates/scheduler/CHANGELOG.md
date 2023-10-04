@@ -5,6 +5,7 @@
 ### Minor
 
 - Support `syscall()`
+- Support `store::fragment`
 
 ### Patch
 

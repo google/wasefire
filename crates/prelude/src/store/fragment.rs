@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,24 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides API for persistent storage.
+//! Support for fragmented entries.
 
 use alloc::boxed::Box;
+use core::ops::Range;
 
-use wasefire_applet_api::store as api;
-
-pub mod fragment;
-
-/// Errors returned by storage operations.
-pub use wasefire_applet_api::store::Error;
+use wasefire_applet_api::store::{fragment as api, Error};
 
 /// Inserts an entry in the store.
 ///
-/// The `key` argument must be a small integer (currently less than 4096). The `value` argument is
-/// the slice to associate with this key. If there was already a value, it is overwritten.
-/// Overwritten values are zeroized from flash.
-pub fn insert(key: usize, value: &[u8]) -> Result<(), Error> {
-    let params = api::insert::Params { key, ptr: value.as_ptr(), len: value.len() };
+/// The entry will be fragmented over multiple keys within the provided range as needed.
+///
+/// The range must be non-empty and end before 4096. The `value` argument is the slice to associate
+/// with this key. If there was already a value, it is overwritten. Overwritten values are zeroized
+/// from flash.
+pub fn insert(keys: Range<usize>, value: &[u8]) -> Result<(), Error> {
+    let params =
+        api::insert::Params { keys: encode_keys(keys)?, ptr: value.as_ptr(), len: value.len() };
     let api::insert::Results { res } = unsafe { api::insert(params) };
     Error::to_result(res)?;
     Ok(())
@@ -37,37 +36,28 @@ pub fn insert(key: usize, value: &[u8]) -> Result<(), Error> {
 
 /// Removes an entry from the store.
 ///
+/// All fragments from the range of keys will be deleted.
+///
 /// If there was not value associated with the `key` argument, this is a no-op. Otherwise the value
 /// is zeroized from flash and the key is not associated.
-pub fn remove(key: usize) -> Result<(), Error> {
-    let params = api::remove::Params { key };
+pub fn remove(keys: Range<usize>) -> Result<(), Error> {
+    let params = api::remove::Params { keys: encode_keys(keys)? };
     let api::remove::Results { res } = unsafe { api::remove(params) };
     Error::to_result(res)?;
     Ok(())
 }
 
 /// Returns the value associated to a key, if any.
-pub fn find(key: usize) -> Result<Option<Box<[u8]>>, Error> {
-    find_impl(key)
+///
+/// The entry may be fragmented withen the provided range.
+pub fn find(keys: Range<usize>) -> Result<Option<Box<[u8]>>, Error> {
+    find_impl(keys)
 }
 
-#[cfg(feature = "multivalue")]
-fn find_impl(key: usize) -> Result<Option<Box<[u8]>>, Error> {
-    let params = api::find::Params { key };
-    let api::find::Results { ptr, len } = unsafe { api::find(params) };
-    let len = Error::to_result(len)?;
-    if ptr.is_null() {
-        return Ok(None);
-    }
-    let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
-    Ok(Some(unsafe { Box::from_raw(ptr) }))
-}
-
-#[cfg(not(feature = "multivalue"))]
-fn find_impl(key: usize) -> Result<Option<Box<[u8]>>, Error> {
+fn find_impl(keys: Range<usize>) -> Result<Option<Box<[u8]>>, Error> {
     let mut ptr = core::ptr::null_mut();
     let mut len = 0;
-    let params = api::find::Params { key, ptr: &mut ptr, len: &mut len };
+    let params = api::find::Params { keys: encode_keys(keys)?, ptr: &mut ptr, len: &mut len };
     let api::find::Results { res } = unsafe { api::find(params) };
     match Error::to_result(res)? {
         0 => Ok(None),
@@ -77,4 +67,10 @@ fn find_impl(key: usize) -> Result<Option<Box<[u8]>>, Error> {
         }
         _ => unreachable!(),
     }
+}
+
+fn encode_keys(keys: Range<usize>) -> Result<u32, Error> {
+    let start = u16::try_from(keys.start).map_err(|_| Error::InvalidArgument)? as u32;
+    let end = u16::try_from(keys.end).map_err(|_| Error::InvalidArgument)? as u32;
+    Ok(end << 16 | start)
 }
