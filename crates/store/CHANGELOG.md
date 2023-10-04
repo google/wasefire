@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2-git
+
+### Patch
+
+- Fix bug where range keys is in wrong order
+
 ## 0.2.1
 
 ### Patch

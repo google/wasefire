@@ -20,21 +20,25 @@
 #![no_std]
 wasefire::applet!();
 
+use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::num::ParseIntError;
+use core::ops::Range;
+use core::str::FromStr;
 
 fn main() {
-    writeln(b"Usage: insert <key> <value>");
-    writeln(b"Usage: find <key>");
-    writeln(b"Usage: remove <key>");
+    writeln(b"Usage: insert <key>[..<key>] <value>");
+    writeln(b"Usage: find <key>[..<key>]");
+    writeln(b"Usage: remove <key>[..<key>]");
     loop {
         // Read the command.
         let mut command = String::new();
         loop {
             usb::serial::write_all(format!("\r\x1b[K> {command}").as_bytes()).unwrap();
             match usb::serial::read_byte().unwrap() {
-                c @ (b' ' | b'a' ..= b'z' | b'0' ..= b'9') => command.push(c as char),
+                c @ (b' ' | b'.' | b'a' ..= b'z' | b'0' ..= b'9') => command.push(c as char),
                 0x7f => drop(command.pop()),
                 0x0d => break,
                 _ => (),
@@ -59,26 +63,26 @@ fn main() {
 }
 
 enum Command<'a> {
-    Insert { key: usize, value: &'a str },
-    Find { key: usize },
-    Remove { key: usize },
+    Insert { key: Key, value: &'a str },
+    Find { key: Key },
+    Remove { key: Key },
 }
 
 impl<'a> Command<'a> {
     fn parse(input: &'a str) -> Option<Self> {
         Some(match *input.split_whitespace().collect::<Vec<_>>().as_slice() {
-            ["insert", key, value] => Command::Insert { key: key.parse().ok()?, value },
-            ["find", key] => Command::Find { key: key.parse().ok()? },
-            ["remove", key] => Command::Remove { key: key.parse().ok()? },
+            ["insert", key, value] => Command::Insert { key: Key::parse(key)?, value },
+            ["find", key] => Command::Find { key: Key::parse(key)? },
+            ["remove", key] => Command::Remove { key: Key::parse(key)? },
             _ => return None,
         })
     }
 
     fn process(&self) -> Result<(), store::Error> {
         match self {
-            Command::Insert { key, value } => store::insert(*key, value.as_bytes()),
+            Command::Insert { key, value } => insert(key, value.as_bytes()),
             Command::Find { key } => {
-                match store::find(*key)? {
+                match find(key)? {
                     None => writeln(b"Not found."),
                     Some(value) => match core::str::from_utf8(&value) {
                         Ok(value) => writeln(format!("Found: {value}").as_bytes()),
@@ -87,8 +91,59 @@ impl<'a> Command<'a> {
                 }
                 Ok(())
             }
-            Command::Remove { key } => store::remove(*key),
+            Command::Remove { key } => remove(key),
         }
+    }
+}
+
+enum Key {
+    Exact(usize),
+    Range(Range<usize>),
+}
+
+impl FromStr for Key {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.split_once("..") {
+            Some((start, end)) => Ok(Key::Range(start.parse()? .. end.parse()?)),
+            None => Ok(Key::Exact(s.parse()?)),
+        }
+    }
+}
+
+impl Key {
+    fn parse(key: &str) -> Option<Self> {
+        let key: Key = key.parse().ok()?;
+        let valid = match &key {
+            Key::Exact(key) => *key < 4096,
+            Key::Range(keys) => !keys.is_empty() && keys.end < 4096,
+        };
+        if !valid {
+            return None;
+        }
+        Some(key)
+    }
+}
+
+fn insert(key: &Key, value: &[u8]) -> Result<(), store::Error> {
+    match key {
+        Key::Exact(key) => store::insert(*key, value),
+        Key::Range(keys) => store::fragment::insert(keys.clone(), value),
+    }
+}
+
+fn find(key: &Key) -> Result<Option<Box<[u8]>>, store::Error> {
+    match key {
+        Key::Exact(key) => store::find(*key),
+        Key::Range(keys) => store::fragment::find(keys.clone()),
+    }
+}
+
+fn remove(key: &Key) -> Result<(), store::Error> {
+    match key {
+        Key::Exact(key) => store::remove(*key),
+        Key::Range(keys) => store::fragment::remove(keys.clone()),
     }
 }
 

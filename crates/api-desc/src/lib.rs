@@ -538,6 +538,7 @@ impl Type {
     fn is_param(&self) -> bool {
         match self {
             Type::Integer { bits: None, .. } => true,
+            Type::Integer { bits: Some(32), .. } => true,
             Type::Integer { bits: Some(_), .. } => false,
             Type::Pointer { .. } => true,
             Type::Function { .. } => true,
@@ -565,6 +566,7 @@ impl Type {
         match self {
             Type::Integer { signed: true, bits: None } => quote!(isize),
             Type::Integer { signed: false, bits: None } => quote!(usize),
+            Type::Integer { signed: false, bits: Some(32) } => quote!(u32),
             Type::Integer { signed: false, bits: Some(64) } => quote!(u64),
             Type::Integer { .. } => unimplemented!(),
             Type::Pointer { mutable, type_ } => {
@@ -586,6 +588,7 @@ impl Type {
         match self {
             Type::Integer { signed: true, bits: None } => write!(output, "isize"),
             Type::Integer { signed: false, bits: None } => write!(output, "usize"),
+            Type::Integer { signed: false, bits: Some(32) } => write!(output, "u32"),
             Type::Integer { signed: false, bits: Some(64) } => write!(output, "u64"),
             Type::Integer { .. } => unimplemented!(),
             // TODO: Is there a way to decorate this better?

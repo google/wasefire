@@ -16,6 +16,7 @@
 macro_rules! type_ {
     (usize) => (Type::Integer { signed: false, bits: None });
     (isize) => (Type::Integer { signed: true, bits: None });
+    (u32) => (Type::Integer { signed: false, bits: Some(32) });
     (u64) => (Type::Integer { signed: false, bits: Some(64) });
     (*const $($type:tt)*) => (type_!(*false $($type)*));
     (*mut $($type:tt)*) => (type_!(*true $($type)*));

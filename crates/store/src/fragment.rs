@@ -43,7 +43,7 @@ pub trait Keys {
 
 impl Keys for Range<usize> {
     fn len(&self) -> usize {
-        self.end - self.start
+        self.end.saturating_sub(self.start)
     }
 
     fn pos(&self, key: usize) -> Option<usize> {

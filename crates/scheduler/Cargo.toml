@@ -22,7 +22,7 @@ wasefire-applet-api = { version = "0.5.0-git", path = "../api", features = ["hos
 wasefire-board-api = { version = "0.4.1-git", path = "../board" }
 wasefire-interpreter = { version = "0.1.4-git", path = "../interpreter", features = ["toctou"] }
 wasefire-logger = { version = "0.1.3", path = "../logger" }
-wasefire-store = { version = "0.2.1", path = "../store" }
+wasefire-store = { version = "0.2.2-git", path = "../store" }
 
 [features]
 defmt = ["debug", "dep:defmt", "wasefire-board-api/defmt", "wasefire-logger/defmt"]

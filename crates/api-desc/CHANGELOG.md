@@ -5,6 +5,7 @@
 ### Minor
 
 - Change return type of `syscall` to unsigned
+- Add `store::fragment` module
 
 ## 0.1.4
 

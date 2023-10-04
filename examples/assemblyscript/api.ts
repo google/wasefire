@@ -785,6 +785,61 @@
     len: usize,
   // One if found. Zero if not found. Otherwise complement of error number.
   ): isize
+
+  // START OF MODULE store_fragment
+  // Support for fragmented entries.
+    // Inserts an entry in the store.
+    //
+    // The entry will be fragmented over multiple keys within the provided range as needed.
+    //
+    // If an entry for that range of keys was already present, it is overwritten.
+    @external("env", "sfi")
+    export declare function store_fragment_insert(
+      // Range of keys where to insert the fragments.
+      //
+      // This is a pair of u16: the lowest u16 is the first key of the range and the
+      // highest u16 is one past the last key of the range.
+      keys: u32,
+
+      // Value of the entry.
+      ptr: usize,
+
+      // Length of the value.
+      len: usize,
+    // Zero for success. Otherwise complement of error number.
+    ): isize
+
+    // Removes an entry from the store.
+    //
+    // All fragments from the range of keys will be deleted.
+    //
+    // This is not an error if no entry is present. This is simply a no-op in that case.
+    @external("env", "sfr")
+    export declare function store_fragment_remove(
+      // Range of keys to remove.
+      keys: u32,
+    // Zero for success. Otherwise complement of error number.
+    ): isize
+
+    // Finds an entry in the store, if any.
+    //
+    // The entry may be fragmented withen the provided range.
+    @external("env", "sff")
+    export declare function store_fragment_find(
+      // Range of keys to concatenate as an entry.
+      keys: u32,
+
+      // Where to write the value of the entry, if found.
+      //
+      // The (inner) pointer will be allocated by the callee and must be freed by the
+      // caller. It is thus owned by the caller when the function returns.
+      ptr: usize,
+
+      // Where to write the length of the value, if found.
+      len: usize,
+    // One if found. Zero if not found. Otherwise complement of error number.
+    ): isize
+  // END OF MODULE store_fragment
 // END OF MODULE store
 
 // START OF MODULE usb
