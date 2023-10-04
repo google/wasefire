@@ -13,6 +13,23 @@ We first define a helper to write a line to the USB serial.
 {{#include store.rs:writeln}}
 ```
 
+Because values may be at most 1023 bytes, there is a system to store large
+entries as multiple fragments of at most 1023 bytes each using multiple keys. To
+support those large entries, we define an abstract notion of keys. An abstract
+key is either exactly one key, or a contiguous range of keys.
+
+```rust,no_run,noplayground
+{{#include store.rs:key}}
+```
+
+We then define helpers to dispatch to the regular or fragmented version based on
+the abstract key. The `insert`, `find`, and `remove` functions will be explained
+later.
+
+```rust,no_run,noplayground
+{{#include store.rs:helpers}}
+```
+
 The first thing we do when the applet starts is print a short help describing
 how to use the applet.
 
@@ -68,10 +85,12 @@ The process function is a `Command` method which may return a store error.
 {{#include store.rs:process_signature}}
 ```
 
-For insert commands, we simply forward to the `store::insert()` function which
-maps a key to a value. If the key was already mapped, it is overwritten. A key
-must be a number smaller than 4096. A value must be a byte slice shorter than
-1024.
+For insert commands, we simply forward to the `store::insert()` function (resp.
+`store::fragment::insert()` for fragmented entries) which maps a key (resp. a
+range of keys) to a value. If the key (resp. range of keys) was already mapped,
+it is overwritten. A key must be a number smaller than 4096. A range of keys
+must be non-empty. A value must be a slice of at most 1023 bytes (resp. 1023
+bytes times the number of fragments).
 
 ```rust,no_run,noplayground
 {{#include store.rs:process_insert}}
