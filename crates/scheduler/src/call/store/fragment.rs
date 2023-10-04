@@ -34,7 +34,7 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
-        let keys = decode_keys(keys);
+        let keys = decode_keys(keys)?;
         let value = memory.get(*ptr, *len)?;
         let res = match fragment::write(&mut scheduler.store, &keys, value) {
             Ok(()) => 0.into(),
@@ -47,11 +47,14 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
 
 fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
     let api::remove::Params { keys } = call.read();
-    let res = match fragment::delete(&mut call.scheduler().store, &decode_keys(keys)) {
-        Ok(()) => 0.into(),
-        Err(e) => convert(e).into(),
+    let results = try {
+        let res = match fragment::delete(&mut call.scheduler().store, &decode_keys(keys)?) {
+            Ok(()) => 0.into(),
+            Err(e) => convert(e).into(),
+        };
+        api::remove::Results { res }
     };
-    call.reply(Ok(api::remove::Results { res }));
+    call.reply(results);
 }
 
 fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
@@ -60,7 +63,7 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let mut memory = scheduler.applet.memory();
     let results = try {
         let mut results = api::find::Results::default();
-        match fragment::read(&mut scheduler.store, &decode_keys(keys)) {
+        match fragment::read(&scheduler.store, &decode_keys(keys)?) {
             Ok(None) => (),
             Ok(Some(value)) => {
                 let len = value.len() as u32;
@@ -81,6 +84,10 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     call.reply(results);
 }
 
-fn decode_keys(keys: u32) -> Range<usize> {
-    (keys & 0xffff) as usize .. ((keys >> 16) & 0xffff) as usize
+fn decode_keys(keys: u32) -> Result<Range<usize>, Trap> {
+    if keys & 0xf000f000 == 0 {
+        Ok((keys & 0xffff) as usize .. ((keys >> 16) & 0xffff) as usize)
+    } else {
+        Err(Trap)
+    }
 }

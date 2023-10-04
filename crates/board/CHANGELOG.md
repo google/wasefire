@@ -6,6 +6,10 @@
 
 - Add optional `Api::syscall()` method
 
+### Patch
+
+- Update dependencies
+
 ## 0.4.0
 
 ### Major
