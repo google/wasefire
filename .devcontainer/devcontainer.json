@@ -1,6 +1,6 @@
 {
    "image":"mcr.microsoft.com/devcontainers/rust:latest",
-   "postCreateCommand":"rustup self update && rustup update",
+   "postCreateCommand":"rustup self update && rustup update &&  ./scripts/setup.sh || true",
    "capAdd":[
       "SYS_PTRACE"
    ],
