@@ -38,16 +38,18 @@ install() {
           usbip) set usbip ;;
           wasm-opt) set binaryen ;;
           wasm-strip) set wabt ;;
-          *) e "Internal error: _install_apt unimplemented for $*" ;;
+          *) e "Internal error: apt-get install unimplemented for $*" ;;
         esac ;;
       lib)
         case "$2" in
           libudev) set libudev-dev ;;
           libusb-1.0) set libusb-1.0-0-dev ;;
           openssl) set libssl-dev ;;
-          *) e "Internal error: _install_apt unimplemented for $*" ;;
+          *) e "Internal error: apt-get install unimplemented for $*" ;;
         esac ;;
     esac
+    # Make sure apt-get update has run at least once (useful for fresh VMs).
+    [ -e /var/lib/apt/lists/lock ] || x sudo apt-get update
     x sudo apt-get install "$1"
   else
     e "Unsupported system. Install $1 '$2' and rerun the command."
