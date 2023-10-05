@@ -1,0 +1,24 @@
+{
+   "image":"mcr.microsoft.com/devcontainers/rust:latest",
+   "postCreateCommand":"rustup self update && rustup update",
+   "capAdd":[
+      "SYS_PTRACE"
+   ],
+   "customizations":{
+      "vscode":{
+         "extensions":[
+            "rust-lang.rust-analyzer"
+         ],
+         "settings":{
+            "terminal.integrated.profiles.linux":{
+               "shell":{
+                  "path":"zsh",
+                  "args":[
+                     "-l"
+                  ]
+               }
+            }
+         }
+      }
+   }
+}
