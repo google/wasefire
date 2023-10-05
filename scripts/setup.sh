@@ -29,13 +29,28 @@ set -e
 . scripts/log.sh
 . scripts/system.sh
 
+# Parse flags
+while [ $# -gt 0 ]; do
+  case $1 in
+    -h) echo "Usage: $0 [-y]"; exit ;;
+    -y) shift; export WASEFIRE_YES=-y ;;
+    -*) e "Unknown flag '$1'" ;;
+    *) e "Unexpected argument '$1'" ;;
+  esac
+done
+
 # Basic binaries used for all Unix systems.
 ensure bin curl
 ensure bin pkg-config
 
 if ! has bin rustup; then
   x git submodule update --init third_party/rust-lang/rustup
-  x ./third_party/rust-lang/rustup/rustup-init.sh
+  if [ -n "$WASEFIRE_YES" ]; then
+    x ./third_party/rust-lang/rustup/rustup-init.sh -y \
+      --default-toolchain=none --profile=minimal --no-modify-path
+  else
+    x ./third_party/rust-lang/rustup/rustup-init.sh
+  fi
 fi
 
 # Transitive dependencies of xtask.

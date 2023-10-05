@@ -50,7 +50,7 @@ install() {
     esac
     # Make sure apt-get update has run at least once (useful for fresh VMs).
     [ -e /var/lib/apt/lists/lock ] || x sudo apt-get update
-    x sudo apt-get install "$1"
+    x sudo apt-get install $WASEFIRE_YES "$1"
   else
     e "Unsupported system. Install $1 '$2' and rerun the command."
   fi
