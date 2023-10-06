@@ -1,9 +1,9 @@
 # Run an applet
 
 We currently use `cargo xtask` as an alias to the local `xtask` crate to build,
-flash, and run platforms and applets. Eventually, this will be a
-`cargo-wasefire` subcommand and will work out-of-tree. You can use `cargo xtask
-help` to discover the tool.
+flash, and run platforms and applets. Eventually, this will be a `wasefire`
+command and will work out-of-tree. You can use `cargo xtask help` to discover
+the tool.
 
 ## On host
 
@@ -14,9 +14,15 @@ following command:
 cargo xtask applet rust tutorial runner host
 ```
 
-Type your password when asked. The `host` runner needs `sudo` to set USB/IP up,
-which is needed for applets that use USB. After a bunch of compilation steps,
-you should see something that ends like:
+If you are using a Github codespace, you need to disable USB:
+
+```shell
+cargo xtask applet rust tutorial runner host --no-default-features
+```
+
+Otherwise, type your password when asked. The `host` runner needs `sudo` to set
+USB/IP up, which is needed for applets that use USB. After a bunch of
+compilation steps, you should see something that ends like:
 
 ```plaintext
      Running `.../wasefire/target/release/runner-host`
