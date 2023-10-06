@@ -9,7 +9,6 @@
 - [Quick start](quick/README.md)
 
 - [Applet user guide](applet/README.md)
-    - [Setup](applet/setup.md)
     - [Create a new applet](applet/create.md)
     - [Run an applet](applet/run.md)
     - [API](applet/api.md)
