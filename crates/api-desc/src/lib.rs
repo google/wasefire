@@ -29,6 +29,7 @@ mod macros;
 mod rng;
 mod scheduling;
 mod store;
+mod uart;
 mod usb;
 
 pub use id::{Id, Name};
@@ -47,6 +48,7 @@ impl Default for Api {
             rng::new(),
             scheduling::new(),
             store::new(),
+            uart::new(),
             usb::new(),
             item! {
                 /// Board-specific syscalls.

@@ -34,6 +34,7 @@ pub mod led;
 pub mod rng;
 mod storage;
 pub mod timer;
+pub mod uart;
 pub mod usb;
 
 /// Board interface.
@@ -71,6 +72,7 @@ pub trait Api {
     type Rng: rng::Api;
     type Storage: Singleton + wasefire_store::Storage;
     type Timer: timer::Api;
+    type Uart: uart::Api;
     type Usb: usb::Api;
 }
 
@@ -106,6 +108,9 @@ pub enum Event<B: Api + ?Sized> {
     /// Timer event.
     Timer(timer::Event<B>),
 
+    /// UART event.
+    Uart(uart::Event<B>),
+
     /// USB event.
     Usb(usb::Event),
 }
@@ -132,6 +137,7 @@ pub type Led<B> = <B as Api>::Led;
 pub type Rng<B> = <B as Api>::Rng;
 pub type Storage<B> = <B as Api>::Storage;
 pub type Timer<B> = <B as Api>::Timer;
+pub type Uart<B> = <B as Api>::Uart;
 pub type Usb<B> = <B as Api>::Usb;
 
 /// Unsupported interface.
@@ -217,6 +223,7 @@ mod tests {
             type Rng = Unsupported;
             type Storage = Unsupported;
             type Timer = Unsupported;
+            type Uart = Unsupported;
             type Usb = Unsupported;
         }
     }

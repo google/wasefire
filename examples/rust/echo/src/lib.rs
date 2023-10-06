@@ -21,12 +21,16 @@
 wasefire::applet!();
 
 fn main() {
+    #[cfg(feature = "uart")]
+    let serial = uart::Uart(0);
+    #[cfg(not(feature = "uart"))]
+    let serial = usb::serial::UsbSerial;
     loop {
         let mut data = [0; 32];
-        let len = usb::serial::read_any(&mut data).unwrap();
+        let len = serial::read_any(&serial, &mut data).unwrap();
         let data = &mut data[.. len];
         data.iter_mut().for_each(switch_case);
-        usb::serial::write_all(data).unwrap();
+        serial::write_all(&serial, data).unwrap();
     }
 }
 

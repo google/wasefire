@@ -25,6 +25,7 @@ mod led;
 mod rng;
 mod scheduling;
 mod store;
+mod uart;
 mod usb;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
@@ -38,6 +39,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Scheduling(call) => scheduling::process(call),
         Api::Store(call) => store::process(call),
         Api::Syscall(call) => syscall(call),
+        Api::Uart(call) => uart::process(call),
         Api::Usb(call) => usb::process(call),
     }
 }

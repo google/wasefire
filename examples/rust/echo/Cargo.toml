@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 wasefire = { path = "../../../crates/prelude" }
+
+[features]
+uart = []

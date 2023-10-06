@@ -18,6 +18,7 @@ mod led;
 mod rng;
 mod storage;
 pub mod timer;
+pub mod uart;
 #[cfg(feature = "usb")]
 pub mod usb;
 
@@ -25,14 +26,14 @@ use tokio::sync::mpsc::Sender;
 use wasefire_board_api::{Api, Event, Unsupported};
 use wasefire_store::FileStorage;
 
-use self::timer::Timers;
 use crate::RECEIVER;
 
 pub struct State {
     pub sender: Sender<Event<Board>>,
     pub button: bool, // whether interrupts are enabled
     pub led: bool,
-    pub timers: Timers,
+    pub timers: timer::Timers,
+    pub uarts: uart::Uarts,
     #[cfg(feature = "usb")]
     pub usb: usb::Usb,
     pub storage: Option<FileStorage>,
@@ -64,6 +65,7 @@ impl Api for Board {
     type Rng = rng::Impl;
     type Storage = storage::Impl;
     type Timer = timer::Impl;
+    type Uart = uart::Impl;
     #[cfg(feature = "usb")]
     type Usb = usb::Impl;
     #[cfg(not(feature = "usb"))]

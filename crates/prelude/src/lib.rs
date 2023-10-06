@@ -46,8 +46,10 @@ pub mod debug;
 pub mod led;
 pub mod rng;
 pub mod scheduling;
+pub mod serial;
 pub mod store;
 pub mod sync;
+pub mod uart;
 pub mod usb;
 
 /// Board-specific syscalls.
