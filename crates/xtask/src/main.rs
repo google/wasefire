@@ -435,6 +435,9 @@ impl RunnerOptions {
         }
         if self.no_default_features {
             cargo.arg("--no-default-features");
+        } else if std::env::var_os("CODESPACES").is_some() {
+            log::warn!("Assuming runner --no-default-features when running in a codespace.");
+            cargo.arg("--no-default-features");
         }
         for features in &self.features {
             cargo.arg(format!("--features={features}"));

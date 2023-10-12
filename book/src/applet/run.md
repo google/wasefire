@@ -14,15 +14,9 @@ following command:
 cargo xtask applet rust tutorial runner host
 ```
 
-If you are using a Github codespace, you need to disable USB:
-
-```shell
-cargo xtask applet rust tutorial runner host --no-default-features
-```
-
-Otherwise, type your password when asked. The `host` runner needs `sudo` to set
-USB/IP up, which is needed for applets that use USB. After a bunch of
-compilation steps, you should see something that ends like:
+Type your password when asked. The `host` runner needs `sudo` to set USB/IP up,
+which is needed for applets that use USB. This is disabled in Github Codespace.
+After a bunch of compilation steps, you should see something that ends like:
 
 ```plaintext
      Running `.../wasefire/target/release/runner-host`
