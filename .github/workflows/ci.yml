@@ -42,6 +42,5 @@ jobs:
             target/
           key: ${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ hashFiles('rust-toolchain.toml') }}
-      - run: sudo apt-get update
       - run: ./scripts/setup.sh
       - run: ./scripts/ci.sh
