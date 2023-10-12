@@ -19,7 +19,14 @@ set -e
 # This script synchronizes the gh-pages branch from a clean main.
 
 [ -z "$(git status -s)" ] || e 'not clean'
-[ -n "$CI" -o "$(git symbolic-ref -q HEAD)" = refs/heads/main ] || e 'not main'
+if [ -z "$CI" ]; then
+  [ "$(git symbolic-ref -q HEAD)" = refs/heads/main ] || e 'not main'
+else
+  set -x
+  git config --global user.name 'Julien Cretin'
+  git config --global user.email cretin@google.com
+  [ "$GITHUB_REF" = refs/heads/main ] || e 'not main'
+fi
 COMMIT="$(git rev-parse -q --verify HEAD)"
 [ -n "$COMMIT" ] || e 'failed to get commit hash'
 
@@ -40,4 +47,5 @@ rmdir html
 git add .
 git commit -qm"$COMMIT"
 git checkout -q main
+[ -z "$CI" ] || git push -f origin gh-pages
 d "gh-pages has been updated"
