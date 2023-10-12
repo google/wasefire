@@ -23,11 +23,9 @@ cd wasefire
 
 ## Run an applet
 
-Depending on your setup and hardware, you can run the hello applet with:
-- `cargo xtask applet rust hello runner host --no-default-features` if you're in
-  a Github codespace
-- `cargo xtask applet rust hello runner nordic` if you have an nRF52840 dev-kit
-- `cargo xtask applet rust hello runner host` otherwise
+Depending on your hardware, you can run the hello applet with:
+- `cargo xtask applet rust hello runner nordic` to run on an nRF52840 dev-kit
+- `cargo xtask applet rust hello runner host` to run on your desktop
 
 The general format is `cargo xtask applet LANGUAGE NAME runner BOARD`. Example
 applets are listed in the `examples` directory by _language_ then _name_.
