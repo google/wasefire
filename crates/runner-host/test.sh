@@ -15,9 +15,9 @@
 
 set -ex
 
-if [ ! -e ../../target/applet.wasm ]; then
-  mkdir -p ../../target
-  touch ../../target/applet.wasm
+if [ ! -e ../../target/wasefire/applet.wasm ]; then
+  mkdir -p ../../target/wasefire
+  touch ../../target/wasefire/applet.wasm
 fi
 cargo check --features=debug
 cargo check --features=release

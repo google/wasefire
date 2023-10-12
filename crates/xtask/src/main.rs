@@ -299,7 +299,7 @@ impl AppletOptions {
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(dir);
         execute_command(&mut cargo)?;
-        if copy_if_changed(&wasm, "target/applet.wasm")? {
+        if copy_if_changed(&wasm, "target/wasefire/applet.wasm")? {
             self.execute_wasm(main)?;
         }
         Ok(())
@@ -315,7 +315,7 @@ impl AppletOptions {
             execute_command(&mut npm)?;
         }
         let mut asc = Command::new("./node_modules/.bin/asc");
-        asc.args(["-o", "../../target/applet.wasm"]);
+        asc.args(["-o", "../../target/wasefire/applet.wasm"]);
         asc.arg(format!("-O{}", self.opt_level));
         asc.args(["--lowMemoryLimit", "--stackSize", &format!("{}", self.stack_size)]);
         asc.args(["--use", &format!("abort={}/main/abort", self.name)]);
@@ -331,7 +331,7 @@ impl AppletOptions {
     }
 
     fn execute_wasm(&self, main: &MainOptions) -> Result<()> {
-        let wasm = "target/applet.wasm";
+        let wasm = "target/wasefire/applet.wasm";
         if main.size {
             println!("Initial applet size: {}", std::fs::metadata(wasm)?.len());
         }
@@ -372,7 +372,7 @@ impl AppletCommand {
             AppletCommand::Twiggy { args } => {
                 let mut twiggy = wrap_command()?;
                 twiggy.arg("twiggy");
-                let mut wasm = Some("target/applet.wasm");
+                let mut wasm = Some("target/wasefire/applet.wasm");
                 for arg in args {
                     let _ = match arg.as_str() {
                         "APPLET" => twiggy.arg(wasm.take().unwrap()),
@@ -451,12 +451,12 @@ impl RunnerOptions {
         }
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(format!("crates/runner-{}", self.name));
-        if !Path::new("target/applet.wasm").exists() {
-            std::fs::create_dir_all("target")?;
-            std::fs::write("target/applet.wasm", "")?;
+        if !Path::new("target/wasefire/applet.wasm").exists() {
+            std::fs::create_dir_all("target/wasefire")?;
+            std::fs::write("target/wasefire/applet.wasm", "")?;
         }
         if run && self.name == "host" {
-            let path = Path::new("target/storage.bin");
+            let path = Path::new("target/wasefire/storage.bin");
             if self.erase_flash && path.exists() {
                 std::fs::remove_file(path)?;
             }

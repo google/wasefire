@@ -42,7 +42,7 @@ fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
 async fn main() -> Result<()> {
     env_logger::init();
     // TODO: Should be a flag controlled by xtask (value is duplicated there).
-    const STORAGE: &str = "../../target/storage.bin";
+    const STORAGE: &str = "../../target/wasefire/storage.bin";
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
     let storage = Some(FileStorage::new(Path::new(STORAGE), options).unwrap());
     let (sender, receiver) = channel(10);
@@ -75,6 +75,6 @@ async fn main() -> Result<()> {
         }
     });
     println!("Board initialized. Starting scheduler.");
-    const WASM: &[u8] = include_bytes!("../../../target/applet.wasm");
+    const WASM: &[u8] = include_bytes!("../../../target/wasefire/applet.wasm");
     Handle::current().spawn_blocking(|| Scheduler::<board::Board>::run(WASM)).await?
 }

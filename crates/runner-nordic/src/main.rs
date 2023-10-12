@@ -136,7 +136,7 @@ fn main() -> ! {
         unsafe { NVIC::unmask(interrupt) };
     }
     logger::debug!("Runner is initialized.");
-    const WASM: &[u8] = include_bytes!("../../../target/applet.wasm");
+    const WASM: &[u8] = include_bytes!("../../../target/wasefire/applet.wasm");
     Scheduler::<Board>::run(WASM)
 }
 
