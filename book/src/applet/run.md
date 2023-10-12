@@ -52,21 +52,15 @@ runner with the following command:
 cargo xtask applet rust tutorial runner nordic
 ```
 
-You might need additional tooling to run (like `probe-rs`). Please open an
-[issue](https://github.com/google/wasefire/issues/new) if you encounter any
-problem. This documentation could be improved.
-
 After a bunch of compilation steps, you should see something that ends like:
 
 ```plaintext
-"probe-run" "--chip=nRF52840_xxAA" "target/thumbv7em-none-eabi/release/runner-nordic"
-(HOST) INFO  flashing program (36 pages / 144.00 KiB)
-(HOST) INFO  success!
-────────────────────────────────────────────────────────────────────────────────
-3 ticks @ (1/100) hello world
-└─ api_helper::debug::println @ crates/api-helper/src/debug.rs:9
+".../wrapper.sh" "probe-rs" "run" "--chip=nRF52840_xxAA" "target/.../runner-nordic"
+     Erasing sectors ✔ [00:00:05] [################################]
+ Programming pages   ✔ [00:00:04] [################################]
+0.090527: hello world
 ```
 
-The first line is from `cargo xtask`. The rest is from `probe-run`. The last 2
-lines are triggered by the applet. Debugging output is prefixed by a timestamp
-(number of 10ms ticks) and followed on the next line by code location.
+The first line is from `cargo xtask`. The rest is from `probe-rs run`. The last
+line is triggered by the applet. Debugging output is prefixed by a timestamp in
+seconds.

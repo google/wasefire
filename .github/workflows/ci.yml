@@ -40,7 +40,10 @@ jobs:
             ~/.cargo/git/db/
             .root/
             target/
-          key: ${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('**/Cargo.lock') }}
+          key: >-
+            ${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles(
+              '**/Cargo.lock', 'scripts/wrapper.sh'
+            ) }}
           restore-keys: ${{ hashFiles('rust-toolchain.toml') }}
       - run: ./scripts/setup.sh
       - run: ./scripts/ci.sh

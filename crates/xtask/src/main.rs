@@ -163,10 +163,6 @@ struct RunnerOptions {
     #[clap(long)]
     log: Option<String>,
 
-    /// Enables probe-run --measure-stack flag.
-    #[clap(long)]
-    measure_stack: bool,
-
     /// Measures bloat after building.
     // TODO: Make this a subcommand taking additional options for cargo bloat.
     #[clap(long)]
@@ -538,19 +534,12 @@ impl RunnerOptions {
             println!("JLinkGDBServer -device {chip} -if swd -speed 4000 -port 2331");
             println!("gdb-multiarch -ex 'file {elf}' -ex 'target remote localhost:2331'");
         }
-        let mut probe_run = wrap_command()?;
-        // TODO(https://crates.io/crates/probe-run > 0.3.10): Use a simpler flag (or no flag).
-        probe_run.args(["probe-run", "--log-format={t} {L} {s}\n└─ {m} @ {F}:{l}"]);
-        probe_run.arg(format!("--chip={chip}"));
-        if main.release {
-            probe_run.arg("--backtrace=never");
-        }
-        if self.measure_stack {
-            probe_run.arg("--measure-stack");
-        }
-        probe_run.arg(elf);
+        let mut probe_rs = wrap_command()?;
+        probe_rs.args(["probe-rs", "run"]);
+        probe_rs.arg(format!("--chip={chip}"));
+        probe_rs.arg(elf);
         println!("Add --no-flash to the following command to rerun:");
-        replace_command(probe_run);
+        replace_command(probe_rs);
     }
 
     fn target(&self) -> &'static str {
