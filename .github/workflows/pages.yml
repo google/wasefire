@@ -1,0 +1,21 @@
+name: Deploy Github Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: ./scripts/setup.sh
+      - run: git config --global user.name 'Julien Cretin'
+      - run: git config --global user.email cretin@google.com
+      - run: ./scripts/pages.sh
+      - run: git push -f origin gh-pages

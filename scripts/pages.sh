@@ -19,11 +19,14 @@ set -e
 # This script synchronizes the gh-pages branch from a clean main.
 
 [ -z "$(git status -s)" ] || e 'not clean'
-[ "$(git symbolic-ref -q HEAD)" = refs/heads/main ] || e 'not main'
+[ -n "$CI" -o "$(git symbolic-ref -q HEAD)" = refs/heads/main ] || e 'not main'
+COMMIT="$(git rev-parse -q --verify HEAD)"
+[ -n "$COMMIT" ] || e 'failed to get commit hash'
 
 git diff --quiet "$(git log --pretty=format:%f origin/gh-pages)".. -- book \
   && d "origin/gh-pages is already up-to-date"
 
+WASEFIRE_WRAPPER_EXEC=n ./scripts/wrapper.sh mdbook
 ( cd book
   ../scripts/wrapper.sh mdbook build 2>/dev/null )
 mv book/book html
@@ -32,9 +35,9 @@ git show-ref -q --verify refs/heads/gh-pages && git branch -qD gh-pages
 git checkout -q --orphan gh-pages
 git rm -qrf .
 git clean -qfxde/html
-mv html/* html/.* .
+find html -mindepth 1 -maxdepth 1 -exec mv {} . \;
 rmdir html
 git add .
-git commit -qm"$(git rev-parse -q --verify main)"
+git commit -qm"$COMMIT"
 git checkout -q main
 d "gh-pages has been updated"
