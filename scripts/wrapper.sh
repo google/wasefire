@@ -34,15 +34,26 @@ run() {
 }
 
 ensure_cargo() {
-  local g
-  local c
-  if [ $# -eq 4 ]; then
-    g=" ($3?rev=$4#.\{8\})"
-    c="--git=$3 --rev=$4"
+  local flags="$1@$2"
+  local git_url
+  local git_commit
+  local features
+  case "$1" in
+    # TODO(https://crates.io/crates/taplo-cli > 0.8.1): Remove.
+    taplo-cli)
+      git_url=https://github.com/tamasfe/taplo.git
+      git_commit=191852c018d142b99cd8f7b4987456a447b3afb7
+      ;;
+    probe-rs) features=cli ;;
+  esac
+  if [ -n "$git_url" ]; then
+      flags="$flags --git=$git_url --rev=$git_commit"
+      grep=" ($git_url?rev=$git_commit#.\{8\})"
   fi
+  [ -n "$features" ] && flags="$flags --features=$features"
   if ! cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2$g:\$"; then
     [ "$1" = cargo-edit ] && ensure lib openssl
-    x cargo install --locked --root="$CARGO_ROOT" "$1@$2" $c
+    x cargo install --locked --root="$CARGO_ROOT" $flags
   fi
 }
 
@@ -57,11 +68,9 @@ case "$1" in
     esac
     ;;
   mdbook) ensure_cargo mdbook 0.4.34 ;;
-  probe-run) ensure_cargo probe-run 0.3.10 ;;
+  probe-rs) ensure_cargo probe-rs 0.21.0 ;;
   rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
-  taplo) ensure_cargo taplo-cli 0.8.1 \
-                      https://github.com/tamasfe/taplo.git \
-                      191852c018d142b99cd8f7b4987456a447b3afb7 ;;
+  taplo) ensure_cargo taplo-cli 0.8.1 ;;
   twiggy) ensure_cargo twiggy 0.7.0 ;;
   *) IS_CARGO=n ;;
 esac
