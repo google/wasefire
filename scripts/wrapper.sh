@@ -48,10 +48,10 @@ ensure_cargo() {
       flags="$flags --git=$git_url --rev=$git_commit"
       grep=" ($git_url?rev=$git_commit#.\{8\})"
   fi
-  shift 2
   if ! cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2$grep:\$"
   then
     [ "$1" = cargo-edit ] && ensure lib openssl
+    shift 2
     x cargo install --locked --root="$CARGO_ROOT" $flags "$@"
   fi
 }
