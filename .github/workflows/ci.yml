@@ -40,7 +40,7 @@ jobs:
             ~/.cargo/git/db/
             .root/
             target/
-          key: |
+          key: >-
             ${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles(
               '**/Cargo.lock', 'scripts/wrapper.sh'
             ) }}
