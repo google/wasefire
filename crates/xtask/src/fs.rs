@@ -24,18 +24,16 @@ pub fn canonicalize(path: impl AsRef<Path>) -> Result<PathBuf> {
     std::fs::canonicalize(path.as_ref()).with_context(|| format!("canonicalizing {name}"))
 }
 
-pub fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<()> {
+pub fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     let src = from.as_ref().display();
     let dst = to.as_ref().display();
     create_parent(to.as_ref())?;
-    std::fs::copy(from.as_ref(), to.as_ref()).with_context(|| format!("copying {src} to {dst}"))?;
-    Ok(())
+    std::fs::copy(from.as_ref(), to.as_ref()).with_context(|| format!("copying {src} to {dst}"))
 }
 
 fn create_dir_all(path: impl AsRef<Path>) -> Result<()> {
     let name = path.as_ref().display();
-    std::fs::create_dir_all(path.as_ref()).with_context(|| format!("creating {name}"))?;
-    Ok(())
+    std::fs::create_dir_all(path.as_ref()).with_context(|| format!("creating {name}"))
 }
 
 fn create_parent(path: impl AsRef<Path>) -> Result<()> {
@@ -57,8 +55,7 @@ pub fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
 
 pub fn remove_file(path: impl AsRef<Path>) -> Result<()> {
     let name = path.as_ref().display();
-    std::fs::remove_file(path.as_ref()).with_context(|| format!("removing {name}"))?;
-    Ok(())
+    std::fs::remove_file(path.as_ref()).with_context(|| format!("removing {name}"))
 }
 
 pub fn touch(path: impl AsRef<Path>) -> Result<()> {
