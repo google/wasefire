@@ -543,7 +543,7 @@ impl Format {
     ///
     /// - `bytes` + [`Self::word_size`] does not overflow.
     pub fn bytes_to_words(&self, bytes: Nat) -> Nat {
-        div_ceil(bytes, self.word_size())
+        bytes.div_ceil(self.word_size())
     }
 }
 
@@ -570,7 +570,7 @@ bitfield! {
     INIT_CYCLE: Field <= MAX_ERASE_CYCLE,
 
     /// The word index of the first entry in this virtual page.
-    INIT_PREFIX: Field <= div_ceil(MAX_VALUE_LEN, WORD_SIZE),
+    INIT_PREFIX: Field <= MAX_VALUE_LEN.div_ceil(WORD_SIZE),
 
     #[cfg(test)]
     LEN_INIT: Length,
@@ -905,17 +905,6 @@ pub fn is_erased(slice: &[u8]) -> bool {
     slice.iter().all(|&x| x == 0xff)
 }
 
-/// Divides then takes ceiling.
-///
-/// Returns ⌈x / m⌉, i.e. the lowest natural number r such that r ≥ x / m.
-///
-/// # Preconditions
-///
-/// - x + m does not overflow.
-const fn div_ceil(x: Nat, m: Nat) -> Nat {
-    (x + m - 1) / m
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1025,17 +1014,6 @@ mod tests {
         assert!(!is_erased(&[0x00]));
         assert!(!is_erased(&[0xff, 0xfe]));
         assert!(!is_erased(&[0x7f, 0xff]));
-    }
-
-    #[test]
-    fn div_ceil_ok() {
-        assert_eq!(div_ceil(0, 1), 0);
-        assert_eq!(div_ceil(1, 1), 1);
-        assert_eq!(div_ceil(2, 1), 2);
-        assert_eq!(div_ceil(0, 2), 0);
-        assert_eq!(div_ceil(1, 2), 1);
-        assert_eq!(div_ceil(2, 2), 1);
-        assert_eq!(div_ceil(3, 2), 2);
     }
 
     #[test]

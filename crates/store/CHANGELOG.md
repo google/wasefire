@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Use `div_ceil` from the standard library
 - Fix bug where range keys is in wrong order
 
 ## 0.2.1
