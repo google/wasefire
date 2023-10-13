@@ -31,6 +31,8 @@ use rustc_demangle::demangle;
 use sha2::{Digest, Sha256};
 use strum::{Display, EnumString};
 
+mod fs;
+
 #[derive(Parser)]
 struct Flags {
     #[clap(flatten)]
@@ -329,7 +331,7 @@ impl AppletOptions {
     fn execute_wasm(&self, main: &MainOptions) -> Result<()> {
         let wasm = "target/wasefire/applet.wasm";
         if main.size {
-            println!("Initial applet size: {}", std::fs::metadata(wasm)?.len());
+            println!("Initial applet size: {}", fs::metadata(wasm)?.len());
         }
         if self.strip.get() {
             let mut strip = wrap_command()?;
@@ -337,7 +339,7 @@ impl AppletOptions {
             strip.arg(wasm);
             execute_command(&mut strip)?;
             if main.size {
-                println!("Stripped applet size: {}", std::fs::metadata(wasm)?.len());
+                println!("Stripped applet size: {}", fs::metadata(wasm)?.len());
             }
         }
         if self.opt.get() {
@@ -354,7 +356,7 @@ impl AppletOptions {
             opt.args([wasm, "-o", wasm]);
             execute_command(&mut opt)?;
             if main.size {
-                println!("Optimized applet size: {}", std::fs::metadata(wasm)?.len());
+                println!("Optimized applet size: {}", fs::metadata(wasm)?.len());
             }
         }
         Ok(())
@@ -447,14 +449,11 @@ impl RunnerOptions {
         }
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(format!("crates/runner-{}", self.name));
-        if !Path::new("target/wasefire/applet.wasm").exists() {
-            std::fs::create_dir_all("target/wasefire")?;
-            std::fs::write("target/wasefire/applet.wasm", "")?;
-        }
+        fs::touch("target/wasefire/applet.wasm")?;
         if run && self.name == "host" {
             let path = Path::new("target/wasefire/storage.bin");
             if self.erase_flash && path.exists() {
-                std::fs::remove_file(path)?;
+                fs::remove_file(path)?;
             }
             replace_command(cargo);
         } else {
@@ -491,7 +490,7 @@ impl RunnerOptions {
             execute_command(&mut size)?;
         }
         if let Some(stack_sizes) = self.stack_sizes {
-            let elf = std::fs::read(&elf)?;
+            let elf = fs::read(&elf)?;
             let symbols = stack_sizes::analyze_executable(&elf)?;
             assert!(symbols.have_32_bit_addresses);
             assert!(symbols.undefined.is_empty());
@@ -612,7 +611,7 @@ fn ensure_command(cmd: &[&str]) -> Result<()> {
 }
 
 fn wrap_command() -> Result<Command> {
-    Ok(Command::new(std::fs::canonicalize("./scripts/wrapper.sh")?))
+    Ok(Command::new(fs::canonicalize("./scripts/wrapper.sh")?))
 }
 
 /// Copies a file if its destination .hash changed.
@@ -620,13 +619,13 @@ fn wrap_command() -> Result<Command> {
 /// Returns whether the copy took place.
 fn copy_if_changed(src: &str, dst: &str) -> Result<bool> {
     let dst_file = format!("{dst}.hash");
-    let src_hash = Sha256::digest(std::fs::read(src)?);
-    let changed = !Path::new(dst).exists()
-        || !Path::new(&dst_file).exists()
-        || std::fs::read(&dst_file)? != *src_hash;
+    let src_hash = Sha256::digest(fs::read(src)?);
+    let dst_path = Path::new(dst);
+    let changed =
+        !dst_path.exists() || !Path::new(&dst_file).exists() || fs::read(&dst_file)? != *src_hash;
     if changed {
-        std::fs::copy(src, dst)?;
-        std::fs::write(&dst_file, src_hash)?;
+        fs::copy(src, dst)?;
+        fs::write(&dst_file, src_hash)?;
     }
     Ok(changed)
 }
