@@ -21,7 +21,7 @@ use anyhow::{Context, Result};
 
 pub fn canonicalize(path: impl AsRef<Path>) -> Result<PathBuf> {
     let name = path.as_ref().display();
-    Ok(std::fs::canonicalize(path.as_ref()).with_context(|| format!("canonicalizing {name}"))?)
+    std::fs::canonicalize(path.as_ref()).with_context(|| format!("canonicalizing {name}"))
 }
 
 pub fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<()> {
@@ -47,12 +47,12 @@ fn create_parent(path: impl AsRef<Path>) -> Result<()> {
 
 pub fn metadata(path: impl AsRef<Path>) -> Result<Metadata> {
     let name = path.as_ref().display();
-    Ok(std::fs::metadata(path.as_ref()).with_context(|| format!("reading {name} metadata"))?)
+    std::fs::metadata(path.as_ref()).with_context(|| format!("reading {name} metadata"))
 }
 
 pub fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
     let name = path.as_ref().display();
-    Ok(std::fs::read(path.as_ref()).with_context(|| format!("reading {name}"))?)
+    std::fs::read(path.as_ref()).with_context(|| format!("reading {name}"))
 }
 
 pub fn remove_file(path: impl AsRef<Path>) -> Result<()> {
