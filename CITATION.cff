@@ -1,13 +1,16 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+message: Please cite this software using these metadata.
+title: Wasefire
+abstract: Secure firmware framework focusing on developer experience.
 authors:
-- family-names: "Cretin"
-  given-names: "Julien"
-- family-names: "Picod"
-  given-names: "Jean-Michel"
-- family-names: "Bursztein"
-  given-names: "Elie"
-- family-names: "Invernizzi"
-  given-names: "Luca"
-title: "Wasefire"
-url: "https://github.com/google/wasefire"
+- family-names: Cretin
+  given-names: Julien
+- family-names: Picod
+  given-names: Jean-Michel
+- family-names: Bursztein
+  given-names: Elie
+- family-names: Invernizzi
+  given-names: Luca
+license: Apache-2.0
+repository-code: 'https://github.com/google/wasefire'
+url: 'https://google.github.io/wasefire'
