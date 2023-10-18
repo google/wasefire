@@ -28,26 +28,6 @@ pub fn count() -> usize {
     cnt
 }
 
-/// Reads from a UART into a buffer without blocking.
-///
-/// Returns how many bytes were read (and thus written to the buffer). This function does not block,
-/// so if there are no data available for read, zero is returned.
-pub fn read(uart: usize, buf: &mut [u8]) -> Result<usize, Error> {
-    let params = api::read::Params { uart, ptr: buf.as_mut_ptr(), len: buf.len() };
-    let api::read::Results { len } = unsafe { api::read(params) };
-    convert(len)
-}
-
-/// Writes from a buffer to a UART.
-///
-/// Returns how many bytes were written (and thus read from the buffer). This function does not
-/// block, so if the serial is not ready for write, zero is returned.
-pub fn write(uart: usize, buf: &[u8]) -> Result<usize, Error> {
-    let params = api::write::Params { uart, ptr: buf.as_ptr(), len: buf.len() };
-    let api::write::Results { len } = unsafe { api::write(params) };
-    convert(len)
-}
-
 /// Implements the [`Serial`] interface for UART.
 pub struct Uart(pub usize);
 
@@ -55,11 +35,16 @@ impl Serial for Uart {
     type Error = Error;
 
     fn read(&self, buffer: &mut [u8]) -> Result<usize, Error> {
-        read(self.0, buffer)
+        let params =
+            api::read::Params { uart: self.0, ptr: buffer.as_mut_ptr(), len: buffer.len() };
+        let api::read::Results { len } = unsafe { api::read(params) };
+        convert(len)
     }
 
     fn write(&self, buffer: &[u8]) -> Result<usize, Error> {
-        write(self.0, buffer)
+        let params = api::write::Params { uart: self.0, ptr: buffer.as_ptr(), len: buffer.len() };
+        let api::write::Results { len } = unsafe { api::write(params) };
+        convert(len)
     }
 
     fn flush(&self) -> Result<(), Error> {

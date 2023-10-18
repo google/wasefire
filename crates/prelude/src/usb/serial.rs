@@ -19,32 +19,6 @@ use wasefire_applet_api::usb::serial as api;
 use crate::serial::{Event, Serial};
 use crate::usb::{convert, Error};
 
-/// Reads from USB serial into a buffer without blocking.
-///
-/// Returns how many bytes were read (and thus written to the buffer). This function does not block,
-/// so if there are no data available for read, zero is returned.
-pub fn read(buf: &mut [u8]) -> Result<usize, Error> {
-    let params = api::read::Params { ptr: buf.as_mut_ptr(), len: buf.len() };
-    let api::read::Results { len } = unsafe { api::read(params) };
-    convert(len)
-}
-
-/// Writes from a buffer to USB serial.
-///
-/// Returns how many bytes were written (and thus read from the buffer). This function does not
-/// block, so if the serial is not ready for write, zero is returned.
-pub fn write(buf: &[u8]) -> Result<usize, Error> {
-    let params = api::write::Params { ptr: buf.as_ptr(), len: buf.len() };
-    let api::write::Results { len } = unsafe { api::write(params) };
-    convert(len)
-}
-
-/// Flushes the USB serial.
-pub fn flush() -> Result<(), Error> {
-    let api::flush::Results { res } = unsafe { api::flush() };
-    convert(res).map(|_| ())
-}
-
 /// Implements the [`Serial`] interface for the USB serial.
 pub struct UsbSerial;
 
@@ -52,15 +26,20 @@ impl Serial for UsbSerial {
     type Error = Error;
 
     fn read(&self, buffer: &mut [u8]) -> Result<usize, Error> {
-        read(buffer)
+        let params = api::read::Params { ptr: buffer.as_mut_ptr(), len: buffer.len() };
+        let api::read::Results { len } = unsafe { api::read(params) };
+        convert(len)
     }
 
     fn write(&self, buffer: &[u8]) -> Result<usize, Error> {
-        write(buffer)
+        let params = api::write::Params { ptr: buffer.as_ptr(), len: buffer.len() };
+        let api::write::Results { len } = unsafe { api::write(params) };
+        convert(len)
     }
 
     fn flush(&self) -> Result<(), Self::Error> {
-        flush()
+        let api::flush::Results { res } = unsafe { api::flush() };
+        convert(res).map(|_| ())
     }
 
     fn register(
