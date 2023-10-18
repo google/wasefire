@@ -165,6 +165,10 @@ struct RunnerOptions {
     #[clap(long)]
     log: Option<String>,
 
+    /// Creates a web interface for the host runner.
+    #[clap(long)]
+    web: bool,
+
     /// Measures bloat after building.
     // TODO: Make this a subcommand taking additional options for cargo bloat.
     #[clap(long)]
@@ -442,6 +446,9 @@ impl RunnerOptions {
         }
         if let Some(log) = &self.log {
             cargo.env(self.log_env(), log);
+        }
+        if self.name == "host" && self.web {
+            cargo.arg("--features=web");
         }
         if self.stack_sizes.is_some() {
             rustflags.push("-Z emit-stack-sizes".to_string());

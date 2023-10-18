@@ -20,8 +20,11 @@ if [ ! -e ../../target/wasefire/applet.wasm ]; then
   touch ../../target/wasefire/applet.wasm
 fi
 cargo check --features=debug
+cargo check --features=debug,web
 cargo check --features=release
 cargo check --no-default-features --features=debug
 cargo fmt -- --check
 cargo clippy --features=debug -- --deny=warnings
+cargo clippy --features=debug,web -- --deny=warnings
+cargo clippy --features=release -- --deny=warnings
 cargo test --features=debug

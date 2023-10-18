@@ -1,0 +1,18 @@
+[package]
+name = "web-server"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>", "Luca Invernizzi <invernizzi@google.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.75"
+futures-util = "0.3.28"
+opener = "0.6.1"
+serde_json = "1.0.107"
+tokio = { version = "1.32.0", features = ["full", "rt-multi-thread", "sync"] }
+tokio-stream = "0.1.14"
+warp = "0.3.5"
+wasefire-logger = { path = "../../../logger" }
+web-common = { path = "../web-common" }

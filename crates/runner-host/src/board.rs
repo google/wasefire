@@ -37,6 +37,8 @@ pub struct State {
     #[cfg(feature = "usb")]
     pub usb: usb::Usb,
     pub storage: Option<FileStorage>,
+    #[cfg(feature = "web")]
+    pub web: web_server::Client,
 }
 
 pub enum Board {}

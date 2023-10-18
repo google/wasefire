@@ -1,0 +1,50 @@
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(12,74,19) rgb(10,10,10);
+}
+*::-webkit-scrollbar {
+  width: 12px;
+}
+*::-webkit-scrollbar-track {
+  background: rgba(10,10,10,.9);
+}
+*::-webkit-scrollbar-thumb {
+  background-color: blue;
+  border-radius: 20px;
+  border: 3px solid rgb(12, 74, 19);
+}
+
+
+/* Loading animation */
+.loading-title {
+	animation: loading-title 1s cubic-bezier(0.2, 0.6, 0.4, 1.000) both;
+}
+@keyframes loading-title {
+  0% {
+    letter-spacing: -0.4em;
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.loading-message {
+	animation: loading-message 1.0s linear both;
+}
+@keyframes loading-message {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
