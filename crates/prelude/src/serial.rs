@@ -57,6 +57,14 @@ pub trait Serial {
     fn unregister(&self, event: Event) -> Result<(), Self::Error>;
 }
 
+/// Reads from the serial into a buffer without blocking.
+///
+/// Returns how many bytes were read (and thus written to the buffer). This function does not
+/// block, so if there are no data available for read, zero is returned.
+pub fn read<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<usize, T::Error> {
+    serial.read(buffer)
+}
+
 /// Synchronously reads at least one byte from a serial into a buffer.
 ///
 /// This function will block if necessary.
@@ -83,6 +91,14 @@ pub fn read_byte<T: Serial>(serial: &T) -> Result<u8, T::Error> {
     Ok(byte)
 }
 
+/// Writes from a buffer to the serial.
+///
+/// Returns how many bytes were written (and thus read from the buffer). This function does not
+/// block, so if the serial is not ready for write, zero is returned.
+pub fn write<T: Serial>(serial: &T, buffer: &[u8]) -> Result<usize, T::Error> {
+    serial.write(buffer)
+}
+
 /// Writes at least one byte from a buffer to a serial.
 ///
 /// This function will block if necessary.
@@ -100,6 +116,11 @@ pub fn write_all<T: Serial>(serial: &T, buffer: &[u8]) -> Result<(), T::Error> {
     scheduling::wait_until(|| writer.is_done());
     writer.result()?;
     Ok(())
+}
+
+/// Flushes the serial (in case reads or writes are buffered).
+pub fn flush<T: Serial>(serial: &T) -> Result<(), T::Error> {
+    serial.flush()
 }
 
 /// Provides asynchronous read support.

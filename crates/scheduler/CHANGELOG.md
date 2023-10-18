@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support `uart`
 - Support `syscall()`
 - Support `store::fragment`
 

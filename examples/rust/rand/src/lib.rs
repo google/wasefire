@@ -23,15 +23,17 @@ wasefire::applet!();
 
 use alloc::{format, vec};
 
+use wasefire::usb::serial::UsbSerial;
+
 fn main() {
     loop {
-        let len = match usb::serial::read_byte().unwrap() {
+        let len = match serial::read_byte(&UsbSerial).unwrap() {
             c @ b'1' ..= b'9' => c - b'0',
             b'0' => 10,
             _ => continue,
         };
         let mut buf = vec![0; len as usize];
         rng::fill_bytes(&mut buf).unwrap();
-        usb::serial::write_all(format!("{buf:02x?}\r\n").as_bytes()).unwrap();
+        serial::write_all(&UsbSerial, format!("{buf:02x?}\r\n").as_bytes()).unwrap();
     }
 }

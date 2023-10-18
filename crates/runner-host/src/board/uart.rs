@@ -48,7 +48,7 @@ impl Uarts {
                             uart.connect(stream, &state.sender);
                         })
                     }
-                    Err(e) => log::warn!("Failed to accept a UART connection: {e:?}"),
+                    Err(e) => log::warn!("Failed to accept a UART connection: {:?}", e),
                 }
             }
         });

@@ -9,7 +9,7 @@ doesn't work.
 
 Clone the repository and run the setup script[^1]:
 
-```sh
+```shell
 git clone https://github.com/google/wasefire
 cd wasefire
 ./scripts/setup.sh

@@ -17,6 +17,7 @@
         - [Buttons](applet/prelude/button.md)
         - [Timers](applet/prelude/timer.md)
         - [USB](applet/prelude/usb.md)
+        - [UART](applet/prelude/uart.md)
         - [Storage](applet/prelude/store.md)
     - [Examples](applet/examples.md)
 

@@ -22,6 +22,7 @@
 wasefire::applet!();
 
 use common::{Deserialize, Deserializer, Error, Request, Response, Serialize, Serializer};
+use wasefire::usb::serial::UsbSerial;
 
 fn main() {
     loop {
@@ -79,16 +80,16 @@ struct Usb;
 
 impl Deserializer for Usb {
     fn read_exact(&mut self, data: &mut [u8]) -> Result<(), Error> {
-        usb::serial::read_all(data).map_err(|_| Error::UsbError)
+        serial::read_all(&UsbSerial, data).map_err(|_| Error::UsbError)
     }
 }
 
 impl Serializer for Usb {
     fn write_all(&mut self, data: &[u8]) -> Result<(), Error> {
-        usb::serial::write_all(data).map_err(|_| Error::UsbError)
+        serial::write_all(&UsbSerial, data).map_err(|_| Error::UsbError)
     }
 
     fn flush(&mut self) -> Result<(), Error> {
-        usb::serial::flush().map_err(|_| Error::UsbError)
+        serial::flush(&UsbSerial).map_err(|_| Error::UsbError)
     }
 }

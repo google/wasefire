@@ -27,14 +27,16 @@ use alloc::{format, vec};
 use core::cell::Cell;
 use core::time::Duration;
 
+use wasefire::usb::serial::UsbSerial;
+
 fn main() {
     let mut level = 3; // length of the string to remember
     let mut prompt = "Press ENTER when you are ready.";
     loop {
-        usb::serial::write_all(format!("\r\x1b[K{prompt}").as_bytes()).unwrap();
+        serial::write_all(&UsbSerial, format!("\r\x1b[K{prompt}").as_bytes()).unwrap();
 
         // Make sure the player is ready.
-        while usb::serial::read_byte().unwrap() != 0x0d {}
+        while serial::read_byte(&UsbSerial).unwrap() != 0x0d {}
 
         // Generate a question for this level.
         let mut question = vec![0; level];
@@ -87,9 +89,9 @@ fn process(
     while !done && secs.get() < max_secs {
         let secs = max_secs - secs.get();
         let message = format!("\r\x1b[K{prompt} ({secs} seconds remaining): \x1b[1m{data}\x1b[m");
-        usb::serial::write_all(message.as_bytes()).unwrap();
+        serial::write_all(&UsbSerial, message.as_bytes()).unwrap();
         let mut buffer = [0; 8];
-        let reader = usb::serial::Reader::new(&mut buffer);
+        let reader = serial::Reader::new(&UsbSerial, &mut buffer);
         scheduling::wait_for_callback();
         let len = reader.result().unwrap();
         for &byte in &buffer[.. len] {
