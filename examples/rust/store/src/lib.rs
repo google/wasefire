@@ -28,6 +28,8 @@ use core::num::ParseIntError;
 use core::ops::Range;
 use core::str::FromStr;
 
+use wasefire::usb::serial::UsbSerial;
+
 fn main() {
     writeln(b"Usage: insert <key>[..<key>] <value>");
     writeln(b"Usage: find <key>[..<key>]");
@@ -36,15 +38,15 @@ fn main() {
         // Read the command.
         let mut command = String::new();
         loop {
-            usb::serial::write_all(format!("\r\x1b[K> {command}").as_bytes()).unwrap();
-            match usb::serial::read_byte().unwrap() {
+            serial::write_all(&UsbSerial, format!("\r\x1b[K> {command}").as_bytes()).unwrap();
+            match serial::read_byte(&UsbSerial).unwrap() {
                 c @ (b' ' | b'.' | b'a' ..= b'z' | b'0' ..= b'9') => command.push(c as char),
                 0x7f => drop(command.pop()),
                 0x0d => break,
                 _ => (),
             }
         }
-        usb::serial::write_all(b"\r\n").unwrap();
+        serial::write_all(&UsbSerial, b"\r\n").unwrap();
 
         // Parse the command.
         let command = match Command::parse(&command) {
@@ -148,6 +150,6 @@ fn remove(key: &Key) -> Result<(), store::Error> {
 }
 
 fn writeln(buf: &[u8]) {
-    usb::serial::write_all(buf).unwrap();
-    usb::serial::write_all(b"\r\n").unwrap();
+    serial::write_all(&UsbSerial, buf).unwrap();
+    serial::write_all(&UsbSerial, b"\r\n").unwrap();
 }

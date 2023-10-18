@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,40 +12,50 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides API for USB serial.
+//! Provides API for UART.
 
-use wasefire_applet_api::usb::serial as api;
+use wasefire_applet_api::uart as api;
 
 use crate::serial::{Event, Serial};
-use crate::usb::{convert, Error};
 
-/// Implements the [`Serial`] interface for the USB serial.
-pub struct UsbSerial;
+/// UART error.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Error;
 
-impl Serial for UsbSerial {
+/// Returns the number of available UARTs on the board.
+pub fn count() -> usize {
+    let api::count::Results { cnt } = unsafe { api::count() };
+    cnt
+}
+
+/// Implements the [`Serial`] interface for UART.
+pub struct Uart(pub usize);
+
+impl Serial for Uart {
     type Error = Error;
 
     fn read(&self, buffer: &mut [u8]) -> Result<usize, Error> {
-        let params = api::read::Params { ptr: buffer.as_mut_ptr(), len: buffer.len() };
+        let params =
+            api::read::Params { uart: self.0, ptr: buffer.as_mut_ptr(), len: buffer.len() };
         let api::read::Results { len } = unsafe { api::read(params) };
         convert(len)
     }
 
     fn write(&self, buffer: &[u8]) -> Result<usize, Error> {
-        let params = api::write::Params { ptr: buffer.as_ptr(), len: buffer.len() };
+        let params = api::write::Params { uart: self.0, ptr: buffer.as_ptr(), len: buffer.len() };
         let api::write::Results { len } = unsafe { api::write(params) };
         convert(len)
     }
 
-    fn flush(&self) -> Result<(), Self::Error> {
-        let api::flush::Results { res } = unsafe { api::flush() };
-        convert(res).map(|_| ())
+    fn flush(&self) -> Result<(), Error> {
+        Ok(())
     }
 
     fn register(
         &self, event: Event, func: extern "C" fn(*const u8), data: *const u8,
     ) -> Result<(), Error> {
         let params = api::register::Params {
+            uart: self.0,
             event: convert_event(event) as usize,
             handler_func: func,
             handler_data: data,
@@ -55,9 +65,17 @@ impl Serial for UsbSerial {
     }
 
     fn unregister(&self, event: Event) -> Result<(), Error> {
-        let params = api::unregister::Params { event: convert_event(event) as usize };
+        let params = api::unregister::Params { uart: self.0, event: convert_event(event) as usize };
         unsafe { api::unregister(params) };
         Ok(())
+    }
+}
+
+fn convert(code: isize) -> Result<usize, Error> {
+    if code < 0 {
+        Err(Error)
+    } else {
+        Ok(code as usize)
     }
 }
 

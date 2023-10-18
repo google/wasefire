@@ -27,7 +27,8 @@ use alloc::{format, vec};
 
 use wasefire::crypto::ccm;
 use wasefire::rng::fill_bytes;
-use wasefire::usb::serial::{read_byte, write_all};
+use wasefire::serial::{read_byte, write_all};
+use wasefire::usb::serial::UsbSerial;
 
 fn main() {
     loop {
@@ -38,7 +39,7 @@ fn main() {
         fill_bytes(&mut iv).unwrap();
         write_hex("iv", &iv);
 
-        let len = match read_byte().unwrap() {
+        let len = match read_byte(&UsbSerial).unwrap() {
             c @ b'1' ..= b'9' => c - b'0',
             b'0' => 10,
             _ => continue,
@@ -62,5 +63,5 @@ fn write_hex(n: &str, xs: &[u8]) {
 }
 
 fn writeln(m: &str) {
-    write_all(format!("{m}\r\n").as_bytes()).unwrap();
+    write_all(&UsbSerial, format!("{m}\r\n").as_bytes()).unwrap();
 }

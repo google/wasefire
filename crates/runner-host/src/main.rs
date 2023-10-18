@@ -27,8 +27,6 @@ use wasefire_board_api::Event;
 use wasefire_scheduler::Scheduler;
 use wasefire_store::{FileOptions, FileStorage};
 
-use crate::board::timer::Timers;
-
 mod board;
 
 static STATE: Mutex<Option<board::State>> = Mutex::new(None);
@@ -51,27 +49,27 @@ async fn main() -> Result<()> {
         sender,
         button: false,
         led: false,
-        timers: Timers::default(),
+        timers: board::timer::Timers::default(),
+        uarts: board::uart::Uarts::new(),
         #[cfg(feature = "usb")]
         usb: board::usb::Usb::default(),
         storage,
     });
+    board::uart::Uarts::init();
     #[cfg(feature = "usb")]
     board::usb::Usb::init()?;
-    tokio::spawn({
-        async move {
-            for line in std::io::stdin().lock().lines() {
-                let pressed = match line.unwrap().as_str() {
-                    "button" => None,
-                    "press" => Some(true),
-                    "release" => Some(false),
-                    x => {
-                        println!("Unrecognized command: {x}");
-                        continue;
-                    }
-                };
-                with_state(|state| board::button::event(state, pressed));
-            }
+    tokio::spawn(async move {
+        for line in std::io::stdin().lock().lines() {
+            let pressed = match line.unwrap().as_str() {
+                "button" => None,
+                "press" => Some(true),
+                "release" => Some(false),
+                x => {
+                    println!("Unrecognized command: {x}");
+                    continue;
+                }
+            };
+            with_state(|state| board::button::event(state, pressed));
         }
     });
     println!("Board initialized. Starting scheduler.");

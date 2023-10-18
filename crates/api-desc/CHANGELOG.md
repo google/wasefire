@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `uart` module
 - Change return type of `syscall` to unsigned
 - Add `store::fragment` module
 

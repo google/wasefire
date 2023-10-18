@@ -27,7 +27,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::cell::{Cell, RefCell};
 
-use wasefire::usb::serial;
+use wasefire::usb::serial::UsbSerial;
 
 const TOUCH_TIMEOUT_MS: usize = 5_000;
 const BUTTON_TIMEOUT_MS: usize = 3_000;
@@ -125,17 +125,17 @@ struct Console {
 
 impl Console {
     fn read(&self) -> Option<Vec<u8>> {
-        match serial::read_byte().unwrap() {
+        match serial::read_byte(&UsbSerial).unwrap() {
             c @ (b' ' | b'0' ..= b'9' | b'A' ..= b'Z' | b'a' ..= b'z') => {
                 self.prompt.borrow_mut().push(c);
-                serial::write_all(&[c]).unwrap();
+                serial::write_all(&UsbSerial, &[c]).unwrap();
                 None
             }
             // Backspace
             0x7f => {
                 if self.prompt.borrow_mut().pop().is_some() {
                     // Note sure if there's something more idiomatic.
-                    serial::write_all(b"\x08 \x08").unwrap();
+                    serial::write_all(&UsbSerial, b"\x08 \x08").unwrap();
                 }
                 None
             }
@@ -145,7 +145,7 @@ impl Console {
                 if prompt.is_empty() {
                     None
                 } else {
-                    serial::write_all(b"\r\n").unwrap();
+                    serial::write_all(&UsbSerial, b"\r\n").unwrap();
                     Some(prompt)
                 }
             }
@@ -175,9 +175,9 @@ impl Console {
     }
 
     fn write_msg(&self, msg: &str) {
-        serial::write_all(format!("\r\x1b[K{msg}\r\n> ").as_bytes()).unwrap();
+        serial::write_all(&UsbSerial, format!("\r\x1b[K{msg}\r\n> ").as_bytes()).unwrap();
         let mut prompt = self.prompt.borrow_mut().split_off(0);
-        serial::write_all(&prompt).unwrap();
+        serial::write_all(&UsbSerial, &prompt).unwrap();
         prompt.append(&mut *self.prompt.borrow_mut());
         *self.prompt.borrow_mut() = prompt;
     }

@@ -28,6 +28,8 @@ use alloc::{format, vec};
 use core::cell::Cell;
 use core::time::Duration;
 
+use wasefire::usb::serial::UsbSerial;
+
 fn main() {
     //{ ANCHOR: state
     let mut level = 3; // length of the string to remember
@@ -37,12 +39,12 @@ fn main() {
     loop {
     //} ANCHOR_END: loop
         //{ ANCHOR: prompt
-        usb::serial::write_all(format!("\r\x1b[K{prompt}").as_bytes()).unwrap();
+        serial::write_all(&UsbSerial, format!("\r\x1b[K{prompt}").as_bytes()).unwrap();
         //} ANCHOR_END: prompt
 
         //{ ANCHOR: ready
         // Make sure the player is ready.
-        while usb::serial::read_byte().unwrap() != 0x0d {}
+        while serial::read_byte(&UsbSerial).unwrap() != 0x0d {}
         //} ANCHOR_END: ready
 
         //{ ANCHOR: generate
@@ -111,11 +113,11 @@ fn process(
         //{ ANCHOR: process_write
         let secs = max_secs - secs.get();
         let message = format!("\r\x1b[K{prompt} ({secs} seconds remaining): \x1b[1m{data}\x1b[m");
-        usb::serial::write_all(message.as_bytes()).unwrap();
+        serial::write_all(&UsbSerial, message.as_bytes()).unwrap();
         //} ANCHOR_END: process_write
         //{ ANCHOR: process_reader
         let mut buffer = [0; 8];
-        let reader = usb::serial::Reader::new(&mut buffer);
+        let reader = serial::Reader::new(&UsbSerial, &mut buffer);
         //} ANCHOR_END: process_reader
         //{ ANCHOR: process_wait
         scheduling::wait_for_callback();

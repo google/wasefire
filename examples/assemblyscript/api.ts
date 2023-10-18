@@ -842,6 +842,82 @@
   // END OF MODULE store_fragment
 // END OF MODULE store
 
+// START OF MODULE uart
+  // Returns how many UARTs are on the device.
+  @external("env", "uac")
+  export declare function uart_count(
+  ): usize
+
+  // Reads from a UART into a buffer.
+  @external("env", "uar")
+  export declare function uart_read(
+    // Index of the UART to read from.
+    uart: usize,
+
+    // Address of the buffer.
+    ptr: usize,
+
+    // Length of the buffer in bytes.
+    len: usize,
+  // Number of bytes read (or negative value for errors).
+  //
+  // This function does not block and may return zero.
+  ): isize
+
+  // Writes to a UART from a buffer.
+  @external("env", "uaw")
+  export declare function uart_write(
+    // Index of the UART to write to.
+    uart: usize,
+
+    // Address of the buffer.
+    ptr: usize,
+
+    // Length of the buffer in bytes.
+    len: usize,
+  // Number of bytes written (or negative value for errors).
+  //
+  // This function does not block and may return zero.
+  ): isize
+
+  // UART events.
+  enum uart_Event {
+    // Ready for read.
+    Read = 0,
+
+    // Ready for write.
+    Write = 1,
+  }
+
+  // Registers a callback when a UART is ready.
+  //
+  // It is possible that the callback is spuriously called.
+  @external("env", "uae")
+  export declare function uart_register(
+    // Index of the UART to listen to.
+    uart: usize,
+
+    // Event to listen to.
+    event: usize,
+
+    // Function pointer of the closure to call on events.
+    handler_func: usize,
+
+    // Opaque data of the closure to call on events.
+    handler_data: usize,
+  ): void
+
+  // Unregisters a callback.
+  @external("env", "uad")
+  export declare function uart_unregister(
+    // Index of the UART to stop listening to.
+    uart: usize,
+
+    // Event to stop listening to.
+    event: usize,
+  ): void
+// END OF MODULE uart
+
 // START OF MODULE usb
 // USB operations.
   // Describes errors on USB operations.

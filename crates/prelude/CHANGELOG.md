@@ -1,9 +1,15 @@
 # Changelog
 
-## 0.3.1-git
+## 0.4.0-git
+
+### Major
+
+- Update `usb::serial` module to use the new `serial::Serial` interface
 
 ### Minor
 
+- Add `serial` module to abstract over serial interfaces
+- Add `uart` module for UARTs
 - Add `syscall()` for board-specific syscalls
 - Add `store::fragment` for fragmented entries in the store
 
@@ -80,4 +86,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 11 -->
+<!-- Increment to skip CHANGELOG.md test: 12 -->

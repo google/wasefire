@@ -32,14 +32,16 @@ First thing we do is print the prompt and wait for the player to press Enter. We
 use ANSI escape codes to overwrite whatever was there before. As an invariant
 throughout the game, we always use a single line of the terminal. This is
 particularly important to overwrite the question since the player has to guess
-it. We write to the USB serial using `usb::serial::write_all()`.
+it. We write to the USB serial using `serial::write_all()`. This function is
+generic over objects implementing `serial::Serial`, in this case
+`usb::serial::UsbSerial`.
 
 ```rust,no_run,noplayground
 {{#include usb.rs:prompt}}
 ```
 
 We then wait until the player press Enter. We can read a single byte from the
-USB serial using `usb::serial::read_byte()`. The terminal sends `0x0d` when
+USB serial using `serial::read_byte()`. The terminal sends `0x0d` when
 Enter is pressed.
 
 ```rust,no_run,noplayground
@@ -121,8 +123,8 @@ We use ANSI escape codes to highlight the data and help readability.
 ```
 
 To be able to update the time left in the terminal we must read from the USB
-serial asynchronously using `usb::serial::Reader`. We create a reader by
-providing a mutable buffer to which the reader will write the received bytes.
+serial asynchronously using `serial::Reader`. We create a reader by providing a
+mutable buffer to which the reader will write the received bytes.
 
 ```rust,no_run,noplayground
 {{#include usb.rs:process_reader}}
@@ -151,4 +153,10 @@ The final code looks like this:
 
 ```rust,no_run
 {{#include usb.rs:all}}
+```
+
+You can connect to the USB serial with the following command:
+
+```shell
+picocom -q /dev/ttyACM1
 ```

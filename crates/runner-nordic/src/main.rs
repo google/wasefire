@@ -34,22 +34,17 @@ use critical_section::Mutex;
 use defmt_rtt as _;
 use nrf52840_hal::ccm::{Ccm, DataRate};
 use nrf52840_hal::clocks::{self, ExternalOscillator, Internal, LfOscStopped};
-use nrf52840_hal::gpio;
 use nrf52840_hal::gpio::{Level, Output, Pin, PushPull};
 use nrf52840_hal::gpiote::Gpiote;
 use nrf52840_hal::pac::{interrupt, Interrupt};
 use nrf52840_hal::prelude::InputPin;
 use nrf52840_hal::rng::Rng;
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
+use nrf52840_hal::{gpio, uarte};
 #[cfg(feature = "release")]
 use panic_abort as _;
 #[cfg(feature = "debug")]
 use panic_probe as _;
-use storage::Storage;
-use tasks::button::{channel, Button};
-use tasks::clock::Timers;
-use tasks::usb::Usb;
-use tasks::{button, led, Events};
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
@@ -57,6 +52,13 @@ use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Id, Support};
 use wasefire_scheduler::Scheduler;
 use {wasefire_board_api as board, wasefire_logger as logger};
+
+use crate::storage::Storage;
+use crate::tasks::button::{self, channel, Button};
+use crate::tasks::clock::Timers;
+use crate::tasks::uart::Uarts;
+use crate::tasks::usb::Usb;
+use crate::tasks::{led, Events};
 
 #[cfg(feature = "debug")]
 #[defmt::panic_handler]
@@ -76,6 +78,7 @@ struct State {
     leds: [Pin<Output<PushPull>>; <led::Impl as Support<usize>>::SUPPORT],
     rng: Rng,
     storage: Option<Storage>,
+    uarts: Uarts,
     usb_dev: UsbDevice<'static, Usb>,
 }
 
@@ -127,8 +130,16 @@ fn main() -> ! {
     let rng = Rng::new(p.RNG);
     let ccm = Ccm::init(p.CCM, p.AAR, DataRate::_1Mbit);
     let storage = Some(Storage::new(p.NVMC));
+    let pins = uarte::Pins {
+        txd: port0.p0_06.into_push_pull_output(gpio::Level::High).degrade(),
+        rxd: port0.p0_08.into_floating_input().degrade(),
+        cts: Some(port0.p0_07.into_floating_input().degrade()),
+        rts: Some(port0.p0_05.into_push_pull_output(gpio::Level::High).degrade()),
+    };
+    let uarts = Uarts::new(p.UARTE0, pins, p.UARTE1);
     let events = Events::default();
-    let state = State { events, buttons, gpiote, serial, timers, ccm, leds, rng, storage, usb_dev };
+    let state =
+        State { events, buttons, gpiote, serial, timers, ccm, leds, rng, storage, uarts, usb_dev };
     // We first set the board and then enable interrupts so that interrupts may assume the board is
     // always present.
     critical_section::with(|cs| STATE.replace(cs, Some(state)));
@@ -159,6 +170,8 @@ interrupts! {
     TIMER2 = timer(2),
     TIMER3 = timer(3),
     TIMER4 = timer(4),
+    UARTE0_UART0 = uarte(0),
+    UARTE1 = uarte(1),
     USBD = usbd(),
 }
 
@@ -183,27 +196,14 @@ fn timer(timer: usize) {
     })
 }
 
+fn uarte(uarte: usize) {
+    let uart = Id::new(uarte).unwrap();
+    with_state(|state| {
+        state.uarts.tick(uart, |event| state.events.push(event.into()));
+    })
+}
+
 fn usbd() {
-    #[cfg(feature = "debug")]
-    {
-        use core::sync::atomic::AtomicU32;
-        use core::sync::atomic::Ordering::SeqCst;
-        static COUNT: AtomicU32 = AtomicU32::new(0);
-        static MASK: AtomicU32 = AtomicU32::new(0);
-        let count = COUNT.fetch_add(1, SeqCst).wrapping_add(1);
-        let mut mask = 0;
-        for i in 0 ..= 24 {
-            let x = (0x40027100 + 4 * i) as *const u32;
-            let x = unsafe { core::ptr::read_volatile(x) };
-            core::assert!(x <= 1);
-            mask |= x << i;
-        }
-        mask |= MASK.fetch_or(mask, SeqCst);
-        if count % 1000 == 0 {
-            logger::trace!("Got {} USB interrupts matching {:08x}.", count, mask);
-            MASK.store(0, SeqCst);
-        }
-    }
     with_state(|state| {
         let polled = state.usb_dev.poll(&mut [state.serial.port()]);
         state.serial.tick(polled, |event| state.events.push(event.into()));
