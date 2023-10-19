@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support `debug::println()`
 - Support `uart`
 - Support `syscall()`
 - Support `store::fragment`

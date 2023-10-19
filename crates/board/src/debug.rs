@@ -23,6 +23,12 @@ pub trait Api {
     /// Maximum value returned by [`Self::time()`] before wrapping.
     const MAX_TIME: u64;
 
+    /// Prints a line with timestamp.
+    fn println(line: &str) {
+        let time = Self::time();
+        log::println!("{}.{:06}: {}", time / 1000000, time % 1000000, line);
+    }
+
     /// Returns the time in micro-seconds since some initial event.
     ///
     /// This wraps once [`Self::MAX_TIME`] is reached. In particular, a maximum value of zero

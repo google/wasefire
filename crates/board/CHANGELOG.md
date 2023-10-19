@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `debug::println()` with default implementation
 - Add optional `Api::syscall()` method
 
 ### Patch

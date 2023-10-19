@@ -15,7 +15,6 @@
 use wasefire_applet_api::debug::{self as api, Api, Perf};
 use wasefire_board_api::debug::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
-use wasefire_logger as logger;
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
@@ -32,9 +31,8 @@ fn println<B: Board>(mut call: SchedulerCall<B, api::println::Sig>) {
     let api::println::Params { ptr, len } = call.read();
     let memory = call.memory();
     let results = try {
-        let time = board::Debug::<B>::time();
-        let message = core::str::from_utf8(memory.get(*ptr, *len)?).map_err(|_| Trap)?;
-        logger::println!("{}.{:06}: {}", time / 1000000, time % 1000000, message);
+        let line = core::str::from_utf8(memory.get(*ptr, *len)?).map_err(|_| Trap)?;
+        board::Debug::<B>::println(line);
         api::println::Results {}
     };
     call.reply(results)
