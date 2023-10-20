@@ -23,10 +23,7 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "componentType", rename_all = "snake_case")]
 pub enum Event {
     #[serde(rename_all = "camelCase")]
-    Button {
-        component_id: usize,
-        state: ButtonState,
-    },
+    Button { component_id: usize, state: ButtonState },
 }
 
 /// Commands for the hardware.
