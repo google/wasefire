@@ -14,7 +14,6 @@
 # limitations under the License.
 
 set -e
-. scripts/git.sh
 . scripts/log.sh
 
 # This script upgrades all dependencies.
@@ -28,9 +27,12 @@ for submodule in WebAssembly/spec; do
     git checkout origin/main
   )
 done
-x git_find -name Cargo.toml -print -execdir \
-  $PWD/scripts/wrapper.sh cargo upgrade --incompatible \;
-x git_find -name Cargo.toml -print -execdir cargo update \;
+for path in $(git ls-files '**/Cargo.toml'); do
+  ./scripts/wrapper.sh cargo upgrade --manifest-path=$path --incompatible
+done
+for path in $(git ls-files '**/Cargo.toml'); do
+  cargo update --manifest-path=$path
+done
 
 get_crates() {
   sed -n 's/^.*ensure_cargo \([^ ]\+\) .*$/\1/p' scripts/wrapper.sh

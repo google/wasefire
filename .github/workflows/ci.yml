@@ -24,6 +24,13 @@ jobs:
         with:
           fetch-depth: 0
       - run: ./scripts/ci-changelog.sh
+  copyright:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - uses: actions/checkout@v3
+      - run: ./scripts/ci-copyright.sh
   ubuntu:
     runs-on: ubuntu-latest
     permissions:
