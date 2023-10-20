@@ -15,7 +15,6 @@
 #![feature(core_intrinsics)]
 #![feature(try_blocks)]
 
-use std::io::BufRead;
 use std::path::Path;
 use std::sync::Mutex;
 
@@ -45,6 +44,21 @@ async fn main() -> Result<()> {
     let storage = Some(FileStorage::new(Path::new(STORAGE), options).unwrap());
     let (sender, receiver) = channel(10);
     *RECEIVER.lock().unwrap() = Some(receiver);
+    #[cfg(feature = "web")]
+    let web = {
+        let (sender, mut receiver) = channel(10);
+        tokio::spawn(async move {
+            while let Some(event) = receiver.recv().await {
+                match event {
+                    web_server::Event::Button { pressed } => {
+                        with_state(|state| board::button::event(state, Some(pressed)));
+                    }
+                }
+            }
+        });
+        // TODO: Make the URL a flag.
+        web_server::Client::new("127.0.0.1:5000", sender).await?
+    };
     *STATE.lock().unwrap() = Some(board::State {
         sender,
         button: false,
@@ -54,11 +68,15 @@ async fn main() -> Result<()> {
         #[cfg(feature = "usb")]
         usb: board::usb::Usb::default(),
         storage,
+        #[cfg(feature = "web")]
+        web,
     });
     board::uart::Uarts::init();
     #[cfg(feature = "usb")]
     board::usb::Usb::init()?;
+    #[cfg(not(feature = "web"))]
     tokio::spawn(async move {
+        use std::io::BufRead;
         for line in std::io::stdin().lock().lines() {
             let pressed = match line.unwrap().as_str() {
                 "button" => None,

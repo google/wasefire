@@ -20,9 +20,11 @@ wasefire-interpreter = { path = "../interpreter" }
 wasefire-logger = { path = "../logger" }
 wasefire-scheduler = { path = "../scheduler", features = ["std"] }
 wasefire-store = { path = "../store", features = ["std"] }
+web-server = { path = "crates/web-server", optional = true }
 
 [features]
 debug = ["wasefire-logger/log", "wasefire-scheduler/log"]
 default = ["usb"]
 release = []
 usb = ["dep:usb-device", "dep:usbd-serial", "dep:usbip-device"]
+web = ["dep:web-server"]

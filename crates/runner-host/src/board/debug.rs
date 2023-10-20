@@ -22,6 +22,13 @@ pub enum Impl {}
 impl board::debug::Api for Impl {
     const MAX_TIME: u64 = u64::MAX;
 
+    #[cfg(feature = "web")]
+    fn println(line: &str) {
+        let time = Self::time();
+        let message = format!("{}.{:06}: {}", time / 1000000, time % 1000000, line);
+        crate::with_state(|state| state.web.println(message))
+    }
+
     fn time() -> u64 {
         static ORIGIN: OnceLock<Instant> = OnceLock::new();
         let now = Instant::now();

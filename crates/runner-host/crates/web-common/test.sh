@@ -13,15 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
-. scripts/log.sh
+set -ex
 
-# This script checks that all source files have a copyright notice in the first
-# 2 lines.
-
-EXTENSIONS='cff\|css\|git[a-z]*\|html\|json\|lock\|md\|svg\|toml\|wasm\|x\|yml'
-
-for file in $(git ls-files \
-  | grep -v -e '^third_party/' -e 'LICENSE$' -e '\.\('"$EXTENSIONS"'\)$'); do
-  sed -n 'N;/Copyright/q;q1' $file || e "No copyright notice in $file"
-done
+cargo check --all-targets
+cargo fmt -- --check
+cargo clippy -- --deny=warnings
+cargo test

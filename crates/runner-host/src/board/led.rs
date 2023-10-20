@@ -31,8 +31,13 @@ impl Api for Impl {
 
     fn set(id: Id<Self>, on: bool) -> Result<(), Error> {
         assert_eq!(*id, 0);
+        #[cfg(not(feature = "web"))]
         println!("Led is {}", if on { "on" } else { "off" });
-        with_state(|state| state.led = on);
+        with_state(|state| {
+            #[cfg(feature = "web")]
+            state.web.set_led(on);
+            state.led = on
+        });
         Ok(())
     }
 }
