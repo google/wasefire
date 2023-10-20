@@ -35,7 +35,11 @@ install() {
           curl) set curl ;;
           npm) _system_nodejs_setup ; set nodejs ;;
           pkg-config) set pkgconf ;;
-          usbip) set usbip ;;
+          usbip)
+            case "$(_system_dist_id)" in
+              Ubuntu) set linux-tools-common ;;
+              *) set usbip ;;
+            esac ;;
           wasm-opt) set binaryen ;;
           wasm-strip) set wabt ;;
           *) e "Internal error: apt-get install unimplemented for $*" ;;
@@ -78,3 +82,5 @@ https://deb.nodesource.com/node_$_SYSTEM_NODEJS_MIN_VERSION.x nodistro main" \
 _system_nodejs_version() {
   apt-cache show nodejs | sed -n 's/^Version: \([0-9]\+\)\..*$/\1/p;T;q'
 }
+
+_system_dist_id() { lsb_release -is; }
