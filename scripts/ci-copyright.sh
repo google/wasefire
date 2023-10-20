@@ -1,3 +1,4 @@
+#!/bin/sh
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Takes a find expression that must disable the default -print and cannot use
-# the comma operator.
-git_find() {
-  # Exclude .gitignore and submodules.
-  find . \( -path ./.root -o -path ./target -o -path ./third_party \) -prune \
-    -o "$@"
-}
+set -e
+. scripts/log.sh
+
+# This script checks that all source files have a copyright notice in the first
+# 2 lines.
+
+for file in $(git ls-files | grep -v -e '^third_party/' -e 'LICENSE$' \
+    -e '\.\(cff\|git[a-z]*\|json\|lock\|md\|toml\|wasm\|x\|yml\)$'); do
+  sed -n 'N;/Copyright/q;q1' $file || e "No copyright notice in $file"
+done

@@ -14,7 +14,6 @@
 # limitations under the License.
 
 set -e
-. scripts/git.sh
 . scripts/log.sh
 . scripts/package.sh
 
@@ -66,8 +65,7 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
 done
 
 i "Remove all -git suffixes"
-git_find \( -name Cargo.toml -or -name Cargo.lock -or -name CHANGELOG.md \) \
-  -exec sed -i 's/-git//' {} \;
+sed -i 's/-git//' $(git ls-files '**/'{Cargo.{toml,lock},CHANGELOG.md})
 if [ -n "$(git status -s)" ]; then
   i "Commit release"
   git commit -aqm'Release all crates'
