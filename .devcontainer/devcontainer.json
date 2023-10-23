@@ -5,8 +5,8 @@
       "SYS_PTRACE"
    ],
    "customizations":{
-      "codespaces": {
-         "openFiles": [
+      "codespaces":{
+         "openFiles":[
             "book/src/quick/README.md",
             "examples/rust/hello/src/lib.rs"
          ],
