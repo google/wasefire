@@ -264,17 +264,20 @@ impl AppletOptions {
     }
 
     fn execute_rust(&self, main: &MainOptions) -> Result<()> {
-        let (dir, wasm) = if self.name.starts_with(['.', '/']) {
-            let dir = &self.name;
+        let dir = if self.name.starts_with(['.', '/']) {
+            self.name.clone()
+        } else {
+            format!("examples/{}/{}", self.lang, self.name)
+        };
+        ensure!(Path::new(&dir).exists(), "{dir} does not exist");
+        let wasm = {
             // We could use `cargo metadata --no-deps --format-version=1` and parse the JSON to get
             // both the target name and target directory.
             let mut sed = Command::new("sed");
             sed.args(["-n", r#"s/^name = "\(.*\)"$/\1/p"#, "Cargo.toml"]);
-            sed.current_dir(dir);
-            let name = read_output_line(&mut sed)?;
-            (dir.to_string(), format!("{dir}/{}", wasm_target(&name)))
-        } else {
-            (format!("examples/{}/{}", self.lang, self.name), wasm_target(&self.name))
+            sed.current_dir(&dir);
+            let name = read_output_line(&mut sed)?.replace('-', "_");
+            format!("target/wasm32-unknown-unknown/release/{name}.wasm")
         };
         let mut cargo = Command::new("cargo");
         let mut rustflags = vec![
@@ -578,10 +581,6 @@ impl RunnerOptions {
     fn board_target(&self) -> String {
         format!("target/{}/release/runner-{}", self.target(), self.name)
     }
-}
-
-fn wasm_target(name: &str) -> String {
-    format!("target/wasm32-unknown-unknown/release/{name}.wasm")
 }
 
 fn execute_command(command: &mut Command) -> Result<()> {

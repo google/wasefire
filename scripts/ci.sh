@@ -23,6 +23,7 @@ for lang in $(ls examples); do
   for name in $(ls examples/$lang); do
     [ $lang = assemblyscript -a $name = node_modules ] && continue
     [ $lang = assemblyscript -a $name = api.ts ] && continue
+    [ $lang = rust -a $name = exercises ] && continue
     x cargo xtask applet $lang $name
     x cargo xtask --release applet $lang $name
     [ $lang = rust ] || continue
