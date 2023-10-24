@@ -5,6 +5,12 @@
       "SYS_PTRACE"
    ],
    "customizations":{
+      "codespaces":{
+         "openFiles":[
+            "book/src/quick/README.md",
+            "examples/rust/hello/src/lib.rs"
+         ],
+      },
       "vscode":{
          "extensions":[
             "rust-lang.rust-analyzer"
