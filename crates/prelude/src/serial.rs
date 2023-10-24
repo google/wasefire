@@ -49,7 +49,12 @@ pub trait Serial {
     fn flush(&self) -> Result<(), Self::Error>;
 
     /// Registers a callback for an event.
-    fn register(
+    ///
+    /// # Safety
+    ///
+    /// The function pointer and data must live until unregistered. The function must support
+    /// concurrent calls.
+    unsafe fn register(
         &self, event: Event, func: extern "C" fn(*const u8), data: *const u8,
     ) -> Result<(), Self::Error>;
 
@@ -191,7 +196,8 @@ impl<'a, T: Serial> Listener<'a, T> {
             let event = listener.kind.event();
             let func = Self::call;
             let data = ready.as_ptr() as *const u8;
-            listener.kind.serial().register(event, func, data).unwrap();
+            let serial = listener.kind.serial();
+            unsafe { serial.register(event, func, data) }.unwrap();
         }
         let _ = listener.update();
         listener
@@ -230,7 +236,7 @@ impl<'a, T: Serial> Listener<'a, T> {
     }
 
     fn unregister(&self) {
-        self.kind.serial().unregister(self.kind.event()).unwrap();
+        self.kind.serial().unregister(self.kind.event()).unwrap()
     }
 
     extern "C" fn call(data: *const u8) {
