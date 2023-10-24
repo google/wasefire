@@ -25,17 +25,19 @@ async function deleteOldCaches() {
 }
 
 async function getResponse(request) {
-  const cache = await self.caches.open(CACHE_KEY);
-  const cached_response = await cache.match(request);
-  // This runs in parallel.
-  const live_response = fetch(request)
+  const live_response = await fetch(request)
     .then((response) => {
       // Update the cache.
       cache.put(request, response.clone());
       return response;
     })
     .catch((error) => console.log("Backend offline"));
-  return cached_response || live_response;
+  if (live_response) {
+    return live_response;
+  }
+  const cache = await self.caches.open(CACHE_KEY);
+  const cached_response = await cache.match(request);
+  return cached_response;
 }
 
 self.addEventListener("install", (event) => event.waitUntil(install()));
