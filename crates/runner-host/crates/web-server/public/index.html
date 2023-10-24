@@ -4,6 +4,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#337E36">
+   <link rel="icon" type="image/x-icon" href="/favicon.png">
   <link href='./style.css' rel='stylesheet'>
   <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
   <script src='/board_components.js'></script>
@@ -15,7 +18,11 @@
   const board = new Board(
      `ws${location.protocol === "https:"? 's': ''}://${location.host}/board`,
      document.querySelector('#board'));
-  board.start()
+  board.start();
   </script>
+  <script>
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js');
+  </script>
+</script>
 </body>
 </html>
