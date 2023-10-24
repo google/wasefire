@@ -37,7 +37,7 @@ class MessageChannel {
     this.ws.onopen = (event) => onOpen();
     this.ws.onmessage = (event) => onMessage(this._parseMessage(event));
     this.ws.onclose = (event) => {
-      setTimeout(() => this._connect(this._args), 1000);
+      setTimeout(() => this._connect(this._args), 150);
       onClose();
     };
     this.ws.onerror = (event) => {
@@ -269,21 +269,25 @@ class BoardDrawer {
  */
 class Board {
   constructor(urlEndpoint, outputElement) {
+    this._connected = false;
     this._components = [];
     this._drawer = new BoardDrawer(outputElement);
     this._channel = new MessageChannel({
       urlEndpoint,
       onOpen: () => {
+        this._connected = true;
         this._drawer.setVisibility(false);
         this._drawer.appendStatus(
           "Connection established! Waiting for runner configuration...",
         );
       },
       onClose: () => {
-        this._drawer.setVisibility(false);
-        this._drawer.appendStatus(
-          "Backend disconnected. Waiting for it to restart...",
-        );
+        if (this._connected) {
+          this._drawer.appendStatus(
+            "Backend disconnected. Waiting for it to restart...",
+          );
+          this._connected = false;
+        }
       },
       onMessage: (message) => this.processMessage(message),
     });
