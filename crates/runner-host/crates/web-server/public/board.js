@@ -341,6 +341,9 @@ class Board {
       this._components.push(component);
     }
     this._drawer.appendStatus("Board is ready!");
+    this._channel.send({
+      type: "board_ready",
+    });
   }
 
   async start() {
