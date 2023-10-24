@@ -51,7 +51,7 @@ impl Serial for Uart {
         Ok(())
     }
 
-    fn register(
+    unsafe fn register(
         &self, event: Event, func: extern "C" fn(*const u8), data: *const u8,
     ) -> Result<(), Error> {
         let params = api::register::Params {
