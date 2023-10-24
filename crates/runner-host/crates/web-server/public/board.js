@@ -346,7 +346,7 @@ class Board {
     }
     this._drawer.appendStatus("Board is ready!");
     this._channel.send({
-      type: "board_ready",
+      componentType: "board_ready",
     });
   }
 
