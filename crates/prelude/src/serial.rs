@@ -21,6 +21,7 @@ use core::fmt::Debug;
 use crate::scheduling;
 
 /// Serial events to be notified.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Event {
     /// The serial may be ready to read.
     Read,

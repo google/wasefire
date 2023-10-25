@@ -1,0 +1,16 @@
+[package]
+name = "client"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.4.4", features = ["derive"] }
+interface = { path = "../interface" }
+p256 = "0.13.2"
+rand = "0.8.5"
+serialport = { version = "4.2.2", optional = true }
+
+[features]
+usb = ["dep:serialport"] # Use USB serial instead of UART.

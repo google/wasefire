@@ -1,0 +1,11 @@
+[package]
+name = "interface"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+edition = "2021"
+
+[dependencies]
+postcard = { version = "1.0.8", default-features = false, features = ["alloc"] }
+serde = { version = "1.0.189", default-features = false, features = ["alloc", "derive"] }
+wasefire = { path = "../../../../crates/prelude" }

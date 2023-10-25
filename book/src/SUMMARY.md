@@ -19,6 +19,7 @@
         - [USB](applet/prelude/usb.md)
         - [UART](applet/prelude/uart.md)
         - [Storage](applet/prelude/store.md)
+    - [Exercises](applet/exercises/README.md)
     - [Examples](applet/examples.md)
 
 - [Runner user guide](runner/README.md)

@@ -75,8 +75,10 @@ async fn main() -> Result<()> {
     #[cfg(feature = "usb")]
     board::usb::Usb::init()?;
     #[cfg(not(feature = "web"))]
-    tokio::spawn(async move {
+    tokio::task::spawn_blocking(|| {
         use std::io::BufRead;
+        // The tokio::io::Stdin documentation recommends to use blocking IO in a dedicated thread.
+        // Note that because of this, the runtime may not exit until the user press enter.
         for line in std::io::stdin().lock().lines() {
             let pressed = match line.unwrap().as_str() {
                 "button" => None,

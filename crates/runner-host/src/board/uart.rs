@@ -94,6 +94,13 @@ impl Uart {
         self.set_writable(writable);
     }
 
+    fn disconnect(&mut self) {
+        let uart = self.uart();
+        let readable = self.has_readable();
+        let writable = self.has_writable();
+        *self = Uart::Disconnected { uart, readable, writable }
+    }
+
     fn uart(&self) -> Id<Impl> {
         match self {
             Uart::Disconnected { uart, .. } | Uart::Connected { uart, .. } => *uart,
@@ -158,7 +165,13 @@ impl Api for Impl {
             uart.set_readable(uart.has_readable());
             match uart.stream() {
                 None => Ok(0),
-                Some(stream) => convert(stream.try_read(output)),
+                Some(stream) => match stream.try_read(output) {
+                    Ok(0) => {
+                        uart.disconnect();
+                        Ok(0)
+                    }
+                    x => convert(x),
+                },
             }
         })
     }
