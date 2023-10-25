@@ -4,6 +4,7 @@
    "capAdd":[
       "SYS_PTRACE"
    ],
+   "forwardPorts":[5000],
    "customizations":{
       "codespaces":{
          "openFiles":[
