@@ -20,9 +20,6 @@ use interface::{Request, Response};
 use wasefire::crypto;
 
 pub struct Logic {
-    /// Maps from name to private key.
-    ///
-    /// This will use the device persistent storage in a later exercise.
     store: BTreeMap<String, [u8; 32]>,
 }
 

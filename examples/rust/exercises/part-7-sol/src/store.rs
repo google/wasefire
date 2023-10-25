@@ -76,8 +76,5 @@ impl Store {
     }
 }
 
-/// Maximum number of names.
 const MAX_NAME_CNT: usize = 5;
-
-/// Maximum length in bytes of a name.
 const MAX_NAME_LEN: usize = 20;
