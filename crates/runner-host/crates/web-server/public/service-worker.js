@@ -21,6 +21,7 @@ const CACHE = [
   "title.svg",
   "board_components.js",
   "board.js",
+  "manifest.json",
   "favicon.png",
   "components/button.svg",
   "components/monochrome_led.svg",
@@ -38,18 +39,20 @@ async function deleteOldCaches() {
   }
 }
 
-async function getResponse(request) {
-  const live_response = await fetch(request)
-    .then((response) => {
-      // Update the cache.
-      cache.put(request, response.clone());
-      return response;
-    })
-    .catch((error) => console.log("Backend offline"));
-  if (live_response) {
-    return live_response;
-  }
+async function fetchFromNetworkOrCache(request) {
+  const url = new URL(request.url);
   const cache = await self.caches.open(CACHE_KEY);
+  let liveResponse = null;
+  try {
+    liveResponse = await fetch(request);
+  } catch (err) {
+    // Backend is offline.
+  }
+  // Update the cache.
+  if (liveResponse && liveResponse.ok) {
+    cache.put(request, liveResponse.clone());
+   return liveResponse;
+  }
   const cached_response = await cache.match(request);
   return cached_response;
 }
@@ -60,6 +63,9 @@ self.addEventListener("activate", (event) =>
   event.waitUntil(deleteOldCaches().then(self.clients.claim())),
 );
 
-self.addEventListener("fetch", (event) =>
-  event.respondWith(getResponse(event.request)),
-);
+self.addEventListener("fetch",  (event) => {
+  const url = new URL(event.request.url);
+  if (self.location.hostname != url.hostname) return;
+  if (url.pathname.endsWith('board')) return;
+  event.respondWith(fetchFromNetworkOrCache(event.request));
+});
