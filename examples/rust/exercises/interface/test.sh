@@ -15,6 +15,8 @@
 
 set -ex
 
+cargo check
 cargo check --target=wasm32-unknown-unknown
 cargo fmt -- --check
+cargo clippy -- --deny=warnings
 cargo clippy --target=wasm32-unknown-unknown -- --deny=warnings

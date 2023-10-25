@@ -13,5 +13,4 @@ rand = "0.8.5"
 serialport = { version = "4.2.2", optional = true }
 
 [features]
-# Use USB serial instead of UART.
-usb = ["dep:serialport"]
+usb = ["dep:serialport"] # Use USB serial instead of UART.

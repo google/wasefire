@@ -8,7 +8,7 @@
       "codespaces":{
          "openFiles":[
             "book/src/quick/README.md",
-            "examples/rust/hello/src/lib.rs"
+            "examples/rust/hello/src/lib.rs",
             "examples/rust/exercises/part-1/src/lib.rs"
          ],
       },
