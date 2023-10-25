@@ -37,7 +37,7 @@ class MessageChannel {
     this.ws.onopen = (event) => onOpen();
     this.ws.onmessage = (event) => onMessage(this._parseMessage(event));
     this.ws.onclose = (event) => {
-      setTimeout(() => this._connect(this._args), 150);
+      setTimeout(() => this._connect(this._args), 1000);
       onClose();
     };
     this.ws.onerror = (event) => {
@@ -292,7 +292,9 @@ class Board {
       onMessage: (message) => this.processMessage(message),
     });
     this._drawer.setInputCallback((message) => this._channel.send(message));
+    this._ensureOnlyThisTabIsOpen();
   }
+
   getComponentFromId(id) {
     for (const component of this._components) {
       if (component.id == id) return component;
@@ -349,5 +351,15 @@ class Board {
 
   async start() {
     await this._drawer.start();
+  }
+
+  _ensureOnlyThisTabIsOpen() {
+    // Allows only one tab to be open on this site.
+    // This prevents messages from being lost.
+    const broadcast = new BroadcastChannel('intertab');
+    broadcast.onmessage = function(event) {
+      if (event?.data?.message === 'TAKEOVER')  window.close();
+    }
+    broadcast.postMessage({ message: 'TAKEOVER' });
   }
 }
