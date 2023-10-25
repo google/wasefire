@@ -115,6 +115,11 @@ async fn handle(mut ws: WebSocket, client: ClientInput) {
         ],
     };
     cmd_sender.send(board_config).await.unwrap();
+    let board_ready = ws_receiver.next().await.unwrap().unwrap();
+    match serde_json::from_str(board_ready.to_str().unwrap()).unwrap() {
+        web_common::Event::BoardReady => (),
+        event => panic!("Expected BoardReady, got {event:?}"),
+    }
     if client_sender.send(Client { sender: cmd_sender }).is_err() {
         panic!("Could not send client.");
     }
@@ -153,6 +158,7 @@ async fn handle(mut ws: WebSocket, client: ClientInput) {
                 }
                 Event::Button { pressed: matches!(state, ButtonState::Pressed) }
             }
+            web_common::Event::BoardReady => panic!("Unexpected BoardReady event."),
         };
         if let Err(e) = event_sender.send(event).await {
             log::warn!("Failed to send {:?}: {:?}", event, e);
