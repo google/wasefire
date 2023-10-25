@@ -35,6 +35,7 @@ install() {
           curl) set curl ;;
           npm) _system_nodejs_setup ; set nodejs ;;
           pkg-config) set pkgconf ;;
+          socat) set socat ;;
           usbip)
             case "$(_system_dist_id)" in
               Ubuntu) set linux-tools-common ;;

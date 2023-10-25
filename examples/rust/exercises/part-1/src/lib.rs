@@ -15,10 +15,11 @@
 //! This exercise is essentially some "echo" applet on a UART. It writes back to the UART whatever
 //! it receives.
 //!
-//! If you are running the applet on the host runner, you can connect to the UART with:
+//! If you are running the applet on the host runner, you can connect to the UART (from the root
+//! directory of the repository) with:
 //!
 //! ```shell
-//! socat -,cfmakeraw UNIX-CONNECT:target/wasefire/uart0
+//! ./scripts/wrapper.sh socat -,cfmakeraw UNIX-CONNECT:target/wasefire/uart0
 //! ```
 
 #![no_std]
