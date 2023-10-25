@@ -71,7 +71,6 @@ class ButtonComponent extends BoardComponent {
       componentType: "button",
       state: "pressed",
     });
-    this._drawer.appendEvent(`Button ${this.id} pressed.`);
     this.set(true);
   }
   onReleased() {
@@ -80,7 +79,6 @@ class ButtonComponent extends BoardComponent {
       componentType: "button",
       state: "released",
     });
-    this._drawer.appendEvent(`Button ${this.id} released.`);
     this.set(false);
   }
 
