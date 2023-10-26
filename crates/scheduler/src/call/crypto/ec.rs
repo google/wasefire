@@ -33,11 +33,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
     let api::is_supported::Params { curve } = call.read();
     let results = try {
-        let support = match convert_curve(*curve)? {
-            Curve::P256 => board::crypto::P256::<B>::SUPPORT,
-            Curve::P384 => board::crypto::P384::<B>::SUPPORT,
-        };
-        api::is_supported::Results { support: (support as u32).into() }
+        let support = convert_curve::<B>(*curve)?.is_ok() as u32;
+        api::is_supported::Results { support: support.into() }
     };
     call.reply(results)
 }
@@ -47,7 +44,7 @@ fn is_valid_scalar<B: Board>(mut call: SchedulerCall<B, api::is_valid_scalar::Si
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
-        let valid = match convert_curve(*curve)? {
+        let valid = match convert_curve::<B>(*curve)?? {
             Curve::P256 => {
                 let n = memory.get_array::<32>(*n)?.into();
                 board::crypto::P256::<B>::is_valid_scalar(n)
@@ -67,7 +64,7 @@ fn is_valid_point<B: Board>(mut call: SchedulerCall<B, api::is_valid_point::Sig>
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
-        let valid = match convert_curve(*curve)? {
+        let valid = match convert_curve::<B>(*curve)?? {
             Curve::P256 => {
                 let x = memory.get_array::<32>(*x)?.into();
                 let y = memory.get_array::<32>(*y)?.into();
@@ -89,7 +86,7 @@ fn base_point_mul<B: Board>(mut call: SchedulerCall<B, api::base_point_mul::Sig>
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
-        let res = match convert_curve(*curve)? {
+        let res = match convert_curve::<B>(*curve)?? {
             Curve::P256 => {
                 let n = memory.get_array::<32>(*n)?.into();
                 let x = memory.get_array_mut::<32>(*x)?.into();
@@ -119,7 +116,7 @@ fn point_mul<B: Board>(mut call: SchedulerCall<B, api::point_mul::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
-        let res = match convert_curve(*curve)? {
+        let res = match convert_curve::<B>(*curve)?? {
             Curve::P256 => {
                 let n = memory.get_array::<32>(*n)?.into();
                 let in_x = memory.get_array::<32>(*in_x)?.into();
@@ -153,7 +150,7 @@ fn ecdsa_sign<B: Board>(mut call: SchedulerCall<B, api::ecdsa_sign::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
-        let res = match convert_curve(*curve)? {
+        let res = match convert_curve::<B>(*curve)?? {
             Curve::P256 => {
                 let key = memory.get_array::<32>(*key)?.into();
                 let message = memory.get_array::<32>(*message)?.into();
@@ -185,7 +182,7 @@ fn ecdsa_verify<B: Board>(mut call: SchedulerCall<B, api::ecdsa_verify::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
-        let res = match convert_curve(*curve)? {
+        let res = match convert_curve::<B>(*curve)?? {
             Curve::P256 => {
                 let message = memory.get_array::<32>(*message)?.into();
                 let x = memory.get_array::<32>(*x)?.into();
@@ -216,6 +213,11 @@ fn ecdsa_verify<B: Board>(mut call: SchedulerCall<B, api::ecdsa_verify::Sig>) {
     call.reply(results);
 }
 
-fn convert_curve(x: u32) -> Result<Curve, Trap> {
-    Curve::try_from(x).map_err(|_| Trap)
+fn convert_curve<B: Board>(curve: u32) -> Result<Result<Curve, Trap>, Trap> {
+    let curve = Curve::try_from(curve).map_err(|_| Trap)?;
+    let support = match curve {
+        Curve::P256 => board::crypto::P256::<B>::SUPPORT,
+        Curve::P384 => board::crypto::P384::<B>::SUPPORT,
+    };
+    Ok(support.then_some(curve).ok_or(Trap))
 }

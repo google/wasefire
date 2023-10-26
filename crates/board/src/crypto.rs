@@ -29,21 +29,27 @@ pub trait Api {
     type Aes128Ccm: aead::Api<U16, U13, Tag = U4>;
     type Aes256Gcm: aead::Api<U32, U12>;
 
-    type HmacSha256: Support<bool> + Hmac<KeySize = U64, OutputSize = U32>;
-    type HmacSha384: Support<bool> + Hmac<KeySize = U128, OutputSize = U48>;
+    type HmacSha256: Hmac<KeySize = U64, OutputSize = U32>;
+    type HmacSha384: Hmac<KeySize = U128, OutputSize = U48>;
 
-    type P256: Support<bool> + ecc::Api<U32>;
-    type P384: Support<bool> + ecc::Api<U48>;
+    type P256: ecc::Api<U32>;
+    type P384: ecc::Api<U48>;
 
-    type Sha256: Support<bool> + Hash<BlockSize = U64, OutputSize = U32>;
-    type Sha384: Support<bool> + Hash<BlockSize = U128, OutputSize = U48>;
+    type Sha256: Hash<BlockSize = U64, OutputSize = U32>;
+    type Sha384: Hash<BlockSize = U128, OutputSize = U48>;
 }
 
-pub trait Hash: Default + BlockSizeUser + Update + FixedOutputReset + HashMarker {}
-pub trait Hmac: KeyInit + Update + FixedOutput + MacMarker {}
+pub trait Hash:
+    Support<bool> + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker
+{
+}
+pub trait Hmac: Support<bool> + KeyInit + Update + FixedOutput + MacMarker {}
 
-impl<T: Default + BlockSizeUser + Update + FixedOutputReset + HashMarker> Hash for T {}
-impl<T: KeyInit + Update + FixedOutput + MacMarker> Hmac for T {}
+impl<T: Support<bool> + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker> Hash
+    for T
+{
+}
+impl<T: Support<bool> + KeyInit + Update + FixedOutput + MacMarker> Hmac for T {}
 
 pub struct UnsupportedHash<Block: ArrayLength<u8>, Output: ArrayLength<u8>> {
     _never: !,
@@ -274,7 +280,8 @@ impl crate::Supported for sha2::Sha256 {}
 impl crate::Supported for sha2::Sha384 {}
 
 #[cfg(feature = "internal-hmac")]
-impl<D: Default + BlockSizeUser + Update + FixedOutput + HashMarker> crate::Supported
+impl<D: Support<bool> + Default + BlockSizeUser + Update + FixedOutput + HashMarker> Support<bool>
     for hmac::SimpleHmac<D>
 {
+    const SUPPORT: bool = D::SUPPORT;
 }

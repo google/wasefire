@@ -16,7 +16,7 @@ use wasefire_applet_api::crypto::gcm::{self as api, Api, Support};
 use wasefire_board_api::crypto::aead::Api as _;
 use wasefire_board_api::{self as board, Api as Board, Support as _};
 
-use crate::{DispatchSchedulerCall, SchedulerCall};
+use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
@@ -46,6 +46,7 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
+        ensure_support::<B>()?;
         let key = memory.get_array::<32>(*key)?.into();
         let iv = memory.get_array::<12>(*iv)?.into();
         let aad = memory.get(*aad, *aad_len)?;
@@ -67,6 +68,7 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
+        ensure_support::<B>()?;
         let key = memory.get_array::<32>(*key)?.into();
         let iv = memory.get_array::<12>(*iv)?.into();
         let aad = memory.get(*aad, *aad_len)?;
@@ -86,4 +88,11 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
 const fn tag_len<B: Board>() -> usize {
     use typenum::Unsigned;
     <board::crypto::Aes256Gcm<B> as board::crypto::aead::Api<_, _>>::Tag::USIZE
+}
+
+fn ensure_support<B: Board>() -> Result<(), Trap> {
+    match bool::from(board::crypto::Aes256Gcm::<B>::SUPPORT) {
+        true => Ok(()),
+        false => Err(Trap),
+    }
 }

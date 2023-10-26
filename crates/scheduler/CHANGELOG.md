@@ -11,6 +11,7 @@
 
 ### Patch
 
+- Prevent applets to call into unsupported board operations
 - Update dependencies
 
 ## 0.2.1
