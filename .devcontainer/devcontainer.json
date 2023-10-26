@@ -8,25 +8,8 @@
    "customizations":{
       "codespaces":{
          "openFiles":[
-            "book/src/quick/README.md",
-            "examples/rust/hello/src/lib.rs",
-            "examples/rust/exercises/part-1/src/lib.rs"
+            "book/src/quick/codespace.md"
          ],
       },
-      "vscode":{
-         "extensions":[
-            "rust-lang.rust-analyzer"
-         ],
-         "settings":{
-            "terminal.integrated.profiles.linux":{
-               "shell":{
-                  "path":"zsh",
-                  "args":[
-                     "-l"
-                  ]
-               }
-            }
-         }
-      }
    }
 }
