@@ -7,6 +7,7 @@
     - [Features](overview/features.md)
 
 - [Quick start](quick/README.md)
+    - [Github codespace tips](quick/codespace.md)
 
 - [Applet user guide](applet/README.md)
     - [Create a new applet](applet/create.md)
