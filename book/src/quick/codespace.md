@@ -18,5 +18,4 @@ cd /workspaces/wasefire
 ```
 
 You can then open the `src/lib.rs` file and benefit from documentation (hovering
-or right-clicking a name), auto-completion, diagnostics, and other rust-analyzer
-features.
+a name), auto-completion, diagnostics, and other rust-analyzer features.
