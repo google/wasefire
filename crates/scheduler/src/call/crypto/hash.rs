@@ -39,11 +39,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
     let api::is_supported::Params { algorithm } = call.read();
     let results = try {
-        let supported = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
-            Algorithm::Sha256 => board::crypto::Sha256::<B>::SUPPORT,
-            Algorithm::Sha384 => board::crypto::Sha384::<B>::SUPPORT,
-        };
-        api::is_supported::Results { supported: (supported as u32).into() }
+        let supported = convert_hash_algorithm::<B>(*algorithm)?.is_ok() as u32;
+        api::is_supported::Results { supported: supported.into() }
     };
     call.reply(results)
 }
@@ -52,7 +49,7 @@ fn initialize<B: Board>(mut call: SchedulerCall<B, api::initialize::Sig>) {
     let api::initialize::Params { algorithm } = call.read();
     let scheduler = call.scheduler();
     let results = try {
-        let context = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
+        let context = match convert_hash_algorithm::<B>(*algorithm)?? {
             Algorithm::Sha256 => HashContext::Sha256(board::crypto::Sha256::<B>::default()),
             Algorithm::Sha384 => HashContext::Sha384(board::crypto::Sha384::<B>::default()),
         };
@@ -104,11 +101,8 @@ fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
 fn is_hmac_supported<B: Board>(call: SchedulerCall<B, api::is_hmac_supported::Sig>) {
     let api::is_hmac_supported::Params { algorithm } = call.read();
     let results = try {
-        let supported = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
-            Algorithm::Sha256 => board::crypto::HmacSha256::<B>::SUPPORT,
-            Algorithm::Sha384 => board::crypto::HmacSha384::<B>::SUPPORT,
-        };
-        api::is_hmac_supported::Results { supported: (supported as u32).into() }
+        let supported = convert_hmac_algorithm::<B>(*algorithm)?.is_ok() as u32;
+        api::is_hmac_supported::Results { supported: supported.into() }
     };
     call.reply(results)
 }
@@ -119,7 +113,7 @@ fn hmac_initialize<B: Board>(mut call: SchedulerCall<B, api::hmac_initialize::Si
     let memory = scheduler.applet.store.memory();
     let results = try {
         let key = memory.get(*key, *key_len)?;
-        let context = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
+        let context = match convert_hmac_algorithm::<B>(*algorithm)?? {
             Algorithm::Sha256 => HashContext::HmacSha256(
                 board::crypto::HmacSha256::<B>::new_from_slice(key).map_err(|_| Trap)?,
             ),
@@ -175,11 +169,8 @@ fn hmac_finalize<B: Board>(mut call: SchedulerCall<B, api::hmac_finalize::Sig>) 
 fn is_hkdf_supported<B: Board>(call: SchedulerCall<B, api::is_hkdf_supported::Sig>) {
     let api::is_hkdf_supported::Params { algorithm } = call.read();
     let results = try {
-        let supported = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
-            Algorithm::Sha256 => board::crypto::HmacSha256::<B>::SUPPORT,
-            Algorithm::Sha384 => board::crypto::HmacSha256::<B>::SUPPORT,
-        };
-        api::is_hkdf_supported::Results { supported: (supported as u32).into() }
+        let supported = convert_hmac_algorithm::<B>(*algorithm)?.is_ok() as u32;
+        api::is_hkdf_supported::Results { supported: supported.into() }
     };
     call.reply(results)
 }
@@ -193,7 +184,7 @@ fn hkdf_expand<B: Board>(mut call: SchedulerCall<B, api::hkdf_expand::Sig>) {
         let prk = memory.get(*prk, *prk_len)?;
         let info = memory.get(*info, *info_len)?;
         let okm = memory.get_mut(*okm, *okm_len)?;
-        let res = match Algorithm::try_from(*algorithm).map_err(|_| Trap)? {
+        let res = match convert_hmac_algorithm::<B>(*algorithm)?? {
             Algorithm::Sha256 => hkdf::<board::crypto::HmacSha256<B>>(prk, info, okm),
             Algorithm::Sha384 => hkdf::<board::crypto::HmacSha384<B>>(prk, info, okm),
         };
@@ -225,4 +216,22 @@ fn hkdf<H: KeyInit + Update + FixedOutput>(
         chunk.copy_from_slice(&output[.. chunk.len()]);
     }
     Ok(())
+}
+
+fn convert_hash_algorithm<B: Board>(algorithm: u32) -> Result<Result<Algorithm, Trap>, Trap> {
+    let algorithm = Algorithm::try_from(algorithm).map_err(|_| Trap)?;
+    let support = match algorithm {
+        Algorithm::Sha256 => board::crypto::Sha256::<B>::SUPPORT,
+        Algorithm::Sha384 => board::crypto::Sha384::<B>::SUPPORT,
+    };
+    Ok(support.then_some(algorithm).ok_or(Trap))
+}
+
+fn convert_hmac_algorithm<B: Board>(algorithm: u32) -> Result<Result<Algorithm, Trap>, Trap> {
+    let algorithm = Algorithm::try_from(algorithm).map_err(|_| Trap)?;
+    let support = match algorithm {
+        Algorithm::Sha256 => board::crypto::HmacSha256::<B>::SUPPORT,
+        Algorithm::Sha384 => board::crypto::HmacSha384::<B>::SUPPORT,
+    };
+    Ok(support.then_some(algorithm).ok_or(Trap))
 }

@@ -165,7 +165,7 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
                 self.scheduler().perf.record(perf::Slot::Applets);
                 self.erased.scheduler.process_answer(answer);
             }
-            Err(Trap) => logger::panic!("Applet trapped in host."),
+            Err(Trap) => logger::panic!("Applet trapped in host function {:?}.", T::NAME),
         }
     }
 

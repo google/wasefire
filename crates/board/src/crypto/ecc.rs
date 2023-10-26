@@ -18,10 +18,10 @@ use generic_array::{ArrayLength, GenericArray};
 #[cfg(feature = "internal-ecc")]
 pub use software::*;
 
-use crate::{Error, Unsupported};
+use crate::{Error, Support, Unsupported};
 
 /// Elliptic-curve cryptography interface.
-pub trait Api<N: ArrayLength<u8>> {
+pub trait Api<N: ArrayLength<u8>>: Support<bool> {
     /// Returns whether a scalar is valid.
     fn is_valid_scalar(n: &Int<N>) -> bool;
 
@@ -95,7 +95,7 @@ mod software {
     use signature::hazmat::PrehashVerifier;
 
     use super::*;
-    use crate::Supported;
+    use crate::Support;
 
     pub struct Software<C, D> {
         curve: PhantomData<C>,
@@ -104,11 +104,14 @@ mod software {
 
     type Int<C> = super::Int<FieldBytesSize<C>>;
 
-    impl<C, D> Supported for Software<C, D> {}
+    impl<C, D: Support<bool>> Support<bool> for Software<C, D> {
+        const SUPPORT: bool = D::SUPPORT;
+    }
 
     impl<C, D> Api<FieldBytesSize<C>> for Software<C, D>
     where
         C: PrimeCurve + CurveArithmetic,
+        D: Support<bool>,
         D: Digest + BlockSizeUser + FixedOutput<OutputSize = FieldBytesSize<C>> + FixedOutputReset,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
         ProjectivePoint<C>: FromEncodedPoint<C>,

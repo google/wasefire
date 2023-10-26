@@ -13,6 +13,8 @@
 
 ### Patch
 
+- Move `Support` bound inside the APIs in `crypto`
+- Fix software crypto support to be transitive
 - Update dependencies
 
 ## 0.4.0

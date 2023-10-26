@@ -17,7 +17,7 @@ use wasefire_applet_api::crypto::ccm::{self as api, Api};
 use wasefire_board_api::crypto::aead::{Api as _, Array};
 use wasefire_board_api::{self as board, Api as Board, Support};
 
-use crate::{DispatchSchedulerCall, SchedulerCall};
+use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
@@ -38,6 +38,7 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
+        ensure_support::<B>()?;
         let key = memory.get(*key, 16)?.into();
         let iv = expand_iv(memory.get(*iv, 8)?);
         let aad = &[0];
@@ -58,6 +59,7 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let results = try {
+        ensure_support::<B>()?;
         let key = memory.get(*key, 16)?.into();
         let iv = expand_iv(memory.get(*iv, 8)?);
         let aad = &[0];
@@ -76,4 +78,11 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
 
 fn expand_iv(iv: &[u8]) -> Array<U13> {
     core::array::from_fn(|i| i.checked_sub(5).map(|i| iv[i]).unwrap_or(0)).into()
+}
+
+fn ensure_support<B: Board>() -> Result<(), Trap> {
+    match bool::from(board::crypto::Aes128Ccm::<B>::SUPPORT) {
+        true => Ok(()),
+        false => Err(Trap),
+    }
 }
