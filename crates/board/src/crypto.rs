@@ -280,8 +280,8 @@ impl crate::Supported for sha2::Sha256 {}
 impl crate::Supported for sha2::Sha384 {}
 
 #[cfg(feature = "internal-hmac")]
-impl<D: Support<bool> + Default + BlockSizeUser + Update + FixedOutput + HashMarker>
-    crate::Support<bool> for hmac::SimpleHmac<D>
+impl<D: Support<bool> + Default + BlockSizeUser + Update + FixedOutput + HashMarker> Support<bool>
+    for hmac::SimpleHmac<D>
 {
     const SUPPORT: bool = D::SUPPORT;
 }
