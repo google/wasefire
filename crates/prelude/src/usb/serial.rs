@@ -14,15 +14,17 @@
 
 //! Provides API for USB serial.
 
+use sealed::sealed;
 use wasefire_applet_api::usb::serial as api;
 
-use crate::serial::{Event, Serial};
+use crate::serial::Event;
 use crate::usb::{convert, Error};
 
 /// Implements the [`Serial`] interface for the USB serial.
 pub struct UsbSerial;
 
-impl Serial for UsbSerial {
+#[sealed]
+impl crate::serial::Serial for UsbSerial {
     type Error = Error;
 
     fn read(&self, buffer: &mut [u8]) -> Result<usize, Error> {

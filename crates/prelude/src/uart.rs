@@ -14,9 +14,10 @@
 
 //! Provides API for UART.
 
+use sealed::sealed;
 use wasefire_applet_api::uart as api;
 
-use crate::serial::{Event, Serial};
+use crate::serial::Event;
 
 /// UART error.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -31,7 +32,8 @@ pub fn count() -> usize {
 /// Implements the [`Serial`] interface for UART.
 pub struct Uart(pub usize);
 
-impl Serial for Uart {
+#[sealed]
+impl crate::serial::Serial for Uart {
     type Error = Error;
 
     fn read(&self, buffer: &mut [u8]) -> Result<usize, Error> {
