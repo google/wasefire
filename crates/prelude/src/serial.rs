@@ -18,6 +18,8 @@ use alloc::boxed::Box;
 use core::cell::Cell;
 use core::fmt::Debug;
 
+use sealed::sealed;
+
 use crate::scheduling;
 
 /// Serial events to be notified.
@@ -31,6 +33,10 @@ pub enum Event {
 }
 
 /// Provides high-level serial API from low-level API.
+///
+/// This trait should only be implemented by the prelude and is thus sealed. Its purpose is to
+/// provide a unique interface to the different serials.
+#[sealed(pub(crate))]
 pub trait Serial {
     type Error: Clone + Debug;
 
