@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0-git
+## 0.5.0
 
 ### Major
 
