@@ -21,7 +21,7 @@ set -e
 #
 # It must run on the release commit. The output is written as markdown into the
 # docs/releases directory. An email should be sent to wasefire@googlegroups.com
-# summarizing the change and linking to the markdown file.
+# summarizing the changes and linking to the generated markdown file.
 
 DATE=$(git log -1 --pretty=%cs)
 OUTPUT=docs/releases/$DATE.md
