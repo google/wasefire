@@ -53,15 +53,14 @@ ins() {
   ( cd $dir
     echo -n "### $(package_name) $(new) "
     case $has in
-      n) echo "(no change)" ;;
+      n) echo "(no change)"; echo ;;
       y)
         local old=$(old)
         if [ -n "$old" ]; then
-          echo "(was $old)"
+          echo "(was $old)"; dif
         else
-          echo "(new)"
+          echo "(new)"; echo
         fi
-        dif
         ;;
     esac
   ) >> $OUTPUT
