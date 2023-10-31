@@ -51,9 +51,18 @@ ins() {
   local has=n
   rem $dir || has=y
   ( cd $dir
+    echo -n "### $(package_name) $(new) "
     case $has in
-      n) echo "### $(package_name) $(new) (no change)" ;;
-      y) echo "### $(package_name) $(new) (was $(old))"; dif ;;
+      n) echo "(no change)" ;;
+      y)
+        local old=$(old)
+        if [ -n "$old" ]; then
+          echo "(was $old)"
+        else
+          echo "(new)"
+        fi
+        dif
+        ;;
     esac
   ) >> $OUTPUT
 }
