@@ -19,7 +19,8 @@ set -e
 # This script checks that all source files have a copyright notice in the first
 # 2 lines.
 
-EXTENSIONS='cff\|css\|git[a-z]*\|html\|json\|lock\|md\|png\|svg\|toml\|wasm\|x\|yml'
+EXTENSIONS='cff\|css\|git[a-z]*\|html\|json\|lock\|md\|pdf\|png\|svg\|toml'
+EXTENSIONS="$EXTENSIONS"'\|wasm\|x\|yml'
 
 for file in $(git ls-files \
   | grep -v -e '^third_party/' -e 'LICENSE$' -e '\.\('"$EXTENSIONS"'\)$'); do
