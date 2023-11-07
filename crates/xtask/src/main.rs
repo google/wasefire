@@ -275,7 +275,7 @@ impl AppletOptions {
             let metadata = MetadataCommand::new().current_dir(&dir).no_deps().exec()?;
             let target = &metadata.target_directory;
             assert_eq!(metadata.packages.len(), 1);
-            let name = &metadata.packages[0].name;
+            let name = metadata.packages[0].name.replace('-', "_");
             format!("{target}/wasm32-unknown-unknown/release/{name}.wasm")
         };
         let mut cargo = Command::new("cargo");
