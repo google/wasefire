@@ -40,6 +40,14 @@ impl board::Api for Board {
         }
     }
 
+    fn syscall(x1: u32, x2: u32, x3: u32, x4: u32) -> Option<u32> {
+        match (x1, x2, x3, x4) {
+            // The syscall_test example relies on this.
+            (1, 2, 3, 4) => Some(5),
+            _ => None,
+        }
+    }
+
     type Button = button::Impl;
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;

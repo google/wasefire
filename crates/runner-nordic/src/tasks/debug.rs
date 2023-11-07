@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use cortex_m_semihosting::debug;
 use wasefire_board_api as board;
 
 pub enum Impl {}
@@ -31,15 +32,10 @@ impl board::debug::Api for Impl {
     }
 
     fn exit(success: bool) -> ! {
-        if success {
-            loop {
-                cortex_m::asm::bkpt();
-            }
-        } else {
-            #[cfg(feature = "debug")]
-            panic_probe::hard_fault();
-            #[cfg(feature = "release")]
-            panic!();
-        }
+        #[cfg(feature = "debug")]
+        defmt::flush();
+        let status = if success { debug::EXIT_SUCCESS } else { debug::EXIT_FAILURE };
+        debug::exit(status);
+        unreachable!();
     }
 }
