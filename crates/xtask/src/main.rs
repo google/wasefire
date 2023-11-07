@@ -23,6 +23,7 @@ use std::process::{Command, Output};
 use std::str::FromStr;
 
 use anyhow::{bail, ensure, Context, Result};
+use cargo_metadata::MetadataCommand;
 use clap::Parser;
 use lazy_static::lazy_static;
 use probe_rs::config::TargetSelector;
@@ -271,13 +272,11 @@ impl AppletOptions {
         };
         ensure!(Path::new(&dir).exists(), "{dir} does not exist");
         let wasm = {
-            // We could use `cargo metadata --no-deps --format-version=1` and parse the JSON to get
-            // both the target name and target directory.
-            let mut sed = Command::new("sed");
-            sed.args(["-n", r#"s/^name = "\(.*\)"$/\1/p"#, "Cargo.toml"]);
-            sed.current_dir(&dir);
-            let name = read_output_line(&mut sed)?.replace('-', "_");
-            format!("target/wasm32-unknown-unknown/release/{name}.wasm")
+            let metadata = MetadataCommand::new().current_dir(&dir).no_deps().exec()?;
+            let target = &metadata.target_directory;
+            assert_eq!(metadata.packages.len(), 1);
+            let name = &metadata.packages[0].name;
+            format!("{target}/wasm32-unknown-unknown/release/{name}.wasm")
         };
         let mut cargo = Command::new("cargo");
         let mut rustflags = vec![
