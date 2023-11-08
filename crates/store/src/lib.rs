@@ -357,6 +357,7 @@
 //! is checked not to crash.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![warn(unreachable_pub)]
 
 #[macro_use]
 extern crate alloc;
@@ -367,7 +368,7 @@ mod buffer;
 mod driver;
 #[cfg(feature = "std")]
 mod file;
-mod format;
+pub mod format;
 pub mod fragment;
 #[cfg(feature = "std")]
 mod model;
@@ -403,7 +404,7 @@ pub use self::store::{
 /// Currently, the store only supports targets with `usize = u32`.
 // Make sure production builds have `usize = 32`.
 #[cfg(any(target_pointer_width = "32", feature = "std"))]
-type Nat = u32;
+pub type Nat = u32;
 
 /// Returns the internal representation of a Rust natural number.
 ///

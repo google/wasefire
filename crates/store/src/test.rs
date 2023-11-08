@@ -15,7 +15,7 @@
 use crate::{BufferOptions, BufferStorage, Store, StoreDriverOff};
 
 #[derive(Clone)]
-pub struct Config {
+pub(crate) struct Config {
     word_size: usize,
     page_size: usize,
     num_pages: usize,
@@ -24,7 +24,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new_driver(&self) -> StoreDriverOff {
+    pub(crate) fn new_driver(&self) -> StoreDriverOff {
         let options = BufferOptions {
             word_size: self.word_size,
             page_size: self.page_size,
@@ -35,12 +35,12 @@ impl Config {
         StoreDriverOff::new(options, self.num_pages)
     }
 
-    pub fn new_store(&self) -> Store<BufferStorage> {
+    pub(crate) fn new_store(&self) -> Store<BufferStorage> {
         self.new_driver().power_on().unwrap().extract_store()
     }
 }
 
-pub const MINIMAL: Config =
+pub(crate) const MINIMAL: Config =
     Config { word_size: 4, page_size: 64, num_pages: 5, max_word_writes: 2, max_page_erases: 9 };
 
 const NORDIC: Config = Config {

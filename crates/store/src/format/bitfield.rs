@@ -184,17 +184,17 @@ macro_rules! bitfield_impl {
     // - Position is the number of bits used by prior bit fields
     // - Output are the bit field definitions
     ([$($output: tt)*]{ pos: $pos: expr }
-     [$(#[$meta: meta])* $name: ident: Bit, $($input: tt)*]) => {
+     [$(#[$meta: meta])* $pub:vis $name: ident: Bit, $($input: tt)*]) => {
         bitfield_impl! {
-            [$($output)* $(#[$meta])* const $name: Bit = Bit { pos: $pos };]
+            [$($output)* $(#[$meta])* $pub const $name: Bit = Bit { pos: $pos };]
             { pos: $pos + 1 }
             [$($input)*]
         }
     };
     ([$($output: tt)*]{ pos: $pos: expr }
-     [$(#[$meta: meta])* $name: ident: Field <= $max: expr, $($input: tt)*]) => {
+     [$(#[$meta: meta])* $pub:vis $name: ident: Field <= $max: expr, $($input: tt)*]) => {
         bitfield_impl! {
-            [$($output)* $(#[$meta])* const $name: Field = Field {
+            [$($output)* $(#[$meta])* $pub const $name: Field = Field {
                 pos: $pos,
                 len: num_bits($max),
             };]
@@ -203,9 +203,9 @@ macro_rules! bitfield_impl {
         }
     };
     ([$($output: tt)*]{ pos: $pos: expr }
-     [$(#[$meta: meta])* $name: ident: Checksum <= $max: expr, $($input: tt)*]) => {
+     [$(#[$meta: meta])* $pub:vis $name: ident: Checksum <= $max: expr, $($input: tt)*]) => {
         bitfield_impl! {
-            [$($output)* $(#[$meta])* const $name: Checksum = Checksum {
+            [$($output)* $(#[$meta])* $pub const $name: Checksum = Checksum {
                 field: Field { pos: $pos, len: num_bits($max) }
             };]
             { pos: $pos + $name.field.len }
@@ -213,17 +213,17 @@ macro_rules! bitfield_impl {
         }
     };
     ([$($output: tt)*]{ pos: $pos: expr }
-     [$(#[$meta: meta])* $name: ident: Length, $($input: tt)*]) => {
+     [$(#[$meta: meta])* $pub:vis $name: ident: Length, $($input: tt)*]) => {
         bitfield_impl! {
-            [$($output)* $(#[$meta])* const $name: Length = Length { pos: $pos };]
+            [$($output)* $(#[$meta])* $pub const $name: Length = Length { pos: $pos };]
             { pos: $pos }
             [$($input)*]
         }
     };
     ([$($output: tt)*]{ pos: $pos: expr }
-     [$(#[$meta: meta])* $name: ident: ConstField = $bits: tt, $($input: tt)*]) => {
+     [$(#[$meta: meta])* $pub:vis $name: ident: ConstField = $bits: tt, $($input: tt)*]) => {
         bitfield_impl! {
-            Reverse $(#[$meta])* $name []$bits
+            Reverse $(#[$meta])* $pub $name []$bits
             [$($output)*]{ pos: $pos }[$($input)*]
         }
     };
@@ -232,17 +232,17 @@ macro_rules! bitfield_impl {
     // Auxiliary rules for constant bit fields:
     // - Input is a sequence of bits
     // - Output is the reversed sequence of bits
-    (Reverse $(#[$meta: meta])* $name: ident [$($output_bits: tt)*] [$bit: tt $($input_bits: tt)*]
-     [$($output: tt)*]{ pos: $pos: expr }[$($input: tt)*]) => {
+    (Reverse $(#[$meta: meta])* $pub:vis $name: ident [$($output_bits: tt)*]
+     [$bit: tt $($input_bits: tt)*] [$($output: tt)*]{ pos: $pos: expr }[$($input: tt)*]) => {
         bitfield_impl! {
-            Reverse $(#[$meta])* $name [$bit $($output_bits)*][$($input_bits)*]
+            Reverse $(#[$meta])* $pub $name [$bit $($output_bits)*][$($input_bits)*]
             [$($output)*]{ pos: $pos }[$($input)*]
         }
     };
-    (Reverse $(#[$meta: meta])* $name: ident $bits: tt []
+    (Reverse $(#[$meta: meta])* $pub:vis $name: ident $bits: tt []
      [$($output: tt)*]{ pos: $pos: expr }[$($input: tt)*]) => {
         bitfield_impl! {
-            ConstField $(#[$meta])* $name { len: 0, val: 0 }$bits
+            ConstField $(#[$meta])* $pub $name { len: 0, val: 0 }$bits
             [$($output)*]{ pos: $pos }[$($input)*]
         }
     };
@@ -250,10 +250,10 @@ macro_rules! bitfield_impl {
     // Auxiliary rules for constant bit fields:
     // - Input is a sequence of bits in reversed order
     // - Output is the constant bit field definition with the sequence of bits as value
-    (ConstField $(#[$meta: meta])* $name: ident { len: $len: expr, val: $val: expr }[]
+    (ConstField $(#[$meta: meta])* $pub:vis $name: ident { len: $len: expr, val: $val: expr }[]
      [$($output: tt)*]{ pos: $pos: expr }[$($input: tt)*]) => {
         bitfield_impl! {
-            [$($output)* $(#[$meta])* const $name: ConstField = ConstField {
+            [$($output)* $(#[$meta])* $pub const $name: ConstField = ConstField {
                 field: Field { pos: $pos, len: $len },
                 value: $val,
             };]
@@ -261,10 +261,10 @@ macro_rules! bitfield_impl {
             [$($input)*]
         }
     };
-    (ConstField $(#[$meta: meta])* $name: ident { len: $len: expr, val: $val: expr }
+    (ConstField $(#[$meta: meta])* $pub:vis $name: ident { len: $len: expr, val: $val: expr }
      [$bit: tt $($bits: tt)*][$($output: tt)*]{ pos: $pos: expr }[$($input: tt)*]) => {
         bitfield_impl! {
-            ConstField $(#[$meta])* $name { len: $len + 1, val: $val * 2 + $bit }[$($bits)*]
+            ConstField $(#[$meta])* $pub $name { len: $len + 1, val: $val * 2 + $bit }[$($bits)*]
             [$($output)*]{ pos: $pos }[$($input)*]
         }
     };
