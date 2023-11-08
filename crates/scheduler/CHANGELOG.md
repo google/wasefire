@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3-git
+
+### Minor
+
+- Use `debug::exit()` board API when the applet traps
+
 ## 0.2.2
 
 ### Minor

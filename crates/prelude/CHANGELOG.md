@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1-git
+
+### Minor
+
+- Use the default allocation error handler
+
 ## 0.4.0
 
 ### Major
