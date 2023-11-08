@@ -165,7 +165,7 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
                 self.scheduler().perf.record(perf::Slot::Applets);
                 self.erased.scheduler.process_answer(answer);
             }
-            Err(Trap) => logger::panic!("Applet trapped in host function {:?}.", T::NAME),
+            Err(Trap) => applet_trapped::<B>(Some(T::NAME)),
         }
     }
 
@@ -308,7 +308,7 @@ impl<B: Board> Scheduler<B> {
                 self.applet.done();
             }
             Ok(RunAnswer::Host) => (),
-            Err(Error::Trap) => logger::panic!("Applet trapped in wasm."),
+            Err(Error::Trap) => applet_trapped::<B>(None),
             Err(e) => core::panic!("{e:?}"),
         }
     }
@@ -316,6 +316,16 @@ impl<B: Board> Scheduler<B> {
 
 fn convert_results<T: Signature>(results: T::Results) -> Vec<Val> {
     <T::Results as ArrayU32>::into(&results).iter().map(|&x| Val::I32(x)).collect()
+}
+
+fn applet_trapped<B: Board>(reason: Option<&'static str>) -> ! {
+    // Until we support multiple applets, we just exit the platform when the applet traps.
+    match reason {
+        None => logger::error!("Applet trapped in wasm (think segfault)."),
+        Some("sa") => logger::error!("Applet aborted (probably a panic)."),
+        Some(name) => logger::error!("Applet trapped calling host {:?}.", name),
+    }
+    <board::Debug<B> as board::debug::Api>::exit(false);
 }
 
 pub struct Trap;

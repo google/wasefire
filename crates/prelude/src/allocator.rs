@@ -21,7 +21,6 @@ use const_default::ConstDefault;
 use portable_atomic::{AtomicBool, Ordering};
 use rlsf::Tlsf;
 
-use crate::debug::println;
 use crate::sync::Mutex;
 
 #[no_mangle]
@@ -66,10 +65,4 @@ unsafe impl GlobalAlloc for Allocator {
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         self.0.lock().deallocate(NonNull::new(ptr).unwrap(), layout.align())
     }
-}
-
-#[alloc_error_handler]
-fn handle_oom(_: core::alloc::Layout) -> ! {
-    println("OOM");
-    crate::scheduling::abort();
 }
