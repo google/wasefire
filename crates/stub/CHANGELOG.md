@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3-git
+
+### Minor
+
+- Use `wasefire-logger` for panics
+
 ## 0.1.2
 
 ### Patch

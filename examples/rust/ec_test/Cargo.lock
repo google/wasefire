@@ -570,8 +570,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasefire-logger"
+version = "0.1.3"
+
+[[package]]
 name = "wasefire-stub"
-version = "0.1.2"
+version = "0.1.3-git"
 dependencies = [
  "crypto-common",
  "digest",
@@ -586,6 +590,7 @@ dependencies = [
  "sha2",
  "signature",
  "wasefire-applet-api",
+ "wasefire-logger",
 ]
 
 [[package]]

@@ -20,6 +20,7 @@ use hkdf::{Hkdf, HmacImpl};
 use hmac::Hmac;
 use sha2::{Sha256, Sha384};
 use wasefire_applet_api::crypto::{hash as api, Error};
+use wasefire_logger as log;
 
 enum Context {
     Sha256(Sha256),
@@ -77,7 +78,7 @@ unsafe extern "C" fn chu(params: api::update::Params) {
     match CONTEXTS.lock().unwrap().get(id) {
         Context::Sha256(x) => x.update(data),
         Context::Sha384(x) => x.update(data),
-        _ => panic!("Invalid context"),
+        _ => log::panic!("Invalid context"),
     };
 }
 
@@ -88,7 +89,7 @@ unsafe extern "C" fn chf(params: api::finalize::Params) -> api::finalize::Result
     match CONTEXTS.lock().unwrap().take(id) {
         Context::Sha256(x) => x.finalize_into(digest(32).into()),
         Context::Sha384(x) => x.finalize_into(digest(48).into()),
-        _ => panic!("Invalid context"),
+        _ => log::panic!("Invalid context"),
     };
     api::finalize::Results { res: 0 }
 }
@@ -122,7 +123,7 @@ unsafe extern "C" fn chv(params: api::hmac_update::Params) {
     match CONTEXTS.lock().unwrap().get(id) {
         Context::HmacSha256(x) => x.update(data),
         Context::HmacSha384(x) => x.update(data),
-        _ => panic!("Invalid context"),
+        _ => log::panic!("Invalid context"),
     };
 }
 
@@ -133,7 +134,7 @@ unsafe extern "C" fn chg(params: api::hmac_finalize::Params) -> api::hmac_finali
     match CONTEXTS.lock().unwrap().take(id) {
         Context::HmacSha256(x) => x.finalize_into(hmac(32).into()),
         Context::HmacSha384(x) => x.finalize_into(hmac(48).into()),
-        _ => panic!("Invalid context"),
+        _ => log::panic!("Invalid context"),
     };
     api::hmac_finalize::Results { res: 0 }
 }

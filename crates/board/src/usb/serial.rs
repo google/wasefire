@@ -17,7 +17,7 @@
 use usb_device::class_prelude::UsbBus;
 use usb_device::UsbError;
 use usbd_serial::SerialPort;
-use wasefire_logger as logger;
+use wasefire_logger as log;
 
 use crate::{Error, Unsupported};
 
@@ -132,12 +132,12 @@ impl<T: HasSerial> Api for WithSerial<T> {
     fn read(output: &mut [u8]) -> Result<usize, Error> {
         match T::with_serial(|serial| serial.port.read(output)) {
             Ok(len) => {
-                logger::trace!("{}{:?} = read({})", len, &output[.. len], output.len());
+                log::trace!("{}{:?} = read({})", len, &output[.. len], output.len());
                 Ok(len)
             }
             Err(UsbError::WouldBlock) => Ok(0),
             Err(e) => {
-                logger::debug!("{} = read({})", logger::Debug2Format(&e), output.len());
+                log::debug!("{} = read({})", log::Debug2Format(&e), output.len());
                 Err(Error::World)
             }
         }
@@ -150,12 +150,12 @@ impl<T: HasSerial> Api for WithSerial<T> {
         }
         match T::with_serial(|serial| serial.port.write(input)) {
             Ok(len) => {
-                logger::trace!("{} = write({}{:?})", len, input.len(), input);
+                log::trace!("{} = write({}{:?})", len, input.len(), input);
                 Ok(len)
             }
             Err(UsbError::WouldBlock) => Ok(0),
             Err(e) => {
-                logger::debug!("{} = write({}{:?})", logger::Debug2Format(&e), input.len(), input);
+                log::debug!("{} = write({}{:?})", log::Debug2Format(&e), input.len(), input);
                 Err(Error::World)
             }
         }
@@ -165,15 +165,15 @@ impl<T: HasSerial> Api for WithSerial<T> {
         loop {
             match T::with_serial(|serial| serial.port.flush()) {
                 Ok(()) => {
-                    logger::trace!("flush()");
+                    log::trace!("flush()");
                     break Ok(());
                 }
                 Err(UsbError::WouldBlock) => {
-                    logger::debug!("flush() didn't flush all data, retrying");
+                    log::debug!("flush() didn't flush all data, retrying");
                     continue;
                 }
                 Err(e) => {
-                    logger::debug!("{} = flush()", logger::Debug2Format(&e));
+                    log::debug!("{} = flush()", log::Debug2Format(&e));
                     break Err(Error::World);
                 }
             }
