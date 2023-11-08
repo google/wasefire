@@ -51,7 +51,7 @@ use usbd_serial::{SerialPort, USB_CLASS_CDC};
 use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Id, Support};
 use wasefire_scheduler::Scheduler;
-use {wasefire_board_api as board, wasefire_logger as logger};
+use {wasefire_board_api as board, wasefire_logger as log};
 
 use crate::storage::Storage;
 use crate::tasks::button::{self, channel, Button};
@@ -100,7 +100,7 @@ fn main() -> ! {
     #[cfg(feature = "debug")]
     systick::init(c.SYST);
     allocator::init();
-    logger::debug!("Runner starts.");
+    log::debug!("Runner starts.");
     let p = nrf52840_hal::pac::Peripherals::take().unwrap();
     let port0 = gpio::p0::Parts::new(p.P0);
     let buttons = [
@@ -146,7 +146,7 @@ fn main() -> ! {
     for &interrupt in INTERRUPTS {
         unsafe { NVIC::unmask(interrupt) };
     }
-    logger::debug!("Runner is initialized.");
+    log::debug!("Runner is initialized.");
     const WASM: &[u8] = include_bytes!("../../../target/wasefire/applet.wasm");
     Scheduler::<Board>::run(WASM)
 }

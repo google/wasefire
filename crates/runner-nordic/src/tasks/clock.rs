@@ -21,7 +21,7 @@ use nrf52840_hal::timer::{Instance, OneShot, Periodic};
 use nrf52840_hal::Timer;
 use wasefire_board_api::timer::{Api, Command};
 use wasefire_board_api::{Error, Id, Support};
-use wasefire_logger as logger;
+use wasefire_logger as log;
 
 use crate::with_state;
 
@@ -113,7 +113,7 @@ impl<T: Instance + Send> ErasedSlot for Slot<T> {
             Slot::Periodic(x) => x.cancel(),
         };
         if result.is_err() {
-            logger::error!("Could not cancel timer.");
+            log::error!("Could not cancel timer.");
         }
     }
 
@@ -146,7 +146,7 @@ impl<T: Instance + Send> ErasedSlot for Slot<T> {
             Slot::Periodic(x) => x.wait().is_ok(),
         };
         if !done {
-            logger::error!("Called wait but timer is not done.");
+            log::error!("Called wait but timer is not done.");
         }
     }
 }

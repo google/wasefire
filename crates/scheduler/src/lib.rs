@@ -34,8 +34,7 @@ use wasefire_board_api::{self as board, Api as Board, Singleton, Support};
 use wasefire_interpreter::{
     self as interpreter, Call, Error, InstId, Module, RunAnswer, RunResult, Store, Val,
 };
-use wasefire_logger::{self as logger, *};
-use wasefire_store as store;
+use {wasefire_logger as log, wasefire_store as store};
 
 mod call;
 mod event;
@@ -59,17 +58,17 @@ impl<B: Board> Events<B> {
     pub fn push(&mut self, event: board::Event<B>) {
         const MAX_EVENTS: usize = 10;
         if self.0.contains(&event) {
-            trace!("Merging {}", Debug2Format(&event));
+            log::trace!("Merging {}", log::Debug2Format(&event));
         } else if self.0.len() < MAX_EVENTS {
-            debug!("Pushing {}", Debug2Format(&event));
+            log::debug!("Pushing {}", log::Debug2Format(&event));
             self.0.push_back(event);
         } else {
-            warn!("Dropping {}", Debug2Format(&event));
+            log::warn!("Dropping {}", log::Debug2Format(&event));
         }
     }
 
     pub fn pop(&mut self) -> Option<board::Event<B>> {
-        self.0.pop_front().inspect(|event| debug!("Popping {}", Debug2Format(&event)))
+        self.0.pop_front().inspect(|event| log::debug!("Popping {}", log::Debug2Format(&event)))
     }
 }
 
@@ -185,7 +184,7 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
 impl<B: Board> Scheduler<B> {
     pub fn run(wasm: &'static [u8]) -> ! {
         let mut scheduler = Self::new();
-        debug!("Loading applet.");
+        log::debug!("Loading applet.");
         scheduler.load(wasm);
         loop {
             scheduler.flush_events();
@@ -230,9 +229,9 @@ impl<B: Board> Scheduler<B> {
         self.perf.record(perf::Slot::Platform);
         match store.invoke(inst, "init", vec![]) {
             Ok(RunResult::Done(x)) => assert!(x.is_empty()),
-            Ok(RunResult::Host { .. }) => logger::panic!("init called into host"),
+            Ok(RunResult::Host { .. }) => log::panic!("init called into host"),
             Err(Error::NotFound) => (),
-            Err(e) => core::panic!("{e:?}"),
+            Err(e) => log::panic!("{}", log::Debug2Format(&e)),
         }
         #[cfg(feature = "debug")]
         self.perf.record(perf::Slot::Applets);
@@ -279,7 +278,7 @@ impl<B: Board> Scheduler<B> {
         let args = args.iter().map(|x| x.unwrap_i32()).collect();
         let erased = SchedulerCallT { scheduler: self, args };
         let call = api_id.merge(erased);
-        debug!("Calling {}", Debug2Format(&call.id()));
+        log::debug!("Calling {}", log::Debug2Format(&call.id()));
         call::process(call);
     }
 
@@ -290,7 +289,7 @@ impl<B: Board> Scheduler<B> {
     }
 
     fn call(&mut self, inst: InstId, name: &'static str, args: &[u32]) {
-        debug!("Schedule thread {}{:?}.", name, args);
+        log::debug!("Schedule thread {}{:?}.", name, args);
         let args = args.iter().map(|&x| Val::I32(x)).collect();
         #[cfg(feature = "debug")]
         self.perf.record(perf::Slot::Platform);
@@ -303,13 +302,13 @@ impl<B: Board> Scheduler<B> {
     fn process_answer(&mut self, result: Result<RunAnswer, interpreter::Error>) {
         match result {
             Ok(RunAnswer::Done(x)) => {
-                debug!("Thread is done.");
+                log::debug!("Thread is done.");
                 debug_assert!(x.is_empty());
                 self.applet.done();
             }
             Ok(RunAnswer::Host) => (),
             Err(Error::Trap) => applet_trapped::<B>(None),
-            Err(e) => core::panic!("{e:?}"),
+            Err(e) => log::panic!("{}", log::Debug2Format(&e)),
         }
     }
 }
@@ -321,9 +320,9 @@ fn convert_results<T: Signature>(results: T::Results) -> Vec<Val> {
 fn applet_trapped<B: Board>(reason: Option<&'static str>) -> ! {
     // Until we support multiple applets, we just exit the platform when the applet traps.
     match reason {
-        None => logger::error!("Applet trapped in wasm (think segfault)."),
-        Some("sa") => logger::error!("Applet aborted (probably a panic)."),
-        Some(name) => logger::error!("Applet trapped calling host {:?}.", name),
+        None => log::error!("Applet trapped in wasm (think segfault)."),
+        Some("sa") => log::error!("Applet aborted (probably a panic)."),
+        Some(name) => log::error!("Applet trapped calling host {:?}.", name),
     }
     <board::Debug<B> as board::debug::Api>::exit(false);
 }

@@ -5,6 +5,11 @@
 ### Minor
 
 - Use `debug::exit()` board API when the applet traps
+- Use `log::panic!()` on interpreter errors
+
+### Patch
+
+- Use `logger` alias instead of `log` for `wasefire-logger` crate
 
 ## 0.2.2
 

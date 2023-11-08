@@ -18,7 +18,7 @@ use core::borrow::Borrow;
 use derivative::Derivative;
 use wasefire_board_api::{Api as Board, Event};
 use wasefire_interpreter::InstId;
-use wasefire_logger as logger;
+use wasefire_logger as log;
 
 use crate::Scheduler;
 
@@ -93,7 +93,7 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
         Some(x) => x,
         None => {
             // This should not happen because we remove pending events when disabling an event.
-            logger::error!("Missing handler for event.");
+            log::error!("Missing handler for event.");
             return;
         }
     };
