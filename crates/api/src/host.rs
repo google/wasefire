@@ -111,7 +111,5 @@ impl Dispatch for Id {
     fn merge<T: Signature>((): Self::Erased) -> Self::Merged<T> {
         Default::default()
     }
-    fn erase<T: Signature>(_: Self::Merged<T>) -> Self::Erased {
-        ()
-    }
+    fn erase<T: Signature>(_: Self::Merged<T>) -> Self::Erased {}
 }

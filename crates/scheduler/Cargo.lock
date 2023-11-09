@@ -79,6 +79,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd7cc57abe963c6d3b9d8be5b06ba7c8957a930305ca90304f24ef040aa6f961"
 
 [[package]]
+name = "critical-section"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7059fff8937831a9ae6f0fe4d658ffabf58f2ca96aa9dec1c889f936f705f216"
+
+[[package]]
 name = "crypto-common"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -391,16 +397,17 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.5.0"
+version = "0.6.0-git"
 dependencies = [
  "bytemuck",
  "sealed",
  "wasefire-applet-api-macro",
+ "wasefire-logger",
 ]
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.1.5"
+version = "0.1.6-git"
 dependencies = [
  "anyhow",
  "clap",
@@ -408,11 +415,12 @@ dependencies = [
  "data-encoding-macro",
  "proc-macro2",
  "quote",
+ "syn 2.0.37",
 ]
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.5.0"
+version = "0.6.0-git"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
@@ -420,7 +428,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.5.1-git"
+version = "0.6.0-git"
 dependencies = [
  "crypto-common",
  "defmt",
@@ -453,13 +461,15 @@ dependencies = [
 
 [[package]]
 name = "wasefire-scheduler"
-version = "0.2.3-git"
+version = "0.3.0-git"
 dependencies = [
  "bytemuck",
+ "critical-section",
  "defmt",
  "derivative",
  "digest",
  "generic-array",
+ "portable-atomic",
  "typenum",
  "wasefire-applet-api",
  "wasefire-board-api",

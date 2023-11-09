@@ -16,6 +16,7 @@ use wasefire_applet_api::usb::serial::{self as api, Api};
 use wasefire_board_api::usb::serial::{Api as _, Event};
 use wasefire_board_api::{self as board, Api as Board};
 
+use crate::applet::store::MemoryApi;
 use crate::event::usb::serial::Key;
 use crate::event::Handler;
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};

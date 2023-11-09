@@ -28,12 +28,14 @@ use signature::hazmat::PrehashVerifier;
 use wasefire_applet_api::crypto::ec as api;
 
 #[no_mangle]
-unsafe extern "C" fn ces(_: api::is_supported::Params) -> api::is_supported::Results {
+unsafe extern "C" fn env_ces(_: api::is_supported::Params) -> api::is_supported::Results {
     api::is_supported::Results { support: 1 }
 }
 
 #[no_mangle]
-unsafe extern "C" fn cet(params: api::is_valid_scalar::Params) -> api::is_valid_scalar::Results {
+unsafe extern "C" fn env_cet(
+    params: api::is_valid_scalar::Params,
+) -> api::is_valid_scalar::Results {
     let api::is_valid_scalar::Params { curve, n } = params;
     let valid = match api::Curve::from(curve) {
         api::Curve::P256 => unsafe { is_valid_scalar::<p256::NistP256>(n) },
@@ -43,7 +45,7 @@ unsafe extern "C" fn cet(params: api::is_valid_scalar::Params) -> api::is_valid_
 }
 
 #[no_mangle]
-unsafe extern "C" fn ceq(params: api::is_valid_point::Params) -> api::is_valid_point::Results {
+unsafe extern "C" fn env_ceq(params: api::is_valid_point::Params) -> api::is_valid_point::Results {
     let api::is_valid_point::Params { curve, x, y } = params;
     let valid = match api::Curve::from(curve) {
         api::Curve::P256 => unsafe { is_valid_point::<p256::NistP256>(x, y) },
@@ -53,7 +55,7 @@ unsafe extern "C" fn ceq(params: api::is_valid_point::Params) -> api::is_valid_p
 }
 
 #[no_mangle]
-unsafe extern "C" fn ceb(params: api::base_point_mul::Params) -> api::base_point_mul::Results {
+unsafe extern "C" fn env_ceb(params: api::base_point_mul::Params) -> api::base_point_mul::Results {
     let api::base_point_mul::Params { curve, n, x, y } = params;
     let res = match api::Curve::from(curve) {
         api::Curve::P256 => unsafe { base_point_mul::<p256::NistP256>(n, x, y) },
@@ -67,7 +69,7 @@ unsafe extern "C" fn ceb(params: api::base_point_mul::Params) -> api::base_point
 }
 
 #[no_mangle]
-unsafe extern "C" fn cep(params: api::point_mul::Params) -> api::point_mul::Results {
+unsafe extern "C" fn env_cep(params: api::point_mul::Params) -> api::point_mul::Results {
     let api::point_mul::Params { curve, n, in_x, in_y, out_x, out_y } = params;
     let res = match api::Curve::from(curve) {
         api::Curve::P256 => unsafe { point_mul::<p256::NistP256>(n, in_x, in_y, out_x, out_y) },
@@ -81,7 +83,7 @@ unsafe extern "C" fn cep(params: api::point_mul::Params) -> api::point_mul::Resu
 }
 
 #[no_mangle]
-unsafe extern "C" fn cei(params: api::ecdsa_sign::Params) -> api::ecdsa_sign::Results {
+unsafe extern "C" fn env_cei(params: api::ecdsa_sign::Params) -> api::ecdsa_sign::Results {
     let api::ecdsa_sign::Params { curve, key, message, r, s } = params;
     let res = match api::Curve::from(curve) {
         api::Curve::P256 => unsafe {
@@ -99,7 +101,7 @@ unsafe extern "C" fn cei(params: api::ecdsa_sign::Params) -> api::ecdsa_sign::Re
 }
 
 #[no_mangle]
-unsafe extern "C" fn cev(params: api::ecdsa_verify::Params) -> api::ecdsa_verify::Results {
+unsafe extern "C" fn env_cev(params: api::ecdsa_verify::Params) -> api::ecdsa_verify::Results {
     let api::ecdsa_verify::Params { curve, message, x, y, r, s } = params;
     let res = match api::Curve::from(curve) {
         api::Curve::P256 => unsafe { ecdsa_verify::<p256::NistP256>(message, x, y, r, s) },

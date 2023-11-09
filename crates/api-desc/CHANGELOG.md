@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6-git
+
+### Minor
+
+- Call some `env_dispatch` function instead of panicking in `native`
+- Prefix function symbols by `env_` with `native` feature
+- Implement `bytemuck::Zeroable` for `Results` structs
+
 ## 0.1.5
 
 ### Minor

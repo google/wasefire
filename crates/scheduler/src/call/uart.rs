@@ -16,6 +16,7 @@ use wasefire_applet_api::uart::{self as api, Api};
 use wasefire_board_api::uart::{Api as _, Direction, Event};
 use wasefire_board_api::{self as board, Api as Board, Id, Support};
 
+use crate::applet::store::MemoryApi;
 use crate::event::uart::Key;
 use crate::event::Handler;
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};

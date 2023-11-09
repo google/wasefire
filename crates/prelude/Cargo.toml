@@ -1,6 +1,6 @@
 [package]
 name = "wasefire"
-version = "0.4.1-git"
+version = "0.5.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -24,7 +24,7 @@ portable-atomic = { version = "1.4.3", default-features = false }
 rlsf = { version = "0.2.1", default-features = false }
 sealed = { version = "0.5.0", default-features = false }
 typenum = { version = "1.17.0", default-features = false }
-wasefire-applet-api = { version = "0.5.0", path = "../api", features = ["wasm"] }
+wasefire-applet-api = { version = "0.6.0-git", path = "../api", features = ["wasm"] }
 zeroize = { version = "1.6.0", default-features = false, features = ["derive"], optional = true }
 
 [features]
@@ -32,5 +32,7 @@ zeroize = { version = "1.6.0", default-features = false, features = ["derive"], 
 multivalue = ["wasefire-applet-api/multivalue"]
 # Implements RustCrypto traits.
 rust-crypto = ["dep:aead", "dep:crypto-common", "dep:digest", "dep:zeroize"]
-# Builds for native library usage instead of Wasm binary.
+# Builds for native library usage instead of Wasm binary (incompatible with test).
 native = ["wasefire-applet-api/native"]
+# Builds for unit-testing applets (incompatible with native).
+test = []

@@ -21,7 +21,7 @@ pub use software::*;
 use crate::{Error, Support, Unsupported};
 
 /// Elliptic-curve cryptography interface.
-pub trait Api<N: ArrayLength<u8>>: Support<bool> {
+pub trait Api<N: ArrayLength<u8>>: Support<bool> + Send {
     /// Returns whether a scalar is valid.
     fn is_valid_scalar(n: &Int<N>) -> bool;
 
@@ -110,8 +110,8 @@ mod software {
 
     impl<C, D> Api<FieldBytesSize<C>> for Software<C, D>
     where
-        C: PrimeCurve + CurveArithmetic,
-        D: Support<bool>,
+        C: Send + PrimeCurve + CurveArithmetic,
+        D: Support<bool> + Send,
         D: Digest + BlockSizeUser + FixedOutput<OutputSize = FieldBytesSize<C>> + FixedOutputReset,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
         ProjectivePoint<C>: FromEncodedPoint<C>,

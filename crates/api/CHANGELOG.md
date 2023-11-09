@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0-git
+
+### Major
+
+- Update `wasefire-applet-api-macro` version
+
+### Patch
+
+- Fix clippy lint
+- Update `native` documentation
+- Implement the internal `env_dispatch` function
+- Add dependency on `wasefire-logger`
+
 ## 0.5.0
 
 ### Major

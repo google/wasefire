@@ -45,7 +45,7 @@ pub mod usb;
 ///
 /// All interfaces are implemented by [`Unsupported`]. This can be used for interfaces that don't
 /// have hardware support, are not yet implemented, or should use a software implementation.
-pub trait Api {
+pub trait Api: Send + 'static {
     /// Returns the oldest triggered event, if any.
     ///
     /// This function is non-blocking. See [`Self::wait_event()`] for a blocking version.
@@ -70,7 +70,7 @@ pub trait Api {
     type Debug: debug::Api;
     type Led: led::Api;
     type Rng: rng::Api;
-    type Storage: Singleton + wasefire_store::Storage;
+    type Storage: Singleton + wasefire_store::Storage + Send;
     type Timer: timer::Api;
     type Uart: uart::Api;
     type Usb: usb::Api;

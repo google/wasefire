@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.2.3-git
+## 0.3.0-git
+
+### Major
+
+- Add `native` and `wasm` features (exactly one must be chosen)
 
 ### Minor
 
@@ -10,6 +14,7 @@
 ### Patch
 
 - Use `logger` alias instead of `log` for `wasefire-logger` crate
+- Update dependencies
 
 ## 0.2.2
 
@@ -76,4 +81,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 17 -->
+<!-- Increment to skip CHANGELOG.md test: 18 -->

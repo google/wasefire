@@ -16,6 +16,7 @@ use wasefire_applet_api::store::{self as api, Api};
 use wasefire_board_api::Api as Board;
 use wasefire_store::StoreError;
 
+use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
 mod fragment;

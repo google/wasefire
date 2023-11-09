@@ -16,6 +16,7 @@ use wasefire_applet_api::rng::{self as api, Api};
 use wasefire_board_api::rng::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
 
+use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {

@@ -325,14 +325,33 @@ impl Fn {
 
     fn wasm_rust(&self) -> TokenStream {
         let Fn { docs, name, link, params, results } = self;
-        let name = format_ident!("{}", name);
+        let name = format_ident!("{name}");
+        let env_link = format!("env_{link}");
+        let link0 = syn::LitByteStr::new(format!("{link}\0").as_bytes(), Span::call_site());
         let doc = format!("Module of [`{name}`]({name}()).");
         let params_doc = format!("Parameters of [`{name}`](super::{name}())");
         let results_doc = format!("Results of [`{name}`](super::{name}())");
         let params: Vec<_> = params.iter().map(|x| x.wasm_rust()).collect();
         let results: Vec<_> = results.iter().map(|x| x.wasm_rust()).collect();
-        let fn_params = if params.is_empty() { None } else { Some(quote!(params: #name::Params)) };
-        let fn_results = if results.is_empty() { None } else { Some(quote!(-> #name::Results)) };
+        let (fn_params, let_params) = if params.is_empty() {
+            (None, quote!(let ffi_params = core::ptr::null();))
+        } else {
+            (
+                Some(quote!(params: #name::Params)),
+                quote!(let ffi_params = &params as *const _ as *const u32;),
+            )
+        };
+        let (fn_results, let_results) = if results.is_empty() {
+            (None, quote!(let results = (); let ffi_results = core::ptr::null_mut();))
+        } else {
+            (
+                Some(quote!(-> #name::Results)),
+                quote! {
+                    let mut results = <#name::Results as bytemuck::Zeroable>::zeroed();
+                    let ffi_results = &mut results as *mut _ as *mut u32;
+                },
+            )
+        };
         quote! {
             #[doc = #doc]
             pub mod #name {
@@ -342,7 +361,7 @@ impl Fn {
                 pub struct Params { #(#params,)* }
 
                 #[doc = #results_doc]
-                #[derive(Debug, Copy, Clone)]
+                #[derive(Debug, Copy, Clone, bytemuck::Zeroable)]
                 #[repr(C)]
                 pub struct Results { #(#results,)* }
             }
@@ -353,10 +372,14 @@ impl Fn {
                 pub fn #name(#fn_params) #fn_results;
             }
             #[cfg(feature = "native")]
-            #[export_name = #link]
+            #[export_name = #env_link]
             #[linkage = "weak"]
             pub unsafe extern "C" fn #name(#fn_params) #fn_results {
-                panic!("{:?} is not defined", #link);
+                #let_params
+                #let_results
+                let ffi_link = core::ffi::CStr::from_bytes_with_nul(#link0).unwrap().as_ptr();
+                crate::wasm::native::env_dispatch(ffi_link, ffi_params, ffi_results);
+                results
             }
         }
     }

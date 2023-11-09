@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.5.1-git
+## 0.6.0-git
+
+### Major
+
+- Require the APIs to be `Send` and the top-level API to be `'static` too
 
 ### Patch
 

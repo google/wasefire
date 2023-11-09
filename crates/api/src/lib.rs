@@ -16,17 +16,17 @@
 #![cfg_attr(feature = "wasm", doc = include_str!("wasm.md"))]
 #![no_std]
 #![cfg_attr(all(feature = "wasm", feature = "native"), feature(linkage))]
+#![warn(unsafe_op_in_unsafe_fn)]
 
 extern crate alloc;
 
 #[cfg(feature = "host")]
-mod host;
-
-#[cfg(feature = "wasm")]
-mod wasm;
+pub use host::*;
 
 #[cfg(feature = "host")]
-pub use host::*;
+mod host;
+#[cfg(feature = "wasm")]
+pub(crate) mod wasm;
 
 #[cfg(feature = "wasm")]
 wasefire_applet_api_macro::wasm!();

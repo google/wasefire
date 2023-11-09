@@ -19,7 +19,7 @@ use wasefire_logger as log;
 use crate::Unsupported;
 
 /// Debugging and testing interface.
-pub trait Api {
+pub trait Api: Send {
     /// Maximum value returned by [`Self::time()`] before wrapping.
     const MAX_TIME: u64;
 

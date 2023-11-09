@@ -17,7 +17,7 @@
 use crate::{Error, Unsupported};
 
 /// Random number generator interface.
-pub trait Api {
+pub trait Api: Send {
     /// Fills a buffer with random bytes uniformly.
     fn fill_bytes(buffer: &mut [u8]) -> Result<(), Error>;
 }

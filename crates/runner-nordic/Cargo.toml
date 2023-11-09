@@ -24,12 +24,16 @@ usb-device = "0.2.9"
 usbd-serial = "0.1.1"
 wasefire-applet-api = { path = "../api" }
 wasefire-board-api = { path = "../board" }
-wasefire-interpreter = { path = "../interpreter" }
+wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
 wasefire-scheduler = { path = "../scheduler" }
 wasefire-store = { path = "../store" }
 
 [features]
+software-crypto = ["wasefire-board-api/software-crypto"]
+software-crypto-aes256-gcm = ["wasefire-board-api/software-crypto-aes256-gcm"]
+software-crypto-sha256 = ["wasefire-board-api/software-crypto-sha256"]
+# Exactly one is enabled by xtask.
 debug = [
   "dep:defmt",
   "dep:defmt-rtt",
@@ -39,6 +43,6 @@ debug = [
   "wasefire-scheduler/defmt",
 ]
 release = ["dep:panic-abort"]
-software-crypto = ["wasefire-board-api/software-crypto"]
-software-crypto-aes256-gcm = ["wasefire-board-api/software-crypto-aes256-gcm"]
-software-crypto-sha256 = ["wasefire-board-api/software-crypto-sha256"]
+# Exactly one is enabled by xtask.
+native = ["wasefire-scheduler/native"]
+wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]

@@ -19,12 +19,16 @@ if [ ! -e ../../target/wasefire/applet.wasm ]; then
   mkdir -p ../../target/wasefire
   touch ../../target/wasefire/applet.wasm
 fi
-cargo check --features=debug
-cargo check --features=debug,web
-cargo check --features=release
-cargo check --no-default-features --features=debug
+cargo check --features=wasm,debug
+cargo check --features=wasm,debug,web
+cargo check --features=wasm,release
+cargo check --target=i686-unknown-linux-gnu --features=native,release
+cargo check --no-default-features --features=wasm,debug
 cargo fmt -- --check
-cargo clippy --features=debug -- --deny=warnings
-cargo clippy --features=debug,web -- --deny=warnings
-cargo clippy --features=release -- --deny=warnings
-cargo test --features=debug
+cargo clippy --features=wasm,debug -- --deny=warnings
+cargo clippy --features=wasm,debug,web -- --deny=warnings
+cargo clippy --features=wasm,release -- --deny=warnings
+cargo clippy --target=i686-unknown-linux-gnu --features=native,release -- \
+--deny=warnings
+cargo clippy --no-default-features --features=wasm,debug -- --deny=warnings
+cargo test --features=wasm,debug

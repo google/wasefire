@@ -10,4 +10,4 @@ wasefire = { path = "../../../crates/prelude" }
 wasefire-stub = { path = "../../../crates/stub", optional = true }
 
 [features]
-native = ["dep:wasefire-stub", "wasefire/native"]
+test = ["dep:wasefire-stub", "wasefire/test"]

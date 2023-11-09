@@ -93,6 +93,11 @@ async fn main() -> Result<()> {
         }
     });
     println!("Board initialized. Starting scheduler.");
+    #[cfg(feature = "wasm")]
     const WASM: &[u8] = include_bytes!("../../../target/wasefire/applet.wasm");
-    Handle::current().spawn_blocking(|| Scheduler::<board::Board>::run(WASM)).await?
+    #[cfg(feature = "wasm")]
+    Handle::current().spawn_blocking(|| Scheduler::<board::Board>::run(WASM)).await?;
+    #[cfg(feature = "native")]
+    Handle::current().spawn_blocking(|| Scheduler::<board::Board>::run()).await?;
+    Ok(())
 }

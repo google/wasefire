@@ -16,6 +16,7 @@ use wasefire_applet_api::crypto::gcm::{self as api, Api, Support};
 use wasefire_board_api::crypto::aead::Api as _;
 use wasefire_board_api::{self as board, Api as Board, Support as _};
 
+use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
