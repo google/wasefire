@@ -83,7 +83,11 @@ pub(crate) fn schedule_callback(callback: Box<dyn Fn() + Send>) {
 
 pub(crate) fn execute_callback() {
     if let Some(callback) = critical_section::with(|cs| CALLBACK.take(cs)) {
+        #[cfg(feature = "debug")]
+        with_scheduler(|x| x.perf_record(Slot::Platform));
         callback();
+        #[cfg(feature = "debug")]
+        with_scheduler(|x| x.perf_record(Slot::Applets));
     }
 }
 
@@ -91,8 +95,12 @@ pub(crate) fn execute_callback() {
 extern "C" fn env_dispatch(link: *const c_char, params: *const u32, results: *mut u32) {
     let link = unsafe { CStr::from_ptr(link) };
     with_scheduler(|scheduler| {
+        #[cfg(feature = "debug")]
+        scheduler.perf_record(Slot::Applets);
         scheduler.flush_events();
         scheduler.dispatch(link, params, results);
     });
     execute_callback();
+    #[cfg(feature = "debug")]
+    with_scheduler(|x| x.perf_record(Slot::Platform));
 }

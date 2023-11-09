@@ -121,8 +121,6 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
         use alloc::boxed::Box;
 
         use crate::native;
-        #[cfg(feature = "debug")]
-        use crate::perf;
 
         #[derive(Copy, Clone)]
         #[repr(transparent)]
@@ -151,8 +149,6 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
                 native::schedule_callback(Box::new(move || unsafe { $cb(ptr, this $(, $x)*) }));
             }};
         }
-        #[cfg(feature = "debug")]
-        scheduler.perf.record(perf::Slot::Platform);
         match params.len() - 2 {
             0 => schedule!(applet_cb0()),
             1 => schedule!(applet_cb1(x0)),
@@ -160,7 +156,5 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
             3 => schedule!(applet_cb3(x0, x1, x2)),
             _ => unimplemented!(),
         }
-        #[cfg(feature = "debug")]
-        scheduler.perf.record(perf::Slot::Applets);
     }
 }
