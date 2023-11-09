@@ -20,6 +20,8 @@ set -e
 # This script runs the continuous integration tests.
 
 for lang in $(ls examples); do
+  # TODO(https://github.com/AssemblyScript/assemblyscript/issues/2784): Remove.
+  [ $lang = assemblyscript ] && continue
   for name in $(ls examples/$lang); do
     [ $lang = assemblyscript -a $name = node_modules ] && continue
     [ $lang = assemblyscript -a $name = api.ts ] && continue
