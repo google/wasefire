@@ -64,6 +64,7 @@ WASEFIRE_WRAPPER_EXEC=n ./scripts/wrapper.sh mdbook
 git diff --exit-code \
   || e "Tracked files were modified and/or untracked files were created"
 
+x ./scripts/wrapper.sh taplo lint --default-schema-catalogs
 x ./scripts/wrapper.sh taplo format
 git diff --exit-code || e "TOML files are not well formatted"
 
