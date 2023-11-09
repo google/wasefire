@@ -50,4 +50,12 @@ for crate in $(get_crates); do
   update_crate "$crate" "$(get_latest "$crate")"
 done
 
+( set -x
+  cd examples/assemblyscript
+  npm install --no-save assemblyscript
+)
+ASC_VERSION=$(sed -n 's/^  "version": "\(.*\)",$/\1/p' \
+  examples/assemblyscript/node_modules/assemblyscript/package.json)
+x sed -i "/ASC_VERSION:/s/\"[^\"]*\"/\"$ASC_VERSION\"/" crates/xtask/src/main.rs
+
 d "All dependencies have been upgraded"

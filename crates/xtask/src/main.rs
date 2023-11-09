@@ -311,13 +311,7 @@ impl AppletOptions {
 
     fn execute_assemblyscript(&self, main: &MainOptions) -> Result<()> {
         let dir = format!("examples/{}", self.lang);
-        if !Path::new("examples/assemblyscript/node_modules/.bin/asc").exists() {
-            ensure_command(&["npm"])?;
-            let mut npm = wrap_command()?;
-            npm.args(["npm", "install", "--no-save", "assemblyscript"]);
-            npm.current_dir(&dir);
-            execute_command(&mut npm)?;
-        }
+        ensure_assemblyscript()?;
         let mut asc = Command::new("./node_modules/.bin/asc");
         asc.args(["-o", "../../target/wasefire/applet.wasm"]);
         asc.arg(format!("-O{}", self.opt_level));
@@ -633,6 +627,24 @@ fn copy_if_changed(src: &str, dst: &str) -> Result<bool> {
         fs::write(&dst_file, src_hash)?;
     }
     Ok(changed)
+}
+
+fn ensure_assemblyscript() -> Result<()> {
+    const ASC_VERSION: &str = "0.27.15"; // scripts/upgrade.sh relies on this name
+    const PATH: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
+    if Path::new(PATH).exists() {
+        let mut sed = Command::new("sed");
+        sed.args(["-n", r#"s/^  "version": "\(.*\)",$/\1/p"#, PATH]);
+        if read_output_line(&mut sed)? == ASC_VERSION {
+            return Ok(());
+        }
+    }
+    ensure_command(&["npm"])?;
+    let mut npm = wrap_command()?;
+    npm.args(["npm", "install", "--no-save"]);
+    npm.arg(format!("assemblyscript@{ASC_VERSION}"));
+    npm.current_dir("examples/assemblyscript");
+    execute_command(&mut npm)
 }
 
 fn main() -> Result<()> {
