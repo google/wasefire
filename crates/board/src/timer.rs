@@ -35,7 +35,7 @@ impl<B: crate::Api> From<Event<B>> for crate::Event<B> {
 }
 
 /// Timer interface.
-pub trait Api: Support<usize> {
+pub trait Api: Support<usize> + Send {
     /// Arms a timer to trigger according to a command.
     fn arm(timer: Id<Self>, command: &Command) -> Result<(), Error>;
 

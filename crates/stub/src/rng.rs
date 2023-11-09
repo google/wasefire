@@ -16,7 +16,7 @@ use rand::RngCore;
 use wasefire_applet_api::rng as api;
 
 #[no_mangle]
-unsafe extern "C" fn rb(params: api::fill_bytes::Params) -> api::fill_bytes::Results {
+unsafe extern "C" fn env_rb(params: api::fill_bytes::Params) -> api::fill_bytes::Results {
     let api::fill_bytes::Params { ptr, len } = params;
     let buf = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
     rand::thread_rng().fill_bytes(buf);

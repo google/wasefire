@@ -19,7 +19,7 @@
 use crate::{Error, Id, Support, Unsupported};
 
 /// LED interface.
-pub trait Api: Support<usize> {
+pub trait Api: Support<usize> + Send {
     /// Returns whether a given LED is on.
     fn get(led: Id<Self>) -> Result<bool, Error>;
 

@@ -31,12 +31,12 @@
 #![feature(macro_metavar_expr)]
 #![feature(negative_impls)]
 #![feature(vec_into_raw_parts)]
+#![warn(unsafe_op_in_unsafe_fn)]
 
 extern crate alloc;
 
 use wasefire_applet_api as api;
 
-#[cfg(not(feature = "native"))]
 mod allocator;
 pub mod button;
 mod callback;
@@ -78,7 +78,7 @@ pub fn syscall(x1: usize, x2: usize, x3: usize, x4: usize) -> usize {
 ///     debug!("Hello world!");
 /// }
 /// ```
-#[cfg(not(feature = "native"))]
+#[cfg(not(any(feature = "native", feature = "test")))]
 #[macro_export]
 macro_rules! applet {
     () => {
@@ -99,10 +99,24 @@ macro_rules! applet {
         extern crate alloc;
 
         use wasefire::*;
+
+        #[no_mangle]
+        extern "C" fn applet_main() {
+            main();
+        }
+    };
+}
+#[cfg(feature = "test")]
+#[macro_export]
+macro_rules! applet {
+    () => {
+        extern crate alloc;
+
+        use wasefire::*;
     };
 }
 
-#[cfg(not(feature = "native"))]
+#[cfg(not(feature = "test"))]
 #[panic_handler]
 fn handle_panic(info: &core::panic::PanicInfo) -> ! {
     debug!("{}", info);

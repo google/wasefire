@@ -20,4 +20,4 @@ cargo check --target=wasm32-unknown-unknown --features=rust-crypto
 cargo check --features=native
 cargo fmt -- --check
 cargo clippy --target=wasm32-unknown-unknown -- --deny=warnings
-cargo test --features=native
+cargo test --features=test

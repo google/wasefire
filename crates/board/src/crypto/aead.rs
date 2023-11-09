@@ -33,7 +33,7 @@ impl From<AeadSupport> for bool {
 }
 
 /// Elliptic-curve cryptography interface.
-pub trait Api<Key, Iv>: Support<AeadSupport>
+pub trait Api<Key, Iv>: Support<AeadSupport> + Send
 where
     Key: ArrayLength<u8>,
     Iv: ArrayLength<u8>,
@@ -62,16 +62,16 @@ where
 
 pub type Array<N> = GenericArray<u8, N>;
 
-pub struct Unsupported<Tag: ArrayLength<u8>> {
+pub struct Unsupported<Tag: ArrayLength<u8> + Send> {
     _never: !,
     _tag: Tag,
 }
 
-impl<Tag: ArrayLength<u8>> Support<AeadSupport> for Unsupported<Tag> {
+impl<Tag: ArrayLength<u8> + Send> Support<AeadSupport> for Unsupported<Tag> {
     const SUPPORT: AeadSupport = AeadSupport { no_copy: false, in_place_no_copy: false };
 }
 
-impl<Key, Iv, Tag: ArrayLength<u8>> Api<Key, Iv> for Unsupported<Tag>
+impl<Key, Iv, Tag: ArrayLength<u8> + Send> Api<Key, Iv> for Unsupported<Tag>
 where
     Key: ArrayLength<u8>,
     Iv: ArrayLength<u8>,
@@ -106,7 +106,7 @@ mod software {
 
     impl<Key, Iv, T> Api<Key, Iv> for T
     where
-        T: KeyInit + AeadInPlace,
+        T: Send + KeyInit + AeadInPlace,
         T: KeySizeUser<KeySize = Key>,
         T: AeadCore<NonceSize = Iv>,
         Key: ArrayLength<u8>,

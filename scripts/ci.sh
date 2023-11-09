@@ -31,10 +31,10 @@ for lang in $(ls examples); do
     ( cd examples/rust/$name
       x cargo fmt -- --check
       x cargo clippy --lib --target=wasm32-unknown-unknown -- --deny=warnings
-      if package_features | grep -q '^native$'; then
-        x cargo clippy --features=native -- --deny=warnings
-        grep -q '^mod tests {$' src/lib.rs && x cargo test --features=native
-        [ -e src/main.rs ] && x env WASEFIRE_DEBUG=1 cargo run --features=native
+      if package_features | grep -q '^test$'; then
+        x cargo clippy --features=test -- --deny=warnings
+        grep -q '^mod tests {$' src/lib.rs && x cargo test --features=test
+        [ -e src/main.rs ] && x env WASEFIRE_DEBUG=1 cargo run --features=test
       fi
     )
   done

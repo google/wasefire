@@ -15,19 +15,22 @@
 use alloc::collections::{BTreeSet, VecDeque};
 
 use wasefire_board_api::{self as board, Api as Board, Event};
-use wasefire_interpreter::Store;
 use wasefire_logger as log;
 
+use self::store::{Memory, Store, StoreApi};
 use crate::event::{Handler, Key};
-use crate::{Memory, Trap};
+use crate::Trap;
+
+pub mod store;
 
 pub struct Applet<B: Board> {
-    pub store: AppletStore,
+    pub store: self::store::Store,
 
     /// Pending events.
     events: VecDeque<Event<B>>,
 
     /// Whether we returned from a callback.
+    #[cfg(feature = "wasm")]
     done: bool,
 
     handlers: BTreeSet<Handler<B>>,
@@ -41,19 +44,11 @@ impl<B: Board> Default for Applet<B> {
         Self {
             store: Default::default(),
             events: Default::default(),
+            #[cfg(feature = "wasm")]
             done: Default::default(),
             handlers: Default::default(),
             hashes: Default::default(),
         }
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct AppletStore(Store<'static>);
-
-impl AppletStore {
-    pub fn memory(&mut self) -> Memory {
-        Memory::new(&mut self.0)
     }
 }
 
@@ -91,16 +86,17 @@ impl<B: Board> AppletHashes<B> {
 }
 
 impl<B: Board> Applet<B> {
-    pub fn store_mut(&mut self) -> &mut Store<'static> {
-        &mut self.store.0
+    pub fn store_mut(&mut self) -> &mut Store {
+        &mut self.store
     }
 
     pub fn memory(&mut self) -> Memory {
-        Memory::new(self.store_mut())
+        self.store.memory()
     }
 
     pub fn push(&mut self, event: Event<B>) {
         const MAX_EVENTS: usize = 5;
+        #[allow(clippy::if_same_then_else)]
         if !self.handlers.contains(&Key::from(&event)) {
             // This can happen after an event is disabled and the event queue of the board is
             // flushed.
@@ -117,6 +113,7 @@ impl<B: Board> Applet<B> {
 
     /// Returns the next event action.
     pub fn pop(&mut self) -> EventAction<B> {
+        #[cfg(feature = "wasm")]
         if core::mem::replace(&mut self.done, false) {
             return EventAction::Reply;
         }
@@ -126,6 +123,7 @@ impl<B: Board> Applet<B> {
         }
     }
 
+    #[cfg(feature = "wasm")]
     pub fn done(&mut self) {
         self.done = true;
     }
@@ -167,6 +165,7 @@ pub enum EventAction<B: Board> {
     Handle(Event<B>),
 
     /// Should resume execution (we handled at least one event).
+    #[cfg(feature = "wasm")]
     Reply,
 
     /// Should suspend execution until an event is available.

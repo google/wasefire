@@ -53,6 +53,13 @@ struct MainOptions {
     #[clap(long)]
     release: bool,
 
+    /// Links the applet as a static library to the platform (requires the `runner` subcommand).
+    ///
+    /// This option improves performance and footprint but removes the security guarantees provided
+    /// by sandboxing the applet using WebAssembly.
+    #[clap(long)]
+    native: bool,
+
     /// Prints basic size information.
     #[clap(long)]
     size: bool,
@@ -247,7 +254,7 @@ impl Applet {
             // use twiggy on the wasm-opt output.
             self.options.opt.set(false);
         }
-        self.options.execute(main)?;
+        self.options.execute(main, &self.command)?;
         if let Some(command) = &self.command {
             command.execute(main)?;
         }
@@ -256,41 +263,56 @@ impl Applet {
 }
 
 impl AppletOptions {
-    fn execute(&self, main: &MainOptions) -> Result<()> {
+    fn execute(&self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
         match self.lang.as_str() {
-            "rust" => self.execute_rust(main),
+            "rust" => self.execute_rust(main, command),
             "assemblyscript" => self.execute_assemblyscript(main),
             x => bail!("unsupported language {x}"),
         }
     }
 
-    fn execute_rust(&self, main: &MainOptions) -> Result<()> {
+    fn execute_rust(&self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
         let dir = if self.name.starts_with(['.', '/']) {
             self.name.clone()
         } else {
             format!("examples/{}/{}", self.lang, self.name)
         };
         ensure!(Path::new(&dir).exists(), "{dir} does not exist");
-        let wasm = {
-            let metadata = MetadataCommand::new().current_dir(&dir).no_deps().exec()?;
-            let target = &metadata.target_directory;
-            assert_eq!(metadata.packages.len(), 1);
-            let name = metadata.packages[0].name.replace('-', "_");
-            format!("{target}/wasm32-unknown-unknown/release/{name}.wasm")
+        let native = match (main.native, command) {
+            (true, Some(AppletCommand::Runner(x))) => Some(x.target()),
+            (true, _) => bail!("--native requires runner"),
+            (false, _) => None,
+        };
+        let metadata = MetadataCommand::new().current_dir(&dir).no_deps().exec()?;
+        let target_dir = &metadata.target_directory;
+        assert_eq!(metadata.packages.len(), 1);
+        let name = metadata.packages[0].name.replace('-', "_");
+        let out = match native {
+            None => format!("{target_dir}/wasm32-unknown-unknown/release/{name}.wasm"),
+            Some(target) => format!("{target_dir}/{target}/release/lib{name}.a"),
         };
         let mut cargo = Command::new("cargo");
         let mut rustflags = vec![
-            format!("-C link-arg=-zstack-size={}", self.stack_size),
             "-C panic=abort".to_string(),
             "-C codegen-units=1".to_string(),
             "-C embed-bitcode=yes".to_string(),
             format!("-C opt-level={}", self.opt_level),
             "-C lto=fat".to_string(),
         ];
-        if main.multivalue {
-            rustflags.push("-C target-feature=+multivalue".to_string());
+        cargo.args(["rustc", "--lib"]);
+        match native {
+            None => {
+                rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
+                if main.multivalue {
+                    rustflags.push("-C target-feature=+multivalue".to_string());
+                }
+                cargo.args(["--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
+            }
+            Some(target) => {
+                cargo.args(["--crate-type=staticlib", "--features=wasefire/native"]);
+                cargo.arg(format!("--target={target}"));
+            }
         }
-        cargo.args(["rustc", "--lib", "--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
         cargo.arg(format!("--profile={}", self.profile));
         for features in &self.features {
             cargo.arg(format!("--features={features}"));
@@ -303,8 +325,10 @@ impl AppletOptions {
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(dir);
         execute_command(&mut cargo)?;
-        if copy_if_changed(&wasm, "target/wasefire/applet.wasm")? {
-            self.execute_wasm(main)?;
+        if native.is_some() {
+            copy_if_changed(&out, "target/wasefire/libapplet.a")?;
+        } else if copy_if_changed(&out, "target/wasefire/applet.wasm")? {
+            self.optimize_wasm(main)?;
         }
         Ok(())
     }
@@ -325,10 +349,10 @@ impl AppletOptions {
         asc.arg(format!("{}/main.ts", self.name));
         asc.current_dir(dir);
         execute_command(&mut asc)?;
-        self.execute_wasm(main)
+        self.optimize_wasm(main)
     }
 
-    fn execute_wasm(&self, main: &MainOptions) -> Result<()> {
+    fn optimize_wasm(&self, main: &MainOptions) -> Result<()> {
         let wasm = "target/wasefire/applet.wasm";
         if main.size {
             println!("Initial applet size: {}", fs::metadata(wasm)?.len());
@@ -449,6 +473,13 @@ impl RunnerOptions {
         if self.stack_sizes.is_some() {
             rustflags.push("-Z emit-stack-sizes".to_string());
             rustflags.push("-C link-arg=-Tstack-sizes.x".to_string());
+        }
+        if main.native {
+            rustflags.push(format!("-L{}/target/wasefire", std::env::current_dir()?.display()));
+            rustflags.push("-lapplet".to_string());
+            cargo.arg("--features=native");
+        } else {
+            cargo.arg("--features=wasm");
         }
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(format!("crates/runner-{}", self.name));

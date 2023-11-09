@@ -147,8 +147,12 @@ fn main() -> ! {
         unsafe { NVIC::unmask(interrupt) };
     }
     log::debug!("Runner is initialized.");
+    #[cfg(feature = "wasm")]
     const WASM: &[u8] = include_bytes!("../../../target/wasefire/applet.wasm");
-    Scheduler::<Board>::run(WASM)
+    #[cfg(feature = "wasm")]
+    Scheduler::<Board>::run(WASM);
+    #[cfg(feature = "native")]
+    Scheduler::<Board>::run();
 }
 
 macro_rules! interrupts {

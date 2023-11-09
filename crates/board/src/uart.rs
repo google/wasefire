@@ -46,7 +46,7 @@ impl<B: crate::Api> From<Event<B>> for crate::Event<B> {
 }
 
 /// UART interface.
-pub trait Api: Support<usize> {
+pub trait Api: Support<usize> + Send {
     /// Reads from a UART into a buffer.
     ///
     /// Returns the number of bytes read. It could be zero if there's nothing to read.

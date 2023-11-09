@@ -14,6 +14,9 @@
 
 use core::ops::Not;
 
+#[cfg(feature = "native")]
+pub(crate) mod native;
+
 impl Not for crate::led::Status {
     type Output = Self;
     fn not(self) -> Self {

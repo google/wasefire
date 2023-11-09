@@ -32,7 +32,7 @@ impl<B: crate::Api> From<Event> for crate::Event<B> {
 }
 
 /// USB interface.
-pub trait Api {
+pub trait Api: Send {
     type Serial: serial::Api;
 }
 

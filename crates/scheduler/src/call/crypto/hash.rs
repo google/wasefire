@@ -18,7 +18,8 @@ use wasefire_applet_api::crypto as crypto_api;
 use wasefire_applet_api::crypto::hash::{self as api, Algorithm, Api};
 use wasefire_board_api::{self as board, Api as Board, Support};
 
-use crate::stores::HashContext;
+use crate::applet::store::{MemoryApi, StoreApi};
+use crate::applet::HashContext;
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
@@ -110,7 +111,7 @@ fn is_hmac_supported<B: Board>(call: SchedulerCall<B, api::is_hmac_supported::Si
 fn hmac_initialize<B: Board>(mut call: SchedulerCall<B, api::hmac_initialize::Sig>) {
     let api::hmac_initialize::Params { algorithm, key, key_len } = call.read();
     let scheduler = call.scheduler();
-    let memory = scheduler.applet.store.memory();
+    let memory = scheduler.applet.memory();
     let results = try {
         let key = memory.get(*key, *key_len)?;
         let context = match convert_hmac_algorithm::<B>(*algorithm)?? {
@@ -179,7 +180,7 @@ fn hkdf_expand<B: Board>(mut call: SchedulerCall<B, api::hkdf_expand::Sig>) {
     let api::hkdf_expand::Params { algorithm, prk, prk_len, info, info_len, okm, okm_len } =
         call.read();
     let scheduler = call.scheduler();
-    let memory = scheduler.applet.store.memory();
+    let memory = scheduler.applet.memory();
     let results = try {
         let prk = memory.get(*prk, *prk_len)?;
         let info = memory.get(*info, *info_len)?;

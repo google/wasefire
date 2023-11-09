@@ -1,10 +1,19 @@
 # Changelog
 
-## 0.4.1-git
+## 0.5.0-git
+
+### Major
+
+- Rename `native` to `test` and use `native` for native applets
 
 ### Minor
 
+- Expose the main function as `applet_main` in `native`
 - Use the default allocation error handler
+
+### Patch
+
+- Update dependencies
 
 ## 0.4.0
 

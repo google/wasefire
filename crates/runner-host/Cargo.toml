@@ -16,15 +16,19 @@ usbd-serial = { version = "0.1.1", optional = true }
 usbip-device = { version = "0.1.5", optional = true }
 wasefire-applet-api = { path = "../api", features = ["host"] }
 wasefire-board-api = { path = "../board", features = ["software-crypto", "std"] }
-wasefire-interpreter = { path = "../interpreter" }
+wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
 wasefire-scheduler = { path = "../scheduler", features = ["std"] }
 wasefire-store = { path = "../store", features = ["std"] }
 web-server = { path = "crates/web-server", optional = true }
 
 [features]
-debug = ["wasefire-logger/log", "wasefire-scheduler/log"]
 default = ["usb"]
-release = []
 usb = ["dep:usb-device", "dep:usbd-serial", "dep:usbip-device"]
 web = ["dep:web-server"]
+# Exactly one is enabled by xtask.
+debug = ["wasefire-logger/log", "wasefire-scheduler/log"]
+release = []
+# Exactly one is enabled by xtask.
+native = ["wasefire-scheduler/native"]
+wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]

@@ -15,11 +15,15 @@
 
 set -ex
 
-cargo check --features=std
-cargo check --features=std,log
-cargo check --target=thumbv7em-none-eabi
-cargo check --target=thumbv7em-none-eabi --features=defmt
+cargo check --features=wasm,std
+cargo check --features=wasm,std,log
+cargo check --target=i686-unknown-linux-gnu --features=native,std
+cargo check --target=i686-unknown-linux-gnu --features=native,std,log
+cargo check --target=thumbv7em-none-eabi --features=wasm
+cargo check --target=thumbv7em-none-eabi --features=wasm,defmt
+cargo check --target=thumbv7em-none-eabi --features=native
+cargo check --target=thumbv7em-none-eabi --features=native,defmt
 cargo fmt -- --check
-cargo clippy --features=std -- --deny=warnings
-cargo clippy --features=std,log -- --deny=warnings
-cargo test --features=std
+sed -n '/^cargo check /!d;s/^cargo check/cargo clippy/;'\
+':a;$!{N;s/\\\n//;ta};s/\n/ -- --deny=warnings\n/;P;D' $0 | sh -ex
+cargo test --features=wasm,std

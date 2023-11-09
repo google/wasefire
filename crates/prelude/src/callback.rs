@@ -13,9 +13,13 @@
 // limitations under the License.
 
 macro_rules! define {
-    ($n:ident $(, $x:ident)*) => {
-        #[no_mangle]
-        pub extern "C" fn $n(
+    ($an:ident $n:ident $(, $x:ident)*) => {
+        define!(#[cfg(not(feature = "native"))] $n $(, $x)*);
+        define!(#[cfg(feature = "native")] $an $(, $x)*);
+    };
+    (#[$m:meta] $n:ident $(, $x:ident)*) => {
+        #[$m] #[no_mangle]
+        extern "C" fn $n (
             ptr: extern "C" fn(*const u8 $(, usize ${ignore(x)})*),
             this: *const u8 $(, $x: usize)*
         ) {
@@ -23,7 +27,7 @@ macro_rules! define {
         }
     };
 }
-define!(cb0);
-define!(cb1, x0);
-define!(cb2, x0, x1);
-define!(cb3, x0, x1, x2);
+define!(applet_cb0 cb0);
+define!(applet_cb1 cb1, x0);
+define!(applet_cb2 cb2, x0, x1);
+define!(applet_cb3 cb3, x0, x1, x2);

@@ -6,6 +6,10 @@
 
 - Use `wasefire-logger` for panics
 
+### Patch
+
+- Update dependencies
+
 ## 0.1.2
 
 ### Patch

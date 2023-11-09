@@ -16,6 +16,7 @@ use wasefire_applet_api::debug::{self as api, Api, Perf};
 use wasefire_board_api::debug::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
 
+use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {

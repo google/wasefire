@@ -38,7 +38,7 @@ impl<B: crate::Api> From<Event> for crate::Event<B> {
 }
 
 /// USB serial interface.
-pub trait Api {
+pub trait Api: Send {
     /// Reads from the USB serial into a buffer.
     ///
     /// Returns the number of bytes read. It could be zero if there's nothing to read.
@@ -82,7 +82,7 @@ impl Api for Unsupported {
 }
 
 /// Helper trait for boards using the `usbd_serial` crate.
-pub trait HasSerial {
+pub trait HasSerial: Send {
     type UsbBus: UsbBus;
 
     fn with_serial<R>(f: impl FnOnce(&mut Serial<Self::UsbBus>) -> R) -> R;

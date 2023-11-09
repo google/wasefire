@@ -27,7 +27,7 @@ list() {
 }
 
 features() {
-  package_features | grep -v -e human -e native
+  package_features | grep -v -e human -e test
 }
 
 for name in $(list); do

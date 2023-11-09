@@ -39,7 +39,7 @@ impl<B: crate::Api> From<Event<B>> for crate::Event<B> {
 }
 
 /// Button interface.
-pub trait Api: Support<usize> {
+pub trait Api: Support<usize> + Send {
     /// Enables events for a given button.
     fn enable(button: Id<Self>) -> Result<(), Error>;
 

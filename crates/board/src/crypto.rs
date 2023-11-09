@@ -25,7 +25,7 @@ pub mod aead;
 pub mod ecc;
 
 /// Cryptography interface.
-pub trait Api {
+pub trait Api: Send {
     type Aes128Ccm: aead::Api<U16, U13, Tag = U4>;
     type Aes256Gcm: aead::Api<U32, U12>;
 
@@ -40,16 +40,17 @@ pub trait Api {
 }
 
 pub trait Hash:
-    Support<bool> + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker
+    Support<bool> + Send + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker
 {
 }
-pub trait Hmac: Support<bool> + KeyInit + Update + FixedOutput + MacMarker {}
+pub trait Hmac: Support<bool> + Send + KeyInit + Update + FixedOutput + MacMarker {}
 
-impl<T: Support<bool> + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker> Hash
-    for T
+impl<
+        T: Support<bool> + Send + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker,
+    > Hash for T
 {
 }
-impl<T: Support<bool> + KeyInit + Update + FixedOutput + MacMarker> Hmac for T {}
+impl<T: Support<bool> + Send + KeyInit + Update + FixedOutput + MacMarker> Hmac for T {}
 
 pub struct UnsupportedHash<Block: ArrayLength<u8>, Output: ArrayLength<u8>> {
     _never: !,

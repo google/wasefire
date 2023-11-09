@@ -19,6 +19,7 @@ use wasefire_board_api::Api as Board;
 use wasefire_store::fragment;
 
 use super::convert;
+use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
