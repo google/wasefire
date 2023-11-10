@@ -31,7 +31,7 @@ new() { sed -n 's/^## //p' CHANGELOG.md | sed -n 1p; }
 dif() { sed -n '/^## /{:a;n;/^## /q;s/^#/##/;p;ba}' CHANGELOG.md; }
 old() { sed -n 's/^## //p' CHANGELOG.md | sed -n 2p; }
 
-CRATES=($(git show --oneline --stat -- '**/CHANGELOG.md' \
+CRATES=($(git show --oneline --stat -- '*/CHANGELOG.md' \
   | sed -n 's#^ \(.*\)/CHANGELOG.md.*#\1#p'))
 rem() {
   local new=()
