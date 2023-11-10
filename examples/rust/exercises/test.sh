@@ -15,9 +15,13 @@
 
 set -ex
 
-for part in part-*-sol; do
+for part in part-*; do
   ( cd $part
+    # This is only to update the Cargo.lock file.
+    cargo check --target=wasm32-unknown-unknown 2>/dev/null
+    # We check the usual for solutions though.
+    [ ${part%-sol} = $part ] && exit
     cargo fmt -- --check
-    cargo clippy --lib --target=wasm32-unknown-unknown -- --deny=warnings
+    cargo clippy --target=wasm32-unknown-unknown -- --deny=warnings
   )
 done
