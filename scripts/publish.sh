@@ -65,7 +65,7 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
 done
 
 i "Remove all -git suffixes"
-sed -i 's/-git//' $(git ls-files '**/'{Cargo.{toml,lock},CHANGELOG.md})
+sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})
 if [ -n "$(git status -s)" ]; then
   i "Commit release"
   git commit -aqm'Release all crates'

@@ -27,10 +27,10 @@ for submodule in WebAssembly/spec; do
     git checkout origin/main
   )
 done
-for path in $(git ls-files '**/Cargo.toml'); do
+for path in $(git ls-files '*/Cargo.toml'); do
   ./scripts/wrapper.sh cargo upgrade --manifest-path=$path --incompatible
 done
-for path in $(git ls-files '**/Cargo.toml'); do
+for path in $(git ls-files '*/Cargo.toml'); do
   cargo update --manifest-path=$path
 done
 

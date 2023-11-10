@@ -47,7 +47,7 @@ for crate in $(ls crates); do
   x cargo xtask --release runner $name
 done
 
-for dir in $(git ls-files '**/test.sh'); do
+for dir in $(git ls-files '*/test.sh'); do
   dir=$(dirname $dir)
   i "Run tests in $dir"
   ( cd $dir && ./test.sh )
