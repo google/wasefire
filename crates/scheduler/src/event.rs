@@ -146,6 +146,7 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
                 };
                 let this = U8(params[1] as _);
                 $( let $x = params[$i] as usize; )*
+                log::debug!("Schedule callback {}{}.", stringify!($cb), params.as_slice());
                 native::schedule_callback(Box::new(move || unsafe { $cb(ptr, this $(, $x)*) }));
             }};
         }

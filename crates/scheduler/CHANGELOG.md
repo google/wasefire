@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add more debug logging in native mode
 - Permit applets to call `debup::println()` during `init()`
 - Use `debug::exit()` board API when the applet traps
 - Use `log::panic!()` on interpreter errors

@@ -20,6 +20,7 @@ use critical_section::Mutex;
 use portable_atomic::AtomicBool;
 use portable_atomic::Ordering::SeqCst;
 use wasefire_board_api::Api as Board;
+use wasefire_logger as log;
 
 #[cfg(feature = "debug")]
 use crate::perf::Slot;
@@ -88,6 +89,7 @@ pub(crate) fn execute_callback() {
         callback();
         #[cfg(feature = "debug")]
         with_scheduler(|x| x.perf_record(Slot::Applets));
+        log::debug!("Callback executed.");
     }
 }
 
