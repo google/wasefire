@@ -312,6 +312,7 @@ impl<B: Board> Scheduler<B> {
             }
             self.process_applet();
         }
+        assert!(matches!(self.applet.pop(), EventAction::Reply));
         #[cfg(feature = "debug")]
         self.perf.record(perf::Slot::Applets);
         self.call(inst, "main", &[]);
