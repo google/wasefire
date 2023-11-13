@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0-git
+
+### Major
+
+- Change `Error::Unsupported` to take a reason with the `debug` feature
+
 ## 0.1.4
 
 ### Patch
@@ -32,4 +38,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 2 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->

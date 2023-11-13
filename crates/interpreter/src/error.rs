@@ -22,11 +22,23 @@ pub enum Error {
     NotFound,
 
     /// An argument is not supported.
-    Unsupported,
+    Unsupported(Unsupported),
 
     /// Execution trapped.
     // TODO: In debug mode, trap could describe the reason (like resource exhaustion, etc).
     Trap,
+}
+
+#[cfg(not(feature = "debug"))]
+pub type Unsupported = ();
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+#[cfg(feature = "debug")]
+pub enum Unsupported {
+    Opcode(u8),
+    OpcodeFc(u32),
+    MaxLocals,
 }
 
 #[cfg(feature = "debug")]
@@ -49,10 +61,10 @@ pub fn not_found() -> Error {
     Error::NotFound
 }
 
-pub fn unsupported() -> Error {
+pub fn unsupported(reason: Unsupported) -> Error {
     #[cfg(feature = "debug")]
     print_backtrace();
-    Error::Unsupported
+    Error::Unsupported(reason)
 }
 
 pub fn trap() -> Error {
