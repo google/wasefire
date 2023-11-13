@@ -41,7 +41,7 @@ fn test(name: &str) {
         match directive {
             WastDirective::Wat(QuoteWat::Wat(Wat::Module(mut m))) => {
                 env.instantiate(name, &m.encode().unwrap());
-                if !matches!(env.inst, Err(Error::Unsupported)) {
+                if !matches!(env.inst, Err(Error::Unsupported(_))) {
                     env.register_id(m.id, env.inst.unwrap());
                 }
             }
@@ -120,7 +120,7 @@ impl<'m> Env<'m> {
 
     fn set_inst(&mut self, inst: Result<InstId, Error>) {
         match inst {
-            Ok(_) | Err(Error::Unsupported) => (),
+            Ok(_) | Err(Error::Unsupported(_)) => (),
             Err(e) => panic!("{e:?}"),
         }
         self.inst = inst;
@@ -296,7 +296,7 @@ fn assert_invoke(env: &mut Env, invoke: WastInvoke) {
 fn assert_malformed(mut wat: QuoteWat) {
     if let Ok(wasm) = wat.encode() {
         let module = Module::new(&wasm);
-        if !matches!(module, Err(Error::Unsupported)) {
+        if !matches!(module, Err(Error::Unsupported(_))) {
             assert_eq!(module.err(), Some(Error::Invalid));
         }
     }
@@ -305,21 +305,21 @@ fn assert_malformed(mut wat: QuoteWat) {
 fn assert_invalid(mut wat: QuoteWat) {
     let wasm = wat.encode().unwrap();
     let module = Module::new(&wasm);
-    if !matches!(module, Err(Error::Unsupported)) {
+    if !matches!(module, Err(Error::Unsupported(_))) {
         assert_eq!(module.err(), Some(Error::Invalid));
     }
 }
 
 fn assert_exhaustion(env: &mut Env, call: WastInvoke) {
     let result = wast_invoke(env, call);
-    if !matches!(result, Err(Error::Unsupported)) {
+    if !matches!(result, Err(Error::Unsupported(_))) {
         assert_eq!(result, Err(Error::Trap));
     }
 }
 
 fn assert_unlinkable(env: &mut Env, mut wat: Wat) {
     let inst = env.maybe_instantiate("", &wat.encode().unwrap());
-    if !matches!(inst, Err(Error::Unsupported)) {
+    if !matches!(inst, Err(Error::Unsupported(_))) {
         assert_eq!(inst.err(), Some(Error::NotFound));
     }
 }

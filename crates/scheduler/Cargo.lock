@@ -444,7 +444,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.1.4"
+version = "0.2.0-git"
 dependencies = [
  "num_enum",
  "paste",

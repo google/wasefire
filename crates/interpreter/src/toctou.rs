@@ -20,7 +20,7 @@ pub trait Mode {
 
     fn invalid<T>() -> Result<T, Self::Error>;
 
-    fn unsupported<T>() -> Result<T, Self::Error>;
+    fn unsupported<T>(reason: Unsupported) -> Result<T, Self::Error>;
 
     fn check(cond: impl FnOnce() -> bool) -> Result<(), Self::Error>;
 
@@ -41,8 +41,8 @@ impl Mode for Check {
         Err(invalid())
     }
 
-    fn unsupported<T>() -> Result<T, Self::Error> {
-        Err(unsupported())
+    fn unsupported<T>(reason: Unsupported) -> Result<T, Self::Error> {
+        Err(unsupported(reason))
     }
 
     fn check(cond: impl FnOnce() -> bool) -> Result<(), Self::Error> {
@@ -75,7 +75,7 @@ impl Mode for Use {
         unreachable!()
     }
 
-    fn unsupported<T>() -> Result<T, Self::Error> {
+    fn unsupported<T>(_: Unsupported) -> Result<T, Self::Error> {
         Self::invalid()
     }
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+### Major
+
+- Change `Error::Unsupported` to take a reason with the `debug` feature
+
 ## 0.1.4
 
 ### Patch

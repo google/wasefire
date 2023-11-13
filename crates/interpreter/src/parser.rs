@@ -15,6 +15,8 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
+#[cfg(feature = "debug")]
+use crate::error::*;
 use crate::syntax::*;
 use crate::toctou::*;
 
@@ -304,7 +306,7 @@ impl<'m, M: Mode> Parser<'m, M> {
             x @ 0x2a ..= 0x2b => support_if!(
                 "float-types"[x],
                 Instr::FLoad((x - 0x2a).into(), self.parse_memarg()?),
-                M::unsupported()?
+                M::unsupported(if_debug!(Unsupported::Opcode(x)))?
             ),
             x @ 0x2c ..= 0x35 => Instr::ILoad_(
                 ((x - 0x2c) / 2).into(),
@@ -315,7 +317,7 @@ impl<'m, M: Mode> Parser<'m, M> {
             x @ 0x38 ..= 0x39 => support_if!(
                 "float-types"[x],
                 Instr::FStore((x - 0x38).into(), self.parse_memarg()?),
-                M::unsupported()?
+                M::unsupported(if_debug!(Unsupported::Opcode(x)))?
             ),
             x @ 0x3a ..= 0x3e => Instr::IStore_((x - 0x3a).into(), self.parse_memarg()?),
             0x3f => {
@@ -331,12 +333,12 @@ impl<'m, M: Mode> Parser<'m, M> {
             0x43 => support_if!(
                 "float-types"[],
                 Instr::F32Const(u32::from_le_bytes(self.parse_bytes(4)?.try_into().unwrap())),
-                M::unsupported()?
+                M::unsupported(if_debug!(Unsupported::Opcode(0x43)))?
             ),
             0x44 => support_if!(
                 "float-types"[],
                 Instr::F64Const(u64::from_le_bytes(self.parse_bytes(8)?.try_into().unwrap())),
-                M::unsupported()?
+                M::unsupported(if_debug!(Unsupported::Opcode(0x44)))?
             ),
             x @ 0x45 ..= 0x5a => {
                 let n = Nx::from((x - 0x45) / 11);
@@ -348,7 +350,7 @@ impl<'m, M: Mode> Parser<'m, M> {
             x @ 0x5b ..= 0x66 => support_if!(
                 "float-types"[x],
                 Instr::FRelOp(((x - 0x5b) / 6).into(), ((x - 0x5b) % 6).into()),
-                M::unsupported()?
+                M::unsupported(if_debug!(Unsupported::Opcode(x)))?
             ),
             x @ 0x67 ..= 0x8a => {
                 let n = Nx::from((x - 0x67) / 18);
@@ -366,7 +368,7 @@ impl<'m, M: Mode> Parser<'m, M> {
                         y => Instr::FBinOp(n, (y - 7).into()),
                     }
                 },
-                M::unsupported()?
+                M::unsupported(if_debug!(Unsupported::Opcode(x)))?
             ),
             0xa7 => Instr::CvtOp(CvtOp::Wrap),
             x @ 0xa8 ..= 0xab => support_if!(
@@ -376,7 +378,7 @@ impl<'m, M: Mode> Parser<'m, M> {
                     ((x - 0xa8) / 2).into(),
                     ((x - 0xa8) % 2).into(),
                 )),
-                M::unsupported()?
+                M::unsupported(if_debug!(Unsupported::Opcode(x)))?
             ),
             x @ 0xac ..= 0xad => Instr::CvtOp(CvtOp::Extend((x - 0xac).into())),
             x @ 0xae ..= 0xb1 => support_if!(
@@ -386,7 +388,7 @@ impl<'m, M: Mode> Parser<'m, M> {
                     ((x - 0xae) / 2).into(),
                     ((x - 0xae) % 2).into(),
                 )),
-                M::unsupported()?
+                M::unsupported(if_debug!(Unsupported::Opcode(x)))?
             ),
             x @ 0xb2 ..= 0xbb => support_if!(
                 "float-types"[x],
@@ -400,17 +402,17 @@ impl<'m, M: Mode> Parser<'m, M> {
                         y => Instr::CvtOp(CvtOp::Convert(n, (y / 2).into(), (y % 2).into())),
                     }
                 },
-                M::unsupported()?
+                M::unsupported(if_debug!(Unsupported::Opcode(x)))?
             ),
             x @ 0xbc ..= 0xbd => support_if!(
                 "float-types"[x],
                 Instr::CvtOp(CvtOp::IReinterpret((x - 0xbc).into())),
-                M::unsupported()?
+                M::unsupported(if_debug!(Unsupported::Opcode(x)))?
             ),
             x @ 0xbe ..= 0xbf => support_if!(
                 "float-types"[x],
                 Instr::CvtOp(CvtOp::FReinterpret((x - 0xbe).into())),
-                M::unsupported()?
+                M::unsupported(if_debug!(Unsupported::Opcode(x)))?
             ),
             x @ 0xc0 ..= 0xc4 => Instr::IExtend((x - 0xc0).into()),
             0xd0 => Instr::RefNull(self.parse_reftype()?),
@@ -424,7 +426,7 @@ impl<'m, M: Mode> Parser<'m, M> {
                         ((x & 2 != 0) as u8).into(),
                         ((x & 1) as u8).into(),
                     )),
-                    M::unsupported()?
+                    M::unsupported(if_debug!(Unsupported::OpcodeFc(x)))?
                 ),
                 8 => {
                     let x = self.parse_dataidx()?;
@@ -453,7 +455,11 @@ impl<'m, M: Mode> Parser<'m, M> {
                 17 => Instr::TableFill(self.parse_tableidx()?),
                 _ => M::invalid()?,
             },
-            0xfd => support_if!("vector-types"[], unimplemented!(), M::unsupported()?),
+            0xfd => support_if!(
+                "vector-types"[],
+                unimplemented!(),
+                M::unsupported(if_debug!(Unsupported::Opcode(0xfd)))?
+            ),
             _ => M::invalid()?,
         })
     }
@@ -462,7 +468,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         for _ in 0 .. self.parse_vec()? {
             let len = self.parse_u32()? as usize;
             if locals.len().checked_add(len).map_or(true, |x| x > MAX_LOCALS) {
-                return M::unsupported();
+                return M::unsupported(if_debug!(Unsupported::MaxLocals));
             }
             let val = self.parse_valtype()?;
             locals.extend(core::iter::repeat(val).take(len));

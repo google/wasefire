@@ -116,6 +116,16 @@
 
 extern crate alloc;
 
+macro_rules! if_debug {
+    ($unit:expr) => {{
+        #[cfg(feature = "debug")]
+        let unit = $unit;
+        #[cfg(not(feature = "debug"))]
+        let unit = ();
+        unit
+    }};
+}
+
 macro_rules! support_if {
     ($feature:literal[$($var:ident)*], $then:expr, $else:expr) => {{
         #[cfg(feature = $feature)]
@@ -141,6 +151,8 @@ mod toctou;
 mod valid;
 
 pub use error::Error;
+#[cfg(feature = "debug")]
+pub use error::Unsupported;
 pub use exec::{Call, InstId, RunAnswer, RunResult, Store, StoreId, Val, MEMORY_ALIGN};
 pub use module::Module;
 pub use syntax::{GlobalType, ImportDesc, Limits, Mut, RefType, TableType, ValType};
