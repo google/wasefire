@@ -32,7 +32,7 @@ use event::Key;
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature};
 use wasefire_board_api::{self as board, Api as Board, Singleton, Support};
 #[cfg(feature = "wasm")]
-use wasefire_interpreter::{self as interpreter, Call, Error, Module, RunAnswer, RunResult, Val};
+use wasefire_interpreter::{self as interpreter, Call, Error, Module, RunAnswer, Val};
 use {wasefire_logger as log, wasefire_store as store};
 
 use crate::applet::store::{Memory, Store, StoreApi};
