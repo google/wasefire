@@ -4,3 +4,6 @@
 [submodule "third_party/rust-lang/rustup"]
 	path = third_party/rust-lang/rustup
 	url = https://github.com/rust-lang/rustup.git
+[submodule "third_party/SchemaStore/schemastore"]
+	path = third_party/SchemaStore/schemastore
+	url = https://github.com/SchemaStore/schemastore.git
