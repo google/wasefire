@@ -304,11 +304,13 @@ impl<B: Board> Scheduler<B> {
         let inst = store.instantiate(module, unsafe { &mut MEMORY.0 }).unwrap();
         #[cfg(feature = "debug")]
         self.perf.record(perf::Slot::Platform);
-        match store.invoke(inst, "init", vec![]) {
-            Ok(RunResult::Done(x)) => assert!(x.is_empty()),
-            Ok(RunResult::Host { .. }) => log::panic!("init called into host"),
-            Err(Error::NotFound) => (),
-            Err(e) => log::panic!("{}", log::Debug2Format(&e)),
+        self.call(inst, "init", &[]);
+        while let Some(call) = self.applet.store_mut().last_call() {
+            match self.host_funcs[call.index()].descriptor().name {
+                "dp" => (),
+                x => log::panic!("init called {} into host", log::Debug2Format(&x)),
+            }
+            self.process_applet();
         }
         #[cfg(feature = "debug")]
         self.perf.record(perf::Slot::Applets);
