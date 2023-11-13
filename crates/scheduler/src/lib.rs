@@ -232,10 +232,13 @@ impl<B: Board> Scheduler<B> {
         }
         #[cfg(feature = "debug")]
         native::with_scheduler(|x| x.perf_record(perf::Slot::Platform));
+        log::debug!("Execute init.");
         unsafe { applet_init() };
+        log::debug!("Execute main.");
         unsafe { applet_main() };
         #[cfg(feature = "debug")]
         native::with_scheduler(|x| x.perf_record(perf::Slot::Applets));
+        log::debug!("Returned from main, executing callbacks only.");
         loop {
             native::with_scheduler(|scheduler| {
                 scheduler.flush_events();
