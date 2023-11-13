@@ -32,7 +32,7 @@ use event::Key;
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature};
 use wasefire_board_api::{self as board, Api as Board, Singleton, Support};
 #[cfg(feature = "wasm")]
-use wasefire_interpreter::{self as interpreter, Call, Error, Module, RunAnswer, RunResult, Val};
+use wasefire_interpreter::{self as interpreter, Call, Error, Module, RunAnswer, Val};
 use {wasefire_logger as log, wasefire_store as store};
 
 use crate::applet::store::{Memory, Store, StoreApi};
@@ -304,12 +304,15 @@ impl<B: Board> Scheduler<B> {
         let inst = store.instantiate(module, unsafe { &mut MEMORY.0 }).unwrap();
         #[cfg(feature = "debug")]
         self.perf.record(perf::Slot::Platform);
-        match store.invoke(inst, "init", vec![]) {
-            Ok(RunResult::Done(x)) => assert!(x.is_empty()),
-            Ok(RunResult::Host { .. }) => log::panic!("init called into host"),
-            Err(Error::NotFound) => (),
-            Err(e) => log::panic!("{}", log::Debug2Format(&e)),
+        self.call(inst, "init", &[]);
+        while let Some(call) = self.applet.store_mut().last_call() {
+            match self.host_funcs[call.index()].descriptor().name {
+                "dp" => (),
+                x => log::panic!("init called {} into host", log::Debug2Format(&x)),
+            }
+            self.process_applet();
         }
+        assert!(matches!(self.applet.pop(), EventAction::Reply));
         #[cfg(feature = "debug")]
         self.perf.record(perf::Slot::Applets);
         self.call(inst, "main", &[]);
