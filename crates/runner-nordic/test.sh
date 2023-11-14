@@ -19,6 +19,11 @@ if [ ! -e ../../target/wasefire/applet.wasm ]; then
   mkdir -p ../../target/wasefire
   touch ../../target/wasefire/applet.wasm
 fi
+if [ ! -e ../../target/wasefire/libapplet.a ]; then
+  ( cd ../..
+    cargo xtask --native-target=thumbv7em-none-eabi applet rust hello
+  )
+fi
 cargo check --target=thumbv7em-none-eabi --features=wasm,debug
 DEFMT_LOG=trace cargo check --target=thumbv7em-none-eabi --features=wasm,debug
 cargo check --target=thumbv7em-none-eabi --features=wasm,release
