@@ -53,12 +53,20 @@ struct MainOptions {
     #[clap(long)]
     release: bool,
 
-    /// Links the applet as a static library to the platform (requires the `runner` subcommand).
+    /// Links the applet as a static library to the platform.
+    ///
+    /// Requires the `runner` subcommand or the `--native-target` option.
     ///
     /// This option improves performance and footprint but removes the security guarantees provided
     /// by sandboxing the applet using WebAssembly.
     #[clap(long)]
     native: bool,
+
+    /// Specifies the native target triple.
+    ///
+    /// Must match the runner target if both are provided. This implies `--native`.
+    #[clap(long)]
+    native_target: Option<String>,
 
     /// Prints basic size information.
     #[clap(long)]
@@ -278,10 +286,16 @@ impl AppletOptions {
             format!("examples/{}/{}", self.lang, self.name)
         };
         ensure!(Path::new(&dir).exists(), "{dir} does not exist");
-        let native = match (main.native, command) {
-            (true, Some(AppletCommand::Runner(x))) => Some(x.target()),
-            (true, _) => bail!("--native requires runner"),
-            (false, _) => None,
+        let native = match (main.native, &main.native_target, command) {
+            (_, Some(target), command) => {
+                if let Some(AppletCommand::Runner(x)) = command {
+                    ensure!(target == x.target(), "--native-target must match runner");
+                }
+                Some(target.as_str())
+            }
+            (true, None, Some(AppletCommand::Runner(x))) => Some(x.target()),
+            (true, None, _) => bail!("--native requires runner"),
+            (false, _, _) => None,
         };
         let metadata = MetadataCommand::new().current_dir(&dir).no_deps().exec()?;
         let target_dir = &metadata.target_directory;
@@ -475,8 +489,6 @@ impl RunnerOptions {
             rustflags.push("-C link-arg=-Tstack-sizes.x".to_string());
         }
         if main.native {
-            rustflags.push(format!("-L{}/target/wasefire", std::env::current_dir()?.display()));
-            rustflags.push("-lapplet".to_string());
             cargo.arg("--features=native");
         } else {
             cargo.arg("--features=wasm");
@@ -654,6 +666,7 @@ fn copy_if_changed(src: &str, dst: &str) -> Result<bool> {
     let changed =
         !dst_path.exists() || !Path::new(&dst_file).exists() || fs::read(&dst_file)? != *src_hash;
     if changed {
+        println!("cp {src} {dst}");
         fs::copy(src, dst)?;
         fs::write(&dst_file, src_hash)?;
     }
