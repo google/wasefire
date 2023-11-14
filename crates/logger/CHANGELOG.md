@@ -4,7 +4,6 @@
 
 ### Patch
 
-- Update dependencies
 - Fix lints
 
 ## 0.1.3
