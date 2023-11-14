@@ -24,7 +24,7 @@ for submodule in $(git submodule status | cut -d' ' -f3); do
   i "Upgrade $submodule"
   ( cd $submodule
     git fetch -p origin
-    git checkout origin/main
+    git checkout refs/remotes/origin/HEAD
   )
 done
 for path in $(git ls-files '*/Cargo.toml'); do
