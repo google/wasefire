@@ -475,8 +475,6 @@ impl RunnerOptions {
             rustflags.push("-C link-arg=-Tstack-sizes.x".to_string());
         }
         if main.native {
-            rustflags.push(format!("-L{}/target/wasefire", std::env::current_dir()?.display()));
-            rustflags.push("-lapplet".to_string());
             cargo.arg("--features=native");
         } else {
             cargo.arg("--features=wasm");
@@ -654,6 +652,7 @@ fn copy_if_changed(src: &str, dst: &str) -> Result<bool> {
     let changed =
         !dst_path.exists() || !Path::new(&dst_file).exists() || fs::read(&dst_file)? != *src_hash;
     if changed {
+        println!("cp {src} {dst}");
         fs::copy(src, dst)?;
         fs::write(&dst_file, src_hash)?;
     }
