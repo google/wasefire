@@ -8,6 +8,11 @@
 - Prefix function symbols by `env_` with `native` feature
 - Implement `bytemuck::Zeroable` for `Results` structs
 
+### Patch
+
+- Update dependencies
+- Fix lints
+
 ## 0.1.5
 
 ### Minor

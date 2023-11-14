@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Update dependencies
 - Fix clippy lint
 - Update `native` documentation
 - Implement the internal `env_dispatch` function

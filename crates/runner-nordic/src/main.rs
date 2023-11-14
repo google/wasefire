@@ -46,7 +46,7 @@ use panic_abort as _;
 #[cfg(feature = "debug")]
 use panic_probe as _;
 use usb_device::class_prelude::UsbBusAllocator;
-use usb_device::device::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
+use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Id, Support};
@@ -124,7 +124,8 @@ fn main() -> ! {
     let usb_bus = USB_BUS.write(usb_bus);
     let serial = Serial::new(SerialPort::new(usb_bus));
     let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x16c0, 0x27dd))
-        .product("Serial port")
+        .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Serial port")])
+        .unwrap()
         .device_class(USB_CLASS_CDC)
         .build();
     let rng = Rng::new(p.RNG);

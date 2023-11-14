@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #![no_std]
-#![feature(result_option_inspect)]
 #![feature(try_blocks)]
 
 extern crate alloc;

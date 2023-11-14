@@ -151,7 +151,7 @@ mod software {
         fn ecdsa_verify(
             m: &Int<C>, x: &Int<C>, y: &Int<C>, r: &Int<C>, s: &Int<C>,
         ) -> Result<bool, Error> {
-            let p = EncodedPoint::<C>::from_affine_coordinates(x.into(), y.into(), false);
+            let p = EncodedPoint::<C>::from_affine_coordinates(x, y, false);
             let p = VerifyingKey::<C>::from_encoded_point(&p).map_err(|_| Error::User)?;
             let signature =
                 Signature::from_scalars(r.clone(), s.clone()).map_err(|_| Error::User)?;
@@ -175,7 +175,7 @@ mod software {
         }
 
         fn point_from_ints(x: &Int<C>, y: &Int<C>) -> Result<ProjectivePoint<C>, Error> {
-            let r = EncodedPoint::<C>::from_affine_coordinates(x.into(), y.into(), false);
+            let r = EncodedPoint::<C>::from_affine_coordinates(x, y, false);
             convert(ProjectivePoint::<C>::from_encoded_point(&r))
         }
 

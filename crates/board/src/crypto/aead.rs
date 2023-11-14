@@ -15,8 +15,6 @@
 //! Authenticated Encryption with Associated Data.
 
 use generic_array::{ArrayLength, GenericArray};
-#[cfg(feature = "internal-aead")]
-pub use software::*;
 
 use crate::{Error, Support};
 

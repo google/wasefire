@@ -6,6 +6,10 @@
 
 - Update `wasefire-applet-api-desc` version
 
+### Patch
+
+- Update dependencies
+
 ## 0.5.0
 
 ### Major

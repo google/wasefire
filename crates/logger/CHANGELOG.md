@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4-git
+
+### Patch
+
+- Fix lints
+
 ## 0.1.3
 
 ### Patch

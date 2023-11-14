@@ -391,7 +391,11 @@ test!(br_table);
 test!(bulk);
 test!(call);
 test!(call_indirect);
-test!(comments);
+test!(
+    // This test seems specific to text format.
+    #[ignore]
+    comments
+);
 test!(const_, "const");
 test!(conversions);
 test!(custom);

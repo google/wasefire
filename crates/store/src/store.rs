@@ -28,12 +28,10 @@ use crate::format::{
     Word, WordState,
 };
 #[cfg(feature = "std")]
-pub use crate::model::{StoreModel, StoreOperation};
-use crate::{usize_to_nat, Nat, Storage, StorageError, StorageIndex};
+pub use crate::model::StoreOperation;
 #[cfg(feature = "std")]
-pub use crate::{
-    BufferStorage, StoreDriver, StoreDriverOff, StoreDriverOn, StoreInterruption, StoreInvariant,
-};
+pub use crate::BufferStorage;
+use crate::{usize_to_nat, Nat, Storage, StorageError, StorageIndex};
 
 /// Errors returned by store operations.
 #[derive(Debug, PartialEq, Eq)]
