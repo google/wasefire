@@ -15,6 +15,11 @@
 
 set -ex
 
+if [ ! -e ../../target/wasefire/libapplet.a ]; then
+  ( cd ../..
+    cargo xtask --native-target=thumbv7em-none-eabi applet rust hello
+  )
+fi
 cargo check --features=wasm,std
 cargo check --features=wasm,std,log
 cargo check --target=i686-unknown-linux-gnu --features=native,std
