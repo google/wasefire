@@ -17,6 +17,7 @@ use std::time::Duration;
 
 use anyhow::{ensure, Result};
 use usb_device::class_prelude::UsbBusAllocator;
+use usb_device::device::StringDescriptors;
 use usb_device::prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
 use usb_device::UsbError;
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
@@ -51,7 +52,8 @@ impl Default for Usb {
         let usb_bus = Box::leak(Box::new(UsbBusAllocator::new(UsbIpBus::new())));
         let serial = Serial::new(SerialPort::new(usb_bus));
         let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x16c0, 0x27dd))
-            .product("Serial port")
+            .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Serial port")])
+            .unwrap()
             .device_class(USB_CLASS_CDC)
             .build();
         Self { serial, usb_dev }

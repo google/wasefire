@@ -6,6 +6,10 @@
 
 - Change `Error::Unsupported` to take a reason with the `debug` feature
 
+### Patch
+
+- Update dependencies
+
 ## 0.1.4
 
 ### Patch

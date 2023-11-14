@@ -8,6 +8,8 @@
 
 ### Patch
 
+- Fix lints
+- Update dependencies
 - Use `logger` alias instead of `log` for `wasefire-logger` crate
 
 ## 0.5.0

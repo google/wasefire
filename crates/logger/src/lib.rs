@@ -69,8 +69,6 @@ mod custom {
 #[cfg(feature = "log")]
 pub use std::println;
 
-#[cfg(not(any(feature = "log", feature = "defmt")))]
-pub use custom::*;
 #[cfg(feature = "defmt")]
 pub use defmt::{debug, error, info, panic, println, trace, warn, Debug2Format, Display2Format};
 #[cfg(feature = "log")]

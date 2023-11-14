@@ -390,7 +390,7 @@ impl Fn {
         writeln!(output, r#"{path:#}@external("env", "{link}")"#)?;
         writeln!(output, "{path:#}export declare function {path}{name}(")?;
         write_items(output, params, |output, param| param.wasm_assemblyscript(output, path, ","))?;
-        if let Some(result) = results.get(0) {
+        if let Some(result) = results.first() {
             write_docs(output, &result.docs, path)?;
         }
         write!(output, "{path:#}): ")?;

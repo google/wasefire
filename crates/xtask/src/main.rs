@@ -674,7 +674,7 @@ fn copy_if_changed(src: &str, dst: &str) -> Result<bool> {
 }
 
 fn ensure_assemblyscript() -> Result<()> {
-    const ASC_VERSION: &str = "0.27.15"; // scripts/upgrade.sh relies on this name
+    const ASC_VERSION: &str = "0.27.17"; // scripts/upgrade.sh relies on this name
     const PATH: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
     if Path::new(PATH).exists() {
         let mut sed = Command::new("sed");

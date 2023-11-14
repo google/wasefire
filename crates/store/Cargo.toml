@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-store"
-version = "0.2.2"
+version = "0.2.3-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -15,7 +15,7 @@ categories = ["embedded", "no-std"]
 features = ["std"]
 
 [dev-dependencies]
-tempfile = "3.8.0"
+tempfile = "3.8.1"
 
 [features]
 std = []
