@@ -27,11 +27,9 @@ use crate::format::{
     is_erased, CompactInfo, Format, Header, InitInfo, InternalEntry, Padding, ParsedWord, Position,
     Word, WordState,
 };
-#[cfg(feature = "std")]
-pub use crate::model::StoreOperation;
-#[cfg(feature = "std")]
-pub use crate::BufferStorage;
 use crate::{usize_to_nat, Nat, Storage, StorageError, StorageIndex};
+#[cfg(feature = "std")]
+use crate::{BufferStorage, StoreOperation};
 
 /// Errors returned by store operations.
 #[derive(Debug, PartialEq, Eq)]

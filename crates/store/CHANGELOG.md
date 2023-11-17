@@ -2,6 +2,10 @@
 
 ## 0.2.3-git
 
+### Minor
+
+- Make implementation public because documentation links it
+
 ### Patch
 
 - Fix lints
