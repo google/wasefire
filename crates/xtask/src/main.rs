@@ -339,9 +339,21 @@ impl AppletOptions {
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(dir);
         execute_command(&mut cargo)?;
-        if native.is_some() {
-            copy_if_changed(&out, "target/wasefire/libapplet.a")?;
-        } else if copy_if_changed(&out, "target/wasefire/applet.wasm")? {
+        let applet = match native {
+            Some(_) => "target/wasefire/libapplet.a",
+            None => "target/wasefire/applet.wasm",
+        };
+        let changed = copy_if_changed(&out, applet)?;
+        if native.is_some() && main.size {
+            let mut size = wrap_command()?;
+            size.args(["rust-size", applet]);
+            let output = String::from_utf8(output_command(&mut size)?.stdout)?;
+            // We assume the interesting part is the first line after the header.
+            for line in output.lines().take(2) {
+                println!("{line}");
+            }
+        }
+        if native.is_none() && changed {
             self.optimize_wasm(main)?;
         }
         Ok(())
@@ -369,7 +381,7 @@ impl AppletOptions {
     fn optimize_wasm(&self, main: &MainOptions) -> Result<()> {
         let wasm = "target/wasefire/applet.wasm";
         if main.size {
-            println!("Initial applet size: {}", fs::metadata(wasm)?.len());
+            println!("Applet size: {}", fs::metadata(wasm)?.len());
         }
         if self.strip.get() {
             let mut strip = wrap_command()?;
@@ -377,7 +389,7 @@ impl AppletOptions {
             strip.arg(wasm);
             execute_command(&mut strip)?;
             if main.size {
-                println!("Stripped applet size: {}", fs::metadata(wasm)?.len());
+                println!("Applet size (after wasm-strip): {}", fs::metadata(wasm)?.len());
             }
         }
         if self.opt.get() {
@@ -394,7 +406,7 @@ impl AppletOptions {
             opt.args([wasm, "-o", wasm]);
             execute_command(&mut opt)?;
             if main.size {
-                println!("Optimized applet size: {}", fs::metadata(wasm)?.len());
+                println!("Applet size (after wasm-opt): {}", fs::metadata(wasm)?.len());
             }
         }
         Ok(())
