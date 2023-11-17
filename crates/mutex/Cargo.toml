@@ -1,0 +1,15 @@
+[package]
+name = "wasefire-mutex"
+version = "0.1.0-git"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = true
+edition = "2021"
+description = "Portable non-blocking mutex"
+repository = "https://github.com/google/wasefire"
+include = ["/src"]
+keywords = ["framework", "mutex", "no-std"]
+categories = ["concurrency", "no-std"]
+
+[dependencies]
+portable-atomic = { version = "1.5.1", default-features = false }

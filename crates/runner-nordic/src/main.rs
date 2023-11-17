@@ -24,12 +24,10 @@ mod storage;
 mod systick;
 mod tasks;
 
-use core::cell::RefCell;
 use core::mem::MaybeUninit;
 
 use cortex_m::peripheral::NVIC;
 use cortex_m_rt::entry;
-use critical_section::Mutex;
 #[cfg(feature = "debug")]
 use defmt_rtt as _;
 use nrf52840_hal::ccm::{Ccm, DataRate};
@@ -50,6 +48,7 @@ use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidP
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Id, Support};
+use wasefire_mutex::Mutex;
 use wasefire_scheduler::Scheduler;
 use {wasefire_board_api as board, wasefire_logger as log};
 
@@ -84,10 +83,10 @@ struct State {
 
 pub enum Board {}
 
-static STATE: Mutex<RefCell<Option<State>>> = Mutex::new(RefCell::new(None));
+static STATE: Mutex<Option<State>> = Mutex::new(None);
 
 fn with_state<R>(f: impl FnOnce(&mut State) -> R) -> R {
-    critical_section::with(|cs| f(STATE.borrow_ref_mut(cs).as_mut().unwrap()))
+    f(STATE.lock().as_mut().unwrap())
 }
 
 #[entry]
@@ -143,7 +142,7 @@ fn main() -> ! {
         State { events, buttons, gpiote, serial, timers, ccm, leds, rng, storage, uarts, usb_dev };
     // We first set the board and then enable interrupts so that interrupts may assume the board is
     // always present.
-    critical_section::with(|cs| STATE.replace(cs, Some(state)));
+    STATE.lock().replace(state);
     for &interrupt in INTERRUPTS {
         unsafe { NVIC::unmask(interrupt) };
     }

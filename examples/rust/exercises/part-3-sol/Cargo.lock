@@ -316,6 +316,7 @@ dependencies = [
  "sealed",
  "typenum",
  "wasefire-applet-api",
+ "wasefire-mutex",
 ]
 
 [[package]]
@@ -345,4 +346,11 @@ version = "0.6.0-git"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
+]
+
+[[package]]
+name = "wasefire-mutex"
+version = "0.1.0-git"
+dependencies = [
+ "portable-atomic",
 ]

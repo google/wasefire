@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Use `wasefire-mutex` to provide `sync::Mutex`
 - Expose the main function as `applet_main` in `native`
 - Use the default allocation error handler
 
