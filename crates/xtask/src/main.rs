@@ -347,8 +347,7 @@ impl AppletOptions {
         if native.is_some() && main.size {
             let mut size = wrap_command()?;
             size.args(["rust-size", applet]);
-            let output = output_command(&mut size)?;
-            let output = String::from_utf8(output.stdout)?;
+            let output = String::from_utf8(output_command(&mut size)?.stdout)?;
             // We assume the interesting part is the first line after the header.
             for line in output.lines().take(2) {
                 println!("{line}");
