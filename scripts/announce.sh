@@ -21,7 +21,8 @@ set -e
 #
 # It must run on the release commit. The output is written as markdown into the
 # docs/releases directory. An email should be sent to wasefire@googlegroups.com
-# summarizing the changes and linking to the generated markdown file.
+# summarizing the changes with links to the release file, relevant PRs, and
+# relevant documentation on docs.rs.
 
 DATE=$(git log -1 --pretty=%cs)
 OUTPUT=docs/releases/$DATE.md
@@ -30,6 +31,22 @@ mkdir -p $(dirname $OUTPUT)
 new() { sed -n 's/^## //p' CHANGELOG.md | sed -n 1p; }
 dif() { sed -n '/^## /{:a;n;/^## /q;s/^#/##/;p;ba}' CHANGELOG.md; }
 old() { sed -n 's/^## //p' CHANGELOG.md | sed -n 2p; }
+get-pr() { git log -1 $1 --pretty=%s | sed 's/^.*(#\([0-9]*\))$/\1/'; }
+format-pr() { echo "[#$1](https://github.com/google/wasefire/pull/$1)"; }
+format-dif() {
+  i=$(grep -n '^## ' CHANGELOG.md | sed 's/:.*$//;q')
+  dif | while IFS= read -r line; do
+    (( i += 1 ))
+    case "$line" in
+      '- '*)
+        commit=$(git blame -ls -L$i,+1 CHANGELOG.md | cut -f1 -d' ')
+        echo "- $(format-pr $(get-pr $commit))"
+        line=" ${line#-}"
+        ;;
+    esac
+    printf '%s\n' "$line"
+  done
+}
 
 CRATES=($(git show --oneline --stat -- '*/CHANGELOG.md' \
   | sed -n 's#^ \(.*\)/CHANGELOG.md.*#\1#p'))
@@ -50,6 +67,7 @@ ins() {
   local dir=crates/$1
   local has=n
   rem $dir || has=y
+  [ -d $dir ] || return 0
   ( cd $dir
     echo -n "### $(package_name) $(new) "
     case $has in
@@ -57,7 +75,7 @@ ins() {
       y)
         local old=$(old)
         if [ -n "$old" ]; then
-          echo "(was $old)"; dif
+          echo "(was $old)"; format-dif
         else
           echo "(new)"; echo
         fi
@@ -72,6 +90,7 @@ pri() {
 
 rm -f $OUTPUT
 pri "# Changes released on $DATE"
+pri "This release was cut by $(format-pr $(get-pr))."
 pri "## Applets"
 ins prelude
 ins api
