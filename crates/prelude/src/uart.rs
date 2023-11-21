@@ -29,7 +29,7 @@ pub fn count() -> usize {
     cnt
 }
 
-/// Implements the [`Serial`] interface for UART.
+/// Implements the [`Serial`](crate::serial::Serial) interface for UART.
 pub struct Uart(pub usize);
 
 #[sealed]

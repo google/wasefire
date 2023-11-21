@@ -48,6 +48,7 @@ for crate in $(ls crates); do
 done
 
 for dir in $(git ls-files '*/test.sh'); do
+  grep -q test-helper $dir || e "$dir doesn't use test-helper.sh"
   dir=$(dirname $dir)
   i "Run tests in $dir"
   ( cd $dir && ./test.sh )

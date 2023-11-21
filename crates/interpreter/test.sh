@@ -13,7 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -e
+
+. "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
+
+ensure_submodule third_party/WebAssembly/spec
+
+test_helper
 
 cargo check
 cargo check --target=thumbv7em-none-eabi
@@ -21,8 +27,4 @@ cargo check --target=riscv32imc-unknown-none-elf \
   --features=portable-atomic/critical-section
 RUSTFLAGS=--cfg=portable_atomic_unsafe_assume_single_core \
   cargo check --target=riscv32imc-unknown-none-elf
-cargo fmt -- --check
-cargo clippy -- --deny=warnings
-[ -e ../../third_party/WebAssembly/spec/.git ] \
-  || git submodule update --init ../../third_party/WebAssembly/spec
 cargo test --features=debug,toctou,float-types,vector-types

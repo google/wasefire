@@ -13,23 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -e
 
-if [ ! -e ../../target/wasefire/applet.wasm ]; then
-  mkdir -p ../../target/wasefire
-  touch ../../target/wasefire/applet.wasm
-fi
-if [ ! -e ../../target/wasefire/libapplet.a ]; then
-  ( cd ../..
-    cargo xtask --native-target=thumbv7em-none-eabi applet rust hello
-  )
-fi
+. "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
+
+ensure_applet
+
+test_helper
+
 cargo check --target=thumbv7em-none-eabi --features=wasm,debug
 DEFMT_LOG=trace cargo check --target=thumbv7em-none-eabi --features=wasm,debug
 cargo check --target=thumbv7em-none-eabi --features=wasm,release
 cargo check --target=thumbv7em-none-eabi --features=native,release
-cargo fmt -- --check
-cargo clippy --target=thumbv7em-none-eabi --features=wasm,debug -- \
-  --deny=warnings
-cargo clippy --target=thumbv7em-none-eabi --features=native,release -- \
-  --deny=warnings

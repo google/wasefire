@@ -13,11 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -e
+
+. "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
+
+test_helper
 
 cargo check --target=wasm32-unknown-unknown
 cargo check --target=wasm32-unknown-unknown --features=rust-crypto
 cargo check --features=native
-cargo fmt -- --check
-cargo clippy --target=wasm32-unknown-unknown -- --deny=warnings
 cargo test --features=test
