@@ -15,6 +15,8 @@
 
 set -ex
 
+# This is a generic test script. We don't need the test-helper script.
+
 for part in part-*; do
   ( cd $part
     # This is only to update the Cargo.lock file.

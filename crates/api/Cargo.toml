@@ -12,8 +12,8 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [package.metadata.docs.rs]
+default-target = "wasm32-unknown-unknown"
 features = ["wasm"]
-targets = ["riscv32imc-unknown-none-elf", "thumbv7em-none-eabi"]
 
 [dependencies]
 bytemuck = { version = "1.14.0", default-features = false, features = ["derive"] }

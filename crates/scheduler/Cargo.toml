@@ -11,6 +11,9 @@ include = ["/src"]
 keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
+[package.metadata.docs.rs]
+features = ["std", "wasm"]
+
 [dependencies]
 bytemuck = { version = "1.14.0", default-features = false }
 critical-section = { version = "1.1.2", default-features = false }

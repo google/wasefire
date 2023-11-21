@@ -12,6 +12,7 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [package.metadata.docs.rs]
+default-target = "wasm32-unknown-unknown"
 features = ["rust-crypto"]
 
 [dependencies]

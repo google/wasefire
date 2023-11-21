@@ -15,6 +15,7 @@
 
 ### Patch
 
+- Fix docs.rs build
 - Use `wasefire-mutex`
 - Fix lints
 - Use `logger` alias instead of `log` for `wasefire-logger` crate

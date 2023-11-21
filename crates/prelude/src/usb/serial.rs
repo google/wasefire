@@ -20,7 +20,7 @@ use wasefire_applet_api::usb::serial as api;
 use crate::serial::Event;
 use crate::usb::{convert, Error};
 
-/// Implements the [`Serial`] interface for the USB serial.
+/// Implements the [`Serial`](crate::serial::Serial) interface for the USB serial.
 pub struct UsbSerial;
 
 #[sealed]

@@ -13,14 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -e
 
-cargo check --features=std
+. "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
+
+test_helper
+
+cargo test --features=std
 cargo check --target=thumbv7em-none-eabi
 cargo check --target=thumbv7em-none-eabi --features=software-crypto
-cargo fmt -- --check
-cargo clippy --features=std -- --deny=warnings
-cargo clippy --target=thumbv7em-none-eabi -- --deny=warnings
-cargo clippy --target=thumbv7em-none-eabi --features=software-crypto -- \
---deny=warnings
-cargo test --features=std
+cargo check --target=riscv32imc-unknown-none-elf

@@ -13,14 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -e
 
+. "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
+
+test_helper
+
+cargo test --features=host
 cargo check --target=thumbv7em-none-eabi --features=host
 cargo check --target=wasm32-unknown-unknown --features=wasm
 cargo check --target=thumbv7em-none-eabi --features=wasm,native
-cargo fmt -- --check
-cargo clippy --target=thumbv7em-none-eabi --features=host -- --deny=warnings
-cargo clippy --target=wasm32-unknown-unknown --features=wasm -- --deny=warnings
-cargo clippy --target=thumbv7em-none-eabi --features=wasm,native -- \
---deny=warnings
-cargo test --features=host
