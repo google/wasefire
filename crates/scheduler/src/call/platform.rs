@@ -18,8 +18,11 @@ use wasefire_board_api::{self as board, Api as Board};
 
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
+mod update;
+
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
+        Api::Update(call) => update::process(call),
         Api::Reboot(call) => reboot(call),
     }
 }

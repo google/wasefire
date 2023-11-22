@@ -17,7 +17,7 @@ use wasefire_board_api::Api as Board;
 use wasefire_store::StoreError;
 
 use crate::applet::store::MemoryApi;
-use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
+use crate::{DispatchSchedulerCall, SchedulerCall};
 
 mod fragment;
 
@@ -67,11 +67,7 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
             Ok(None) => (),
             Ok(Some(value)) => {
                 let len = value.len() as u32;
-                let ptr = memory.alloc(len, 1);
-                if ptr == 0 {
-                    // This API doesn't support failing allocation.
-                    Err(Trap)?;
-                }
+                let ptr = memory.alloc(len, 1)?;
                 memory.get_mut(ptr, len)?.copy_from_slice(&value);
                 #[cfg(feature = "multivalue")]
                 {

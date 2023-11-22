@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `platform::update` module
 - Add `platform` module with `platform::reboot()` function
 - Use `wasefire-sync` to provide `sync::Mutex`
 - Expose the main function as `applet_main` in `native`

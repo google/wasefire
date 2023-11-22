@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `platform::update` module
 - Add `platform` module with `platform::reboot()` function
 - Call some `env_dispatch` function instead of panicking in `native`
 - Prefix function symbols by `env_` with `native` feature

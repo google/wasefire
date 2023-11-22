@@ -13,11 +13,13 @@
 // limitations under the License.
 
 use wasefire_board_api::platform::Api;
-use wasefire_board_api::Error;
+use wasefire_board_api::{Error, Unsupported};
 
 pub enum Impl {}
 
 impl Api for Impl {
+    type Update = Unsupported;
+
     fn reboot() -> Result<!, Error> {
         nrf52840_hal::pac::SCB::sys_reset()
     }

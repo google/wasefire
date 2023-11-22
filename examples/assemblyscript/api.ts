@@ -685,6 +685,57 @@
 
 // START OF MODULE platform
 // Platform operations.
+  // START OF MODULE platform_update
+  // Operations to update the platform.
+  //
+  // All operations are abstract over the content such that they can work on all platform. In
+  // particular, chunks and errors are platform-specific. Applets with knowledge about their
+  // platform may actually inspect that content for additional checks.
+    // Returns the metadata of the platform.
+    //
+    // This typically contains the version and side (A or B) of the running platform.
+    @external("env", "pum")
+    export declare function platform_update_metadata(
+      // Where to write the allocated metadata.
+      ptr: usize,
+
+      // Where to write the metadata length.
+      len: usize,
+    // Zero on success. Negative on error.
+    ): isize
+
+    // Starts a platform update process.
+    @external("env", "pui")
+    export declare function platform_update_initialize(
+      // Zero for normal operation. One for dry-run.
+      //
+      // During a dry-run, any mutable operation is skipped and only checks are
+      // performed.
+      dry_run: usize,
+    // Zero on success. Negative on error.
+    ): isize
+
+    // Processes the next chunk of a platform update.
+    @external("env", "pup")
+    export declare function platform_update_process(
+      // Address of the chunk.
+      ptr: usize,
+
+      // Length of the chunk in bytes.
+      len: usize,
+    // Zero on success. Negative on error.
+    ): isize
+
+    // Finalizes a platform update process.
+    //
+    // This function will reboot when the update is successful and thus only returns in
+    // case of errors or in dry-run mode.
+    @external("env", "puf")
+    export declare function platform_update_finalize(
+    // Negative on error.
+    ): isize
+  // END OF MODULE platform_update
+
   // Reboots the device (thus platform and applets).
   @external("env", "pr")
   export declare function platform_reboot(

@@ -16,13 +16,21 @@
 
 use crate::{Error, Unsupported};
 
+pub mod update;
+
 /// Platform interface.
 pub trait Api: Send {
+    type Update: update::Api;
+
     /// Reboots the device (thus platform and applets).
     fn reboot() -> Result<!, Error>;
 }
 
+pub type Update<B> = <super::Platform<B> as Api>::Update;
+
 impl Api for Unsupported {
+    type Update = Unsupported;
+
     fn reboot() -> Result<!, Error> {
         Err(Error::World)
     }

@@ -16,6 +16,8 @@
 
 use wasefire_applet_api::platform as api;
 
+pub mod update;
+
 /// Reboots the device (thus platform and applets).
 pub fn reboot() -> ! {
     let api::reboot::Results { res } = unsafe { api::reboot() };
