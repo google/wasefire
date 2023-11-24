@@ -1,0 +1,20 @@
+[package]
+name = "bootloader"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[dependencies]
+cortex-m = "0.7.7"
+cortex-m-rt = "0.7.3"
+embedded-storage = "0.3.0"
+header = { path = "../header" }
+nrf52840-hal = "0.16.0"
+panic-abort = "0.3.2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+panic = "abort"

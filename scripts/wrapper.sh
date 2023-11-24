@@ -68,7 +68,7 @@ case "$1" in
     ;;
   mdbook) ensure_cargo mdbook 0.4.35 ;;
   probe-rs) ensure_cargo probe-rs 0.21.1 --features=cli ;;
-  rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
+  rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
   taplo) ensure_cargo taplo-cli 0.8.1 ;;
   twiggy) ensure_cargo twiggy 0.7.0 ;;
   *) IS_CARGO=n ;;

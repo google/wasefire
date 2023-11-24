@@ -133,6 +133,7 @@ fn main() -> ! {
     let ccm = Ccm::init(p.CCM, p.AAR, DataRate::_1Mbit);
     storage::init(p.NVMC);
     let storage = Some(Storage::new_store());
+    crate::tasks::platform::update::init(Storage::new_other());
     let pins = uarte::Pins {
         txd: port0.p0_06.into_push_pull_output(gpio::Level::High).degrade(),
         rxd: port0.p0_08.into_floating_input().degrade(),

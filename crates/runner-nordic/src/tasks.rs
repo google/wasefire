@@ -22,7 +22,7 @@ pub mod clock;
 mod crypto;
 mod debug;
 pub mod led;
-mod platform;
+pub mod platform;
 mod rng;
 pub mod uart;
 pub mod usb;

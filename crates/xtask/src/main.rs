@@ -32,6 +32,7 @@ use sha2::{Digest, Sha256};
 use strum::{Display, EnumString};
 
 mod fs;
+mod lazy;
 
 #[derive(Parser)]
 struct Flags {
@@ -156,6 +157,13 @@ struct RunnerOptions {
     /// Runner name.
     name: String,
 
+    /// Platform version.
+    ///
+    /// How the version string is interpreted is up to the runner. For Nordic, it must be a u32
+    /// smaller than u32::MAX.
+    #[clap(long)]
+    version: Option<String>,
+
     /// Cargo no-default-features.
     #[clap(long)]
     no_default_features: bool,
@@ -167,6 +175,10 @@ struct RunnerOptions {
     /// Optimization level (0, 1, 2, 3, s, z).
     #[clap(long, short = 'O')]
     opt_level: Option<OptLevel>,
+
+    /// Produces target/wasefire/platform_{side}.bin files instead of flashing.
+    #[clap(long)]
+    bundle: bool,
 
     /// Erases all the flash first.
     #[clap(long)]
@@ -419,7 +431,7 @@ impl AppletOptions {
 impl AppletCommand {
     fn execute(&self, main: &MainOptions) -> Result<()> {
         match self {
-            AppletCommand::Runner(runner) => runner.execute(main, true),
+            AppletCommand::Runner(runner) => runner.execute(main, 0, true),
             AppletCommand::Twiggy { args } => {
                 let mut twiggy = wrap_command()?;
                 twiggy.arg("twiggy");
@@ -439,13 +451,13 @@ impl AppletCommand {
 
 impl Runner {
     fn execute(&self, main: &MainOptions) -> Result<()> {
-        self.options.execute(main, false)?;
+        self.options.execute(main, 0, false)?;
         Ok(())
     }
 }
 
 impl RunnerOptions {
-    fn execute(&self, main: &MainOptions, run: bool) -> Result<()> {
+    fn execute(&self, main: &MainOptions, step: usize, run: bool) -> Result<()> {
         let mut cargo = Command::new("cargo");
         let mut rustflags = Vec::new();
         let mut features = self.features.clone();
@@ -456,13 +468,28 @@ impl RunnerOptions {
         }
         cargo.arg("--release");
         cargo.arg(format!("--target={}", self.target()));
+        let (side, max_step) = match self.name.as_str() {
+            "nordic" => (Some(step), 1),
+            "host" => (None, 0),
+            _ => unimplemented!(),
+        };
+        let side = match side {
+            None => "",
+            Some(0) => "_a",
+            Some(1) => "_b",
+            _ => unimplemented!(),
+        };
         if self.name == "nordic" {
-            rustflags.extend([
-                "-C link-arg=--nmagic".to_string(),
-                "-C link-arg=-Tlink.x".to_string(),
-                "-C codegen-units=1".to_string(),
-                "-C embed-bitcode=yes".to_string(),
-            ]);
+            rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
+            let version = match &self.version {
+                Some(x) => x.parse()?,
+                None => 0,
+            };
+            ensure!(version < u32::MAX, "--version must be smaller than u32::MAX");
+            rustflags.push(format!("-C link-arg=--defsym=RUNNER_VERSION={version}"));
+            rustflags.push("-C link-arg=-Tlink.x".to_string());
+            rustflags.push("-C codegen-units=1".to_string());
+            rustflags.push("-C embed-bitcode=yes".to_string());
             if main.release {
                 cargo.arg("-Zbuild-std=core,alloc");
                 cargo.arg("-Zbuild-std-features=panic_immediate_abort");
@@ -571,6 +598,16 @@ impl RunnerOptions {
                 println!("{:#010x}\t{}\t{}", address, stack, demangle(name));
             }
         }
+        if self.bundle {
+            let mut objcopy = wrap_command()?;
+            objcopy.args(["rust-objcopy", "-O", "binary", &elf]);
+            objcopy.arg(format!("target/wasefire/platform{side}.bin"));
+            execute_command(&mut objcopy)?;
+            if step < max_step {
+                return self.execute(main, step + 1, run);
+            }
+            return Ok(());
+        }
         if !run {
             return Ok(());
         }
@@ -579,13 +616,27 @@ impl RunnerOptions {
             "host" => unreachable!(),
             _ => unimplemented!(),
         };
-        if self.erase_flash {
-            let mut session = Session::auto_attach(
+        let mut session = lazy::Lazy::new(|| {
+            Ok(Session::auto_attach(
                 TargetSelector::Unspecified(chip.to_string()),
                 Permissions::default(),
+            )?)
+        });
+        if self.erase_flash {
+            println!("Erasing the flash of {}", session.get()?.target().name);
+            flashing::erase_all(session.get()?, None)?;
+        }
+        if self.name == "nordic" {
+            let mut cargo = Command::new("cargo");
+            cargo.current_dir("crates/runner-nordic/crates/bootloader");
+            cargo.args(["build", "--release", "--target=thumbv7em-none-eabi"]);
+            cargo.args(["-Zbuild-std=core", "-Zbuild-std-features=panic_immediate_abort"]);
+            execute_command(&mut cargo)?;
+            flashing::download_file(
+                session.get()?,
+                "target/thumbv7em-none-eabi/release/bootloader",
+                flashing::Format::Elf,
             )?;
-            println!("Erasing the flash of {}", session.target().name);
-            flashing::erase_all(&mut session, None)?;
         }
         if self.gdb {
             println!("Use the following 2 commands in different terminals:");
