@@ -871,7 +871,6 @@ dependencies = [
  "wasefire-board-api",
  "wasefire-interpreter",
  "wasefire-logger",
- "wasefire-mutex",
  "wasefire-scheduler",
  "wasefire-store",
 ]

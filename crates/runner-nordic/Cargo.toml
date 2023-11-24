@@ -26,7 +26,6 @@ wasefire-applet-api = { path = "../api" }
 wasefire-board-api = { path = "../board" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
-wasefire-mutex = { path = "../mutex" }
 wasefire-scheduler = { path = "../scheduler" }
 wasefire-store = { path = "../store" }
 
