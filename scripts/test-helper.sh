@@ -37,10 +37,12 @@ ensure_submodule() {
 }
 
 test_helper() {
-  _test_description '\(check\|test\)' check
-  _test_description test test
+  _test_desc_raw | grep -v -e '^$' -e '^#' -e 'cargo \(check\|test\)' \
+    && e 'Invalid description (invalid commands are listed above).'
+  _test_desc '\(check\|test\)' check
+  _test_desc test test
   x cargo fmt -- --check
-  _test_description '\(check\|test\)' clippy ' -- --deny=warnings'
+  _test_desc '\(check\|test\)' clippy ' -- --deny=warnings'
   if [ -e src/lib.rs -a "$(package_publish)" = true ]; then
     features=$(package_doc_features | tr -d '[]" ')
     [ -n "$features" ] && features="--features=$features"
@@ -52,7 +54,10 @@ test_helper() {
   exit
 }
 
-_test_description() {
-  sed '0,/^test_helper$/d;:a;/\\$/{N;s/\\\n//;ta};s/ \+/ /g' "$SELF" \
-    | sed -n "s/cargo $1/cargo $2/p" | sed "s/\$/$3/" | sh -ex
+_test_desc_raw() {
+  sed '0,/^test_helper$/d;:a;/\\$/{N;s/\\\n//;ta};s/ \+/ /g' "$SELF"
+}
+
+_test_desc() {
+  _test_desc_raw | sed -n "s/cargo $1/cargo $2/p" | sed "s/\$/$3/" | sh -ex
 }
