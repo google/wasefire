@@ -1,0 +1,16 @@
+[package]
+name = "opensk"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand_core = "0.6.4"
+opensk = { path = "../../../third_party/OpenSK/libraries/opensk" }
+persistent_store = { path = "../../../third_party/OpenSK/libraries/persistent_store" }
+wasefire = { path = "../../../crates/prelude" }
+wasefire-stub = { path = "../../../crates/stub", optional = true }
+
+[features]
+test = ["dep:wasefire-stub", "persistent_store/std", "wasefire/test"]
