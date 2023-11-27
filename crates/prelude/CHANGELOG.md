@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `platform` module with `platform::reboot()` function
 - Use `wasefire-mutex` to provide `sync::Mutex`
 - Expose the main function as `applet_main` in `native`
 - Use the default allocation error handler
