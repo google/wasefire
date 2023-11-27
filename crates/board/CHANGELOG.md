@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add `Api::Platform` with `platform::Api::reboot()` function
 - Require the APIs to be `Send` and the top-level API to be `'static` too
 
 ### Patch

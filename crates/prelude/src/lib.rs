@@ -44,6 +44,7 @@ pub mod clock;
 pub mod crypto;
 pub mod debug;
 pub mod led;
+pub mod platform;
 pub mod rng;
 pub mod scheduling;
 pub mod serial;

@@ -49,7 +49,7 @@ test_helper() {
     target="$(package_doc_default_target)"
     [ -z "$(package_doc_targets)" ] || e 'docs.rs targets unsupported'
     [ -n "$target" ] && target="--target=$target"
-    x env RUSTDOCFLAGS=--deny=warnings cargo doc $target $features
+    x env RUSTDOCFLAGS=--deny=warnings cargo doc --no-deps $target $features
   fi
   exit
 }

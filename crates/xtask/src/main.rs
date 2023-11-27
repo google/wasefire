@@ -594,7 +594,7 @@ impl RunnerOptions {
         probe_rs.args(["probe-rs", "run"]);
         probe_rs.arg(format!("--chip={chip}"));
         probe_rs.arg(elf);
-        println!("Add --no-flash to the following command to rerun:");
+        println!("Replace `run` with `attach` in the following command to rerun:");
         replace_command(probe_rs);
     }
 

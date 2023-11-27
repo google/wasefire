@@ -683,6 +683,15 @@
   ): void
 // END OF MODULE led
 
+// START OF MODULE platform
+// Platform operations.
+  // Reboots the device (thus platform and applets).
+  @external("env", "pr")
+  export declare function platform_reboot(
+  // Complement of error number.
+  ): isize
+// END OF MODULE platform
+
 // START OF MODULE rng
 // Random number generators.
   // Fills a slice with random bytes.
