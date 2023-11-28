@@ -444,6 +444,7 @@ impl RunnerOptions {
     fn execute(&self, main: &MainOptions, run: bool) -> Result<()> {
         let mut cargo = Command::new("cargo");
         let mut rustflags = Vec::new();
+        let mut features = self.features.clone();
         if run && self.name == "host" {
             cargo.arg("run");
         } else {
@@ -459,13 +460,8 @@ impl RunnerOptions {
                 "-C embed-bitcode=yes".to_string(),
             ]);
             if main.release {
-                // We have to split -Z from its argument because of cargo bloat.
-                cargo.args([
-                    "-Z",
-                    "build-std=core,alloc",
-                    "-Z",
-                    "build-std-features=panic_immediate_abort",
-                ]);
+                cargo.arg("-Zbuild-std=core,alloc");
+                cargo.arg("-Zbuild-std-features=panic_immediate_abort");
             }
             if main.release {
                 rustflags.push("-C lto=fat".to_string());
@@ -476,9 +472,9 @@ impl RunnerOptions {
         }
         rustflags.push(format!("-C opt-level={}", self.opt_level));
         if main.release {
-            cargo.arg("--features=release");
+            features.push("release".to_string());
         } else {
-            cargo.arg("--features=debug");
+            features.push("debug".to_string());
         }
         if self.no_default_features {
             cargo.arg("--no-default-features");
@@ -486,23 +482,23 @@ impl RunnerOptions {
             log::warn!("Assuming runner --no-default-features when running in a codespace.");
             cargo.arg("--no-default-features");
         }
-        for features in &self.features {
-            cargo.arg(format!("--features={features}"));
-        }
         if let Some(log) = &self.log {
             cargo.env(self.log_env(), log);
         }
         if self.name == "host" && self.web {
-            cargo.arg("--features=web");
+            features.push("web".to_string());
         }
         if self.stack_sizes.is_some() {
             rustflags.push("-Z emit-stack-sizes".to_string());
             rustflags.push("-C link-arg=-Tstack-sizes.x".to_string());
         }
         if main.native {
-            cargo.arg("--features=native");
+            features.push("native".to_string());
         } else {
-            cargo.arg("--features=wasm");
+            features.push("wasm".to_string());
+        }
+        if !features.is_empty() {
+            cargo.arg(format!("--features={}", features.join(",")));
         }
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(format!("crates/runner-{}", self.name));
