@@ -112,8 +112,8 @@ struct AppletOptions {
     features: Vec<String>,
 
     /// Optimization level (0, 1, 2, 3, s, z).
-    #[clap(long, short = 'O', default_value_t)]
-    opt_level: OptLevel,
+    #[clap(long, short = 'O')]
+    opt_level: Option<OptLevel>,
 
     /// Stack size.
     #[clap(long, default_value_t)]
@@ -165,8 +165,8 @@ struct RunnerOptions {
     features: Vec<String>,
 
     /// Optimization level (0, 1, 2, 3, s, z).
-    #[clap(long, short = 'O', default_value_t)]
-    opt_level: OptLevel,
+    #[clap(long, short = 'O')]
+    opt_level: Option<OptLevel>,
 
     /// Erases all the flash first.
     #[clap(long)]
@@ -217,7 +217,7 @@ impl FromStr for StackSize {
     }
 }
 
-#[derive(Default, Copy, Clone, EnumString, Display)]
+#[derive(Copy, Clone, EnumString, Display)]
 enum OptLevel {
     #[strum(serialize = "0")]
     O0,
@@ -226,7 +226,6 @@ enum OptLevel {
     #[strum(serialize = "2")]
     O2,
     #[strum(serialize = "3")]
-    #[default]
     O3,
     #[strum(serialize = "s")]
     Os,
@@ -309,7 +308,6 @@ impl AppletOptions {
             "-C panic=abort".to_string(),
             "-C codegen-units=1".to_string(),
             "-C embed-bitcode=yes".to_string(),
-            format!("-C opt-level={}", self.opt_level),
             "-C lto=fat".to_string(),
         ];
         cargo.args(["rustc", "--lib"]);
@@ -327,6 +325,9 @@ impl AppletOptions {
             }
         }
         cargo.arg(format!("--profile={}", self.profile));
+        if let Some(level) = self.opt_level {
+            rustflags.push(format!("-C opt-level={level}"));
+        }
         for features in &self.features {
             cargo.arg(format!("--features={features}"));
         }
@@ -363,7 +364,10 @@ impl AppletOptions {
         ensure_assemblyscript()?;
         let mut asc = Command::new("./node_modules/.bin/asc");
         asc.args(["-o", "../../target/wasefire/applet.wasm"]);
-        asc.arg(format!("-O{}", self.opt_level));
+        match self.opt_level {
+            Some(level) => drop(asc.arg(format!("-O{level}"))),
+            None => drop(asc.arg("-O")),
+        }
         asc.args(["--lowMemoryLimit", "--stackSize", &format!("{}", self.stack_size)]);
         asc.args(["--use", &format!("abort={}/main/abort", self.name)]);
         if main.release {
@@ -397,11 +401,11 @@ impl AppletOptions {
             if main.multivalue {
                 opt.arg("--enable-multivalue");
             }
-            opt.args([
-                "--enable-bulk-memory",
-                "--enable-sign-ext",
-                &format!("-O{}", self.opt_level),
-            ]);
+            opt.args(["--enable-bulk-memory", "--enable-sign-ext"]);
+            match self.opt_level {
+                Some(level) => drop(opt.arg(format!("-O{level}"))),
+                None => drop(opt.arg("-O")),
+            }
             opt.args([wasm, "-o", wasm]);
             execute_command(&mut opt)?;
             if main.size {
@@ -470,7 +474,9 @@ impl RunnerOptions {
                 rustflags.push("-C debuginfo=2".to_string());
             }
         }
-        rustflags.push(format!("-C opt-level={}", self.opt_level));
+        if let Some(level) = self.opt_level {
+            rustflags.push(format!("-C opt-level={level}"));
+        }
         if main.release {
             features.push("release".to_string());
         } else {
