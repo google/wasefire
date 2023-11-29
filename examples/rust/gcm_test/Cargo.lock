@@ -298,7 +298,6 @@ dependencies = [
  "crypto-common",
  "digest",
  "generic-array",
- "portable-atomic",
  "rlsf",
  "sealed",
  "typenum",

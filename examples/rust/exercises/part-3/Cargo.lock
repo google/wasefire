@@ -311,7 +311,6 @@ version = "0.5.0-git"
 dependencies = [
  "const-default",
  "generic-array",
- "portable-atomic",
  "rlsf",
  "sealed",
  "typenum",
