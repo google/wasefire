@@ -14,5 +14,4 @@
 
 //! Provides API for mutexes and atomics.
 
-pub use portable_atomic::*;
 pub use wasefire_sync::*;

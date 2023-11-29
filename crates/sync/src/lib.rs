@@ -18,6 +18,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 pub use mutex::{Mutex, MutexGuard};
+pub use portable_atomic::*;
 
 mod mutex;
 mod once;

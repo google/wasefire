@@ -16,7 +16,7 @@
 #[macro_export]
 macro_rules! executed {
     () => {{
-        use portable_atomic::{AtomicBool, Ordering};
+        use $crate::{AtomicBool, Ordering};
         static __X: AtomicBool = AtomicBool::new(false);
         __X.swap(true, Ordering::Relaxed)
     }};

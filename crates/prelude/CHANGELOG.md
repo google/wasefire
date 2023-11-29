@@ -15,6 +15,7 @@
 
 ### Patch
 
+- Only depend on `portable-atomic` through `wasefire-sync`
 - Use `wasefire-sync::executed!()` to ensure the allocator is initialized at
   most once
 - Build docs.rs for wasm32-unknown-unknown
