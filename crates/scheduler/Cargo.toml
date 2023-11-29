@@ -26,8 +26,8 @@ typenum = { version = "1.17.0", default-features = false }
 wasefire-applet-api = { version = "0.6.0-git", path = "../api", features = ["host"] }
 wasefire-board-api = { version = "0.6.0-git", path = "../board" }
 wasefire-logger = { version = "0.1.4-git", path = "../logger" }
-wasefire-mutex = { version = "0.1.0-git", path = "../mutex" }
 wasefire-store = { version = "0.2.3-git", path = "../store" }
+wasefire-sync = { version = "0.1.0-git", path = "../sync" }
 
 [dependencies.wasefire-interpreter]
 version = "0.2.0-git"

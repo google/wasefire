@@ -12,7 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides API for mutexes and atomics.
+//! This crate provides different synchronization primitives.
 
-pub use portable_atomic::*;
-pub use wasefire_sync::*;
+#![no_std]
+#![deny(unsafe_op_in_unsafe_fn)]
+
+pub use mutex::{Mutex, MutexGuard};
+
+mod mutex;
+mod once;

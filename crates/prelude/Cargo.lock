@@ -295,7 +295,7 @@ dependencies = [
  "sealed",
  "typenum",
  "wasefire-applet-api",
- "wasefire-mutex",
+ "wasefire-sync",
  "zeroize",
 ]
 
@@ -334,7 +334,7 @@ name = "wasefire-logger"
 version = "0.1.4-git"
 
 [[package]]
-name = "wasefire-mutex"
+name = "wasefire-sync"
 version = "0.1.0-git"
 dependencies = [
  "portable-atomic",

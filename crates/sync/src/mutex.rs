@@ -12,20 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! This crate provides non-blocking mutexes using portable-atomic.
-
-#![no_std]
-#![deny(unsafe_op_in_unsafe_fn)]
-
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
 
 use portable_atomic::AtomicBool;
-use portable_atomic::Ordering::SeqCst;
+use portable_atomic::Ordering::{Acquire, Relaxed, Release};
 
 /// Non-blocking non-reentrant mutex.
 ///
-/// Locking this mutex will panic if it is already locked.
+/// Locking this mutex will panic if it is already locked. In particular, it will not block.
 pub struct Mutex<T> {
     lock: AtomicBool,
     data: UnsafeCell<T>,
@@ -44,10 +39,8 @@ impl<T> Mutex<T> {
 
     /// Tries to lock the mutex.
     pub fn try_lock(&self) -> Option<MutexGuard<'_, T>> {
-        match self.lock.swap(true, SeqCst) {
-            false => Some(MutexGuard(self)),
-            true => None,
-        }
+        self.lock.compare_exchange(false, true, Acquire, Relaxed).ok()?;
+        Some(MutexGuard(self))
     }
 
     /// Locks the mutex.
@@ -55,6 +48,7 @@ impl<T> Mutex<T> {
     /// # Panics
     ///
     /// Panics if it is already locked.
+    #[track_caller]
     pub fn lock(&self) -> MutexGuard<'_, T> {
         self.try_lock().unwrap()
     }
@@ -76,7 +70,7 @@ impl<'a, T> DerefMut for MutexGuard<'a, T> {
 
 impl<'a, T> Drop for MutexGuard<'a, T> {
     fn drop(&mut self) {
-        assert!(self.0.lock.swap(false, SeqCst));
+        self.0.lock.store(false, Release);
     }
 }
 

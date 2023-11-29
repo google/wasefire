@@ -9,7 +9,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3bccab0e7fd7cc19f820a1c8c91720af652d0c88dc9664dd72aef2614f04af3b"
 
 [[package]]
-name = "wasefire-mutex"
+name = "wasefire-sync"
 version = "0.1.0-git"
 dependencies = [
  "portable-atomic",
