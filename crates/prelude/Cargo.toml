@@ -21,12 +21,11 @@ const-default = { version = "1.0.0", default-features = false }
 crypto-common = { version = "0.1.6", default-features = false, optional = true }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
 generic-array = { version = "0.14.7", default-features = false }
-portable-atomic = { version = "1.5.1", default-features = false }
 rlsf = { version = "0.2.1", default-features = false }
 sealed = { version = "0.5.0", default-features = false }
 typenum = { version = "1.17.0", default-features = false }
 wasefire-applet-api = { version = "0.6.0-git", path = "../api", features = ["wasm"] }
-wasefire-mutex = { version = "0.1.0-git", path = "../mutex" }
+wasefire-sync = { version = "0.1.0-git", path = "../sync" }
 zeroize = { version = "1.6.0", default-features = false, features = ["derive"], optional = true }
 
 [features]

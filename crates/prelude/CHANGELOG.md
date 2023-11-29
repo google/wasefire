@@ -9,12 +9,15 @@
 ### Minor
 
 - Add `platform` module with `platform::reboot()` function
-- Use `wasefire-mutex` to provide `sync::Mutex`
+- Use `wasefire-sync` to provide `sync::Mutex`
 - Expose the main function as `applet_main` in `native`
 - Use the default allocation error handler
 
 ### Patch
 
+- Only depend on `portable-atomic` through `wasefire-sync`
+- Use `wasefire-sync::executed!()` to ensure the allocator is initialized at
+  most once
 - Build docs.rs for wasm32-unknown-unknown
 - Fix broken links in documentation
 - Update dependencies

@@ -18,15 +18,13 @@ use core::num::NonZeroUsize;
 use core::ptr::{null_mut, NonNull};
 
 use const_default::ConstDefault;
-use portable_atomic::{AtomicBool, Ordering};
 use rlsf::Tlsf;
 
 use crate::sync::Mutex;
 
 #[no_mangle]
 extern "C" fn init() {
-    static CALLED: AtomicBool = AtomicBool::new(false);
-    assert!(!CALLED.swap(true, Ordering::SeqCst));
+    assert!(!wasefire_sync::executed!());
     const SIZE: usize = 32768;
     #[repr(align(16))]
     struct Pool(MaybeUninit<[u8; SIZE]>);

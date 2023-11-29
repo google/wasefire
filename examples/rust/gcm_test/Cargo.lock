@@ -298,12 +298,11 @@ dependencies = [
  "crypto-common",
  "digest",
  "generic-array",
- "portable-atomic",
  "rlsf",
  "sealed",
  "typenum",
  "wasefire-applet-api",
- "wasefire-mutex",
+ "wasefire-sync",
  "zeroize",
 ]
 
@@ -337,7 +336,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasefire-mutex"
+name = "wasefire-sync"
 version = "0.1.0-git"
 dependencies = [
  "portable-atomic",

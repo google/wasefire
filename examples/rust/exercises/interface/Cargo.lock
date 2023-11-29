@@ -303,12 +303,11 @@ version = "0.5.0-git"
 dependencies = [
  "const-default",
  "generic-array",
- "portable-atomic",
  "rlsf",
  "sealed",
  "typenum",
  "wasefire-applet-api",
- "wasefire-mutex",
+ "wasefire-sync",
 ]
 
 [[package]]
@@ -341,7 +340,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasefire-mutex"
+name = "wasefire-sync"
 version = "0.1.0-git"
 dependencies = [
  "portable-atomic",

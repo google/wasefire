@@ -1833,13 +1833,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasefire-mutex"
-version = "0.1.0-git"
-dependencies = [
- "portable-atomic",
-]
-
-[[package]]
 name = "wasefire-scheduler"
 version = "0.3.0-git"
 dependencies = [
@@ -1854,13 +1847,20 @@ dependencies = [
  "wasefire-board-api",
  "wasefire-interpreter",
  "wasefire-logger",
- "wasefire-mutex",
  "wasefire-store",
+ "wasefire-sync",
 ]
 
 [[package]]
 name = "wasefire-store"
 version = "0.2.3-git"
+
+[[package]]
+name = "wasefire-sync"
+version = "0.1.0-git"
+dependencies = [
+ "portable-atomic",
+]
 
 [[package]]
 name = "wasi"

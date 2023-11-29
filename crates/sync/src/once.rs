@@ -12,6 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides API for mutexes and atomics.
+/// Returns whether this statement was already executed.
+#[macro_export]
+macro_rules! executed {
+    () => {{
+        use $crate::{AtomicBool, Ordering};
+        static __X: AtomicBool = AtomicBool::new(false);
+        __X.swap(true, Ordering::Relaxed)
+    }};
+}
 
-pub use wasefire_sync::*;
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn executed_ok() {
+        fn test() -> bool {
+            executed!()
+        }
+        assert!(!test());
+        assert!(test());
+        assert!(test());
+    }
+}

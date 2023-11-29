@@ -17,7 +17,7 @@ use core::ffi::{c_char, CStr};
 
 use wasefire_board_api::Api as Board;
 use wasefire_logger as log;
-use wasefire_mutex::Mutex;
+use wasefire_sync::Mutex;
 
 #[cfg(feature = "debug")]
 use crate::perf::Slot;
