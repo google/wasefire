@@ -14,17 +14,22 @@
 
 use crate::*;
 
+mod update;
+
 pub(crate) fn new() -> Item {
     let docs = docs! {
         /// Platform operations.
     };
     let name = "platform".into();
-    let items = vec![item! {
-        /// Reboots the device (thus platform and applets).
-        fn reboot "pr" {} -> {
-            /// Complement of error number.
-            res: isize,
-        }
-    }];
+    let items = vec![
+        update::new(),
+        item! {
+            /// Reboots the device (thus platform and applets).
+            fn reboot "pr" {} -> {
+                /// Complement of error number.
+                res: isize,
+            }
+        },
+    ];
     Item::Mod(Mod { docs, name, items })
 }

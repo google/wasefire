@@ -21,6 +21,7 @@ use core::ops::Range;
 use wasefire_interpreter::{
     Call, Error, InstId, Module, RunResult, Store as InterpreterStore, Val,
 };
+use wasefire_logger as log;
 
 use super::{MemoryApi, StoreApi};
 use crate::Trap;
@@ -135,21 +136,22 @@ impl<'a> MemoryApi for Memory<'a> {
         <[u8]>::get_mut(data, range).ok_or(Trap)
     }
 
-    fn alloc(&mut self, size: u32, align: u32) -> u32 {
+    fn alloc(&mut self, size: u32, align: u32) -> Result<u32, Trap> {
         self.borrow.borrow_mut().clear();
         let store = unsafe { &mut *self.store };
         let args = vec![Val::I32(size), Val::I32(align)];
         let inst = store.last_call().unwrap().inst();
-        let result: Result<Val, Error> = try {
-            // TODO: We should ideally account this to the applet performance time.
-            match store.invoke(inst, "alloc", args)? {
-                RunResult::Done(x) if x.len() == 1 => x[0],
-                _ => Err(Error::Invalid)?,
-            }
+        // TODO: We should ideally account this to the applet performance time.
+        let result = match store.invoke(inst, "alloc", args) {
+            Ok(RunResult::Done(x)) if x.len() == 1 => x[0],
+            Ok(RunResult::Done(_)) => return Err(Trap),
+            Ok(RunResult::Host(_)) => log::panic!("alloc called into host"),
+            Err(Error::Trap) => return Err(Trap),
+            Err(x) => log::panic!("alloc failed with {}", log::Debug2Format(&x)),
         };
         match result {
-            Ok(Val::I32(x)) => x,
-            _ => 0,
+            Val::I32(x) if x != 0 => Ok(x),
+            _ => Err(Trap),
         }
     }
 }

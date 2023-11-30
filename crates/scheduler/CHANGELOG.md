@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support `platform::update`
 - Support `platform` and `platform::reboot()`
 - Add more debug logging in native mode
 - Permit applets to call `debup::println()` during `init()`
