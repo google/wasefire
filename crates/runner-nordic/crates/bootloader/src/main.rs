@@ -14,8 +14,6 @@
 
 #![no_std]
 #![no_main]
-#![feature(pointer_is_aligned)]
-#![feature(ptr_sub_ptr)]
 
 use cortex_m::asm;
 use cortex_m_rt::entry;
