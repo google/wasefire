@@ -53,6 +53,18 @@ impl Storage {
     pub fn new_store() -> Self {
         Storage(TakeCell::new(Some(take_storage!(__sstore .. __estore))))
     }
+
+    pub fn new_other() -> Self {
+        Storage(TakeCell::new(Some(take_storage!(__sother .. __eother))))
+    }
+
+    pub fn as_ptr(&self) -> *const u8 {
+        self.0.with(|x| x.as_ptr())
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.with(|x| x.len())
+    }
 }
 
 struct Helper<'a> {
@@ -89,7 +101,7 @@ impl store::Storage for Storage {
     }
 
     fn num_pages(&self) -> usize {
-        self.0.with(|x| x.len()) / PAGE_SIZE
+        self.len() / PAGE_SIZE
     }
 
     fn max_word_writes(&self) -> usize {

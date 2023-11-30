@@ -1,0 +1,13 @@
+[package]
+name = "host"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.75"
+clap = { version = "4.4.8", features = ["derive"] }
+env_logger = "0.10.1"
+log = "0.4.20"
+serialport = "4.2.2"
