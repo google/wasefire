@@ -18,9 +18,9 @@ pub(crate) fn new() -> Item {
     let docs = docs! {
         /// Operations to update the platform.
         ///
-        /// All operations are abstract over the content such that they can work on all platform. In
-        /// particular, chunks and errors are platform-specific. Applets with knowledge about their
-        /// platform may actually inspect that content for additional checks.
+        /// All operations are abstract over the update content such that they can work on all
+        /// platforms. In particular, chunks and errors are platform-specific. Applets with
+        /// knowledge about their platform may actually inspect that content for additional checks.
     };
     let name = "update".into();
     let items = vec![
