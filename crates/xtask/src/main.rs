@@ -488,14 +488,14 @@ impl RunnerOptions {
             ensure!(version < u32::MAX, "--version must be smaller than u32::MAX");
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_VERSION={version}"));
             rustflags.push("-C link-arg=-Tlink.x".to_string());
-            rustflags.push("-C codegen-units=1".to_string());
-            rustflags.push("-C embed-bitcode=yes".to_string());
             if main.release {
                 cargo.arg("-Zbuild-std=core,alloc");
                 cargo.arg("-Zbuild-std-features=panic_immediate_abort");
             }
             if main.release {
                 rustflags.push("-C lto=fat".to_string());
+                rustflags.push("-C codegen-units=1".to_string());
+                rustflags.push("-C embed-bitcode=yes".to_string());
             } else {
                 rustflags.push("-C link-arg=-Tdefmt.x".to_string());
                 rustflags.push("-C debuginfo=2".to_string());
