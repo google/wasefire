@@ -873,6 +873,7 @@ dependencies = [
  "wasefire-logger",
  "wasefire-scheduler",
  "wasefire-store",
+ "wasefire-sync",
 ]
 
 [[package]]

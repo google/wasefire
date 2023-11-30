@@ -28,6 +28,7 @@ wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
 wasefire-scheduler = { path = "../scheduler" }
 wasefire-store = { path = "../store" }
+wasefire-sync = { path = "../sync" }
 
 [features]
 software-crypto = ["wasefire-board-api/software-crypto"]

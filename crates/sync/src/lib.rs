@@ -19,6 +19,8 @@
 
 pub use mutex::{Mutex, MutexGuard};
 pub use portable_atomic::*;
+pub use take::TakeCell;
 
 mod mutex;
 mod once;
+mod take;

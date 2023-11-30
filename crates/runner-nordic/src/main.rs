@@ -131,7 +131,8 @@ fn main() -> ! {
         .build();
     let rng = Rng::new(p.RNG);
     let ccm = Ccm::init(p.CCM, p.AAR, DataRate::_1Mbit);
-    let storage = Some(Storage::new(p.NVMC));
+    storage::init(p.NVMC);
+    let storage = Some(Storage::new_store());
     let pins = uarte::Pins {
         txd: port0.p0_06.into_push_pull_output(gpio::Level::High).degrade(),
         rxd: port0.p0_08.into_floating_input().degrade(),
