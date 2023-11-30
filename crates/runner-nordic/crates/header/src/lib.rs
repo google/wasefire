@@ -14,14 +14,43 @@
 
 #![no_std]
 
-#[repr(C)]
-pub struct Header {
-    pub timestamp: u32,
-    pub attempt: [Attempt; 3],
-}
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Header(u32);
 
-#[repr(transparent)]
-pub struct Attempt(u32);
+impl Header {
+    pub fn new(side: Side) -> Self {
+        let addr = match side {
+            Side::A => FIRMWARE_A,
+            Side::B => FIRMWARE_B,
+        };
+        Header(addr)
+    }
+
+    pub fn timestamp(self) -> u32 {
+        unsafe { read(self.0) }
+    }
+
+    pub fn attempt(self, index: u32) -> Attempt {
+        assert!(index < 3);
+        Attempt(self.0 + 4 * index)
+    }
+
+    pub fn has_firmware(self) -> bool {
+        self.timestamp() != 0xffffffff
+    }
+
+    pub fn addr(self) -> u32 {
+        self.0
+    }
+
+    pub fn side(self) -> Side {
+        Side::new(self.addr()).unwrap()
+    }
+
+    pub fn firmware(&self) -> u32 {
+        self.addr() + HEADER_LEN
+    }
+}
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Side {
@@ -57,47 +86,21 @@ impl core::ops::Not for Side {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Attempt(u32);
+
 impl Attempt {
-    pub const FREE: u32 = 0xffffffff;
-    pub const USED: u32 = 0x00000000;
-
-    pub fn addr(&self) -> u32 {
-        self as *const _ as u32
+    pub fn free(self) -> bool {
+        unsafe { read(self.0) == 0xffffffff }
     }
 
-    pub fn free(&self) -> bool {
-        self.0 == Self::FREE
-    }
-
-    pub fn used(&self) -> bool {
-        !self.free()
+    pub fn addr(self) -> u32 {
+        self.0
     }
 }
 
-impl Header {
-    pub fn new(side: Side) -> &'static Self {
-        let addr = match side {
-            Side::A => FIRMWARE_A,
-            Side::B => FIRMWARE_B,
-        };
-        unsafe { &*(addr as *const Header) }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.timestamp == 0xffffffff
-    }
-
-    pub fn addr(&self) -> u32 {
-        self as *const _ as u32
-    }
-
-    pub fn side(&self) -> Side {
-        Side::new(self.addr()).unwrap()
-    }
-
-    pub fn firmware(&self) -> u32 {
-        self.addr() + HEADER_LEN
-    }
+unsafe fn read(addr: u32) -> u32 {
+    unsafe { (addr as *const u32).read_volatile() }
 }
 
 // Keep those values in sync with the memory.x linker script.

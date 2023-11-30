@@ -27,18 +27,18 @@ use panic_abort as _;
 fn main() -> ! {
     let mut new = Header::new(Side::A);
     let mut old = Header::new(Side::B);
-    if new.timestamp < old.timestamp {
+    if new.timestamp() < old.timestamp() {
         core::mem::swap(&mut new, &mut old);
     }
     let cur = if mark(new) { new } else { old };
     unsafe { asm::bootload(cur.firmware() as *const u32) };
 }
 
-fn mark(header: &Header) -> bool {
-    if header.is_empty() {
+fn mark(header: Header) -> bool {
+    if !header.has_firmware() {
         return false;
     }
-    let attempt = match header.attempt.iter().find(|x| x.free()) {
+    let attempt = match (0 .. 3).map(|i| header.attempt(i)).find(|x| x.free()) {
         Some(x) => x.addr(),
         None => return false,
     };

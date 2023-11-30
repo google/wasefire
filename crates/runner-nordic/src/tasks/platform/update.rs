@@ -162,11 +162,13 @@ impl From<Error> for usize {
     }
 }
 
-fn push_header(metadata: &mut Vec<u8>, header: &Header) {
+fn push_header(metadata: &mut Vec<u8>, header: Header) {
     match header.side() {
         Side::A => metadata.push(0xa),
         Side::B => metadata.push(0xb),
     }
-    metadata.push(header.attempt.iter().filter(|x| x.used()).count() as u8);
-    metadata.extend_from_slice(&header.timestamp.to_be_bytes());
+    for i in 0 .. 3 {
+        metadata.push(0xff * header.attempt(i).free() as u8);
+    }
+    metadata.extend_from_slice(&header.timestamp().to_be_bytes());
 }

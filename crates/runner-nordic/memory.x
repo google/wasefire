@@ -42,7 +42,11 @@ SECTIONS {
     LONG(0xffffffff);
     LONG(0xffffffff);
     LONG(0xffffffff);
-  } > HEADER =0xffff
+    /* We fill the unused part of the header to keep it erased. */
+    FILL(0xffffffff);
+    . = ORIGIN(FLASH) - 1;
+    BYTE(0xff);
+  } > HEADER
 }
 
 _stack_start = ORIGIN(RAM);
