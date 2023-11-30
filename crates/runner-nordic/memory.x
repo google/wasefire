@@ -39,6 +39,8 @@ SECTIONS {
   .header : {
     /* Keep this section in sync with the bootloader. */
     LONG(RUNNER_VERSION);
+    /* The 3 boot attempts of the newest side. It's not unusual for 2 attempts
+       to be burned at the same time. Not clear why, maybe probe-rs. */
     LONG(0xffffffff);
     LONG(0xffffffff);
     LONG(0xffffffff);
