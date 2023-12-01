@@ -42,8 +42,8 @@ impl MemoryApi for Memory {
         Ok(unsafe { core::slice::from_raw_parts_mut(ptr as *mut u8, len as usize) })
     }
 
-    fn alloc(&mut self, size: u32, align: u32) -> u32 {
-        board_alloc(size, align) as u32
+    fn alloc(&mut self, size: u32, align: u32) -> Result<u32, Trap> {
+        Ok(board_alloc(size, align) as u32)
     }
 }
 

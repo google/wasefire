@@ -9,3 +9,7 @@ reorder_keys = true
 [[rule]]
 formatting = { reorder_keys = false }
 keys = ["dependencies.*", "package"]
+
+[[rule]]
+formatting = { reorder_keys = true }
+keys = ["package.*"]

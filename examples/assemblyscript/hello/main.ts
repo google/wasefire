@@ -28,6 +28,8 @@ export function abort(
     unreachable();
 }
 
+export function init(): void {}
+
 export function main(): void {
     println("hello");
 }

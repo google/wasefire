@@ -534,11 +534,11 @@ version = "0.5.0-git"
 dependencies = [
  "const-default",
  "generic-array",
- "portable-atomic",
  "rlsf",
  "sealed",
  "typenum",
  "wasefire-applet-api",
+ "wasefire-sync",
 ]
 
 [[package]]
@@ -593,6 +593,13 @@ dependencies = [
  "signature",
  "wasefire-applet-api",
  "wasefire-logger",
+]
+
+[[package]]
+name = "wasefire-sync"
+version = "0.1.0-git"
+dependencies = [
+ "portable-atomic",
 ]
 
 [[package]]

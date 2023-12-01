@@ -43,6 +43,10 @@ fn create_parent(path: impl AsRef<Path>) -> Result<()> {
     Ok(())
 }
 
+pub fn exists(path: impl AsRef<Path>) -> bool {
+    path.as_ref().exists()
+}
+
 pub fn metadata(path: impl AsRef<Path>) -> Result<Metadata> {
     let name = path.as_ref().display();
     std::fs::metadata(path.as_ref()).with_context(|| format!("reading {name} metadata"))
@@ -59,7 +63,7 @@ pub fn remove_file(path: impl AsRef<Path>) -> Result<()> {
 }
 
 pub fn touch(path: impl AsRef<Path>) -> Result<()> {
-    if path.as_ref().exists() {
+    if exists(path.as_ref()) {
         return Ok(());
     }
     write(path, "")

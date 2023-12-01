@@ -13,14 +13,11 @@
 // limitations under the License.
 
 use alloc::boxed::Box;
-use core::cell::RefCell;
 use core::ffi::{c_char, CStr};
 
-use critical_section::Mutex;
-use portable_atomic::AtomicBool;
-use portable_atomic::Ordering::SeqCst;
 use wasefire_board_api::Api as Board;
 use wasefire_logger as log;
+use wasefire_sync::Mutex;
 
 #[cfg(feature = "debug")]
 use crate::perf::Slot;
@@ -53,37 +50,23 @@ impl<B: Board> ErasedScheduler for Scheduler<B> {
     }
 }
 
-// TODO: There should be a Mutex that doesn't disable interrupts for the whole critical section. We
-// implement it manually for now.
-static BORROWED: AtomicBool = AtomicBool::new(false);
-static mut SCHEDULER: Option<Box<dyn ErasedScheduler>> = None;
-#[allow(clippy::type_complexity)]
-static CALLBACK: Mutex<RefCell<Option<Box<dyn Fn() + Send>>>> = Mutex::new(RefCell::new(None));
-
-fn lock<R>(operation: impl FnOnce() -> R) -> R {
-    assert!(!BORROWED.swap(true, SeqCst));
-    let result = operation();
-    assert!(BORROWED.swap(false, SeqCst));
-    result
-}
+static SCHEDULER: Mutex<Option<Box<dyn ErasedScheduler>>> = Mutex::new(None);
+static CALLBACK: Mutex<Option<Box<dyn Fn() + Send>>> = Mutex::new(None);
 
 pub(crate) fn set_scheduler<B: Board>(scheduler: Scheduler<B>) {
-    lock(|| {
-        assert!(unsafe { SCHEDULER.is_none() });
-        unsafe { SCHEDULER = Some(Box::new(scheduler)) };
-    });
+    *SCHEDULER.lock() = Some(Box::new(scheduler));
 }
 
 pub(crate) fn with_scheduler<R>(f: impl FnOnce(&mut dyn ErasedScheduler) -> R) -> R {
-    lock(|| f(unsafe { SCHEDULER.as_deref_mut().unwrap() }))
+    f(SCHEDULER.lock().as_deref_mut().unwrap())
 }
 
 pub(crate) fn schedule_callback(callback: Box<dyn Fn() + Send>) {
-    assert!(critical_section::with(|cs| CALLBACK.replace(cs, Some(callback))).is_none());
+    assert!(CALLBACK.lock().replace(callback).is_none());
 }
 
 pub(crate) fn execute_callback() {
-    if let Some(callback) = critical_section::with(|cs| CALLBACK.take(cs)) {
+    if let Some(callback) = CALLBACK.lock().take() {
         #[cfg(feature = "debug")]
         with_scheduler(|x| x.perf_record(Slot::Platform));
         callback();

@@ -8,6 +8,8 @@
 
 ### Minor
 
+- Support `platform::update`
+- Support `platform` and `platform::reboot()`
 - Add more debug logging in native mode
 - Permit applets to call `debup::println()` during `init()`
 - Use `debug::exit()` board API when the applet traps
@@ -15,6 +17,8 @@
 
 ### Patch
 
+- Fix docs.rs build
+- Use `wasefire-sync`
 - Fix lints
 - Use `logger` alias instead of `log` for `wasefire-logger` crate
 - Update dependencies

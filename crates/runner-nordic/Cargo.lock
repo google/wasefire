@@ -545,6 +545,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "header"
+version = "0.1.0"
+
+[[package]]
 name = "heapless"
 version = "0.7.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -861,6 +865,7 @@ dependencies = [
  "embedded-alloc",
  "embedded-hal",
  "embedded-storage",
+ "header",
  "nrf52840-hal",
  "panic-abort",
  "panic-probe",
@@ -873,6 +878,7 @@ dependencies = [
  "wasefire-logger",
  "wasefire-scheduler",
  "wasefire-store",
+ "wasefire-sync",
 ]
 
 [[package]]
@@ -1190,11 +1196,19 @@ dependencies = [
  "wasefire-interpreter",
  "wasefire-logger",
  "wasefire-store",
+ "wasefire-sync",
 ]
 
 [[package]]
 name = "wasefire-store"
 version = "0.2.3-git"
+
+[[package]]
+name = "wasefire-sync"
+version = "0.1.0-git"
+dependencies = [
+ "portable-atomic",
+]
 
 [[package]]
 name = "zeroize"

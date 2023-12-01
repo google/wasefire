@@ -64,6 +64,7 @@ impl Api for Board {
     type Crypto = Unsupported;
     type Debug = debug::Impl;
     type Led = led::Impl;
+    type Platform = Unsupported;
     type Rng = rng::Impl;
     type Storage = storage::Impl;
     type Timer = timer::Impl;

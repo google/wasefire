@@ -15,7 +15,7 @@
 //! Storage representation of a store.
 
 #[macro_use]
-mod bitfield;
+pub mod bitfield;
 
 use alloc::vec::Vec;
 use core::borrow::Borrow;
@@ -67,65 +67,65 @@ impl Word {
 ///
 /// Currently, the store only supports storages where the [word size](Storage::word_size) is 4
 /// bytes.
-const WORD_SIZE: Nat = core::mem::size_of::<WORD>() as Nat;
+pub const WORD_SIZE: Nat = core::mem::size_of::<WORD>() as Nat;
 
 /// Minimum number of words per page.
 ///
 /// Currently, the store only supports storages where pages have at least 8 [words](WORD_SIZE), i.e.
 /// the [page size](Storage::page_size) is at least 32 bytes.
-const MIN_PAGE_SIZE: Nat = 8;
+pub const MIN_PAGE_SIZE: Nat = 8;
 
 /// Maximum size of a page in bytes.
 ///
 /// Currently, the store only supports storages where pages have at most 1024 [words](WORD_SIZE),
 /// i.e. the [page size](Storage::page_size) is at most 4096 bytes.
-const MAX_PAGE_SIZE: Nat = 4096;
+pub const MAX_PAGE_SIZE: Nat = 4096;
 
 /// Maximum number of erase cycles.
 ///
 /// Currently, the store only supports storages where the [maximum number of erase
 /// cycles](Storage::max_page_erases) fits in 16 bits, i.e. it is at most 65535.
-const MAX_ERASE_CYCLE: Nat = 65535;
+pub const MAX_ERASE_CYCLE: Nat = 65535;
 
 /// Minimum number of pages.
 ///
 /// Currently, the store only supports storages where the [number of pages](Storage::num_pages) is
 /// at least 3.
-const MIN_NUM_PAGES: Nat = 3;
+pub const MIN_NUM_PAGES: Nat = 3;
 
 /// Maximum page index.
 ///
 /// Currently, the store only supports storages where the [number of pages](Storage::num_pages) is
 /// at most 64, i.e. the maximum page index is 63.
-const MAX_PAGE_INDEX: Nat = 63;
+pub const MAX_PAGE_INDEX: Nat = 63;
 
 /// Maximum key index.
 ///
 /// Currently, the store only supports 4096 keys, i.e. the maximum key index is 4095.
-const MAX_KEY_INDEX: Nat = 4095;
+pub const MAX_KEY_INDEX: Nat = 4095;
 
 /// Maximum length in bytes of a user payload.
 ///
 /// Currently, the store only supports values at most 1023 bytes long. This may be further reduced
 /// depending on the [page size](Storage::page_size), see [`Format::max_value_len`].
-const MAX_VALUE_LEN: Nat = 1023;
+pub const MAX_VALUE_LEN: Nat = 1023;
 
 /// Maximum number of updates per transaction.
 ///
 /// Currently, the store only supports transactions with at most 31 updates.
-const MAX_UPDATES: Nat = 31;
+pub const MAX_UPDATES: Nat = 31;
 
 /// Maximum number of words per virtual page.
 ///
 /// A virtual page has [`CONTENT_WORD`] less [words](WORD_SIZE) than the storage [page
 /// size](Storage::page_size). Those words are used to store the page header. Since a page has at
 /// least [8](MIN_PAGE_SIZE) words, a virtual page has at least 6 words.
-const MAX_VIRT_PAGE_SIZE: Nat = MAX_PAGE_SIZE / WORD_SIZE - CONTENT_WORD;
+pub const MAX_VIRT_PAGE_SIZE: Nat = MAX_PAGE_SIZE / WORD_SIZE - CONTENT_WORD;
 
 /// Word with all bits set to one.
 ///
 /// After a page is erased, all words are equal to this value.
-const ERASED_WORD: Word = Word(!(0 as WORD));
+pub const ERASED_WORD: Word = Word(!(0 as WORD));
 
 /// Helpers for a given storage configuration.
 #[derive(Clone, Debug)]
@@ -180,7 +180,7 @@ impl Format {
     /// - The [`Storage::num_pages`] is between [`MIN_NUM_PAGES`] and [`MAX_PAGE_INDEX`] + 1.
     /// - The [`Storage::max_word_writes`] is at least 2.
     /// - The [`Storage::max_page_erases`] is at most [`MAX_ERASE_CYCLE`].
-    fn is_storage_supported<S: Storage>(storage: &S) -> bool {
+    pub fn is_storage_supported<S: Storage>(storage: &S) -> bool {
         let word_size = usize_to_nat(storage.word_size());
         let page_size = usize_to_nat(storage.page_size());
         let num_pages = usize_to_nat(storage.num_pages());
@@ -548,32 +548,32 @@ impl Format {
 }
 
 /// The word index of the init info in a page.
-const INIT_WORD: Nat = 0;
+pub const INIT_WORD: Nat = 0;
 
 /// The word index of the compact info in a page.
-const COMPACT_WORD: Nat = 1;
+pub const COMPACT_WORD: Nat = 1;
 
 /// The word index of the content of a page.
 ///
 /// This is also the length in words of the page header.
-const CONTENT_WORD: Nat = 2;
+pub const CONTENT_WORD: Nat = 2;
 
 /// The checksum for a single word.
 ///
 /// Since checksums are the number of bits set to zero and a word is 32 bits, we need 5 bits to
 /// store numbers between 0 and 27 (which is 32 - 5).
-const WORD_CHECKSUM: Checksum = Checksum { field: Field { pos: 27, len: 5 } };
+pub const WORD_CHECKSUM: Checksum = Checksum { field: Field { pos: 27, len: 5 } };
 
 // The fields of the init info of a page.
 bitfield! {
     /// The number of times the page has been erased.
-    INIT_CYCLE: Field <= MAX_ERASE_CYCLE,
+    pub INIT_CYCLE: Field <= MAX_ERASE_CYCLE,
 
     /// The word index of the first entry in this virtual page.
-    INIT_PREFIX: Field <= MAX_VALUE_LEN.div_ceil(WORD_SIZE),
+    pub INIT_PREFIX: Field <= MAX_VALUE_LEN.div_ceil(WORD_SIZE),
 
     #[cfg(test)]
-    LEN_INIT: Length,
+    pub LEN_INIT: Length,
 }
 
 // The fields of the compact info of a page.
@@ -582,10 +582,10 @@ bitfield! {
     ///
     /// In particular, compaction copies non-deleted user entries from the head to the tail as long
     /// as entries span the page to be compacted.
-    COMPACT_TAIL: Field <= MAX_VIRT_PAGE_SIZE * MAX_PAGE_INDEX,
+    pub COMPACT_TAIL: Field <= MAX_VIRT_PAGE_SIZE * MAX_PAGE_INDEX,
 
     #[cfg(test)]
-    LEN_COMPACT: Length,
+    pub LEN_COMPACT: Length,
 }
 
 // Overview of the first word of the different kind of entries.
@@ -611,27 +611,27 @@ bitfield! {
 // The fields of a padding entry.
 bitfield! {
     /// The identifier for padding entries.
-    ID_PADDING: ConstField = [0],
+    pub ID_PADDING: ConstField = [0],
 }
 
 // The fields of a user entry.
 bitfield! {
     /// The identifier for user entries.
-    ID_HEADER: ConstField = [1 0],
+    pub ID_HEADER: ConstField = [1 0],
 
     /// Whether the user entry is deleted.
-    HEADER_DELETED: Bit,
+    pub HEADER_DELETED: Bit,
 
     /// Whether the last bit of the user data is flipped.
-    HEADER_FLIPPED: Bit,
+    pub HEADER_FLIPPED: Bit,
 
     /// The length in bytes of the user data.
     // NOTE: It is possible to support values of length 1024 by having a separate kind of entries
     // when the value is empty. We could then subtract one from the length here.
-    HEADER_LENGTH: Field <= MAX_VALUE_LEN,
+    pub HEADER_LENGTH: Field <= MAX_VALUE_LEN,
 
     /// The key of the user entry.
-    HEADER_KEY: Field <= MAX_KEY_INDEX,
+    pub HEADER_KEY: Field <= MAX_KEY_INDEX,
 
     /// The checksum of the user entry.
     ///
@@ -640,62 +640,62 @@ bitfield! {
     // NOTE: It may be possible to save one bit by storing:
     // - the footer checksum (as a field) if the value is not empty
     // - the header checksum (as a checksum) if the value is empty
-    HEADER_CHECKSUM: Checksum <= 58,
+    pub HEADER_CHECKSUM: Checksum <= 58,
 
     #[cfg(test)]
-    LEN_HEADER: Length,
+    pub LEN_HEADER: Length,
 }
 
 // The fields of an erase entry.
 bitfield! {
     /// The identifier for erase entries.
-    ID_ERASE: ConstField = [1 1 0 0 0],
+    pub ID_ERASE: ConstField = [1 1 0 0 0],
 
     /// The page to be erased.
-    ERASE_PAGE: Field <= MAX_PAGE_INDEX,
+    pub ERASE_PAGE: Field <= MAX_PAGE_INDEX,
 
     #[cfg(test)]
-    LEN_ERASE: Length,
+    pub LEN_ERASE: Length,
 }
 
 // The fields of a clear entry.
 bitfield! {
     /// The identifier for clear entries.
-    ID_CLEAR: ConstField = [1 1 0 0 1],
+    pub ID_CLEAR: ConstField = [1 1 0 0 1],
 
     /// The minimum key to be cleared.
     ///
     /// All entries with a key below this limit are not cleared. All other entries are deleted.
-    CLEAR_MIN_KEY: Field <= MAX_KEY_INDEX,
+    pub CLEAR_MIN_KEY: Field <= MAX_KEY_INDEX,
 
     #[cfg(test)]
-    LEN_CLEAR: Length,
+    pub LEN_CLEAR: Length,
 }
 
 // The fields of a marker entry.
 bitfield! {
     /// The identifier for marker entries.
-    ID_MARKER: ConstField = [1 1 0 1 0],
+    pub ID_MARKER: ConstField = [1 1 0 1 0],
 
     /// The number of updates in this transaction.
     ///
     /// The update entries follow this marker entry.
-    MARKER_COUNT: Field <= MAX_UPDATES,
+    pub MARKER_COUNT: Field <= MAX_UPDATES,
 
     #[cfg(test)]
-    LEN_MARKER: Length,
+    pub LEN_MARKER: Length,
 }
 
 // The fields of a remove entry.
 bitfield! {
     /// The identifier for remove entries.
-    ID_REMOVE: ConstField = [1 1 0 1 1],
+    pub ID_REMOVE: ConstField = [1 1 0 1 1],
 
     /// The key of the user entry to be removed.
-    REMOVE_KEY: Field <= MAX_KEY_INDEX,
+    pub REMOVE_KEY: Field <= MAX_KEY_INDEX,
 
     #[cfg(test)]
-    LEN_REMOVE: Length,
+    pub LEN_REMOVE: Length,
 }
 
 /// The position of a word in the virtual storage.

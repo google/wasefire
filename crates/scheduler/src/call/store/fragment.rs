@@ -68,11 +68,7 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
             Ok(None) => (),
             Ok(Some(value)) => {
                 let len = value.len() as u32;
-                let ptr = memory.alloc(len, 1);
-                if ptr == 0 {
-                    // This API doesn't support failing allocation.
-                    Err(Trap)?;
-                }
+                let ptr = memory.alloc(len, 1)?;
                 memory.get_mut(ptr, len)?.copy_from_slice(&value);
                 memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
                 memory.get_mut(*len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());

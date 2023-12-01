@@ -4,6 +4,8 @@
 
 ### Minor
 
+- Add `platform::update` module
+- Add `platform` module with `platform::reboot()` function
 - Call some `env_dispatch` function instead of panicking in `native`
 - Prefix function symbols by `env_` with `native` feature
 - Implement `bytemuck::Zeroable` for `Results` structs
@@ -75,4 +77,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 10 -->
+<!-- Increment to skip CHANGELOG.md test: 11 -->

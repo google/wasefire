@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Build docs.rs for `wasm32-unknown-unknown` only
 - Update dependencies
 - Fix clippy lint
 - Update `native` documentation

@@ -33,7 +33,7 @@ pub trait StoreApi {
 pub trait MemoryApi {
     fn get(&self, ptr: u32, len: u32) -> Result<&[u8], Trap>;
     fn get_mut(&self, ptr: u32, len: u32) -> Result<&mut [u8], Trap>;
-    fn alloc(&mut self, size: u32, align: u32) -> u32;
+    fn alloc(&mut self, size: u32, align: u32) -> Result<u32, Trap>;
 
     fn get_opt(&self, ptr: u32, len: u32) -> Result<Option<&[u8]>, Trap> {
         Ok(match ptr {

@@ -13,10 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -e
 
-cargo check --features=std
-cargo check --target=thumbv7em-none-eabi
-cargo fmt -- --check
-cargo clippy --features=std -- --deny=warnings
+. "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
+
+test_helper
+
 cargo test --features=std
+cargo check --target=thumbv7em-none-eabi

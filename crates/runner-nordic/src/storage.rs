@@ -14,7 +14,6 @@
 
 use alloc::borrow::Cow;
 use alloc::vec;
-use core::cell::RefCell;
 use core::slice;
 
 use embedded_storage::nor_flash::{
@@ -23,31 +22,72 @@ use embedded_storage::nor_flash::{
 use nrf52840_hal::nvmc::Nvmc;
 use nrf52840_hal::pac::NVMC;
 use wasefire_store::{self as store, StorageError, StorageIndex, StorageResult};
+use wasefire_sync::TakeCell;
 
 const PAGE_SIZE: usize = <Nvmc<NVMC>>::ERASE_SIZE;
 
-pub struct Storage(RefCell<Nvmc<NVMC>>);
+static DRIVER: TakeCell<NVMC> = TakeCell::new(None);
+
+pub fn init(nvmc: NVMC) {
+    DRIVER.put(nvmc);
+}
+
+pub struct Storage(TakeCell<&'static mut [u8]>);
+
+macro_rules! take_storage {
+    ($start:ident .. $end:ident) => {{
+        assert!(!wasefire_sync::executed!());
+        extern "C" {
+            static mut $start: u32;
+            static mut $end: u32;
+        }
+        let start = unsafe { &mut $start as *mut u32 as *mut u8 };
+        let end = unsafe { &mut $end as *mut u32 as usize };
+        let length = end.checked_sub(start as usize).unwrap();
+        assert_eq!(length % PAGE_SIZE, 0);
+        unsafe { slice::from_raw_parts_mut(start, length) }
+    }};
+}
 
 impl Storage {
-    pub fn new(nvmc: NVMC) -> Self {
-        // SAFETY: We assume only one NVMC instance can exist, so this function is called at most
-        // once, and so we call inner at most once.
-        Storage(RefCell::new(Nvmc::new(nvmc, unsafe { Self::inner() })))
+    pub fn new_store() -> Self {
+        Storage(TakeCell::new(Some(take_storage!(__sstore .. __estore))))
     }
 
-    // SAFETY: Must be called at most once.
-    unsafe fn inner() -> &'static mut [u8] {
-        extern "C" {
-            static mut __sstore: u32;
-            static mut __estore: u32;
-        }
-        let start = &mut __sstore as *mut u32 as *mut u8;
-        let sstore = start as usize;
-        let estore = &mut __estore as *mut u32 as usize;
-        assert!(sstore < estore);
-        let length = estore - sstore;
-        assert_eq!(length % PAGE_SIZE, 0);
-        slice::from_raw_parts_mut(start, length)
+    pub fn new_other() -> Self {
+        Storage(TakeCell::new(Some(take_storage!(__sother .. __eother))))
+    }
+
+    pub fn as_ptr(&self) -> *const u8 {
+        self.0.with(|x| x.as_ptr())
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.with(|x| x.len())
+    }
+}
+
+struct Helper<'a> {
+    storage: &'a TakeCell<&'static mut [u8]>,
+    nvmc: Option<Nvmc<NVMC>>,
+}
+
+impl<'a> Helper<'a> {
+    fn new(storage: &'a TakeCell<&'static mut [u8]>) -> Self {
+        let nvmc = Some(Nvmc::new(DRIVER.take(), storage.take()));
+        Helper { storage, nvmc }
+    }
+
+    fn nvmc(&mut self) -> &mut Nvmc<NVMC> {
+        self.nvmc.as_mut().unwrap()
+    }
+}
+
+impl<'a> Drop for Helper<'a> {
+    fn drop(&mut self) {
+        let (driver, storage) = self.nvmc.take().unwrap().free();
+        DRIVER.put(driver);
+        self.storage.put(storage);
     }
 }
 
@@ -61,7 +101,7 @@ impl store::Storage for Storage {
     }
 
     fn num_pages(&self) -> usize {
-        self.0.borrow().capacity() / PAGE_SIZE
+        self.len() / PAGE_SIZE
     }
 
     fn max_word_writes(&self) -> usize {
@@ -75,19 +115,22 @@ impl store::Storage for Storage {
     fn read_slice(&self, index: StorageIndex, length: usize) -> StorageResult<Cow<[u8]>> {
         let offset = offset(self, length, index)?;
         let mut result = vec![0; length];
-        self.0.borrow_mut().read(offset, &mut result).map_err(convert)?;
+        let mut helper = Helper::new(&self.0);
+        helper.nvmc().read(offset, &mut result).map_err(convert)?;
         Ok(Cow::Owned(result))
     }
 
     fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> StorageResult<()> {
         let offset = offset(self, value.len(), index)?;
-        self.0.get_mut().write(offset, value).map_err(convert)
+        let mut helper = Helper::new(&self.0);
+        helper.nvmc().write(offset, value).map_err(convert)
     }
 
     fn erase_page(&mut self, page: usize) -> StorageResult<()> {
         let from = offset(self, PAGE_SIZE, StorageIndex { page, byte: 0 })?;
         let to = from + PAGE_SIZE as u32;
-        self.0.get_mut().erase(from, to).map_err(convert)
+        let mut helper = Helper::new(&self.0);
+        helper.nvmc().erase(from, to).map_err(convert)
     }
 }
 

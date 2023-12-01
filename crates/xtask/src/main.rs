@@ -18,7 +18,6 @@ use std::collections::BinaryHeap;
 use std::fmt::Display;
 use std::num::ParseIntError;
 use std::os::unix::prelude::CommandExt;
-use std::path::Path;
 use std::process::{Command, Output};
 use std::str::FromStr;
 
@@ -33,6 +32,7 @@ use sha2::{Digest, Sha256};
 use strum::{Display, EnumString};
 
 mod fs;
+mod lazy;
 
 #[derive(Parser)]
 struct Flags {
@@ -113,8 +113,8 @@ struct AppletOptions {
     features: Vec<String>,
 
     /// Optimization level (0, 1, 2, 3, s, z).
-    #[clap(long, short = 'O', default_value_t)]
-    opt_level: OptLevel,
+    #[clap(long, short = 'O')]
+    opt_level: Option<OptLevel>,
 
     /// Stack size.
     #[clap(long, default_value_t)]
@@ -157,6 +157,13 @@ struct RunnerOptions {
     /// Runner name.
     name: String,
 
+    /// Platform version.
+    ///
+    /// How the version string is interpreted is up to the runner. For Nordic, it must be a u32
+    /// smaller than u32::MAX.
+    #[clap(long)]
+    version: Option<String>,
+
     /// Cargo no-default-features.
     #[clap(long)]
     no_default_features: bool,
@@ -166,8 +173,12 @@ struct RunnerOptions {
     features: Vec<String>,
 
     /// Optimization level (0, 1, 2, 3, s, z).
-    #[clap(long, short = 'O', default_value_t)]
-    opt_level: OptLevel,
+    #[clap(long, short = 'O')]
+    opt_level: Option<OptLevel>,
+
+    /// Produces target/wasefire/platform_{side}.bin files instead of flashing.
+    #[clap(long)]
+    bundle: bool,
 
     /// Erases all the flash first.
     #[clap(long)]
@@ -218,7 +229,7 @@ impl FromStr for StackSize {
     }
 }
 
-#[derive(Default, Copy, Clone, EnumString, Display)]
+#[derive(Copy, Clone, EnumString, Display)]
 enum OptLevel {
     #[strum(serialize = "0")]
     O0,
@@ -227,7 +238,6 @@ enum OptLevel {
     #[strum(serialize = "2")]
     O2,
     #[strum(serialize = "3")]
-    #[default]
     O3,
     #[strum(serialize = "s")]
     Os,
@@ -285,7 +295,7 @@ impl AppletOptions {
         } else {
             format!("examples/{}/{}", self.lang, self.name)
         };
-        ensure!(Path::new(&dir).exists(), "{dir} does not exist");
+        ensure!(fs::exists(&dir), "{dir} does not exist");
         let native = match (main.native, &main.native_target, command) {
             (_, Some(target), command) => {
                 if let Some(AppletCommand::Runner(x)) = command {
@@ -310,7 +320,6 @@ impl AppletOptions {
             "-C panic=abort".to_string(),
             "-C codegen-units=1".to_string(),
             "-C embed-bitcode=yes".to_string(),
-            format!("-C opt-level={}", self.opt_level),
             "-C lto=fat".to_string(),
         ];
         cargo.args(["rustc", "--lib"]);
@@ -328,6 +337,9 @@ impl AppletOptions {
             }
         }
         cargo.arg(format!("--profile={}", self.profile));
+        if let Some(level) = self.opt_level {
+            rustflags.push(format!("-C opt-level={level}"));
+        }
         for features in &self.features {
             cargo.arg(format!("--features={features}"));
         }
@@ -339,9 +351,21 @@ impl AppletOptions {
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(dir);
         execute_command(&mut cargo)?;
-        if native.is_some() {
-            copy_if_changed(&out, "target/wasefire/libapplet.a")?;
-        } else if copy_if_changed(&out, "target/wasefire/applet.wasm")? {
+        let applet = match native {
+            Some(_) => "target/wasefire/libapplet.a",
+            None => "target/wasefire/applet.wasm",
+        };
+        let changed = copy_if_changed(&out, applet)?;
+        if native.is_some() && main.size {
+            let mut size = wrap_command()?;
+            size.args(["rust-size", applet]);
+            let output = String::from_utf8(output_command(&mut size)?.stdout)?;
+            // We assume the interesting part is the first line after the header.
+            for line in output.lines().take(2) {
+                println!("{line}");
+            }
+        }
+        if native.is_none() && changed {
             self.optimize_wasm(main)?;
         }
         Ok(())
@@ -352,7 +376,10 @@ impl AppletOptions {
         ensure_assemblyscript()?;
         let mut asc = Command::new("./node_modules/.bin/asc");
         asc.args(["-o", "../../target/wasefire/applet.wasm"]);
-        asc.arg(format!("-O{}", self.opt_level));
+        match self.opt_level {
+            Some(level) => drop(asc.arg(format!("-O{level}"))),
+            None => drop(asc.arg("-O")),
+        }
         asc.args(["--lowMemoryLimit", "--stackSize", &format!("{}", self.stack_size)]);
         asc.args(["--use", &format!("abort={}/main/abort", self.name)]);
         if main.release {
@@ -369,7 +396,7 @@ impl AppletOptions {
     fn optimize_wasm(&self, main: &MainOptions) -> Result<()> {
         let wasm = "target/wasefire/applet.wasm";
         if main.size {
-            println!("Initial applet size: {}", fs::metadata(wasm)?.len());
+            println!("Applet size: {}", fs::metadata(wasm)?.len());
         }
         if self.strip.get() {
             let mut strip = wrap_command()?;
@@ -377,7 +404,7 @@ impl AppletOptions {
             strip.arg(wasm);
             execute_command(&mut strip)?;
             if main.size {
-                println!("Stripped applet size: {}", fs::metadata(wasm)?.len());
+                println!("Applet size (after wasm-strip): {}", fs::metadata(wasm)?.len());
             }
         }
         if self.opt.get() {
@@ -386,15 +413,15 @@ impl AppletOptions {
             if main.multivalue {
                 opt.arg("--enable-multivalue");
             }
-            opt.args([
-                "--enable-bulk-memory",
-                "--enable-sign-ext",
-                &format!("-O{}", self.opt_level),
-            ]);
+            opt.args(["--enable-bulk-memory", "--enable-sign-ext"]);
+            match self.opt_level {
+                Some(level) => drop(opt.arg(format!("-O{level}"))),
+                None => drop(opt.arg("-O")),
+            }
             opt.args([wasm, "-o", wasm]);
             execute_command(&mut opt)?;
             if main.size {
-                println!("Optimized applet size: {}", fs::metadata(wasm)?.len());
+                println!("Applet size (after wasm-opt): {}", fs::metadata(wasm)?.len());
             }
         }
         Ok(())
@@ -404,7 +431,7 @@ impl AppletOptions {
 impl AppletCommand {
     fn execute(&self, main: &MainOptions) -> Result<()> {
         match self {
-            AppletCommand::Runner(runner) => runner.execute(main, true),
+            AppletCommand::Runner(runner) => runner.execute(main, 0, true),
             AppletCommand::Twiggy { args } => {
                 let mut twiggy = wrap_command()?;
                 twiggy.arg("twiggy");
@@ -424,15 +451,16 @@ impl AppletCommand {
 
 impl Runner {
     fn execute(&self, main: &MainOptions) -> Result<()> {
-        self.options.execute(main, false)?;
+        self.options.execute(main, 0, false)?;
         Ok(())
     }
 }
 
 impl RunnerOptions {
-    fn execute(&self, main: &MainOptions, run: bool) -> Result<()> {
+    fn execute(&self, main: &MainOptions, step: usize, run: bool) -> Result<()> {
         let mut cargo = Command::new("cargo");
         let mut rustflags = Vec::new();
+        let mut features = self.features.clone();
         if run && self.name == "host" {
             cargo.arg("run");
         } else {
@@ -440,34 +468,46 @@ impl RunnerOptions {
         }
         cargo.arg("--release");
         cargo.arg(format!("--target={}", self.target()));
+        let (side, max_step) = match self.name.as_str() {
+            "nordic" => (Some(step), 1),
+            "host" => (None, 0),
+            _ => unimplemented!(),
+        };
+        let side = match side {
+            None => "",
+            Some(0) => "_a",
+            Some(1) => "_b",
+            _ => unimplemented!(),
+        };
         if self.name == "nordic" {
-            rustflags.extend([
-                "-C link-arg=--nmagic".to_string(),
-                "-C link-arg=-Tlink.x".to_string(),
-                "-C codegen-units=1".to_string(),
-                "-C embed-bitcode=yes".to_string(),
-            ]);
+            rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
+            let version = match &self.version {
+                Some(x) => x.parse()?,
+                None => 0,
+            };
+            ensure!(version < u32::MAX, "--version must be smaller than u32::MAX");
+            rustflags.push(format!("-C link-arg=--defsym=RUNNER_VERSION={version}"));
+            rustflags.push("-C link-arg=-Tlink.x".to_string());
             if main.release {
-                // We have to split -Z from its argument because of cargo bloat.
-                cargo.args([
-                    "-Z",
-                    "build-std=core,alloc",
-                    "-Z",
-                    "build-std-features=panic_immediate_abort",
-                ]);
+                cargo.arg("-Zbuild-std=core,alloc");
+                cargo.arg("-Zbuild-std-features=panic_immediate_abort");
             }
             if main.release {
                 rustflags.push("-C lto=fat".to_string());
+                rustflags.push("-C codegen-units=1".to_string());
+                rustflags.push("-C embed-bitcode=yes".to_string());
             } else {
                 rustflags.push("-C link-arg=-Tdefmt.x".to_string());
                 rustflags.push("-C debuginfo=2".to_string());
             }
         }
-        rustflags.push(format!("-C opt-level={}", self.opt_level));
+        if let Some(level) = self.opt_level {
+            rustflags.push(format!("-C opt-level={level}"));
+        }
         if main.release {
-            cargo.arg("--features=release");
+            features.push("release".to_string());
         } else {
-            cargo.arg("--features=debug");
+            features.push("debug".to_string());
         }
         if self.no_default_features {
             cargo.arg("--no-default-features");
@@ -475,30 +515,30 @@ impl RunnerOptions {
             log::warn!("Assuming runner --no-default-features when running in a codespace.");
             cargo.arg("--no-default-features");
         }
-        for features in &self.features {
-            cargo.arg(format!("--features={features}"));
-        }
         if let Some(log) = &self.log {
             cargo.env(self.log_env(), log);
         }
         if self.name == "host" && self.web {
-            cargo.arg("--features=web");
+            features.push("web".to_string());
         }
         if self.stack_sizes.is_some() {
             rustflags.push("-Z emit-stack-sizes".to_string());
             rustflags.push("-C link-arg=-Tstack-sizes.x".to_string());
         }
         if main.native {
-            cargo.arg("--features=native");
+            features.push("native".to_string());
         } else {
-            cargo.arg("--features=wasm");
+            features.push("wasm".to_string());
+        }
+        if !features.is_empty() {
+            cargo.arg(format!("--features={}", features.join(",")));
         }
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(format!("crates/runner-{}", self.name));
         fs::touch("target/wasefire/applet.wasm")?;
         if run && self.name == "host" {
-            let path = Path::new("target/wasefire/storage.bin");
-            if self.erase_flash && path.exists() {
+            let path = "target/wasefire/storage.bin";
+            if self.erase_flash && fs::exists(path) {
                 fs::remove_file(path)?;
             }
             replace_command(cargo);
@@ -558,6 +598,16 @@ impl RunnerOptions {
                 println!("{:#010x}\t{}\t{}", address, stack, demangle(name));
             }
         }
+        if self.bundle {
+            let mut objcopy = wrap_command()?;
+            objcopy.args(["rust-objcopy", "-O", "binary", &elf]);
+            objcopy.arg(format!("target/wasefire/platform{side}.bin"));
+            execute_command(&mut objcopy)?;
+            if step < max_step {
+                return self.execute(main, step + 1, run);
+            }
+            return Ok(());
+        }
         if !run {
             return Ok(());
         }
@@ -566,13 +616,27 @@ impl RunnerOptions {
             "host" => unreachable!(),
             _ => unimplemented!(),
         };
-        if self.erase_flash {
-            let mut session = Session::auto_attach(
+        let mut session = lazy::Lazy::new(|| {
+            Ok(Session::auto_attach(
                 TargetSelector::Unspecified(chip.to_string()),
                 Permissions::default(),
+            )?)
+        });
+        if self.erase_flash {
+            println!("Erasing the flash of {}", session.get()?.target().name);
+            flashing::erase_all(session.get()?, None)?;
+        }
+        if self.name == "nordic" {
+            let mut cargo = Command::new("cargo");
+            cargo.current_dir("crates/runner-nordic/crates/bootloader");
+            cargo.args(["build", "--release", "--target=thumbv7em-none-eabi"]);
+            cargo.args(["-Zbuild-std=core", "-Zbuild-std-features=panic_immediate_abort"]);
+            execute_command(&mut cargo)?;
+            flashing::download_file(
+                session.get()?,
+                "target/thumbv7em-none-eabi/release/bootloader",
+                flashing::Format::Elf,
             )?;
-            println!("Erasing the flash of {}", session.target().name);
-            flashing::erase_all(&mut session, None)?;
         }
         if self.gdb {
             println!("Use the following 2 commands in different terminals:");
@@ -583,7 +647,7 @@ impl RunnerOptions {
         probe_rs.args(["probe-rs", "run"]);
         probe_rs.arg(format!("--chip={chip}"));
         probe_rs.arg(elf);
-        println!("Add --no-flash to the following command to rerun:");
+        println!("Replace `run` with `attach` in the following command to rerun:");
         replace_command(probe_rs);
     }
 
@@ -660,15 +724,13 @@ fn wrap_command() -> Result<Command> {
 ///
 /// Returns whether the copy took place.
 fn copy_if_changed(src: &str, dst: &str) -> Result<bool> {
-    let dst_file = format!("{dst}.hash");
+    let dst_hash = format!("{dst}.hash");
     let src_hash = Sha256::digest(fs::read(src)?);
-    let dst_path = Path::new(dst);
-    let changed =
-        !dst_path.exists() || !Path::new(&dst_file).exists() || fs::read(&dst_file)? != *src_hash;
+    let changed = !fs::exists(dst) || !fs::exists(&dst_hash) || fs::read(&dst_hash)? != *src_hash;
     if changed {
         println!("cp {src} {dst}");
         fs::copy(src, dst)?;
-        fs::write(&dst_file, src_hash)?;
+        fs::write(&dst_hash, src_hash)?;
     }
     Ok(changed)
 }
@@ -676,7 +738,7 @@ fn copy_if_changed(src: &str, dst: &str) -> Result<bool> {
 fn ensure_assemblyscript() -> Result<()> {
     const ASC_VERSION: &str = "0.27.17"; // scripts/upgrade.sh relies on this name
     const PATH: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
-    if Path::new(PATH).exists() {
+    if fs::exists(PATH) {
         let mut sed = Command::new("sed");
         sed.args(["-n", r#"s/^  "version": "\(.*\)",$/\1/p"#, PATH]);
         if read_output_line(&mut sed)? == ASC_VERSION {
