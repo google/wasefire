@@ -3,27 +3,16 @@ name: Continuous Integration
 on:
   push:
     branches:
-      - main
+      - opensk
   pull_request:
     branches:
-      - main
-  schedule:
-    - cron: 45 3 * * 2 # every Tuesday at 3:45 UTC
+      - opensk
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  changelog:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - run: ./scripts/ci-changelog.sh
   copyright:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -38,7 +27,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
-        if: github.event_name != 'schedule'
         with:
           path: |
             ~/.cargo/bin/

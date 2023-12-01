@@ -6,9 +6,9 @@ license = "Apache-2.0"
 edition = "2021"
 
 [dependencies]
+opensk-lib = { path = "../../../third_party/OpenSK/libraries/opensk", package = "opensk" }
 persistent_store = { path = "../../../third_party/OpenSK/libraries/persistent_store" }
 rand_core = "0.6.4"
-opensk-lib = { path = "../../../third_party/OpenSK/libraries/opensk", package = "opensk" }
 wasefire = { path = "../../../crates/prelude" }
 wasefire-stub = { path = "../../../crates/stub", optional = true }
 
