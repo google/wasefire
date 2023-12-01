@@ -38,7 +38,7 @@ impl RngCore for WasefireEnv {
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
         match rng::fill_bytes(dest) {
             Ok(()) => Ok(()),
-            Err(_) => Err(NonZeroU32::new(rand_core::Error::CUSTOM_START).unwrap().into()),
+            Err(_) => Err(NonZeroU32::new(Error::CUSTOM_START).unwrap().into()),
         }
     }
 }
