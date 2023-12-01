@@ -14,6 +14,7 @@
 
 use persistent_store::Storage;
 
+#[derive(Default)]
 pub struct WasefireStorage;
 
 impl Storage for WasefireStorage {
@@ -51,11 +52,5 @@ impl Storage for WasefireStorage {
 
     fn erase_page(&mut self, page: usize) -> persistent_store::StorageResult<()> {
         todo!()
-    }
-}
-
-impl Default for WasefireStorage {
-    fn default() -> Self {
-        Self {}
     }
 }

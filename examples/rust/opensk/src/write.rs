@@ -12,13 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[derive(Default)]
 pub struct WasefireWrite;
-
-impl Default for WasefireWrite {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl core::fmt::Write for WasefireWrite {
     fn write_str(&mut self, _: &str) -> core::fmt::Result {

@@ -43,7 +43,7 @@ fn main() {
 // const WASEFIRE_CUSTOMIZATION: CustomizationImpl =
 //     CustomizationImpl { aaguid: AAGUID, ..DEFAULT_CUSTOMIZATION };
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct WasefireHidConnection;
 
 impl HidConnection for WasefireHidConnection {
@@ -54,12 +54,7 @@ impl HidConnection for WasefireHidConnection {
     }
 }
 
-impl Default for WasefireHidConnection {
-    fn default() -> Self {
-        Self {}
-    }
-}
-
+#[derive(Default)]
 struct WasefireEnv {
     write: write::WasefireWrite,
     // store: Store<Storage<S, C>>,
@@ -83,22 +78,6 @@ impl AttestationStore for WasefireEnv {
         &mut self, id: &Id, attestation: Option<&Attestation>,
     ) -> Result<(), opensk_lib::api::attestation_store::Error> {
         todo!()
-    }
-}
-
-impl Default for WasefireEnv {
-    fn default() -> Self {
-        let write = write::WasefireWrite::default();
-        let storage = storage::WasefireStorage::default();
-        let clock = clock::WasefireClock::default();
-        let hid_connection = WasefireHidConnection::default();
-        WasefireEnv {
-            write,
-            storage,
-            clock,
-            main_connection: hid_connection.clone(),
-            vendor_connection: hid_connection,
-        }
     }
 }
 

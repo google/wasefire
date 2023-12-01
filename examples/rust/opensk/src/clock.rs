@@ -14,13 +14,8 @@
 
 use opensk_lib::api::clock::Clock;
 
+#[derive(Default)]
 pub struct WasefireClock {}
-
-impl Default for WasefireClock {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl Clock for WasefireClock {
     type Timer = Self;
