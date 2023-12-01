@@ -118,17 +118,6 @@ impl<H: Handler> Drop for Timer<H> {
     }
 }
 
-impl<H: Handler> Default for Timer<H> {
-    fn default() -> Self {
-        // Timer::new({
-        // let done = done.clone();
-        // move || done.set(true)
-        // move || debug!("{} micro-seconds", debug::time())
-        todo!()
-        // })
-    }
-}
-
 /// Sleeps for a given duration in milliseconds.
 ///
 /// This is a convenience function to avoid creating a timer and a callback.

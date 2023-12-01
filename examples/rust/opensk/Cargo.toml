@@ -1,14 +1,14 @@
 [package]
 name = "opensk"
 version = "0.1.0"
+authors = ["Surya Midatala <suryamidatala@google.com>"]
+license = "Apache-2.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-rand_core = "0.6.4"
-opensk = { path = "../../../third_party/OpenSK/libraries/opensk" }
 persistent_store = { path = "../../../third_party/OpenSK/libraries/persistent_store" }
+rand_core = "0.6.4"
+opensk-lib = { path = "../../../third_party/OpenSK/libraries/opensk", package = "opensk" }
 wasefire = { path = "../../../crates/prelude" }
 wasefire-stub = { path = "../../../crates/stub", optional = true }
 

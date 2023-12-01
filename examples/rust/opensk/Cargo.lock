@@ -684,7 +684,6 @@ dependencies = [
  "sealed",
  "typenum",
  "wasefire-applet-api",
- "wasefire-mutex",
 ]
 
 [[package]]
@@ -720,13 +719,6 @@ dependencies = [
 [[package]]
 name = "wasefire-logger"
 version = "0.1.4-git"
-
-[[package]]
-name = "wasefire-mutex"
-version = "0.1.0-git"
-dependencies = [
- "portable-atomic",
-]
 
 [[package]]
 name = "wasefire-stub"
