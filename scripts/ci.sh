@@ -19,17 +19,16 @@ set -e
 
 # This script runs the continuous integration tests.
 
+x git submodule update --init third_party/OpenSK
+
 x cargo xtask applet rust opensk
 x cargo xtask --release applet rust opensk
 ( cd examples/rust/opensk
+  x cargo test --features=test
   x cargo fmt -- --check
-  # TODO: Enable this back at some point.
+  # TODO: Enable these 2 lines at some point.
   # x cargo clippy --lib --target=wasm32-unknown-unknown -- --deny=warnings
-  if package_features | grep -q '^test$'; then
-    # TODO: Enable this back at some point.
-    # x cargo clippy --features=test -- --deny=warnings
-    grep -q '^mod tests {$' src/lib.rs && x cargo test --features=test
-  fi
+  # x cargo clippy --features=test -- --deny=warnings
 )
 
 git diff --exit-code \
