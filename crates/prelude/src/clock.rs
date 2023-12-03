@@ -101,6 +101,14 @@ impl<H: Handler> Timer<H> {
         core::mem::forget(self);
     }
 
+    /// Returns true if the timer has elapsed.
+    pub fn is_elapsed(&self) -> bool {
+        // TODO: Is this only applicable for oneshot timers? For periodic
+        // timers, should we always return false?
+
+        !self.running.get()
+    }
+
     extern "C" fn call(data: *const u8) {
         let handler = unsafe { &*(data as *const H) };
         handler.event();

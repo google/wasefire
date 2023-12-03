@@ -13,18 +13,43 @@
 // limitations under the License.use opensk_lib::api::clock::Clock;
 
 use opensk_lib::api::clock::Clock;
+use wasefire::clock::Mode::Oneshot;
+use wasefire::clock::{Handler, Timer};
 
 #[derive(Default)]
-pub struct WasefireClock {}
+struct ClockHandler;
+
+impl Handler for ClockHandler {
+    fn event(&self) {
+        // TODO: What should we do here?
+        wasefire::debug!("timer elapsed");
+    }
+}
+
+pub struct WasefireTimer {
+    timer: Timer<ClockHandler>,
+}
+
+impl Default for WasefireTimer {
+    fn default() -> Self {
+        let timer: Timer<ClockHandler> = Timer::new(ClockHandler {});
+        Self { timer }
+    }
+}
+
+#[derive(Default)]
+pub struct WasefireClock;
 
 impl Clock for WasefireClock {
-    type Timer = Self;
+    type Timer = WasefireTimer;
 
     fn make_timer(&mut self, milliseconds: usize) -> Self::Timer {
-        todo!()
+        let timer = Timer::new(ClockHandler {});
+        timer.start_ms(Oneshot, milliseconds);
+        WasefireTimer { timer }
     }
 
     fn is_elapsed(&mut self, timer: &Self::Timer) -> bool {
-        todo!()
+        timer.timer.is_elapsed()
     }
 }
