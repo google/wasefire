@@ -21,8 +21,18 @@ use wasefire::sync::AtomicBool;
 use wasefire::sync::Ordering::Relaxed;
 
 fn main() -> ! {
-    debug!("Waiting 5 seconds...");
-    blink(Duration::from_secs(5));
+    blink(5);
+    press();
+    blink(3);
+    debug!("Rebooting...");
+    platform::reboot();
+}
+
+fn press() {
+    if button::count() == 0 {
+        debug!("Not waiting for button press because there are no buttons.");
+        return;
+    }
     debug!("Waiting for a button press to reboot...");
     static PRESSED: AtomicBool = AtomicBool::new(false);
     let button = button::Listener::new(0, |event| match event {
@@ -31,13 +41,15 @@ fn main() -> ! {
     });
     scheduling::wait_until(|| PRESSED.load(Relaxed));
     drop(button);
-    debug!("Waiting 3 seconds...");
-    blink(Duration::from_secs(3));
-    debug!("Rebooting...");
-    platform::reboot();
 }
 
-fn blink(duration: Duration) {
+fn blink(seconds: u64) {
+    debug!("Waiting {seconds} seconds...");
+    let duration = Duration::from_secs(seconds);
+    if led::count() == 0 {
+        clock::sleep(duration);
+        return;
+    }
     led::set(0, led::On);
     let blink = clock::Timer::new(|| led::set(0, !led::get(0)));
     blink.start(clock::Periodic, Duration::from_millis(300));
