@@ -431,7 +431,7 @@ const fn memory_size() -> usize {
             assert!(x.len() == 1, "not a single digit");
             let x = x[0];
             assert!(x.is_ascii_digit(), "not a single digit");
-            x as usize
+            (x - b'0') as usize
         }
         None => 1,
     };
