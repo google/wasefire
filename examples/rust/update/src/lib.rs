@@ -16,6 +16,7 @@
 wasefire::applet!();
 
 fn main() {
+    assert!(platform::update::is_supported());
     let metadata = platform::update::metadata().unwrap();
     debug!("{metadata:02x?}");
     let serial = usb::serial::UsbSerial;

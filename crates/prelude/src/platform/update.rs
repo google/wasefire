@@ -18,6 +18,12 @@ use alloc::boxed::Box;
 
 use wasefire_applet_api::platform::update as api;
 
+/// Returns whether platform update is supported.
+pub fn is_supported() -> bool {
+    let api::is_supported::Results { supported } = unsafe { api::is_supported() };
+    supported != 0
+}
+
 /// Returns the metadata of the platform.
 ///
 /// This typically contains the version and side (A or B) of the running platform.

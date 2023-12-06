@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support `platform::update::is_supported()`
 - Support `platform::update`
 - Support `platform` and `platform::reboot()`
 - Add more debug logging in native mode
