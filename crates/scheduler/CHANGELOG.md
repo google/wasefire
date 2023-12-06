@@ -19,6 +19,7 @@
 
 ### Patch
 
+- Fix parsing of `WASEFIRE_MEMORY_PAGE_COUNT`
 - Fix docs.rs build
 - Use `wasefire-sync`
 - Fix lints
