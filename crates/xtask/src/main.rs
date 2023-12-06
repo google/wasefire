@@ -544,7 +544,9 @@ impl RunnerOptions {
             ensure!((0 ..= 9).contains(&n), "--memory-page-count supports single digit only");
             cargo.env("WASEFIRE_MEMORY_PAGE_COUNT", format!("{n}"));
         }
-        cargo.env("RUSTFLAGS", rustflags.join(" "));
+        if !rustflags.is_empty() {
+            cargo.env("RUSTFLAGS", rustflags.join(" "));
+        }
         cargo.current_dir(format!("crates/runner-{}", self.name));
         fs::touch("target/wasefire/applet.wasm")?;
         if run && self.name == "host" {
