@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support configuring the memory size with `WASEFIRE_MEMORY_PAGE_COUNT`
 - Support `platform::update::is_supported()`
 - Support `platform::update`
 - Support `platform` and `platform::reboot()`
