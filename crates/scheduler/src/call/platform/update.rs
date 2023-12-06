@@ -14,18 +14,28 @@
 
 use wasefire_applet_api::platform::update::{self as api, Api};
 use wasefire_board_api::platform::update::Api as _;
-use wasefire_board_api::{self as board, Api as Board};
+use wasefire_board_api::{self as board, Api as Board, Support};
 
 use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
+        Api::IsSupported(call) => is_supported(call),
         Api::Metadata(call) => metadata(call),
         Api::Initialize(call) => initialize(call),
         Api::Process(call) => process_(call),
         Api::Finalize(call) => finalize(call),
     }
+}
+
+fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
+    let api::is_supported::Params {} = call.read();
+    let results = try {
+        let supported = board::platform::Update::<B>::SUPPORT as u32;
+        api::is_supported::Results { supported: supported.into() }
+    };
+    call.reply(results)
 }
 
 fn metadata<B: Board>(mut call: SchedulerCall<B, api::metadata::Sig>) {

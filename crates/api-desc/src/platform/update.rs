@@ -25,6 +25,13 @@ pub(crate) fn new() -> Item {
     let name = "update".into();
     let items = vec![
         item! {
+            /// Whether platform update is supported.
+            fn is_supported "pus" {} -> {
+                /// 1 if supported, 0 otherwise.
+                supported: usize,
+            }
+        },
+        item! {
             /// Returns the metadata of the platform.
             ///
             /// This typically contains the version and side (A or B) of the running platform.
