@@ -201,9 +201,16 @@ struct RunnerOptions {
     #[clap(long)]
     measure_bloat: bool,
 
-    /// Show the (top N) stack sizes of the firmware
+    /// Show the (top N) stack sizes of the firmware.
     #[clap(long)]
     stack_sizes: Option<Option<usize>>,
+
+    /// Allocates <MEMORY_PAGE_COUNT> pages for the WASM module.
+    ///
+    /// Supported values are numbers between 0 and 9 inclusive, i.e. single digit. The default when
+    /// missing is 1 page.
+    #[clap(long)]
+    memory_page_count: Option<usize>,
 }
 
 #[derive(Copy, Clone)]
@@ -532,6 +539,10 @@ impl RunnerOptions {
         }
         if !features.is_empty() {
             cargo.arg(format!("--features={}", features.join(",")));
+        }
+        if let Some(n) = self.memory_page_count {
+            ensure!((0 ..= 9).contains(&n), "--memory-page-count supports single digit only");
+            cargo.env("WASEFIRE_MEMORY_PAGE_COUNT", format!("{n}"));
         }
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(format!("crates/runner-{}", self.name));
