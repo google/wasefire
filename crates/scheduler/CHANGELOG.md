@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add `radio` module
 - Add `native` and `wasm` features (exactly one must be chosen)
 
 ### Minor
