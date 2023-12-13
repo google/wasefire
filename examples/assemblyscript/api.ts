@@ -749,6 +749,44 @@
   ): isize
 // END OF MODULE platform
 
+// START OF MODULE radio
+// Radio operations.
+  // Reads radio packet into a buffer.
+  @external("env", "rr")
+  export declare function radio_read(
+    // Address of the buffer.
+    ptr: usize,
+
+    // Length of the buffer in bytes.
+    len: usize,
+  // Number of bytes read (or negative value for errors).
+  //
+  // This function does not block and may return zero.
+  ): isize
+
+  // Register a handler for radio events.
+  @external("env", "re")
+  export declare function radio_register(
+    // Function called on radio events.
+    //
+    // The function takes its opaque `data` as argument.
+    handler_func: usize,
+
+    // The opaque data to use when calling the handler function.
+    handler_data: usize,
+  ): void
+
+  // Unregister handlers for radio events.
+  @external("env", "rd")
+  export declare function radio_unregister(
+  ): void
+
+  // Describes errors on radio operations.
+  enum radio_Error {
+    Unknown = 0,
+  }
+// END OF MODULE radio
+
 // START OF MODULE rng
 // Random number generators.
   // Fills a slice with random bytes.
