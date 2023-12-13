@@ -24,8 +24,8 @@ use wasefire_logger as log;
 use crate::Scheduler;
 
 pub mod button;
-pub mod timer;
 pub mod radio;
+pub mod timer;
 pub mod uart;
 pub mod usb;
 
