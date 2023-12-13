@@ -61,4 +61,3 @@ pub(crate) fn new() -> Item {
     ];
     Item::Mod(Mod { docs, name, items })
 }
-
