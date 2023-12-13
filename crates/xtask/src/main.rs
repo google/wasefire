@@ -750,10 +750,11 @@ fn copy_if_changed(src: &str, dst: &str) -> Result<bool> {
 
 fn ensure_assemblyscript() -> Result<()> {
     const ASC_VERSION: &str = "0.27.17"; // scripts/upgrade.sh relies on this name
-    const PATH: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
-    if fs::exists(PATH) {
+    const BIN: &str = "examples/assemblyscript/node_modules/.bin/asc";
+    const JSON: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
+    if fs::exists(BIN) && fs::exists(JSON) {
         let mut sed = Command::new("sed");
-        sed.args(["-n", r#"s/^  "version": "\(.*\)",$/\1/p"#, PATH]);
+        sed.args(["-n", r#"s/^  "version": "\(.*\)",$/\1/p"#, JSON]);
         if read_output_line(&mut sed)? == ASC_VERSION {
             return Ok(());
         }
