@@ -27,6 +27,7 @@ mod id;
 mod led;
 mod macros;
 mod platform;
+mod radio;
 mod rng;
 mod scheduling;
 mod store;
@@ -47,6 +48,7 @@ impl Default for Api {
             debug::new(),
             led::new(),
             platform::new(),
+            radio::new(),
             rng::new(),
             scheduling::new(),
             store::new(),

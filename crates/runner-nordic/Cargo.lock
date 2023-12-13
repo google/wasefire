@@ -98,6 +98,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
+name = "bitflags"
+version = "2.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "327762f6e5a765692301e5bb513e0d9fef63be86bbc14528052b1cd3e6f03e07"
+
+[[package]]
 name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -336,7 +342,7 @@ version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8a2d011b2fee29fb7d659b83c43fce9a2cb4df453e16d441a51448e448f3f98"
 dependencies = [
- "bitflags",
+ "bitflags 1.3.2",
  "defmt-macros",
 ]
 
@@ -492,6 +498,21 @@ dependencies = [
  "half",
  "typenum",
 ]
+
+[[package]]
+name = "fugit"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17186ad64927d5ac8f02c1e77ccefa08ccd9eaa314d5a4772278aa204a22f7e7"
+dependencies = [
+ "gcd",
+]
+
+[[package]]
+name = "gcd"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d758ba1b47b00caf47f24925c0074ecb20d6dfcffe7f6d53395c0465674841a"
 
 [[package]]
 name = "generic-array"
@@ -853,6 +874,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "rubble"
+version = "0.0.5"
+source = "git+https://github.com/jmichelp/rubble.git?rev=d545f4f#d545f4f598d081c0177f38500792e353a7d932a3"
+dependencies = [
+ "bitflags 2.4.1",
+ "defmt",
+ "fugit",
+ "heapless",
+ "p256",
+ "rand_core",
+ "sha2",
+ "zerocopy",
+]
+
+[[package]]
+name = "rubble-nrf5x"
+version = "0.0.5"
+source = "git+https://github.com/jmichelp/rubble.git?rev=d545f4f#d545f4f598d081c0177f38500792e353a7d932a3"
+dependencies = [
+ "nrf52840-pac",
+ "rubble",
+]
+
+[[package]]
 name = "runner-nordic"
 version = "0.1.0"
 dependencies = [
@@ -869,6 +914,8 @@ dependencies = [
  "nrf52840-hal",
  "panic-abort",
  "panic-probe",
+ "rubble",
+ "rubble-nrf5x",
  "typenum",
  "usb-device",
  "usbd-serial",
@@ -1208,6 +1255,27 @@ name = "wasefire-sync"
 version = "0.1.0-git"
 dependencies = [
  "portable-atomic",
+]
+
+[[package]]
+name = "zerocopy"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96f8f25c15a0edc9b07eb66e7e6e97d124c0505435c382fde1ab7ceb188aa956"
+dependencies = [
+ "byteorder",
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "855e0f6af9cd72b87d8a6c586f3cb583f5cdcc62c2c80869d8cd7e96fdf7ee20"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.39",
 ]
 
 [[package]]

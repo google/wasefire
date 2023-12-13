@@ -23,6 +23,7 @@ mod crypto;
 mod debug;
 mod led;
 mod platform;
+mod radio;
 mod rng;
 mod scheduling;
 mod store;
@@ -37,6 +38,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Debug(call) => debug::process(call),
         Api::Led(call) => led::process(call),
         Api::Platform(call) => platform::process(call),
+        Api::Radio(call) => radio::process(call),
         Api::Rng(call) => rng::process(call),
         Api::Scheduling(call) => scheduling::process(call),
         Api::Store(call) => store::process(call),

@@ -23,6 +23,7 @@ mod crypto;
 mod debug;
 pub mod led;
 pub mod platform;
+mod radio;
 mod rng;
 pub mod uart;
 pub mod usb;
@@ -54,6 +55,7 @@ impl board::Api for Board {
     type Debug = debug::Impl;
     type Led = led::Impl;
     type Platform = platform::Impl;
+    type Radio = radio::Impl;
     type Rng = rng::Impl;
     type Storage = crate::storage::Storage;
     type Timer = clock::Impl;
