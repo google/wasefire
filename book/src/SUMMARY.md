@@ -31,3 +31,4 @@
 
 [FAQ](faq.md)
 [Links](links.md)
+[Acknowledgments](acknowledgments.md)
