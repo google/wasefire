@@ -4,11 +4,12 @@
 
 ### Major
 
-- Add `radio::ble` module
 - Rename `native` to `test` and use `native` for native applets
 
 ### Minor
 
+- Add `platform::version()`
+- Add `radio::ble` module
 - Add `platform::update::is_supported()`
 - Add `platform::update` module
 - Add `platform` module with `platform::reboot()` function

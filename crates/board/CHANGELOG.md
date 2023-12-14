@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add `platform::Api::version()`
 - Add `Api::Radio` for radio APIs
 - Add `radio::Api::Ble` for Bluetooth Low Energy
 - Add `platform::Api::Update` (fix #47)

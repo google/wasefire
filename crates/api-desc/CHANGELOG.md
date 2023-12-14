@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `platform::version()`
 - Add `radio::ble` module
 - Support array types and all `{i,u}{8,16,32,64}` integers
 - Add `platform::update::is_supported()`

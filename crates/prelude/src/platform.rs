@@ -14,9 +14,30 @@
 
 //! Provides API to interact with the platform.
 
+use alloc::boxed::Box;
+use alloc::vec;
+
 use wasefire_applet_api::platform as api;
+use wasefire_sync::Mutex;
 
 pub mod update;
+
+/// Returns the version of the platform.
+pub fn version() -> &'static [u8] {
+    static VERSION: Mutex<Option<&'static [u8]>> = Mutex::new(None);
+    let mut guard = VERSION.lock();
+    if let Some(version) = *guard {
+        return version;
+    }
+    let params = api::version::Params { ptr: core::ptr::null_mut(), len: 0 };
+    let api::version::Results { len } = unsafe { api::version(params) };
+    let mut version = vec![0; len];
+    let params = api::version::Params { ptr: version[..].as_mut_ptr(), len };
+    let api::version::Results { .. } = unsafe { api::version(params) };
+    let version = Box::leak(version.into_boxed_slice());
+    *guard = Some(version);
+    version
+}
 
 /// Reboots the device (thus platform and applets).
 pub fn reboot() -> ! {

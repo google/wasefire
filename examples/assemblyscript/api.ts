@@ -742,6 +742,19 @@
     ): isize
   // END OF MODULE platform_update
 
+  // Returns the version of the platform.
+  @external("env", "pv")
+  export declare function platform_version(
+    // Where to write the version.
+    ptr: usize,
+
+    // Capacity of the buffer.
+    len: usize,
+  // Length of the version in bytes.
+  //
+  // This may be larger than the capacity, in which case only a prefix was written.
+  ): usize
+
   // Reboots the device (thus platform and applets).
   @external("env", "pr")
   export declare function platform_reboot(
