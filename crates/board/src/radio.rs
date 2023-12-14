@@ -19,7 +19,7 @@ use crate::{Error, Support, Unsupported};
 /// Radio event.
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Event {
-    /// A radio packet has been received
+    /// A radio packet has been received.
     Received,
 }
 
@@ -31,10 +31,10 @@ impl<B: crate::Api> From<Event> for crate::Event<B> {
 
 /// Radio interface.
 pub trait Api: Support<bool> {
-    /// Enables radio events
+    /// Enables radio events.
     fn enable() -> Result<(), Error>;
 
-    /// Disables radio events
+    /// Disables radio events.
     fn disable() -> Result<(), Error>;
 
     /// Reads from the radio receive queue into a buffer.

@@ -109,7 +109,7 @@ fn with_state<R>(f: impl FnOnce(&mut State) -> R) -> R {
 fn main() -> ! {
     static mut CLOCKS: MaybeUninit<Clocks> = MaybeUninit::uninit();
     static mut USB_BUS: MaybeUninit<UsbBusAllocator<Usb>> = MaybeUninit::uninit();
-    // TX buffer is mandatory even when we only listen
+    // TX buffer is mandatory even when we only listen.
     static mut BLE_TX: MaybeUninit<PacketBuffer> = MaybeUninit::uninit();
     static mut BLE_RX: MaybeUninit<PacketBuffer> = MaybeUninit::uninit();
 

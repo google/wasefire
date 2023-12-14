@@ -59,13 +59,10 @@ impl<C: ScanCallback, F: AddressFilter> BleTrackerScanner<C, F> {
         self.channel = AdvertisingChannel::first();
 
         Cmd {
-            // Switch channels
             next_update: NextUpdate::At(now + self.interval),
-
             radio: RadioCmd::ListenAdvertising {
                 channel: self.channel,
             },
-
             queued_work: false,
         }
     }
@@ -77,13 +74,10 @@ impl<C: ScanCallback, F: AddressFilter> BleTrackerScanner<C, F> {
         self.channel = self.channel.cycle();
 
         Cmd {
-            // Switch channels
             next_update: NextUpdate::At(now + self.interval),
-
             radio: RadioCmd::ListenAdvertising {
                 channel: self.channel,
             },
-
             queued_work: false,
         }
     }
@@ -99,7 +93,7 @@ impl<C: ScanCallback, F: AddressFilter> BleTrackerScanner<C, F> {
         metadata: Metadata,
     ) -> Cmd {
         if metadata.crc_ok && header.type_().is_beacon() {
-            // Partially decode to get the device ID and run it through the filter
+            // Partially decode to get the device ID and run it through the filter.
             if let Ok(pdu) = Pdu::from_header_and_payload(header, &mut ByteReader::new(payload)) {
                 if self.filter.should_scan(*pdu.sender()) {
                     let ad = pdu.advertising_data().unwrap();

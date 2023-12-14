@@ -47,7 +47,7 @@ impl Api for Impl {
             let packet = state.ble_packet_queue.pop_front().ok_or(Error::World)?;
             let len = packet.len();
             let mut writer = ByteWriter::new(output);
-            // Serialize RadioMetadata first, then BDADDR and append the packet
+            // Serialize RadioMetadata first, then BDADDR and append the packet.
             let res: Result<(), rubble::Error> = try {
                 writer.write_u32_le(packet.metadata.ticks)?;
                 writer.write_u16_le(packet.metadata.freq)?;
@@ -63,6 +63,4 @@ impl Api for Impl {
     }
 }
 
-impl Support<bool> for Impl {
-    const SUPPORT: bool = true;
-}
+impl Supported for Impl {}

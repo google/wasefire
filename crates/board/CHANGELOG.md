@@ -4,7 +4,8 @@
 
 ### Major
 
-- Add `radio` module
+- Add `Api::Radio` for radio APIs
+- Add `radio::Api::Ble` for Bluetooth Low Energy
 - Add `platform::Api::Update` (fix #47)
 - Add `Api::Platform` with `platform::Api::reboot()` function
 - Require the APIs to be `Send` and the top-level API to be `'static` too

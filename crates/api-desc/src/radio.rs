@@ -49,8 +49,7 @@ pub(crate) fn new() -> Item {
         },
         item! {
             /// Unregister handlers for radio events.
-            fn unregister "rd" {
-            } -> {}
+            fn unregister "rd" {} -> {}
         },
         item! {
             /// Describes errors on radio operations.
