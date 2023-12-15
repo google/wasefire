@@ -808,7 +808,7 @@
     ): void
 
     // Unregister handlers for radio events.
-    @external("env", "rd")
+    @external("env", "rld")
     export declare function radio_ble_unregister(
       // Radio [`super::Event`] to stop listening to.
       event: u32,
