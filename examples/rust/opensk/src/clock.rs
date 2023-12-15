@@ -17,12 +17,13 @@ use wasefire::clock::Mode::Oneshot;
 use wasefire::clock::{Handler, Timer};
 
 #[derive(Default)]
-struct ClockHandler;
+struct ClockHandler {
+    triggered: Rc<Cell<bool>>,
+}
 
 impl Handler for ClockHandler {
     fn event(&self) {
-        // TODO: What should we do here?
-        wasefire::debug!("timer elapsed");
+        self.triggered.set(true);
     }
 }
 
@@ -45,12 +46,14 @@ impl Clock for WasefireClock {
     type Timer = WasefireTimer;
 
     fn make_timer(&mut self, milliseconds: usize) -> Self::Timer {
-        let timer = Timer::new(ClockHandler {});
+        let elapsed = Rc::new(Cell::new(false));
+        let triggered = elapsed.clone();
+        let timer = Timer::new(ClockHandler { triggered });
         timer.start_ms(Oneshot, milliseconds);
-        WasefireTimer { timer }
+        WasefireTimer { timer, elapsed }
     }
 
     fn is_elapsed(&mut self, timer: &Self::Timer) -> bool {
-        timer.timer.is_elapsed()
+        timer.elapsed.get()
     }
 }
