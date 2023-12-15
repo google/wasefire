@@ -14,7 +14,6 @@
 
 use alloc::string::String;
 
-
 #[derive(Default)]
 pub struct WasefireWrite {
     buf: String,
