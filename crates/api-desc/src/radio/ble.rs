@@ -68,7 +68,7 @@ pub(crate) fn new() -> Item {
         },
         item! {
             /// Unregister handlers for radio events.
-            fn unregister "rd" {
+            fn unregister "rld" {
                 /// Radio [`super::Event`] to stop listening to.
                 event: u32,
             } -> {}

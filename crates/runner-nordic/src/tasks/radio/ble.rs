@@ -13,9 +13,7 @@
 // limitations under the License.
 
 use alloc::collections::VecDeque;
-use core::cell::RefCell;
 
-use critical_section::Mutex;
 use nrf52840_hal::pac::TIMER0;
 use rubble::beacon::{BeaconScanner, ScanCallback};
 use rubble::bytes::{ByteWriter, ToBytes};
@@ -29,6 +27,7 @@ use wasefire_applet_api::radio::ble::Advertisement;
 use wasefire_board_api::radio::ble::{Api, Event};
 use wasefire_board_api::{Error, Supported};
 use wasefire_logger as log;
+use wasefire_sync::TakeCell;
 
 use crate::with_state;
 
@@ -102,17 +101,15 @@ impl Ble {
                 None => return,
             };
         self.timer.configure_interrupt(next_update);
-        critical_section::with(|cs| {
-            if let Some(packet) = BLE_PACKET.take(cs) {
-                if self.packet_queue.len() < 50 {
-                    self.packet_queue.push_back(packet);
-                    push(Event::Advertisement);
-                    log::debug!("BLE queue size: {}", self.packet_queue.len());
-                } else {
-                    log::warn!("BLE Packet dropped. Queue size: {}", self.packet_queue.len());
-                }
+        if let Some(packet) = BLE_PACKET.get() {
+            if self.packet_queue.len() < 50 {
+                self.packet_queue.push_back(packet);
+                push(Event::Advertisement);
+                log::debug!("BLE queue size: {}", self.packet_queue.len());
+            } else {
+                log::warn!("BLE Packet dropped. Queue size: {}", self.packet_queue.len());
             }
-        });
+        }
     }
 
     pub fn tick_timer(&mut self) {
@@ -126,7 +123,7 @@ impl Ble {
     }
 }
 
-static BLE_PACKET: Mutex<RefCell<Option<BlePacket>>> = Mutex::new(RefCell::new(None));
+static BLE_PACKET: TakeCell<BlePacket> = TakeCell::new(None);
 
 struct RadioMetadata {
     ticks: u32,
@@ -175,6 +172,6 @@ impl ScanCallback for BleAdvScanCallback {
             metadata: metadata.clone().into(),
             data: buf[.. len].to_vec(),
         };
-        assert!(critical_section::with(|cs| BLE_PACKET.replace(cs, Some(packet))).is_none());
+        BLE_PACKET.put(packet);
     }
 }

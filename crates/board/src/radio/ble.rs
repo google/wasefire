@@ -33,10 +33,10 @@ impl<B: crate::Api> From<Event> for crate::Event<B> {
 
 /// BLE interface.
 pub trait Api: Support<bool> {
-    /// Enables radio events.
+    /// Enables BLE events.
     fn enable(event: &Event) -> Result<(), Error>;
 
-    /// Disables radio events.
+    /// Disables BLE events.
     fn disable(event: &Event) -> Result<(), Error>;
 
     /// Reads the next advertisement packet, if any.

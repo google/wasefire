@@ -20,8 +20,5 @@ pub use wasefire_applet_api::radio::Error;
 pub mod ble;
 
 fn convert(len: isize) -> Result<usize, Error> {
-    if len < 0 {
-        return Err(Error::Unknown);
-    }
-    Ok(len as usize)
+    Error::to_result(len)
 }

@@ -30,7 +30,17 @@ impl<T> TakeCell<T> {
     /// Panics if the mutex is locked or the option is empty.
     #[track_caller]
     pub fn take(&self) -> T {
-        self.0.lock().take().unwrap()
+        self.get().unwrap()
+    }
+
+    /// Takes the (possibly empty) content of the option.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the mutex is locked.
+    #[track_caller]
+    pub fn get(&self) -> Option<T> {
+        self.0.lock().take()
     }
 
     /// Replaces the content of the option.

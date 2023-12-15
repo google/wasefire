@@ -18,6 +18,7 @@
 
 ### Patch
 
+- Use `ENUM::to_result()` to convert errors
 - Only depend on `portable-atomic` through `wasefire-sync`
 - Use `wasefire-sync::executed!()` to ensure the allocator is initialized at
   most once
