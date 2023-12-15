@@ -16,8 +16,17 @@
 macro_rules! type_ {
     (usize) => (Type::Integer { signed: false, bits: None });
     (isize) => (Type::Integer { signed: true, bits: None });
+    (u8) => (Type::Integer { signed: false, bits: Some(8) });
+    (i8) => (Type::Integer { signed: true, bits: Some(8) });
+    (u16) => (Type::Integer { signed: false, bits: Some(16) });
+    (i16) => (Type::Integer { signed: true, bits: Some(16) });
     (u32) => (Type::Integer { signed: false, bits: Some(32) });
+    (i32) => (Type::Integer { signed: true, bits: Some(32) });
     (u64) => (Type::Integer { signed: false, bits: Some(64) });
+    (i64) => (Type::Integer { signed: true, bits: Some(64) });
+    ([$len:tt; $($type:tt)*]) => {
+        Type::Array { type_: Box::new(type_!($($type)*)), length: $len }
+    };
     (*const $($type:tt)*) => (type_!(*false $($type)*));
     (*mut $($type:tt)*) => (type_!(*true $($type)*));
     (*$mut:tt u8) => (Type::Pointer { mutable: $mut, type_: None });

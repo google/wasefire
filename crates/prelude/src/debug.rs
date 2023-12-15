@@ -18,6 +18,7 @@
 // size (and other performance) doesn't matter. This permits to have a simple debugging that is
 // completely excluded from release applets.
 
+use bytemuck::Zeroable;
 use wasefire_applet_api::debug as api;
 pub use wasefire_applet_api::debug::Perf;
 
@@ -41,7 +42,7 @@ pub fn time() -> u64 {
 
 /// Returns the time in micro-seconds since some initial event, split by component.
 pub fn perf() -> Perf {
-    let mut result = Perf { platform: 0, applets: 0, waiting: 0 };
+    let mut result = Perf::zeroed();
     let params = api::perf::Params { ptr: &mut result as *mut Perf as *mut u8 };
     unsafe { api::perf(params) };
     result

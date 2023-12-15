@@ -8,6 +8,10 @@
 
 ### Minor
 
+- Support `platform::version()`
+- Support `radio::ble` module
+- Support configuring the memory size with `WASEFIRE_MEMORY_PAGE_COUNT`
+- Support `platform::update::is_supported()`
 - Support `platform::update`
 - Support `platform` and `platform::reboot()`
 - Add more debug logging in native mode
@@ -17,6 +21,7 @@
 
 ### Patch
 
+- Fix parsing of `WASEFIRE_MEMORY_PAGE_COUNT`
 - Fix docs.rs build
 - Use `wasefire-sync`
 - Fix lints
@@ -88,4 +93,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 22 -->
+<!-- Increment to skip CHANGELOG.md test: 24 -->

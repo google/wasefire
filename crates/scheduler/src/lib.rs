@@ -293,9 +293,10 @@ impl<B: Board> Scheduler<B> {
 
     #[cfg(feature = "wasm")]
     fn load(&mut self, wasm: &'static [u8]) {
+        const MEMORY_SIZE: usize = memory_size();
         #[repr(align(16))]
-        struct Memory([u8; 0x10000]);
-        static mut MEMORY: Memory = Memory([0; 0x10000]);
+        struct Memory([u8; MEMORY_SIZE]);
+        static mut MEMORY: Memory = Memory([0; MEMORY_SIZE]);
         #[cfg(not(feature = "unsafe-skip-validation"))]
         let module = Module::new(wasm).unwrap();
         // SAFETY: The module is valid by the feature invariant.
@@ -420,4 +421,19 @@ impl From<()> for Trap {
     fn from(_: ()) -> Self {
         Trap
     }
+}
+
+#[cfg(feature = "wasm")]
+const fn memory_size() -> usize {
+    let page = match option_env!("WASEFIRE_MEMORY_PAGE_COUNT") {
+        Some(x) => {
+            let x = x.as_bytes();
+            assert!(x.len() == 1, "not a single digit");
+            let x = x[0];
+            assert!(x.is_ascii_digit(), "not a single digit");
+            (x - b'0') as usize
+        }
+        None => 1,
+    };
+    page * 0x10000
 }

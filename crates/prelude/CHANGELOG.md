@@ -8,6 +8,9 @@
 
 ### Minor
 
+- Add `platform::version()`
+- Add `radio::ble` module
+- Add `platform::update::is_supported()`
 - Add `platform::update` module
 - Add `platform` module with `platform::reboot()` function
 - Use `wasefire-sync` to provide `sync::Mutex`
@@ -16,6 +19,7 @@
 
 ### Patch
 
+- Use `ENUM::to_result()` to convert errors
 - Only depend on `portable-atomic` through `wasefire-sync`
 - Use `wasefire-sync::executed!()` to ensure the allocator is initialized at
   most once
@@ -109,4 +113,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 16 -->
+<!-- Increment to skip CHANGELOG.md test: 17 -->

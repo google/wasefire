@@ -201,9 +201,16 @@ struct RunnerOptions {
     #[clap(long)]
     measure_bloat: bool,
 
-    /// Show the (top N) stack sizes of the firmware
+    /// Show the (top N) stack sizes of the firmware.
     #[clap(long)]
     stack_sizes: Option<Option<usize>>,
+
+    /// Allocates <MEMORY_PAGE_COUNT> pages for the WASM module.
+    ///
+    /// Supported values are numbers between 0 and 9 inclusive, i.e. single digit. The default when
+    /// missing is 1 page.
+    #[clap(long)]
+    memory_page_count: Option<usize>,
 }
 
 #[derive(Copy, Clone)]
@@ -533,7 +540,13 @@ impl RunnerOptions {
         if !features.is_empty() {
             cargo.arg(format!("--features={}", features.join(",")));
         }
-        cargo.env("RUSTFLAGS", rustflags.join(" "));
+        if let Some(n) = self.memory_page_count {
+            ensure!((0 ..= 9).contains(&n), "--memory-page-count supports single digit only");
+            cargo.env("WASEFIRE_MEMORY_PAGE_COUNT", format!("{n}"));
+        }
+        if !rustflags.is_empty() {
+            cargo.env("RUSTFLAGS", rustflags.join(" "));
+        }
         cargo.current_dir(format!("crates/runner-{}", self.name));
         fs::touch("target/wasefire/applet.wasm")?;
         if run && self.name == "host" {
@@ -736,11 +749,12 @@ fn copy_if_changed(src: &str, dst: &str) -> Result<bool> {
 }
 
 fn ensure_assemblyscript() -> Result<()> {
-    const ASC_VERSION: &str = "0.27.17"; // scripts/upgrade.sh relies on this name
-    const PATH: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
-    if fs::exists(PATH) {
+    const ASC_VERSION: &str = "0.27.22"; // scripts/upgrade.sh relies on this name
+    const BIN: &str = "examples/assemblyscript/node_modules/.bin/asc";
+    const JSON: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
+    if fs::exists(BIN) && fs::exists(JSON) {
         let mut sed = Command::new("sed");
-        sed.args(["-n", r#"s/^  "version": "\(.*\)",$/\1/p"#, PATH]);
+        sed.args(["-n", r#"s/^  "version": "\(.*\)",$/\1/p"#, JSON]);
         if read_output_line(&mut sed)? == ASC_VERSION {
             return Ok(());
         }

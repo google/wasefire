@@ -32,6 +32,7 @@ pub mod crypto;
 pub mod debug;
 pub mod led;
 pub mod platform;
+pub mod radio;
 pub mod rng;
 mod storage;
 pub mod timer;
@@ -71,6 +72,7 @@ pub trait Api: Send + 'static {
     type Debug: debug::Api;
     type Led: led::Api;
     type Platform: platform::Api;
+    type Radio: radio::Api;
     type Rng: rng::Api;
     type Storage: Singleton + wasefire_store::Storage + Send;
     type Timer: timer::Api;
@@ -107,6 +109,9 @@ pub enum Event<B: Api + ?Sized> {
     /// Button event.
     Button(button::Event<B>),
 
+    /// Radio event.
+    Radio(radio::Event),
+
     /// Timer event.
     Timer(timer::Event<B>),
 
@@ -137,6 +142,7 @@ pub type Crypto<B> = <B as Api>::Crypto;
 pub type Debug<B> = <B as Api>::Debug;
 pub type Led<B> = <B as Api>::Led;
 pub type Platform<B> = <B as Api>::Platform;
+pub type Radio<B> = <B as Api>::Radio;
 pub type Rng<B> = <B as Api>::Rng;
 pub type Storage<B> = <B as Api>::Storage;
 pub type Timer<B> = <B as Api>::Timer;
@@ -224,6 +230,7 @@ mod tests {
             type Debug = Unsupported;
             type Led = Unsupported;
             type Platform = Unsupported;
+            type Radio = Unsupported;
             type Rng = Unsupported;
             type Storage = Unsupported;
             type Timer = Unsupported;

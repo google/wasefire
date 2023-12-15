@@ -46,6 +46,8 @@ use nrf52840_hal::{gpio, uarte};
 use panic_abort as _;
 #[cfg(feature = "debug")]
 use panic_probe as _;
+use rubble::link::MIN_PDU_BUF;
+use rubble_nrf5x::radio::{BleRadio, PacketBuffer};
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
@@ -57,6 +59,7 @@ use {wasefire_board_api as board, wasefire_logger as log};
 use crate::storage::Storage;
 use crate::tasks::button::{self, channel, Button};
 use crate::tasks::clock::Timers;
+use crate::tasks::radio::ble::Ble;
 use crate::tasks::uart::Uarts;
 use crate::tasks::usb::Usb;
 use crate::tasks::{led, Events};
@@ -75,6 +78,7 @@ struct State {
     gpiote: Gpiote,
     serial: Serial<'static, Usb>,
     timers: Timers,
+    ble: Ble,
     ccm: Ccm,
     leds: [Pin<Output<PushPull>>; <led::Impl as Support<usize>>::SUPPORT],
     rng: Rng,
@@ -95,6 +99,9 @@ fn with_state<R>(f: impl FnOnce(&mut State) -> R) -> R {
 fn main() -> ! {
     static mut CLOCKS: MaybeUninit<Clocks> = MaybeUninit::uninit();
     static mut USB_BUS: MaybeUninit<UsbBusAllocator<Usb>> = MaybeUninit::uninit();
+    // TX buffer is mandatory even when we only listen.
+    static mut BLE_TX: MaybeUninit<PacketBuffer> = MaybeUninit::uninit();
+    static mut BLE_RX: MaybeUninit<PacketBuffer> = MaybeUninit::uninit();
 
     #[cfg(feature = "debug")]
     let c = nrf52840_hal::pac::CorePeripherals::take().unwrap();
@@ -116,7 +123,7 @@ fn main() -> ! {
         port0.p0_15.into_push_pull_output(Level::High).degrade(),
         port0.p0_16.into_push_pull_output(Level::High).degrade(),
     ];
-    let timers = Timers::new(p.TIMER0, p.TIMER1, p.TIMER2, p.TIMER3, p.TIMER4);
+    let timers = Timers::new(p.TIMER1, p.TIMER2, p.TIMER3, p.TIMER4);
     let gpiote = Gpiote::new(p.GPIOTE);
     // We enable all USB interrupts except STARTED and EPDATA which are feedback loops.
     p.USBD.inten.write(|w| unsafe { w.bits(0x00fffffd) });
@@ -129,6 +136,13 @@ fn main() -> ! {
         .unwrap()
         .device_class(USB_CLASS_CDC)
         .build();
+    let radio = BleRadio::new(
+        p.RADIO,
+        &p.FICR,
+        BLE_TX.write([0; MIN_PDU_BUF]),
+        BLE_RX.write([0; MIN_PDU_BUF]),
+    );
+    let ble = Ble::new(radio, p.TIMER0);
     let rng = Rng::new(p.RNG);
     let ccm = Ccm::init(p.CCM, p.AAR, DataRate::_1Mbit);
     storage::init(p.NVMC);
@@ -142,8 +156,20 @@ fn main() -> ! {
     };
     let uarts = Uarts::new(p.UARTE0, pins, p.UARTE1);
     let events = Events::default();
-    let state =
-        State { events, buttons, gpiote, serial, timers, ccm, leds, rng, storage, uarts, usb_dev };
+    let state = State {
+        events,
+        buttons,
+        gpiote,
+        serial,
+        timers,
+        ble,
+        ccm,
+        leds,
+        rng,
+        storage,
+        uarts,
+        usb_dev,
+    };
     // We first set the board and then enable interrupts so that interrupts may assume the board is
     // always present.
     critical_section::with(|cs| STATE.replace(cs, Some(state)));
@@ -173,7 +199,8 @@ macro_rules! interrupts {
 
 interrupts! {
     GPIOTE = gpiote(),
-    TIMER0 = timer(0),
+    RADIO = radio(),
+    TIMER0 = radio_timer(),
     TIMER1 = timer(1),
     TIMER2 = timer(2),
     TIMER3 = timer(3),
@@ -194,6 +221,14 @@ fn gpiote() {
         }
         state.gpiote.reset_events();
     });
+}
+
+fn radio() {
+    with_state(|state| state.ble.tick(|event| state.events.push(event.into())))
+}
+
+fn radio_timer() {
+    with_state(|state| state.ble.tick_timer())
 }
 
 fn timer(timer: usize) {
