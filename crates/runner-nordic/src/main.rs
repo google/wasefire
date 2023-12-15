@@ -25,7 +25,6 @@ mod storage;
 mod systick;
 mod tasks;
 
-use alloc::collections::VecDeque;
 use core::cell::RefCell;
 use core::mem::MaybeUninit;
 
@@ -38,7 +37,7 @@ use nrf52840_hal::ccm::{Ccm, DataRate};
 use nrf52840_hal::clocks::{self, ExternalOscillator, Internal, LfOscStopped};
 use nrf52840_hal::gpio::{Level, Output, Pin, PushPull};
 use nrf52840_hal::gpiote::Gpiote;
-use nrf52840_hal::pac::{interrupt, Interrupt, TIMER0};
+use nrf52840_hal::pac::{interrupt, Interrupt};
 use nrf52840_hal::prelude::InputPin;
 use nrf52840_hal::rng::Rng;
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
@@ -47,14 +46,8 @@ use nrf52840_hal::{gpio, uarte};
 use panic_abort as _;
 #[cfg(feature = "debug")]
 use panic_probe as _;
-use rubble::beacon::{BeaconScanner, ScanCallback};
-use rubble::bytes::{ByteWriter, ToBytes};
-use rubble::link::ad_structure::AdStructure;
-use rubble::link::filter::AllowAll;
-use rubble::link::{DeviceAddress, Metadata, MIN_PDU_BUF};
-use rubble::time::Timer;
+use rubble::link::MIN_PDU_BUF;
 use rubble_nrf5x::radio::{BleRadio, PacketBuffer};
-use rubble_nrf5x::timer::BleTimer;
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
@@ -66,6 +59,7 @@ use {wasefire_board_api as board, wasefire_logger as log};
 use crate::storage::Storage;
 use crate::tasks::button::{self, channel, Button};
 use crate::tasks::clock::Timers;
+use crate::tasks::radio::ble::Ble;
 use crate::tasks::uart::Uarts;
 use crate::tasks::usb::Usb;
 use crate::tasks::{led, Events};
@@ -84,12 +78,9 @@ struct State {
     gpiote: Gpiote,
     serial: Serial<'static, Usb>,
     timers: Timers,
+    ble: Ble,
     ccm: Ccm,
     leds: [Pin<Output<PushPull>>; <led::Impl as Support<usize>>::SUPPORT],
-    ble_radio: BleRadio,
-    ble_scanner: BeaconScanner<BleAdvScanCallback, AllowAll>,
-    ble_timer: BleTimer<TIMER0>,
-    ble_packet_queue: VecDeque<BlePacket>,
     rng: Rng,
     storage: Option<Storage>,
     uarts: Uarts,
@@ -99,7 +90,6 @@ struct State {
 pub enum Board {}
 
 static STATE: Mutex<RefCell<Option<State>>> = Mutex::new(RefCell::new(None));
-static BLE_PACKET: Mutex<RefCell<Option<BlePacket>>> = Mutex::new(RefCell::new(None));
 
 fn with_state<R>(f: impl FnOnce(&mut State) -> R) -> R {
     critical_section::with(|cs| f(STATE.borrow_ref_mut(cs).as_mut().unwrap()))
@@ -146,15 +136,13 @@ fn main() -> ! {
         .unwrap()
         .device_class(USB_CLASS_CDC)
         .build();
-    let ble_radio = BleRadio::new(
+    let radio = BleRadio::new(
         p.RADIO,
         &p.FICR,
         BLE_TX.write([0; MIN_PDU_BUF]),
         BLE_RX.write([0; MIN_PDU_BUF]),
     );
-    let ble_timer = BleTimer::init(p.TIMER0);
-    let ble_scanner = BeaconScanner::new(BleAdvScanCallback);
-    let ble_packet_queue = VecDeque::<BlePacket>::new();
+    let ble = Ble::new(radio, p.TIMER0);
     let rng = Rng::new(p.RNG);
     let ccm = Ccm::init(p.CCM, p.AAR, DataRate::_1Mbit);
     storage::init(p.NVMC);
@@ -174,12 +162,9 @@ fn main() -> ! {
         gpiote,
         serial,
         timers,
+        ble,
         ccm,
         leds,
-        ble_radio,
-        ble_scanner,
-        ble_timer,
-        ble_packet_queue,
         rng,
         storage,
         uarts,
@@ -198,57 +183,6 @@ fn main() -> ! {
     Scheduler::<Board>::run(WASM);
     #[cfg(feature = "native")]
     Scheduler::<Board>::run();
-}
-
-pub struct RadioMetadata {
-    ticks: u32,
-    freq: u16,
-    rssi: i8,
-    pdu_type: u8,
-}
-
-impl From<Metadata> for RadioMetadata {
-    fn from(value: Metadata) -> Self {
-        RadioMetadata {
-            ticks: value.timestamp.unwrap().ticks(),
-            freq: match value.channel {
-                ch @ 0 ..= 10 => 2404 + 2 * (ch as u16),
-                ch @ 11 ..= 36 => 2404 + 2 * (ch as u16 + 1),
-                37 => 2402,
-                38 => 2426,
-                39 => 2480,
-                _ => 0,
-            },
-            rssi: value.rssi.unwrap(),
-            pdu_type: u8::from(value.pdu_type.unwrap()),
-        }
-    }
-}
-
-pub struct BlePacket {
-    addr: [u8; 6],
-    metadata: RadioMetadata,
-    data: alloc::vec::Vec<u8>,
-}
-
-pub struct BleAdvScanCallback;
-
-impl ScanCallback for BleAdvScanCallback {
-    fn beacon<'a, I>(&mut self, addr: DeviceAddress, data: I, metadata: Metadata)
-    where I: Iterator<Item = AdStructure<'a>> {
-        let mut buf: [u8; MIN_PDU_BUF] = [0; MIN_PDU_BUF];
-        let mut writer = ByteWriter::new(&mut buf);
-        for p in data {
-            assert!(p.to_bytes(&mut writer).is_ok());
-        }
-        let len = MIN_PDU_BUF - writer.space_left();
-        let packet = BlePacket {
-            addr: *addr.raw(),
-            metadata: metadata.clone().into(),
-            data: buf[.. len].to_vec(),
-        };
-        assert!(critical_section::with(|cs| BLE_PACKET.replace(cs, Some(packet))).is_none());
-    }
 }
 
 macro_rules! interrupts {
@@ -290,40 +224,11 @@ fn gpiote() {
 }
 
 fn radio() {
-    with_state(|state| {
-        if let Some(next_update) =
-            state.ble_radio.recv_beacon_interrupt(state.ble_timer.now(), &mut state.ble_scanner)
-        {
-            state.ble_timer.configure_interrupt(next_update);
-            critical_section::with(|cs| {
-                if let Some(packet) = BLE_PACKET.take(cs) {
-                    if state.ble_packet_queue.len() < 50 {
-                        state.ble_packet_queue.push_back(packet);
-                        state.events.push(board::radio::ble::Event::Advertisement.into());
-                        log::warn!("BLE queue size: {}", state.ble_packet_queue.len());
-                    } else {
-                        log::warn!(
-                            "BLE Packet dropped. Queue size: {}",
-                            state.ble_packet_queue.len()
-                        );
-                    }
-                }
-            });
-        }
-    })
+    with_state(|state| state.ble.tick(|event| state.events.push(event.into())))
 }
 
 fn radio_timer() {
-    with_state(|state| {
-        if !state.ble_timer.is_interrupt_pending() {
-            return;
-        }
-        state.ble_timer.clear_interrupt();
-
-        let cmd = state.ble_scanner.timer_update(state.ble_timer.now());
-        state.ble_radio.configure_receiver(cmd.radio);
-        state.ble_timer.configure_interrupt(cmd.next_update);
-    });
+    with_state(|state| state.ble.tick_timer())
 }
 
 fn timer(timer: usize) {

@@ -14,7 +14,7 @@
 
 use wasefire_board_api::radio::Api;
 
-mod ble;
+pub mod ble;
 
 pub enum Impl {}
 

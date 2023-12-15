@@ -12,8 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use rubble::link::{NextUpdate, RadioCmd};
+use alloc::collections::VecDeque;
+use core::cell::RefCell;
+
+use critical_section::Mutex;
+use nrf52840_hal::pac::TIMER0;
+use rubble::beacon::{BeaconScanner, ScanCallback};
+use rubble::bytes::{ByteWriter, ToBytes};
+use rubble::link::ad_structure::AdStructure;
+use rubble::link::filter::AllowAll;
+use rubble::link::{DeviceAddress, Metadata, NextUpdate, RadioCmd, MIN_PDU_BUF};
 use rubble::time::{Duration, Timer};
+use rubble_nrf5x::radio::BleRadio;
+use rubble_nrf5x::timer::BleTimer;
 use wasefire_applet_api::radio::ble::Advertisement;
 use wasefire_board_api::radio::ble::{Api, Event};
 use wasefire_board_api::{Error, Supported};
@@ -23,14 +34,16 @@ use crate::with_state;
 
 pub enum Impl {}
 
+impl Supported for Impl {}
+
 impl Api for Impl {
     fn enable(event: &Event) -> Result<(), Error> {
         match event {
             Event::Advertisement => with_state(|state| {
-                let scanner_cmd =
-                    state.ble_scanner.configure(state.ble_timer.now(), Duration::millis(500));
-                state.ble_radio.configure_receiver(scanner_cmd.radio);
-                state.ble_timer.configure_interrupt(scanner_cmd.next_update);
+                let ble = &mut state.ble;
+                let scanner_cmd = ble.scanner.configure(ble.timer.now(), Duration::millis(500));
+                ble.radio.configure_receiver(scanner_cmd.radio);
+                ble.timer.configure_interrupt(scanner_cmd.next_update);
                 Ok(())
             }),
         }
@@ -39,8 +52,9 @@ impl Api for Impl {
     fn disable(event: &Event) -> Result<(), Error> {
         match event {
             Event::Advertisement => with_state(|state| {
-                state.ble_timer.configure_interrupt(NextUpdate::Disable);
-                state.ble_radio.configure_receiver(RadioCmd::Off);
+                let ble = &mut state.ble;
+                ble.timer.configure_interrupt(NextUpdate::Disable);
+                ble.radio.configure_receiver(RadioCmd::Off);
                 Ok(())
             }),
         }
@@ -48,7 +62,8 @@ impl Api for Impl {
 
     fn read_advertisement(output: &mut Advertisement) -> Result<bool, Error> {
         with_state(|state| {
-            let input = match state.ble_packet_queue.pop_front() {
+            let ble = &mut state.ble;
+            let input = match ble.packet_queue.pop_front() {
                 Some(x) => x,
                 None => return Ok(false),
             };
@@ -65,4 +80,101 @@ impl Api for Impl {
     }
 }
 
-impl Supported for Impl {}
+pub struct Ble {
+    radio: BleRadio,
+    scanner: BeaconScanner<BleAdvScanCallback, AllowAll>,
+    timer: BleTimer<TIMER0>,
+    packet_queue: VecDeque<BlePacket>,
+}
+
+impl Ble {
+    pub fn new(radio: BleRadio, timer: TIMER0) -> Self {
+        let timer = BleTimer::init(timer);
+        let scanner = BeaconScanner::new(BleAdvScanCallback);
+        let packet_queue = VecDeque::<BlePacket>::new();
+        Ble { radio, scanner, timer, packet_queue }
+    }
+
+    pub fn tick(&mut self, mut push: impl FnMut(Event)) {
+        let next_update =
+            match self.radio.recv_beacon_interrupt(self.timer.now(), &mut self.scanner) {
+                Some(x) => x,
+                None => return,
+            };
+        self.timer.configure_interrupt(next_update);
+        critical_section::with(|cs| {
+            if let Some(packet) = BLE_PACKET.take(cs) {
+                if self.packet_queue.len() < 50 {
+                    self.packet_queue.push_back(packet);
+                    push(Event::Advertisement);
+                    log::debug!("BLE queue size: {}", self.packet_queue.len());
+                } else {
+                    log::warn!("BLE Packet dropped. Queue size: {}", self.packet_queue.len());
+                }
+            }
+        });
+    }
+
+    pub fn tick_timer(&mut self) {
+        if !self.timer.is_interrupt_pending() {
+            return;
+        }
+        self.timer.clear_interrupt();
+        let cmd = self.scanner.timer_update(self.timer.now());
+        self.radio.configure_receiver(cmd.radio);
+        self.timer.configure_interrupt(cmd.next_update);
+    }
+}
+
+static BLE_PACKET: Mutex<RefCell<Option<BlePacket>>> = Mutex::new(RefCell::new(None));
+
+struct RadioMetadata {
+    ticks: u32,
+    freq: u16,
+    rssi: i8,
+    pdu_type: u8,
+}
+
+impl From<Metadata> for RadioMetadata {
+    fn from(value: Metadata) -> Self {
+        RadioMetadata {
+            ticks: value.timestamp.unwrap().ticks(),
+            freq: match value.channel {
+                ch @ 0 ..= 10 => 2404 + 2 * (ch as u16),
+                ch @ 11 ..= 36 => 2404 + 2 * (ch as u16 + 1),
+                37 => 2402,
+                38 => 2426,
+                39 => 2480,
+                _ => 0,
+            },
+            rssi: value.rssi.unwrap(),
+            pdu_type: u8::from(value.pdu_type.unwrap()),
+        }
+    }
+}
+
+struct BlePacket {
+    addr: [u8; 6],
+    metadata: RadioMetadata,
+    data: alloc::vec::Vec<u8>,
+}
+
+struct BleAdvScanCallback;
+
+impl ScanCallback for BleAdvScanCallback {
+    fn beacon<'a, I>(&mut self, addr: DeviceAddress, data: I, metadata: Metadata)
+    where I: Iterator<Item = AdStructure<'a>> {
+        let mut buf: [u8; MIN_PDU_BUF] = [0; MIN_PDU_BUF];
+        let mut writer = ByteWriter::new(&mut buf);
+        for p in data {
+            assert!(p.to_bytes(&mut writer).is_ok());
+        }
+        let len = MIN_PDU_BUF - writer.space_left();
+        let packet = BlePacket {
+            addr: *addr.raw(),
+            metadata: metadata.clone().into(),
+            data: buf[.. len].to_vec(),
+        };
+        assert!(critical_section::with(|cs| BLE_PACKET.replace(cs, Some(packet))).is_none());
+    }
+}
