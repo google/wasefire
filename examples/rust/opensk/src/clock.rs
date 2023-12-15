@@ -37,8 +37,9 @@ pub struct WasefireTimer {
 
 impl Default for WasefireTimer {
     fn default() -> Self {
-        let elapsed = Rc::new(Cell::new(false));
+        let elapsed = Rc::new(Cell::new(true));
         let triggered = elapsed.clone();
+        // This is a bit wasteful to allocate a timer that we don't need. This could be optimized later.
         let timer = Timer::new(ClockHandler { triggered });
         Self { timer, elapsed }
     }
