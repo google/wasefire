@@ -12,19 +12,54 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.use opensk_lib::api::clock::Clock;
 
+use alloc::rc::Rc;
+use core::cell::Cell;
+
 use opensk_lib::api::clock::Clock;
+use wasefire::clock::Mode::Oneshot;
+use wasefire::clock::{Handler, Timer};
 
 #[derive(Default)]
-pub struct WasefireClock {}
+struct ClockHandler {
+    triggered: Rc<Cell<bool>>,
+}
+
+impl Handler for ClockHandler {
+    fn event(&self) {
+        self.triggered.set(true);
+    }
+}
+
+pub struct WasefireTimer {
+    timer: Timer<ClockHandler>,
+    elapsed: Rc<Cell<bool>>,
+}
+
+impl Default for WasefireTimer {
+    fn default() -> Self {
+        let elapsed = Rc::new(Cell::new(true));
+        let triggered = elapsed.clone();
+        // This is a bit wasteful to allocate a timer that we don't need. This could be optimized later.
+        let timer = Timer::new(ClockHandler { triggered });
+        Self { timer, elapsed }
+    }
+}
+
+#[derive(Default)]
+pub struct WasefireClock;
 
 impl Clock for WasefireClock {
-    type Timer = Self;
+    type Timer = WasefireTimer;
 
     fn make_timer(&mut self, milliseconds: usize) -> Self::Timer {
-        todo!()
+        let elapsed = Rc::new(Cell::new(false));
+        let triggered = elapsed.clone();
+        let timer = Timer::new(ClockHandler { triggered });
+        timer.start_ms(Oneshot, milliseconds);
+        WasefireTimer { timer, elapsed }
     }
 
     fn is_elapsed(&mut self, timer: &Self::Timer) -> bool {
-        todo!()
+        timer.elapsed.get()
     }
 }
