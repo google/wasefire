@@ -24,6 +24,21 @@ pub(crate) fn new() -> Item {
     let items = vec![
         update::new(),
         item! {
+            /// Returns the version of the platform.
+            fn version "pv" {
+                /// Where to write the version.
+                ptr: *mut u8,
+
+                /// Capacity of the buffer.
+                len: usize,
+            } -> {
+                /// Length of the version in bytes.
+                ///
+                /// This may be larger than the capacity, in which case only a prefix was written.
+                len: usize,
+            }
+        },
+        item! {
             /// Reboots the device (thus platform and applets).
             fn reboot "pr" {} -> {
                 /// Complement of error number.

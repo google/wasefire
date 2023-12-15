@@ -22,6 +22,14 @@ pub mod update;
 pub trait Api: Send {
     type Update: update::Api;
 
+    /// Writes the platform version and returns its length in bytes.
+    ///
+    /// Versions are comparable with lexicographical order.
+    ///
+    /// The returned length may be larger than the buffer length, in which case the buffer only
+    /// contains a prefix of the version.
+    fn version(output: &mut [u8]) -> usize;
+
     /// Reboots the device (thus platform and applets).
     fn reboot() -> Result<!, Error>;
 }
@@ -30,6 +38,10 @@ pub type Update<B> = <super::Platform<B> as Api>::Update;
 
 impl Api for Unsupported {
     type Update = Unsupported;
+
+    fn version(_: &mut [u8]) -> usize {
+        0
+    }
 
     fn reboot() -> Result<!, Error> {
         Err(Error::World)
