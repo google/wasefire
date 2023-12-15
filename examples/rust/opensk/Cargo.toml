@@ -11,6 +11,7 @@ persistent_store = { path = "../../../third_party/OpenSK/libraries/persistent_st
 rand_core = "0.6.4"
 wasefire = { path = "../../../crates/prelude" }
 wasefire-stub = { path = "../../../crates/stub", optional = true }
+wasefire-logger = { path = "../../../crates/logger" }
 
 [features]
 test = ["dep:wasefire-stub", "persistent_store/std", "wasefire/test"]

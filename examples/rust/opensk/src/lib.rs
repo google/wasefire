@@ -24,6 +24,7 @@ use opensk_lib::api::crypto::software_crypto::SoftwareCrypto;
 use opensk_lib::api::customization::CustomizationImpl;
 use opensk_lib::env::Env;
 use persistent_store::Store;
+use write::WasefireWrite;
 // use wasefire::clock::{Handler, Timer};
 
 mod clock;
@@ -124,7 +125,7 @@ impl Env for WasefireEnv {
     }
 
     fn write(&mut self) -> Self::Write {
-        todo!()
+        Self::Write::default()
     }
 
     fn main_hid_connection(&mut self) -> &mut Self::HidConnection {

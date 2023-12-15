@@ -12,11 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::string::String;
+
+use wasefire_logger as log;
+
 #[derive(Default)]
-pub struct WasefireWrite;
+pub struct WasefireWrite {
+    buf: String,
+}
 
 impl core::fmt::Write for WasefireWrite {
-    fn write_str(&mut self, _: &str) -> core::fmt::Result {
-        todo!()
+    fn write_str(&mut self, data: &str) -> core::fmt::Result {
+        self.buf.write_str(data)
+    }
+}
+
+impl Drop for WasefireWrite {
+    fn drop(&mut self) {
+        log::debug!(self.buf)
     }
 }
