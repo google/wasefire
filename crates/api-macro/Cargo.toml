@@ -15,7 +15,7 @@ categories = ["embedded", "no-std", "wasm"]
 proc-macro = true
 
 [dependencies]
-proc-macro2 = { version = "1.0.69", default-features = false }
+proc-macro2 = { version = "1.0.70", default-features = false }
 wasefire-applet-api-desc = { version = "=0.1.6-git", path = "../api-desc" }
 
 [features]
