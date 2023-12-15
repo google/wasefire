@@ -13,14 +13,14 @@ categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
 libm = { version = "0.2.8", default-features = false, optional = true }
-lru = { version = "0.12.0", default-features = false, optional = true }
+lru = { version = "0.12.1", default-features = false, optional = true }
 num_enum = { version = "0.7.1", default-features = false }
 paste = { version = "1.0.14", default-features = false }
-portable-atomic = { version = "1.5.1", default-features = false }
+portable-atomic = { version = "1.6.0", default-features = false }
 
 [dev-dependencies]
 lazy_static = "1.4.0"
-wast = "67.0.1"
+wast = "69.0.1"
 
 [features]
 # Enable debugging features (only works for targets with std).

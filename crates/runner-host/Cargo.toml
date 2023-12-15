@@ -10,10 +10,10 @@ edition = "2021"
 anyhow = "1.0.75"
 env_logger = "0.10.1"
 rand = "0.8.5"
-tokio = { version = "1.34.0", features = ["full"] }
-usb-device = { version = "0.3.0", optional = true }
+tokio = { version = "1.35.0", features = ["full"] }
+usb-device = { version = "0.3.1", optional = true }
 usbd-serial = { version = "0.2.0", optional = true }
-usbip-device = { version = "0.1.6", optional = true }
+usbip-device = { version = "0.2.0", optional = true }
 wasefire-applet-api = { path = "../api", features = ["host"] }
 wasefire-board-api = { path = "../board", features = ["software-crypto", "std"] }
 wasefire-interpreter = { path = "../interpreter", optional = true }
