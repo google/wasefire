@@ -14,7 +14,6 @@
 
 use alloc::string::String;
 
-use wasefire_logger as log;
 
 #[derive(Default)]
 pub struct WasefireWrite {
@@ -29,6 +28,6 @@ impl core::fmt::Write for WasefireWrite {
 
 impl Drop for WasefireWrite {
     fn drop(&mut self) {
-        log::debug!(self.buf)
+        wasefire::debug!(self.buf)
     }
 }

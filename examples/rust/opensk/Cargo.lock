@@ -361,7 +361,6 @@ dependencies = [
  "persistent_store",
  "rand_core",
  "wasefire",
- "wasefire-logger",
  "wasefire-stub",
 ]
 
