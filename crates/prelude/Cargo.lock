@@ -286,6 +286,7 @@ name = "wasefire"
 version = "0.5.0-git"
 dependencies = [
  "aead",
+ "bytemuck",
  "const-default",
  "crypto-common",
  "digest",

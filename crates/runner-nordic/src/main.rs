@@ -207,19 +207,6 @@ pub struct RadioMetadata {
     pdu_type: u8,
 }
 
-impl RadioMetadata {
-    pub fn len(&self) -> usize {
-        core::mem::size_of::<u32>()
-            + core::mem::size_of::<u16>()
-            + core::mem::size_of::<i8>()
-            + core::mem::size_of::<u8>()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        false
-    }
-}
-
 impl From<Metadata> for RadioMetadata {
     fn from(value: Metadata) -> Self {
         RadioMetadata {
@@ -242,16 +229,6 @@ pub struct BlePacket {
     addr: [u8; 6],
     metadata: RadioMetadata,
     data: alloc::vec::Vec<u8>,
-}
-
-impl BlePacket {
-    pub fn len(&self) -> usize {
-        self.addr.len() + self.metadata.len() + self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        false
-    }
 }
 
 pub struct BleAdvScanCallback;
@@ -322,7 +299,7 @@ fn radio() {
                 if let Some(packet) = BLE_PACKET.take(cs) {
                     if state.ble_packet_queue.len() < 50 {
                         state.ble_packet_queue.push_back(packet);
-                        state.events.push(board::radio::Event::Received.into());
+                        state.events.push(board::radio::ble::Event::Advertisement.into());
                         log::warn!("BLE queue size: {}", state.ble_packet_queue.len());
                     } else {
                         log::warn!(

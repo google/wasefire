@@ -551,6 +551,7 @@ dependencies = [
  "typenum",
  "usb-device",
  "usbd-serial",
+ "wasefire-applet-api",
  "wasefire-logger",
  "wasefire-store",
 ]

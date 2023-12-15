@@ -143,6 +143,10 @@ enum Type {
         signed: bool,
         bits: Option<usize>,
     },
+    Array {
+        type_: Box<Type>,
+        length: usize,
+    },
     Pointer {
         mutable: bool,
 
@@ -569,6 +573,7 @@ impl Type {
             Type::Integer { bits: None, .. } => true,
             Type::Integer { bits: Some(32), .. } => true,
             Type::Integer { bits: Some(_), .. } => false,
+            Type::Array { .. } => false,
             Type::Pointer { .. } => true,
             Type::Function { .. } => true,
         }
@@ -578,6 +583,7 @@ impl Type {
         match self {
             Type::Integer { bits: None, .. } => true,
             Type::Integer { bits: Some(_), .. } => false,
+            Type::Array { .. } => false,
             Type::Pointer { .. } => true,
             Type::Function { .. } => true,
         }
@@ -595,9 +601,19 @@ impl Type {
         match self {
             Type::Integer { signed: true, bits: None } => quote!(isize),
             Type::Integer { signed: false, bits: None } => quote!(usize),
+            Type::Integer { signed: true, bits: Some(8) } => quote!(i8),
+            Type::Integer { signed: false, bits: Some(8) } => quote!(u8),
+            Type::Integer { signed: true, bits: Some(16) } => quote!(i16),
+            Type::Integer { signed: false, bits: Some(16) } => quote!(u16),
+            Type::Integer { signed: true, bits: Some(32) } => quote!(i32),
             Type::Integer { signed: false, bits: Some(32) } => quote!(u32),
+            Type::Integer { signed: true, bits: Some(64) } => quote!(i64),
             Type::Integer { signed: false, bits: Some(64) } => quote!(u64),
             Type::Integer { .. } => unimplemented!(),
+            Type::Array { type_, length } => {
+                let type_ = type_.wasm_rust();
+                quote!([#type_; #length])
+            }
             Type::Pointer { mutable, type_ } => {
                 let mutable = if *mutable { quote!(mut) } else { quote!(const) };
                 let type_ = match type_ {
@@ -617,9 +633,16 @@ impl Type {
         match self {
             Type::Integer { signed: true, bits: None } => write!(output, "isize"),
             Type::Integer { signed: false, bits: None } => write!(output, "usize"),
+            Type::Integer { signed: true, bits: Some(8) } => write!(output, "i8"),
+            Type::Integer { signed: false, bits: Some(8) } => write!(output, "u8"),
+            Type::Integer { signed: true, bits: Some(16) } => write!(output, "i16"),
+            Type::Integer { signed: false, bits: Some(16) } => write!(output, "u16"),
+            Type::Integer { signed: true, bits: Some(32) } => write!(output, "i32"),
             Type::Integer { signed: false, bits: Some(32) } => write!(output, "u32"),
+            Type::Integer { signed: true, bits: Some(64) } => write!(output, "i64"),
             Type::Integer { signed: false, bits: Some(64) } => write!(output, "u64"),
             Type::Integer { .. } => unimplemented!(),
+            Type::Array { .. } => write!(output, "unimplemented"),
             // TODO: Is there a way to decorate this better?
             Type::Pointer { mutable: _, type_: _ } => write!(output, "usize"),
             // TODO: Is there a way to decorate this better?

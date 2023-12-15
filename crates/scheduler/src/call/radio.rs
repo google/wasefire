@@ -12,59 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_applet_api::radio::{self as api, Api};
-use wasefire_board_api::radio::Api as _;
-use wasefire_board_api::{self as board, Api as Board};
+use wasefire_applet_api::radio::Api;
+use wasefire_board_api::Api as Board;
 
-use crate::applet::store::MemoryApi;
-use crate::event::radio::Key;
-use crate::event::Handler;
-use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
+use crate::DispatchSchedulerCall;
+
+mod ble;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
-        Api::Register(call) => register(call),
-        Api::Unregister(call) => unregister(call),
-        Api::Read(call) => read(call),
+        Api::Ble(call) => ble::process(call),
     }
-}
-
-fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
-    let api::register::Params { handler_func, handler_data } = call.read();
-    let inst = call.inst();
-    let results = try {
-        call.scheduler().applet.enable(Handler {
-            key: Key::Received.into(),
-            inst,
-            func: *handler_func,
-            data: *handler_data,
-        })?;
-        board::Radio::<B>::enable().map_err(|_| Trap)?;
-        api::register::Results {}
-    };
-    call.reply(results);
-}
-
-fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
-    let results = try {
-        board::Radio::<B>::disable().map_err(|_| Trap)?;
-        call.scheduler().disable_event(Key::Received.into())?;
-        api::unregister::Results {}
-    };
-    call.reply(results);
-}
-
-fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
-    let api::read::Params { ptr, len } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
-    let results = try {
-        let output = memory.get_mut(*ptr, *len)?;
-        let len = match board::Radio::<B>::read(output) {
-            Ok(len) => (len as u32).into(),
-            Err(_) => u32::MAX.into(),
-        };
-        api::read::Results { len }
-    };
-    call.reply(results);
 }

@@ -12,32 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::radio::Event;
+use wasefire_board_api::radio::ble::Event;
 use wasefire_board_api::Api as Board;
-
-pub mod ble;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
-    Ble(ble::Key),
+    Advertisement,
 }
 
 impl<B: Board> From<Key> for crate::event::Key<B> {
     fn from(key: Key) -> Self {
-        crate::event::Key::Radio(key)
+        super::Key::Ble(key).into()
     }
 }
 
 impl<'a> From<&'a Event> for Key {
     fn from(event: &'a Event) -> Self {
         match event {
-            Event::Ble(event) => Key::Ble(event.into()),
+            Event::Advertisement => Key::Advertisement,
         }
     }
 }
 
-pub fn process(event: Event) {
-    match event {
-        Event::Ble(_) => ble::process(),
-    }
-}
+pub fn process() {}

@@ -109,7 +109,7 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
     let mut params = vec![*func, *data];
     match event {
         Event::Button(event) => button::process(event, &mut params),
-        Event::Radio(_) => radio::process(),
+        Event::Radio(event) => radio::process(event),
         Event::Timer(_) => timer::process(),
         Event::Uart(_) => uart::process(),
         Event::Usb(event) => usb::process(event),

@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod serial;
-
 use wasefire_board_api::usb::Event;
 use wasefire_board_api::Api as Board;
+
+pub mod serial;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {

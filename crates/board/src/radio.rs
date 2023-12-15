@@ -14,13 +14,15 @@
 
 //! Radio interface.
 
-use crate::{Error, Support, Unsupported};
+use crate::Unsupported;
+
+pub mod ble;
 
 /// Radio event.
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Event {
-    /// A radio packet has been received.
-    Received,
+    /// BLE event.
+    Ble(ble::Event),
 }
 
 impl<B: crate::Api> From<Event> for crate::Event<B> {
@@ -30,29 +32,12 @@ impl<B: crate::Api> From<Event> for crate::Event<B> {
 }
 
 /// Radio interface.
-pub trait Api: Support<bool> {
-    /// Enables radio events.
-    fn enable() -> Result<(), Error>;
-
-    /// Disables radio events.
-    fn disable() -> Result<(), Error>;
-
-    /// Reads from the radio receive queue into a buffer.
-    ///
-    /// Returns the number of bytes read. It could be zero if there's nothing to read.
-    fn read(output: &mut [u8]) -> Result<usize, Error>;
+pub trait Api: Send {
+    type Ble: ble::Api;
 }
 
+pub type Ble<B> = <super::Radio<B> as Api>::Ble;
+
 impl Api for Unsupported {
-    fn enable() -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn disable() -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn read(_: &mut [u8]) -> Result<usize, Error> {
-        unreachable!()
-    }
+    type Ble = Unsupported;
 }

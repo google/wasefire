@@ -4,7 +4,7 @@
 
 ### Minor
 
-- Add `radio` module
+- Add `radio::ble` module
 - Add `platform::update::is_supported()`
 - Add `platform::update` module
 - Add `platform` module with `platform::reboot()` function
