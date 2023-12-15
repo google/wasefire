@@ -4,11 +4,11 @@
 
 ### Major
 
-- Add `radio` module
 - Add `native` and `wasm` features (exactly one must be chosen)
 
 ### Minor
 
+- Support `radio::ble` module
 - Support configuring the memory size with `WASEFIRE_MEMORY_PAGE_COUNT`
 - Support `platform::update::is_supported()`
 - Support `platform::update`

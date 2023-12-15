@@ -4,7 +4,7 @@
 
 ### Major
 
-- Add `radio` module
+- Add `radio::ble` module
 - Rename `native` to `test` and use `native` for native applets
 
 ### Minor
