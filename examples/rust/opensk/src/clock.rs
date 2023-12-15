@@ -28,6 +28,7 @@ impl Handler for ClockHandler {
 
 pub struct WasefireTimer {
     timer: Timer<ClockHandler>,
+    elapsed: Rc<Cell<bool>>,
 }
 
 impl Default for WasefireTimer {
