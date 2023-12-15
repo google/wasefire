@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.use opensk_lib::api::clock::Clock;
 
+use alloc::rc::Rc;
+use core::cell::Cell;
+
 use opensk_lib::api::clock::Clock;
 use wasefire::clock::Mode::Oneshot;
 use wasefire::clock::{Handler, Timer};
@@ -34,8 +37,10 @@ pub struct WasefireTimer {
 
 impl Default for WasefireTimer {
     fn default() -> Self {
-        let timer: Timer<ClockHandler> = Timer::new(ClockHandler {});
-        Self { timer }
+        let elapsed = Rc::new(Cell::new(false));
+        let triggered = elapsed.clone();
+        let timer = Timer::new(ClockHandler { triggered });
+        Self { timer, elapsed }
     }
 }
 
