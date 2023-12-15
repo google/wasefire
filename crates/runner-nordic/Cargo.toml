@@ -20,6 +20,10 @@ header = { path = "crates/header" }
 nrf52840-hal = "0.16.0"
 panic-abort = { version = "0.3.2", optional = true }
 panic-probe = { version = "0.3.1", features = ["print-defmt"], optional = true }
+rubble = { git = "https://github.com/jmichelp/rubble.git", rev = "d545f4f" }
+rubble-nrf5x = { git = "https://github.com/jmichelp/rubble.git", rev = "d545f4f", features = [
+  "52840",
+] }
 typenum = { version = "1.17.0", default-features = false }
 usb-device = "0.3.0"
 usbd-serial = "0.2.0"

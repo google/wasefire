@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod serial;
-
 use wasefire_applet_api::usb::Api;
 use wasefire_board_api::Api as Board;
 
 use crate::DispatchSchedulerCall;
+
+mod serial;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {

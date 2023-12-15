@@ -4,6 +4,8 @@
 
 ### Minor
 
+- Add `radio::ble` module
+- Support array types and all `{i,u}{8,16,32,64}` integers
 - Add `platform::update::is_supported()`
 - Add `platform::update` module
 - Add `platform` module with `platform::reboot()` function
@@ -78,4 +80,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 11 -->
+<!-- Increment to skip CHANGELOG.md test: 12 -->

@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support `radio::ble` module
 - Support configuring the memory size with `WASEFIRE_MEMORY_PAGE_COUNT`
 - Support `platform::update::is_supported()`
 - Support `platform::update`
@@ -91,4 +92,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 22 -->
+<!-- Increment to skip CHANGELOG.md test: 23 -->

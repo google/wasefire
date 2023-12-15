@@ -17,14 +17,11 @@
 //! Only serial is currently supported. HID and its derivatives (e.g. CTAP) will be added in the
 //! future.
 
-pub mod serial;
-
 /// Errors returned by USB operations.
 pub use wasefire_applet_api::usb::Error;
 
+pub mod serial;
+
 fn convert(len: isize) -> Result<usize, Error> {
-    if len < 0 {
-        return Err(Error::Unknown);
-    }
-    Ok(len as usize)
+    Error::to_result(len)
 }
