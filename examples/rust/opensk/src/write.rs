@@ -27,6 +27,6 @@ impl core::fmt::Write for WasefireWrite {
 
 impl Drop for WasefireWrite {
     fn drop(&mut self) {
-        wasefire::debug!(self.buf)
+        wasefire::debug!("{}", self.buf)
     }
 }
