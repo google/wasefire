@@ -63,8 +63,8 @@ pub(crate) fn new() -> Item {
             /// It is possible that the callback is spuriously called.
             fn register "use" {
                 event: usize,
-                handler_func: fn { data: *const u8 },
-                handler_data: *const u8,
+                handler_func: fn { data: *const void },
+                handler_data: *const void,
             } -> {}
         },
         item! {

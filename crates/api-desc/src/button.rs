@@ -46,10 +46,10 @@ pub(crate) fn new() -> Item {
                 /// Function called on button events.
                 ///
                 /// The function takes its opaque `data` and the new button `state` as arguments.
-                handler_func: fn { data: *const u8, state: usize },
+                handler_func: fn { data: *const void, state: usize },
 
                 /// The opaque data to use when calling the handler function.
-                handler_data: *const u8,
+                handler_data: *const void,
             } -> {}
         },
         item! {

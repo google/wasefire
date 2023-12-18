@@ -29,7 +29,7 @@ macro_rules! type_ {
     };
     (*const $($type:tt)*) => (type_!(*false $($type)*));
     (*mut $($type:tt)*) => (type_!(*true $($type)*));
-    (*$mut:tt u8) => (Type::Pointer { mutable: $mut, type_: None });
+    (*$mut:tt void) => (Type::Pointer { mutable: $mut, type_: None });
     (*$mut:tt $($type:tt)*) => {
         Type::Pointer { mutable: $mut, type_: Some(Box::new(type_!($($type)*))) }
     };
