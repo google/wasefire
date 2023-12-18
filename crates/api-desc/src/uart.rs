@@ -80,10 +80,10 @@ pub(crate) fn new() -> Item {
                 event: usize,
 
                 /// Function pointer of the closure to call on events.
-                handler_func: fn { data: *const u8 },
+                handler_func: fn { data: *const void },
 
                 /// Opaque data of the closure to call on events.
-                handler_data: *const u8,
+                handler_data: *const void,
             } -> {}
         },
         item! {

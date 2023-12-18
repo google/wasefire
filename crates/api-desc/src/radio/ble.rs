@@ -60,10 +60,10 @@ pub(crate) fn new() -> Item {
                 /// Function called on radio events.
                 ///
                 /// The function takes its opaque `data` as argument.
-                handler_func: fn { data: *mut u8 },
+                handler_func: fn { data: *const void },
 
                 /// The opaque data to use when calling the handler function.
-                handler_data: *mut u8,
+                handler_data: *const void,
             } -> {}
         },
         item! {

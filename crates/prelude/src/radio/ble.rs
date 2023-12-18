@@ -57,7 +57,7 @@ impl<H: Handler> Listener<H> {
         let event = event as u32;
         let handler_func = Self::call;
         let handler = Box::into_raw(Box::new(handler));
-        let handler_data = handler as *mut u8;
+        let handler_data = handler as *const u8;
         unsafe { api::register(api::register::Params { event, handler_func, handler_data }) };
         Listener { handler }
     }
@@ -78,8 +78,8 @@ impl<H: Handler> Listener<H> {
         core::mem::forget(self);
     }
 
-    extern "C" fn call(data: *mut u8) {
-        let handler = unsafe { &mut *(data as *mut H) };
+    extern "C" fn call(data: *const u8) {
+        let handler = unsafe { &*(data as *const H) };
         handler.event(Event::Advertisement);
     }
 }

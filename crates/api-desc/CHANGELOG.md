@@ -16,6 +16,7 @@
 
 ### Patch
 
+- Use `*const void` instead of `*const u8` for opaque data
 - Update dependencies
 - Fix lints
 
