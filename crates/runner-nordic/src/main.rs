@@ -20,10 +20,10 @@
 extern crate alloc;
 
 mod allocator;
+mod board;
 mod storage;
 #[cfg(feature = "debug")]
 mod systick;
-mod tasks;
 
 use core::cell::RefCell;
 use core::mem::MaybeUninit;
@@ -53,16 +53,16 @@ use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidP
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Id, Support};
+use wasefire_logger as log;
 use wasefire_scheduler::Scheduler;
-use {wasefire_board_api as board, wasefire_logger as log};
 
+use crate::board::button::{self, channel, Button};
+use crate::board::clock::Timers;
+use crate::board::radio::ble::Ble;
+use crate::board::uart::Uarts;
+use crate::board::usb::Usb;
+use crate::board::{led, Events};
 use crate::storage::Storage;
-use crate::tasks::button::{self, channel, Button};
-use crate::tasks::clock::Timers;
-use crate::tasks::radio::ble::Ble;
-use crate::tasks::uart::Uarts;
-use crate::tasks::usb::Usb;
-use crate::tasks::{led, Events};
 
 #[cfg(feature = "debug")]
 #[defmt::panic_handler]
@@ -147,7 +147,7 @@ fn main() -> ! {
     let ccm = Ccm::init(p.CCM, p.AAR, DataRate::_1Mbit);
     storage::init(p.NVMC);
     let storage = Some(Storage::new_store());
-    crate::tasks::platform::update::init(Storage::new_other());
+    crate::board::platform::update::init(Storage::new_other());
     let pins = uarte::Pins {
         txd: port0.p0_06.into_push_pull_output(gpio::Level::High).degrade(),
         rxd: port0.p0_08.into_floating_input().degrade(),
@@ -216,7 +216,7 @@ fn gpiote() {
             let id = Id::new(i).unwrap();
             if channel(&state.gpiote, id).is_event_triggered() {
                 let pressed = button.pin.is_low().unwrap();
-                state.events.push(board::button::Event { button: id, pressed }.into());
+                state.events.push(wasefire_board_api::button::Event { button: id, pressed }.into());
             }
         }
         state.gpiote.reset_events();
@@ -234,7 +234,7 @@ fn radio_timer() {
 fn timer(timer: usize) {
     let timer = Id::new(timer).unwrap();
     with_state(|state| {
-        state.events.push(board::timer::Event { timer }.into());
+        state.events.push(wasefire_board_api::timer::Event { timer }.into());
         state.timers.tick(*timer);
     })
 }
