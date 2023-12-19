@@ -15,7 +15,7 @@
 use alloc::boxed::Box;
 
 use bytemuck::Zeroable;
-use wasefire_applet_api::radio::ble::{Advertisement, Event};
+pub use wasefire_applet_api::radio::ble::{Advertisement, Event};
 use wasefire_applet_api::radio::{ble as api, Error};
 
 /// Reads the next advertisement packet, if any.
