@@ -66,7 +66,10 @@ pub(crate) fn schedule_callback(callback: Box<dyn Fn() + Send>) {
 }
 
 pub(crate) fn execute_callback() {
-    if let Some(callback) = CALLBACK.lock().take() {
+    // We cannot inline the callback expression in the `if let` because the lifetime of the guard
+    // would extend to the end of the `if let` block.
+    let callback = CALLBACK.lock().take();
+    if let Some(callback) = callback {
         #[cfg(feature = "debug")]
         with_scheduler(|x| x.perf_record(Slot::Platform));
         callback();
