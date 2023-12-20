@@ -113,4 +113,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 19 -->
+<!-- Increment to skip CHANGELOG.md test: 20 -->
