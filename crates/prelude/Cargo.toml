@@ -38,3 +38,5 @@ rust-crypto = ["dep:aead", "dep:crypto-common", "dep:digest", "dep:zeroize"]
 native = ["wasefire-applet-api/native"]
 # Builds for unit-testing applets (incompatible with native).
 test = []
+# Sets portable-atomic/unsafe-assume-single-core (for convenience).
+unsafe-assume-single-core = ["wasefire-sync/unsafe-assume-single-core"]
