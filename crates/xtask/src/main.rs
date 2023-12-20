@@ -180,9 +180,9 @@ struct RunnerOptions {
     #[clap(long)]
     bundle: bool,
 
-    /// Erases all the flash first.
+    /// Resets the persistent storage before running.
     #[clap(long)]
-    erase_flash: bool,
+    reset_storage: bool,
 
     /// Prints the command lines to use GDB.
     #[clap(long)]
@@ -551,7 +551,7 @@ impl RunnerOptions {
         fs::touch("target/wasefire/applet.wasm")?;
         if run && self.name == "host" {
             let path = "target/wasefire/storage.bin";
-            if self.erase_flash && fs::exists(path) {
+            if self.reset_storage && fs::exists(path) {
                 fs::remove_file(path)?;
             }
             replace_command(cargo);
@@ -635,9 +635,10 @@ impl RunnerOptions {
                 Permissions::default(),
             )?)
         });
-        if self.erase_flash {
-            println!("Erasing the flash of {}", session.get()?.target().name);
-            flashing::erase_all(session.get()?, None)?;
+        if self.reset_storage {
+            println!("Erasing the persistent storage");
+            // Keep those values in sync with crates/runner-nordic/memory.x.
+            flashing::erase_sectors(session.get()?, None, 240, 16)?;
         }
         if self.name == "nordic" {
             let mut cargo = Command::new("cargo");

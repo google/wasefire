@@ -21,6 +21,7 @@ __flash_origin = __header_origin + __header_length;
 __flash_length = 0x00070000 - __header_length;
 __sother = 0x00010000 + (1 - RUNNER_SIDE) * 0x00070000;
 __eother = __sother + 0x00070000;
+/* Keep those values in sync with --reset-storage in xtask */
 __sstore = 0x000f0000;
 __estore = 0x00100000;
 
