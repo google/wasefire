@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `unsafe-assume-single-core` feature for convenience
 - Add `platform::version()`
 - Add `radio::ble` module
 - Add `platform::update::is_supported()`
