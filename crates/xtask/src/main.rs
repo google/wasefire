@@ -636,7 +636,7 @@ impl RunnerOptions {
             )?)
         });
         if self.reset_storage {
-            println!("Erasing the persistent storage");
+            println!("Erasing the persistent storage.");
             // Keep those values in sync with crates/runner-nordic/memory.x.
             flashing::erase_sectors(session.get()?, None, 240, 16)?;
         }
