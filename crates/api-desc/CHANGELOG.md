@@ -16,6 +16,7 @@
 
 ### Patch
 
+- Make sure enum values don't skip any value, essentially mapping to `0..N`
 - Use `*const void` instead of `*const u8` for opaque data
 - Update dependencies
 - Fix lints
