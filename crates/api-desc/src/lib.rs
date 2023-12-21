@@ -243,6 +243,7 @@ impl Enum {
 
                 fn try_from(x: u32) -> Result<Self, Self::Error> {
                     if x < #num_variants as u32 {
+                        // SAFETY: See `tests::enum_values_are_valid()`.
                         Ok(unsafe { core::mem::transmute(x) })
                     } else {
                         Err(())
@@ -744,8 +745,11 @@ mod tests {
         }
     }
 
+    /// Makes sure enum values form a range starting at zero.
+    ///
+    /// This invariant is assumed by unsafe code.
     #[test]
-    fn enum_values_are_unique() {
+    fn enum_values_are_valid() {
         let Api(mut todo) = Api::default();
         while let Some(item) = todo.pop() {
             match item {
@@ -755,6 +759,9 @@ mod tests {
                         if let Some(other) = seen.insert(value, name.clone()) {
                             panic!("duplicate enum value {value} between {name} and {other}");
                         }
+                    }
+                    for value in 0 .. seen.len() as u32 {
+                        assert!(seen.contains_key(&value), "skipped enum value {value}");
                     }
                 }
                 Item::Struct(_) => (),
