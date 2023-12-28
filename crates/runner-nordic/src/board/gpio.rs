@@ -35,24 +35,24 @@ impl Api for Impl {
     fn configure(gpio: Id<Self>, config: Config) -> Result<(), Error> {
         with_state(|state| {
             let gpio = &mut state.gpios[*gpio];
-            *gpio = match core::mem::replace(gpio, Gpio::Invalid) {
+            let (pin, res) = match core::mem::replace(gpio, Gpio::Invalid) {
                 Gpio::Invalid => unreachable!(),
-                Gpio::Disconnected(x) => configure(x, config)?,
-                Gpio::InputFloating(x) => configure(x, config)?,
-                Gpio::InputPullDown(x) => configure(x, config)?,
-                Gpio::InputPullUp(x) => configure(x, config)?,
-                Gpio::OutputPushPull(x) => configure(x, config)?,
-                Gpio::OutputOpenDrain(x) => configure(x, config)?,
-                Gpio::OutputOpenDrainIO(x) => configure(x, config)?,
+                Gpio::Disconnected(x) => configure(Gpio::Disconnected, x, config),
+                Gpio::InputFloating(x) => configure(Gpio::InputFloating, x, config),
+                Gpio::InputPullDown(x) => configure(Gpio::InputPullDown, x, config),
+                Gpio::InputPullUp(x) => configure(Gpio::InputPullUp, x, config),
+                Gpio::OutputPushPull(x) => configure(Gpio::OutputPushPull, x, config),
+                Gpio::OutputOpenDrain(x) => configure(Gpio::OutputOpenDrain, x, config),
+                Gpio::OutputOpenDrainIO(x) => configure(Gpio::OutputOpenDrainIO, x, config),
             };
-            Ok(())
+            *gpio = pin;
+            res
         })
     }
 
     fn read(gpio: Id<Self>) -> Result<bool, Error> {
         with_state(|state| {
-            let gpio = &state.gpios[*gpio];
-            match gpio {
+            match &state.gpios[*gpio] {
                 Gpio::Invalid => unreachable!(),
                 Gpio::Disconnected(_) | Gpio::OutputPushPull(_) | Gpio::OutputOpenDrain(_) => {
                     return Err(Error::User);
@@ -69,8 +69,7 @@ impl Api for Impl {
     fn write(gpio: Id<Self>, value: bool) -> Result<(), Error> {
         let value = if value { PinState::High } else { PinState::Low };
         with_state(|state| {
-            let gpio = &mut state.gpios[*gpio];
-            match gpio {
+            match &mut state.gpios[*gpio] {
                 Gpio::Invalid => unreachable!(),
                 Gpio::Disconnected(_)
                 | Gpio::InputFloating(_)
@@ -102,50 +101,66 @@ impl Gpio {
     }
 }
 
-fn configure<MODE>(pin: Pin<MODE>, config: Config) -> Result<Gpio, Error> {
+fn configure<MODE>(
+    wrap: impl FnOnce(Pin<MODE>) -> Gpio, pin: Pin<MODE>, config: Config,
+) -> (Gpio, Result<(), Error>) {
     let initial = if config.initial { Level::High } else { Level::Low };
-    Ok(match (config.input, config.output) {
+    match (config.input, config.output) {
         (InputConfig::Disabled, OutputConfig::Disabled) => {
-            Gpio::Disconnected(pin.into_disconnected())
+            (Gpio::Disconnected(pin.into_disconnected()), Ok(()))
         }
         (InputConfig::Floating, OutputConfig::Disabled) => {
-            Gpio::InputFloating(pin.into_floating_input())
+            (Gpio::InputFloating(pin.into_floating_input()), Ok(()))
         }
         (InputConfig::PullDown, OutputConfig::Disabled) => {
-            Gpio::InputPullDown(pin.into_pulldown_input())
+            (Gpio::InputPullDown(pin.into_pulldown_input()), Ok(()))
         }
-        (InputConfig::PullUp, OutputConfig::Disabled) => Gpio::InputPullUp(pin.into_pullup_input()),
+        (InputConfig::PullUp, OutputConfig::Disabled) => {
+            (Gpio::InputPullUp(pin.into_pullup_input()), Ok(()))
+        }
         (InputConfig::Disabled, OutputConfig::PushPull) => {
-            Gpio::OutputPushPull(pin.into_push_pull_output(initial))
+            (Gpio::OutputPushPull(pin.into_push_pull_output(initial)), Ok(()))
         }
-        (_, OutputConfig::PushPull) => Err(Error::User)?,
-        (InputConfig::Disabled, OutputConfig::OpenDrain) => Gpio::OutputOpenDrain(
-            pin.into_open_drain_output(OpenDrainConfig::Standard0Disconnect1, initial),
+        (_, OutputConfig::PushPull) => (wrap(pin), Err(Error::User)),
+        (InputConfig::Disabled, OutputConfig::OpenDrain) => (
+            Gpio::OutputOpenDrain(
+                pin.into_open_drain_output(OpenDrainConfig::Standard0Disconnect1, initial),
+            ),
+            Ok(()),
         ),
-        (InputConfig::Floating, OutputConfig::OpenDrain) => Gpio::OutputOpenDrainIO(
-            pin.into_open_drain_input_output(OpenDrainConfig::Standard0Disconnect1, initial),
+        (InputConfig::Floating, OutputConfig::OpenDrain) => (
+            Gpio::OutputOpenDrainIO(
+                pin.into_open_drain_input_output(OpenDrainConfig::Standard0Disconnect1, initial),
+            ),
+            Ok(()),
         ),
-        (InputConfig::PullDown, OutputConfig::OpenDrain) => Err(Error::User)?,
+        (InputConfig::PullDown, OutputConfig::OpenDrain) => (wrap(pin), Err(Error::User)),
         (InputConfig::PullUp, OutputConfig::OpenDrain) => {
             let pin =
                 pin.into_open_drain_input_output(OpenDrainConfig::Standard0Disconnect1, initial);
             pin_cnf(&pin).modify(|_, w| w.pull().pullup());
-            Gpio::OutputOpenDrainIO(pin)
+            (Gpio::OutputOpenDrainIO(pin), Ok(()))
         }
-        (InputConfig::Disabled, OutputConfig::OpenSource) => Gpio::OutputOpenDrain(
-            pin.into_open_drain_output(OpenDrainConfig::Disconnect0Standard1, initial),
+        (InputConfig::Disabled, OutputConfig::OpenSource) => (
+            Gpio::OutputOpenDrain(
+                pin.into_open_drain_output(OpenDrainConfig::Disconnect0Standard1, initial),
+            ),
+            Ok(()),
         ),
-        (InputConfig::Floating, OutputConfig::OpenSource) => Gpio::OutputOpenDrainIO(
-            pin.into_open_drain_input_output(OpenDrainConfig::Disconnect0Standard1, initial),
+        (InputConfig::Floating, OutputConfig::OpenSource) => (
+            Gpio::OutputOpenDrainIO(
+                pin.into_open_drain_input_output(OpenDrainConfig::Disconnect0Standard1, initial),
+            ),
+            Ok(()),
         ),
         (InputConfig::PullDown, OutputConfig::OpenSource) => {
             let pin =
                 pin.into_open_drain_input_output(OpenDrainConfig::Disconnect0Standard1, initial);
             pin_cnf(&pin).modify(|_, w| w.pull().pulldown());
-            Gpio::OutputOpenDrainIO(pin)
+            (Gpio::OutputOpenDrainIO(pin), Ok(()))
         }
-        (InputConfig::PullUp, OutputConfig::OpenSource) => Err(Error::User)?,
-    })
+        (InputConfig::PullUp, OutputConfig::OpenSource) => (wrap(pin), Err(Error::User)),
+    }
 }
 
 fn pin_cnf(pin: &Pin<Output<OpenDrainIO>>) -> &Reg<PIN_CNF_SPEC> {
