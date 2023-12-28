@@ -18,6 +18,7 @@ features = ["std"]
 aead = { version = "0.5.2", default-features = false, optional = true }
 aes = { version = "0.8.3", default-features = false, optional = true }
 aes-gcm = { version = "0.10.3", default-features = false, optional = true }
+bytemuck = { version = "1.14.0", default-features = false }
 ccm = { version = "0.5.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.6", default-features = false }
 defmt = { version = "0.3.5", default-features = false, optional = true }

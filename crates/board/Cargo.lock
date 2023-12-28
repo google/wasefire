@@ -844,6 +844,7 @@ dependencies = [
  "aead",
  "aes",
  "aes-gcm",
+ "bytemuck",
  "ccm",
  "crypto-common",
  "defmt",

@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `gpio` module
 - Add `unsafe-assume-single-core` feature for convenience
 - Add `platform::version()`
 - Add `radio::ble` module
@@ -114,4 +115,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 20 -->
+<!-- Increment to skip CHANGELOG.md test: 21 -->

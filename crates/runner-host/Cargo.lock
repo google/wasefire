@@ -1803,6 +1803,7 @@ dependencies = [
  "aead",
  "aes",
  "aes-gcm",
+ "bytemuck",
  "ccm",
  "crypto-common",
  "derivative",

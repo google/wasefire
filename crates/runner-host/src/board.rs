@@ -63,6 +63,7 @@ impl Api for Board {
     type Button = button::Impl;
     type Crypto = Unsupported;
     type Debug = debug::Impl;
+    type Gpio = Unsupported;
     type Led = led::Impl;
     type Platform = Unsupported;
     type Radio = Unsupported;

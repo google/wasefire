@@ -56,12 +56,13 @@ use wasefire_board_api::{Id, Support};
 use wasefire_logger as log;
 use wasefire_scheduler::Scheduler;
 
-use crate::board::button::{self, channel, Button};
+use crate::board::button::{channel, Button};
 use crate::board::clock::Timers;
+use crate::board::gpio::Gpio;
 use crate::board::radio::ble::Ble;
 use crate::board::uart::Uarts;
 use crate::board::usb::Usb;
-use crate::board::{led, Events};
+use crate::board::{button, led, Events};
 use crate::storage::Storage;
 
 #[cfg(feature = "debug")]
@@ -80,6 +81,7 @@ struct State {
     timers: Timers,
     ble: Ble,
     ccm: Ccm,
+    gpios: [Gpio; <board::gpio::Impl as Support<usize>>::SUPPORT],
     leds: [Pin<Output<PushPull>>; <led::Impl as Support<usize>>::SUPPORT],
     rng: Rng,
     storage: Option<Storage>,
@@ -111,6 +113,7 @@ fn main() -> ! {
     log::debug!("Runner starts.");
     let p = nrf52840_hal::pac::Peripherals::take().unwrap();
     let port0 = gpio::p0::Parts::new(p.P0);
+    let port1 = gpio::p1::Parts::new(p.P1);
     let buttons = [
         Button::new(port0.p0_11.into_pullup_input().degrade()),
         Button::new(port0.p0_12.into_pullup_input().degrade()),
@@ -122,6 +125,12 @@ fn main() -> ! {
         port0.p0_14.into_push_pull_output(Level::High).degrade(),
         port0.p0_15.into_push_pull_output(Level::High).degrade(),
         port0.p0_16.into_push_pull_output(Level::High).degrade(),
+    ];
+    let gpios = [
+        Gpio::new(port1.p1_01.degrade()),
+        Gpio::new(port1.p1_02.degrade()),
+        Gpio::new(port1.p1_03.degrade()),
+        Gpio::new(port1.p1_04.degrade()),
     ];
     let timers = Timers::new(p.TIMER1, p.TIMER2, p.TIMER3, p.TIMER4);
     let gpiote = Gpiote::new(p.GPIOTE);
@@ -164,6 +173,7 @@ fn main() -> ! {
         timers,
         ble,
         ccm,
+        gpios,
         leds,
         rng,
         storage,

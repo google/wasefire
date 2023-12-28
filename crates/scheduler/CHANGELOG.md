@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support `gpio` module
 - Support `platform::version()`
 - Support `radio::ble` module
 - Support configuring the memory size with `WASEFIRE_MEMORY_PAGE_COUNT`

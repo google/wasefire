@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `gpio` module
 - Add `platform::version()`
 - Add `radio::ble` module
 - Support array types and all `{i,u}{8,16,32,64}` integers
@@ -83,4 +84,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 13 -->
+<!-- Increment to skip CHANGELOG.md test: 14 -->
