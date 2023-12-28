@@ -654,29 +654,48 @@
   // Returns how many GPIOs are on the device.
   @external("env", "gc")
   export declare function gpio_count(
-  // How many GPIOs are on the device.
   ): usize
 
   // Input configuration.
   enum gpio_InputConfig {
+    // Input is disabled.
     Disabled = 0,
 
+    // Floating input (most common configuration).
+    //
+    // Reading while the voltage is not driven may return 0 or 1.
     Floating = 1,
 
+    // Pull-down input.
+    //
+    // Reading while the voltage is not driven returns 0.
     PullDown = 2,
 
+    // Pull-up input.
+    //
+    // Reading while the voltage is not driven returns 1.
     PullUp = 3,
   }
 
   // Output configuration.
   enum gpio_OutputConfig {
+    // Output is disabled.
     Disabled = 0,
 
+    // Push-pull output (most common configuration).
+    //
+    // Writing 0 (resp. 1) drives the voltage to 0 (resp. 1).
+    PushPull = 3,
+
+    // Open-drain output.
+    //
+    // Writing 0 drives the voltage to 0. Writing 1 doesn't drive the voltage.
     OpenDrain = 1,
 
+    // Open-source output.
+    //
+    // Writing 0 doesn't drive the voltage. Writing 1 drives the voltage to 1.
     OpenSource = 2,
-
-    PushPull = 3,
   }
 
   // Configures a GPIO.

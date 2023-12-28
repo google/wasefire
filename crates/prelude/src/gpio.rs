@@ -58,7 +58,7 @@ impl Config {
         Config::new(InputConfig::Disabled, output, initial)
     }
 
-    /// Creates a new config
+    /// Creates a new configuration (possibly for both input and output).
     pub fn new(input: InputConfig, output: OutputConfig, initial: bool) -> Self {
         Config { input, output, initial }
     }
@@ -104,15 +104,18 @@ impl Drop for Gpio {
 }
 
 impl Gpio {
+    /// Configures the GPIO and returns a handle.
     pub fn new(gpio: usize, config: &Config) -> Self {
         configure(gpio, config);
         Gpio(gpio)
     }
 
+    /// Reads from the GPIO (must be configured as input).
     pub fn read(&self) -> bool {
         read(self.0)
     }
 
+    /// Writes to the GPIO (must be configured as output).
     pub fn write(&self, value: bool) {
         write(self.0, value)
     }
