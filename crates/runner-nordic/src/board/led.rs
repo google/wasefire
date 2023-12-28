@@ -28,7 +28,7 @@ impl Api for Impl {
     fn get(id: Id<Self>) -> Result<bool, Error> {
         with_state(|state| {
             let led = &mut state.leds[*id];
-            led.is_set_low().map_err(|_| Error::World)
+            led.is_set_low().map_err(|_| Error::world(0))
         })
     }
 
@@ -39,7 +39,7 @@ impl Api for Impl {
                 false => led.set_high(),
                 true => led.set_low(),
             }
-            .map_err(|_| Error::World)
+            .map_err(|_| Error::world(0))
         })
     }
 }

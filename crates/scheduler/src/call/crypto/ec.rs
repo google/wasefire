@@ -92,19 +92,13 @@ fn base_point_mul<B: Board>(mut call: SchedulerCall<B, api::base_point_mul::Sig>
                 let n = memory.get_array::<32>(*n)?.into();
                 let x = memory.get_array_mut::<32>(*x)?.into();
                 let y = memory.get_array_mut::<32>(*y)?.into();
-                match board::crypto::P256::<B>::base_point_mul(n, x, y) {
-                    Ok(()) => 0u32,
-                    Err(_) => u32::MAX,
-                }
+                board::crypto::P256::<B>::base_point_mul(n, x, y)
             }
             Curve::P384 => {
                 let n = memory.get_array::<48>(*n)?.into();
                 let x = memory.get_array_mut::<48>(*x)?.into();
                 let y = memory.get_array_mut::<48>(*y)?.into();
-                match board::crypto::P384::<B>::base_point_mul(n, x, y) {
-                    Ok(()) => 0u32,
-                    Err(_) => u32::MAX,
-                }
+                board::crypto::P384::<B>::base_point_mul(n, x, y)
             }
         };
         api::base_point_mul::Results { res: res.into() }
@@ -124,10 +118,7 @@ fn point_mul<B: Board>(mut call: SchedulerCall<B, api::point_mul::Sig>) {
                 let in_y = memory.get_array::<32>(*in_y)?.into();
                 let out_x = memory.get_array_mut::<32>(*out_x)?.into();
                 let out_y = memory.get_array_mut::<32>(*out_y)?.into();
-                match board::crypto::P256::<B>::point_mul(n, in_x, in_y, out_x, out_y) {
-                    Ok(()) => 0u32,
-                    Err(_) => u32::MAX,
-                }
+                board::crypto::P256::<B>::point_mul(n, in_x, in_y, out_x, out_y)
             }
             Curve::P384 => {
                 let n = memory.get_array::<48>(*n)?.into();
@@ -135,10 +126,7 @@ fn point_mul<B: Board>(mut call: SchedulerCall<B, api::point_mul::Sig>) {
                 let in_y = memory.get_array::<48>(*in_y)?.into();
                 let out_x = memory.get_array_mut::<48>(*out_x)?.into();
                 let out_y = memory.get_array_mut::<48>(*out_y)?.into();
-                match board::crypto::P384::<B>::point_mul(n, in_x, in_y, out_x, out_y) {
-                    Ok(()) => 0u32,
-                    Err(_) => u32::MAX,
-                }
+                board::crypto::P384::<B>::point_mul(n, in_x, in_y, out_x, out_y)
             }
         };
         api::point_mul::Results { res: res.into() }
@@ -157,20 +145,14 @@ fn ecdsa_sign<B: Board>(mut call: SchedulerCall<B, api::ecdsa_sign::Sig>) {
                 let message = memory.get_array::<32>(*message)?.into();
                 let r = memory.get_array_mut::<32>(*r)?.into();
                 let s = memory.get_array_mut::<32>(*s)?.into();
-                match board::crypto::P256::<B>::ecdsa_sign(key, message, r, s) {
-                    Ok(()) => 0u32,
-                    Err(_) => u32::MAX,
-                }
+                board::crypto::P256::<B>::ecdsa_sign(key, message, r, s)
             }
             Curve::P384 => {
                 let key = memory.get_array::<48>(*key)?.into();
                 let message = memory.get_array::<48>(*message)?.into();
                 let r = memory.get_array_mut::<48>(*r)?.into();
                 let s = memory.get_array_mut::<48>(*s)?.into();
-                match board::crypto::P384::<B>::ecdsa_sign(key, message, r, s) {
-                    Ok(()) => 0u32,
-                    Err(_) => u32::MAX,
-                }
+                board::crypto::P384::<B>::ecdsa_sign(key, message, r, s)
             }
         };
         api::ecdsa_sign::Results { res: res.into() }
@@ -190,11 +172,7 @@ fn ecdsa_verify<B: Board>(mut call: SchedulerCall<B, api::ecdsa_verify::Sig>) {
                 let y = memory.get_array::<32>(*y)?.into();
                 let r = memory.get_array::<32>(*r)?.into();
                 let s = memory.get_array::<32>(*s)?.into();
-                match board::crypto::P256::<B>::ecdsa_verify(message, x, y, r, s) {
-                    Ok(true) => 1u32,
-                    Ok(false) => 0u32,
-                    Err(_) => u32::MAX,
-                }
+                board::crypto::P256::<B>::ecdsa_verify(message, x, y, r, s)
             }
             Curve::P384 => {
                 let message = memory.get_array::<48>(*message)?.into();
@@ -202,11 +180,7 @@ fn ecdsa_verify<B: Board>(mut call: SchedulerCall<B, api::ecdsa_verify::Sig>) {
                 let y = memory.get_array::<48>(*y)?.into();
                 let r = memory.get_array::<48>(*r)?.into();
                 let s = memory.get_array::<48>(*s)?.into();
-                match board::crypto::P384::<B>::ecdsa_verify(message, x, y, r, s) {
-                    Ok(true) => 1u32,
-                    Ok(false) => 0u32,
-                    Err(_) => u32::MAX,
-                }
+                board::crypto::P384::<B>::ecdsa_verify(message, x, y, r, s)
             }
         };
         api::ecdsa_verify::Results { res: res.into() }

@@ -121,7 +121,7 @@ mod software {
                 cipher.copy_from_slice(clear);
             }
             tag.copy_from_slice(
-                &aead.encrypt_in_place_detached(iv, aad, cipher).map_err(|_| Error::World)?,
+                &aead.encrypt_in_place_detached(iv, aad, cipher).map_err(|_| Error::world(0))?,
             );
             Ok(())
         }
@@ -134,7 +134,7 @@ mod software {
             if let Some(cipher) = cipher {
                 clear.copy_from_slice(cipher);
             }
-            aead.decrypt_in_place_detached(iv, aad, clear, tag).map_err(|_| Error::World)
+            aead.decrypt_in_place_detached(iv, aad, clear, tag).map_err(|_| Error::world(0))
         }
     }
 }

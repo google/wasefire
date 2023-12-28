@@ -18,6 +18,7 @@ use nrf52840_hal::ccm::CcmData;
 use typenum::{U13, U16, U4};
 use wasefire_board_api::crypto::aead::{AeadSupport, Api, Array};
 use wasefire_board_api::{Error, Support};
+use wasefire_error::Code;
 
 use crate::with_state;
 
@@ -35,14 +36,14 @@ impl Api<U16, U13> for Impl {
         tag: &mut Array<U4>,
     ) -> Result<(), Error> {
         if aad != [0] {
-            return Err(Error::User);
+            return Err(Error::user(Code::BadSize));
         }
         let clear = match clear {
             Some(x) => x,
             None => cipher,
         };
         if 251 < clear.len() || cipher.len() != clear.len() {
-            return Err(Error::User);
+            return Err(Error::user(Code::BadSize));
         }
         let len = clear.len();
         let mut ccm_data = CcmData::new((*key).into(), truncate_iv(iv));
@@ -58,7 +59,7 @@ impl Api<U16, U13> for Impl {
                 cipher.copy_from_slice(&cipher_packet[3 ..][.. len]);
                 tag.copy_from_slice(&cipher_packet[3 + len ..]);
             }
-            Err(_) => return Err(Error::World),
+            Err(_) => return Err(Error::world(0)),
         }
         Ok(())
     }
@@ -68,14 +69,14 @@ impl Api<U16, U13> for Impl {
         clear: &mut [u8],
     ) -> Result<(), Error> {
         if aad != [0] {
-            return Err(Error::User);
+            return Err(Error::user(Code::BadSize));
         }
         let cipher = match cipher {
             Some(x) => x,
             None => clear,
         };
         if 251 < clear.len() || cipher.len() != clear.len() {
-            return Err(Error::User);
+            return Err(Error::user(Code::BadSize));
         }
         let len = clear.len();
         let mut ccm_data = CcmData::new((*key).into(), truncate_iv(iv));
@@ -89,7 +90,7 @@ impl Api<U16, U13> for Impl {
             state.ccm.decrypt_packet(&mut ccm_data, &mut clear_packet, &cipher_packet, &mut scratch)
         }) {
             Ok(()) => clear.copy_from_slice(&clear_packet[3 ..]),
-            Err(_) => return Err(Error::World),
+            Err(_) => return Err(Error::world(0)),
         }
         Ok(())
     }

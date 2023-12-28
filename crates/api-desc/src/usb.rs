@@ -21,14 +21,6 @@ pub(crate) fn new() -> Item {
         /// USB operations.
     };
     let name = "usb".into();
-    let items = vec![
-        item! {
-            /// Describes errors on USB operations.
-            enum Error {
-                Unknown = 0,
-            }
-        },
-        serial::new(),
-    ];
+    let items = vec![serial::new()];
     Item::Mod(Mod { docs, name, items })
 }

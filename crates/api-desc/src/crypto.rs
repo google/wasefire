@@ -24,24 +24,6 @@ pub(crate) fn new() -> Item {
         /// Cryptographic operations.
     };
     let name = "crypto".into();
-    let items = vec![
-        item! {
-            /// Describes errors on cryptographic operations.
-            enum Error {
-                /// A function pre-condition was broken.
-                InvalidArgument = 0,
-
-                /// An operation is unsupported.
-                Unsupported = 1,
-
-                /// An RNG operation failed.
-                RngFailure = 2,
-            }
-        },
-        ccm::new(),
-        ec::new(),
-        gcm::new(),
-        hash::new(),
-    ];
+    let items = vec![ccm::new(), ec::new(), gcm::new(), hash::new()];
     Item::Mod(Mod { docs, name, items })
 }

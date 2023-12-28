@@ -23,25 +23,6 @@ pub(crate) fn new() -> Item {
     let name = "store".into();
     let items = vec![
         item! {
-            /// Describes errors interacting with the store.
-            enum Error {
-                /// A function pre-condition was broken.
-                InvalidArgument = 0,
-
-                /// The store is full.
-                NoCapacity = 1,
-
-                /// The store reached its end of life.
-                NoLifetime = 2,
-
-                /// An operation to the underlying storage failed.
-                StorageError = 3,
-
-                /// The underlying storage doesn't match the store invariant.
-                InvalidStorage = 4,
-            }
-        },
-        item! {
             /// Inserts an entry in the store.
             ///
             /// If an entry for that key was already present, it is overwritten.
@@ -57,7 +38,7 @@ pub(crate) fn new() -> Item {
                 /// Length of the value.
                 len: usize,
             } -> {
-                /// Zero for success. Otherwise complement of error number.
+                /// Zero for success. Negative on error.
                 res: isize,
             }
         },
@@ -69,7 +50,7 @@ pub(crate) fn new() -> Item {
                 /// Key of the entry.
                 key: usize,
             } -> {
-                /// Zero for success. Otherwise complement of error number.
+                /// Zero for success. Negative on error.
                 res: isize,
             }
         },
@@ -97,11 +78,11 @@ pub(crate) fn new() -> Item {
                 #[cfg(feature = "multivalue")]
                 ptr: *mut u8,
 
-                /// Length of the value if non-negative. Otherwise complement of error number.
+                /// Negative on error. Otherwise length of the value.
                 #[cfg(feature = "multivalue")]
                 len: isize,
 
-                /// One if found. Zero if not found. Otherwise complement of error number.
+                /// One if found. Zero if not found. Negative on error.
                 #[cfg(not(feature = "multivalue"))]
                 res: isize,
             }

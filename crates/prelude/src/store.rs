@@ -18,10 +18,9 @@ use alloc::boxed::Box;
 
 use wasefire_applet_api::store as api;
 
-pub mod fragment;
+use crate::{convert_unit, Error};
 
-/// Errors returned by storage operations.
-pub use wasefire_applet_api::store::Error;
+pub mod fragment;
 
 /// Inserts an entry in the store.
 ///
@@ -31,8 +30,7 @@ pub use wasefire_applet_api::store::Error;
 pub fn insert(key: usize, value: &[u8]) -> Result<(), Error> {
     let params = api::insert::Params { key, ptr: value.as_ptr(), len: value.len() };
     let api::insert::Results { res } = unsafe { api::insert(params) };
-    Error::to_result(res)?;
-    Ok(())
+    convert_unit(res)
 }
 
 /// Removes an entry from the store.
@@ -42,8 +40,7 @@ pub fn insert(key: usize, value: &[u8]) -> Result<(), Error> {
 pub fn remove(key: usize) -> Result<(), Error> {
     let params = api::remove::Params { key };
     let api::remove::Results { res } = unsafe { api::remove(params) };
-    Error::to_result(res)?;
-    Ok(())
+    convert_unit(res)
 }
 
 /// Returns the value associated to a key, if any.
@@ -65,16 +62,16 @@ fn find_impl(key: usize) -> Result<Option<Box<[u8]>>, Error> {
 
 #[cfg(not(feature = "multivalue"))]
 fn find_impl(key: usize) -> Result<Option<Box<[u8]>>, Error> {
+    use crate::convert_bool;
+
     let mut ptr = core::ptr::null_mut();
     let mut len = 0;
     let params = api::find::Params { key, ptr: &mut ptr, len: &mut len };
     let api::find::Results { res } = unsafe { api::find(params) };
-    match Error::to_result(res)? {
-        0 => Ok(None),
-        1 => {
-            let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
-            Ok(Some(unsafe { Box::from_raw(ptr) }))
-        }
-        _ => unreachable!(),
+    if convert_bool(res)? {
+        let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
+        Ok(Some(unsafe { Box::from_raw(ptr) }))
+    } else {
+        Ok(None)
     }
 }

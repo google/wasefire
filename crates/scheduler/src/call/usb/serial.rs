@@ -37,10 +37,7 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let memory = scheduler.applet.memory();
     let results = try {
         let output = memory.get_mut(*ptr, *len)?;
-        let len = match board::usb::Serial::<B>::read(output) {
-            Ok(len) => (len as u32).into(),
-            Err(_) => u32::MAX.into(),
-        };
+        let len = board::usb::Serial::<B>::read(output).map(|x| x as u32).into();
         api::read::Results { len }
     };
     call.reply(results);
@@ -52,10 +49,7 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let memory = scheduler.applet.memory();
     let results = try {
         let input = memory.get(*ptr, *len)?;
-        let len = match board::usb::Serial::<B>::write(input) {
-            Ok(len) => (len as u32).into(),
-            Err(_) => u32::MAX.into(),
-        };
+        let len = board::usb::Serial::<B>::write(input).map(|x| x as u32).into();
         api::write::Results { len }
     };
     call.reply(results);
@@ -94,10 +88,7 @@ fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
 fn flush<B: Board>(call: SchedulerCall<B, api::flush::Sig>) {
     let api::flush::Params {} = call.read();
     let results = try {
-        let res = match board::usb::Serial::<B>::flush() {
-            Ok(()) => 0.into(),
-            Err(_) => u32::MAX.into(),
-        };
+        let res = board::usb::Serial::<B>::flush().into();
         api::flush::Results { res }
     };
     call.reply(results);

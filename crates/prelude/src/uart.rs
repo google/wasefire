@@ -18,10 +18,7 @@ use sealed::sealed;
 use wasefire_applet_api::uart as api;
 
 use crate::serial::Event;
-
-/// UART error.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Error;
+use crate::{convert, Error};
 
 /// Returns the number of available UARTs on the board.
 pub fn count() -> usize {
@@ -34,8 +31,6 @@ pub struct Uart(pub usize);
 
 #[sealed]
 impl crate::serial::Serial for Uart {
-    type Error = Error;
-
     fn read(&self, buffer: &mut [u8]) -> Result<usize, Error> {
         let params =
             api::read::Params { uart: self.0, ptr: buffer.as_mut_ptr(), len: buffer.len() };
@@ -70,14 +65,6 @@ impl crate::serial::Serial for Uart {
         let params = api::unregister::Params { uart: self.0, event: convert_event(event) as usize };
         unsafe { api::unregister(params) };
         Ok(())
-    }
-}
-
-fn convert(code: isize) -> Result<usize, Error> {
-    if code < 0 {
-        Err(Error)
-    } else {
-        Ok(code as usize)
     }
 }
 

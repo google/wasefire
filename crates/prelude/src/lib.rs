@@ -36,6 +36,7 @@
 extern crate alloc;
 
 use wasefire_applet_api as api;
+pub use wasefire_error::Error;
 
 mod allocator;
 pub mod button;
@@ -124,4 +125,25 @@ macro_rules! applet {
 fn handle_panic(info: &core::panic::PanicInfo) -> ! {
     debug!("{}", info);
     scheduling::abort();
+}
+
+fn convert(res: isize) -> Result<usize, Error> {
+    Error::decode(res as i32).map(|x| x as usize)
+}
+
+fn convert_unit(res: isize) -> Result<(), Error> {
+    match convert(res) {
+        Ok(0) => Ok(()),
+        Ok(_) => unreachable!(),
+        Err(e) => Err(e),
+    }
+}
+
+fn convert_bool(res: isize) -> Result<bool, Error> {
+    match convert(res) {
+        Ok(0) => Ok(false),
+        Ok(1) => Ok(true),
+        Ok(_) => unreachable!(),
+        Err(e) => Err(e),
+    }
 }

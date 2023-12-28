@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Migrate to `wasefire-error`
 - Support `gpio` module
 - Support `platform::version()`
 - Support `radio::ble` module

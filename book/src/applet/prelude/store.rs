@@ -96,7 +96,7 @@ impl<'a> Command<'a> {
     //} ANCHOR_END: impl_parse
 
     //{ ANCHOR: process_signature
-    fn process(&self) -> Result<(), store::Error> {
+    fn process(&self) -> Result<(), Error> {
         //} ANCHOR_END: process_signature
         //{ ANCHOR: process_insert
         match self {
@@ -160,21 +160,21 @@ impl Key {
 }
 
 //{ ANCHOR: helpers
-fn insert(key: &Key, value: &[u8]) -> Result<(), store::Error> {
+fn insert(key: &Key, value: &[u8]) -> Result<(), Error> {
     match key {
         Key::Exact(key) => store::insert(*key, value),
         Key::Range(keys) => store::fragment::insert(keys.clone(), value),
     }
 }
 
-fn find(key: &Key) -> Result<Option<Box<[u8]>>, store::Error> {
+fn find(key: &Key) -> Result<Option<Box<[u8]>>, Error> {
     match key {
         Key::Exact(key) => store::find(*key),
         Key::Range(keys) => store::fragment::find(keys.clone()),
     }
 }
 
-fn remove(key: &Key) -> Result<(), store::Error> {
+fn remove(key: &Key) -> Result<(), Error> {
     match key {
         Key::Exact(key) => store::remove(*key),
         Key::Range(keys) => store::fragment::remove(keys.clone()),

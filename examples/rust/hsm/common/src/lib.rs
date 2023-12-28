@@ -60,27 +60,6 @@ pub enum Error {
     UsbError,
 }
 
-#[cfg(feature = "api")]
-impl From<wasefire::crypto::Error> for Error {
-    fn from(_: wasefire::crypto::Error) -> Self {
-        Error::CryptoError
-    }
-}
-
-#[cfg(feature = "api")]
-impl From<wasefire::rng::Error> for Error {
-    fn from(_: wasefire::rng::Error) -> Self {
-        Error::RngError
-    }
-}
-
-#[cfg(feature = "api")]
-impl From<wasefire::store::Error> for Error {
-    fn from(_: wasefire::store::Error) -> Self {
-        Error::StoreError
-    }
-}
-
 pub trait Serializer {
     fn write_all(&mut self, data: &[u8]) -> Result<(), Error>;
     fn flush(&mut self) -> Result<(), Error>;

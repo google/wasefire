@@ -22,6 +22,7 @@ use nrf52840_hal::pac::generic::Reg;
 use nrf52840_hal::pac::p0::pin_cnf::PIN_CNF_SPEC;
 use wasefire_board_api::gpio::{Api, Config, InputConfig, OutputConfig};
 use wasefire_board_api::{Error, Id, Support};
+use wasefire_error::Code;
 
 use crate::with_state;
 
@@ -55,14 +56,14 @@ impl Api for Impl {
             match &state.gpios[*gpio] {
                 Gpio::Invalid => unreachable!(),
                 Gpio::Disconnected(_) | Gpio::OutputPushPull(_) | Gpio::OutputOpenDrain(_) => {
-                    return Err(Error::User);
+                    return Err(Error::user(Code::BadState));
                 }
                 Gpio::InputFloating(x) => x.is_high(),
                 Gpio::InputPullDown(x) => x.is_high(),
                 Gpio::InputPullUp(x) => x.is_high(),
                 Gpio::OutputOpenDrainIO(x) => x.is_high(),
             }
-            .map_err(|_| Error::World)
+            .map_err(|_| Error::world(0))
         })
     }
 
@@ -74,12 +75,12 @@ impl Api for Impl {
                 Gpio::Disconnected(_)
                 | Gpio::InputFloating(_)
                 | Gpio::InputPullDown(_)
-                | Gpio::InputPullUp(_) => return Err(Error::User),
+                | Gpio::InputPullUp(_) => return Err(Error::user(Code::BadState)),
                 Gpio::OutputPushPull(x) => x.set_state(value),
                 Gpio::OutputOpenDrain(x) => x.set_state(value),
                 Gpio::OutputOpenDrainIO(x) => x.set_state(value),
             }
-            .map_err(|_| Error::World)
+            .map_err(|_| Error::world(0))
         })
     }
 }
@@ -121,7 +122,7 @@ fn configure<MODE>(
         (InputConfig::Disabled, OutputConfig::PushPull) => {
             (Gpio::OutputPushPull(pin.into_push_pull_output(initial)), Ok(()))
         }
-        (_, OutputConfig::PushPull) => (wrap(pin), Err(Error::User)),
+        (_, OutputConfig::PushPull) => (wrap(pin), Err(Error::user(0))),
         (InputConfig::Disabled, OutputConfig::OpenDrain) => (
             Gpio::OutputOpenDrain(
                 pin.into_open_drain_output(OpenDrainConfig::Standard0Disconnect1, initial),
@@ -134,7 +135,7 @@ fn configure<MODE>(
             ),
             Ok(()),
         ),
-        (InputConfig::PullDown, OutputConfig::OpenDrain) => (wrap(pin), Err(Error::User)),
+        (InputConfig::PullDown, OutputConfig::OpenDrain) => (wrap(pin), Err(Error::user(0))),
         (InputConfig::PullUp, OutputConfig::OpenDrain) => {
             let pin =
                 pin.into_open_drain_input_output(OpenDrainConfig::Standard0Disconnect1, initial);
@@ -159,7 +160,7 @@ fn configure<MODE>(
             pin_cnf(&pin).modify(|_, w| w.pull().pulldown());
             (Gpio::OutputOpenDrainIO(pin), Ok(()))
         }
-        (InputConfig::PullUp, OutputConfig::OpenSource) => (wrap(pin), Err(Error::User)),
+        (InputConfig::PullUp, OutputConfig::OpenSource) => (wrap(pin), Err(Error::user(0))),
     }
 }
 

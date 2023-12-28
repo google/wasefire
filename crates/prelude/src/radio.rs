@@ -14,11 +14,4 @@
 
 //! Provides API for radio.
 
-/// Errors returned by radio operations.
-pub use wasefire_applet_api::radio::Error;
-
 pub mod ble;
-
-fn convert(len: isize) -> Result<usize, Error> {
-    Error::to_result(len)
-}

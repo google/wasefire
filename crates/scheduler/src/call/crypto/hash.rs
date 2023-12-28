@@ -14,9 +14,9 @@
 
 use digest::{FixedOutput, InvalidLength, KeyInit, Output, Update};
 use generic_array::GenericArray;
-use wasefire_applet_api::crypto as crypto_api;
 use wasefire_applet_api::crypto::hash::{self as api, Algorithm, Api};
 use wasefire_board_api::{self as board, Api as Board, Support};
+use wasefire_error::Error;
 
 use crate::applet::store::{MemoryApi, StoreApi};
 use crate::applet::HashContext;
@@ -191,7 +191,7 @@ fn hkdf_expand<B: Board>(mut call: SchedulerCall<B, api::hkdf_expand::Sig>) {
         };
         let res = match res {
             Ok(()) => 0.into(),
-            Err(InvalidLength) => crypto_api::Error::InvalidArgument.into(),
+            Err(InvalidLength) => Error::user(0).into(),
         };
         api::hkdf_expand::Results { res }
     };

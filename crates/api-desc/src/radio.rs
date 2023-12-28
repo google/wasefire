@@ -21,14 +21,6 @@ pub(crate) fn new() -> Item {
         /// Radio operations.
     };
     let name = "radio".into();
-    let items = vec![
-        item! {
-            /// Describes errors on radio operations.
-            enum Error {
-                Unknown = 0,
-            }
-        },
-        ble::new(),
-    ];
+    let items = vec![ble::new()];
     Item::Mod(Mod { docs, name, items })
 }

@@ -19,11 +19,12 @@ features = ["wasm"]
 bytemuck = { version = "1.14.0", default-features = false, features = ["derive"] }
 sealed = { version = "0.5.0", default-features = false, optional = true }
 wasefire-applet-api-macro = { version = "0.6.0-git", path = "../api-macro" }
+wasefire-error = { version = "0.1.0-git", path = "../error", optional = true }
 wasefire-logger = { version = "0.1.4-git", path = "../logger", optional = true }
 
 [features]
 # Compiles for host or wasm (choose exactly one).
-host = ["dep:sealed"]
+host = ["dep:sealed", "dep:wasefire-error"]
 wasm = []
 
 # Enables multivalue support (unstable).

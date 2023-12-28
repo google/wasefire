@@ -21,7 +21,7 @@ use alloc::vec::Vec;
 pub use rust_crypto::*;
 use wasefire_applet_api::crypto::gcm as api;
 
-use super::Error;
+use crate::{convert_unit, Error};
 
 /// Describes AES-256-GCM support.
 pub struct Support {
@@ -73,7 +73,7 @@ pub fn encrypt_mut(
     key: &[u8; 32], iv: &[u8; 12], aad: &[u8], clear: &[u8], cipher: &mut [u8], tag: &mut [u8],
 ) -> Result<(), Error> {
     if clear.len() != cipher.len() || tag.len() != tag_length() {
-        return Err(Error::InvalidArgument);
+        return Err(Error::user(0));
     }
     let params = api::encrypt::Params {
         key: key.as_ptr(),
@@ -86,8 +86,7 @@ pub fn encrypt_mut(
         tag: tag.as_mut_ptr(),
     };
     let api::encrypt::Results { res } = unsafe { api::encrypt(params) };
-    Error::to_result(res)?;
-    Ok(())
+    convert_unit(res)
 }
 
 /// Encrypts and authenticates a buffer in place.
@@ -95,7 +94,7 @@ pub fn encrypt_in_place(
     key: &[u8; 32], iv: &[u8; 12], aad: &[u8], buffer: &mut [u8], tag: &mut [u8],
 ) -> Result<(), Error> {
     if tag.len() != tag_length() {
-        return Err(Error::InvalidArgument);
+        return Err(Error::user(0));
     }
     let params = api::encrypt::Params {
         key: key.as_ptr(),
@@ -108,8 +107,7 @@ pub fn encrypt_in_place(
         tag: tag.as_mut_ptr(),
     };
     let api::encrypt::Results { res } = unsafe { api::encrypt(params) };
-    Error::to_result(res)?;
-    Ok(())
+    convert_unit(res)
 }
 
 /// Decrypts and authenticates a ciphertext.
@@ -126,7 +124,7 @@ pub fn decrypt_mut(
     key: &[u8; 32], iv: &[u8; 12], aad: &[u8], tag: &[u8], cipher: &[u8], clear: &mut [u8],
 ) -> Result<(), Error> {
     if cipher.len() != clear.len() || tag.len() != tag_length() {
-        return Err(Error::InvalidArgument);
+        return Err(Error::user(0));
     }
     let params = api::decrypt::Params {
         key: key.as_ptr(),
@@ -139,8 +137,7 @@ pub fn decrypt_mut(
         clear: clear.as_mut_ptr(),
     };
     let api::decrypt::Results { res } = unsafe { api::decrypt(params) };
-    Error::to_result(res)?;
-    Ok(())
+    convert_unit(res)
 }
 
 /// Decrypts and authenticates a ciphertext.
@@ -148,7 +145,7 @@ pub fn decrypt_in_place(
     key: &[u8; 32], iv: &[u8; 12], aad: &[u8], tag: &[u8], buffer: &mut [u8],
 ) -> Result<(), Error> {
     if tag.len() != tag_length() {
-        return Err(Error::InvalidArgument);
+        return Err(Error::user(0));
     }
     let params = api::decrypt::Params {
         key: key.as_ptr(),
@@ -161,8 +158,7 @@ pub fn decrypt_in_place(
         clear: buffer.as_mut_ptr(),
     };
     let api::decrypt::Results { res } = unsafe { api::decrypt(params) };
-    Error::to_result(res)?;
-    Ok(())
+    convert_unit(res)
 }
 
 #[cfg(feature = "rust-crypto")]

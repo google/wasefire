@@ -34,7 +34,7 @@ impl Api for Impl {
             let state = state.deref_mut();
             let timer = &mut state.timers.0[*id];
             if timer.handle.is_some() {
-                return Err(Error::User);
+                return Err(Error::user(0));
             }
             let duration = Duration::from_millis(command.duration_ms as u64);
             if command.periodic {
@@ -61,7 +61,7 @@ impl Api for Impl {
             let timer = &mut state.timers.0[*id];
             match &timer.handle {
                 Some(handle) => handle.abort(),
-                None => return Err(Error::User),
+                None => return Err(Error::user(0)),
             }
             timer.handle = None;
             Ok(())

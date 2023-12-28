@@ -14,6 +14,8 @@
 
 //! Platform interface.
 
+use wasefire_error::Code;
+
 use crate::{Error, Unsupported};
 
 pub mod update;
@@ -44,6 +46,6 @@ impl Api for Unsupported {
     }
 
     fn reboot() -> Result<!, Error> {
-        Err(Error::World)
+        Err(Error::internal(Code::NotImplemented))
     }
 }

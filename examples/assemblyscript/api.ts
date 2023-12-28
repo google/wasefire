@@ -111,18 +111,6 @@
 
 // START OF MODULE crypto
 // Cryptographic operations.
-  // Describes errors on cryptographic operations.
-  enum crypto_Error {
-    // A function pre-condition was broken.
-    InvalidArgument = 0,
-
-    // An operation is unsupported.
-    Unsupported = 1,
-
-    // An RNG operation failed.
-    RngFailure = 2,
-  }
-
   // START OF MODULE crypto_ccm
   // AES-CCM according to Bluetooth.
     // Whether AES-CCM is supported.
@@ -155,8 +143,7 @@
       //
       // Its length must be `len + 4` bytes.
       cipher: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
+    // Zero on success. Negative on error.
     ): isize
 
     // Decrypts a cipher text given a key and IV.
@@ -183,8 +170,7 @@
       //
       // Its length must be provided in the `len` field.
       clear: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
+    // Zero on success. Negative on error.
     ): isize
   // END OF MODULE crypto_ccm
 
@@ -245,8 +231,7 @@
 
       // The y coordinate in SEC1 encoding.
       y: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
+    // Zero on success. Negative on error.
     ): isize
 
     // Performs point multiplication.
@@ -269,8 +254,7 @@
 
       // The y coordinate of the output point in SEC1 encoding.
       out_y: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
+    // Zero on success. Negative on error.
     ): isize
 
     // Signs a message with ECDSA.
@@ -290,8 +274,7 @@
 
       // The s signature component in SEC1 encoding.
       s: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
+    // Zero on success. Negative on error.
     ): isize
 
     // Verifies an ECDSA signature.
@@ -314,8 +297,7 @@
 
       // The s signature component in SEC1 encoding.
       s: usize,
-    // 1 if the signature is valid, 0 if invalid, and bitwise complement of
-    // [`Error`](crate::crypto::Error) otherwise.
+    // One if the signature is valid. Zero if invalid. Negative on error.
     ): isize
   // END OF MODULE crypto_ec
 
@@ -376,8 +358,7 @@
 
       // The authentication tag (see [`super::tag_length()`]).
       tag: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
+    // Zero on success. Negative on error.
     ): isize
 
     // Decrypts and authenticates a cipher text with associated data given a key and IV.
@@ -409,8 +390,7 @@
 
       // The clear text.
       clear: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
+    // Zero on success. Negative on error.
     ): isize
   // END OF MODULE crypto_gcm
 
@@ -438,8 +418,7 @@
     export declare function crypto_hash_initialize(
       // The hash algorithm.
       algorithm: usize,
-    // A non-negative identifier on success, bitwise complement of
-    // [`Error`](crate::crypto::Error) otherwise.
+    // Negative on error. The identifier otherwise.
     ): isize
 
     // Updates a hash.
@@ -473,8 +452,7 @@
       // The pointer may be null, in which case this function deallocates the identifier
       // without computing the digest.
       digest: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
+    // Zero on success. Negative on error.
     ): isize
 
     // Whether the algorithm is supported for hmac.
@@ -498,8 +476,7 @@
       //
       // If greater than 64 bytes, the key will be itself hashed.
       key_len: usize,
-    // A non-negative identifier on success, bitwise complement of
-    // [`Error`](crate::crypto::Error) otherwise.
+    // Negative on error. The identifier otherwise.
     ): isize
 
     // Updates an hmac.
@@ -533,8 +510,7 @@
       // The pointer may be null, in which case this function deallocates the identifier
       // without computing the hmac.
       hmac: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
+    // Zero on success. Negative otherwise.
     ): isize
 
     // Whether the algorithm is supported for hkdf.
@@ -576,8 +552,7 @@
       //
       // Must be at most 255 times the output length of the hash algorithm.
       okm_len: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
+    // Zero on success. Negative on error.
     ): isize
   // END OF MODULE crypto_hash
 // END OF MODULE crypto
@@ -852,11 +827,6 @@
 
 // START OF MODULE radio
 // Radio operations.
-  // Describes errors on radio operations.
-  enum radio_Error {
-    Unknown = 0,
-  }
-
   // START OF MODULE radio_ble
   // Bluetooth Low Energy (BLE) operations.
     // BLE events.
@@ -889,8 +859,8 @@
     export declare function radio_ble_read_advertisement(
       // Pointer to the [`super::Advertisement`] packet.
       ptr: usize,
-    // One if a packet was read. Zero if there was no packet to read. Otherwise
-    // complement of error number.
+    // One if a packet was read. Zero if there was no packet to read. Negative on
+    // error.
     ): isize
 
     // Register a handler for radio events.
@@ -957,24 +927,6 @@
 
 // START OF MODULE store
 // Persistent storage operations.
-  // Describes errors interacting with the store.
-  enum store_Error {
-    // A function pre-condition was broken.
-    InvalidArgument = 0,
-
-    // The store is full.
-    NoCapacity = 1,
-
-    // The store reached its end of life.
-    NoLifetime = 2,
-
-    // An operation to the underlying storage failed.
-    StorageError = 3,
-
-    // The underlying storage doesn't match the store invariant.
-    InvalidStorage = 4,
-  }
-
   // Inserts an entry in the store.
   //
   // If an entry for that key was already present, it is overwritten.
@@ -990,7 +942,7 @@
 
     // Length of the value.
     len: usize,
-  // Zero for success. Otherwise complement of error number.
+  // Zero for success. Negative on error.
   ): isize
 
   // Removes an entry from the store.
@@ -1000,7 +952,7 @@
   export declare function store_remove(
     // Key of the entry.
     key: usize,
-  // Zero for success. Otherwise complement of error number.
+  // Zero for success. Negative on error.
   ): isize
 
   // Finds an entry in the store, if any.
@@ -1017,7 +969,7 @@
 
     // Where to write the length of the value, if found.
     len: usize,
-  // One if found. Zero if not found. Otherwise complement of error number.
+  // One if found. Zero if not found. Negative on error.
   ): isize
 
   // START OF MODULE store_fragment
@@ -1154,11 +1106,6 @@
 
 // START OF MODULE usb
 // USB operations.
-  // Describes errors on USB operations.
-  enum usb_Error {
-    Unknown = 0,
-  }
-
   // START OF MODULE usb_serial
     // Reads from USB serial into a buffer.
     @external("env", "usr")
@@ -1216,7 +1163,7 @@
     // Flushs the USB serial.
     @external("env", "usf")
     export declare function usb_serial_flush(
-    // Zero on success, -1 on error.
+    // Zero on success. Negative on error.
     ): isize
   // END OF MODULE usb_serial
 // END OF MODULE usb
