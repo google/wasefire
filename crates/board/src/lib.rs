@@ -30,6 +30,7 @@ use derivative::Derivative;
 pub mod button;
 pub mod crypto;
 pub mod debug;
+pub mod gpio;
 pub mod led;
 pub mod platform;
 pub mod radio;
@@ -70,6 +71,7 @@ pub trait Api: Send + 'static {
     type Button: button::Api;
     type Crypto: crypto::Api;
     type Debug: debug::Api;
+    type Gpio: gpio::Api;
     type Led: led::Api;
     type Platform: platform::Api;
     type Radio: radio::Api;
@@ -140,6 +142,7 @@ pub enum Error {
 pub type Button<B> = <B as Api>::Button;
 pub type Crypto<B> = <B as Api>::Crypto;
 pub type Debug<B> = <B as Api>::Debug;
+pub type Gpio<B> = <B as Api>::Gpio;
 pub type Led<B> = <B as Api>::Led;
 pub type Platform<B> = <B as Api>::Platform;
 pub type Radio<B> = <B as Api>::Radio;
@@ -228,6 +231,7 @@ mod tests {
             type Button = Unsupported;
             type Crypto = Unsupported;
             type Debug = Unsupported;
+            type Gpio = Unsupported;
             type Led = Unsupported;
             type Platform = Unsupported;
             type Radio = Unsupported;

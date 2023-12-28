@@ -23,6 +23,7 @@ mod button;
 mod clock;
 mod crypto;
 mod debug;
+mod gpio;
 mod id;
 mod led;
 mod macros;
@@ -46,6 +47,7 @@ impl Default for Api {
             clock::new(),
             crypto::new(),
             debug::new(),
+            gpio::new(),
             led::new(),
             platform::new(),
             radio::new(),

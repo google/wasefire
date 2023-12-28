@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add `Api::Gpio` for low-level GPIOs
 - Add `platform::Api::version()`
 - Add `Api::Radio` for radio APIs
 - Add `radio::Api::Ble` for Bluetooth Low Energy

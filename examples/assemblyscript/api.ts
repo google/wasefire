@@ -647,6 +647,75 @@
   ): void
 // END OF MODULE debug
 
+// START OF MODULE gpio
+// Low-level GPIO operations.
+//
+// See [`crate::button`] and [`crate::led`] for higher-level GPIO operations.
+  // Returns how many GPIOs are on the device.
+  @external("env", "gc")
+  export declare function gpio_count(
+  // How many GPIOs are on the device.
+  ): usize
+
+  // Input configuration.
+  enum gpio_InputConfig {
+    Disabled = 0,
+
+    Floating = 1,
+
+    PullDown = 2,
+
+    PullUp = 3,
+  }
+
+  // Output configuration.
+  enum gpio_OutputConfig {
+    Disabled = 0,
+
+    OpenDrain = 1,
+
+    OpenSource = 2,
+
+    PushPull = 3,
+  }
+
+  // Configures a GPIO.
+  @external("env", "gf")
+  export declare function gpio_configure(
+    // Index of the GPIO to configure.
+    gpio: usize,
+
+    // Bit-field describing the configuration.
+    //
+    // | Bits  | Description          |
+    // | ---   | ---                  |
+    // | 01:00 | Input configuration  |
+    // | 09:08 | Output configuration |
+    // | 16:16 | Output initial value |
+    mode: usize,
+  // Zero. Negative on error.
+  ): isize
+
+  // Reads from a GPIO.
+  @external("env", "gr")
+  export declare function gpio_read(
+    // Index of the GPIO to read from (must be configured as input).
+    gpio: usize,
+  // Zero or One. Negative on error.
+  ): isize
+
+  // Writes to a GPIO.
+  @external("env", "gw")
+  export declare function gpio_write(
+    // Index of the GPIO to write to (must be configured as output).
+    gpio: usize,
+
+    // Zero or one.
+    val: usize,
+  // Zero. Negative on error.
+  ): isize
+// END OF MODULE gpio
+
 // START OF MODULE led
 // LED operations.
   // Returns how many LEDs are on the device.

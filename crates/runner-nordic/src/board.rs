@@ -21,6 +21,7 @@ pub mod button;
 pub mod clock;
 mod crypto;
 mod debug;
+pub mod gpio;
 pub mod led;
 pub mod platform;
 pub mod radio;
@@ -53,6 +54,7 @@ impl board::Api for Board {
     type Button = button::Impl;
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;
+    type Gpio = gpio::Impl;
     type Led = led::Impl;
     type Platform = platform::Impl;
     type Radio = radio::Impl;

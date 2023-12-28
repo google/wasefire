@@ -21,6 +21,7 @@ mod button;
 mod clock;
 mod crypto;
 mod debug;
+mod gpio;
 mod led;
 mod platform;
 mod radio;
@@ -36,6 +37,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Clock(call) => clock::process(call),
         Api::Crypto(call) => crypto::process(call),
         Api::Debug(call) => debug::process(call),
+        Api::Gpio(call) => gpio::process(call),
         Api::Led(call) => led::process(call),
         Api::Platform(call) => platform::process(call),
         Api::Radio(call) => radio::process(call),
