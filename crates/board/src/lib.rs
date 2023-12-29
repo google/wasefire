@@ -26,6 +26,7 @@ use core::marker::PhantomData;
 use core::ops::Deref;
 
 use derivative::Derivative;
+pub use wasefire_error::Error;
 
 pub mod button;
 pub mod crypto;
@@ -122,21 +123,6 @@ pub enum Event<B: Api + ?Sized> {
 
     /// USB event.
     Usb(usb::Event),
-}
-
-/// Errors that interfaces may return.
-///
-/// Because a board interfaces between the user and the world, there's 2 types of errors: those due
-/// to the user and those due to the world. If the board itself errors, the error should be handled
-/// internally: either by an automatic reset (in production) or by halting execution until a manual
-/// reset (during testing to permit debugging).
-#[derive(Debug, Copy, Clone)]
-pub enum Error {
-    /// The user made an error.
-    User,
-
-    /// The world made an error.
-    World,
 }
 
 pub type Button<B> = <B as Api>::Button;

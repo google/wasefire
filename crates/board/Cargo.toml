@@ -36,6 +36,7 @@ typenum = { version = "1.17.0", default-features = false }
 usb-device = { version = "0.3.1", default-features = false }
 usbd-serial = { version = "0.2.0", default-features = false }
 wasefire-applet-api = { version = "0.6.0-git", path = "../api", features = ["host"] }
+wasefire-error = { version = "0.1.0-git", path = "../error" }
 wasefire-logger = { version = "0.1.4-git", path = "../logger" }
 wasefire-store = { version = "0.2.3-git", path = "../store" }
 

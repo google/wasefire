@@ -46,8 +46,7 @@ pub(crate) fn new() -> Item {
                 /// The hash algorithm.
                 algorithm: usize,
             } -> {
-                /// A non-negative identifier on success, bitwise complement of
-                /// [`Error`](crate::crypto::Error) otherwise.
+                /// Negative on error. The identifier otherwise.
                 id: isize,
             }
         },
@@ -83,8 +82,7 @@ pub(crate) fn new() -> Item {
                 /// without computing the digest.
                 digest: *mut u8,
             } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
+                /// Zero on success. Negative on error.
                 res: isize,
             }
         },
@@ -112,8 +110,7 @@ pub(crate) fn new() -> Item {
                 /// If greater than 64 bytes, the key will be itself hashed.
                 key_len: usize,
             } -> {
-                /// A non-negative identifier on success, bitwise complement of
-                /// [`Error`](crate::crypto::Error) otherwise.
+                /// Negative on error. The identifier otherwise.
                 id: isize,
             }
         },
@@ -149,8 +146,7 @@ pub(crate) fn new() -> Item {
                 /// without computing the hmac.
                 hmac: *mut u8,
             } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
+                /// Zero on success. Negative otherwise.
                 res: isize,
             }
         },
@@ -197,8 +193,7 @@ pub(crate) fn new() -> Item {
                 okm_len: usize,
 
             } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
+                /// Zero on success. Negative on error.
                 res: isize,
             }
         },

@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Migrate to `wasefire-error`
 - Use `wasefire-logger` for panics
 
 ### Patch

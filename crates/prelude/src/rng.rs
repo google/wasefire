@@ -16,16 +16,11 @@
 
 use wasefire_applet_api::rng as api;
 
-/// Error generating randomness.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Error;
+use crate::{convert_unit, Error};
 
 /// Fills a slice with random bytes.
 pub fn fill_bytes(buf: &mut [u8]) -> Result<(), Error> {
     let params = api::fill_bytes::Params { ptr: buf.as_mut_ptr(), len: buf.len() };
     let api::fill_bytes::Results { res } = unsafe { api::fill_bytes(params) };
-    match res {
-        0 => Ok(()),
-        _ => Err(Error),
-    }
+    convert_unit(res)
 }

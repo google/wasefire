@@ -4,6 +4,7 @@
 
 ### Major
 
+- Replace `Error` type with `wasefire-error`
 - Add `Api::Gpio` for low-level GPIOs
 - Add `platform::Api::version()`
 - Add `Api::Radio` for radio APIs

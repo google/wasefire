@@ -76,7 +76,7 @@ pub(crate) fn new() -> Item {
         item! {
             /// Flushs the USB serial.
             fn flush "usf" {} -> {
-                /// Zero on success, -1 on error.
+                /// Zero on success. Negative on error.
                 res: isize,
             }
         },

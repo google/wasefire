@@ -22,7 +22,7 @@ use wasefire_applet_api::crypto::ec as api;
 use wasefire_applet_api::crypto::hash::Algorithm;
 
 use super::hash::hkdf;
-use super::Error;
+use crate::{convert_bool, convert_unit, Error};
 
 /// ECDSA private key.
 pub struct EcdsaPrivate<C: Curve>(Private<C>);
@@ -328,8 +328,7 @@ impl<T: InternalHelper> Curve for T {
             y: y.as_mut_ptr(),
         };
         let api::base_point_mul::Results { res } = unsafe { api::base_point_mul(params) };
-        Error::to_result(res)?;
-        Ok(())
+        convert_unit(res)
     }
 
     fn point_mul(
@@ -345,8 +344,7 @@ impl<T: InternalHelper> Curve for T {
             out_y: out_y.as_mut_ptr(),
         };
         let api::point_mul::Results { res } = unsafe { api::point_mul(params) };
-        Error::to_result(res)?;
-        Ok(())
+        convert_unit(res)
     }
 
     fn ecdsa_sign(
@@ -360,8 +358,7 @@ impl<T: InternalHelper> Curve for T {
             s: s.as_mut_ptr(),
         };
         let api::ecdsa_sign::Results { res } = unsafe { api::ecdsa_sign(params) };
-        Error::to_result(res)?;
-        Ok(())
+        convert_unit(res)
     }
 
     fn ecdsa_verify(
@@ -376,7 +373,7 @@ impl<T: InternalHelper> Curve for T {
             s: s.as_ptr(),
         };
         let api::ecdsa_verify::Results { res } = unsafe { api::ecdsa_verify(params) };
-        Ok(Error::to_result(res)? == 1)
+        convert_bool(res)
     }
 }
 
@@ -395,10 +392,10 @@ impl<C: Curve> Private<C> {
         let mut scalar = Int::<C>::default();
         loop {
             // TODO(#163): Use a DRBG (possibly taking it as argument).
-            crate::rng::fill_bytes(&mut scalar).map_err(|_| Error::RngFailure)?;
+            crate::rng::fill_bytes(&mut scalar)?;
             if is_zero_scalar::<C>(&scalar) {
                 // The probability is very low for this to happen during normal operation.
-                return Err(Error::RngFailure);
+                return Err(Error::world(0));
             }
             if C::is_valid_scalar(&scalar) {
                 return Ok(Self(scalar));
@@ -409,7 +406,7 @@ impl<C: Curve> Private<C> {
     /// Creates a private key from its non-zero scalar SEC1 encoding.
     fn from_non_zero_scalar(n: Int<C>) -> Result<Self, Error> {
         if is_zero_scalar::<C>(&n) || !C::is_valid_scalar(&n) {
-            return Err(Error::InvalidArgument);
+            return Err(Error::user(0));
         }
         Ok(Self(n))
     }
@@ -432,7 +429,7 @@ impl<C: Curve> Public<C> {
     /// Creates a public key from its coordinates in SEC1 encoding.
     fn from_coordinates(x: Int<C>, y: Int<C>) -> Result<Self, Error> {
         if !C::is_valid_point(&x, &y) {
-            return Err(Error::InvalidArgument);
+            return Err(Error::user(0));
         }
         Ok(Self { x, y })
     }

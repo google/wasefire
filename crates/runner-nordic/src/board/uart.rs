@@ -173,7 +173,7 @@ impl Api for Impl {
             return Ok(0);
         }
         if EASY_DMA_SIZE < input.len() || !in_ram(input) {
-            return Err(Error::User);
+            return Err(Error::user(0));
         }
         with_state(|state| {
             let uart = state.uarts.get(uart);

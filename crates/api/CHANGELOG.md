@@ -6,6 +6,10 @@
 
 - Update `wasefire-applet-api-macro` version
 
+### Minor
+
+- Implement conversion from types involving `Error` to `U32`
+
 ### Patch
 
 - Build docs.rs for `wasm32-unknown-unknown` only
@@ -68,4 +72,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 6 -->
+<!-- Increment to skip CHANGELOG.md test: 7 -->

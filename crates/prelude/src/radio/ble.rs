@@ -15,19 +15,17 @@
 use alloc::boxed::Box;
 
 use bytemuck::Zeroable;
+use wasefire_applet_api::radio::ble as api;
 pub use wasefire_applet_api::radio::ble::{Advertisement, Event};
-use wasefire_applet_api::radio::{ble as api, Error};
+
+use crate::{convert_bool, Error};
 
 /// Reads the next advertisement packet, if any.
 pub fn read_advertisement() -> Result<Option<Advertisement>, Error> {
     let mut result = Advertisement::zeroed();
     let params = api::read_advertisement::Params { ptr: &mut result as *mut _ as *mut u8 };
     let api::read_advertisement::Results { res } = unsafe { api::read_advertisement(params) };
-    Ok(match super::convert(res)? {
-        0 => None,
-        1 => Some(result),
-        _ => unreachable!(),
-    })
+    Ok(convert_bool(res)?.then_some(result))
 }
 
 /// Provides callback support for BLE events.

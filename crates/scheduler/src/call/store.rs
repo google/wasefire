@@ -14,6 +14,7 @@
 
 use wasefire_applet_api::store::{self as api, Api};
 use wasefire_board_api::Api as Board;
+use wasefire_error::{Code, Error};
 use wasefire_store::StoreError;
 
 use crate::applet::store::MemoryApi;
@@ -91,12 +92,11 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     call.reply(results);
 }
 
-fn convert(err: StoreError) -> api::Error {
+fn convert(err: StoreError) -> Error {
     match err {
-        StoreError::InvalidArgument => api::Error::InvalidArgument,
-        StoreError::NoCapacity => api::Error::NoCapacity,
-        StoreError::NoLifetime => api::Error::NoLifetime,
-        StoreError::StorageError => api::Error::StorageError,
-        StoreError::InvalidStorage => api::Error::InvalidStorage,
+        StoreError::InvalidArgument => Error::user(0),
+        StoreError::NoCapacity | StoreError::NoLifetime => Error::user(Code::NotEnough),
+        StoreError::StorageError => Error::world(0),
+        StoreError::InvalidStorage => Error::world(Code::BadState),
     }
 }

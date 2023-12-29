@@ -4,6 +4,7 @@
 
 ### Major
 
+- Remove custom error types and use `wasefire-error` instead
 - Rename `native` to `test` and use `native` for native applets
 
 ### Minor

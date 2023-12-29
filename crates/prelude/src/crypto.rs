@@ -18,6 +18,3 @@ pub mod ccm;
 pub mod ec;
 pub mod gcm;
 pub mod hash;
-
-/// Errors returned by cryptographic operations.
-pub use wasefire_applet_api::crypto::Error;

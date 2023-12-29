@@ -65,10 +65,7 @@ fn read_advertisement<B: Board>(mut call: SchedulerCall<B, api::read_advertiseme
     let memory = scheduler.applet.memory();
     let results = try {
         let packet = memory.from_bytes_mut::<Advertisement>(*ptr)?;
-        let res = match board::radio::Ble::<B>::read_advertisement(packet) {
-            Ok(read) => (read as u32).into(),
-            Err(_) => u32::MAX.into(),
-        };
+        let res = board::radio::Ble::<B>::read_advertisement(packet).map(|x| x as u32).into();
         api::read_advertisement::Results { res }
     };
     call.reply(results);

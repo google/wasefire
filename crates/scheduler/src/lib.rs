@@ -31,7 +31,7 @@ use event::Key;
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature};
 use wasefire_board_api::{self as board, Api as Board, Singleton, Support};
 #[cfg(feature = "wasm")]
-use wasefire_interpreter::{self as interpreter, Call, Error, Module, RunAnswer, Val};
+use wasefire_interpreter::{self as interpreter, Call, Module, RunAnswer, Val};
 use {wasefire_logger as log, wasefire_store as store};
 
 use crate::applet::store::{Memory, Store, StoreApi};
@@ -394,7 +394,7 @@ impl<B: Board> Scheduler<B> {
                 self.applet.done();
             }
             Ok(RunAnswer::Host) => (),
-            Err(Error::Trap) => applet_trapped::<B>(None),
+            Err(interpreter::Error::Trap) => applet_trapped::<B>(None),
             Err(e) => log::panic!("{}", log::Debug2Format(&e)),
         }
     }
@@ -417,8 +417,8 @@ fn applet_trapped<B: Board>(reason: Option<&'static str>) -> ! {
 
 pub struct Trap;
 
-impl From<()> for Trap {
-    fn from(_: ()) -> Self {
+impl From<wasefire_error::Error> for Trap {
+    fn from(_: wasefire_error::Error) -> Self {
         Trap
     }
 }

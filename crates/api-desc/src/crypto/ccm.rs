@@ -53,8 +53,7 @@ pub(crate) fn new() -> Item {
                 /// Its length must be `len + 4` bytes.
                 cipher: *mut u8,
             } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
+                /// Zero on success. Negative on error.
                 res: isize,
             }
         },
@@ -83,8 +82,7 @@ pub(crate) fn new() -> Item {
                 /// Its length must be provided in the `len` field.
                 clear: *mut u8,
             } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
+                /// Zero on success. Negative on error.
                 res: isize,
             }
         },

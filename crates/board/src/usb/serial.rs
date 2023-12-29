@@ -138,7 +138,7 @@ impl<T: HasSerial> Api for WithSerial<T> {
             Err(UsbError::WouldBlock) => Ok(0),
             Err(e) => {
                 log::debug!("{} = read({})", log::Debug2Format(&e), output.len());
-                Err(Error::World)
+                Err(Error::world(0))
             }
         }
     }
@@ -156,7 +156,7 @@ impl<T: HasSerial> Api for WithSerial<T> {
             Err(UsbError::WouldBlock) => Ok(0),
             Err(e) => {
                 log::debug!("{} = write({}{:?})", log::Debug2Format(&e), input.len(), input);
-                Err(Error::World)
+                Err(Error::world(0))
             }
         }
     }
@@ -174,7 +174,7 @@ impl<T: HasSerial> Api for WithSerial<T> {
                 }
                 Err(e) => {
                     log::debug!("{} = flush()", log::Debug2Format(&e));
-                    break Err(Error::World);
+                    break Err(Error::world(0));
                 }
             }
         }

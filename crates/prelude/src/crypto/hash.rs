@@ -20,9 +20,10 @@ use alloc::vec;
 #[cfg(feature = "rust-crypto")]
 pub use rust_crypto::*;
 use wasefire_applet_api::crypto::hash as api;
+use wasefire_error::Code;
 
 pub use self::api::Algorithm;
-use super::Error;
+use crate::{convert, convert_unit, Error};
 
 /// Hashing context.
 pub struct Digest {
@@ -39,11 +40,11 @@ impl Digest {
     /// Creates a new hashing context for the specified algorithm.
     pub fn new(algorithm: Algorithm) -> Result<Self, Error> {
         if !is_supported(algorithm) {
-            return Err(Error::Unsupported);
+            return Err(Error::world(Code::NotImplemented));
         }
         let params = api::initialize::Params { algorithm: algorithm as usize };
         let api::initialize::Results { id } = unsafe { api::initialize(params) };
-        let id = Error::to_result(id)?;
+        let id = convert(id)?;
         let len = algorithm.digest_len();
         Ok(Self { id, len })
     }
@@ -57,12 +58,12 @@ impl Digest {
     /// Finalizes the hashing context and writes the associated digest.
     pub fn finalize(mut self, digest: &mut [u8]) -> Result<(), Error> {
         if digest.len() != self.len {
-            return Err(Error::InvalidArgument);
+            return Err(Error::user(0));
         }
         let params = api::finalize::Params { id: self.id, digest: digest.as_mut_ptr() };
         let api::finalize::Results { res } = unsafe { api::finalize(params) };
         self.id = usize::MAX;
-        Error::to_result(res).map(|_| ())
+        convert_unit(res)
     }
 
     /// Writes the hash of the data for the given algorithm in the digest.
@@ -99,7 +100,7 @@ impl Hmac {
     /// Creates a new hmac context for the specified algorithm.
     pub fn new(algorithm: Algorithm, key: &[u8]) -> Result<Self, Error> {
         if !is_hmac_supported(algorithm) {
-            return Err(Error::Unsupported);
+            return Err(Error::world(Code::NotImplemented));
         }
         let params = api::hmac_initialize::Params {
             algorithm: algorithm as usize,
@@ -107,7 +108,7 @@ impl Hmac {
             key_len: key.len(),
         };
         let api::hmac_initialize::Results { id } = unsafe { api::hmac_initialize(params) };
-        let id = Error::to_result(id)?;
+        let id = convert(id)?;
         let len = algorithm.digest_len();
         Ok(Self { id, len })
     }
@@ -122,12 +123,12 @@ impl Hmac {
     /// Finalizes the hmac context and writes the associated hmac.
     pub fn finalize(mut self, hmac: &mut [u8]) -> Result<(), Error> {
         if hmac.len() != self.len {
-            return Err(Error::InvalidArgument);
+            return Err(Error::user(0));
         }
         let params = api::hmac_finalize::Params { id: self.id, hmac: hmac.as_mut_ptr() };
         let api::hmac_finalize::Results { res } = unsafe { api::hmac_finalize(params) };
         self.id = usize::MAX;
-        Error::to_result(res).map(|_| ())
+        convert_unit(res)
     }
 
     /// Writes the hmac of the data for the given algorithm.
@@ -199,7 +200,7 @@ pub fn hkdf_expand(
         okm_len: okm.len(),
     };
     let api::hkdf_expand::Results { res } = unsafe { api::hkdf_expand(params) };
-    Error::to_result(res).map(|_| ())
+    convert_unit(res)
 }
 
 /// Whether a hash algorithm is supported.

@@ -78,8 +78,7 @@ pub(crate) fn new() -> Item {
                 /// The authentication tag (see [`super::tag_length()`]).
                 tag: *mut u8,
             } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
+                /// Zero on success. Negative on error.
                 res: isize,
             }
         },
@@ -113,8 +112,7 @@ pub(crate) fn new() -> Item {
                 /// The clear text.
                 clear: *mut u8,
             } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
+                /// Zero on success. Negative on error.
                 res: isize,
             }
         },

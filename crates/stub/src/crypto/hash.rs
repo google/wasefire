@@ -19,7 +19,8 @@ use digest::{FixedOutput, Update};
 use hkdf::{Hkdf, HmacImpl};
 use hmac::Hmac;
 use sha2::{Sha256, Sha384};
-use wasefire_applet_api::crypto::{hash as api, Error};
+use wasefire_applet_api::crypto::hash as api;
+use wasefire_error::Error;
 use wasefire_logger as log;
 
 enum Context {
@@ -113,7 +114,7 @@ unsafe extern "C" fn env_chj(
     };
     let id = match context {
         Ok(context) => CONTEXTS.lock().unwrap().insert(context) as isize,
-        Err(_) => Error::InvalidArgument.into(),
+        Err(_) => Error::encode(Err(Error::user(0))) as isize,
     };
     api::hmac_initialize::Results { id }
 }
@@ -156,16 +157,13 @@ unsafe extern "C" fn env_che(params: api::hkdf_expand::Params) -> api::hkdf_expa
         api::Algorithm::Sha256 => hkdf::<Sha256, Hmac<Sha256>>(prk, info, okm),
         api::Algorithm::Sha384 => hkdf::<Sha384, Hmac<Sha384>>(prk, info, okm),
     };
-    let res = match res {
-        Ok(()) => 0,
-        Err(err) => err.into(),
-    };
+    let res = Error::encode(res.map(|()| 0)) as isize;
     api::hkdf_expand::Results { res }
 }
 
 fn hkdf<H: OutputSizeUser, I: HmacImpl<H>>(
     prk: &[u8], info: &[u8], okm: &mut [u8],
 ) -> Result<(), Error> {
-    let hkdf = Hkdf::<H, I>::from_prk(prk).map_err(|_| Error::InvalidArgument)?;
-    hkdf.expand(info, okm).map_err(|_| Error::InvalidArgument)
+    let hkdf = Hkdf::<H, I>::from_prk(prk).map_err(|_| Error::user(0))?;
+    hkdf.expand(info, okm).map_err(|_| Error::user(0))
 }

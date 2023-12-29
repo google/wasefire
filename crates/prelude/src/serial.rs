@@ -20,7 +20,7 @@ use core::fmt::Debug;
 
 use sealed::sealed;
 
-use crate::scheduling;
+use crate::{scheduling, Error};
 
 /// Serial events to be notified.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -38,22 +38,20 @@ pub enum Event {
 /// provide a unique interface to the different serials.
 #[sealed(pub(crate))]
 pub trait Serial {
-    type Error: Clone + Debug;
-
     /// Reads from the serial into a buffer without blocking.
     ///
     /// Returns how many bytes were read (and thus written to the buffer). This function does not
     /// block, so if there are no data available for read, zero is returned.
-    fn read(&self, buffer: &mut [u8]) -> Result<usize, Self::Error>;
+    fn read(&self, buffer: &mut [u8]) -> Result<usize, Error>;
 
     /// Writes from a buffer to the serial.
     ///
     /// Returns how many bytes were written (and thus read from the buffer). This function does not
     /// block, so if the serial is not ready for write, zero is returned.
-    fn write(&self, buffer: &[u8]) -> Result<usize, Self::Error>;
+    fn write(&self, buffer: &[u8]) -> Result<usize, Error>;
 
     /// Flushes the serial (in case reads or writes are buffered).
-    fn flush(&self) -> Result<(), Self::Error>;
+    fn flush(&self) -> Result<(), Error>;
 
     /// Registers a callback for an event.
     ///
@@ -63,24 +61,24 @@ pub trait Serial {
     /// concurrent calls.
     unsafe fn register(
         &self, event: Event, func: extern "C" fn(*const u8), data: *const u8,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<(), Error>;
 
     /// Unregisters the callback for an event.
-    fn unregister(&self, event: Event) -> Result<(), Self::Error>;
+    fn unregister(&self, event: Event) -> Result<(), Error>;
 }
 
 /// Reads from the serial into a buffer without blocking.
 ///
 /// Returns how many bytes were read (and thus written to the buffer). This function does not
 /// block, so if there are no data available for read, zero is returned.
-pub fn read<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<usize, T::Error> {
+pub fn read<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<usize, Error> {
     serial.read(buffer)
 }
 
 /// Synchronously reads at least one byte from a serial into a buffer.
 ///
 /// This function will block if necessary.
-pub fn read_any<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<usize, T::Error> {
+pub fn read_any<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<usize, Error> {
     let mut reader = Reader::new(serial, buffer);
     scheduling::wait_until(|| !reader.is_empty());
     reader.result()
@@ -89,7 +87,7 @@ pub fn read_any<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<usize, T::Er
 /// Synchronously reads from a serial into a buffer until it is filled.
 ///
 /// This function will block if necessary.
-pub fn read_all<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<(), T::Error> {
+pub fn read_all<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<(), Error> {
     let mut reader = Reader::new(serial, buffer);
     scheduling::wait_until(|| reader.is_done());
     reader.result()?;
@@ -97,7 +95,7 @@ pub fn read_all<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<(), T::Error
 }
 
 /// Synchronously reads exactly one byte.
-pub fn read_byte<T: Serial>(serial: &T) -> Result<u8, T::Error> {
+pub fn read_byte<T: Serial>(serial: &T) -> Result<u8, Error> {
     let mut byte = 0;
     read_any(serial, core::slice::from_mut(&mut byte))?;
     Ok(byte)
@@ -107,14 +105,14 @@ pub fn read_byte<T: Serial>(serial: &T) -> Result<u8, T::Error> {
 ///
 /// Returns how many bytes were written (and thus read from the buffer). This function does not
 /// block, so if the serial is not ready for write, zero is returned.
-pub fn write<T: Serial>(serial: &T, buffer: &[u8]) -> Result<usize, T::Error> {
+pub fn write<T: Serial>(serial: &T, buffer: &[u8]) -> Result<usize, Error> {
     serial.write(buffer)
 }
 
 /// Writes at least one byte from a buffer to a serial.
 ///
 /// This function will block if necessary.
-pub fn write_any<T: Serial>(serial: &T, buffer: &[u8]) -> Result<usize, T::Error> {
+pub fn write_any<T: Serial>(serial: &T, buffer: &[u8]) -> Result<usize, Error> {
     let mut writer = Writer::new(serial, buffer);
     scheduling::wait_until(|| !writer.is_empty());
     writer.result()
@@ -123,7 +121,7 @@ pub fn write_any<T: Serial>(serial: &T, buffer: &[u8]) -> Result<usize, T::Error
 /// Writes from a buffer to a serial until everything has been written.
 ///
 /// This function will block if necessary.
-pub fn write_all<T: Serial>(serial: &T, buffer: &[u8]) -> Result<(), T::Error> {
+pub fn write_all<T: Serial>(serial: &T, buffer: &[u8]) -> Result<(), Error> {
     let mut writer = Writer::new(serial, buffer);
     scheduling::wait_until(|| writer.is_done());
     writer.result()?;
@@ -131,7 +129,7 @@ pub fn write_all<T: Serial>(serial: &T, buffer: &[u8]) -> Result<(), T::Error> {
 }
 
 /// Flushes the serial (in case reads or writes are buffered).
-pub fn flush<T: Serial>(serial: &T) -> Result<(), T::Error> {
+pub fn flush<T: Serial>(serial: &T) -> Result<(), Error> {
     serial.flush()
 }
 
@@ -156,7 +154,7 @@ impl<'a, T: Serial> Reader<'a, T> {
     }
 
     /// Returns how many bytes were read (or if an error occurred).
-    pub fn result(self) -> Result<usize, T::Error> {
+    pub fn result(self) -> Result<usize, Error> {
         self.0.result()
     }
 }
@@ -182,7 +180,7 @@ impl<'a, T: Serial> Writer<'a, T> {
     }
 
     /// Returns how many bytes were written (or if an error occurred).
-    pub fn result(self) -> Result<usize, T::Error> {
+    pub fn result(self) -> Result<usize, Error> {
         self.0.result()
     }
 }
@@ -192,7 +190,7 @@ struct Listener<'a, T: Serial> {
     // Whether the callback triggered since last operation.
     ready: &'static Cell<bool>,
     // The callback is registered as long as not done.
-    result: Result<usize, T::Error>,
+    result: Result<usize, Error>,
 }
 
 impl<'a, T: Serial> Listener<'a, T> {
@@ -219,13 +217,13 @@ impl<'a, T: Serial> Listener<'a, T> {
         !self.is_registered()
     }
 
-    fn result(mut self) -> Result<usize, T::Error> {
+    fn result(mut self) -> Result<usize, Error> {
         self.update()
     }
 
-    fn update(&mut self) -> Result<usize, T::Error> {
+    fn update(&mut self) -> Result<usize, Error> {
         if !self.is_registered() || !self.ready.replace(false) {
-            return self.result.clone();
+            return self.result;
         }
         let pos = self.result.as_mut().unwrap();
         match self.kind.update(*pos) {
@@ -235,7 +233,7 @@ impl<'a, T: Serial> Listener<'a, T> {
         if !self.is_registered() {
             self.unregister();
         }
-        self.result.clone()
+        self.result
     }
 
     fn is_registered(&self) -> bool {
@@ -287,7 +285,7 @@ impl<'a, T: Serial> Kind<'a, T> {
         }
     }
 
-    fn update(&mut self, pos: usize) -> Result<usize, T::Error> {
+    fn update(&mut self, pos: usize) -> Result<usize, Error> {
         match self {
             Kind::Reader { serial, buffer } => serial.read(&mut buffer[pos ..]),
             Kind::Writer { serial, buffer } => serial.write(&buffer[pos ..]),

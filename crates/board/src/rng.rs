@@ -14,6 +14,8 @@
 
 //! Random number generator interface.
 
+use wasefire_error::Code;
+
 use crate::{Error, Unsupported};
 
 /// Random number generator interface.
@@ -24,6 +26,6 @@ pub trait Api: Send {
 
 impl Api for Unsupported {
     fn fill_bytes(_: &mut [u8]) -> Result<(), Error> {
-        Err(Error::World)
+        Err(Error::internal(Code::NotImplemented))
     }
 }

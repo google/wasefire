@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Migrate to `wasefire-error`
 - Support `gpio` module
 - Support `platform::version()`
 - Support `radio::ble` module
@@ -95,4 +96,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 24 -->
+<!-- Increment to skip CHANGELOG.md test: 25 -->

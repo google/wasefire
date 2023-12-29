@@ -46,8 +46,8 @@ pub(crate) fn new() -> Item {
                 /// Pointer to the [`super::Advertisement`] packet.
                 ptr: *mut u8,
             } -> {
-                /// One if a packet was read. Zero if there was no packet to read. Otherwise
-                /// complement of error number.
+                /// One if a packet was read. Zero if there was no packet to read. Negative on
+                /// error.
                 res: isize,
             }
         },

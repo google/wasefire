@@ -214,7 +214,7 @@ fn convert(x: Result<usize, std::io::Error>) -> Result<usize, Error> {
     match x {
         Ok(x) => Ok(x),
         Err(e) if e.kind() == ErrorKind::WouldBlock => Ok(0),
-        Err(_) => Err(Error::World),
+        Err(_) => Err(Error::world(0)),
     }
 }
 

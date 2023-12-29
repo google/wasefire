@@ -46,10 +46,7 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
         let clear = Some(memory.get(*clear, *len)?);
         let (cipher, tag) = memory.get_mut(*cipher, *len + 4)?.split_at_mut(*len as usize);
         let tag = tag.into();
-        let res = match board::crypto::Aes128Ccm::<B>::encrypt(key, &iv, aad, clear, cipher, tag) {
-            Ok(()) => 0u32.into(),
-            Err(_) => u32::MAX.into(),
-        };
+        let res = board::crypto::Aes128Ccm::<B>::encrypt(key, &iv, aad, clear, cipher, tag).into();
         api::encrypt::Results { res }
     };
     call.reply(results);
@@ -68,10 +65,7 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         let cipher = Some(cipher);
         let tag = tag.into();
         let clear = memory.get_mut(*clear, *len)?;
-        let res = match board::crypto::Aes128Ccm::<B>::decrypt(key, &iv, aad, cipher, tag, clear) {
-            Ok(()) => 0u32.into(),
-            Err(_) => u32::MAX.into(),
-        };
+        let res = board::crypto::Aes128Ccm::<B>::decrypt(key, &iv, aad, cipher, tag, clear).into();
         api::decrypt::Results { res }
     };
     call.reply(results);

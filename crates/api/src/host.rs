@@ -17,6 +17,7 @@ use core::marker::PhantomData;
 use core::ops::Deref;
 
 use sealed::sealed;
+use wasefire_error::Error;
 
 /// Describes an interface function at type-level.
 #[sealed(pub(crate))]
@@ -78,6 +79,30 @@ impl<T> Deref for U32<T> {
 impl<T> From<u32> for U32<T> {
     fn from(value: u32) -> Self {
         U32 { value, phantom: PhantomData }
+    }
+}
+
+impl<T> From<Error> for U32<T> {
+    fn from(error: Error) -> Self {
+        (Error::encode(Err(error)) as u32).into()
+    }
+}
+
+impl<T> From<Result<(), Error>> for U32<T> {
+    fn from(result: Result<(), Error>) -> Self {
+        result.map(|()| 0).into()
+    }
+}
+
+impl<T> From<Result<bool, Error>> for U32<T> {
+    fn from(result: Result<bool, Error>) -> Self {
+        result.map(|x| x as u32).into()
+    }
+}
+
+impl<T> From<Result<u32, Error>> for U32<T> {
+    fn from(result: Result<u32, Error>) -> Self {
+        (Error::encode(result) as u32).into()
     }
 }
 

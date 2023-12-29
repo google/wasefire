@@ -82,8 +82,7 @@ pub(crate) fn new() -> Item {
                 /// The y coordinate in SEC1 encoding.
                 y: *mut u8,
             } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
+                /// Zero on success. Negative on error.
                 res: isize,
             }
         },
@@ -108,8 +107,7 @@ pub(crate) fn new() -> Item {
                 /// The y coordinate of the output point in SEC1 encoding.
                 out_y: *mut u8,
             } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
+                /// Zero on success. Negative on error.
                 res: isize,
             }
         },
@@ -131,8 +129,7 @@ pub(crate) fn new() -> Item {
                 /// The s signature component in SEC1 encoding.
                 s: *mut u8,
             } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
+                /// Zero on success. Negative on error.
                 res: isize,
             }
         },
@@ -157,8 +154,7 @@ pub(crate) fn new() -> Item {
                 /// The s signature component in SEC1 encoding.
                 s: *const u8,
             } -> {
-                /// 1 if the signature is valid, 0 if invalid, and bitwise complement of
-                /// [`Error`](crate::crypto::Error) otherwise.
+                /// One if the signature is valid. Zero if invalid. Negative on error.
                 res: isize,
             }
         },

@@ -29,6 +29,7 @@ usb-device = "0.3.1"
 usbd-serial = "0.2.0"
 wasefire-applet-api = { path = "../api" }
 wasefire-board-api = { path = "../board" }
+wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
 wasefire-scheduler = { path = "../scheduler" }
