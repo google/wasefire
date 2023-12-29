@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Migrate to `platform::update` returning `Error`
 - Migrate to `wasefire-error`
 - Support `gpio` module
 - Support `platform::version()`

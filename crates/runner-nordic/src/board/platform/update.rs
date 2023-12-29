@@ -18,7 +18,8 @@ use alloc::vec::Vec;
 use header::{Header, Side};
 use wasefire_board_api::platform::update::Api;
 use wasefire_board_api::Supported;
-use wasefire_store::{Storage as _, StorageError, StorageIndex};
+use wasefire_error::{Code, Error};
+use wasefire_store::{Storage as _, StorageIndex};
 use wasefire_sync::TakeCell;
 
 use crate::storage::Storage;
@@ -28,22 +29,22 @@ pub enum Impl {}
 impl Supported for Impl {}
 
 impl Api for Impl {
-    fn metadata() -> Result<Box<[u8]>, usize> {
+    fn metadata() -> Result<Box<[u8]>, Error> {
         let mut metadata = Vec::new();
-        let side = Side::current().ok_or(Error::NoSide)?;
+        let side = Side::current().ok_or(Error::world(Code::BadState))?;
         push_header(&mut metadata, Header::new(side));
         push_header(&mut metadata, Header::new(!side));
         Ok(metadata.into_boxed_slice())
     }
 
-    fn initialize(dry_run: bool) -> Result<(), usize> {
+    fn initialize(dry_run: bool) -> Result<(), Error> {
         STATE.with(|state| {
             state.reset(dry_run);
             Ok(())
         })
     }
 
-    fn process(mut chunk: &[u8]) -> Result<(), usize> {
+    fn process(mut chunk: &[u8]) -> Result<(), Error> {
         STATE.with(|state| {
             while !chunk.is_empty() {
                 state.write(&mut chunk)?;
@@ -52,7 +53,7 @@ impl Api for Impl {
         })
     }
 
-    fn finalize() -> Result<(), usize> {
+    fn finalize() -> Result<(), Error> {
         STATE.with(|state| {
             state.flush()?;
             match state.dry_run {
@@ -111,9 +112,9 @@ impl Update {
         }
         if !self.dry_run {
             if byte == 0 {
-                self.storage.erase_page(page)?;
+                self.storage.erase_page(page).map_err(|_| Error::world(0))?;
             }
-            self.storage.write_slice(index, value)?;
+            self.storage.write_slice(index, value).map_err(|_| Error::world(0))?;
         }
         *chunk = rest;
         self.offset += value.len();
@@ -132,33 +133,6 @@ impl Update {
         self.write(&mut chunk)?;
         assert!(chunk.is_empty());
         Ok(())
-    }
-}
-
-#[repr(usize)]
-enum Error {
-    _Unknown = 0x00,
-    // Internal errors (0x01 ..= 0x7f).
-    NoSide = 0x01,
-    Storage = 0x02,
-    // User errors (0x81 ..= 0xff).
-    OutOfBounds = 0x81,
-    NotAligned = 0x82,
-}
-
-impl From<StorageError> for Error {
-    fn from(value: StorageError) -> Self {
-        match value {
-            StorageError::NotAligned => Error::NotAligned,
-            StorageError::OutOfBounds => Error::OutOfBounds,
-            StorageError::CustomError => Error::Storage,
-        }
-    }
-}
-
-impl From<Error> for usize {
-    fn from(value: Error) -> Self {
-        value as usize
     }
 }
 
