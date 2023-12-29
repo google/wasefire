@@ -301,6 +301,7 @@ version = "0.6.0-git"
 dependencies = [
  "bytemuck",
  "wasefire-applet-api-macro",
+ "wasefire-error",
 ]
 
 [[package]]
