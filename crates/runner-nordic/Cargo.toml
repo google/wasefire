@@ -46,6 +46,7 @@ debug = [
   "dep:defmt-rtt",
   "dep:panic-probe",
   "wasefire-board-api/defmt",
+  "wasefire-error/defmt",
   "wasefire-logger/defmt",
   "wasefire-scheduler/defmt",
 ]

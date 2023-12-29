@@ -105,6 +105,7 @@ impl CodeParam for u16 {}
 /// Values from 0 to 127 (0x7f) are reserved for common error spaces and defined by this enum.
 /// Values from 128 (0x80) to 255 (0xff) are reserved for implementation-specific error spaces.
 #[derive(Debug, Copy, Clone, TryFromPrimitive, IntoPrimitive)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
 #[repr(u8)]
 pub enum Space {
@@ -126,6 +127,7 @@ pub enum Space {
 /// Values from 32768 (0x8000) to 65535 (0xffff) are reserved for implementation-specific error
 /// codes.
 #[derive(Debug, Copy, Clone, TryFromPrimitive, IntoPrimitive)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
 #[repr(u16)]
 pub enum Code {
@@ -139,8 +141,15 @@ pub enum Code {
     BadState = 7,
 }
 
+impl core::fmt::Debug for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
 impl core::fmt::Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // Keep in sync with defmt::Format.
         match Space::try_from_primitive(self.space()) {
             Ok(x) => write!(f, "{x:?}")?,
             Err(TryFromPrimitiveError { number: x }) => write!(f, "[{x:02x}]")?,
@@ -153,9 +162,20 @@ impl core::fmt::Display for Error {
     }
 }
 
-impl core::fmt::Debug for Error {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{self}")
+#[cfg(feature = "defmt")]
+impl defmt::Format for Error {
+    fn format(&self, fmt: defmt::Formatter) {
+        // Keep in sync with core::fmt::Display.
+        use defmt::write;
+        match Space::try_from_primitive(self.space()) {
+            Ok(x) => write!(fmt, "{:?}", x),
+            Err(TryFromPrimitiveError { number: x }) => write!(fmt, "[{:02x}]", x),
+        }
+        write!(fmt, ":");
+        match Code::try_from_primitive(self.code()) {
+            Ok(x) => write!(fmt, "{:?}", x),
+            Err(TryFromPrimitiveError { number: x }) => write!(fmt, "[{:04x}]", x),
+        }
     }
 }
 

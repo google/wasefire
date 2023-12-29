@@ -20,5 +20,5 @@ set -e
 test_helper
 
 cargo test
-cargo check --target=thumbv7em-none-eabi
+cargo check --target=thumbv7em-none-eabi --features=defmt
 cargo check --target=wasm32-unknown-unknown
