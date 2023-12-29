@@ -20,8 +20,11 @@ use num_enum::{IntoPrimitive, TryFromPrimitive, TryFromPrimitiveError};
 
 /// API errors.
 ///
-/// Errors are equivalent to `u32` but with the top 8 bits set to 1. The 24 remaining bits are used
-/// to encode the error space (8 bits) and the error code (16 bits).
+/// Errors are equivalent to `u32` but only using the 24 least significant bits: 8 bits for the
+/// error space and 16 bits for the error code. The 8 most significant bits are zero. It is possible
+/// to encode a `Result<u32, Error>` into a `i32` as long as the success value only uses the 31
+/// least significant bits. Non-negative values encode success, while negative values encode the
+/// error by taking its bitwise complement (thus setting the 8 most significant bits to 1).
 #[derive(Default, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Error(u32);
@@ -58,6 +61,10 @@ impl Error {
     }
 
     /// Decodes a signed integer as a result (where errors are negative values).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the signed integer is smaller than -16777216 (0xff000000).
     pub fn decode(result: i32) -> Result<u32, Self> {
         if result < 0 {
             let error = !result as u32;
@@ -72,7 +79,7 @@ impl Error {
     ///
     /// # Panics
     ///
-    /// Panics if the most significant bit of the `u32` is set.
+    /// Panics if the result is a success greater than 2147483647 (0x7fffffff).
     pub fn encode(result: Result<u32, Self>) -> i32 {
         match result {
             Ok(value) => {
