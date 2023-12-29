@@ -205,9 +205,6 @@ impl Enum {
             impl From<#name> for crate::U32<usize> {
                 fn from(x: #name) -> Self { (x as u32).into() }
             }
-            impl From<#name> for crate::U32<isize> {
-                fn from(x: #name) -> Self { (!(x as u32)).into() }
-            }
         }
     }
 
@@ -219,12 +216,6 @@ impl Enum {
             impl From<usize> for #name {
                 fn from(x: usize) -> Self {
                     (x as u32).try_into().unwrap()
-                }
-            }
-            impl #name {
-                pub fn to_result(x: isize) -> Result<usize, Self> {
-                    let y = x as usize;
-                    if x < 0 { Err((!y).into()) } else { Ok(y) }
                 }
             }
         }
@@ -241,19 +232,16 @@ impl Enum {
             #[repr(u32)]
             pub enum #name { #(#variants),* }
             impl TryFrom<u32> for #name {
-                type Error = ();
+                type Error = wasefire_error::Error;
 
                 fn try_from(x: u32) -> Result<Self, Self::Error> {
                     if x < #num_variants as u32 {
                         // SAFETY: See `tests::enum_values_are_valid()`.
                         Ok(unsafe { core::mem::transmute(x) })
                     } else {
-                        Err(())
+                        Err(wasefire_error::Error::internal(0))
                     }
                 }
-            }
-            impl From<#name> for isize {
-                fn from(x: #name) -> Self { !(x as usize) as isize }
             }
         }
     }
