@@ -37,7 +37,13 @@ features = ["toctou"]
 optional = true
 
 [features]
-defmt = ["debug", "dep:defmt", "wasefire-board-api/defmt", "wasefire-logger/defmt"]
+defmt = [
+  "debug",
+  "dep:defmt",
+  "wasefire-board-api/defmt",
+  "wasefire-error/defmt",
+  "wasefire-logger/defmt",
+]
 log = ["debug", "wasefire-board-api/log", "wasefire-logger/log"]
 std = ["wasefire-board-api/std", "wasefire-store/std"]
 # Selects between Wasm applet or native applet (choose exactly one).

@@ -892,6 +892,7 @@ dependencies = [
 name = "wasefire-error"
 version = "0.1.0-git"
 dependencies = [
+ "defmt",
  "num_enum 0.7.1",
 ]
 

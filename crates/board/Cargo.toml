@@ -41,7 +41,7 @@ wasefire-logger = { version = "0.1.4-git", path = "../logger" }
 wasefire-store = { version = "0.2.3-git", path = "../store" }
 
 [features]
-defmt = ["dep:defmt", "wasefire-logger/defmt"]
+defmt = ["dep:defmt", "wasefire-error/defmt", "wasefire-logger/defmt"]
 internal-aead = ["dep:aead"]
 internal-ecc = [
   "dep:ecdsa",
