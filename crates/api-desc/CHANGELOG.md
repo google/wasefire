@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Remove isize conversion functions for enums
 - Remove custom error types
 - Add `gpio` module
 - Add `platform::version()`
