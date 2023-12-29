@@ -52,7 +52,7 @@ fn metadata<B: Board>(mut call: SchedulerCall<B, api::metadata::Sig>) {
                 memory.get_mut(*len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
                 0.into()
             }
-            Err(error) => convert(error).into(),
+            Err(error) => error.into(),
         };
         api::metadata::Results { res }
     };
@@ -67,10 +67,7 @@ fn initialize<B: Board>(call: SchedulerCall<B, api::initialize::Sig>) {
             1 => true,
             _ => Err(Trap)?,
         };
-        let res = match board::platform::Update::<B>::initialize(dry_run) {
-            Ok(()) => 0.into(),
-            Err(error) => convert(error).into(),
-        };
+        let res = board::platform::Update::<B>::initialize(dry_run).into();
         api::initialize::Results { res }
     };
     call.reply(results);
@@ -82,10 +79,7 @@ fn process_<B: Board>(mut call: SchedulerCall<B, api::process::Sig>) {
     let memory = scheduler.applet.memory();
     let results = try {
         let chunk = memory.get(*ptr, *len)?;
-        let res = match board::platform::Update::<B>::process(chunk) {
-            Ok(()) => 0.into(),
-            Err(error) => convert(error).into(),
-        };
+        let res = board::platform::Update::<B>::process(chunk).into();
         api::process::Results { res }
     };
     call.reply(results);
@@ -94,15 +88,8 @@ fn process_<B: Board>(mut call: SchedulerCall<B, api::process::Sig>) {
 fn finalize<B: Board>(call: SchedulerCall<B, api::finalize::Sig>) {
     let api::finalize::Params {} = call.read();
     let results = try {
-        let res = match board::platform::Update::<B>::finalize() {
-            Ok(()) => 0.into(),
-            Err(error) => convert(error).into(),
-        };
+        let res = board::platform::Update::<B>::finalize().into();
         api::finalize::Results { res }
     };
     call.reply(results);
-}
-
-fn convert(error: usize) -> u32 {
-    !(error as u32)
 }

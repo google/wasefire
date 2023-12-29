@@ -16,46 +16,46 @@
 
 use alloc::boxed::Box;
 
-use crate::{Support, Unsupported};
+use wasefire_error::Code;
+
+use crate::{Error, Support, Unsupported};
 
 /// Platform update interface.
-///
-/// Errors must fit on 23 bits (they will be negated for the applet API).
 pub trait Api: Support<bool> + Send {
     /// Returns the metadata of the platform.
     ///
     /// This typically contains the version and side (A or B) of the running platform.
-    fn metadata() -> Result<Box<[u8]>, usize>;
+    fn metadata() -> Result<Box<[u8]>, Error>;
 
     /// Starts a platform update process.
     ///
     /// During a dry-run, any mutable operation is skipped and only checks are performed.
-    fn initialize(dry_run: bool) -> Result<(), usize>;
+    fn initialize(dry_run: bool) -> Result<(), Error>;
 
     /// Processes the next chunk of a platform update.
-    fn process(chunk: &[u8]) -> Result<(), usize>;
+    fn process(chunk: &[u8]) -> Result<(), Error>;
 
     /// Finalizes a platform update process.
     ///
     /// This function will reboot when the update is successful and thus only returns in case of
     /// errors or in dry-run mode.
-    fn finalize() -> Result<(), usize>;
+    fn finalize() -> Result<(), Error>;
 }
 
 impl Api for Unsupported {
-    fn metadata() -> Result<Box<[u8]>, usize> {
-        unreachable!()
+    fn metadata() -> Result<Box<[u8]>, Error> {
+        Err(Error::user(Code::NotImplemented))
     }
 
-    fn initialize(_: bool) -> Result<(), usize> {
-        unreachable!()
+    fn initialize(_: bool) -> Result<(), Error> {
+        Err(Error::user(Code::NotImplemented))
     }
 
-    fn process(_: &[u8]) -> Result<(), usize> {
-        unreachable!()
+    fn process(_: &[u8]) -> Result<(), Error> {
+        Err(Error::user(Code::NotImplemented))
     }
 
-    fn finalize() -> Result<(), usize> {
-        unreachable!()
+    fn finalize() -> Result<(), Error> {
+        Err(Error::user(Code::NotImplemented))
     }
 }
