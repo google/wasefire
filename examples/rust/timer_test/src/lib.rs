@@ -128,7 +128,7 @@ fn test_cancel_callback() {
 }
 
 fn test_empty() {
-    debug!("test_empty(): This should should instantly print a message.");
+    debug!("test_empty(): This should instantly print a message.");
     let done = Rc::new(Cell::new(false));
     let timer = clock::Timer::new({
         let done = done.clone();
