@@ -34,6 +34,7 @@ fn main() {
     test_oneshot_cancel();
     test_periodic_cancel();
     test_cancel_callback();
+    test_empty();
     debug::exit(true);
 }
 
@@ -124,4 +125,18 @@ fn test_cancel_callback() {
     drop(first);
     debug::assert_eq(&scheduling::num_pending_callbacks(), &0);
     debug::assert(!has_run.get());
+}
+
+fn test_empty() {
+    debug!("test_empty(): This should instantly print a message.");
+    let done = Rc::new(Cell::new(false));
+    let timer = clock::Timer::new({
+        let done = done.clone();
+        move || done.set(true)
+    });
+    debug!("+ start timer");
+    timer.start_ms(clock::Oneshot, 0);
+    scheduling::wait_until(|| done.get());
+    debug!("- done");
+    debug::assert(done.get());
 }
