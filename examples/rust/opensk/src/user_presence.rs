@@ -20,7 +20,7 @@ use opensk_lib::api::user_presence::UserPresenceError::{Fail, Timeout};
 use opensk_lib::api::user_presence::{UserPresence, UserPresenceResult};
 use wasefire::button::{self, Listener};
 use wasefire::clock::{Oneshot, Periodic};
-use wasefire::{clock, debug, led, scheduling};
+use wasefire::{clock, led, scheduling};
 
 use crate::WasefireEnv;
 
