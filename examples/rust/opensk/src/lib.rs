@@ -17,8 +17,8 @@
 #![no_std]
 wasefire::applet!();
 
-use opensk_lib::api::attestation_store::{Attestation, AttestationStore, Id};
-use opensk_lib::api::connection::HidConnection;
+use opensk_lib::api::attestation_store::{Attestation, AttestationStore, Id, Error};
+use opensk_lib::api::connection::{HidConnection, SendOrRecvResult};
 use opensk_lib::api::crypto::software_crypto::SoftwareCrypto;
 // use opensk_lib::api::customization::{AAGUID_LENGTH, DEFAULT_CUSTOMIZATION};
 use opensk_lib::api::customization::CustomizationImpl;
@@ -49,7 +49,7 @@ pub struct WasefireHidConnection;
 impl HidConnection for WasefireHidConnection {
     fn send_and_maybe_recv(
         &mut self, buf: &mut [u8; 64], timeout_ms: usize,
-    ) -> opensk_lib::api::connection::SendOrRecvResult {
+    ) -> SendOrRecvResult {
         todo!()
     }
 }
@@ -70,13 +70,13 @@ struct WasefireEnv {
 impl AttestationStore for WasefireEnv {
     fn get(
         &mut self, id: &Id,
-    ) -> Result<Option<Attestation>, opensk_lib::api::attestation_store::Error> {
+    ) -> Result<Option<Attestation>, Error> {
         todo!()
     }
 
     fn set(
         &mut self, id: &Id, attestation: Option<&Attestation>,
-    ) -> Result<(), opensk_lib::api::attestation_store::Error> {
+    ) -> Result<(), Error> {
         todo!()
     }
 }
