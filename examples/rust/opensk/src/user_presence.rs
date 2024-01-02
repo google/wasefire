@@ -29,36 +29,25 @@ impl UserPresence for WasefireEnv {
 
     fn wait_with_timeout(&mut self, timeout_ms: usize) -> UserPresenceResult {
         // Make sure there is at least one button and one LED.
-        let num_buttons = button::count();
-        let num_leds = led::count();
-        if num_buttons == 0 || num_leds == 0 {
+        if button::count() == 0 || led::count() == 0 {
             return Err(Fail);
         }
 
         // Start listening for button presses.
-        // TODO: Should we be checking for any button pressed or only index 0?
         let button_pressed = Rc::new(Cell::new(false));
-        for index in 0 .. num_buttons {
+        let listener = Listener::new(0, {
             let button_pressed = button_pressed.clone();
-            let handler = move |state| match state {
+            move |state| match state {
                 button::Pressed => button_pressed.set(true),
                 button::Released => (),
-            };
-            let listener = Listener::new(index, handler);
-            listener.leak();
-        }
-
-        // Start a periodic timer blinking the LED.
-        // TODO: Similarly, should we be blinking all LEDs or only index 0?
-        let blinking = Rc::new(Cell::new(false));
-        let blink_timer = clock::Timer::new({
-            let blinking = blinking.clone();
-            move || {
-                if blinking.get() {
-                    led::set(0, !led::get(0));
-                }
             }
         });
+
+        // Start a periodic timer blinking the LED.
+        let blink_timer = clock::Timer::new(|| {
+            led::set(0, !led::get(0));
+        });
+        led::set(0, led::On);
         blink_timer.start(Periodic, Duration::from_millis(200));
 
         // Start a timer for timeout.
@@ -74,7 +63,7 @@ impl UserPresence for WasefireEnv {
 
         // Drop the periodic timer, then set the LED off.
         drop(blink_timer);
-        blinking.set(false);
+        led::set(0, led::Off);
 
         if !button_pressed.get() {
             return Err(Timeout);
