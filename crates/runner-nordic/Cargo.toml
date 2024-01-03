@@ -32,12 +32,29 @@ wasefire-board-api = { path = "../board" }
 wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
-wasefire-scheduler = { path = "../scheduler" }
 wasefire-store = { path = "../store" }
 wasefire-sync = { path = "../sync" }
 
+[dependencies.wasefire-scheduler]
+path = "../scheduler"
+features = [
+  "board-api-button",
+  "board-api-crypto-aes128-ccm",
+  "board-api-gpio",
+  "board-api-led",
+  "board-api-platform",
+  "board-api-platform-update",
+  "board-api-radio-ble",
+  "board-api-rng",
+  "board-api-storage",
+  "board-api-timer",
+  "board-api-uart",
+  "board-api-usb-serial",
+  # TODO: Remove once the scheduler accepts all function imports.
+  "full-applet-api",
+]
+
 [features]
-software-crypto = ["wasefire-board-api/software-crypto"]
 software-crypto-aes256-gcm = ["wasefire-board-api/software-crypto-aes256-gcm"]
 software-crypto-sha256 = ["wasefire-board-api/software-crypto-sha256"]
 # Exactly one is enabled by xtask.

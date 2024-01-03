@@ -12,7 +12,7 @@ keywords = ["embedded", "framework", "no-std"]
 categories = ["embedded", "no-std"]
 
 [package.metadata.docs.rs]
-features = ["std"]
+features = ["full-api", "std"]
 
 [dependencies]
 aead = { version = "0.5.2", default-features = false, optional = true }
@@ -38,23 +38,58 @@ usbd-serial = { version = "0.2.0", default-features = false }
 wasefire-applet-api = { version = "0.6.0-git", path = "../api", features = ["host"] }
 wasefire-error = { version = "0.1.0-git", path = "../error" }
 wasefire-logger = { version = "0.1.4-git", path = "../logger" }
-wasefire-store = { version = "0.2.3-git", path = "../store" }
+wasefire-store = { version = "0.2.3-git", path = "../store", optional = true }
 
 [features]
+std = ["wasefire-store?/std"]
+# Logging features (enable at most one).
 defmt = ["dep:defmt", "wasefire-error/defmt", "wasefire-logger/defmt"]
-internal-aead = ["dep:aead"]
-internal-ecc = [
-  "dep:ecdsa",
-  "dep:elliptic-curve",
-  "dep:signature",
-  "ecdsa?/arithmetic",
-  "ecdsa?/signing",
-  "ecdsa?/verifying",
-  "elliptic-curve?/arithmetic",
-  "elliptic-curve?/sec1",
-]
-internal-hmac = ["dep:hmac"]
 log = ["wasefire-logger/log"]
+# API features. DO NOT enable those features if you also depend on the
+# scheduler. Instead, enable the `board-api` features of the scheduler.
+api-button = []
+api-crypto-aes128-ccm = ["internal-api-crypto-aead"]
+api-crypto-aes256-gcm = ["internal-api-crypto-aead"]
+api-crypto-hmac-sha256 = ["internal-api-crypto-hmac"]
+api-crypto-hmac-sha384 = ["internal-api-crypto-hmac"]
+api-crypto-p256 = ["internal-api-crypto-ecc"]
+api-crypto-p384 = ["internal-api-crypto-ecc"]
+api-crypto-sha256 = ["internal-api-crypto-hash"]
+api-crypto-sha384 = ["internal-api-crypto-hash"]
+api-gpio = []
+api-led = []
+api-platform = ["internal-api-platform"]
+api-platform-update = ["internal-api-platform"]
+api-radio-ble = ["internal-api-radio", "wasefire-applet-api/api-radio-ble"]
+api-rng = []
+api-storage = ["dep:wasefire-store"]
+api-timer = []
+api-uart = []
+api-usb-serial = ["internal-api-usb"]
+# Enables all API features (unstable).
+full-api = [
+  "api-button",
+  "api-crypto-aes128-ccm",
+  "api-crypto-aes256-gcm",
+  "api-crypto-hmac-sha256",
+  "api-crypto-hmac-sha384",
+  "api-crypto-p256",
+  "api-crypto-p384",
+  "api-crypto-sha256",
+  "api-crypto-sha384",
+  "api-gpio",
+  "api-led",
+  "api-platform",
+  "api-platform-update",
+  "api-radio-ble",
+  "api-rng",
+  "api-storage",
+  "api-timer",
+  "api-uart",
+  "api-usb-serial",
+]
+# Software crypto features. DO NOT enable those features if you also depend on
+# the scheduler. Instead, use the `software-crypto` features of the scheduler.
 software-crypto = [
   "software-crypto-aes128-ccm",
   "software-crypto-aes256-gcm",
@@ -65,12 +100,54 @@ software-crypto = [
   "software-crypto-sha256",
   "software-crypto-sha384",
 ]
-software-crypto-aes128-ccm = ["dep:aes", "dep:ccm", "internal-aead"]
-software-crypto-aes256-gcm = ["aes-gcm?/aes", "dep:aes-gcm", "internal-aead"]
-software-crypto-hmac-sha256 = ["internal-hmac"]
-software-crypto-hmac-sha384 = ["internal-hmac"]
-software-crypto-p256 = ["dep:p256", "internal-ecc", "p256?/arithmetic", "p256?/ecdsa"]
-software-crypto-p384 = ["dep:p384", "internal-ecc", "p384?/arithmetic", "p384?/ecdsa"]
-software-crypto-sha256 = ["dep:sha2"]
-software-crypto-sha384 = ["dep:sha2"]
-std = ["wasefire-store/std"]
+software-crypto-aes128-ccm = [
+  "api-crypto-aes128-ccm",
+  "dep:aes",
+  "dep:ccm",
+  "internal-software-crypto-aead",
+]
+software-crypto-aes256-gcm = [
+  "aes-gcm?/aes",
+  "api-crypto-aes256-gcm",
+  "dep:aes-gcm",
+  "internal-software-crypto-aead",
+]
+software-crypto-hmac-sha256 = ["api-crypto-hmac-sha256", "internal-software-crypto-hmac"]
+software-crypto-hmac-sha384 = ["api-crypto-hmac-sha384", "internal-software-crypto-hmac"]
+software-crypto-p256 = [
+  "api-crypto-p256",
+  "dep:p256",
+  "internal-software-crypto-ecc",
+  "p256?/arithmetic",
+  "p256?/ecdsa",
+]
+software-crypto-p384 = [
+  "api-crypto-p384",
+  "dep:p384",
+  "internal-software-crypto-ecc",
+  "p384?/arithmetic",
+  "p384?/ecdsa",
+]
+software-crypto-sha256 = ["api-crypto-sha256", "dep:sha2"]
+software-crypto-sha384 = ["api-crypto-sha384", "dep:sha2"]
+# Internal features.
+internal-api-crypto = []
+internal-api-crypto-aead = ["internal-api-crypto"]
+internal-api-crypto-ecc = ["internal-api-crypto"]
+internal-api-crypto-hash = ["internal-api-crypto"]
+internal-api-crypto-hmac = ["internal-api-crypto"]
+internal-api-platform = []
+internal-api-radio = []
+internal-api-usb = []
+internal-software-crypto-aead = ["dep:aead"]
+internal-software-crypto-ecc = [
+  "dep:ecdsa",
+  "dep:elliptic-curve",
+  "dep:signature",
+  "ecdsa?/arithmetic",
+  "ecdsa?/signing",
+  "ecdsa?/verifying",
+  "elliptic-curve?/arithmetic",
+  "elliptic-curve?/sec1",
+]
+internal-software-crypto-hmac = ["dep:hmac"]

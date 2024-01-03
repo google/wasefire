@@ -6,6 +6,10 @@
 
 - Update `wasefire-applet-api-desc` version
 
+### Minor
+
+- Add API features (disabled by default)
+
 ### Patch
 
 - Update dependencies

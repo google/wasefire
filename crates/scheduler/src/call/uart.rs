@@ -13,30 +13,40 @@
 // limitations under the License.
 
 use wasefire_applet_api::uart::{self as api, Api};
+#[cfg(feature = "board-api-uart")]
 use wasefire_board_api::uart::{Api as _, Direction, Event};
-use wasefire_board_api::{self as board, Api as Board, Id, Support};
+use wasefire_board_api::Api as Board;
+#[cfg(feature = "board-api-uart")]
+use wasefire_board_api::{self as board, Id, Support};
 
+#[cfg(feature = "board-api-uart")]
 use crate::applet::store::MemoryApi;
-use crate::event::uart::Key;
-use crate::event::Handler;
-use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
+#[cfg(feature = "board-api-uart")]
+use crate::event::{uart::Key, Handler};
+#[cfg(feature = "board-api-uart")]
+use crate::Trap;
+use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Count(call) => count(call),
-        Api::Read(call) => read(call),
-        Api::Write(call) => write(call),
-        Api::Register(call) => register(call),
-        Api::Unregister(call) => unregister(call),
+        Api::Read(call) => or_trap!("board-api-uart", read(call)),
+        Api::Write(call) => or_trap!("board-api-uart", write(call)),
+        Api::Register(call) => or_trap!("board-api-uart", register(call)),
+        Api::Unregister(call) => or_trap!("board-api-uart", unregister(call)),
     }
 }
 
 fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     let api::count::Params {} = call.read();
+    #[cfg(feature = "board-api-uart")]
     let count = board::Uart::<B>::SUPPORT as u32;
+    #[cfg(not(feature = "board-api-uart"))]
+    let count = 0;
     call.reply(Ok(api::count::Results { cnt: count.into() }));
 }
 
+#[cfg(feature = "board-api-uart")]
 fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { uart, ptr, len } = call.read();
     let scheduler = call.scheduler();
@@ -53,6 +63,7 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     call.reply(results);
 }
 
+#[cfg(feature = "board-api-uart")]
 fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let api::write::Params { uart, ptr, len } = call.read();
     let scheduler = call.scheduler();
@@ -69,6 +80,7 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     call.reply(results);
 }
 
+#[cfg(feature = "board-api-uart")]
 fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { uart, event, handler_func, handler_data } = call.read();
     let inst = call.inst();
@@ -88,6 +100,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     call.reply(results);
 }
 
+#[cfg(feature = "board-api-uart")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { uart, event } = call.read();
     let scheduler = call.scheduler();
@@ -101,6 +114,7 @@ fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     call.reply(results);
 }
 
+#[cfg(feature = "board-api-uart")]
 fn convert_event<B: Board>(uart: Id<board::Uart<B>>, event: u32) -> Result<Event<B>, Trap> {
     let direction = match api::Event::try_from(event)? {
         api::Event::Read => Direction::Read,

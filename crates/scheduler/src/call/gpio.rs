@@ -13,26 +13,35 @@
 // limitations under the License.
 
 use wasefire_applet_api::gpio::{self as api, Api};
+#[cfg(feature = "board-api-gpio")]
 use wasefire_board_api::gpio::Api as _;
-use wasefire_board_api::{self as board, Api as Board, Id, Support};
+use wasefire_board_api::Api as Board;
+#[cfg(feature = "board-api-gpio")]
+use wasefire_board_api::{self as board, Id, Support};
 
-use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
+#[cfg(feature = "board-api-gpio")]
+use crate::Trap;
+use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Count(call) => count(call),
-        Api::Configure(call) => configure(call),
-        Api::Read(call) => read(call),
-        Api::Write(call) => write(call),
+        Api::Configure(call) => or_trap!("board-api-gpio", configure(call)),
+        Api::Read(call) => or_trap!("board-api-gpio", read(call)),
+        Api::Write(call) => or_trap!("board-api-gpio", write(call)),
     }
 }
 
 fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     let api::count::Params {} = call.read();
+    #[cfg(feature = "board-api-gpio")]
     let count = board::Gpio::<B>::SUPPORT as u32;
+    #[cfg(not(feature = "board-api-gpio"))]
+    let count = 0;
     call.reply(Ok(api::count::Results { cnt: count.into() }));
 }
 
+#[cfg(feature = "board-api-gpio")]
 fn configure<B: Board>(call: SchedulerCall<B, api::configure::Sig>) {
     let api::configure::Params { gpio, mode } = call.read();
     let results = try {
@@ -47,6 +56,7 @@ fn configure<B: Board>(call: SchedulerCall<B, api::configure::Sig>) {
     call.reply(results);
 }
 
+#[cfg(feature = "board-api-gpio")]
 fn read<B: Board>(call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { gpio } = call.read();
     let results = try {
@@ -60,6 +70,7 @@ fn read<B: Board>(call: SchedulerCall<B, api::read::Sig>) {
     call.reply(results);
 }
 
+#[cfg(feature = "board-api-gpio")]
 fn write<B: Board>(call: SchedulerCall<B, api::write::Sig>) {
     let api::write::Params { gpio, val } = call.read();
     let results = try {

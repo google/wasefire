@@ -4,6 +4,8 @@
 
 ### Major
 
+- Add API features (disabled by default)
+- Make `Event` non-exhaustive
 - Update `platform::update::Api` to return `Error` instead of `usize`
 - Replace `Error` type with `wasefire-error`
 - Add `Api::Gpio` for low-level GPIOs

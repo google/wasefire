@@ -17,35 +17,86 @@ use wasefire_board_api::Api as Board;
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
+#[cfg_attr(not(feature = "applet-api-button"), allow(unused_macros))]
+macro_rules! or_trap {
+    ($feature:literal, $name:ident($call:ident)) => {{
+        #[cfg(feature = $feature)]
+        $name($call);
+        #[cfg(not(feature = $feature))]
+        $call.reply(Err(crate::Trap));
+    }};
+}
+
+#[cfg_attr(not(feature = "applet-api-crypto-ec"), allow(unused_macros))]
+macro_rules! or_false {
+    ($feature:literal, $support:expr) => {{
+        #[cfg(feature = $feature)]
+        let support = $support;
+        #[cfg(not(feature = $feature))]
+        let support = false;
+        support
+    }};
+}
+
+#[cfg_attr(not(feature = "applet-api-crypto-hash"), allow(unused_macros))]
+macro_rules! trap_use {
+    ($($x:ident),* $(,)?) => {{
+        $( let _ = $x; )*
+        Err(crate::Trap)?
+    }};
+}
+
+#[cfg(feature = "applet-api-button")]
 mod button;
+#[cfg(feature = "applet-api-timer")]
 mod clock;
+#[cfg(feature = "internal-applet-api-crypto")]
 mod crypto;
 mod debug;
+#[cfg(feature = "applet-api-gpio")]
 mod gpio;
+#[cfg(feature = "applet-api-led")]
 mod led;
+#[cfg(feature = "internal-applet-api-platform")]
 mod platform;
+#[cfg(feature = "internal-applet-api-radio")]
 mod radio;
+#[cfg(feature = "applet-api-rng")]
 mod rng;
 mod scheduling;
+#[cfg(feature = "internal-applet-api-store")]
 mod store;
+#[cfg(feature = "applet-api-uart")]
 mod uart;
+#[cfg(feature = "internal-applet-api-usb")]
 mod usb;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
+        #[cfg(feature = "applet-api-button")]
         Api::Button(call) => button::process(call),
+        #[cfg(feature = "applet-api-timer")]
         Api::Clock(call) => clock::process(call),
+        #[cfg(feature = "internal-applet-api-crypto")]
         Api::Crypto(call) => crypto::process(call),
         Api::Debug(call) => debug::process(call),
+        #[cfg(feature = "applet-api-gpio")]
         Api::Gpio(call) => gpio::process(call),
+        #[cfg(feature = "applet-api-led")]
         Api::Led(call) => led::process(call),
+        #[cfg(feature = "internal-applet-api-platform")]
         Api::Platform(call) => platform::process(call),
+        #[cfg(feature = "internal-applet-api-radio")]
         Api::Radio(call) => radio::process(call),
+        #[cfg(feature = "applet-api-rng")]
         Api::Rng(call) => rng::process(call),
         Api::Scheduling(call) => scheduling::process(call),
+        #[cfg(feature = "internal-applet-api-store")]
         Api::Store(call) => store::process(call),
         Api::Syscall(call) => syscall(call),
+        #[cfg(feature = "applet-api-uart")]
         Api::Uart(call) => uart::process(call),
+        #[cfg(feature = "internal-applet-api-usb")]
         Api::Usb(call) => usb::process(call),
     }
 }

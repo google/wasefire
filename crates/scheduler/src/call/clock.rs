@@ -13,22 +13,36 @@
 // limitations under the License.
 
 use wasefire_applet_api::clock::{self as api, Api};
+#[cfg(feature = "board-api-timer")]
 use wasefire_board_api::timer::{Api as _, Command};
-use wasefire_board_api::{self as board, Api as Board, Id};
+use wasefire_board_api::Api as Board;
+#[cfg(feature = "board-api-timer")]
+use wasefire_board_api::{self as board, Id};
 
-use crate::event::timer::Key;
-use crate::event::Handler;
-use crate::{DispatchSchedulerCall, Scheduler, SchedulerCall, Timer, Trap};
+#[cfg(feature = "board-api-timer")]
+use crate::event::{timer::Key, Handler};
+#[cfg(feature = "board-api-timer")]
+use crate::Trap;
+use crate::{DispatchSchedulerCall, SchedulerCall};
+#[cfg(feature = "board-api-timer")]
+use crate::{Scheduler, Timer};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Allocate(call) => allocate(call),
-        Api::Start(call) => start(call),
-        Api::Stop(call) => stop(call),
-        Api::Free(call) => free(call),
+        Api::Start(call) => or_trap!("board-api-timer", start(call)),
+        Api::Stop(call) => or_trap!("board-api-timer", stop(call)),
+        Api::Free(call) => or_trap!("board-api-timer", free(call)),
     }
 }
 
+#[cfg(not(feature = "board-api-timer"))]
+fn allocate<B: Board>(call: SchedulerCall<B, api::allocate::Sig>) {
+    let id = wasefire_error::Error::world(wasefire_error::Code::NotEnough);
+    call.reply(Ok(api::allocate::Results { id: id.into() }))
+}
+
+#[cfg(feature = "board-api-timer")]
 fn allocate<B: Board>(mut call: SchedulerCall<B, api::allocate::Sig>) {
     let api::allocate::Params { handler_func, handler_data } = call.read();
     let inst = call.inst();
@@ -47,6 +61,7 @@ fn allocate<B: Board>(mut call: SchedulerCall<B, api::allocate::Sig>) {
     call.reply(results);
 }
 
+#[cfg(feature = "board-api-timer")]
 fn start<B: Board>(mut call: SchedulerCall<B, api::start::Sig>) {
     let api::start::Params { id, mode, duration_ms } = call.read();
     let timer = *id as usize;
@@ -61,6 +76,7 @@ fn start<B: Board>(mut call: SchedulerCall<B, api::start::Sig>) {
     call.reply(results);
 }
 
+#[cfg(feature = "board-api-timer")]
 fn stop<B: Board>(mut call: SchedulerCall<B, api::stop::Sig>) {
     let api::stop::Params { id } = call.read();
     let timer = *id as usize;
@@ -72,6 +88,7 @@ fn stop<B: Board>(mut call: SchedulerCall<B, api::stop::Sig>) {
     call.reply(results);
 }
 
+#[cfg(feature = "board-api-timer")]
 fn free<B: Board>(mut call: SchedulerCall<B, api::free::Sig>) {
     let api::free::Params { id } = call.read();
     let timer = *id as usize;
@@ -85,6 +102,7 @@ fn free<B: Board>(mut call: SchedulerCall<B, api::free::Sig>) {
 }
 
 // TODO: Should also check that the timer belongs to the calling applet.
+#[cfg(feature = "board-api-timer")]
 fn get_timer<B: Board>(
     scheduler: &Scheduler<B>, timer: usize,
 ) -> Result<Id<board::Timer<B>>, Trap> {

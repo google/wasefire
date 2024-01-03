@@ -84,7 +84,11 @@ enum MainCommand {
     Runner(Runner),
 
     /// Updates the applet API for all languages.
-    UpdateApis,
+    UpdateApis {
+        /// Cargo features.
+        #[clap(long, default_values_t = ["full-api".to_string()])]
+        features: Vec<String>,
+    },
 }
 
 #[derive(clap::Args)]
@@ -257,10 +261,14 @@ impl Flags {
         match self.command {
             MainCommand::Applet(applet) => applet.execute(&self.options)?,
             MainCommand::Runner(runner) => runner.execute(&self.options)?,
-            MainCommand::UpdateApis => {
+            MainCommand::UpdateApis { features } => {
                 let (lang, ext) = ("assemblyscript", "ts");
                 let mut cargo = Command::new("cargo");
-                cargo.args(["run", "--manifest-path=crates/api-desc/Cargo.toml", "--"]);
+                cargo.args(["run", "--manifest-path=crates/api-desc/Cargo.toml"]);
+                for features in features {
+                    cargo.arg(format!("--features={features}"));
+                }
+                cargo.arg("--");
                 cargo.arg(format!("--lang={lang}"));
                 cargo.arg(format!("--output=examples/{lang}/api.{ext}"));
                 execute_command(&mut cargo)?;

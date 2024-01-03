@@ -19,20 +19,31 @@ use clap::ValueEnum;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 
+#[cfg(feature = "api-button")]
 mod button;
+#[cfg(feature = "api-timer")]
 mod clock;
+#[cfg(feature = "internal-api-crypto")]
 mod crypto;
 mod debug;
+#[cfg(feature = "api-gpio")]
 mod gpio;
 mod id;
+#[cfg(feature = "api-led")]
 mod led;
 mod macros;
+#[cfg(feature = "internal-api-platform")]
 mod platform;
+#[cfg(feature = "internal-api-radio")]
 mod radio;
+#[cfg(feature = "api-rng")]
 mod rng;
 mod scheduling;
+#[cfg(feature = "internal-api-store")]
 mod store;
+#[cfg(feature = "api-uart")]
 mod uart;
+#[cfg(feature = "internal-api-usb")]
 mod usb;
 
 pub use id::{Id, Name};
@@ -43,18 +54,29 @@ pub struct Api(Vec<Item>);
 impl Default for Api {
     fn default() -> Self {
         Api(vec![
+            #[cfg(feature = "api-button")]
             button::new(),
+            #[cfg(feature = "api-timer")]
             clock::new(),
+            #[cfg(feature = "internal-api-crypto")]
             crypto::new(),
             debug::new(),
+            #[cfg(feature = "api-gpio")]
             gpio::new(),
+            #[cfg(feature = "api-led")]
             led::new(),
+            #[cfg(feature = "internal-api-platform")]
             platform::new(),
+            #[cfg(feature = "internal-api-radio")]
             radio::new(),
+            #[cfg(feature = "api-rng")]
             rng::new(),
             scheduling::new(),
+            #[cfg(feature = "internal-api-store")]
             store::new(),
+            #[cfg(feature = "api-uart")]
             uart::new(),
+            #[cfg(feature = "internal-api-usb")]
             usb::new(),
             item! {
                 /// Board-specific syscalls.
@@ -96,6 +118,7 @@ impl Api {
 
 #[derive(Debug, Clone)]
 enum Item {
+    #[cfg_attr(not(feature = "api-button"), allow(dead_code))]
     Enum(Enum),
     Struct(Struct),
     Fn(Fn),
@@ -145,6 +168,7 @@ enum Type {
         signed: bool,
         bits: Option<usize>,
     },
+    #[cfg_attr(not(feature = "api-radio-ble"), allow(dead_code))]
     Array {
         type_: Box<Type>,
         length: usize,
@@ -155,6 +179,7 @@ enum Type {
         /// Pointed type (None if opaque).
         type_: Option<Box<Type>>,
     },
+    #[cfg_attr(not(feature = "api-button"), allow(dead_code))]
     Function {
         params: Vec<Field>,
     },

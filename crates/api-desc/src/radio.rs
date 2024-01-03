@@ -14,6 +14,7 @@
 
 use crate::*;
 
+#[cfg(feature = "api-radio-ble")]
 mod ble;
 
 pub(crate) fn new() -> Item {
@@ -21,6 +22,9 @@ pub(crate) fn new() -> Item {
         /// Radio operations.
     };
     let name = "radio".into();
-    let items = vec![ble::new()];
+    let items = vec![
+        #[cfg(feature = "api-radio-ble")]
+        ble::new(),
+    ];
     Item::Mod(Mod { docs, name, items })
 }

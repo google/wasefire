@@ -14,14 +14,16 @@
 
 //! Platform interface.
 
-use wasefire_error::Code;
+#[cfg(feature = "api-platform")]
+use crate::Error;
+use crate::Unsupported;
 
-use crate::{Error, Unsupported};
-
+#[cfg(feature = "api-platform-update")]
 pub mod update;
 
 /// Platform interface.
 pub trait Api: Send {
+    #[cfg(feature = "api-platform-update")]
     type Update: update::Api;
 
     /// Writes the platform version and returns its length in bytes.
@@ -30,22 +32,28 @@ pub trait Api: Send {
     ///
     /// The returned length may be larger than the buffer length, in which case the buffer only
     /// contains a prefix of the version.
+    #[cfg(feature = "api-platform")]
     fn version(output: &mut [u8]) -> usize;
 
     /// Reboots the device (thus platform and applets).
+    #[cfg(feature = "api-platform")]
     fn reboot() -> Result<!, Error>;
 }
 
+#[cfg(feature = "api-platform-update")]
 pub type Update<B> = <super::Platform<B> as Api>::Update;
 
 impl Api for Unsupported {
+    #[cfg(feature = "api-platform-update")]
     type Update = Unsupported;
 
+    #[cfg(feature = "api-platform")]
     fn version(_: &mut [u8]) -> usize {
         0
     }
 
+    #[cfg(feature = "api-platform")]
     fn reboot() -> Result<!, Error> {
-        Err(Error::internal(Code::NotImplemented))
+        Err(Error::internal(wasefire_error::Code::NotImplemented))
     }
 }

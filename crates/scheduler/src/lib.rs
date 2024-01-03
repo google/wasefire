@@ -20,7 +20,6 @@ extern crate alloc;
 extern crate std;
 
 use alloc::collections::VecDeque;
-use alloc::vec;
 use alloc::vec::Vec;
 #[cfg(feature = "native")]
 use core::ffi::CStr;
@@ -29,10 +28,16 @@ use core::marker::PhantomData;
 use derivative::Derivative;
 use event::Key;
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature};
-use wasefire_board_api::{self as board, Api as Board, Singleton, Support};
+#[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
+use wasefire_board_api::Singleton;
+#[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
+use wasefire_board_api::Support;
+use wasefire_board_api::{self as board, Api as Board};
 #[cfg(feature = "wasm")]
 use wasefire_interpreter::{self as interpreter, Call, Module, RunAnswer, Val};
-use {wasefire_logger as log, wasefire_store as store};
+use wasefire_logger as log;
+#[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
+use wasefire_store as store;
 
 use crate::applet::store::{Memory, Store, StoreApi};
 use crate::applet::{Applet, EventAction};
@@ -80,9 +85,11 @@ impl<B: Board> Events<B> {
 }
 
 pub struct Scheduler<B: Board> {
+    #[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
     store: store::Store<B::Storage>,
     host_funcs: Vec<Api<Id>>,
     applet: Applet<B>,
+    #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
     timers: Vec<Option<Timer>>,
     #[cfg(feature = "debug")]
     perf: perf::Perf<B>,
@@ -282,10 +289,12 @@ impl<B: Board> Scheduler<B> {
         #[cfg(feature = "native")]
         let applet = Applet::default();
         Self {
+            #[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
             store: store::Store::new(board::Storage::<B>::take().unwrap()).ok().unwrap(),
             host_funcs,
             applet,
-            timers: vec![None; board::Timer::<B>::SUPPORT],
+            #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
+            timers: alloc::vec![None; board::Timer::<B>::SUPPORT],
             #[cfg(feature = "debug")]
             perf: perf::Perf::default(),
         }
@@ -367,6 +376,7 @@ impl<B: Board> Scheduler<B> {
         call::process(call);
     }
 
+    #[allow(dead_code)] // in case there are no events
     fn disable_event(&mut self, key: Key<B>) -> Result<(), Trap> {
         self.applet.disable(key)?;
         self.flush_events();

@@ -17,10 +17,12 @@ use wasefire_board_api::Api as Board;
 
 use crate::DispatchSchedulerCall;
 
+#[cfg(feature = "applet-api-radio-ble")]
 mod ble;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
+        #[cfg(feature = "applet-api-radio-ble")]
         Api::Ble(call) => ble::process(call),
     }
 }

@@ -14,4 +14,5 @@
 
 //! Provides API for radio.
 
+#[cfg(feature = "api-radio-ble")]
 pub mod ble;

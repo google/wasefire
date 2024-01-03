@@ -30,6 +30,7 @@ pub(crate) fn new() -> Item {
                 Sha384 = 1,
             }
         },
+        #[cfg(feature = "api-crypto-hash")]
         item! {
             /// Whether the algorithm is supported.
             fn is_supported "chs" {
@@ -40,6 +41,7 @@ pub(crate) fn new() -> Item {
                 supported: usize,
             }
         },
+        #[cfg(feature = "api-crypto-hash")]
         item! {
             /// Initializes a hash.
             fn initialize "chi" {
@@ -50,6 +52,7 @@ pub(crate) fn new() -> Item {
                 id: isize,
             }
         },
+        #[cfg(feature = "api-crypto-hash")]
         item! {
             /// Updates a hash.
             ///
@@ -65,6 +68,7 @@ pub(crate) fn new() -> Item {
                 length: usize,
             } -> {}
         },
+        #[cfg(feature = "api-crypto-hash")]
         item! {
             /// Finalizes a hash.
             fn finalize "chf" {
@@ -86,6 +90,7 @@ pub(crate) fn new() -> Item {
                 res: isize,
             }
         },
+        #[cfg(feature = "api-crypto-hmac")]
         item! {
             /// Whether the algorithm is supported for hmac.
             fn is_hmac_supported "cht" {
@@ -96,6 +101,7 @@ pub(crate) fn new() -> Item {
                 supported: usize,
             }
         },
+        #[cfg(feature = "api-crypto-hmac")]
         item! {
             /// Initializes an hmac.
             fn hmac_initialize "chj" {
@@ -114,6 +120,7 @@ pub(crate) fn new() -> Item {
                 id: isize,
             }
         },
+        #[cfg(feature = "api-crypto-hmac")]
         item! {
             /// Updates an hmac.
             ///
@@ -129,6 +136,7 @@ pub(crate) fn new() -> Item {
                 length: usize,
             } -> {}
         },
+        #[cfg(feature = "api-crypto-hmac")]
         item! {
             /// Finalizes an hmac.
             fn hmac_finalize "chg" {
@@ -150,6 +158,7 @@ pub(crate) fn new() -> Item {
                 res: isize,
             }
         },
+        #[cfg(feature = "api-crypto-hkdf")]
         item! {
             /// Whether the algorithm is supported for hkdf.
             fn is_hkdf_supported "chr" {
@@ -160,6 +169,7 @@ pub(crate) fn new() -> Item {
                 supported: usize,
             }
         },
+        #[cfg(feature = "api-crypto-hkdf")]
         item! {
             /// Expands with RFC5869 HKDF.
             fn hkdf_expand "che" {
