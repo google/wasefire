@@ -113,7 +113,7 @@ pub enum Event<B: Api + ?Sized> {
     Button(button::Event<B>),
 
     /// Radio event.
-    Radio(radio::Event),
+    Radio(radio::Event, PhantomData<B>),
 
     /// Timer event.
     Timer(timer::Event<B>),
@@ -122,7 +122,7 @@ pub enum Event<B: Api + ?Sized> {
     Uart(uart::Event<B>),
 
     /// USB event.
-    Usb(usb::Event),
+    Usb(usb::Event, PhantomData<B>),
 }
 
 pub type Button<B> = <B as Api>::Button;

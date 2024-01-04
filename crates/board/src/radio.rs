@@ -14,6 +14,8 @@
 
 //! Radio interface.
 
+use core::marker::PhantomData;
+
 use crate::Unsupported;
 
 pub mod ble;
@@ -27,7 +29,7 @@ pub enum Event {
 
 impl<B: crate::Api> From<Event> for crate::Event<B> {
     fn from(event: Event) -> Self {
-        crate::Event::Radio(event)
+        crate::Event::Radio(event, PhantomData)
     }
 }
 

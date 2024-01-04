@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Migrate to all events mentioning the board implementation
 - Migrate to `platform::update` returning `Error`
 - Migrate to `wasefire-error`
 - Support `gpio` module

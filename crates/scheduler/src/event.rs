@@ -64,10 +64,10 @@ impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
     fn from(event: &'a Event<B>) -> Self {
         match event {
             Event::Button(event) => Key::Button(event.into()),
-            Event::Radio(event) => Key::Radio(event.into()),
+            Event::Radio(event, _) => Key::Radio(event.into()),
             Event::Timer(event) => Key::Timer(event.into()),
             Event::Uart(event) => Key::Uart(event.into()),
-            Event::Usb(event) => Key::Usb(event.into()),
+            Event::Usb(event, _) => Key::Usb(event.into()),
         }
     }
 }
@@ -109,10 +109,10 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
     let mut params = vec![*func, *data];
     match event {
         Event::Button(event) => button::process(event, &mut params),
-        Event::Radio(event) => radio::process(event),
+        Event::Radio(event, _) => radio::process(event),
         Event::Timer(_) => timer::process(),
         Event::Uart(_) => uart::process(),
-        Event::Usb(event) => usb::process(event),
+        Event::Usb(event, _) => usb::process(event),
     }
     #[cfg(feature = "wasm")]
     {

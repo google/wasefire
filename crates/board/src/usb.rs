@@ -14,6 +14,8 @@
 
 //! USB interface.
 
+use core::marker::PhantomData;
+
 use crate::Unsupported;
 
 pub mod serial;
@@ -27,7 +29,7 @@ pub enum Event {
 
 impl<B: crate::Api> From<Event> for crate::Event<B> {
     fn from(event: Event) -> Self {
-        crate::Event::Usb(event)
+        crate::Event::Usb(event, PhantomData)
     }
 }
 
