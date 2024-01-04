@@ -146,14 +146,12 @@ mod tests {
         tmp_dir.into_path()
     }
 
-    fn remove_tmp_dir(tmp_dir: PathBuf) {
+    fn remove_tmp_dir(tmp_dir: &Path) {
         std::fs::remove_dir_all(tmp_dir).unwrap();
     }
 
-    fn temp_storage(tmp_dir: &PathBuf) -> FileStorage {
-        let mut tmp_file = tmp_dir.clone();
-        tmp_file.push(FILE_NAME);
-        FileStorage::new(&tmp_file, OPTIONS).unwrap()
+    fn temp_storage(tmp_dir: &Path) -> FileStorage {
+        FileStorage::new(&tmp_dir.join(FILE_NAME), OPTIONS).unwrap()
     }
 
     #[test]
@@ -175,6 +173,6 @@ mod tests {
             assert_eq!(file_storage.read_slice(index, 4).unwrap(), DATA_WORD);
             assert_eq!(file_storage.read_slice(next_index, 4).unwrap(), BLANK_WORD);
         }
-        remove_tmp_dir(tmp_dir);
+        remove_tmp_dir(&tmp_dir);
     }
 }

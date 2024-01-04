@@ -59,10 +59,7 @@ fn interrupted_overflowing_compaction() {
             .partial_apply(StoreOperation::Prepare { length: 1 }, StoreInterruption::pure(1))
         {
             Ok((None, d)) => driver = d.power_on().unwrap(),
-            _ => {
-                assert!(false);
-                return;
-            }
+            _ => panic!(),
         }
     }
 }
@@ -103,15 +100,13 @@ fn full_compaction_with_max_prefix() {
 
     // We fill the store with non-deleted entries making sure the last entry always overlaps the
     // next page with m words for the first 3 pages.
-    let mut k = 0;
-    for _ in 0 .. c {
+    for k in 0 .. c {
         let tail = get_tail(&driver);
         if tail % q == q - 1 && tail < 4 * q {
             driver.insert(k, &vec![0; max_value_len]).unwrap();
         } else {
             driver.insert(k, &[]).unwrap();
         }
-        k += 1;
     }
     // We lost 1 word of lifetime because of compacting the first page.
     check_lifetime(&driver, c + 1);
@@ -129,10 +124,7 @@ fn full_compaction_with_max_prefix() {
             .partial_apply(StoreOperation::Clear { min_key: max_key }, StoreInterruption::pure(1))
         {
             Ok((None, d)) => driver = d.power_on().unwrap(),
-            _ => {
-                assert!(false);
-                return;
-            }
+            _ => panic!(),
         }
     }
     check_lifetime(&mut driver, c + n - 1);
