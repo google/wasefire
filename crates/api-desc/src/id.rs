@@ -136,7 +136,7 @@ mod tests {
     fn name_new() {
         #[track_caller]
         fn test(expected: Option<&[u8; 6]>, name: &str) {
-            let expected = expected.map(|x| *x);
+            let expected = expected.copied();
             let actual = Name::new(name).map(|x| x.0);
             assert_eq!(actual, expected);
         }

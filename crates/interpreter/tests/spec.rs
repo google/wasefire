@@ -25,7 +25,7 @@ use wast::{parser, QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvo
 
 fn test(name: &str) {
     let path = format!("../../third_party/WebAssembly/spec/test/core/{}.wast", name);
-    let content = std::fs::read_to_string(&path).unwrap();
+    let content = std::fs::read_to_string(path).unwrap();
     let mut lexer = Lexer::new(&content);
     lexer.allow_confusing_unicode(true);
     let buffer = parser::ParseBuffer::new_with_lexer(lexer).unwrap();
@@ -33,7 +33,7 @@ fn test(name: &str) {
     let layout = std::alloc::Layout::from_size_align(pool_size(name), MEMORY_ALIGN).unwrap();
     let pool = unsafe { std::slice::from_raw_parts_mut(std::alloc::alloc(layout), layout.size()) };
     let mut env = Env::new(pool);
-    env.instantiate("spectest", &*SPECTEST);
+    env.instantiate("spectest", &SPECTEST);
     env.register_name("spectest", None);
     assert!(env.inst.is_ok());
     for directive in wast.directives {
@@ -173,6 +173,7 @@ lazy_static! {
     static ref SPECTEST: Vec<u8> = spectest();
 }
 
+#[allow(clippy::vec_init_then_push)]
 fn spectest() -> Vec<u8> {
     let leb128 = |wasm: &mut Vec<u8>, mut x: usize| {
         assert!(x <= u32::MAX as usize);

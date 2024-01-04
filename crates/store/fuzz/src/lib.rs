@@ -179,6 +179,7 @@ fn read_bits_ok() {
     assert_eq!(entropy.read_bits(2), 0b10);
 }
 
+#[allow(clippy::identity_op)]
 #[test]
 fn read_range_ok() {
     let mut entropy = Entropy::new(&[0b00101011]);
