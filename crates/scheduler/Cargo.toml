@@ -77,7 +77,8 @@ applet-api-store-fragment = ["internal-applet-api-store", "wasefire-applet-api/a
 applet-api-timer = ["wasefire-applet-api/api-timer"]
 applet-api-uart = ["wasefire-applet-api/api-uart"]
 applet-api-usb-serial = ["internal-applet-api-usb", "wasefire-applet-api/api-usb-serial"]
-# Board API features.
+# Board API features. Enabling a board API feature automatically enables all
+# applet API features that would be implemented.
 board-api-button = ["applet-api-button", "wasefire-board-api/api-button"]
 board-api-crypto-aes128-ccm = ["applet-api-crypto-ccm", "wasefire-board-api/api-crypto-aes128-ccm"]
 board-api-crypto-aes256-gcm = ["applet-api-crypto-gcm", "wasefire-board-api/api-crypto-aes256-gcm"]
@@ -172,7 +173,8 @@ full-board-api = [
   "board-api-usb-serial",
 ]
 # Software crypto features. Enabling a software crypto feature automatically
-# enables its board API feature.
+# enables its board API feature. Only the `software-crypto-` features are
+# stable. The `software-crypto` feature is unstable.
 software-crypto = [
   "software-crypto-aes128-ccm",
   "software-crypto-aes256-gcm",
