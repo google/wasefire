@@ -55,8 +55,8 @@ features = [
 ]
 
 [features]
-software-crypto-aes256-gcm = ["wasefire-board-api/software-crypto-aes256-gcm"]
-software-crypto-sha256 = ["wasefire-board-api/software-crypto-sha256"]
+software-crypto-aes256-gcm = ["wasefire-scheduler/software-crypto-aes256-gcm"]
+software-crypto-sha256 = ["wasefire-scheduler/software-crypto-sha256"]
 # Exactly one is enabled by xtask.
 debug = [
   "dep:defmt",
