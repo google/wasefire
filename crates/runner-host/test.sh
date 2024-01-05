@@ -22,7 +22,6 @@ ensure_applet
 test_helper
 
 cargo test --features=wasm,debug
-cargo check --features=wasm,debug,software-crypto-sha256
 cargo check --features=wasm,debug,web
 cargo check --features=wasm,release
 cargo check --target=i686-unknown-linux-gnu --features=native,release

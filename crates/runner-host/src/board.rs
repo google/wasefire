@@ -61,7 +61,6 @@ impl Api for Board {
     }
 
     type Button = button::Impl;
-    #[cfg(feature = "internal-software-crypto")]
     type Crypto = wasefire_board_api::Unsupported;
     type Debug = debug::Impl;
     type Led = led::Impl;

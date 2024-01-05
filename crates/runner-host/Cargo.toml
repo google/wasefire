@@ -30,6 +30,7 @@ features = [
   "board-api-storage",
   "board-api-timer",
   "board-api-uart",
+  "software-crypto",
   "std",
   # TODO: Remove once the scheduler accepts all function imports.
   "full-applet-api",
@@ -37,12 +38,6 @@ features = [
 
 [features]
 default = ["usb"]
-software-crypto = ["internal-software-crypto", "wasefire-scheduler/software-crypto"]
-software-crypto-aes256-gcm = [
-  "internal-software-crypto",
-  "wasefire-scheduler/software-crypto-aes256-gcm",
-]
-software-crypto-sha256 = ["internal-software-crypto", "wasefire-scheduler/software-crypto-sha256"]
 usb = [
   "dep:usb-device",
   "dep:usbd-serial",
@@ -56,5 +51,3 @@ release = []
 # Exactly one is enabled by xtask.
 native = ["wasefire-scheduler/native"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
-# Internal features.
-internal-software-crypto = []
