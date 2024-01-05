@@ -4,11 +4,8 @@
 
 ### Major
 
-- Update `wasefire-applet-api-desc` version
-
-### Minor
-
 - Add API features (disabled by default)
+- Update `wasefire-applet-api-desc` version
 
 ### Patch
 
