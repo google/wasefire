@@ -18,6 +18,7 @@
 //! support triggering [events][Event].
 
 #![no_std]
+#![feature(doc_auto_cfg)]
 #![feature(never_type)]
 
 extern crate alloc;
@@ -28,17 +29,28 @@ use core::ops::Deref;
 use derivative::Derivative;
 pub use wasefire_error::Error;
 
+#[cfg(feature = "api-button")]
 pub mod button;
+#[cfg(feature = "internal-api-crypto")]
 pub mod crypto;
 pub mod debug;
+#[cfg(feature = "api-gpio")]
 pub mod gpio;
+#[cfg(feature = "api-led")]
 pub mod led;
+#[cfg(feature = "internal-api-platform")]
 pub mod platform;
+#[cfg(feature = "internal-api-radio")]
 pub mod radio;
+#[cfg(feature = "api-rng")]
 pub mod rng;
+#[cfg(feature = "api-storage")]
 mod storage;
+#[cfg(feature = "api-timer")]
 pub mod timer;
+#[cfg(feature = "api-uart")]
 pub mod uart;
+#[cfg(feature = "internal-api-usb")]
 pub mod usb;
 
 /// Board interface.
@@ -69,17 +81,28 @@ pub trait Api: Send + 'static {
         None
     }
 
+    #[cfg(feature = "api-button")]
     type Button: button::Api;
+    #[cfg(feature = "internal-api-crypto")]
     type Crypto: crypto::Api;
     type Debug: debug::Api;
+    #[cfg(feature = "api-gpio")]
     type Gpio: gpio::Api;
+    #[cfg(feature = "api-led")]
     type Led: led::Api;
+    #[cfg(feature = "internal-api-platform")]
     type Platform: platform::Api;
+    #[cfg(feature = "internal-api-radio")]
     type Radio: radio::Api;
+    #[cfg(feature = "api-rng")]
     type Rng: rng::Api;
+    #[cfg(feature = "api-storage")]
     type Storage: Singleton + wasefire_store::Storage + Send;
+    #[cfg(feature = "api-timer")]
     type Timer: timer::Api;
+    #[cfg(feature = "api-uart")]
     type Uart: uart::Api;
+    #[cfg(feature = "internal-api-usb")]
     type Usb: usb::Api;
 }
 
@@ -110,32 +133,84 @@ pub trait Singleton: Sized {
 #[derivative(Debug(bound = ""), PartialEq(bound = ""), Eq(bound = ""))]
 pub enum Event<B: Api + ?Sized> {
     /// Button event.
+    #[cfg(feature = "api-button")]
     Button(button::Event<B>),
 
     /// Radio event.
+    #[cfg(feature = "internal-api-radio")]
     Radio(radio::Event),
 
     /// Timer event.
+    #[cfg(feature = "api-timer")]
     Timer(timer::Event<B>),
 
     /// UART event.
+    #[cfg(feature = "api-uart")]
     Uart(uart::Event<B>),
 
     /// USB event.
+    #[cfg(feature = "internal-api-usb")]
     Usb(usb::Event),
+
+    /// Dummy event for typing purposes.
+    Impossible(Impossible<B>),
 }
 
+/// Impossible type with board parameter.
+///
+/// This type is useful when the type parameter `B` needs to be mentioned in an enum. This type can
+/// be destructed by calling its unreachable method.
+#[derive(Derivative)]
+#[derivative(Debug(bound = ""), Copy(bound = ""), Hash(bound = ""))]
+#[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
+#[derivative(Ord = "feature_allow_slow_enum")]
+pub struct Impossible<B: Api + ?Sized>(Void, PhantomData<B>);
+
+// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use Clone(bound = "") instead.
+impl<B: Api + ?Sized> Clone for Impossible<B> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use PartialOrd(bound = "") instead.
+impl<B: Api + ?Sized> PartialOrd for Impossible<B> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<B: Api + ?Sized> Impossible<B> {
+    pub fn unreachable(&self) -> ! {
+        match self.0 {}
+    }
+}
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+enum Void {}
+
+#[cfg(feature = "api-button")]
 pub type Button<B> = <B as Api>::Button;
+#[cfg(feature = "internal-api-crypto")]
 pub type Crypto<B> = <B as Api>::Crypto;
 pub type Debug<B> = <B as Api>::Debug;
+#[cfg(feature = "api-gpio")]
 pub type Gpio<B> = <B as Api>::Gpio;
+#[cfg(feature = "api-led")]
 pub type Led<B> = <B as Api>::Led;
+#[cfg(feature = "internal-api-platform")]
 pub type Platform<B> = <B as Api>::Platform;
+#[cfg(feature = "internal-api-radio")]
 pub type Radio<B> = <B as Api>::Radio;
+#[cfg(feature = "api-rng")]
 pub type Rng<B> = <B as Api>::Rng;
+#[cfg(feature = "api-storage")]
 pub type Storage<B> = <B as Api>::Storage;
+#[cfg(feature = "api-timer")]
 pub type Timer<B> = <B as Api>::Timer;
+#[cfg(feature = "api-uart")]
 pub type Uart<B> = <B as Api>::Uart;
+#[cfg(feature = "internal-api-usb")]
 pub type Usb<B> = <B as Api>::Usb;
 
 /// Unsupported interface.
@@ -214,17 +289,28 @@ mod tests {
                 todo!()
             }
 
+            #[cfg(feature = "api-button")]
             type Button = Unsupported;
+            #[cfg(feature = "internal-api-crypto")]
             type Crypto = Unsupported;
             type Debug = Unsupported;
+            #[cfg(feature = "api-gpio")]
             type Gpio = Unsupported;
+            #[cfg(feature = "api-led")]
             type Led = Unsupported;
+            #[cfg(feature = "internal-api-platform")]
             type Platform = Unsupported;
+            #[cfg(feature = "internal-api-radio")]
             type Radio = Unsupported;
+            #[cfg(feature = "api-rng")]
             type Rng = Unsupported;
+            #[cfg(feature = "api-storage")]
             type Storage = Unsupported;
+            #[cfg(feature = "api-timer")]
             type Timer = Unsupported;
+            #[cfg(feature = "api-uart")]
             type Uart = Unsupported;
+            #[cfg(feature = "internal-api-usb")]
             type Usb = Unsupported;
         }
     }

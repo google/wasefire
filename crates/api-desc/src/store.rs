@@ -14,6 +14,7 @@
 
 use crate::*;
 
+#[cfg(feature = "api-store-fragment")]
 mod fragment;
 
 pub(crate) fn new() -> Item {
@@ -22,6 +23,7 @@ pub(crate) fn new() -> Item {
     };
     let name = "store".into();
     let items = vec![
+        #[cfg(feature = "api-store")]
         item! {
             /// Inserts an entry in the store.
             ///
@@ -42,6 +44,7 @@ pub(crate) fn new() -> Item {
                 res: isize,
             }
         },
+        #[cfg(feature = "api-store")]
         item! {
             /// Removes an entry from the store.
             ///
@@ -54,6 +57,7 @@ pub(crate) fn new() -> Item {
                 res: isize,
             }
         },
+        #[cfg(feature = "api-store")]
         item! {
             /// Finds an entry in the store, if any.
             fn find "sf" {
@@ -87,6 +91,7 @@ pub(crate) fn new() -> Item {
                 res: isize,
             }
         },
+        #[cfg(feature = "api-store-fragment")]
         fragment::new(),
     ];
     Item::Mod(Mod { docs, name, items })

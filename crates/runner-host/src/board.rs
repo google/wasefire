@@ -23,7 +23,7 @@ pub mod uart;
 pub mod usb;
 
 use tokio::sync::mpsc::Sender;
-use wasefire_board_api::{Api, Event, Unsupported};
+use wasefire_board_api::{Api, Event};
 use wasefire_store::FileStorage;
 
 use crate::RECEIVER;
@@ -61,18 +61,13 @@ impl Api for Board {
     }
 
     type Button = button::Impl;
-    type Crypto = Unsupported;
+    type Crypto = wasefire_board_api::Unsupported;
     type Debug = debug::Impl;
-    type Gpio = Unsupported;
     type Led = led::Impl;
-    type Platform = Unsupported;
-    type Radio = Unsupported;
     type Rng = rng::Impl;
     type Storage = storage::Impl;
     type Timer = timer::Impl;
     type Uart = uart::Impl;
     #[cfg(feature = "usb")]
     type Usb = usb::Impl;
-    #[cfg(not(feature = "usb"))]
-    type Usb = Unsupported;
 }

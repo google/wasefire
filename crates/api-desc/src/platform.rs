@@ -14,6 +14,7 @@
 
 use crate::*;
 
+#[cfg(feature = "api-platform-update")]
 mod update;
 
 pub(crate) fn new() -> Item {
@@ -22,7 +23,9 @@ pub(crate) fn new() -> Item {
     };
     let name = "platform".into();
     let items = vec![
+        #[cfg(feature = "api-platform-update")]
         update::new(),
+        #[cfg(feature = "api-platform")]
         item! {
             /// Returns the version of the platform.
             fn version "pv" {
@@ -38,6 +41,7 @@ pub(crate) fn new() -> Item {
                 len: usize,
             }
         },
+        #[cfg(feature = "api-platform")]
         item! {
             /// Reboots the device (thus platform and applets).
             fn reboot "pr" {} -> {

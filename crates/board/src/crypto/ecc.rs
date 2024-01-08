@@ -15,7 +15,7 @@
 //! Elliptic-curve cryptography.
 
 use generic_array::{ArrayLength, GenericArray};
-#[cfg(feature = "internal-ecc")]
+#[cfg(feature = "internal-software-crypto-ecc")]
 pub use software::*;
 
 use crate::{Error, Support, Unsupported};
@@ -78,7 +78,7 @@ impl<N: ArrayLength<u8>> Api<N> for Unsupported {
     }
 }
 
-#[cfg(feature = "internal-ecc")]
+#[cfg(feature = "internal-software-crypto-ecc")]
 mod software {
     use core::marker::PhantomData;
 

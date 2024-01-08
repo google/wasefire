@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add applet API and board API features (disabled by default)
 - Add `native` and `wasm` features (exactly one must be chosen)
 
 ### Minor
@@ -97,4 +98,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 26 -->
+<!-- Increment to skip CHANGELOG.md test: 27 -->

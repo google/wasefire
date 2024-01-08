@@ -14,7 +14,9 @@
 
 use alloc::collections::{BTreeSet, VecDeque};
 
-use wasefire_board_api::{self as board, Api as Board, Event};
+#[cfg(feature = "internal-hash-context")]
+use wasefire_board_api as board;
+use wasefire_board_api::{Api as Board, Event};
 use wasefire_logger as log;
 
 use self::store::{Memory, Store, StoreApi};
@@ -35,6 +37,7 @@ pub struct Applet<B: Board> {
 
     handlers: BTreeSet<Handler<B>>,
 
+    #[cfg(feature = "internal-hash-context")]
     pub hashes: AppletHashes<B>,
 }
 
@@ -47,28 +50,38 @@ impl<B: Board> Default for Applet<B> {
             #[cfg(feature = "wasm")]
             done: Default::default(),
             handlers: Default::default(),
+            #[cfg(feature = "internal-hash-context")]
             hashes: Default::default(),
         }
     }
 }
 
 /// Currently alive hash contexts.
+#[cfg(feature = "internal-hash-context")]
 pub struct AppletHashes<B: Board>([Option<HashContext<B>>; 4]);
 
 // We have to implement manually because derive is not able to find the correct bounds.
+#[cfg(feature = "internal-hash-context")]
 impl<B: Board> Default for AppletHashes<B> {
     fn default() -> Self {
         Self([None, None, None, None])
     }
 }
 
+#[cfg(feature = "internal-hash-context")]
 pub enum HashContext<B: Board> {
-    HmacSha256(board::crypto::HmacSha256<B>),
-    HmacSha384(board::crypto::HmacSha384<B>),
+    #[cfg(feature = "board-api-crypto-sha256")]
     Sha256(board::crypto::Sha256<B>),
+    #[cfg(feature = "board-api-crypto-sha384")]
     Sha384(board::crypto::Sha384<B>),
+    #[cfg(feature = "board-api-crypto-hmac-sha256")]
+    HmacSha256(board::crypto::HmacSha256<B>),
+    #[cfg(feature = "board-api-crypto-hmac-sha384")]
+    HmacSha384(board::crypto::HmacSha384<B>),
+    _Impossible(board::Impossible<B>),
 }
 
+#[cfg(feature = "internal-hash-context")]
 impl<B: Board> AppletHashes<B> {
     pub fn insert(&mut self, hash: HashContext<B>) -> Result<usize, Trap> {
         let id = self.0.iter().position(|x| x.is_none()).ok_or(Trap)?;
@@ -90,6 +103,7 @@ impl<B: Board> Applet<B> {
         &mut self.store
     }
 
+    #[allow(dead_code)] // in case no API uses memory
     pub fn memory(&mut self) -> Memory {
         self.store.memory()
     }
@@ -128,6 +142,7 @@ impl<B: Board> Applet<B> {
         self.done = true;
     }
 
+    #[allow(dead_code)] // in case there are no events
     pub fn enable(&mut self, handler: Handler<B>) -> Result<(), Trap> {
         match self.handlers.insert(handler) {
             true => Ok(()),

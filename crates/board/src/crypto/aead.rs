@@ -91,7 +91,7 @@ where
     }
 }
 
-#[cfg(feature = "internal-aead")]
+#[cfg(feature = "internal-software-crypto-aead")]
 mod software {
     use aead::{AeadCore, AeadInPlace};
     use crypto_common::{KeyInit, KeySizeUser};

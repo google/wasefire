@@ -4,6 +4,8 @@
 
 ### Major
 
+- Add API features (disabled by default)
+- Add `Event::Impossible` to always mention the type parameter `B`
 - Update `platform::update::Api` to return `Error` instead of `usize`
 - Replace `Error` type with `wasefire-error`
 - Add `Api::Gpio` for low-level GPIOs
@@ -99,4 +101,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 16 -->
+<!-- Increment to skip CHANGELOG.md test: 17 -->

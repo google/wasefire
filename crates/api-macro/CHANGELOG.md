@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add API features (disabled by default)
 - Update `wasefire-applet-api-desc` version
 
 ### Patch

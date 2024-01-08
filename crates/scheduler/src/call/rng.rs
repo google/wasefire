@@ -13,9 +13,13 @@
 // limitations under the License.
 
 use wasefire_applet_api::rng::{self as api, Api};
+#[cfg(feature = "board-api-rng")]
 use wasefire_board_api::rng::Api as _;
-use wasefire_board_api::{self as board, Api as Board};
+use wasefire_board_api::Api as Board;
+#[cfg(feature = "board-api-rng")]
+use wasefire_board_api::{self as board};
 
+#[cfg(feature = "board-api-rng")]
 use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
@@ -25,6 +29,13 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     }
 }
 
+#[cfg(not(feature = "board-api-rng"))]
+fn fill_bytes<B: Board>(call: SchedulerCall<B, api::fill_bytes::Sig>) {
+    let res = wasefire_error::Error::world(wasefire_error::Code::NotImplemented);
+    call.reply(Ok(api::fill_bytes::Results { res: res.into() }));
+}
+
+#[cfg(feature = "board-api-rng")]
 fn fill_bytes<B: Board>(mut call: SchedulerCall<B, api::fill_bytes::Sig>) {
     let api::fill_bytes::Params { ptr, len } = call.read();
     let scheduler = call.scheduler();

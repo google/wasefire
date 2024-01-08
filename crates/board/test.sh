@@ -17,9 +17,11 @@ set -e
 
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
+check_board_api api- --features=std, --all-targets
+
 test_helper
 
-cargo test --features=std
-cargo check --target=thumbv7em-none-eabi
-cargo check --target=thumbv7em-none-eabi --features=software-crypto
-cargo check --target=riscv32imc-unknown-none-elf
+cargo test --features=full-api,std
+cargo check --target=thumbv7em-none-eabi --features=full-api
+cargo check --target=thumbv7em-none-eabi --features=full-api,software-crypto
+cargo check --target=riscv32imc-unknown-none-elf --features=full-api

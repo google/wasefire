@@ -17,4 +17,5 @@
 //! Only serial is currently supported. HID and its derivatives (e.g. CTAP) will be added in the
 //! future.
 
+#[cfg(feature = "api-usb-serial")]
 pub mod serial;

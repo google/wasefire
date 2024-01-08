@@ -14,9 +14,6 @@
 
 //! Provides hash functions.
 
-use alloc::borrow::Cow;
-use alloc::vec;
-
 #[cfg(feature = "rust-crypto")]
 pub use rust_crypto::*;
 use wasefire_applet_api::crypto::hash as api;
@@ -26,6 +23,7 @@ pub use self::api::Algorithm;
 use crate::{convert, convert_unit, Error};
 
 /// Hashing context.
+#[cfg(feature = "api-crypto-hash")]
 pub struct Digest {
     /// The hashing context identifier.
     ///
@@ -36,6 +34,7 @@ pub struct Digest {
     len: usize,
 }
 
+#[cfg(feature = "api-crypto-hash")]
 impl Digest {
     /// Creates a new hashing context for the specified algorithm.
     pub fn new(algorithm: Algorithm) -> Result<Self, Error> {
@@ -74,6 +73,7 @@ impl Digest {
     }
 }
 
+#[cfg(feature = "api-crypto-hash")]
 impl Drop for Digest {
     fn drop(&mut self) {
         if self.id == usize::MAX {
@@ -86,6 +86,7 @@ impl Drop for Digest {
 }
 
 /// Hmac context.
+#[cfg(feature = "api-crypto-hmac")]
 pub struct Hmac {
     /// The hmac context identifier.
     ///
@@ -96,6 +97,7 @@ pub struct Hmac {
     len: usize,
 }
 
+#[cfg(feature = "api-crypto-hmac")]
 impl Hmac {
     /// Creates a new hmac context for the specified algorithm.
     pub fn new(algorithm: Algorithm, key: &[u8]) -> Result<Self, Error> {
@@ -141,6 +143,7 @@ impl Hmac {
     }
 }
 
+#[cfg(feature = "api-crypto-hmac")]
 impl Drop for Hmac {
     fn drop(&mut self) {
         if self.id == usize::MAX {
@@ -153,6 +156,7 @@ impl Drop for Hmac {
 }
 
 /// Returns the SHA-256 of the provided data.
+#[cfg(feature = "api-crypto-hash")]
 pub fn sha256(data: &[u8]) -> Result<[u8; 32], Error> {
     let mut digest = [0; 32];
     Digest::digest(Algorithm::Sha256, data, &mut digest)?;
@@ -160,6 +164,7 @@ pub fn sha256(data: &[u8]) -> Result<[u8; 32], Error> {
 }
 
 /// Returns the HMAC-SHA-256 of the provided data.
+#[cfg(feature = "api-crypto-hmac")]
 pub fn hmac_sha256(key: &[u8], data: &[u8]) -> Result<[u8; 32], Error> {
     let mut hmac = [0; 32];
     Hmac::hmac(Algorithm::Sha256, key, data, &mut hmac)?;
@@ -167,26 +172,30 @@ pub fn hmac_sha256(key: &[u8], data: &[u8]) -> Result<[u8; 32], Error> {
 }
 
 /// Derives a key according to HKDF.
+#[cfg(feature = "api-crypto-hkdf")]
 pub fn hkdf(
     algorithm: Algorithm, salt: Option<&[u8]>, ikm: &[u8], info: &[u8], okm: &mut [u8],
 ) -> Result<(), Error> {
-    let mut prk = vec![0; algorithm.digest_len()];
+    let mut prk = alloc::vec![0; algorithm.digest_len()];
     hkdf_extract(algorithm, salt, ikm, &mut prk)?;
     hkdf_expand(algorithm, &prk, info, okm)
 }
 
 /// The extract operation of HKDF.
+#[cfg(feature = "api-crypto-hkdf")]
 pub fn hkdf_extract(
     algorithm: Algorithm, salt: Option<&[u8]>, ikm: &[u8], prk: &mut [u8],
 ) -> Result<(), Error> {
+    use alloc::borrow::Cow;
     let salt = match salt {
         Some(x) => Cow::Borrowed(x),
-        None => Cow::Owned(vec![0; algorithm.digest_len()]),
+        None => Cow::Owned(alloc::vec![0; algorithm.digest_len()]),
     };
     Hmac::hmac(algorithm, &salt, ikm, prk)
 }
 
 /// The expand operation of HKDF.
+#[cfg(feature = "api-crypto-hkdf")]
 pub fn hkdf_expand(
     algorithm: Algorithm, prk: &[u8], info: &[u8], okm: &mut [u8],
 ) -> Result<(), Error> {
@@ -204,6 +213,7 @@ pub fn hkdf_expand(
 }
 
 /// Whether a hash algorithm is supported.
+#[cfg(feature = "api-crypto-hash")]
 pub fn is_supported(algorithm: Algorithm) -> bool {
     let params = api::is_supported::Params { algorithm: algorithm as usize };
     let api::is_supported::Results { supported } = unsafe { api::is_supported(params) };
@@ -211,6 +221,7 @@ pub fn is_supported(algorithm: Algorithm) -> bool {
 }
 
 /// Whether a hash algorithm is supported for HMAC.
+#[cfg(feature = "api-crypto-hmac")]
 pub fn is_hmac_supported(algorithm: Algorithm) -> bool {
     let params = api::is_hmac_supported::Params { algorithm: algorithm as usize };
     let api::is_hmac_supported::Results { supported } = unsafe { api::is_hmac_supported(params) };
@@ -218,6 +229,7 @@ pub fn is_hmac_supported(algorithm: Algorithm) -> bool {
 }
 
 /// Whether a hash algorithm is supported for HKDF.
+#[cfg(feature = "api-crypto-hkdf")]
 pub fn is_hkdf_supported(algorithm: Algorithm) -> bool {
     let params = api::is_hkdf_supported::Params { algorithm: algorithm as usize };
     let api::is_hkdf_supported::Results { supported } = unsafe { api::is_hkdf_supported(params) };
@@ -226,47 +238,62 @@ pub fn is_hkdf_supported(algorithm: Algorithm) -> bool {
 
 #[cfg(feature = "rust-crypto")]
 mod rust_crypto {
+    #[cfg(feature = "api-crypto-hmac")]
     use crypto_common::{KeyInit, KeySizeUser};
-    use digest::{FixedOutput, HashMarker, MacMarker, OutputSizeUser, Update};
+    #[cfg(feature = "api-crypto-hash")]
+    use digest::HashMarker;
+    #[cfg(feature = "api-crypto-hmac")]
+    use digest::MacMarker;
+    use digest::{FixedOutput, OutputSizeUser, Update};
 
     use super::*;
 
     /// SHA-256 implementing RustCrypto traits like `Digest`.
+    #[cfg(feature = "api-crypto-hash")]
     pub struct Sha256(Digest);
 
     /// HMAC-SHA-256 implementing RustCrypto traits like `Mac`.
+    #[cfg(feature = "api-crypto-hmac")]
     pub struct HmacSha256(Hmac);
 
+    #[cfg(feature = "api-crypto-hash")]
     impl HashMarker for Sha256 {}
 
+    #[cfg(feature = "api-crypto-hash")]
     impl Default for Sha256 {
         fn default() -> Self {
             Self(Digest::new(Algorithm::Sha256).unwrap())
         }
     }
 
+    #[cfg(feature = "api-crypto-hash")]
     impl Update for Sha256 {
         fn update(&mut self, data: &[u8]) {
             self.0.update(data);
         }
     }
 
+    #[cfg(feature = "api-crypto-hash")]
     impl OutputSizeUser for Sha256 {
         type OutputSize = digest::consts::U32;
     }
 
+    #[cfg(feature = "api-crypto-hash")]
     impl FixedOutput for Sha256 {
         fn finalize_into(self, out: &mut digest::Output<Self>) {
             self.0.finalize(out).unwrap();
         }
     }
 
+    #[cfg(feature = "api-crypto-hmac")]
     impl MacMarker for HmacSha256 {}
 
+    #[cfg(feature = "api-crypto-hmac")]
     impl KeySizeUser for HmacSha256 {
         type KeySize = digest::consts::U64;
     }
 
+    #[cfg(feature = "api-crypto-hmac")]
     impl KeyInit for HmacSha256 {
         fn new(key: &digest::Key<Self>) -> Self {
             Self::new_from_slice(key).unwrap()
@@ -277,16 +304,19 @@ mod rust_crypto {
         }
     }
 
+    #[cfg(feature = "api-crypto-hmac")]
     impl Update for HmacSha256 {
         fn update(&mut self, data: &[u8]) {
             self.0.update(data);
         }
     }
 
+    #[cfg(feature = "api-crypto-hmac")]
     impl OutputSizeUser for HmacSha256 {
         type OutputSize = digest::consts::U32;
     }
 
+    #[cfg(feature = "api-crypto-hmac")]
     impl FixedOutput for HmacSha256 {
         fn finalize_into(self, out: &mut digest::Output<Self>) {
             self.0.finalize(out).unwrap()

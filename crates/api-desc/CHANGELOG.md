@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add API features (disabled by default)
 - Remove isize conversion functions for enums
 - Remove custom error types
 - Add `gpio` module

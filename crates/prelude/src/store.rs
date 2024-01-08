@@ -14,12 +14,16 @@
 
 //! Provides API for persistent storage.
 
+#[cfg(feature = "api-store")]
 use alloc::boxed::Box;
 
+#[cfg(feature = "api-store")]
 use wasefire_applet_api::store as api;
 
+#[cfg(feature = "api-store")]
 use crate::{convert_unit, Error};
 
+#[cfg(feature = "api-store-fragment")]
 pub mod fragment;
 
 /// Inserts an entry in the store.
@@ -27,6 +31,7 @@ pub mod fragment;
 /// The `key` argument must be a small integer (currently less than 4096). The `value` argument is
 /// the slice to associate with this key. If there was already a value, it is overwritten.
 /// Overwritten values are zeroized from flash.
+#[cfg(feature = "api-store")]
 pub fn insert(key: usize, value: &[u8]) -> Result<(), Error> {
     let params = api::insert::Params { key, ptr: value.as_ptr(), len: value.len() };
     let api::insert::Results { res } = unsafe { api::insert(params) };
@@ -37,6 +42,7 @@ pub fn insert(key: usize, value: &[u8]) -> Result<(), Error> {
 ///
 /// If there was not value associated with the `key` argument, this is a no-op. Otherwise the value
 /// is zeroized from flash and the key is not associated.
+#[cfg(feature = "api-store")]
 pub fn remove(key: usize) -> Result<(), Error> {
     let params = api::remove::Params { key };
     let api::remove::Results { res } = unsafe { api::remove(params) };
@@ -44,11 +50,13 @@ pub fn remove(key: usize) -> Result<(), Error> {
 }
 
 /// Returns the value associated to a key, if any.
+#[cfg(feature = "api-store")]
 pub fn find(key: usize) -> Result<Option<Box<[u8]>>, Error> {
     find_impl(key)
 }
 
 #[cfg(feature = "multivalue")]
+#[cfg(feature = "api-store")]
 fn find_impl(key: usize) -> Result<Option<Box<[u8]>>, Error> {
     let params = api::find::Params { key };
     let api::find::Results { ptr, len } = unsafe { api::find(params) };
@@ -61,6 +69,7 @@ fn find_impl(key: usize) -> Result<Option<Box<[u8]>>, Error> {
 }
 
 #[cfg(not(feature = "multivalue"))]
+#[cfg(feature = "api-store")]
 fn find_impl(key: usize) -> Result<Option<Box<[u8]>>, Error> {
     use crate::convert_bool;
 

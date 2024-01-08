@@ -10,6 +10,7 @@
 
 ### Minor
 
+- Add API features (enabled by default)
 - Add `gpio` module
 - Add `unsafe-assume-single-core` feature for convenience
 - Add `platform::version()`

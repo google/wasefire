@@ -28,6 +28,7 @@
 
 #![no_std]
 #![feature(alloc_error_handler)]
+#![feature(doc_auto_cfg)]
 #![feature(macro_metavar_expr)]
 #![feature(negative_impls)]
 #![feature(vec_into_raw_parts)]
@@ -39,21 +40,33 @@ use wasefire_applet_api as api;
 pub use wasefire_error::Error;
 
 mod allocator;
+#[cfg(feature = "api-button")]
 pub mod button;
 mod callback;
+#[cfg(feature = "api-timer")]
 pub mod clock;
+#[cfg(feature = "internal-api-crypto")]
 pub mod crypto;
 pub mod debug;
+#[cfg(feature = "api-gpio")]
 pub mod gpio;
+#[cfg(feature = "api-led")]
 pub mod led;
+#[cfg(feature = "internal-api-platform")]
 pub mod platform;
+#[cfg(feature = "internal-api-radio")]
 pub mod radio;
+#[cfg(feature = "api-rng")]
 pub mod rng;
 pub mod scheduling;
+#[cfg(feature = "internal-serial")]
 pub mod serial;
+#[cfg(feature = "internal-api-store")]
 pub mod store;
 pub mod sync;
+#[cfg(feature = "api-uart")]
 pub mod uart;
+#[cfg(feature = "internal-api-usb")]
 pub mod usb;
 
 /// Board-specific syscalls.
@@ -127,10 +140,12 @@ fn handle_panic(info: &core::panic::PanicInfo) -> ! {
     scheduling::abort();
 }
 
+#[cfg_attr(not(feature = "api-crypto-ec"), allow(dead_code))]
 fn convert(res: isize) -> Result<usize, Error> {
     Error::decode(res as i32).map(|x| x as usize)
 }
 
+#[cfg_attr(not(feature = "api-crypto-ec"), allow(dead_code))]
 fn convert_unit(res: isize) -> Result<(), Error> {
     match convert(res) {
         Ok(0) => Ok(()),
@@ -139,6 +154,7 @@ fn convert_unit(res: isize) -> Result<(), Error> {
     }
 }
 
+#[cfg_attr(not(feature = "api-crypto-ec"), allow(dead_code))]
 fn convert_bool(res: isize) -> Result<bool, Error> {
     match convert(res) {
         Ok(0) => Ok(false),
