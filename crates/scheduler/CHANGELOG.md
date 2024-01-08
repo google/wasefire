@@ -26,6 +26,7 @@
 
 ### Patch
 
+- Fix board API feature gates for AES-128-CCM and AES-256-GCM
 - Remove unreachable `multivalue` feature gates
 - Correctly gate events of nested APIs
 - Rename `debug` internal feature to `internal-debug`
