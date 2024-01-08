@@ -44,11 +44,10 @@ fn time<B: Board>(mut call: SchedulerCall<B, api::time::Sig>) {
     let memory = call.memory();
     let results = try {
         let time = board::Debug::<B>::time();
-        let high = (time >> 32) as u32;
-        let low = time as u32;
         if *ptr != 0 {
-            memory.get_mut(*ptr, 4)?.copy_from_slice(&high.to_le_bytes());
+            memory.get_mut(*ptr, 8)?.copy_from_slice(&time.to_le_bytes());
         }
+        let low = time as u32 & 0x7fffffff;
         api::time::Results { res: low.into() }
     };
     call.reply(results)

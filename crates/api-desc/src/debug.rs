@@ -37,14 +37,15 @@ pub(crate) fn new() -> Item {
         item! {
             /// Returns the time spent since some initial event.
             ///
-            /// The time is in micro-seconds and may wrap before using all 64 bits. In particular,
-            /// this function may constantly return zero if time is not supported.
+            /// The time is in micro-seconds and may wrap before using all 64 bits.
             fn time "dt" {
-                /// Pointer to the upper 32-bits (may be null).
-                ptr: *mut usize,
+                /// Pointer to the 64-bits time (may be null).
+                ///
+                /// The least significant 31 bits are always returned.
+                ptr: *mut u64,
             } -> {
-                /// Lower 32-bits of the time.
-                res: usize,
+                /// Least significant 31 bits of the time. Negative on error.
+                res: isize,
             }
         },
         item! {

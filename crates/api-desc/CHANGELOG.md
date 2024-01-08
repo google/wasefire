@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Change `debug::time()` to return `isize` and take `*mut u64`
 - Remove unstable `multivalue` support for #355
 - Add API features (disabled by default)
 - Remove isize conversion functions for enums

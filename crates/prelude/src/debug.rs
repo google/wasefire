@@ -21,6 +21,9 @@
 use bytemuck::Zeroable;
 use wasefire_applet_api::debug as api;
 pub use wasefire_applet_api::debug::Perf;
+use wasefire_error::Error;
+
+use crate::convert;
 
 /// Prints a line to the debug output.
 pub fn println(msg: &str) {
@@ -32,12 +35,12 @@ pub fn println(msg: &str) {
 
 /// Returns the time in micro-seconds since some initial event.
 ///
-/// This may return zero if not supported. This may wrap before using all 64 bits.
-pub fn time() -> u64 {
-    let mut high: usize = 0;
-    let params = api::time::Params { ptr: &mut high as *mut _ };
-    let api::time::Results { res: low } = unsafe { api::time(params) };
-    (high as u64) << 32 | low as u64
+/// The time may wrap before using all 64 bits.
+pub fn time() -> Result<u64, Error> {
+    let mut result: u64 = 0;
+    let params = api::time::Params { ptr: &mut result as *mut _ };
+    let api::time::Results { res } = unsafe { api::time(params) };
+    convert(res).map(|_| result)
 }
 
 /// Returns the time in micro-seconds since some initial event, split by component.
