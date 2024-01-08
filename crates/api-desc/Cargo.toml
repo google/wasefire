@@ -61,8 +61,6 @@ full-api = [
   "api-uart",
   "api-usb-serial",
 ]
-# Enables multivalue support (unstable).
-multivalue = []
 # Internal features.
 internal-api-crypto = []
 internal-api-crypto-hash = ["internal-api-crypto"]

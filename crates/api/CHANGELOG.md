@@ -9,6 +9,7 @@
 
 ### Minor
 
+- Remove unstable `multivalue` support for #355
 - Implement conversion from types involving `Error` to `U32`
 
 ### Patch

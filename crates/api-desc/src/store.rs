@@ -68,26 +68,12 @@ pub(crate) fn new() -> Item {
                 ///
                 /// The (inner) pointer will be allocated by the callee and must be freed by the
                 /// caller. It is thus owned by the caller when the function returns.
-                #[cfg(not(feature = "multivalue"))]
                 ptr: *mut *mut u8,
 
                 /// Where to write the length of the value, if found.
-                #[cfg(not(feature = "multivalue"))]
                 len: *mut usize,
             } -> {
-                /// Value of the entry if found. Null if not found.
-                ///
-                /// The pointer is allocated by the callee and must be freed by the caller. It is
-                /// thus owned by the caller when the function returns.
-                #[cfg(feature = "multivalue")]
-                ptr: *mut u8,
-
-                /// Negative on error. Otherwise length of the value.
-                #[cfg(feature = "multivalue")]
-                len: isize,
-
                 /// One if found. Zero if not found. Negative on error.
-                #[cfg(not(feature = "multivalue"))]
                 res: isize,
             }
         },

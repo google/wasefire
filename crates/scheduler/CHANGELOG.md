@@ -25,6 +25,7 @@
 
 ### Patch
 
+- Remove unreachable `multivalue` feature gates
 - Correctly gate events of nested APIs
 - Rename `debug` internal feature to `internal-debug`
 - Fix double-lock issue for native callbacks

@@ -21,7 +21,7 @@ use alloc::boxed::Box;
 use wasefire_applet_api::store as api;
 
 #[cfg(feature = "api-store")]
-use crate::{convert_unit, Error};
+use crate::{convert_bool, convert_unit, Error};
 
 #[cfg(feature = "api-store-fragment")]
 pub mod fragment;
@@ -52,27 +52,6 @@ pub fn remove(key: usize) -> Result<(), Error> {
 /// Returns the value associated to a key, if any.
 #[cfg(feature = "api-store")]
 pub fn find(key: usize) -> Result<Option<Box<[u8]>>, Error> {
-    find_impl(key)
-}
-
-#[cfg(feature = "multivalue")]
-#[cfg(feature = "api-store")]
-fn find_impl(key: usize) -> Result<Option<Box<[u8]>>, Error> {
-    let params = api::find::Params { key };
-    let api::find::Results { ptr, len } = unsafe { api::find(params) };
-    let len = Error::to_result(len)?;
-    if ptr.is_null() {
-        return Ok(None);
-    }
-    let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
-    Ok(Some(unsafe { Box::from_raw(ptr) }))
-}
-
-#[cfg(not(feature = "multivalue"))]
-#[cfg(feature = "api-store")]
-fn find_impl(key: usize) -> Result<Option<Box<[u8]>>, Error> {
-    use crate::convert_bool;
-
     let mut ptr = core::ptr::null_mut();
     let mut len = 0;
     let params = api::find::Params { key, ptr: &mut ptr, len: &mut len };

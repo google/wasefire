@@ -10,6 +10,7 @@
 
 ### Minor
 
+- Remove experimental `multivalue` support for #355
 - Add API features (enabled by default)
 - Add `gpio` module
 - Add `unsafe-assume-single-core` feature for convenience

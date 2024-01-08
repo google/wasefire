@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Remove unstable `multivalue` support for #355
 - Add API features (disabled by default)
 - Remove isize conversion functions for enums
 - Remove custom error types
