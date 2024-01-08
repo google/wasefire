@@ -76,7 +76,7 @@ _test_check_api() {
   local full="full-${prefix%-}"
   _test_diff 'the API features' "$api" \
     $(package_features | sed -n "s/^$prefix//p")
-  if package_features | grep "^$full\$"; then
+  if package_features | grep -q "^$full\$"; then
     _test_diff "the $full feature dependencies" "$api" \
       $(_test_full_deps $full $prefix)
   fi
