@@ -56,9 +56,9 @@ fn time<B: Board>(mut call: SchedulerCall<B, api::time::Sig>) {
 
 fn perf<B: Board>(mut call: SchedulerCall<B, api::perf::Sig>) {
     let api::perf::Params { ptr } = call.read();
-    #[cfg(feature = "debug")]
+    #[cfg(feature = "internal-debug")]
     let perf = call.scheduler().perf.read();
-    #[cfg(not(feature = "debug"))]
+    #[cfg(not(feature = "internal-debug"))]
     let perf = Perf { platform: 0, applets: 0, waiting: 0 };
     let memory = call.memory();
     let results = try {

@@ -40,13 +40,13 @@ optional = true
 std = ["wasefire-board-api/std", "wasefire-store?/std"]
 # Logging features (enable at most one).
 defmt = [
-  "debug",
   "dep:defmt",
+  "internal-debug",
   "wasefire-board-api/defmt",
   "wasefire-error/defmt",
   "wasefire-logger/defmt",
 ]
-log = ["debug", "wasefire-board-api/log", "wasefire-logger/log"]
+log = ["internal-debug", "wasefire-board-api/log", "wasefire-logger/log"]
 # Applet API features (automatically enabled by board API features).
 applet-api-button = ["wasefire-applet-api/api-button"]
 applet-api-crypto-ccm = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ccm"]
@@ -212,7 +212,6 @@ wasm = ["dep:wasefire-interpreter"]
 # safety invariant.
 unsafe-skip-validation = []
 # Internal features.
-debug = []
 internal-applet-api-crypto = []
 internal-applet-api-crypto-hash = ["internal-applet-api-crypto"]
 internal-applet-api-platform = []
@@ -222,4 +221,5 @@ internal-applet-api-usb = []
 internal-board-api-crypto-ecc = []
 internal-board-api-radio = []
 internal-board-api-usb = []
+internal-debug = []
 internal-hash-context = []
