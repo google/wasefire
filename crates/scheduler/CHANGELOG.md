@@ -9,6 +9,7 @@
 
 ### Minor
 
+- Support `debug::time()` new return type
 - Migrate to `platform::update` returning `Error`
 - Migrate to `wasefire-error`
 - Support `gpio` module
