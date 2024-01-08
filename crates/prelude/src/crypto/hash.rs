@@ -20,7 +20,7 @@ use wasefire_applet_api::crypto::hash as api;
 use wasefire_error::Code;
 
 pub use self::api::Algorithm;
-use crate::{convert, convert_unit, Error};
+use crate::{convert, convert_bool, convert_unit, Error};
 
 /// Hashing context.
 #[cfg(feature = "api-crypto-hash")]
@@ -42,8 +42,7 @@ impl Digest {
             return Err(Error::world(Code::NotImplemented));
         }
         let params = api::initialize::Params { algorithm: algorithm as usize };
-        let api::initialize::Results { id } = unsafe { api::initialize(params) };
-        let id = convert(id)?;
+        let id = convert(unsafe { api::initialize(params) })?;
         let len = algorithm.digest_len();
         Ok(Self { id, len })
     }
@@ -51,7 +50,7 @@ impl Digest {
     /// Updates the hashing context with the provided data.
     pub fn update(&mut self, data: &[u8]) {
         let params = api::update::Params { id: self.id, data: data.as_ptr(), length: data.len() };
-        unsafe { api::update(params) };
+        convert_unit(unsafe { api::update(params) }).unwrap();
     }
 
     /// Finalizes the hashing context and writes the associated digest.
@@ -60,9 +59,8 @@ impl Digest {
             return Err(Error::user(0));
         }
         let params = api::finalize::Params { id: self.id, digest: digest.as_mut_ptr() };
-        let api::finalize::Results { res } = unsafe { api::finalize(params) };
         self.id = usize::MAX;
-        convert_unit(res)
+        convert_unit(unsafe { api::finalize(params) })
     }
 
     /// Writes the hash of the data for the given algorithm in the digest.
@@ -81,7 +79,7 @@ impl Drop for Digest {
             return;
         }
         let params = api::finalize::Params { id: self.id, digest: core::ptr::null_mut() };
-        unsafe { api::finalize(params) };
+        convert_unit(unsafe { api::finalize(params) }).unwrap();
     }
 }
 
@@ -109,8 +107,7 @@ impl Hmac {
             key: key.as_ptr(),
             key_len: key.len(),
         };
-        let api::hmac_initialize::Results { id } = unsafe { api::hmac_initialize(params) };
-        let id = convert(id)?;
+        let id = convert(unsafe { api::hmac_initialize(params) })?;
         let len = algorithm.digest_len();
         Ok(Self { id, len })
     }
@@ -119,7 +116,7 @@ impl Hmac {
     pub fn update(&mut self, data: &[u8]) {
         let params =
             api::hmac_update::Params { id: self.id, data: data.as_ptr(), length: data.len() };
-        unsafe { api::hmac_update(params) };
+        convert_unit(unsafe { api::hmac_update(params) }).unwrap();
     }
 
     /// Finalizes the hmac context and writes the associated hmac.
@@ -128,9 +125,8 @@ impl Hmac {
             return Err(Error::user(0));
         }
         let params = api::hmac_finalize::Params { id: self.id, hmac: hmac.as_mut_ptr() };
-        let api::hmac_finalize::Results { res } = unsafe { api::hmac_finalize(params) };
         self.id = usize::MAX;
-        convert_unit(res)
+        convert_unit(unsafe { api::hmac_finalize(params) })
     }
 
     /// Writes the hmac of the data for the given algorithm.
@@ -151,7 +147,7 @@ impl Drop for Hmac {
             return;
         }
         let params = api::hmac_finalize::Params { id: self.id, hmac: core::ptr::null_mut() };
-        unsafe { api::hmac_finalize(params) };
+        convert_unit(unsafe { api::hmac_finalize(params) }).unwrap();
     }
 }
 
@@ -208,32 +204,28 @@ pub fn hkdf_expand(
         okm: okm.as_mut_ptr(),
         okm_len: okm.len(),
     };
-    let api::hkdf_expand::Results { res } = unsafe { api::hkdf_expand(params) };
-    convert_unit(res)
+    convert_unit(unsafe { api::hkdf_expand(params) })
 }
 
 /// Whether a hash algorithm is supported.
 #[cfg(feature = "api-crypto-hash")]
 pub fn is_supported(algorithm: Algorithm) -> bool {
     let params = api::is_supported::Params { algorithm: algorithm as usize };
-    let api::is_supported::Results { supported } = unsafe { api::is_supported(params) };
-    supported != 0
+    convert_bool(unsafe { api::is_supported(params) }).unwrap_or(false)
 }
 
 /// Whether a hash algorithm is supported for HMAC.
 #[cfg(feature = "api-crypto-hmac")]
 pub fn is_hmac_supported(algorithm: Algorithm) -> bool {
     let params = api::is_hmac_supported::Params { algorithm: algorithm as usize };
-    let api::is_hmac_supported::Results { supported } = unsafe { api::is_hmac_supported(params) };
-    supported != 0
+    convert_bool(unsafe { api::is_hmac_supported(params) }).unwrap_or(false)
 }
 
 /// Whether a hash algorithm is supported for HKDF.
 #[cfg(feature = "api-crypto-hkdf")]
 pub fn is_hkdf_supported(algorithm: Algorithm) -> bool {
     let params = api::is_hkdf_supported::Params { algorithm: algorithm as usize };
-    let api::is_hkdf_supported::Results { supported } = unsafe { api::is_hkdf_supported(params) };
-    supported != 0
+    convert_bool(unsafe { api::is_hkdf_supported(params) }).unwrap_or(false)
 }
 
 #[cfg(feature = "rust-crypto")]

@@ -72,10 +72,9 @@ pub mod usb;
 /// Board-specific syscalls.
 ///
 /// Those calls are directly forwarded to the board by the scheduler.
-pub fn syscall(x1: usize, x2: usize, x3: usize, x4: usize) -> usize {
+pub fn syscall(x1: usize, x2: usize, x3: usize, x4: usize) -> Result<usize, Error> {
     let params = api::syscall::Params { x1, x2, x3, x4 };
-    let api::syscall::Results { res } = unsafe { api::syscall(params) };
-    res
+    convert(unsafe { api::syscall(params) })
 }
 
 /// Defines the entry point of an applet.
@@ -140,7 +139,6 @@ fn handle_panic(info: &core::panic::PanicInfo) -> ! {
     scheduling::abort();
 }
 
-#[cfg_attr(not(feature = "api-crypto-ec"), allow(dead_code))]
 fn convert(res: isize) -> Result<usize, Error> {
     Error::decode(res as i32).map(|x| x as usize)
 }

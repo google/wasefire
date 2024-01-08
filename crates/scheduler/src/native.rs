@@ -24,7 +24,7 @@ use crate::perf::Slot;
 use crate::Scheduler;
 
 pub(crate) trait ErasedScheduler: Send {
-    fn dispatch(&mut self, link: &CStr, params: *const u32, results: *mut u32);
+    fn dispatch(&mut self, link: &CStr, params: *const u32) -> isize;
     fn flush_events(&mut self);
     fn process_event(&mut self);
     #[cfg(feature = "internal-debug")]
@@ -32,8 +32,8 @@ pub(crate) trait ErasedScheduler: Send {
 }
 
 impl<B: Board> ErasedScheduler for Scheduler<B> {
-    fn dispatch(&mut self, link: &CStr, params: *const u32, results: *mut u32) {
-        self.dispatch(link, params, results);
+    fn dispatch(&mut self, link: &CStr, params: *const u32) -> isize {
+        self.dispatch(link, params)
     }
 
     fn flush_events(&mut self) {
@@ -80,15 +80,16 @@ pub(crate) fn execute_callback() {
 }
 
 #[no_mangle]
-extern "C" fn env_dispatch(link: *const c_char, params: *const u32, results: *mut u32) {
+extern "C" fn env_dispatch(link: *const c_char, params: *const u32) -> isize {
     let link = unsafe { CStr::from_ptr(link) };
-    with_scheduler(|scheduler| {
+    let result = with_scheduler(|scheduler| {
         #[cfg(feature = "internal-debug")]
         scheduler.perf_record(Slot::Applets);
         scheduler.flush_events();
-        scheduler.dispatch(link, params, results);
+        scheduler.dispatch(link, params)
     });
     execute_callback();
     #[cfg(feature = "internal-debug")]
     with_scheduler(|x| x.perf_record(Slot::Platform));
+    result
 }

@@ -32,13 +32,12 @@ pub(crate) fn new() -> Item {
         },
         item! {
             /// Returns how many buttons are on the device.
-            fn count "bc" {} -> {
-                /// How many buttons are on the device.
-                cnt: usize,
-            }
+            fn count "bc" {}
         },
         item! {
             /// Register a handler for button events.
+            ///
+            /// Returns zero on success.
             fn register "br" {
                 /// Index of the button to listen to.
                 button: usize,
@@ -50,14 +49,16 @@ pub(crate) fn new() -> Item {
 
                 /// The opaque data to use when calling the handler function.
                 handler_data: *const void,
-            } -> {}
+            }
         },
         item! {
             /// Unregister handlers for button events.
+            ///
+            /// Returns zero on success.
             fn unregister "bu" {
                 /// Index of the button to stop listening to.
                 button: usize,
-            } -> {}
+            }
         },
     ];
     Item::Mod(Mod { docs, name, items })

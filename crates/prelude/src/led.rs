@@ -22,22 +22,21 @@ use wasefire_applet_api::led as api;
 
 pub use self::api::Status;
 pub use self::api::Status::*;
+use crate::{convert, convert_bool, convert_unit};
 
 /// Returns the number of available LEDs on the board.
 pub fn count() -> usize {
-    let api::count::Results { cnt } = unsafe { api::count() };
-    cnt
+    convert(unsafe { api::count() }).unwrap_or(0)
 }
 
 /// Returns the status of a LED.
 ///
 /// The `led` argument is the index of the LED. It must be less than [count()].
 pub fn get(led: usize) -> api::Status {
-    let api::get::Results { status } = unsafe { api::get(api::get::Params { led }) };
+    let status = convert_bool(unsafe { api::get(api::get::Params { led }) }).unwrap();
     match status {
-        0 => api::Status::Off,
-        1 => api::Status::On,
-        _ => unreachable!(),
+        false => api::Status::Off,
+        true => api::Status::On,
     }
 }
 
@@ -46,5 +45,6 @@ pub fn get(led: usize) -> api::Status {
 /// The `led` argument is the index of the LED. It must be less than [count()]. The `status`
 /// argument is the new status.
 pub fn set(led: usize, status: api::Status) {
-    unsafe { api::set(api::set::Params { led, status: status as usize }) };
+    let params = api::set::Params { led, status: status as usize };
+    convert_unit(unsafe { api::set(params) }).unwrap();
 }

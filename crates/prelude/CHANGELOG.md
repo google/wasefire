@@ -11,6 +11,7 @@
 
 ### Minor
 
+- Migrate to low-level applet API returning `isize`
 - Remove experimental `multivalue` support for #355
 - Add API features (enabled by default)
 - Add `gpio` module

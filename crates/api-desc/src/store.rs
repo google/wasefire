@@ -28,6 +28,8 @@ pub(crate) fn new() -> Item {
             /// Inserts an entry in the store.
             ///
             /// If an entry for that key was already present, it is overwritten.
+            ///
+            /// Returns zero on success.
             fn insert "si" {
                 /// Key of the entry.
                 ///
@@ -39,9 +41,6 @@ pub(crate) fn new() -> Item {
 
                 /// Length of the value.
                 len: usize,
-            } -> {
-                /// Zero for success. Negative on error.
-                res: isize,
             }
         },
         #[cfg(feature = "api-store")]
@@ -49,17 +48,18 @@ pub(crate) fn new() -> Item {
             /// Removes an entry from the store.
             ///
             /// This is not an error if no entry is present. This is simply a no-op in that case.
+            ///
+            /// Returns zero on success.
             fn remove "sr" {
                 /// Key of the entry.
                 key: usize,
-            } -> {
-                /// Zero for success. Negative on error.
-                res: isize,
             }
         },
         #[cfg(feature = "api-store")]
         item! {
             /// Finds an entry in the store, if any.
+            ///
+            /// On success, returns 1 if found, 0 otherwise.
             fn find "sf" {
                 /// Key of the entry to find.
                 key: usize,
@@ -72,9 +72,6 @@ pub(crate) fn new() -> Item {
 
                 /// Where to write the length of the value, if found.
                 len: *mut usize,
-            } -> {
-                /// One if found. Zero if not found. Negative on error.
-                res: isize,
             }
         },
         #[cfg(feature = "api-store-fragment")]

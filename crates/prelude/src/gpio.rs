@@ -19,10 +19,11 @@
 use wasefire_applet_api::gpio as api;
 pub use wasefire_applet_api::gpio::{InputConfig, OutputConfig};
 
+use crate::{convert, convert_bool, convert_unit};
+
 /// Returns the number of available GPIOs on the board.
 pub fn count() -> usize {
-    let api::count::Results { cnt } = unsafe { api::count() };
-    cnt
+    convert(unsafe { api::count() }).unwrap_or(0)
 }
 
 /// GPIO configuration.
@@ -75,23 +76,19 @@ impl Config {
 /// Configures a GPIO.
 pub fn configure(gpio: usize, config: &Config) {
     let params = api::configure::Params { gpio, mode: config.mode() };
-    let api::configure::Results { res } = unsafe { api::configure(params) };
-    assert!(res == 0);
+    convert_unit(unsafe { api::configure(params) }).unwrap();
 }
 
 /// Reads from a GPIO (must be configured as input).
 pub fn read(gpio: usize) -> bool {
     let params = api::read::Params { gpio };
-    let api::read::Results { val } = unsafe { api::read(params) };
-    assert!(val & !1 == 0);
-    val == 1
+    convert_bool(unsafe { api::read(params) }).unwrap()
 }
 
 /// Writes to a GPIO (must be configured as output).
 pub fn write(gpio: usize, value: bool) {
     let params = api::write::Params { gpio, val: value as usize };
-    let api::write::Results { res } = unsafe { api::write(params) };
-    assert!(res == 0);
+    convert_unit(unsafe { api::write(params) }).unwrap();
 }
 
 /// GPIO that disconnects on drop.

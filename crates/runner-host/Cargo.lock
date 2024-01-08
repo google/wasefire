@@ -1201,6 +1201,7 @@ dependencies = [
  "usbip-device",
  "wasefire-applet-api",
  "wasefire-board-api",
+ "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
  "wasefire-scheduler",

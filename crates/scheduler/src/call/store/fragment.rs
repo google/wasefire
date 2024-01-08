@@ -29,9 +29,9 @@ use crate::SchedulerCall;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
-        Api::Insert(call) => or_trap!("board-api-storage", insert(call)),
-        Api::Remove(call) => or_trap!("board-api-storage", remove(call)),
-        Api::Find(call) => or_trap!("board-api-storage", find(call)),
+        Api::Insert(call) => or_fail!("board-api-storage", insert(call)),
+        Api::Remove(call) => or_fail!("board-api-storage", remove(call)),
+        Api::Find(call) => or_fail!("board-api-storage", find(call)),
     }
 }
 
@@ -40,29 +40,20 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let api::insert::Params { keys, ptr, len } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
+    let result = try {
         let keys = decode_keys(keys)?;
         let value = memory.get(*ptr, *len)?;
-        let res = match fragment::write(&mut scheduler.store, &keys, value) {
-            Ok(()) => 0.into(),
-            Err(e) => convert(e).into(),
-        };
-        api::insert::Results { res }
+        fragment::write(&mut scheduler.store, &keys, value).map_err(convert)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-storage")]
 fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
     let api::remove::Params { keys } = call.read();
-    let results = try {
-        let res = match fragment::delete(&mut call.scheduler().store, &decode_keys(keys)?) {
-            Ok(()) => 0.into(),
-            Err(e) => convert(e).into(),
-        };
-        api::remove::Results { res }
-    };
-    call.reply(results);
+    let result =
+        try { fragment::delete(&mut call.scheduler().store, &decode_keys(keys)?).map_err(convert) };
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-storage")]
@@ -70,23 +61,21 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let api::find::Params { keys, ptr: ptr_ptr, len: len_ptr } = call.read();
     let scheduler = call.scheduler();
     let mut memory = scheduler.applet.memory();
-    let results = try {
-        let mut results = api::find::Results::default();
+    let result = try {
         match fragment::read(&scheduler.store, &decode_keys(keys)?) {
-            Ok(None) => (),
+            Ok(None) => Ok(false),
             Ok(Some(value)) => {
                 let len = value.len() as u32;
                 let ptr = memory.alloc(len, 1)?;
                 memory.get_mut(ptr, len)?.copy_from_slice(&value);
                 memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
                 memory.get_mut(*len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
-                results.res = 1.into();
+                Ok(true)
             }
-            Err(e) => results.res = convert(e).into(),
+            Err(e) => Err(convert(e)),
         }
-        results
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-storage")]

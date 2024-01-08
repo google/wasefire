@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #![no_std]
+#![feature(never_type)]
 #![feature(try_blocks)]
 
 extern crate alloc;
@@ -33,6 +34,7 @@ use wasefire_board_api::Singleton;
 #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
 use wasefire_board_api::Support;
 use wasefire_board_api::{self as board, Api as Board};
+use wasefire_error::Error;
 #[cfg(feature = "wasm")]
 use wasefire_interpreter::{self as interpreter, Call, Module, RunAnswer, Val};
 use wasefire_logger as log;
@@ -113,7 +115,7 @@ struct SchedulerCallT<'a, B: Board> {
     #[cfg(feature = "native")]
     params: &'a [u32],
     #[cfg(feature = "native")]
-    results: &'a mut [u32],
+    result: &'a mut i32,
 }
 
 impl<'a, B: Board> core::fmt::Debug for SchedulerCallT<'a, B> {
@@ -176,25 +178,31 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
         self.erased.scheduler
     }
 
-    fn reply(self, results: Result<T::Results, Trap>) {
-        match results {
-            #[cfg(feature = "wasm")]
-            Ok(results) => {
-                let mut this = self;
-                let results = convert_results::<T>(results);
-                #[cfg(feature = "internal-debug")]
-                this.scheduler().perf.record(perf::Slot::Platform);
-                let answer = this.call().resume(&results).map(|x| x.forget());
-                #[cfg(feature = "internal-debug")]
-                this.scheduler().perf.record(perf::Slot::Applets);
-                this.erased.scheduler.process_answer(answer);
-            }
-            #[cfg(feature = "native")]
-            Ok(results) => {
-                let results = <T::Results as ArrayU32>::into(&results);
-                self.erased.results.copy_from_slice(results);
-            }
+    fn reply(self, result: Result<impl Into<Reply>, Trap>) {
+        // We quickly call the monomorphic version.
+        self.reply_(result.map(|x| x.into()))
+    }
+
+    fn reply_(self, result: Result<Reply, Trap>) {
+        let result = match result {
+            Ok(x) => x,
             Err(Trap) => applet_trapped::<B>(Some(T::NAME)),
+        };
+        let result = Error::encode(result.0);
+        #[cfg(feature = "wasm")]
+        {
+            let mut this = self;
+            let results = [Val::I32(result as u32)];
+            #[cfg(feature = "internal-debug")]
+            this.scheduler().perf.record(perf::Slot::Platform);
+            let answer = this.call().resume(&results).map(|x| x.forget());
+            #[cfg(feature = "internal-debug")]
+            this.scheduler().perf.record(perf::Slot::Applets);
+            this.erased.scheduler.process_answer(answer);
+        }
+        #[cfg(feature = "native")]
+        {
+            *self.erased.result = result;
         }
     }
 
@@ -250,7 +258,7 @@ impl<B: Board> Scheduler<B> {
     }
 
     #[cfg(feature = "native")]
-    fn dispatch(&mut self, link: &CStr, params: *const u32, results: *mut u32) {
+    fn dispatch(&mut self, link: &CStr, params: *const u32) -> isize {
         let name = link.to_str().unwrap();
         let index = match self.host_funcs.binary_search_by_key(&name, |x| x.descriptor().name) {
             Ok(x) => x,
@@ -259,11 +267,12 @@ impl<B: Board> Scheduler<B> {
         let api_id = self.host_funcs[index].id();
         let desc = api_id.descriptor();
         let params = unsafe { core::slice::from_raw_parts(params, desc.params) };
-        let results = unsafe { core::slice::from_raw_parts_mut(results, desc.results) };
-        let erased = SchedulerCallT { scheduler: self, params, results };
+        let mut result = 0;
+        let erased = SchedulerCallT { scheduler: self, params, result: &mut result };
         let call = api_id.merge(erased);
         log::debug!("Calling {}", log::Debug2Format(&call.id()));
         call::process(call);
+        result as isize
     }
 
     fn new() -> Self {
@@ -277,7 +286,7 @@ impl<B: Board> Scheduler<B> {
             let store = applet.store_mut();
             for f in &host_funcs {
                 let d = f.descriptor();
-                store.link_func("env", d.name, d.params, d.results).unwrap();
+                store.link_func("env", d.name, d.params, 1).unwrap();
             }
             applet
         };
@@ -405,11 +414,6 @@ impl<B: Board> Scheduler<B> {
     }
 }
 
-#[cfg(feature = "wasm")]
-fn convert_results<T: Signature>(results: T::Results) -> Vec<Val> {
-    <T::Results as ArrayU32>::into(&results).iter().map(|&x| Val::I32(x)).collect()
-}
-
 fn applet_trapped<B: Board>(reason: Option<&'static str>) -> ! {
     // Until we support multiple applets, we just exit the platform when the applet traps.
     match reason {
@@ -425,6 +429,32 @@ struct Trap;
 impl From<wasefire_error::Error> for Trap {
     fn from(_: wasefire_error::Error) -> Self {
         Trap
+    }
+}
+
+struct Reply(Result<u32, Error>);
+
+impl From<Result<!, Error>> for Reply {
+    fn from(value: Result<!, Error>) -> Self {
+        Reply(value.map(|x| match x {}))
+    }
+}
+
+impl From<Result<(), Error>> for Reply {
+    fn from(value: Result<(), Error>) -> Self {
+        Reply(value.map(|()| 0))
+    }
+}
+
+impl From<Result<bool, Error>> for Reply {
+    fn from(value: Result<bool, Error>) -> Self {
+        Reply(value.map(|x| x as u32))
+    }
+}
+
+impl From<Result<u32, Error>> for Reply {
+    fn from(value: Result<u32, Error>) -> Self {
+        Reply(value)
     }
 }
 

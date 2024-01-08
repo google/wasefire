@@ -21,7 +21,7 @@ use alloc::vec::Vec;
 pub use rust_crypto::*;
 use wasefire_applet_api::crypto::gcm as api;
 
-use crate::{convert_unit, Error};
+use crate::{convert, convert_unit, Error};
 
 /// Describes AES-256-GCM support.
 pub struct Support {
@@ -41,13 +41,12 @@ pub struct Cipher {
 
 /// Whether AES-256-GCM is supported.
 pub fn is_supported() -> bool {
-    let api::support::Results { support } = unsafe { api::support() };
-    support != 0
+    convert(unsafe { api::support() }).unwrap_or(0) != 0
 }
 
 /// Describes how AES-256-GCM is supported.
 pub fn support() -> Support {
-    let api::support::Results { support } = unsafe { api::support() };
+    let support = convert(unsafe { api::support() }).unwrap();
     Support {
         no_copy: (support & 1 << api::Support::NoCopy as u32) != 0,
         in_place_no_copy: (support & 1 << api::Support::InPlaceNoCopy as u32) != 0,
@@ -56,8 +55,7 @@ pub fn support() -> Support {
 
 /// Returns the supported tag length.
 pub fn tag_length() -> usize {
-    let api::tag_length::Results { len } = unsafe { api::tag_length() };
-    len
+    convert(unsafe { api::tag_length() }).unwrap()
 }
 
 /// Encrypts and authenticates a cleartext.
@@ -85,8 +83,7 @@ pub fn encrypt_mut(
         cipher: cipher.as_mut_ptr(),
         tag: tag.as_mut_ptr(),
     };
-    let api::encrypt::Results { res } = unsafe { api::encrypt(params) };
-    convert_unit(res)
+    convert_unit(unsafe { api::encrypt(params) })
 }
 
 /// Encrypts and authenticates a buffer in place.
@@ -106,8 +103,7 @@ pub fn encrypt_in_place(
         cipher: buffer.as_mut_ptr(),
         tag: tag.as_mut_ptr(),
     };
-    let api::encrypt::Results { res } = unsafe { api::encrypt(params) };
-    convert_unit(res)
+    convert_unit(unsafe { api::encrypt(params) })
 }
 
 /// Decrypts and authenticates a ciphertext.
@@ -136,8 +132,7 @@ pub fn decrypt_mut(
         cipher: cipher.as_ptr(),
         clear: clear.as_mut_ptr(),
     };
-    let api::decrypt::Results { res } = unsafe { api::decrypt(params) };
-    convert_unit(res)
+    convert_unit(unsafe { api::decrypt(params) })
 }
 
 /// Decrypts and authenticates a ciphertext.
@@ -157,8 +152,7 @@ pub fn decrypt_in_place(
         cipher: core::ptr::null(),
         clear: buffer.as_mut_ptr(),
     };
-    let api::decrypt::Results { res } = unsafe { api::decrypt(params) };
-    convert_unit(res)
+    convert_unit(unsafe { api::decrypt(params) })
 }
 
 #[cfg(feature = "rust-crypto")]

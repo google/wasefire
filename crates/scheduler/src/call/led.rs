@@ -37,31 +37,26 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     let count = board::Led::<B>::SUPPORT as u32;
     #[cfg(not(feature = "board-api-led"))]
     let count = 0;
-    call.reply(Ok(api::count::Results { cnt: count.into() }));
+    call.reply(Ok(Ok(count)));
 }
 
 #[cfg(feature = "board-api-led")]
 fn get<B: Board>(call: SchedulerCall<B, api::get::Sig>) {
     let api::get::Params { led } = call.read();
-    let results = try {
+    let result = try {
         let id = Id::new(*led as usize).ok_or(Trap)?;
-        let status = match board::Led::<B>::get(id).map_err(|_| Trap)? {
-            false => api::Status::Off.into(),
-            true => api::Status::On.into(),
-        };
-        api::get::Results { status }
+        board::Led::<B>::get(id)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-led")]
 fn set<B: Board>(call: SchedulerCall<B, api::set::Sig>) {
     let api::set::Params { led, status } = call.read();
-    let results = try {
+    let result = try {
         let id = Id::new(*led as usize).ok_or(Trap)?;
         let on = matches!(api::Status::try_from(*status)?, api::Status::On);
-        board::Led::<B>::set(id, on).map_err(|_| Trap)?;
-        api::set::Results {}
+        board::Led::<B>::set(id, on)
     };
-    call.reply(results);
+    call.reply(result);
 }

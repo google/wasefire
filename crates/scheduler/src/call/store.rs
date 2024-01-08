@@ -32,13 +32,12 @@ mod fragment;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
-        // TODO: Instead of trapping, we should provide a way to know if storage is supported.
         #[cfg(feature = "applet-api-store")]
-        Api::Insert(call) => or_trap!("board-api-storage", insert(call)),
+        Api::Insert(call) => or_fail!("board-api-storage", insert(call)),
         #[cfg(feature = "applet-api-store")]
-        Api::Remove(call) => or_trap!("board-api-storage", remove(call)),
+        Api::Remove(call) => or_fail!("board-api-storage", remove(call)),
         #[cfg(feature = "applet-api-store")]
-        Api::Find(call) => or_trap!("board-api-storage", find(call)),
+        Api::Find(call) => or_fail!("board-api-storage", find(call)),
         #[cfg(feature = "applet-api-store-fragment")]
         Api::Fragment(call) => fragment::process(call),
     }
@@ -49,25 +48,18 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let api::insert::Params { key, ptr, len } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
+    let result = try {
         let value = memory.get(*ptr, *len)?;
-        let res = match scheduler.store.insert(*key as usize, value) {
-            Ok(()) => 0.into(),
-            Err(e) => convert(e).into(),
-        };
-        api::insert::Results { res }
+        scheduler.store.insert(*key as usize, value).map_err(convert)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-storage")]
 fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
     let api::remove::Params { key } = call.read();
-    let res = match call.scheduler().store.remove(*key as usize) {
-        Ok(()) => 0.into(),
-        Err(e) => convert(e).into(),
-    };
-    call.reply(Ok(api::remove::Results { res }));
+    let res = call.scheduler().store.remove(*key as usize).map_err(convert);
+    call.reply(Ok(res));
 }
 
 #[cfg(feature = "board-api-storage")]
@@ -75,23 +67,21 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let api::find::Params { key, ptr: ptr_ptr, len: len_ptr } = call.read();
     let scheduler = call.scheduler();
     let mut memory = scheduler.applet.memory();
-    let results = try {
-        let mut results = api::find::Results::default();
+    let result = try {
         match scheduler.store.find(*key as usize) {
-            Ok(None) => (),
+            Ok(None) => Ok(false),
             Ok(Some(value)) => {
                 let len = value.len() as u32;
                 let ptr = memory.alloc(len, 1)?;
                 memory.get_mut(ptr, len)?.copy_from_slice(&value);
                 memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
                 memory.get_mut(*len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
-                results.res = 1.into();
+                Ok(true)
             }
-            Err(e) => results.res = convert(e).into(),
+            Err(e) => Err(convert(e)),
         }
-        results
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-storage")]

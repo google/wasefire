@@ -18,7 +18,7 @@ use sealed::sealed;
 use wasefire_applet_api::usb::serial as api;
 
 use crate::serial::Event;
-use crate::{convert, Error};
+use crate::{convert, convert_unit, Error};
 
 /// Implements the [`Serial`](crate::serial::Serial) interface for the USB serial.
 pub struct UsbSerial;
@@ -27,19 +27,16 @@ pub struct UsbSerial;
 impl crate::serial::Serial for UsbSerial {
     fn read(&self, buffer: &mut [u8]) -> Result<usize, Error> {
         let params = api::read::Params { ptr: buffer.as_mut_ptr(), len: buffer.len() };
-        let api::read::Results { len } = unsafe { api::read(params) };
-        convert(len)
+        convert(unsafe { api::read(params) })
     }
 
     fn write(&self, buffer: &[u8]) -> Result<usize, Error> {
         let params = api::write::Params { ptr: buffer.as_ptr(), len: buffer.len() };
-        let api::write::Results { len } = unsafe { api::write(params) };
-        convert(len)
+        convert(unsafe { api::write(params) })
     }
 
     fn flush(&self) -> Result<(), Error> {
-        let api::flush::Results { res } = unsafe { api::flush() };
-        convert(res).map(|_| ())
+        convert(unsafe { api::flush() }).map(|_| ())
     }
 
     unsafe fn register(
@@ -50,14 +47,12 @@ impl crate::serial::Serial for UsbSerial {
             handler_func: func,
             handler_data: data,
         };
-        unsafe { api::register(params) };
-        Ok(())
+        convert_unit(unsafe { api::register(params) })
     }
 
     fn unregister(&self, event: Event) -> Result<(), Error> {
         let params = api::unregister::Params { event: convert_event(event) as usize };
-        unsafe { api::unregister(params) };
-        Ok(())
+        convert_unit(unsafe { api::unregister(params) })
     }
 }
 

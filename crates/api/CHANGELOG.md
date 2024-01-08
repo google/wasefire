@@ -4,6 +4,7 @@
 
 ### Major
 
+- Make all API functions return `isize`
 - Add API features (disabled by default)
 - Update `wasefire-applet-api-macro` version
 

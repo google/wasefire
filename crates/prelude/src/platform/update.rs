@@ -18,12 +18,11 @@ use alloc::boxed::Box;
 
 use wasefire_applet_api::platform::update as api;
 
-use crate::{convert_unit, Error};
+use crate::{convert_bool, convert_unit, Error};
 
 /// Returns whether platform update is supported.
 pub fn is_supported() -> bool {
-    let api::is_supported::Results { supported } = unsafe { api::is_supported() };
-    supported != 0
+    convert_bool(unsafe { api::is_supported() }).unwrap_or(false)
 }
 
 /// Returns the metadata of the platform.
@@ -33,8 +32,7 @@ pub fn metadata() -> Result<Box<[u8]>, Error> {
     let mut ptr = core::ptr::null_mut();
     let mut len = 0;
     let params = api::metadata::Params { ptr: &mut ptr, len: &mut len };
-    let api::metadata::Results { res } = unsafe { api::metadata(params) };
-    convert_unit(res)?;
+    convert_unit(unsafe { api::metadata(params) })?;
     let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
     Ok(unsafe { Box::from_raw(ptr) })
 }
@@ -44,15 +42,13 @@ pub fn metadata() -> Result<Box<[u8]>, Error> {
 /// During a dry-run, any mutable operation is skipped and only checks are performed.
 pub fn initialize(dry_run: bool) -> Result<(), Error> {
     let params = api::initialize::Params { dry_run: dry_run as usize };
-    let api::initialize::Results { res } = unsafe { api::initialize(params) };
-    convert_unit(res)
+    convert_unit(unsafe { api::initialize(params) })
 }
 
 /// Processes the next chunk of a platform update.
 pub fn process(chunk: &[u8]) -> Result<(), Error> {
     let params = api::process::Params { ptr: chunk.as_ptr(), len: chunk.len() };
-    let api::process::Results { res } = unsafe { api::process(params) };
-    convert_unit(res)
+    convert_unit(unsafe { api::process(params) })
 }
 
 /// Finalizes a platform update process.
@@ -60,6 +56,5 @@ pub fn process(chunk: &[u8]) -> Result<(), Error> {
 /// This function will reboot when the update is successful and thus only returns in case of errors
 /// or in dry-run mode.
 pub fn finalize() -> Result<(), Error> {
-    let api::finalize::Results { res } = unsafe { api::finalize() };
-    convert_unit(res)
+    convert_unit(unsafe { api::finalize() })
 }

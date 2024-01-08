@@ -24,6 +24,7 @@ pub mod usb;
 
 use tokio::sync::mpsc::Sender;
 use wasefire_board_api::{Api, Event};
+use wasefire_error::Error;
 use wasefire_store::FileStorage;
 
 use crate::RECEIVER;
@@ -52,10 +53,10 @@ impl Api for Board {
         RECEIVER.lock().unwrap().as_mut().unwrap().blocking_recv().unwrap()
     }
 
-    fn syscall(x1: u32, x2: u32, x3: u32, x4: u32) -> Option<u32> {
+    fn syscall(x1: u32, x2: u32, x3: u32, x4: u32) -> Option<Result<u32, Error>> {
         match (x1, x2, x3, x4) {
             // The syscall_test example relies on this.
-            (0, 0, 0, x) => Some(x),
+            (0, 0, 0, x) => Some(Error::decode(x as i32)),
             _ => None,
         }
     }

@@ -22,14 +22,14 @@ pub(crate) fn new() -> Item {
     let items = vec![
         item! {
             /// Whether AES-CCM is supported.
-            fn is_supported "ccs" {
-            } -> {
-                /// 1 if supported, 0 otherwise.
-                supported: usize,
-            }
+            ///
+            /// On success, returns 1 if supported, 0 otherwise.
+            fn is_supported "ccs" {}
         },
         item! {
             /// Encrypts a clear text given a key and IV.
+            ///
+            /// Returns zero on success.
             fn encrypt "cce" {
                 /// The 16 bytes key to encrypt with.
                 key: *const u8,
@@ -52,13 +52,12 @@ pub(crate) fn new() -> Item {
                 ///
                 /// Its length must be `len + 4` bytes.
                 cipher: *mut u8,
-            } -> {
-                /// Zero on success. Negative on error.
-                res: isize,
             }
         },
         item! {
             /// Decrypts a cipher text given a key and IV.
+            ///
+            /// Returns zero on success.
             fn decrypt "ccd" {
                 /// The 16 bytes key to encrypt with.
                 key: *const u8,
@@ -81,9 +80,6 @@ pub(crate) fn new() -> Item {
                 ///
                 /// Its length must be provided in the `len` field.
                 clear: *mut u8,
-            } -> {
-                /// Zero on success. Negative on error.
-                res: isize,
             }
         },
     ];

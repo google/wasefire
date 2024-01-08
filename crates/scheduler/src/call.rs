@@ -23,7 +23,19 @@ macro_rules! or_trap {
         #[cfg(feature = $feature)]
         $name($call);
         #[cfg(not(feature = $feature))]
-        $call.reply(Err(crate::Trap));
+        $call.reply_(Err(crate::Trap));
+    }};
+}
+
+#[cfg_attr(not(feature = "applet-api-store"), allow(unused_macros))]
+macro_rules! or_fail {
+    ($feature:literal, $name:ident($call:ident)) => {{
+        #[cfg(feature = $feature)]
+        $name($call);
+        #[cfg(not(feature = $feature))]
+        $call.reply_(Ok(crate::Reply(Err(wasefire_error::Error::world(
+            wasefire_error::Code::NotImplemented,
+        )))));
     }};
 }
 
@@ -103,9 +115,5 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 
 fn syscall<B: Board>(call: SchedulerCall<B, api::syscall::Sig>) {
     let api::syscall::Params { x1, x2, x3, x4 } = call.read();
-    let results = try {
-        let res = B::syscall(*x1, *x2, *x3, *x4).ok_or(Trap)?.into();
-        api::syscall::Results { res }
-    };
-    call.reply(results);
+    call.reply(B::syscall(*x1, *x2, *x3, *x4).ok_or(Trap));
 }

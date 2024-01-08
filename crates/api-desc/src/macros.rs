@@ -108,13 +108,12 @@ macro_rules! item {
         })
     };
 
-    ($(#[doc = $doc:literal])* fn $name:ident $link:literal $params:tt -> $results:tt) => {
+    ($(#[doc = $doc:literal])* fn $name:ident $link:literal $params:tt) => {
         Item::Fn(Fn {
             docs: vec![$($doc.into()),*],
             name: stringify!($name).into(),
             link: $link.into(),
             params: fields!($params),
-            results: fields!($results),
         })
     };
 }

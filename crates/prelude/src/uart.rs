@@ -18,12 +18,11 @@ use sealed::sealed;
 use wasefire_applet_api::uart as api;
 
 use crate::serial::Event;
-use crate::{convert, Error};
+use crate::{convert, convert_unit, Error};
 
 /// Returns the number of available UARTs on the board.
 pub fn count() -> usize {
-    let api::count::Results { cnt } = unsafe { api::count() };
-    cnt
+    convert(unsafe { api::count() }).unwrap_or(0)
 }
 
 /// Implements the [`Serial`](crate::serial::Serial) interface for UART.
@@ -34,14 +33,12 @@ impl crate::serial::Serial for Uart {
     fn read(&self, buffer: &mut [u8]) -> Result<usize, Error> {
         let params =
             api::read::Params { uart: self.0, ptr: buffer.as_mut_ptr(), len: buffer.len() };
-        let api::read::Results { len } = unsafe { api::read(params) };
-        convert(len)
+        convert(unsafe { api::read(params) })
     }
 
     fn write(&self, buffer: &[u8]) -> Result<usize, Error> {
         let params = api::write::Params { uart: self.0, ptr: buffer.as_ptr(), len: buffer.len() };
-        let api::write::Results { len } = unsafe { api::write(params) };
-        convert(len)
+        convert(unsafe { api::write(params) })
     }
 
     fn flush(&self) -> Result<(), Error> {
@@ -57,14 +54,12 @@ impl crate::serial::Serial for Uart {
             handler_func: func,
             handler_data: data,
         };
-        unsafe { api::register(params) };
-        Ok(())
+        convert_unit(unsafe { api::register(params) })
     }
 
     fn unregister(&self, event: Event) -> Result<(), Error> {
         let params = api::unregister::Params { uart: self.0, event: convert_event(event) as usize };
-        unsafe { api::unregister(params) };
-        Ok(())
+        convert_unit(unsafe { api::unregister(params) })
     }
 }
 

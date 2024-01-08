@@ -19,12 +19,11 @@ use alloc::vec::Vec;
 
 use wasefire_applet_api::crypto::ccm as api;
 
-use crate::{convert_unit, Error};
+use crate::{convert_bool, convert_unit, Error};
 
 /// Whether AES-CCM is supported.
 pub fn is_supported() -> bool {
-    let api::is_supported::Results { supported } = unsafe { api::is_supported() };
-    supported != 0
+    convert_bool(unsafe { api::is_supported() }).unwrap_or(false)
 }
 
 /// Returns the ciphertext given a cleartext, a key, and a nonce.
@@ -38,8 +37,7 @@ pub fn encrypt(key: &[u8; 16], nonce: &[u8; 8], clear: &[u8]) -> Result<Vec<u8>,
         clear: clear.as_ptr(),
         cipher: cipher.as_mut_ptr(),
     };
-    let api::encrypt::Results { res } = unsafe { api::encrypt(params) };
-    convert_unit(res)?;
+    convert_unit(unsafe { api::encrypt(params) })?;
     Ok(cipher)
 }
 
@@ -54,7 +52,6 @@ pub fn decrypt(key: &[u8; 16], nonce: &[u8; 8], cipher: &[u8]) -> Result<Vec<u8>
         cipher: cipher.as_ptr(),
         clear: clear.as_mut_ptr(),
     };
-    let api::decrypt::Results { res } = unsafe { api::decrypt(params) };
-    convert_unit(res)?;
+    convert_unit(unsafe { api::decrypt(params) })?;
     Ok(clear)
 }

@@ -26,61 +26,56 @@ pub(crate) fn new() -> Item {
     let items = vec![
         item! {
             /// Whether platform update is supported.
-            fn is_supported "pus" {} -> {
-                /// 1 if supported, 0 otherwise.
-                supported: usize,
-            }
+            ///
+            /// On success, returns 1 if supported, 0 otherwise.
+            fn is_supported "pus" {}
         },
         item! {
             /// Returns the metadata of the platform.
             ///
             /// This typically contains the version and side (A or B) of the running platform.
+            ///
+            /// Returns zero on success.
             fn metadata "pum" {
                 /// Where to write the allocated metadata.
                 ptr: *mut *mut u8,
 
                 /// Where to write the metadata length.
                 len: *mut usize,
-            } -> {
-                /// Zero on success. Negative on error.
-                res: isize,
             }
         },
         item! {
             /// Starts a platform update process.
+            ///
+            /// Returns zero on success.
             fn initialize "pui" {
                 /// Zero for normal operation. One for dry-run.
                 ///
                 /// During a dry-run, any mutable operation is skipped and only checks are
                 /// performed.
                 dry_run: usize,
-            } -> {
-                /// Zero on success. Negative on error.
-                res: isize,
             }
         },
         item! {
             /// Processes the next chunk of a platform update.
+            ///
+            /// Returns zero on success.
             fn process "pup" {
                 /// Address of the chunk.
                 ptr: *const u8,
 
                 /// Length of the chunk in bytes.
                 len: usize,
-            } -> {
-                /// Zero on success. Negative on error.
-                res: isize,
             }
         },
         item! {
             /// Finalizes a platform update process.
             ///
-            /// This function will reboot when the update is successful and thus only returns in
-            /// case of errors or in dry-run mode.
-            fn finalize "puf" {} -> {
-                /// Negative on error.
-                res: isize,
-            }
+            /// This function will reboot when the update is successful.
+            ///
+            /// In dry-run mode, returns zero on success. In normal operation, does not return on
+            /// success.
+            fn finalize "puf" {}
         },
     ];
     Item::Mod(Mod { docs, name, items })

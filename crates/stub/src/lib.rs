@@ -27,6 +27,20 @@
 #![feature(try_blocks)]
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use wasefire_error::Error;
+
 mod crypto;
 mod debug;
 mod rng;
+
+fn convert(x: Result<u32, Error>) -> isize {
+    Error::encode(x) as isize
+}
+
+fn convert_bool(x: Result<bool, Error>) -> isize {
+    convert(x.map(|x| x as u32))
+}
+
+fn convert_unit(x: Result<(), Error>) -> isize {
+    convert(x.map(|()| 0))
+}

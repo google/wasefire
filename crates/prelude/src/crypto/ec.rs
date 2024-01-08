@@ -312,21 +312,18 @@ impl<T: InternalHelper> Curve for T {
 
     fn is_supported() -> bool {
         let params = api::is_supported::Params { curve: T::C as usize };
-        let api::is_supported::Results { support } = unsafe { api::is_supported(params) };
-        support != 0
+        convert_bool(unsafe { api::is_supported(params) }).unwrap_or(false)
     }
 
     fn is_valid_scalar(n: &Int<Self>) -> bool {
         let params = api::is_valid_scalar::Params { curve: T::C as usize, n: n.as_ptr() };
-        let api::is_valid_scalar::Results { valid } = unsafe { api::is_valid_scalar(params) };
-        valid != 0
+        convert_bool(unsafe { api::is_valid_scalar(params) }).unwrap()
     }
 
     fn is_valid_point(x: &Int<Self>, y: &Int<Self>) -> bool {
         let params =
             api::is_valid_point::Params { curve: T::C as usize, x: x.as_ptr(), y: y.as_ptr() };
-        let api::is_valid_point::Results { valid } = unsafe { api::is_valid_point(params) };
-        valid != 0
+        convert_bool(unsafe { api::is_valid_point(params) }).unwrap()
     }
 
     fn base_point_mul(n: &Int<Self>, x: &mut Int<Self>, y: &mut Int<Self>) -> Result<(), Error> {
@@ -336,8 +333,7 @@ impl<T: InternalHelper> Curve for T {
             x: x.as_mut_ptr(),
             y: y.as_mut_ptr(),
         };
-        let api::base_point_mul::Results { res } = unsafe { api::base_point_mul(params) };
-        convert_unit(res)
+        convert_unit(unsafe { api::base_point_mul(params) })
     }
 
     fn point_mul(
@@ -352,8 +348,7 @@ impl<T: InternalHelper> Curve for T {
             out_x: out_x.as_mut_ptr(),
             out_y: out_y.as_mut_ptr(),
         };
-        let api::point_mul::Results { res } = unsafe { api::point_mul(params) };
-        convert_unit(res)
+        convert_unit(unsafe { api::point_mul(params) })
     }
 
     fn ecdsa_sign(
@@ -366,8 +361,7 @@ impl<T: InternalHelper> Curve for T {
             r: r.as_mut_ptr(),
             s: s.as_mut_ptr(),
         };
-        let api::ecdsa_sign::Results { res } = unsafe { api::ecdsa_sign(params) };
-        convert_unit(res)
+        convert_unit(unsafe { api::ecdsa_sign(params) })
     }
 
     fn ecdsa_verify(
@@ -381,8 +375,7 @@ impl<T: InternalHelper> Curve for T {
             r: r.as_ptr(),
             s: s.as_ptr(),
         };
-        let api::ecdsa_verify::Results { res } = unsafe { api::ecdsa_verify(params) };
-        convert_bool(res)
+        convert_bool(unsafe { api::ecdsa_verify(params) })
     }
 }
 

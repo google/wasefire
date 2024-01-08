@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Migrate to applet API always returning `isize`
 - Migrate to `wasefire-error`
 - Use `wasefire-logger` for panics
 

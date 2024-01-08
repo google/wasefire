@@ -28,31 +28,31 @@ pub(crate) fn new() -> Item {
         },
         item! {
             /// Whether a curve is supported.
+            ///
+            /// On success, returns 1 if supported, 0 otherwise.
             fn is_supported "ces" {
                 /// The enum value of the [curve][super::Curve].
                 curve: usize,
-            } -> {
-                /// 1 when supported, 0 otherwise.
-                support: usize,
             }
         },
         item! {
             /// Returns whether a scalar is valid.
             ///
             /// A scalar is valid if smaller than the field's modulus.
+            ///
+            /// On success, returns 1 if valid, 0 otherwise.
             fn is_valid_scalar "cet" {
                 /// The curve.
                 curve: usize,
 
                 /// The scalar in SEC1 encoding.
                 n: *const u8,
-            } -> {
-                /// 1 if valid, 0 otherwise.
-                valid: usize,
             }
         },
         item! {
             /// Returns whether a point is valid.
+            ///
+            /// On success, returns 1 if valid, 0 otherwise.
             fn is_valid_point "ceq" {
                 /// The curve.
                 curve: usize,
@@ -62,13 +62,12 @@ pub(crate) fn new() -> Item {
 
                 /// The y-coordinate in SEC1 encoding.
                 y: *const u8,
-            } -> {
-                /// 1 if valid, 0 otherwise.
-                valid: usize,
             }
         },
         item! {
             /// Performs base point multiplication.
+            ///
+            /// Returns zero on success.
             fn base_point_mul "ceb" {
                 /// The curve.
                 curve: usize,
@@ -81,13 +80,12 @@ pub(crate) fn new() -> Item {
 
                 /// The y coordinate in SEC1 encoding.
                 y: *mut u8,
-            } -> {
-                /// Zero on success. Negative on error.
-                res: isize,
             }
         },
         item! {
             /// Performs point multiplication.
+            ///
+            /// Returns zero on success.
             fn point_mul "cep" {
                 /// The curve.
                 curve: usize,
@@ -106,13 +104,12 @@ pub(crate) fn new() -> Item {
 
                 /// The y coordinate of the output point in SEC1 encoding.
                 out_y: *mut u8,
-            } -> {
-                /// Zero on success. Negative on error.
-                res: isize,
             }
         },
         item! {
             /// Signs a message with ECDSA.
+            ///
+            /// Returns zero on success.
             fn ecdsa_sign "cei" {
                 /// The curve.
                 curve: usize,
@@ -128,13 +125,12 @@ pub(crate) fn new() -> Item {
 
                 /// The s signature component in SEC1 encoding.
                 s: *mut u8,
-            } -> {
-                /// Zero on success. Negative on error.
-                res: isize,
             }
         },
         item! {
             /// Verifies an ECDSA signature.
+            ///
+            /// On success, returns 1 if the signature is valid, 0 otherwise.
             fn ecdsa_verify "cev" {
                 /// The curve.
                 curve: usize,
@@ -153,9 +149,6 @@ pub(crate) fn new() -> Item {
 
                 /// The s signature component in SEC1 encoding.
                 s: *const u8,
-            } -> {
-                /// One if the signature is valid. Zero if invalid. Negative on error.
-                res: isize,
             }
         },
     ];

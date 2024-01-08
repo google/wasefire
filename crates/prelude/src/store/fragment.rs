@@ -31,8 +31,7 @@ use crate::{convert_bool, convert_unit, Error};
 pub fn insert(keys: Range<usize>, value: &[u8]) -> Result<(), Error> {
     let params =
         api::insert::Params { keys: encode_keys(keys)?, ptr: value.as_ptr(), len: value.len() };
-    let api::insert::Results { res } = unsafe { api::insert(params) };
-    convert_unit(res)
+    convert_unit(unsafe { api::insert(params) })
 }
 
 /// Removes an entry from the store.
@@ -43,23 +42,17 @@ pub fn insert(keys: Range<usize>, value: &[u8]) -> Result<(), Error> {
 /// is zeroized from flash and the key is not associated.
 pub fn remove(keys: Range<usize>) -> Result<(), Error> {
     let params = api::remove::Params { keys: encode_keys(keys)? };
-    let api::remove::Results { res } = unsafe { api::remove(params) };
-    convert_unit(res)
+    convert_unit(unsafe { api::remove(params) })
 }
 
 /// Returns the value associated to a key, if any.
 ///
 /// The entry may be fragmented withen the provided range.
 pub fn find(keys: Range<usize>) -> Result<Option<Box<[u8]>>, Error> {
-    find_impl(keys)
-}
-
-fn find_impl(keys: Range<usize>) -> Result<Option<Box<[u8]>>, Error> {
     let mut ptr = core::ptr::null_mut();
     let mut len = 0;
     let params = api::find::Params { keys: encode_keys(keys)?, ptr: &mut ptr, len: &mut len };
-    let api::find::Results { res } = unsafe { api::find(params) };
-    if convert_bool(res)? {
+    if convert_bool(unsafe { api::find(params) })? {
         let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
         Ok(Some(unsafe { Box::from_raw(ptr) }))
     } else {
