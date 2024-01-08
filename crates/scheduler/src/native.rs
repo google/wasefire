@@ -19,7 +19,7 @@ use wasefire_board_api::Api as Board;
 use wasefire_logger as log;
 use wasefire_sync::Mutex;
 
-#[cfg(feature = "debug")]
+#[cfg(feature = "internal-debug")]
 use crate::perf::Slot;
 use crate::Scheduler;
 
@@ -27,7 +27,7 @@ pub(crate) trait ErasedScheduler: Send {
     fn dispatch(&mut self, link: &CStr, params: *const u32, results: *mut u32);
     fn flush_events(&mut self);
     fn process_event(&mut self);
-    #[cfg(feature = "debug")]
+    #[cfg(feature = "internal-debug")]
     fn perf_record(&mut self, slot: Slot);
 }
 
@@ -44,7 +44,7 @@ impl<B: Board> ErasedScheduler for Scheduler<B> {
         self.process_event();
     }
 
-    #[cfg(feature = "debug")]
+    #[cfg(feature = "internal-debug")]
     fn perf_record(&mut self, slot: Slot) {
         self.perf.record(slot);
     }
@@ -70,10 +70,10 @@ pub(crate) fn execute_callback() {
     // would extend to the end of the `if let` block.
     let callback = CALLBACK.lock().take();
     if let Some(callback) = callback {
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         with_scheduler(|x| x.perf_record(Slot::Platform));
         callback();
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         with_scheduler(|x| x.perf_record(Slot::Applets));
         log::debug!("Callback executed.");
     }
@@ -83,12 +83,12 @@ pub(crate) fn execute_callback() {
 extern "C" fn env_dispatch(link: *const c_char, params: *const u32, results: *mut u32) {
     let link = unsafe { CStr::from_ptr(link) };
     with_scheduler(|scheduler| {
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         scheduler.perf_record(Slot::Applets);
         scheduler.flush_events();
         scheduler.dispatch(link, params, results);
     });
     execute_callback();
-    #[cfg(feature = "debug")]
+    #[cfg(feature = "internal-debug")]
     with_scheduler(|x| x.perf_record(Slot::Platform));
 }

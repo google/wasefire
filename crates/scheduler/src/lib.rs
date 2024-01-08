@@ -48,7 +48,7 @@ mod call;
 mod event;
 #[cfg(feature = "native")]
 mod native;
-#[cfg(feature = "debug")]
+#[cfg(feature = "internal-debug")]
 mod perf;
 
 #[cfg(all(feature = "native", not(target_pointer_width = "32")))]
@@ -91,7 +91,7 @@ pub struct Scheduler<B: Board> {
     applet: Applet<B>,
     #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
     timers: Vec<Option<Timer>>,
-    #[cfg(feature = "debug")]
+    #[cfg(feature = "internal-debug")]
     perf: perf::Perf<B>,
 }
 
@@ -187,10 +187,10 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
             Ok(results) => {
                 let mut this = self;
                 let results = convert_results::<T>(results);
-                #[cfg(feature = "debug")]
+                #[cfg(feature = "internal-debug")]
                 this.scheduler().perf.record(perf::Slot::Platform);
                 let answer = this.call().resume(&results).map(|x| x.forget());
-                #[cfg(feature = "debug")]
+                #[cfg(feature = "internal-debug")]
                 this.scheduler().perf.record(perf::Slot::Applets);
                 this.erased.scheduler.process_answer(answer);
             }
@@ -236,13 +236,13 @@ impl<B: Board> Scheduler<B> {
             fn applet_init();
             fn applet_main();
         }
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         native::with_scheduler(|x| x.perf_record(perf::Slot::Platform));
         log::debug!("Execute init.");
         unsafe { applet_init() };
         log::debug!("Execute main.");
         unsafe { applet_main() };
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         native::with_scheduler(|x| x.perf_record(perf::Slot::Applets));
         log::debug!("Returned from main, executing callbacks only.");
         loop {
@@ -295,7 +295,7 @@ impl<B: Board> Scheduler<B> {
             applet,
             #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
             timers: alloc::vec![None; board::Timer::<B>::SUPPORT],
-            #[cfg(feature = "debug")]
+            #[cfg(feature = "internal-debug")]
             perf: perf::Perf::default(),
         }
     }
@@ -314,7 +314,7 @@ impl<B: Board> Scheduler<B> {
         let store = self.applet.store_mut();
         // SAFETY: This function is called once in `run()`.
         let inst = store.instantiate(module, unsafe { &mut MEMORY.0 }).unwrap();
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Platform);
         self.call(inst, "init", &[]);
         while let Some(call) = self.applet.store_mut().last_call() {
@@ -325,7 +325,7 @@ impl<B: Board> Scheduler<B> {
             self.process_applet();
         }
         assert!(matches!(self.applet.pop(), EventAction::Reply));
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Applets);
         self.call(inst, "main", &[]);
     }
@@ -342,10 +342,10 @@ impl<B: Board> Scheduler<B> {
             match self.applet.pop() {
                 EventAction::Handle(event) => break event,
                 EventAction::Wait => {
-                    #[cfg(feature = "debug")]
+                    #[cfg(feature = "internal-debug")]
                     self.perf.record(perf::Slot::Platform);
                     let event = B::wait_event();
-                    #[cfg(feature = "debug")]
+                    #[cfg(feature = "internal-debug")]
                     self.perf.record(perf::Slot::Waiting);
                     self.applet.push(event);
                 }
@@ -387,10 +387,10 @@ impl<B: Board> Scheduler<B> {
     fn call(&mut self, inst: InstId, name: &str, args: &[u32]) {
         log::debug!("Schedule thread {}{:?}.", name, args);
         let args = args.iter().map(|&x| Val::I32(x)).collect();
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Platform);
         let answer = self.applet.store_mut().invoke(inst, name, args).map(|x| x.forget());
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Applets);
         self.process_answer(answer);
     }
