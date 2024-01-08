@@ -421,7 +421,7 @@ impl Fn {
         match &results[..] {
             [] => write!(output, "void")?,
             [result] => result.type_.wasm_assemblyscript(output)?,
-            _ => unimplemented!("multi-value is not supported in AssemblyScript"),
+            _ => unreachable!(),
         }
         writeln!(output)
     }
@@ -806,7 +806,6 @@ mod tests {
         }
     }
 
-    #[cfg(not(feature = "multivalue"))]
     #[test]
     fn at_most_one_result() {
         let Api(mut todo) = Api::default();

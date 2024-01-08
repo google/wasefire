@@ -72,9 +72,6 @@ fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
 
 #[cfg(feature = "board-api-storage")]
 fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
-    #[cfg(feature = "multivalue")]
-    let api::find::Params { key } = call.read();
-    #[cfg(not(feature = "multivalue"))]
     let api::find::Params { key, ptr: ptr_ptr, len: len_ptr } = call.read();
     let scheduler = call.scheduler();
     let mut memory = scheduler.applet.memory();
@@ -86,21 +83,10 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
                 let len = value.len() as u32;
                 let ptr = memory.alloc(len, 1)?;
                 memory.get_mut(ptr, len)?.copy_from_slice(&value);
-                #[cfg(feature = "multivalue")]
-                {
-                    results.ptr = ptr.into();
-                    results.len = len.into();
-                }
-                #[cfg(not(feature = "multivalue"))]
-                {
-                    memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
-                    memory.get_mut(*len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
-                    results.res = 1.into();
-                }
+                memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
+                memory.get_mut(*len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
+                results.res = 1.into();
             }
-            #[cfg(feature = "multivalue")]
-            Err(e) => results.len = convert(e).into(),
-            #[cfg(not(feature = "multivalue"))]
             Err(e) => results.res = convert(e).into(),
         }
         results

@@ -45,10 +45,6 @@ struct Flags {
 
 #[derive(clap::Args)]
 struct MainOptions {
-    /// (unstable) Compiles with multivalue support.
-    #[clap(long)]
-    multivalue: bool,
-
     /// Compiles without debugging support.
     #[clap(long)]
     release: bool,
@@ -341,9 +337,6 @@ impl AppletOptions {
         match native {
             None => {
                 rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
-                if main.multivalue {
-                    rustflags.push("-C target-feature=+multivalue".to_string());
-                }
                 cargo.args(["--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
             }
             Some(target) => {
@@ -425,9 +418,6 @@ impl AppletOptions {
         if self.opt.get() {
             let mut opt = wrap_command()?;
             opt.arg("wasm-opt");
-            if main.multivalue {
-                opt.arg("--enable-multivalue");
-            }
             opt.args(["--enable-bulk-memory", "--enable-sign-ext"]);
             match self.opt_level {
                 Some(level) => drop(opt.arg(format!("-O{level}"))),

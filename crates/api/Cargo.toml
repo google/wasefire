@@ -66,8 +66,6 @@ full-api = [
   "api-uart",
   "api-usb-serial",
 ]
-# Enables multivalue support (unstable).
-multivalue = ["wasefire-applet-api-macro/multivalue"]
 # Implements the API with weak symbols to permit custom definitions (only
 # relevant in wasm mode).
 #

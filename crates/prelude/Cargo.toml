@@ -72,8 +72,6 @@ full-api = [
   "api-uart",
   "api-usb-serial",
 ]
-# Uses multiple return values instead of output parameters (experimental).
-multivalue = ["wasefire-applet-api/multivalue"]
 # Implements RustCrypto traits.
 rust-crypto = ["dep:aead", "dep:crypto-common", "dep:digest", "dep:zeroize"]
 # Builds for native library usage instead of Wasm binary (incompatible with test).
