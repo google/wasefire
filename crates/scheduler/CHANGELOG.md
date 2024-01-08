@@ -25,6 +25,7 @@
 
 ### Patch
 
+- Correctly gate events of nested APIs
 - Rename `debug` internal feature to `internal-debug`
 - Fix double-lock issue for native callbacks
 - Fix parsing of `WASEFIRE_MEMORY_PAGE_COUNT`
