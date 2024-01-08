@@ -106,7 +106,7 @@ impl<B: Board> core::fmt::Debug for Scheduler<B> {
     }
 }
 
-pub struct SchedulerCallT<'a, B: Board> {
+struct SchedulerCallT<'a, B: Board> {
     scheduler: &'a mut Scheduler<B>,
     #[cfg(feature = "wasm")]
     args: Vec<u32>,
@@ -122,7 +122,7 @@ impl<'a, B: Board> core::fmt::Debug for SchedulerCallT<'a, B> {
     }
 }
 
-pub struct SchedulerCall<'a, B: Board, T> {
+struct SchedulerCall<'a, B: Board, T> {
     erased: SchedulerCallT<'a, B>,
     phantom: PhantomData<T>,
 }
@@ -133,14 +133,8 @@ impl<'a, B: Board, T> core::fmt::Debug for SchedulerCall<'a, B, T> {
     }
 }
 
-pub struct DispatchSchedulerCall<'a, B> {
+struct DispatchSchedulerCall<'a, B> {
     phantom: PhantomData<&'a B>,
-}
-
-pub enum SchedulerResult<'a, B: Board> {
-    Call(Api<DispatchSchedulerCall<'a, B>>),
-    Yield,
-    Wait,
 }
 
 impl<'a, B: Board> Dispatch for DispatchSchedulerCall<'a, B> {
@@ -157,7 +151,7 @@ impl<'a, B: Board> Dispatch for DispatchSchedulerCall<'a, B> {
 }
 
 impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
-    pub fn read(&self) -> T::Params {
+    fn read(&self) -> T::Params {
         #[cfg(feature = "wasm")]
         let params = &self.erased.args;
         #[cfg(feature = "native")]
@@ -165,7 +159,8 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
         *<T::Params as ArrayU32>::from(params)
     }
 
-    pub fn inst(&mut self) -> InstId {
+    #[cfg_attr(not(feature = "board-api-button"), allow(dead_code))]
+    fn inst(&mut self) -> InstId {
         #[cfg(feature = "wasm")]
         let id = self.call().inst();
         #[cfg(feature = "native")]
@@ -173,15 +168,15 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
         id
     }
 
-    pub fn memory(&mut self) -> Memory<'_> {
+    fn memory(&mut self) -> Memory<'_> {
         self.store().memory()
     }
 
-    pub fn scheduler(&mut self) -> &mut Scheduler<B> {
+    fn scheduler(&mut self) -> &mut Scheduler<B> {
         self.erased.scheduler
     }
 
-    pub fn reply(self, results: Result<T::Results, Trap>) {
+    fn reply(self, results: Result<T::Results, Trap>) {
         match results {
             #[cfg(feature = "wasm")]
             Ok(results) => {
@@ -425,7 +420,7 @@ fn applet_trapped<B: Board>(reason: Option<&'static str>) -> ! {
     <board::Debug<B> as board::debug::Api>::exit(false);
 }
 
-pub struct Trap;
+struct Trap;
 
 impl From<wasefire_error::Error> for Trap {
     fn from(_: wasefire_error::Error) -> Self {

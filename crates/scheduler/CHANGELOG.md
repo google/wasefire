@@ -4,6 +4,7 @@
 
 ### Major
 
+- Do not expose internal details
 - Add applet API and board API features (disabled by default)
 - Add `native` and `wasm` features (exactly one must be chosen)
 
