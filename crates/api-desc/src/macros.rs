@@ -14,6 +14,9 @@
 
 #[macro_export]
 macro_rules! type_ {
+    (!) => (Type::Never);
+    (()) => (Type::Unit);
+    (bool) => (Type::Bool);
     (usize) => (Type::Integer { signed: false, bits: None });
     (isize) => (Type::Integer { signed: true, bits: None });
     (u8) => (Type::Integer { signed: false, bits: Some(8) });
@@ -108,12 +111,13 @@ macro_rules! item {
         })
     };
 
-    ($(#[doc = $doc:literal])* fn $name:ident $link:literal $params:tt) => {
+    ($(#[doc = $doc:literal])* fn $name:ident $link:literal $params:tt -> $($result:tt)*) => {
         Item::Fn(Fn {
             docs: vec![$($doc.into()),*],
             name: stringify!($name).into(),
             link: $link.into(),
             params: fields!($params),
+            result: type_!($($result)*),
         })
     };
 }

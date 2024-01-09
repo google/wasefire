@@ -33,30 +33,24 @@ pub(crate) fn new() -> Item {
         #[cfg(feature = "api-crypto-hash")]
         item! {
             /// Whether the algorithm is supported.
-            ///
-            /// On success, returns 1 if supported, 0 otherwise.
             fn is_supported "chs" {
                 /// The hash algorithm.
                 algorithm: usize,
-            }
+            } -> bool
         },
         #[cfg(feature = "api-crypto-hash")]
         item! {
-            /// Initializes a hash.
-            ///
-            /// Returns the hash identifier on success.
+            /// Initializes a hash and returns its identifier.
             fn initialize "chi" {
                 /// The hash algorithm.
                 algorithm: usize,
-            }
+            } -> usize
         },
         #[cfg(feature = "api-crypto-hash")]
         item! {
             /// Updates a hash.
             ///
             /// Errors are surfaced in the [`finalize()`] call.
-            ///
-            /// Returns zero on success.
             fn update "chu" {
                 /// The identifier returned by the associated [`initialize()`] call.
                 id: usize,
@@ -66,13 +60,11 @@ pub(crate) fn new() -> Item {
 
                 /// The length of the data to hash.
                 length: usize,
-            }
+            } -> ()
         },
         #[cfg(feature = "api-crypto-hash")]
         item! {
             /// Finalizes a hash.
-            ///
-            /// Returns zero on success.
             fn finalize "chf" {
                 /// The identifier returned by the associated [`initialize()`] call.
                 ///
@@ -87,23 +79,19 @@ pub(crate) fn new() -> Item {
                 /// The pointer may be null, in which case this function deallocates the identifier
                 /// without computing the digest.
                 digest: *mut u8,
-            }
+            } -> ()
         },
         #[cfg(feature = "api-crypto-hmac")]
         item! {
             /// Whether the algorithm is supported for hmac.
-            ///
-            /// On success, returns 1 if supported, 0 otherwise.
             fn is_hmac_supported "cht" {
                 /// The hash algorithm.
                 algorithm: usize,
-            }
+            } -> bool
         },
         #[cfg(feature = "api-crypto-hmac")]
         item! {
-            /// Initializes an hmac.
-            ///
-            /// Returns the hmac identifier on success.
+            /// Initializes an hmac and returns its identifier.
             fn hmac_initialize "chj" {
                 /// The hash algorithm.
                 algorithm: usize,
@@ -115,15 +103,13 @@ pub(crate) fn new() -> Item {
                 ///
                 /// If greater than 64 bytes, the key will be itself hashed.
                 key_len: usize,
-            }
+            } -> usize
         },
         #[cfg(feature = "api-crypto-hmac")]
         item! {
             /// Updates an hmac.
             ///
             /// Errors are surfaced in the [`hmac_finalize()`] call.
-            ///
-            /// Returns zero on success.
             fn hmac_update "chv" {
                 /// The identifier returned by the associated [`hmac_initialize()`] call.
                 id: usize,
@@ -133,13 +119,11 @@ pub(crate) fn new() -> Item {
 
                 /// The length of the data to hmac.
                 length: usize,
-            }
+            } -> ()
         },
         #[cfg(feature = "api-crypto-hmac")]
         item! {
             /// Finalizes an hmac.
-            ///
-            /// Returns zero on success.
             fn hmac_finalize "chg" {
                 /// The identifier returned by the associated [`hmac_initialize()`] call.
                 ///
@@ -154,23 +138,19 @@ pub(crate) fn new() -> Item {
                 /// The pointer may be null, in which case this function deallocates the identifier
                 /// without computing the hmac.
                 hmac: *mut u8,
-            }
+            } -> ()
         },
         #[cfg(feature = "api-crypto-hkdf")]
         item! {
             /// Whether the algorithm is supported for hkdf.
-            ///
-            /// On success, returns 1 if supported, 0 otherwise.
             fn is_hkdf_supported "chr" {
                 /// The hash algorithm.
                 algorithm: usize,
-            }
+            } -> bool
         },
         #[cfg(feature = "api-crypto-hkdf")]
         item! {
             /// Expands with RFC5869 HKDF.
-            ///
-            /// Returns zero on success.
             fn hkdf_expand "che" {
                 /// The hash algorithm.
                 algorithm: usize,
@@ -201,7 +181,7 @@ pub(crate) fn new() -> Item {
                 /// Must be at most 255 times the output length of the hash algorithm.
                 okm_len: usize,
 
-            }
+            } -> ()
         },
     ];
     Item::Mod(Mod { docs, name, items })

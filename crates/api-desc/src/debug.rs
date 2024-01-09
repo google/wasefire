@@ -24,8 +24,6 @@ pub(crate) fn new() -> Item {
             /// Prints a message to the debug output.
             ///
             /// If debug output is disabled then this is a no-op.
-            ///
-            /// Returns zero on success.
             fn println "dp" {
                 /// The message to print.
                 ///
@@ -34,21 +32,19 @@ pub(crate) fn new() -> Item {
 
                 /// The length of the message in bytes.
                 len: usize,
-            }
+            } -> ()
         },
         item! {
             /// Returns the time spent since some initial event.
             ///
             /// The time is in micro-seconds and may wrap before using all 64 bits.
-            ///
-            /// Returns the least significant 31 bits on success.
             fn time "dt" {
                 /// Pointer to the 64-bits time (may be null).
                 ///
                 /// The least significant 31 bits are always returned, regardless of whether the
                 /// pointer is null.
                 ptr: *mut u64,
-            }
+            } -> usize
         },
         item! {
             /// Time in micro-seconds since the scheduler started.
@@ -71,24 +67,20 @@ pub(crate) fn new() -> Item {
         },
         item! {
             /// Returns the time spent since some initial event, split by component.
-            ///
-            /// Returns zero on success.
             fn perf "dq" {
                 /// Pointer to the output [`super::Perf`] struct.
                 ptr: *mut u8,
-            }
+            } -> ()
         },
         item! {
             /// Exits the platform with an error code.
             ///
             /// This is used by test applets to terminate the platform and propagate the test
             /// result.
-            ///
-            /// Does not return on success.
             fn exit "de" {
                 /// 0 for success, 1 for failure.
                 code: usize,
-            }
+            } -> !
         },
     ];
     Item::Mod(Mod { docs, name, items })

@@ -33,9 +33,7 @@ macro_rules! or_fail {
         #[cfg(feature = $feature)]
         $name($call);
         #[cfg(not(feature = $feature))]
-        $call.reply_(Ok(crate::Reply(Err(wasefire_error::Error::world(
-            wasefire_error::Code::NotImplemented,
-        )))));
+        $call.reply_(Ok(Err(wasefire_error::Error::world(wasefire_error::Code::NotImplemented))));
     }};
 }
 

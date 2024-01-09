@@ -26,8 +26,6 @@ pub(crate) fn new() -> Item {
             /// The entry will be fragmented over multiple keys within the provided range as needed.
             ///
             /// If an entry for that range of keys was already present, it is overwritten.
-            ///
-            /// Returns zero on success.
             fn insert "sfi" {
                 /// Range of keys where to insert the fragments.
                 ///
@@ -40,7 +38,7 @@ pub(crate) fn new() -> Item {
 
                 /// Length of the value.
                 len: usize,
-            }
+            } -> ()
         },
         item! {
             /// Removes an entry from the store.
@@ -48,19 +46,17 @@ pub(crate) fn new() -> Item {
             /// All fragments from the range of keys will be deleted.
             ///
             /// This is not an error if no entry is present. This is simply a no-op in that case.
-            ///
-            /// Returns zero on success.
             fn remove "sfr" {
                 /// Range of keys to remove.
                 keys: u32,
-            }
+            } -> ()
         },
         item! {
             /// Finds an entry in the store, if any.
             ///
             /// The entry may be fragmented withen the provided range.
             ///
-            /// On success, returns 1 if found, 0 otherwise.
+            /// Returns whether an entry was found.
             fn find "sff" {
                 /// Range of keys to concatenate as an entry.
                 keys: u32,
@@ -73,7 +69,7 @@ pub(crate) fn new() -> Item {
 
                 /// Where to write the length of the value, if found.
                 len: *mut usize,
-            }
+            } -> bool
         },
     ];
     Item::Mod(Mod { docs, name, items })

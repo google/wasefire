@@ -28,7 +28,7 @@ use core::marker::PhantomData;
 
 use derivative::Derivative;
 use event::Key;
-use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature};
+use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature, U32};
 #[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
 use wasefire_board_api::Singleton;
 #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
@@ -178,17 +178,16 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
         self.erased.scheduler
     }
 
-    fn reply(self, result: Result<impl Into<Reply>, Trap>) {
-        // We quickly call the monomorphic version.
-        self.reply_(result.map(|x| x.into()))
+    fn reply(self, result: Result<Result<impl Into<U32<T::Result>>, Error>, Trap>) {
+        self.reply_(result.map(|x| x.map(|x| x.into())))
     }
 
-    fn reply_(self, result: Result<Reply, Trap>) {
+    fn reply_(self, result: Result<Result<U32<T::Result>, Error>, Trap>) {
         let result = match result {
             Ok(x) => x,
             Err(Trap) => applet_trapped::<B>(Some(T::NAME)),
         };
-        let result = Error::encode(result.0);
+        let result = Error::encode(result.map(|x| *x));
         #[cfg(feature = "wasm")]
         {
             let mut this = self;
@@ -429,32 +428,6 @@ struct Trap;
 impl From<wasefire_error::Error> for Trap {
     fn from(_: wasefire_error::Error) -> Self {
         Trap
-    }
-}
-
-struct Reply(Result<u32, Error>);
-
-impl From<Result<!, Error>> for Reply {
-    fn from(value: Result<!, Error>) -> Self {
-        Reply(value.map(|x| match x {}))
-    }
-}
-
-impl From<Result<(), Error>> for Reply {
-    fn from(value: Result<(), Error>) -> Self {
-        Reply(value.map(|()| 0))
-    }
-}
-
-impl From<Result<bool, Error>> for Reply {
-    fn from(value: Result<bool, Error>) -> Self {
-        Reply(value.map(|x| x as u32))
-    }
-}
-
-impl From<Result<u32, Error>> for Reply {
-    fn from(value: Result<u32, Error>) -> Self {
-        Reply(value)
     }
 }
 

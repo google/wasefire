@@ -40,5 +40,5 @@ fn num_pending_callbacks<B: Board>(mut call: SchedulerCall<B, api::num_pending_c
 
 fn abort<B: Board>(call: SchedulerCall<B, api::abort::Sig>) {
     let api::abort::Params {} = call.read();
-    call.reply(Result::<crate::Reply, _>::Err(crate::Trap));
+    call.reply_(Err(crate::Trap));
 }

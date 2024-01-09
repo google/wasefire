@@ -29,8 +29,6 @@
   ): i32
 
   // Register a handler for button events.
-  //
-  // Returns zero on success.
   @external("env", "br")
   export declare function button_register(
     // Index of the button to listen to.
@@ -46,8 +44,6 @@
   ): i32
 
   // Unregister handlers for button events.
-  //
-  // Returns zero on success.
   @external("env", "bu")
   export declare function button_unregister(
     // Index of the button to stop listening to.
@@ -66,9 +62,7 @@
     Periodic = 1,
   }
 
-  // Allocates a timer (initially stopped).
-  //
-  // Returns the timer identifier on success.
+  // Allocates a timer (initially stopped) and returns its identifier.
   @external("env", "ta")
   export declare function clock_allocate(
     // Function called when the timer triggers.
@@ -79,8 +73,6 @@
   ): i32
 
   // Starts a stopped timer given its identifier.
-  //
-  // Returns zero on success.
   @external("env", "tb")
   export declare function clock_start(
     // The identifier of the timer to start.
@@ -101,8 +93,6 @@
   //
   // Note that if the timer triggers while being stopped, the handler may still be
   // called.
-  //
-  // Returns zero on success.
   @external("env", "tc")
   export declare function clock_stop(
     // The identifier of the timer to start.
@@ -110,8 +100,6 @@
   ): i32
 
   // Deallocates a stopped timer given its identifier.
-  //
-  // Returns zero on success.
   @external("env", "td")
   export declare function clock_free(
     // The identifier of the timer to start.
@@ -124,15 +112,11 @@
   // START OF MODULE crypto_ccm
   // AES-CCM according to Bluetooth.
     // Whether AES-CCM is supported.
-    //
-    // On success, returns 1 if supported, 0 otherwise.
     @external("env", "ccs")
     export declare function crypto_ccm_is_supported(
     ): i32
 
     // Encrypts a clear text given a key and IV.
-    //
-    // Returns zero on success.
     @external("env", "cce")
     export declare function crypto_ccm_encrypt(
       // The 16 bytes key to encrypt with.
@@ -159,8 +143,6 @@
     ): i32
 
     // Decrypts a cipher text given a key and IV.
-    //
-    // Returns zero on success.
     @external("env", "ccd")
     export declare function crypto_ccm_decrypt(
       // The 16 bytes key to encrypt with.
@@ -196,8 +178,6 @@
     }
 
     // Whether a curve is supported.
-    //
-    // On success, returns 1 if supported, 0 otherwise.
     @external("env", "ces")
     export declare function crypto_ec_is_supported(
       // The enum value of the [curve][super::Curve].
@@ -207,8 +187,6 @@
     // Returns whether a scalar is valid.
     //
     // A scalar is valid if smaller than the field's modulus.
-    //
-    // On success, returns 1 if valid, 0 otherwise.
     @external("env", "cet")
     export declare function crypto_ec_is_valid_scalar(
       // The curve.
@@ -219,8 +197,6 @@
     ): i32
 
     // Returns whether a point is valid.
-    //
-    // On success, returns 1 if valid, 0 otherwise.
     @external("env", "ceq")
     export declare function crypto_ec_is_valid_point(
       // The curve.
@@ -234,8 +210,6 @@
     ): i32
 
     // Performs base point multiplication.
-    //
-    // Returns zero on success.
     @external("env", "ceb")
     export declare function crypto_ec_base_point_mul(
       // The curve.
@@ -252,8 +226,6 @@
     ): i32
 
     // Performs point multiplication.
-    //
-    // Returns zero on success.
     @external("env", "cep")
     export declare function crypto_ec_point_mul(
       // The curve.
@@ -276,8 +248,6 @@
     ): i32
 
     // Signs a message with ECDSA.
-    //
-    // Returns zero on success.
     @external("env", "cei")
     export declare function crypto_ec_ecdsa_sign(
       // The curve.
@@ -297,8 +267,6 @@
     ): i32
 
     // Verifies an ECDSA signature.
-    //
-    // On success, returns 1 if the signature is valid, 0 otherwise.
     @external("env", "cev")
     export declare function crypto_ec_ecdsa_verify(
       // The curve.
@@ -351,8 +319,6 @@
     ): i32
 
     // Encrypts and authenticates a clear text with associated data given a key and IV.
-    //
-    // Returns zero on success.
     @external("env", "cge")
     export declare function crypto_gcm_encrypt(
       // The 32 bytes key.
@@ -384,8 +350,6 @@
     ): i32
 
     // Decrypts and authenticates a cipher text with associated data given a key and IV.
-    //
-    // Returns zero on success.
     @external("env", "cgd")
     export declare function crypto_gcm_decrypt(
       // The 32 bytes key.
@@ -429,17 +393,13 @@
     }
 
     // Whether the algorithm is supported.
-    //
-    // On success, returns 1 if supported, 0 otherwise.
     @external("env", "chs")
     export declare function crypto_hash_is_supported(
       // The hash algorithm.
       algorithm: usize,
     ): i32
 
-    // Initializes a hash.
-    //
-    // Returns the hash identifier on success.
+    // Initializes a hash and returns its identifier.
     @external("env", "chi")
     export declare function crypto_hash_initialize(
       // The hash algorithm.
@@ -449,8 +409,6 @@
     // Updates a hash.
     //
     // Errors are surfaced in the [`finalize()`] call.
-    //
-    // Returns zero on success.
     @external("env", "chu")
     export declare function crypto_hash_update(
       // The identifier returned by the associated [`initialize()`] call.
@@ -464,8 +422,6 @@
     ): i32
 
     // Finalizes a hash.
-    //
-    // Returns zero on success.
     @external("env", "chf")
     export declare function crypto_hash_finalize(
       // The identifier returned by the associated [`initialize()`] call.
@@ -484,17 +440,13 @@
     ): i32
 
     // Whether the algorithm is supported for hmac.
-    //
-    // On success, returns 1 if supported, 0 otherwise.
     @external("env", "cht")
     export declare function crypto_hash_is_hmac_supported(
       // The hash algorithm.
       algorithm: usize,
     ): i32
 
-    // Initializes an hmac.
-    //
-    // Returns the hmac identifier on success.
+    // Initializes an hmac and returns its identifier.
     @external("env", "chj")
     export declare function crypto_hash_hmac_initialize(
       // The hash algorithm.
@@ -512,8 +464,6 @@
     // Updates an hmac.
     //
     // Errors are surfaced in the [`hmac_finalize()`] call.
-    //
-    // Returns zero on success.
     @external("env", "chv")
     export declare function crypto_hash_hmac_update(
       // The identifier returned by the associated [`hmac_initialize()`] call.
@@ -527,8 +477,6 @@
     ): i32
 
     // Finalizes an hmac.
-    //
-    // Returns zero on success.
     @external("env", "chg")
     export declare function crypto_hash_hmac_finalize(
       // The identifier returned by the associated [`hmac_initialize()`] call.
@@ -547,8 +495,6 @@
     ): i32
 
     // Whether the algorithm is supported for hkdf.
-    //
-    // On success, returns 1 if supported, 0 otherwise.
     @external("env", "chr")
     export declare function crypto_hash_is_hkdf_supported(
       // The hash algorithm.
@@ -556,8 +502,6 @@
     ): i32
 
     // Expands with RFC5869 HKDF.
-    //
-    // Returns zero on success.
     @external("env", "che")
     export declare function crypto_hash_hkdf_expand(
       // The hash algorithm.
@@ -597,8 +541,6 @@
   // Prints a message to the debug output.
   //
   // If debug output is disabled then this is a no-op.
-  //
-  // Returns zero on success.
   @external("env", "dp")
   export declare function debug_println(
     // The message to print.
@@ -613,8 +555,6 @@
   // Returns the time spent since some initial event.
   //
   // The time is in micro-seconds and may wrap before using all 64 bits.
-  //
-  // Returns the least significant 31 bits on success.
   @external("env", "dt")
   export declare function debug_time(
     // Pointer to the 64-bits time (may be null).
@@ -645,8 +585,6 @@
   }
 
   // Returns the time spent since some initial event, split by component.
-  //
-  // Returns zero on success.
   @external("env", "dq")
   export declare function debug_perf(
     // Pointer to the output [`super::Perf`] struct.
@@ -657,8 +595,6 @@
   //
   // This is used by test applets to terminate the platform and propagate the test
   // result.
-  //
-  // Does not return on success.
   @external("env", "de")
   export declare function debug_exit(
     // 0 for success, 1 for failure.
@@ -718,8 +654,6 @@
   }
 
   // Configures a GPIO.
-  //
-  // Returns zero on success.
   @external("env", "gf")
   export declare function gpio_configure(
     // Index of the GPIO to configure.
@@ -736,8 +670,6 @@
   ): i32
 
   // Reads from a GPIO.
-  //
-  // Returns the logical value (0 or 1) on success.
   @external("env", "gr")
   export declare function gpio_read(
     // Index of the GPIO to read from (must be configured as input).
@@ -745,8 +677,6 @@
   ): i32
 
   // Writes to a GPIO.
-  //
-  // Returns zero on success.
   @external("env", "gw")
   export declare function gpio_write(
     // Index of the GPIO to write to (must be configured as output).
@@ -773,9 +703,7 @@
     On = 1,
   }
 
-  // Returns a LED status.
-  //
-  // On success, returns 0 for off and 1 for on.
+  // Returns whether a LED is on.
   @external("env", "lg")
   export declare function led_get(
     // Index of the LED to set.
@@ -783,8 +711,6 @@
   ): i32
 
   // Sets a LED status.
-  //
-  // Returns zero on success.
   @external("env", "ls")
   export declare function led_set(
     // Index of the LED to set.
@@ -804,8 +730,6 @@
   // platforms. In particular, chunks and errors are platform-specific. Applets with
   // knowledge about their platform may actually inspect that content for additional checks.
     // Whether platform update is supported.
-    //
-    // On success, returns 1 if supported, 0 otherwise.
     @external("env", "pus")
     export declare function platform_update_is_supported(
     ): i32
@@ -813,8 +737,6 @@
     // Returns the metadata of the platform.
     //
     // This typically contains the version and side (A or B) of the running platform.
-    //
-    // Returns zero on success.
     @external("env", "pum")
     export declare function platform_update_metadata(
       // Where to write the allocated metadata.
@@ -825,8 +747,6 @@
     ): i32
 
     // Starts a platform update process.
-    //
-    // Returns zero on success.
     @external("env", "pui")
     export declare function platform_update_initialize(
       // Zero for normal operation. One for dry-run.
@@ -837,8 +757,6 @@
     ): i32
 
     // Processes the next chunk of a platform update.
-    //
-    // Returns zero on success.
     @external("env", "pup")
     export declare function platform_update_process(
       // Address of the chunk.
@@ -852,8 +770,7 @@
     //
     // This function will reboot when the update is successful.
     //
-    // In dry-run mode, returns zero on success. In normal operation, does not return on
-    // success.
+    // Does not return, unless in dry-run mode or in case of error.
     @external("env", "puf")
     export declare function platform_update_finalize(
     ): i32
@@ -911,7 +828,7 @@
 
     // Reads the next advertisement packet into a buffer, if any.
     //
-    // On success, returns 1 if a packet was read, 0 otherwise.
+    // Returns whether a packet was read.
     @external("env", "rlra")
     export declare function radio_ble_read_advertisement(
       // Pointer to the [`super::Advertisement`] packet.
@@ -919,8 +836,6 @@
     ): i32
 
     // Register a handler for radio events.
-    //
-    // Returns zero on success.
     @external("env", "rle")
     export declare function radio_ble_register(
       // Radio [`super::Event`] to listen to.
@@ -936,8 +851,6 @@
     ): i32
 
     // Unregister handlers for radio events.
-    //
-    // Returns zero on success.
     @external("env", "rld")
     export declare function radio_ble_unregister(
       // Radio [`super::Event`] to stop listening to.
@@ -949,8 +862,6 @@
 // START OF MODULE rng
 // Random number generators.
   // Fills a slice with random bytes.
-  //
-  // Returns zero on success.
   @external("env", "rb")
   export declare function rng_fill_bytes(
     // The slice to fill.
@@ -965,8 +876,6 @@
   // Waits until a callback is scheduled.
   //
   // This can be used as power management, since the CPU will sleep while waiting.
-  //
-  // Returns zero on success.
   @external("env", "sw")
   export declare function scheduling_wait_for_callback(
   ): i32
@@ -977,8 +886,6 @@
   ): i32
 
   // Aborts the applet.
-  //
-  // Does not return on success.
   @external("env", "sa")
   export declare function scheduling_abort(
   ): i32
@@ -989,8 +896,6 @@
   // Inserts an entry in the store.
   //
   // If an entry for that key was already present, it is overwritten.
-  //
-  // Returns zero on success.
   @external("env", "si")
   export declare function store_insert(
     // Key of the entry.
@@ -1008,8 +913,6 @@
   // Removes an entry from the store.
   //
   // This is not an error if no entry is present. This is simply a no-op in that case.
-  //
-  // Returns zero on success.
   @external("env", "sr")
   export declare function store_remove(
     // Key of the entry.
@@ -1018,7 +921,7 @@
 
   // Finds an entry in the store, if any.
   //
-  // On success, returns 1 if found, 0 otherwise.
+  // Returns whether an entry was found.
   @external("env", "sf")
   export declare function store_find(
     // Key of the entry to find.
@@ -1041,8 +944,6 @@
     // The entry will be fragmented over multiple keys within the provided range as needed.
     //
     // If an entry for that range of keys was already present, it is overwritten.
-    //
-    // Returns zero on success.
     @external("env", "sfi")
     export declare function store_fragment_insert(
       // Range of keys where to insert the fragments.
@@ -1063,8 +964,6 @@
     // All fragments from the range of keys will be deleted.
     //
     // This is not an error if no entry is present. This is simply a no-op in that case.
-    //
-    // Returns zero on success.
     @external("env", "sfr")
     export declare function store_fragment_remove(
       // Range of keys to remove.
@@ -1075,7 +974,7 @@
     //
     // The entry may be fragmented withen the provided range.
     //
-    // On success, returns 1 if found, 0 otherwise.
+    // Returns whether an entry was found.
     @external("env", "sff")
     export declare function store_fragment_find(
       // Range of keys to concatenate as an entry.
@@ -1101,8 +1000,7 @@
 
   // Reads from a UART into a buffer.
   //
-  // Returns the number of bytes read on success. This function does not block and may
-  // return zero.
+  // Returns the number of bytes read. This function does not block and may return zero.
   @external("env", "uar")
   export declare function uart_read(
     // Index of the UART to read from.
@@ -1117,8 +1015,8 @@
 
   // Writes to a UART from a buffer.
   //
-  // Returns the number of bytes written on success. This function does not block and may
-  // return zero.
+  // Returns the number of bytes written. This function does not block and may return
+  // zero.
   @external("env", "uaw")
   export declare function uart_write(
     // Index of the UART to write to.
@@ -1143,8 +1041,6 @@
   // Registers a callback when a UART is ready.
   //
   // It is possible that the callback is spuriously called.
-  //
-  // Returns zero on success.
   @external("env", "uae")
   export declare function uart_register(
     // Index of the UART to listen to.
@@ -1161,8 +1057,6 @@
   ): i32
 
   // Unregisters a callback.
-  //
-  // Returns zero on success.
   @external("env", "uad")
   export declare function uart_unregister(
     // Index of the UART to stop listening to.
@@ -1178,8 +1072,7 @@
   // START OF MODULE usb_serial
     // Reads from USB serial into a buffer.
     //
-    // Returns the number of bytes read on success. This function does not block and may
-    // return zero.
+    // Returns the number of bytes read. This function does not block and may return zero.
     @external("env", "usr")
     export declare function usb_serial_read(
       // Address of the buffer.
@@ -1191,8 +1084,8 @@
 
     // Writes to USB serial from a buffer.
     //
-    // Returns the number of bytes written on success. This function does not block and may
-    // return zero.
+    // Returns the number of bytes written. This function does not block and may return
+    // zero.
     @external("env", "usw")
     export declare function usb_serial_write(
       // Address of the buffer.
@@ -1214,8 +1107,6 @@
     // Registers a callback when USB serial is ready.
     //
     // It is possible that the callback is spuriously called.
-    //
-    // Returns zero on success.
     @external("env", "use")
     export declare function usb_serial_register(
       event: usize,
@@ -1226,16 +1117,12 @@
     ): i32
 
     // Unregisters a callback.
-    //
-    // Returns zero on success.
     @external("env", "usd")
     export declare function usb_serial_unregister(
       event: usize,
     ): i32
 
     // Flushs the USB serial.
-    //
-    // Returns zero on success.
     @external("env", "usf")
     export declare function usb_serial_flush(
     ): i32

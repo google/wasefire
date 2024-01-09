@@ -39,7 +39,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 #[cfg(not(feature = "board-api-timer"))]
 fn allocate<B: Board>(call: SchedulerCall<B, api::allocate::Sig>) {
     use wasefire_error::{Code, Error};
-    call.reply_(Ok(crate::Reply(Err(Error::world(Code::NotEnough)))))
+    call.reply_(Ok(Err(Error::world(Code::NotEnough))))
 }
 
 #[cfg(feature = "board-api-timer")]

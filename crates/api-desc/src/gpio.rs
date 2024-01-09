@@ -24,7 +24,7 @@ pub(crate) fn new() -> Item {
     let items = vec![
         item! {
             /// Returns how many GPIOs are on the device.
-            fn count "gc" {}
+            fn count "gc" {} -> usize
         },
         item! {
             /// Input configuration.
@@ -72,8 +72,6 @@ pub(crate) fn new() -> Item {
         },
         item! {
             /// Configures a GPIO.
-            ///
-            /// Returns zero on success.
             fn configure "gf" {
                 /// Index of the GPIO to configure.
                 gpio: usize,
@@ -86,28 +84,24 @@ pub(crate) fn new() -> Item {
                 /// | 09:08 | Output configuration |
                 /// | 16:16 | Output initial value |
                 mode: usize,
-            }
+            } -> ()
         },
         item! {
             /// Reads from a GPIO.
-            ///
-            /// Returns the logical value (0 or 1) on success.
             fn read "gr" {
                 /// Index of the GPIO to read from (must be configured as input).
                 gpio: usize,
-            }
+            } -> bool
         },
         item! {
             /// Writes to a GPIO.
-            ///
-            /// Returns zero on success.
             fn write "gw" {
                 /// Index of the GPIO to write to (must be configured as output).
                 gpio: usize,
 
                 /// Logical value (0 or 1).
                 val: usize,
-            }
+            } -> ()
         },
     ];
     Item::Mod(Mod { docs, name, items })

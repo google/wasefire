@@ -37,14 +37,14 @@ pub(crate) fn new() -> Item {
 
                 /// Capacity of the buffer.
                 len: usize,
-            }
+            } -> usize
         },
         #[cfg(feature = "api-platform")]
         item! {
             /// Reboots the device (thus platform and applets).
             ///
             /// Does not return on success.
-            fn reboot "pr" {}
+            fn reboot "pr" {} -> !
         },
     ];
     Item::Mod(Mod { docs, name, items })

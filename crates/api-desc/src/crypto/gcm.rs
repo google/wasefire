@@ -38,18 +38,16 @@ pub(crate) fn new() -> Item {
             /// Describes how AES-256-GCM is supported.
             ///
             /// Returns a bit-flag described by [`super::Support`] on success.
-            fn support "cgs" {}
+            fn support "cgs" {} -> usize
         },
         item! {
             /// Returns the supported tag length.
             ///
             /// The tag argument to [`encrypt()`] and [`decrypt()`] must be of that length.
-            fn tag_length "cgt" {}
+            fn tag_length "cgt" {} -> usize
         },
         item! {
             /// Encrypts and authenticates a clear text with associated data given a key and IV.
-            ///
-            /// Returns zero on success.
             fn encrypt "cge" {
                 /// The 32 bytes key.
                 key: *const u8,
@@ -77,12 +75,10 @@ pub(crate) fn new() -> Item {
 
                 /// The authentication tag (see [`super::tag_length()`]).
                 tag: *mut u8,
-            }
+            } -> ()
         },
         item! {
             /// Decrypts and authenticates a cipher text with associated data given a key and IV.
-            ///
-            /// Returns zero on success.
             fn decrypt "cgd" {
                 /// The 32 bytes key.
                 key: *const u8,
@@ -110,7 +106,7 @@ pub(crate) fn new() -> Item {
 
                 /// The clear text.
                 clear: *mut u8,
-            }
+            } -> ()
         },
     ];
     Item::Mod(Mod { docs, name, items })

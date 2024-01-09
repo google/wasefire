@@ -27,6 +27,9 @@ pub trait Signature: Default + Debug {
     /// The type of params for this function.
     type Params: ArrayU32;
 
+    /// The success result type for this function.
+    type Result;
+
     /// Returns the descriptor of this function.
     fn descriptor() -> Descriptor {
         Descriptor { name: Self::NAME, params: Self::Params::LENGTH }
@@ -68,6 +71,24 @@ impl<T> Deref for U32<T> {
 impl<T> From<u32> for U32<T> {
     fn from(value: u32) -> Self {
         U32 { value, phantom: PhantomData }
+    }
+}
+
+impl From<bool> for U32<bool> {
+    fn from(x: bool) -> Self {
+        (x as u32).into()
+    }
+}
+
+impl From<()> for U32<()> {
+    fn from(_: ()) -> Self {
+        0u32.into()
+    }
+}
+
+impl From<!> for U32<!> {
+    fn from(x: !) -> Self {
+        match x {}
     }
 }
 

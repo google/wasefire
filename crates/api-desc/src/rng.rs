@@ -21,15 +21,13 @@ pub(crate) fn new() -> Item {
     let name = "rng".into();
     let items = vec![item! {
         /// Fills a slice with random bytes.
-        ///
-        /// Returns zero on success.
         fn fill_bytes "rb" {
             /// The slice to fill.
             ptr: *mut u8,
 
             /// The length of the slice.
             len: usize,
-        }
+        } -> ()
     }];
     Item::Mod(Mod { docs, name, items })
 }

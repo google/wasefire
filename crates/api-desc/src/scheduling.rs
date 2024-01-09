@@ -22,19 +22,15 @@ pub(crate) fn new() -> Item {
             /// Waits until a callback is scheduled.
             ///
             /// This can be used as power management, since the CPU will sleep while waiting.
-            ///
-            /// Returns zero on success.
-            fn wait_for_callback "sw" {}
+            fn wait_for_callback "sw" {} -> ()
         },
         item! {
             /// Returns how many callbacks are pending.
-            fn num_pending_callbacks "sh" {}
+            fn num_pending_callbacks "sh" {} -> usize
         },
         item! {
             /// Aborts the applet.
-            ///
-            /// Does not return on success.
-            fn abort "sa" {}
+            fn abort "sa" {} -> !
         },
     ];
     Item::Mod(Mod { docs, name, items })

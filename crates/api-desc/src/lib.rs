@@ -82,7 +82,7 @@ impl Default for Api {
                 /// Board-specific syscalls.
                 ///
                 /// Those calls are directly forwarded to the board by the scheduler.
-                fn syscall "s" { x1: usize, x2: usize, x3: usize, x4: usize }
+                fn syscall "s" { x1: usize, x2: usize, x3: usize, x4: usize } -> usize
             },
         ])
     }
@@ -152,6 +152,7 @@ struct Fn {
     name: String,
     link: String,
     params: Vec<Field>,
+    result: Type,
 }
 
 #[derive(Debug, Clone)]
@@ -163,6 +164,10 @@ struct Field {
 
 #[derive(Debug, Clone)]
 enum Type {
+    Never,
+    Unit,
+    #[cfg_attr(not(feature = "api-store"), allow(dead_code))]
+    Bool,
     Integer {
         signed: bool,
         bits: Option<usize>,
@@ -311,10 +316,11 @@ impl Struct {
 
 impl Fn {
     fn host(&self) -> TokenStream {
-        let Fn { docs, name, link, params } = self;
+        let Fn { docs, name, link, params, result } = self;
         let name = format_ident!("{}", name);
         let doc = format!("Module of [`{name}`]({name}::Sig).");
         let params: Vec<_> = params.iter().map(|x| x.host()).collect();
+        let result = result.host();
         quote! {
             #[doc = #doc]
             pub mod #name {
@@ -333,13 +339,14 @@ impl Fn {
                 impl crate::Signature for Sig {
                     const NAME: &'static str = #link;
                     type Params = Params;
+                    type Result = #result;
                 }
             }
         }
     }
 
     fn wasm_rust(&self) -> TokenStream {
-        let Fn { docs, name, link, params } = self;
+        let Fn { docs, name, link, params, result: _ } = self;
         let name = format_ident!("{name}");
         let env_link = format!("env_{link}");
         let link0 = syn::LitByteStr::new(format!("{link}\0").as_bytes(), Span::call_site());
@@ -380,7 +387,7 @@ impl Fn {
     }
 
     fn wasm_assemblyscript(&self, output: &mut dyn Write, path: &Path) -> std::io::Result<()> {
-        let Fn { docs, name, link, params } = self;
+        let Fn { docs, name, link, params, result: _ } = self;
         write_docs(output, docs, path)?;
         writeln!(output, r#"{path:#}@external("env", "{link}")"#)?;
         writeln!(output, "{path:#}export declare function {path}{name}(")?;
@@ -548,6 +555,7 @@ impl Type {
     #[cfg(test)]
     fn is_param(&self) -> bool {
         match self {
+            Type::Never | Type::Unit | Type::Bool => false,
             Type::Integer { bits: None, .. } => true,
             Type::Integer { bits: Some(32), .. } => true,
             Type::Integer { bits: Some(_), .. } => false,
@@ -557,8 +565,20 @@ impl Type {
         }
     }
 
+    #[cfg(test)]
+    fn is_result(&self) -> bool {
+        #[allow(clippy::match_like_matches_macro)]
+        match self {
+            Type::Never | Type::Unit | Type::Bool => true,
+            Type::Integer { signed: false, bits: None } => true,
+            _ => false,
+        }
+    }
+
+    /// Returns whether the type width is the pointer width.
     fn needs_u32(&self) -> bool {
         match self {
+            Type::Never | Type::Unit | Type::Bool => false,
             Type::Integer { bits: None, .. } => true,
             Type::Integer { bits: Some(_), .. } => false,
             Type::Array { .. } => false,
@@ -577,6 +597,9 @@ impl Type {
 
     fn wasm_rust(&self) -> TokenStream {
         match self {
+            Type::Never => quote!(!),
+            Type::Unit => quote!(()),
+            Type::Bool => quote!(bool),
             Type::Integer { signed: true, bits: None } => quote!(isize),
             Type::Integer { signed: false, bits: None } => quote!(usize),
             Type::Integer { signed: true, bits: Some(8) } => quote!(i8),
@@ -609,6 +632,7 @@ impl Type {
 
     fn wasm_assemblyscript(&self, output: &mut dyn Write) -> std::io::Result<()> {
         match self {
+            Type::Never | Type::Unit | Type::Bool => unreachable!(),
             Type::Integer { signed: true, bits: None } => write!(output, "isize"),
             Type::Integer { signed: false, bits: None } => write!(output, "usize"),
             Type::Integer { signed: true, bits: Some(8) } => write!(output, "i8"),
@@ -760,6 +784,21 @@ mod tests {
                 Item::Enum(_) => (),
                 Item::Struct(_) => (),
                 Item::Fn(Fn { link, params, .. }) => params.iter().for_each(|x| test(&link, x)),
+                Item::Mod(Mod { items, .. }) => todo.extend(items),
+            }
+        }
+    }
+
+    #[test]
+    fn results_are_valid() {
+        let Api(mut todo) = Api::default();
+        while let Some(item) = todo.pop() {
+            match item {
+                Item::Enum(_) => (),
+                Item::Struct(_) => (),
+                Item::Fn(Fn { link, result, .. }) => {
+                    assert!(result.is_result(), "Result of {link:?} is invalid");
+                }
                 Item::Mod(Mod { items, .. }) => todo.extend(items),
             }
         }
