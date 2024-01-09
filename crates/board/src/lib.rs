@@ -76,7 +76,8 @@ pub trait Api: Send + 'static {
     /// Board-specific syscalls.
     ///
     /// Those calls are directly forwarded from the applet by the scheduler. The default
-    /// implementation traps.
+    /// implementation traps by returning `None`. The platform will panic if `Some(Ok(x))` is
+    /// returned when `x as i32` would be negative.
     fn syscall(_x1: u32, _x2: u32, _x3: u32, _x4: u32) -> Option<Result<u32, Error>> {
         None
     }

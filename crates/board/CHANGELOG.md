@@ -4,7 +4,7 @@
 
 ### Major
 
-- Change `syscall` return type to `Option<Result<u32, Error>>`
+- Change `syscall` return type to `Option<Result<u31, Error>>`
 - Add API features (disabled by default)
 - Add `Event::Impossible` to always mention the type parameter `B`
 - Update `platform::update::Api` to return `Error` instead of `usize`

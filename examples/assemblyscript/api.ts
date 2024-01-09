@@ -768,9 +768,8 @@
 
     // Finalizes a platform update process.
     //
-    // This function will reboot when the update is successful.
-    //
-    // Does not return, unless in dry-run mode or in case of error.
+    // This function will reboot when the update is successful and thus only returns in
+    // case of errors or in dry-run mode.
     @external("env", "puf")
     export declare function platform_update_finalize(
     ): i32
