@@ -28,7 +28,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 fn wait_for_callback<B: Board>(mut call: SchedulerCall<B, api::wait_for_callback::Sig>) {
     let api::wait_for_callback::Params {} = call.read();
     if call.scheduler().process_event() {
-        call.reply(Ok(Ok(0)));
+        call.reply(Ok(Ok(())));
     }
 }
 

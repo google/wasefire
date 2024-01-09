@@ -34,7 +34,7 @@ fn println<B: Board>(mut call: SchedulerCall<B, api::println::Sig>) {
     let result = try {
         let line = core::str::from_utf8(memory.get(*ptr, *len)?).map_err(|_| Trap)?;
         board::Debug::<B>::println(line);
-        Ok(0)
+        Ok(())
     };
     call.reply(result)
 }
@@ -61,7 +61,7 @@ fn perf<B: Board>(mut call: SchedulerCall<B, api::perf::Sig>) {
     let memory = call.memory();
     let result = try {
         *memory.from_bytes_mut::<Perf>(*ptr)? = perf;
-        Ok(0)
+        Ok(())
     };
     call.reply(result)
 }

@@ -53,7 +53,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
             data: *handler_data,
         })?;
         board::Button::<B>::enable(button).map_err(|_| Trap)?;
-        Ok(0)
+        Ok(())
     };
     call.reply(result);
 }
@@ -65,7 +65,7 @@ fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
         let button = Id::new(*button as usize).ok_or(Trap)?;
         board::Button::<B>::disable(button).map_err(|_| Trap)?;
         call.scheduler().disable_event(Key { button }.into())?;
-        Ok(0)
+        Ok(())
     };
     call.reply(result);
 }
