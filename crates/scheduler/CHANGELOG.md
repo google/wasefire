@@ -10,6 +10,7 @@
 
 ### Minor
 
+- Migrate to applet API functions always returning `isize`
 - Support `debug::time()` new return type
 - Migrate to `platform::update` returning `Error`
 - Migrate to `wasefire-error`
@@ -104,4 +105,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 27 -->
+<!-- Increment to skip CHANGELOG.md test: 29 -->

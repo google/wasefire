@@ -82,7 +82,7 @@ impl Default for Api {
                 /// Board-specific syscalls.
                 ///
                 /// Those calls are directly forwarded to the board by the scheduler.
-                fn syscall "s" { x1: usize, x2: usize, x3: usize, x4: usize } -> { res: usize }
+                fn syscall "s" { x1: usize, x2: usize, x3: usize, x4: usize } -> usize
             },
         ])
     }
@@ -152,7 +152,7 @@ struct Fn {
     name: String,
     link: String,
     params: Vec<Field>,
-    results: Vec<Field>,
+    result: Type,
 }
 
 #[derive(Debug, Clone)]
@@ -164,6 +164,10 @@ struct Field {
 
 #[derive(Debug, Clone)]
 enum Type {
+    Never,
+    Unit,
+    #[cfg_attr(not(feature = "api-store"), allow(dead_code))]
+    Bool,
     Integer {
         signed: bool,
         bits: Option<usize>,
@@ -312,11 +316,11 @@ impl Struct {
 
 impl Fn {
     fn host(&self) -> TokenStream {
-        let Fn { docs, name, link, params, results } = self;
+        let Fn { docs, name, link, params, result } = self;
         let name = format_ident!("{}", name);
         let doc = format!("Module of [`{name}`]({name}::Sig).");
         let params: Vec<_> = params.iter().map(|x| x.host()).collect();
-        let results: Vec<_> = results.iter().map(|x| x.host()).collect();
+        let result = result.host();
         quote! {
             #[doc = #doc]
             pub mod #name {
@@ -330,50 +334,31 @@ impl Fn {
                 #[repr(C)]
                 pub struct Params { #(#params,)* }
 
-                /// Results of [Sig].
-                #[derive(Debug, Default, Copy, Clone)]
-                #[repr(C)]
-                pub struct Results { #(#results,)* }
-
                 #[sealed::sealed] impl crate::ArrayU32 for Params {}
-                #[sealed::sealed] impl crate::ArrayU32 for Results {}
                 #[sealed::sealed]
                 impl crate::Signature for Sig {
                     const NAME: &'static str = #link;
                     type Params = Params;
-                    type Results = Results;
+                    type Result = #result;
                 }
             }
         }
     }
 
     fn wasm_rust(&self) -> TokenStream {
-        let Fn { docs, name, link, params, results } = self;
+        let Fn { docs, name, link, params, result: _ } = self;
         let name = format_ident!("{name}");
         let env_link = format!("env_{link}");
         let link0 = syn::LitByteStr::new(format!("{link}\0").as_bytes(), Span::call_site());
         let doc = format!("Module of [`{name}`]({name}()).");
         let params_doc = format!("Parameters of [`{name}`](super::{name}())");
-        let results_doc = format!("Results of [`{name}`](super::{name}())");
         let params: Vec<_> = params.iter().map(|x| x.wasm_rust()).collect();
-        let results: Vec<_> = results.iter().map(|x| x.wasm_rust()).collect();
         let (fn_params, let_params) = if params.is_empty() {
             (None, quote!(let ffi_params = core::ptr::null();))
         } else {
             (
                 Some(quote!(params: #name::Params)),
                 quote!(let ffi_params = &params as *const _ as *const u32;),
-            )
-        };
-        let (fn_results, let_results) = if results.is_empty() {
-            (None, quote!(let results = (); let ffi_results = core::ptr::null_mut();))
-        } else {
-            (
-                Some(quote!(-> #name::Results)),
-                quote! {
-                    let mut results = <#name::Results as bytemuck::Zeroable>::zeroed();
-                    let ffi_results = &mut results as *mut _ as *mut u32;
-                },
             )
         };
         quote! {
@@ -383,47 +368,31 @@ impl Fn {
                 #[derive(Debug, Copy, Clone)]
                 #[repr(C)]
                 pub struct Params { #(#params,)* }
-
-                #[doc = #results_doc]
-                #[derive(Debug, Copy, Clone, bytemuck::Zeroable)]
-                #[repr(C)]
-                pub struct Results { #(#results,)* }
             }
             #[cfg(not(feature = "native"))]
             extern "C" {
                 #(#[doc = #docs])*
                 #[link_name = #link]
-                pub fn #name(#fn_params) #fn_results;
+                pub fn #name(#fn_params) -> isize;
             }
             #[cfg(feature = "native")]
             #[export_name = #env_link]
             #[linkage = "weak"]
-            pub unsafe extern "C" fn #name(#fn_params) #fn_results {
+            pub unsafe extern "C" fn #name(#fn_params) -> isize {
                 #let_params
-                #let_results
                 let ffi_link = core::ffi::CStr::from_bytes_with_nul(#link0).unwrap().as_ptr();
-                crate::wasm::native::env_dispatch(ffi_link, ffi_params, ffi_results);
-                results
+                crate::wasm::native::env_dispatch(ffi_link, ffi_params)
             }
         }
     }
 
     fn wasm_assemblyscript(&self, output: &mut dyn Write, path: &Path) -> std::io::Result<()> {
-        let Fn { docs, name, link, params, results } = self;
+        let Fn { docs, name, link, params, result: _ } = self;
         write_docs(output, docs, path)?;
         writeln!(output, r#"{path:#}@external("env", "{link}")"#)?;
         writeln!(output, "{path:#}export declare function {path}{name}(")?;
         write_items(output, params, |output, param| param.wasm_assemblyscript(output, path, ","))?;
-        if let Some(result) = results.first() {
-            write_docs(output, &result.docs, path)?;
-        }
-        write!(output, "{path:#}): ")?;
-        match &results[..] {
-            [] => write!(output, "void")?,
-            [result] => result.type_.wasm_assemblyscript(output)?,
-            _ => unreachable!(),
-        }
-        writeln!(output)
+        writeln!(output, "{path:#}): i32")
     }
 }
 
@@ -586,6 +555,7 @@ impl Type {
     #[cfg(test)]
     fn is_param(&self) -> bool {
         match self {
+            Type::Never | Type::Unit | Type::Bool => false,
             Type::Integer { bits: None, .. } => true,
             Type::Integer { bits: Some(32), .. } => true,
             Type::Integer { bits: Some(_), .. } => false,
@@ -595,8 +565,20 @@ impl Type {
         }
     }
 
+    #[cfg(test)]
+    fn is_result(&self) -> bool {
+        #[allow(clippy::match_like_matches_macro)]
+        match self {
+            Type::Never | Type::Unit | Type::Bool => true,
+            Type::Integer { signed: false, bits: None } => true,
+            _ => false,
+        }
+    }
+
+    /// Returns whether the type width is the pointer width.
     fn needs_u32(&self) -> bool {
         match self {
+            Type::Never | Type::Unit | Type::Bool => false,
             Type::Integer { bits: None, .. } => true,
             Type::Integer { bits: Some(_), .. } => false,
             Type::Array { .. } => false,
@@ -615,6 +597,9 @@ impl Type {
 
     fn wasm_rust(&self) -> TokenStream {
         match self {
+            Type::Never => quote!(!),
+            Type::Unit => quote!(()),
+            Type::Bool => quote!(bool),
             Type::Integer { signed: true, bits: None } => quote!(isize),
             Type::Integer { signed: false, bits: None } => quote!(usize),
             Type::Integer { signed: true, bits: Some(8) } => quote!(i8),
@@ -647,6 +632,7 @@ impl Type {
 
     fn wasm_assemblyscript(&self, output: &mut dyn Write) -> std::io::Result<()> {
         match self {
+            Type::Never | Type::Unit | Type::Bool => unreachable!(),
             Type::Integer { signed: true, bits: None } => write!(output, "isize"),
             Type::Integer { signed: false, bits: None } => write!(output, "usize"),
             Type::Integer { signed: true, bits: Some(8) } => write!(output, "i8"),
@@ -787,34 +773,31 @@ mod tests {
     }
 
     #[test]
-    fn params_and_results_are_u32() {
-        fn test(link: &str, kind: &str, field: &Field) {
+    fn params_are_u32() {
+        fn test(link: &str, field: &Field) {
             let name = &field.name;
-            assert!(field.type_.is_param(), "{kind} {name} of {link:?} is not U32");
+            assert!(field.type_.is_param(), "Param {name} of {link:?} is not U32");
         }
         let Api(mut todo) = Api::default();
         while let Some(item) = todo.pop() {
             match item {
                 Item::Enum(_) => (),
                 Item::Struct(_) => (),
-                Item::Fn(Fn { link, params, results, .. }) => {
-                    params.iter().for_each(|x| test(&link, "Param", x));
-                    results.iter().for_each(|x| test(&link, "Result", x));
-                }
+                Item::Fn(Fn { link, params, .. }) => params.iter().for_each(|x| test(&link, x)),
                 Item::Mod(Mod { items, .. }) => todo.extend(items),
             }
         }
     }
 
     #[test]
-    fn at_most_one_result() {
+    fn results_are_valid() {
         let Api(mut todo) = Api::default();
         while let Some(item) = todo.pop() {
             match item {
                 Item::Enum(_) => (),
                 Item::Struct(_) => (),
-                Item::Fn(Fn { link, results, .. }) => {
-                    assert!(results.len() <= 1, "More than one result for {link:?}");
+                Item::Fn(Fn { link, result, .. }) => {
+                    assert!(result.is_result(), "Result of {link:?} is invalid");
                 }
                 Item::Mod(Mod { items, .. }) => todo.extend(items),
             }

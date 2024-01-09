@@ -42,14 +42,12 @@ pub(crate) fn new() -> Item {
         },
         item! {
             /// Reads the next advertisement packet into a buffer, if any.
+            ///
+            /// Returns whether a packet was read.
             fn read_advertisement "rlra" {
                 /// Pointer to the [`super::Advertisement`] packet.
                 ptr: *mut u8,
-            } -> {
-                /// One if a packet was read. Zero if there was no packet to read. Negative on
-                /// error.
-                res: isize,
-            }
+            } -> bool
         },
         item! {
             /// Register a handler for radio events.
@@ -64,14 +62,14 @@ pub(crate) fn new() -> Item {
 
                 /// The opaque data to use when calling the handler function.
                 handler_data: *const void,
-            } -> {}
+            } -> ()
         },
         item! {
             /// Unregister handlers for radio events.
             fn unregister "rld" {
                 /// Radio [`super::Event`] to stop listening to.
                 event: u32,
-            } -> {}
+            } -> ()
         },
     ];
     Item::Mod(Mod { docs, name, items })

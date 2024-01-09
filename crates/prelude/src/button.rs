@@ -24,11 +24,11 @@ use wasefire_applet_api::button as api;
 
 pub use self::api::State;
 pub use self::api::State::*;
+use crate::{convert, convert_unit};
 
 /// Returns the number of available buttons on the board.
 pub fn count() -> usize {
-    let api::count::Results { cnt } = unsafe { api::count() };
-    cnt
+    convert(unsafe { api::count() }).unwrap_or(0)
 }
 
 /// Provides callback support for button events.
@@ -70,7 +70,8 @@ impl<H: Handler> Listener<H> {
         let handler_func = Self::call;
         let handler = Box::into_raw(Box::new(handler));
         let handler_data = handler as *const u8;
-        unsafe { api::register(api::register::Params { button, handler_func, handler_data }) };
+        let params = api::register::Params { button, handler_func, handler_data };
+        convert_unit(unsafe { api::register(params) }).unwrap();
         Listener { button, handler }
     }
 
@@ -100,7 +101,7 @@ impl<H: Handler> Listener<H> {
 impl<H: Handler> Drop for Listener<H> {
     fn drop(&mut self) {
         let params = api::unregister::Params { button: self.button };
-        unsafe { api::unregister(params) };
+        convert_unit(unsafe { api::unregister(params) }).unwrap();
         drop(unsafe { Box::from_raw(self.handler as *mut H) });
     }
 }

@@ -38,53 +38,41 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     let count = board::Gpio::<B>::SUPPORT as u32;
     #[cfg(not(feature = "board-api-gpio"))]
     let count = 0;
-    call.reply(Ok(api::count::Results { cnt: count.into() }));
+    call.reply(Ok(Ok(count)));
 }
 
 #[cfg(feature = "board-api-gpio")]
 fn configure<B: Board>(call: SchedulerCall<B, api::configure::Sig>) {
     let api::configure::Params { gpio, mode } = call.read();
-    let results = try {
+    let result = try {
         let gpio = Id::new(*gpio as usize).ok_or(Trap)?;
         let config = *bytemuck::checked::try_from_bytes(&mode.to_le_bytes()).map_err(|_| Trap)?;
-        let res = match board::Gpio::<B>::configure(gpio, config) {
-            Ok(()) => 0,
-            Err(_) => u32::MAX,
-        };
-        api::configure::Results { res: res.into() }
+        board::Gpio::<B>::configure(gpio, config)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-gpio")]
 fn read<B: Board>(call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { gpio } = call.read();
-    let results = try {
+    let result = try {
         let gpio = Id::new(*gpio as usize).ok_or(Trap)?;
-        let val = match board::Gpio::<B>::read(gpio) {
-            Ok(x) => x as u32,
-            Err(_) => u32::MAX,
-        };
-        api::read::Results { val: val.into() }
+        board::Gpio::<B>::read(gpio)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-gpio")]
 fn write<B: Board>(call: SchedulerCall<B, api::write::Sig>) {
     let api::write::Params { gpio, val } = call.read();
-    let results = try {
+    let result = try {
         let gpio = Id::new(*gpio as usize).ok_or(Trap)?;
         let value = match *val {
             0 => false,
             1 => true,
             _ => Err(Trap)?,
         };
-        let res = match board::Gpio::<B>::write(gpio, value) {
-            Ok(()) => 0,
-            Err(_) => u32::MAX,
-        };
-        api::write::Results { res: res.into() }
+        board::Gpio::<B>::write(gpio, value)
     };
-    call.reply(results);
+    call.reply(result);
 }

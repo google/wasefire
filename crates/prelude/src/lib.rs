@@ -31,6 +31,7 @@
 #![feature(doc_auto_cfg)]
 #![feature(macro_metavar_expr)]
 #![feature(negative_impls)]
+#![feature(never_type)]
 #![feature(vec_into_raw_parts)]
 #![warn(unsafe_op_in_unsafe_fn)]
 
@@ -72,10 +73,9 @@ pub mod usb;
 /// Board-specific syscalls.
 ///
 /// Those calls are directly forwarded to the board by the scheduler.
-pub fn syscall(x1: usize, x2: usize, x3: usize, x4: usize) -> usize {
+pub fn syscall(x1: usize, x2: usize, x3: usize, x4: usize) -> Result<usize, Error> {
     let params = api::syscall::Params { x1, x2, x3, x4 };
-    let api::syscall::Results { res } = unsafe { api::syscall(params) };
-    res
+    convert(unsafe { api::syscall(params) })
 }
 
 /// Defines the entry point of an applet.
@@ -140,9 +140,18 @@ fn handle_panic(info: &core::panic::PanicInfo) -> ! {
     scheduling::abort();
 }
 
-#[cfg_attr(not(feature = "api-crypto-ec"), allow(dead_code))]
 fn convert(res: isize) -> Result<usize, Error> {
     Error::decode(res as i32).map(|x| x as usize)
+}
+
+#[cfg_attr(not(feature = "api-crypto-ec"), allow(dead_code))]
+fn convert_bool(res: isize) -> Result<bool, Error> {
+    match convert(res) {
+        Ok(0) => Ok(false),
+        Ok(1) => Ok(true),
+        Ok(_) => unreachable!(),
+        Err(e) => Err(e),
+    }
 }
 
 #[cfg_attr(not(feature = "api-crypto-ec"), allow(dead_code))]
@@ -154,11 +163,8 @@ fn convert_unit(res: isize) -> Result<(), Error> {
     }
 }
 
-#[cfg_attr(not(feature = "api-crypto-ec"), allow(dead_code))]
-fn convert_bool(res: isize) -> Result<bool, Error> {
+fn convert_never(res: isize) -> Result<!, Error> {
     match convert(res) {
-        Ok(0) => Ok(false),
-        Ok(1) => Ok(true),
         Ok(_) => unreachable!(),
         Err(e) => Err(e),
     }

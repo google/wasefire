@@ -17,6 +17,9 @@
 #[cfg(feature = "api-platform")]
 use wasefire_applet_api::platform as api;
 
+#[cfg(feature = "api-platform")]
+use crate::{convert, convert_never};
+
 #[cfg(feature = "api-platform-update")]
 pub mod update;
 
@@ -30,10 +33,10 @@ pub fn version() -> &'static [u8] {
         return version;
     }
     let params = api::version::Params { ptr: core::ptr::null_mut(), len: 0 };
-    let api::version::Results { len } = unsafe { api::version(params) };
+    let len = convert(unsafe { api::version(params) }).unwrap();
     let mut version = alloc::vec![0; len];
     let params = api::version::Params { ptr: version[..].as_mut_ptr(), len };
-    let api::version::Results { .. } = unsafe { api::version(params) };
+    convert(unsafe { api::version(params) }).unwrap();
     let version = alloc::boxed::Box::leak(version.into_boxed_slice());
     *guard = Some(version);
     version
@@ -42,6 +45,5 @@ pub fn version() -> &'static [u8] {
 /// Reboots the device (thus platform and applets).
 #[cfg(feature = "api-platform")]
 pub fn reboot() -> ! {
-    let api::reboot::Results { res } = unsafe { api::reboot() };
-    unreachable!("reboot() returned {res}");
+    convert_never(unsafe { api::reboot() }).unwrap();
 }

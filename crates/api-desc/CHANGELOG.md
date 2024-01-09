@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Make all API functions return `isize`
 - Change `debug::time()` to return `isize` and take `*mut u64`
 - Remove unstable `multivalue` support for #355
 - Add API features (disabled by default)
@@ -90,4 +91,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 14 -->
+<!-- Increment to skip CHANGELOG.md test: 16 -->

@@ -37,14 +37,14 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     let count = board::Button::<B>::SUPPORT as u32;
     #[cfg(not(feature = "board-api-button"))]
     let count = 0;
-    call.reply(Ok(api::count::Results { cnt: count.into() }));
+    call.reply(Ok(Ok(count)));
 }
 
 #[cfg(feature = "board-api-button")]
 fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { button, handler_func, handler_data } = call.read();
     let inst = call.inst();
-    let results = try {
+    let result = try {
         let button = Id::new(*button as usize).ok_or(Trap)?;
         call.scheduler().applet.enable(Handler {
             key: Key { button }.into(),
@@ -53,19 +53,19 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
             data: *handler_data,
         })?;
         board::Button::<B>::enable(button).map_err(|_| Trap)?;
-        api::register::Results {}
+        Ok(())
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-button")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { button } = call.read();
-    let results = try {
+    let result = try {
         let button = Id::new(*button as usize).ok_or(Trap)?;
         board::Button::<B>::disable(button).map_err(|_| Trap)?;
         call.scheduler().disable_event(Key { button }.into())?;
-        api::unregister::Results {}
+        Ok(())
     };
-    call.reply(results);
+    call.reply(result);
 }

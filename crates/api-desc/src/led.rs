@@ -22,10 +22,7 @@ pub(crate) fn new() -> Item {
     let items = vec![
         item! {
             /// Returns how many LEDs are on the device.
-            fn count "lc" {} -> {
-                /// How many LEDs are on the device.
-                cnt: usize,
-            }
+            fn count "lc" {} -> usize
         },
         item! {
             /// Describes the state of a LED.
@@ -38,14 +35,11 @@ pub(crate) fn new() -> Item {
             }
         },
         item! {
-            /// Returns a LED status.
+            /// Returns whether a LED is on.
             fn get "lg" {
                 /// Index of the LED to set.
                 led: usize,
-            } -> {
-                /// 0 for off and 1 for on.
-                status: usize,
-            }
+            } -> bool
         },
         item! {
             /// Sets a LED status.
@@ -55,7 +49,7 @@ pub(crate) fn new() -> Item {
 
                 /// 0 for off and 1 for on.
                 status: usize,
-            } -> {}
+            } -> ()
         },
     ];
     Item::Mod(Mod { docs, name, items })

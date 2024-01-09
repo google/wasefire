@@ -23,13 +23,13 @@ use wasefire_applet_api::debug as api;
 pub use wasefire_applet_api::debug::Perf;
 use wasefire_error::Error;
 
-use crate::convert;
+use crate::{convert, convert_never, convert_unit};
 
 /// Prints a line to the debug output.
 pub fn println(msg: &str) {
     if ENABLED {
         let params = api::println::Params { ptr: msg.as_ptr(), len: msg.len() };
-        unsafe { api::println(params) };
+        convert_unit(unsafe { api::println(params) }).unwrap();
     }
 }
 
@@ -39,15 +39,14 @@ pub fn println(msg: &str) {
 pub fn time() -> Result<u64, Error> {
     let mut result: u64 = 0;
     let params = api::time::Params { ptr: &mut result as *mut _ };
-    let api::time::Results { res } = unsafe { api::time(params) };
-    convert(res).map(|_| result)
+    convert(unsafe { api::time(params) }).map(|_| result)
 }
 
 /// Returns the time in micro-seconds since some initial event, split by component.
 pub fn perf() -> Perf {
     let mut result = Perf::zeroed();
     let params = api::perf::Params { ptr: &mut result as *mut Perf as *mut u8 };
-    unsafe { api::perf(params) };
+    convert_unit(unsafe { api::perf(params) }).unwrap();
     result
 }
 
@@ -80,8 +79,7 @@ macro_rules! debug {
 /// Exits the platform indicating success of failure.
 pub fn exit(success: bool) -> ! {
     let params = api::exit::Params { code: if success { 0 } else { 1 } };
-    unsafe { api::exit(params) };
-    unreachable!()
+    convert_never(unsafe { api::exit(params) }).unwrap();
 }
 
 /// Asserts that a condition holds and exits with an error otherwise.

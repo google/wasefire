@@ -39,7 +39,7 @@ fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
     let supported = bool::from(board::crypto::Aes128Ccm::<B>::SUPPORT) as u32;
     #[cfg(not(feature = "board-api-crypto-aes128-ccm"))]
     let supported = 0;
-    call.reply(Ok(api::is_supported::Results { supported: supported.into() }))
+    call.reply(Ok(Ok(supported)))
 }
 
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
@@ -47,7 +47,7 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
     let api::encrypt::Params { key, iv, len, clear, cipher } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
+    let result = try {
         ensure_support::<B>()?;
         let key = memory.get(*key, 16)?.into();
         let iv = expand_iv(memory.get(*iv, 8)?);
@@ -55,10 +55,9 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
         let clear = Some(memory.get(*clear, *len)?);
         let (cipher, tag) = memory.get_mut(*cipher, *len + 4)?.split_at_mut(*len as usize);
         let tag = tag.into();
-        let res = board::crypto::Aes128Ccm::<B>::encrypt(key, &iv, aad, clear, cipher, tag).into();
-        api::encrypt::Results { res }
+        board::crypto::Aes128Ccm::<B>::encrypt(key, &iv, aad, clear, cipher, tag)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
@@ -66,7 +65,7 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
     let api::decrypt::Params { key, iv, len, cipher, clear } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
+    let result = try {
         ensure_support::<B>()?;
         let key = memory.get(*key, 16)?.into();
         let iv = expand_iv(memory.get(*iv, 8)?);
@@ -75,10 +74,9 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         let cipher = Some(cipher);
         let tag = tag.into();
         let clear = memory.get_mut(*clear, *len)?;
-        let res = board::crypto::Aes128Ccm::<B>::decrypt(key, &iv, aad, cipher, tag, clear).into();
-        api::decrypt::Results { res }
+        board::crypto::Aes128Ccm::<B>::decrypt(key, &iv, aad, cipher, tag, clear)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-crypto-aes128-ccm")]

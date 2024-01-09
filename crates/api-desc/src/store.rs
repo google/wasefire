@@ -39,10 +39,7 @@ pub(crate) fn new() -> Item {
 
                 /// Length of the value.
                 len: usize,
-            } -> {
-                /// Zero for success. Negative on error.
-                res: isize,
-            }
+            } -> ()
         },
         #[cfg(feature = "api-store")]
         item! {
@@ -52,14 +49,13 @@ pub(crate) fn new() -> Item {
             fn remove "sr" {
                 /// Key of the entry.
                 key: usize,
-            } -> {
-                /// Zero for success. Negative on error.
-                res: isize,
-            }
+            } -> ()
         },
         #[cfg(feature = "api-store")]
         item! {
             /// Finds an entry in the store, if any.
+            ///
+            /// Returns whether an entry was found.
             fn find "sf" {
                 /// Key of the entry to find.
                 key: usize,
@@ -72,10 +68,7 @@ pub(crate) fn new() -> Item {
 
                 /// Where to write the length of the value, if found.
                 len: *mut usize,
-            } -> {
-                /// One if found. Zero if not found. Negative on error.
-                res: isize,
-            }
+            } -> bool
         },
         #[cfg(feature = "api-store-fragment")]
         fragment::new(),

@@ -16,6 +16,8 @@
 
 use wasefire_applet_api::scheduling as api;
 
+use crate::{convert, convert_never, convert_unit};
+
 /// Waits until a callback is called.
 ///
 /// This is similar to how `wfi` (wait for interrupt) and `wfe` (wait for event) work. When calling
@@ -24,13 +26,12 @@ use wasefire_applet_api::scheduling as api;
 /// multiple callbacks execute. Callbacks have priority over resuming execution of a code waiting
 /// for callbacks.
 pub fn wait_for_callback() {
-    unsafe { api::wait_for_callback() };
+    convert_unit(unsafe { api::wait_for_callback() }).unwrap();
 }
 
 /// Returns how many callbacks are pending.
 pub fn num_pending_callbacks() -> usize {
-    let api::num_pending_callbacks::Results { count } = unsafe { api::num_pending_callbacks() };
-    count
+    convert(unsafe { api::num_pending_callbacks() }).unwrap()
 }
 
 /// Waits until a condition is satisfied.
@@ -51,7 +52,5 @@ pub fn wait_indefinitely() -> ! {
 
 /// Aborts the applet.
 pub fn abort() -> ! {
-    unsafe { api::abort() };
-    // SAFETY: The platform guarantees that abort does not return.
-    unsafe { core::hint::unreachable_unchecked() };
+    convert_never(unsafe { api::abort() }).unwrap();
 }

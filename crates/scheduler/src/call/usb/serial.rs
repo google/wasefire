@@ -31,11 +31,11 @@ use crate::{SchedulerCall, Trap};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
-        Api::Read(call) => or_trap!("board-api-usb-serial", read(call)),
-        Api::Write(call) => or_trap!("board-api-usb-serial", write(call)),
-        Api::Register(call) => or_trap!("board-api-usb-serial", register(call)),
-        Api::Unregister(call) => or_trap!("board-api-usb-serial", unregister(call)),
-        Api::Flush(call) => or_trap!("board-api-usb-serial", flush(call)),
+        Api::Read(call) => or_fail!("board-api-usb-serial", read(call)),
+        Api::Write(call) => or_fail!("board-api-usb-serial", write(call)),
+        Api::Register(call) => or_fail!("board-api-usb-serial", register(call)),
+        Api::Unregister(call) => or_fail!("board-api-usb-serial", unregister(call)),
+        Api::Flush(call) => or_fail!("board-api-usb-serial", flush(call)),
     }
 }
 
@@ -44,12 +44,11 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { ptr, len } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
+    let result = try {
         let output = memory.get_mut(*ptr, *len)?;
-        let len = board::usb::Serial::<B>::read(output).map(|x| x as u32).into();
-        api::read::Results { len }
+        board::usb::Serial::<B>::read(output).map(|x| x as u32)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-usb-serial")]
@@ -57,12 +56,11 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let api::write::Params { ptr, len } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
+    let result = try {
         let input = memory.get(*ptr, *len)?;
-        let len = board::usb::Serial::<B>::write(input).map(|x| x as u32).into();
-        api::write::Results { len }
+        board::usb::Serial::<B>::write(input).map(|x| x as u32)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-usb-serial")]
@@ -70,7 +68,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { event, handler_func, handler_data } = call.read();
     let inst = call.inst();
     let scheduler = call.scheduler();
-    let results = try {
+    let result = try {
         let event = convert_event(*event)?;
         scheduler.applet.enable(Handler {
             key: Key::from(&event).into(),
@@ -78,33 +76,29 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
             func: *handler_func,
             data: *handler_data,
         })?;
-        board::usb::Serial::<B>::enable(&event).map_err(|_| Trap)?;
-        api::register::Results {}
+        board::usb::Serial::<B>::enable(&event)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-usb-serial")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { event } = call.read();
     let scheduler = call.scheduler();
-    let results = try {
+    let result = try {
         let event = convert_event(*event)?;
         board::usb::Serial::<B>::disable(&event).map_err(|_| Trap)?;
         scheduler.disable_event(Key::from(&event).into())?;
-        api::unregister::Results {}
+        Ok(())
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-usb-serial")]
 fn flush<B: Board>(call: SchedulerCall<B, api::flush::Sig>) {
     let api::flush::Params {} = call.read();
-    let results = try {
-        let res = board::usb::Serial::<B>::flush().into();
-        api::flush::Results { res }
-    };
-    call.reply(results);
+    let result = try { board::usb::Serial::<B>::flush() };
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-usb-serial")]

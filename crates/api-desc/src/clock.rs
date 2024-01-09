@@ -31,20 +31,17 @@ pub(crate) fn new() -> Item {
             }
         },
         item! {
-            /// Allocates a timer (initially stopped).
+            /// Allocates a timer (initially stopped) and returns its identifier.
             fn allocate "ta" {
                 /// Function called when the timer triggers.
                 handler_func: fn { data: *const void },
 
                 /// The opaque data to use when calling the handler function.
                 handler_data: *const void,
-            } -> {
-                /// Identifier for this timer.
-                id: usize,
-            }
+            } -> usize
         },
         item! {
-            /// Starts a stopped timer given its id.
+            /// Starts a stopped timer given its identifier.
             fn start "tb" {
                 /// The identifier of the timer to start.
                 ///
@@ -58,24 +55,24 @@ pub(crate) fn new() -> Item {
 
                 /// How long until the timer triggers in milli-seconds.
                 duration_ms: usize,
-            } -> {}
+            } -> ()
         },
         item! {
-            /// Stops a running timer given its id.
+            /// Stops a running timer given its identifier.
             ///
             /// Note that if the timer triggers while being stopped, the handler may still be
             /// called.
             fn stop "tc" {
                 /// The identifier of the timer to start.
                 id: usize,
-            } -> {}
+            } -> ()
         },
         item! {
-            /// Deallocates a stopped timer given its id.
+            /// Deallocates a stopped timer given its identifier.
             fn free "td" {
                 /// The identifier of the timer to start.
                 id: usize,
-            } -> {}
+            } -> ()
         },
     ];
     Item::Mod(Mod { docs, name, items })

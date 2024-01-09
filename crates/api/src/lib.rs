@@ -16,8 +16,9 @@
 #![cfg_attr(feature = "wasm", doc = include_str!("wasm.md"))]
 #![no_std]
 #![cfg_attr(all(feature = "wasm", feature = "native"), feature(linkage))]
-#![warn(unsafe_op_in_unsafe_fn)]
+#![cfg_attr(feature = "host", feature(never_type))]
 #![feature(doc_auto_cfg)]
+#![warn(unsafe_op_in_unsafe_fn)]
 
 extern crate alloc;
 

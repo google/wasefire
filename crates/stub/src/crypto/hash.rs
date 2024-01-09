@@ -23,6 +23,8 @@ use wasefire_applet_api::crypto::hash as api;
 use wasefire_error::Error;
 use wasefire_logger as log;
 
+use crate::{convert, convert_unit};
+
 enum Context {
     Sha256(Sha256),
     Sha384(Sha384),
@@ -57,23 +59,22 @@ impl Contexts {
 }
 
 #[no_mangle]
-unsafe extern "C" fn env_chs(_: api::is_supported::Params) -> api::is_supported::Results {
-    api::is_supported::Results { supported: 1 }
+unsafe extern "C" fn env_chs(_: api::is_supported::Params) -> isize {
+    1
 }
 
 #[no_mangle]
-unsafe extern "C" fn env_chi(params: api::initialize::Params) -> api::initialize::Results {
+unsafe extern "C" fn env_chi(params: api::initialize::Params) -> isize {
     let api::initialize::Params { algorithm } = params;
     let context = match api::Algorithm::from(algorithm) {
         api::Algorithm::Sha256 => Context::Sha256(Sha256::default()),
         api::Algorithm::Sha384 => Context::Sha384(Sha384::default()),
     };
-    let id = CONTEXTS.lock().unwrap().insert(context) as isize;
-    api::initialize::Results { id }
+    convert(Ok(CONTEXTS.lock().unwrap().insert(context) as u32))
 }
 
 #[no_mangle]
-unsafe extern "C" fn env_chu(params: api::update::Params) {
+unsafe extern "C" fn env_chu(params: api::update::Params) -> isize {
     let api::update::Params { id, data, length } = params;
     let data = unsafe { std::slice::from_raw_parts(data, length) };
     match CONTEXTS.lock().unwrap().get(id) {
@@ -81,10 +82,11 @@ unsafe extern "C" fn env_chu(params: api::update::Params) {
         Context::Sha384(x) => x.update(data),
         _ => log::panic!("Invalid context"),
     };
+    0
 }
 
 #[no_mangle]
-unsafe extern "C" fn env_chf(params: api::finalize::Params) -> api::finalize::Results {
+unsafe extern "C" fn env_chf(params: api::finalize::Params) -> isize {
     let api::finalize::Params { id, digest } = params;
     let digest = |length| unsafe { std::slice::from_raw_parts_mut(digest, length) };
     match CONTEXTS.lock().unwrap().take(id) {
@@ -92,35 +94,33 @@ unsafe extern "C" fn env_chf(params: api::finalize::Params) -> api::finalize::Re
         Context::Sha384(x) => x.finalize_into(digest(48).into()),
         _ => log::panic!("Invalid context"),
     };
-    api::finalize::Results { res: 0 }
+    0
 }
 
 #[no_mangle]
-unsafe extern "C" fn env_cht(_: api::is_hmac_supported::Params) -> api::is_hmac_supported::Results {
-    api::is_hmac_supported::Results { supported: 1 }
+unsafe extern "C" fn env_cht(_: api::is_hmac_supported::Params) -> isize {
+    1
 }
 
 #[no_mangle]
-unsafe extern "C" fn env_chj(
-    params: api::hmac_initialize::Params,
-) -> api::hmac_initialize::Results {
+unsafe extern "C" fn env_chj(params: api::hmac_initialize::Params) -> isize {
     let api::hmac_initialize::Params { algorithm, key, key_len } = params;
     let key = unsafe { std::slice::from_raw_parts(key, key_len) };
-    let context: Result<Context, InvalidLength> = try {
+    let context = try {
         match api::Algorithm::from(algorithm) {
             api::Algorithm::Sha256 => Context::HmacSha256(Hmac::new_from_slice(key)?),
             api::Algorithm::Sha384 => Context::HmacSha384(Hmac::new_from_slice(key)?),
         }
     };
-    let id = match context {
-        Ok(context) => CONTEXTS.lock().unwrap().insert(context) as isize,
-        Err(_) => Error::encode(Err(Error::user(0))) as isize,
+    let res = match context {
+        Ok(context) => Ok(CONTEXTS.lock().unwrap().insert(context) as u32),
+        Err(InvalidLength) => Err(Error::user(0)),
     };
-    api::hmac_initialize::Results { id }
+    convert(res)
 }
 
 #[no_mangle]
-unsafe extern "C" fn env_chv(params: api::hmac_update::Params) {
+unsafe extern "C" fn env_chv(params: api::hmac_update::Params) -> isize {
     let api::hmac_update::Params { id, data, length } = params;
     let data = unsafe { std::slice::from_raw_parts(data, length) };
     match CONTEXTS.lock().unwrap().get(id) {
@@ -128,10 +128,11 @@ unsafe extern "C" fn env_chv(params: api::hmac_update::Params) {
         Context::HmacSha384(x) => x.update(data),
         _ => log::panic!("Invalid context"),
     };
+    0
 }
 
 #[no_mangle]
-unsafe extern "C" fn env_chg(params: api::hmac_finalize::Params) -> api::hmac_finalize::Results {
+unsafe extern "C" fn env_chg(params: api::hmac_finalize::Params) -> isize {
     let api::hmac_finalize::Params { id, hmac } = params;
     let hmac = |length| unsafe { std::slice::from_raw_parts_mut(hmac, length) };
     match CONTEXTS.lock().unwrap().take(id) {
@@ -139,16 +140,16 @@ unsafe extern "C" fn env_chg(params: api::hmac_finalize::Params) -> api::hmac_fi
         Context::HmacSha384(x) => x.finalize_into(hmac(48).into()),
         _ => log::panic!("Invalid context"),
     };
-    api::hmac_finalize::Results { res: 0 }
+    0
 }
 
 #[no_mangle]
-unsafe extern "C" fn env_chr(_: api::is_hkdf_supported::Params) -> api::is_hkdf_supported::Results {
-    api::is_hkdf_supported::Results { supported: 1 }
+unsafe extern "C" fn env_chr(_: api::is_hkdf_supported::Params) -> isize {
+    1
 }
 
 #[no_mangle]
-unsafe extern "C" fn env_che(params: api::hkdf_expand::Params) -> api::hkdf_expand::Results {
+unsafe extern "C" fn env_che(params: api::hkdf_expand::Params) -> isize {
     let api::hkdf_expand::Params { algorithm, prk, prk_len, info, info_len, okm, okm_len } = params;
     let prk = unsafe { std::slice::from_raw_parts(prk, prk_len) };
     let info = unsafe { std::slice::from_raw_parts(info, info_len) };
@@ -157,8 +158,7 @@ unsafe extern "C" fn env_che(params: api::hkdf_expand::Params) -> api::hkdf_expa
         api::Algorithm::Sha256 => hkdf::<Sha256, Hmac<Sha256>>(prk, info, okm),
         api::Algorithm::Sha384 => hkdf::<Sha384, Hmac<Sha384>>(prk, info, okm),
     };
-    let res = Error::encode(res.map(|()| 0)) as isize;
-    api::hkdf_expand::Results { res }
+    convert_unit(res)
 }
 
 fn hkdf<H: OutputSizeUser, I: HmacImpl<H>>(

@@ -39,11 +39,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 
 fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
     let api::is_supported::Params { curve } = call.read();
-    let results = try {
-        let support = convert_curve::<B>(*curve)?.is_ok() as u32;
-        api::is_supported::Results { support: support.into() }
-    };
-    call.reply(results)
+    call.reply(convert_curve::<B>(*curve).map(|x| Ok(x.is_ok())))
 }
 
 #[cfg(feature = "internal-board-api-crypto-ecc")]
@@ -51,8 +47,8 @@ fn is_valid_scalar<B: Board>(mut call: SchedulerCall<B, api::is_valid_scalar::Si
     let api::is_valid_scalar::Params { curve, n } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
-        let valid = match convert_curve::<B>(*curve)?? {
+    let result = try {
+        Ok(match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
             Curve::P256 => {
                 let n = memory.get_array::<32>(*n)?.into();
@@ -65,10 +61,9 @@ fn is_valid_scalar<B: Board>(mut call: SchedulerCall<B, api::is_valid_scalar::Si
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(),
-        };
-        api::is_valid_scalar::Results { valid: (valid as u32).into() }
+        })
     };
-    call.reply(results)
+    call.reply(result)
 }
 
 #[cfg(feature = "internal-board-api-crypto-ecc")]
@@ -76,8 +71,8 @@ fn is_valid_point<B: Board>(mut call: SchedulerCall<B, api::is_valid_point::Sig>
     let api::is_valid_point::Params { curve, x, y } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
-        let valid = match convert_curve::<B>(*curve)?? {
+    let result = try {
+        Ok(match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
             Curve::P256 => {
                 let x = memory.get_array::<32>(*x)?.into();
@@ -92,10 +87,9 @@ fn is_valid_point<B: Board>(mut call: SchedulerCall<B, api::is_valid_point::Sig>
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(),
-        };
-        api::is_valid_point::Results { valid: (valid as u32).into() }
+        })
     };
-    call.reply(results)
+    call.reply(result)
 }
 
 #[cfg(feature = "internal-board-api-crypto-ecc")]
@@ -103,8 +97,8 @@ fn base_point_mul<B: Board>(mut call: SchedulerCall<B, api::base_point_mul::Sig>
     let api::base_point_mul::Params { curve, n, x, y } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
-        let res = match convert_curve::<B>(*curve)?? {
+    let result = try {
+        match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
             Curve::P256 => {
                 let n = memory.get_array::<32>(*n)?.into();
@@ -121,10 +115,9 @@ fn base_point_mul<B: Board>(mut call: SchedulerCall<B, api::base_point_mul::Sig>
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(),
-        };
-        api::base_point_mul::Results { res: res.into() }
+        }
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "internal-board-api-crypto-ecc")]
@@ -132,8 +125,8 @@ fn point_mul<B: Board>(mut call: SchedulerCall<B, api::point_mul::Sig>) {
     let api::point_mul::Params { curve, n, in_x, in_y, out_x, out_y } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
-        let res = match convert_curve::<B>(*curve)?? {
+    let result = try {
+        match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
             Curve::P256 => {
                 let n = memory.get_array::<32>(*n)?.into();
@@ -154,10 +147,9 @@ fn point_mul<B: Board>(mut call: SchedulerCall<B, api::point_mul::Sig>) {
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(),
-        };
-        api::point_mul::Results { res: res.into() }
+        }
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "internal-board-api-crypto-ecc")]
@@ -165,8 +157,8 @@ fn ecdsa_sign<B: Board>(mut call: SchedulerCall<B, api::ecdsa_sign::Sig>) {
     let api::ecdsa_sign::Params { curve, key, message, r, s } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
-        let res = match convert_curve::<B>(*curve)?? {
+    let result = try {
+        match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
             Curve::P256 => {
                 let key = memory.get_array::<32>(*key)?.into();
@@ -185,10 +177,9 @@ fn ecdsa_sign<B: Board>(mut call: SchedulerCall<B, api::ecdsa_sign::Sig>) {
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(),
-        };
-        api::ecdsa_sign::Results { res: res.into() }
+        }
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[cfg(feature = "internal-board-api-crypto-ecc")]
@@ -196,8 +187,8 @@ fn ecdsa_verify<B: Board>(mut call: SchedulerCall<B, api::ecdsa_verify::Sig>) {
     let api::ecdsa_verify::Params { curve, message, x, y, r, s } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
-        let res = match convert_curve::<B>(*curve)?? {
+    let result = try {
+        match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
             Curve::P256 => {
                 let message = memory.get_array::<32>(*message)?.into();
@@ -218,10 +209,9 @@ fn ecdsa_verify<B: Board>(mut call: SchedulerCall<B, api::ecdsa_verify::Sig>) {
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(),
-        };
-        api::ecdsa_verify::Results { res: res.into() }
+        }
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 #[allow(clippy::extra_unused_type_parameters)]
