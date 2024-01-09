@@ -23,7 +23,7 @@ use wasefire_applet_api::debug as api;
 pub use wasefire_applet_api::debug::Perf;
 use wasefire_error::Error;
 
-use crate::{convert, convert_unit};
+use crate::{convert, convert_never, convert_unit};
 
 /// Prints a line to the debug output.
 pub fn println(msg: &str) {
@@ -79,8 +79,7 @@ macro_rules! debug {
 /// Exits the platform indicating success of failure.
 pub fn exit(success: bool) -> ! {
     let params = api::exit::Params { code: if success { 0 } else { 1 } };
-    convert_unit(unsafe { api::exit(params) }).unwrap();
-    unreachable!()
+    convert_never(unsafe { api::exit(params) }).unwrap();
 }
 
 /// Asserts that a condition holds and exits with an error otherwise.

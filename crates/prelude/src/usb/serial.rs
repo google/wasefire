@@ -36,7 +36,7 @@ impl crate::serial::Serial for UsbSerial {
     }
 
     fn flush(&self) -> Result<(), Error> {
-        convert(unsafe { api::flush() }).map(|_| ())
+        convert_unit(unsafe { api::flush() })
     }
 
     unsafe fn register(

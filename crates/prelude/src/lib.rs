@@ -31,6 +31,7 @@
 #![feature(doc_auto_cfg)]
 #![feature(macro_metavar_expr)]
 #![feature(negative_impls)]
+#![feature(never_type)]
 #![feature(vec_into_raw_parts)]
 #![warn(unsafe_op_in_unsafe_fn)]
 
@@ -144,6 +145,16 @@ fn convert(res: isize) -> Result<usize, Error> {
 }
 
 #[cfg_attr(not(feature = "api-crypto-ec"), allow(dead_code))]
+fn convert_bool(res: isize) -> Result<bool, Error> {
+    match convert(res) {
+        Ok(0) => Ok(false),
+        Ok(1) => Ok(true),
+        Ok(_) => unreachable!(),
+        Err(e) => Err(e),
+    }
+}
+
+#[cfg_attr(not(feature = "api-crypto-ec"), allow(dead_code))]
 fn convert_unit(res: isize) -> Result<(), Error> {
     match convert(res) {
         Ok(0) => Ok(()),
@@ -152,11 +163,8 @@ fn convert_unit(res: isize) -> Result<(), Error> {
     }
 }
 
-#[cfg_attr(not(feature = "api-crypto-ec"), allow(dead_code))]
-fn convert_bool(res: isize) -> Result<bool, Error> {
+fn convert_never(res: isize) -> Result<!, Error> {
     match convert(res) {
-        Ok(0) => Ok(false),
-        Ok(1) => Ok(true),
         Ok(_) => unreachable!(),
         Err(e) => Err(e),
     }

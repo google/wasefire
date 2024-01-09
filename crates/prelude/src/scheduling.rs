@@ -16,7 +16,7 @@
 
 use wasefire_applet_api::scheduling as api;
 
-use crate::{convert, convert_unit};
+use crate::{convert, convert_never, convert_unit};
 
 /// Waits until a callback is called.
 ///
@@ -52,7 +52,5 @@ pub fn wait_indefinitely() -> ! {
 
 /// Aborts the applet.
 pub fn abort() -> ! {
-    convert_unit(unsafe { api::abort() }).unwrap();
-    // SAFETY: The platform guarantees that abort does not return.
-    unsafe { core::hint::unreachable_unchecked() };
+    convert_never(unsafe { api::abort() }).unwrap();
 }

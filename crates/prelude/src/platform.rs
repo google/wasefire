@@ -18,7 +18,7 @@
 use wasefire_applet_api::platform as api;
 
 #[cfg(feature = "api-platform")]
-use crate::convert;
+use crate::{convert, convert_never};
 
 #[cfg(feature = "api-platform-update")]
 pub mod update;
@@ -45,6 +45,5 @@ pub fn version() -> &'static [u8] {
 /// Reboots the device (thus platform and applets).
 #[cfg(feature = "api-platform")]
 pub fn reboot() -> ! {
-    let res = convert(unsafe { api::reboot() }).unwrap();
-    unreachable!("reboot() returned {res}");
+    convert_never(unsafe { api::reboot() }).unwrap();
 }
