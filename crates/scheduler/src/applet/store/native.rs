@@ -35,11 +35,19 @@ impl StoreApi for Store {
 // when running the applet in Wasm. Native applets are meant for performance.
 impl MemoryApi for Memory {
     fn get(&self, ptr: u32, len: u32) -> Result<&[u8], Trap> {
-        Ok(unsafe { core::slice::from_raw_parts(ptr as *const u8, len as usize) })
+        match (ptr, len) {
+            (_, 0) => Ok(&[]),
+            (0, _) => Err(Trap),
+            _ => Ok(unsafe { core::slice::from_raw_parts(ptr as *const u8, len as usize) }),
+        }
     }
 
     fn get_mut(&self, ptr: u32, len: u32) -> Result<&mut [u8], Trap> {
-        Ok(unsafe { core::slice::from_raw_parts_mut(ptr as *mut u8, len as usize) })
+        match (ptr, len) {
+            (_, 0) => Ok(&mut []),
+            (0, _) => Err(Trap),
+            _ => Ok(unsafe { core::slice::from_raw_parts_mut(ptr as *mut u8, len as usize) }),
+        }
     }
 
     fn alloc(&mut self, size: u32, align: u32) -> Result<u32, Trap> {
