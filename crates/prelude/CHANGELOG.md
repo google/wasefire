@@ -4,6 +4,7 @@
 
 ### Major
 
+- Rename `clock` module to `timer`
 - Change `debug::time()` to return `Result<u64>` instead of `u64`
 - Migrate `platform::update` to use `Error` instead of `usize`
 - Remove custom error types and use `wasefire-error` instead
