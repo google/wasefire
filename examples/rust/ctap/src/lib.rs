@@ -187,8 +187,8 @@ struct Touch {
     console: Rc<Console>,
     light: Rc<Cell<led::Status>>,
     touched: Rc<Cell<bool>>,
-    blink: Rc<clock::Timer<BlinkHandler>>,
-    timeout: Rc<clock::Timer<TimeoutHandler>>,
+    blink: Rc<timer::Timer<BlinkHandler>>,
+    timeout: Rc<timer::Timer<TimeoutHandler>>,
     _button: button::Listener<ButtonHandler>,
 }
 
@@ -196,7 +196,7 @@ struct BlinkHandler {
     light: Rc<Cell<led::Status>>,
 }
 
-impl clock::Handler for BlinkHandler {
+impl timer::Handler for BlinkHandler {
     fn event(&self) {
         self.light.set(!self.light.get());
         led::set(0, self.light.get());
@@ -207,10 +207,10 @@ struct TimeoutHandler {
     console: Rc<Console>,
     light: Rc<Cell<led::Status>>,
     touched: Rc<Cell<bool>>,
-    blink: Rc<clock::Timer<BlinkHandler>>,
+    blink: Rc<timer::Timer<BlinkHandler>>,
 }
 
-impl clock::Handler for TimeoutHandler {
+impl timer::Handler for TimeoutHandler {
     fn event(&self) {
         if !self.touched.get() {
             return;
@@ -225,8 +225,8 @@ struct ButtonHandler {
     console: Rc<Console>,
     light: Rc<Cell<led::Status>>,
     touched: Rc<Cell<bool>>,
-    blink: Rc<clock::Timer<BlinkHandler>>,
-    timeout: Rc<clock::Timer<TimeoutHandler>>,
+    blink: Rc<timer::Timer<BlinkHandler>>,
+    timeout: Rc<timer::Timer<TimeoutHandler>>,
 }
 
 impl button::Handler for ButtonHandler {
@@ -237,7 +237,7 @@ impl button::Handler for ButtonHandler {
         self.console.write("Button pressed.");
         self.touched.set(true);
         Touch::blink_start(&self.light, &self.blink);
-        self.timeout.start_ms(clock::Oneshot, BUTTON_TIMEOUT_MS);
+        self.timeout.start_ms(timer::Oneshot, BUTTON_TIMEOUT_MS);
     }
 }
 
@@ -253,8 +253,8 @@ impl Touch {
         }
         let light = Rc::new(Cell::new(led::Off));
         let touched = Rc::new(Cell::new(false));
-        let blink = Rc::new(clock::Timer::new(BlinkHandler { light: light.clone() }));
-        let timeout = Rc::new(clock::Timer::new(TimeoutHandler {
+        let blink = Rc::new(timer::Timer::new(BlinkHandler { light: light.clone() }));
+        let timeout = Rc::new(timer::Timer::new(TimeoutHandler {
             console: console.clone(),
             light: light.clone(),
             touched: touched.clone(),
@@ -284,11 +284,11 @@ impl Touch {
         self.console.write("Waiting for touch...");
         Self::blink_start(&self.light, &self.blink);
         let timed_out = Rc::new(Cell::new(false));
-        let timer = clock::Timer::new({
+        let timer = timer::Timer::new({
             let timed_out = timed_out.clone();
             move || timed_out.set(true)
         });
-        timer.start_ms(clock::Oneshot, TOUCH_TIMEOUT_MS);
+        timer.start_ms(timer::Oneshot, TOUCH_TIMEOUT_MS);
         loop {
             scheduling::wait_for_callback();
             if self.touched.get() {
@@ -304,13 +304,13 @@ impl Touch {
         }
     }
 
-    fn blink_start(light: &Cell<led::Status>, blink: &clock::Timer<BlinkHandler>) {
+    fn blink_start(light: &Cell<led::Status>, blink: &timer::Timer<BlinkHandler>) {
         light.set(led::On);
         led::set(0, light.get());
-        blink.start_ms(clock::Periodic, LED_BLINK_MS);
+        blink.start_ms(timer::Periodic, LED_BLINK_MS);
     }
 
-    fn blink_stop(light: &Cell<led::Status>, blink: &clock::Timer<BlinkHandler>) {
+    fn blink_stop(light: &Cell<led::Status>, blink: &timer::Timer<BlinkHandler>) {
         blink.stop();
         light.set(led::Off);
         led::set(0, light.get());

@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Rename `clock` module to `timer`
 - Make all API functions return `isize`
 - Change `debug::time()` to return `isize` and take `*mut u64`
 - Remove unstable `multivalue` support for #355

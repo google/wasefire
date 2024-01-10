@@ -11,8 +11,8 @@ Noticeable examples are:
   `usb::serial` modules of the prelude. It comes with a companion program to
   interact with the applet (see the documentation in the `src/lib.rs` of the
   applet).
-- `ctap` implements some simple CTAP-like API using the `button`, `clock`,
-  `led`, `scheduling`, `store`, and `usb::serial` modules of the prelude. It
+- `ctap` implements some simple CTAP-like API using the `button`, `led`,
+  `timer`,`scheduling`, `store`, and `usb::serial` modules of the prelude. It
   describes its usage when connecting to the USB serial interface.
 - `memory_game` implements some memory game using the `usb::serial` module of
   the prelude. It describes its usage when connecting to the USB serial

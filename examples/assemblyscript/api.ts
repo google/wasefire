@@ -51,62 +51,6 @@
   ): i32
 // END OF MODULE button
 
-// START OF MODULE clock
-// Clock and timer operations.
-  // Whether a timer should periodically trigger.
-  enum clock_Mode {
-    // The timer fires only once.
-    Oneshot = 0,
-
-    // The timer fires periodically.
-    Periodic = 1,
-  }
-
-  // Allocates a timer (initially stopped) and returns its identifier.
-  @external("env", "ta")
-  export declare function clock_allocate(
-    // Function called when the timer triggers.
-    handler_func: usize,
-
-    // The opaque data to use when calling the handler function.
-    handler_data: usize,
-  ): i32
-
-  // Starts a stopped timer given its identifier.
-  @external("env", "tb")
-  export declare function clock_start(
-    // The identifier of the timer to start.
-    //
-    // It must come from an allocated timer that wasn't stopped.
-    id: usize,
-
-    // Whether the timer should periodically fire.
-    //
-    // Valid values are defined by [`Mode`](super::Mode).
-    mode: usize,
-
-    // How long until the timer triggers in milli-seconds.
-    duration_ms: usize,
-  ): i32
-
-  // Stops a running timer given its identifier.
-  //
-  // Note that if the timer triggers while being stopped, the handler may still be
-  // called.
-  @external("env", "tc")
-  export declare function clock_stop(
-    // The identifier of the timer to start.
-    id: usize,
-  ): i32
-
-  // Deallocates a stopped timer given its identifier.
-  @external("env", "td")
-  export declare function clock_free(
-    // The identifier of the timer to start.
-    id: usize,
-  ): i32
-// END OF MODULE clock
-
 // START OF MODULE crypto
 // Cryptographic operations.
   // START OF MODULE crypto_ccm
@@ -990,6 +934,62 @@
     ): i32
   // END OF MODULE store_fragment
 // END OF MODULE store
+
+// START OF MODULE timer
+// Timer operations.
+  // Whether a timer should periodically trigger.
+  enum timer_Mode {
+    // The timer fires only once.
+    Oneshot = 0,
+
+    // The timer fires periodically.
+    Periodic = 1,
+  }
+
+  // Allocates a timer (initially stopped) and returns its identifier.
+  @external("env", "ta")
+  export declare function timer_allocate(
+    // Function called when the timer triggers.
+    handler_func: usize,
+
+    // The opaque data to use when calling the handler function.
+    handler_data: usize,
+  ): i32
+
+  // Starts a stopped timer given its identifier.
+  @external("env", "tb")
+  export declare function timer_start(
+    // The identifier of the timer to start.
+    //
+    // It must come from an allocated timer that wasn't stopped.
+    id: usize,
+
+    // Whether the timer should periodically fire.
+    //
+    // Valid values are defined by [`Mode`](super::Mode).
+    mode: usize,
+
+    // How long until the timer triggers in milli-seconds.
+    duration_ms: usize,
+  ): i32
+
+  // Stops a running timer given its identifier.
+  //
+  // Note that if the timer triggers while being stopped, the handler may still be
+  // called.
+  @external("env", "tc")
+  export declare function timer_stop(
+    // The identifier of the timer to start.
+    id: usize,
+  ): i32
+
+  // Deallocates a stopped timer given its identifier.
+  @external("env", "td")
+  export declare function timer_free(
+    // The identifier of the timer to start.
+    id: usize,
+  ): i32
+// END OF MODULE timer
 
 // START OF MODULE uart
   // Returns how many UARTs are on the device.

@@ -17,7 +17,7 @@ use alloc::string::String;
 use core::cell::{Cell, RefCell};
 use core::time::Duration;
 
-use wasefire::{button, clock, debug, led, scheduling};
+use wasefire::{button, debug, led, scheduling, timer};
 
 #[derive(Default, Clone)]
 pub struct Touch(Rc<RefCell<Option<TouchImpl>>>);
@@ -25,8 +25,8 @@ pub struct Touch(Rc<RefCell<Option<TouchImpl>>>);
 struct TouchImpl {
     touched: bool,
     _button: button::Listener<Touch>,
-    blink: clock::Timer<Blink>,
-    timeout: clock::Timer<Touch>,
+    blink: timer::Timer<Blink>,
+    timeout: timer::Timer<Touch>,
 }
 
 struct Blink;
@@ -35,8 +35,8 @@ impl Touch {
     pub fn new() -> Self {
         let touch = Touch::default();
         let _button = button::Listener::new(0, touch.clone());
-        let blink = clock::Timer::new(Blink);
-        let timeout = clock::Timer::new(touch.clone());
+        let blink = timer::Timer::new(Blink);
+        let timeout = timer::Timer::new(touch.clone());
         let touch_impl = TouchImpl { touched: false, _button, blink, timeout };
         assert!(touch.0.borrow_mut().replace(touch_impl).is_none());
         touch
@@ -55,11 +55,11 @@ impl Touch {
         debug!("Waiting touch.");
         touch.blink_start();
         let timed_out = Rc::new(Cell::new(false));
-        let timer = clock::Timer::new({
+        let timer = timer::Timer::new({
             let timed_out = timed_out.clone();
             move || timed_out.set(true)
         });
-        timer.start(clock::Oneshot, Duration::from_secs(5));
+        timer.start(timer::Oneshot, Duration::from_secs(5));
         drop(touch_guard);
         loop {
             scheduling::wait_for_callback();
@@ -90,17 +90,17 @@ impl button::Handler for Touch {
         let touch = touch_guard.as_mut().unwrap();
         touch.touched = true;
         touch.blink_start();
-        touch.timeout.start(clock::Oneshot, Duration::from_secs(3));
+        touch.timeout.start(timer::Oneshot, Duration::from_secs(3));
     }
 }
 
-impl clock::Handler for Blink {
+impl timer::Handler for Blink {
     fn event(&self) {
         led::set(0, !led::get(0));
     }
 }
 
-impl clock::Handler for Touch {
+impl timer::Handler for Touch {
     fn event(&self) {
         let mut touch_guard = self.0.borrow_mut();
         let touch = touch_guard.as_mut().unwrap();
@@ -116,7 +116,7 @@ impl clock::Handler for Touch {
 impl TouchImpl {
     fn blink_start(&self) {
         led::set(0, led::On);
-        self.blink.start(clock::Periodic, Duration::from_millis(200));
+        self.blink.start(timer::Periodic, Duration::from_millis(200));
     }
 
     fn blink_stop(&self) {

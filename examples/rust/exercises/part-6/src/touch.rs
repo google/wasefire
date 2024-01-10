@@ -17,7 +17,7 @@ use alloc::string::String;
 use core::cell::Cell;
 use core::time::Duration;
 
-use wasefire::{button, clock, led, scheduling};
+use wasefire::{button, led, scheduling, timer};
 
 #[derive(Default, Clone)]
 pub struct Touch;
@@ -39,13 +39,13 @@ impl Touch {
             }
         });
         // TODO: Create a timed_out variable similar to pressed.
-        // TODO: Use clock::Timer to allocate a new timer.
+        // TODO: Use timer::Timer to allocate a new timer.
         // TODO: Unconditionally set the timed_out variable in its callback (similar to pressed).
         // TODO(optional): Allocate another timer to blink the LED. The callback should toggle the
         // LED using led::get() and negating its value.
-        // TODO: Start the timer for 5 seconds using the start() method and clock::Oneshot.
+        // TODO: Start the timer for 5 seconds using the start() method and timer::Oneshot.
         // TODO(optional): Start the blinking timer to trigger every 200 milliseconds using
-        // clock::Periodic.
+        // timer::Periodic.
         // TODO: Update the waiting condition to also return when timed_out is set.
         scheduling::wait_until(|| pressed.get());
         led::set(0, led::Off);

@@ -80,11 +80,11 @@ fn process(
     max_secs: usize, prompt: &str, data: &mut String, update: impl Fn(&mut String, u8) -> bool,
 ) {
     let secs = Rc::new(Cell::new(0));
-    let timer = clock::Timer::new({
+    let timer = timer::Timer::new({
         let time = secs.clone();
         move || time.set(time.get() + 1)
     });
-    timer.start(clock::Periodic, Duration::from_secs(1));
+    timer.start(timer::Periodic, Duration::from_secs(1));
     let mut done = false;
     while !done && secs.get() < max_secs {
         let secs = max_secs - secs.get();

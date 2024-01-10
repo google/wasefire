@@ -20,7 +20,7 @@ wasefire::applet!();
 use core::time::Duration;
 
 fn main() {
-    let timer = clock::Timer::new(|| debug!("{} micro-seconds", debug::time().unwrap()));
-    timer.start(clock::Periodic, Duration::from_secs(1));
+    let timer = timer::Timer::new(|| debug!("{} micro-seconds", debug::time().unwrap()));
+    timer.start(timer::Periodic, Duration::from_secs(1));
     timer.leak();
 }
