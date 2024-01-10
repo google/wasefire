@@ -44,8 +44,6 @@ pub mod platform;
 pub mod radio;
 #[cfg(feature = "api-rng")]
 pub mod rng;
-#[cfg(feature = "api-storage")]
-mod storage;
 #[cfg(feature = "api-timer")]
 pub mod timer;
 #[cfg(feature = "api-uart")]
@@ -58,9 +56,6 @@ pub mod usb;
 /// This is essentially a type hierarchy. The implementation is responsible for handling a possible
 /// explicit global state. The type implementing this API may be equivalent to the never type (e.g.
 /// an empty enum) because it is never used, i.e. there are no functions which take `self`.
-///
-/// All interfaces are implemented by [`Unsupported`]. This can be used for interfaces that don't
-/// have hardware support, are not yet implemented, or should use a software implementation.
 pub trait Api: Send + 'static {
     /// Returns the oldest triggered event, if any.
     ///
@@ -118,7 +113,7 @@ pub trait Support<Value> {
 /// Marker trait for supported API.
 pub trait Supported {}
 
-/// Provides access to a (possibly unsupported) singleton API.
+/// Provides access to a singleton API.
 pub trait Singleton: Sized {
     /// Returns the singleton.
     ///
@@ -214,10 +209,6 @@ pub type Uart<B> = <B as Api>::Uart;
 #[cfg(feature = "internal-api-usb")]
 pub type Usb<B> = <B as Api>::Usb;
 
-/// Unsupported interface.
-#[derive(Debug)]
-pub enum Unsupported {}
-
 /// Valid identifier for a countable API.
 #[derive(Derivative)]
 #[derivative(Debug(bound = ""), Copy(bound = ""), Hash(bound = ""))]
@@ -256,63 +247,6 @@ impl<T: Support<usize>> Deref for Id<T> {
     }
 }
 
-impl Support<bool> for Unsupported {
-    const SUPPORT: bool = false;
-}
-
-impl Support<usize> for Unsupported {
-    const SUPPORT: usize = 0;
-}
-
 impl<T: Supported> Support<bool> for T {
     const SUPPORT: bool = true;
-}
-
-impl Singleton for Unsupported {
-    fn take() -> Option<Self> {
-        None
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn unsupported() {
-        enum Test {}
-        impl Api for Test {
-            fn try_event() -> Option<Event<Self>> {
-                todo!()
-            }
-
-            fn wait_event() -> Event<Self> {
-                todo!()
-            }
-
-            #[cfg(feature = "api-button")]
-            type Button = Unsupported;
-            #[cfg(feature = "internal-api-crypto")]
-            type Crypto = Unsupported;
-            type Debug = Unsupported;
-            #[cfg(feature = "api-gpio")]
-            type Gpio = Unsupported;
-            #[cfg(feature = "api-led")]
-            type Led = Unsupported;
-            #[cfg(feature = "internal-api-platform")]
-            type Platform = Unsupported;
-            #[cfg(feature = "internal-api-radio")]
-            type Radio = Unsupported;
-            #[cfg(feature = "api-rng")]
-            type Rng = Unsupported;
-            #[cfg(feature = "api-storage")]
-            type Storage = Unsupported;
-            #[cfg(feature = "api-timer")]
-            type Timer = Unsupported;
-            #[cfg(feature = "api-uart")]
-            type Uart = Unsupported;
-            #[cfg(feature = "internal-api-usb")]
-            type Usb = Unsupported;
-        }
-    }
 }

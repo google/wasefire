@@ -14,8 +14,6 @@
 
 //! Radio interface.
 
-use crate::Unsupported;
-
 #[cfg(feature = "api-radio-ble")]
 pub mod ble;
 
@@ -41,8 +39,3 @@ pub trait Api: Send {
 
 #[cfg(feature = "api-radio-ble")]
 pub type Ble<B> = <super::Radio<B> as Api>::Ble;
-
-impl Api for Unsupported {
-    #[cfg(feature = "api-radio-ble")]
-    type Ble = Unsupported;
-}

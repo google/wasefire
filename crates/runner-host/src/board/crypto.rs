@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Random number generator interface.
+use wasefire_board_api::crypto::{self, Api};
 
-use crate::Error;
+pub enum Impl {}
 
-/// Random number generator interface.
-pub trait Api: Send {
-    /// Fills a buffer with random bytes uniformly.
-    fn fill_bytes(buffer: &mut [u8]) -> Result<(), Error>;
+impl Api for Impl {
+    type Aes128Ccm = crypto::SoftwareAes128Ccm;
+    type Aes256Gcm = crypto::SoftwareAes256Gcm;
+    type HmacSha256 = crypto::SoftwareHmacSha256<Self>;
+    type HmacSha384 = crypto::SoftwareHmacSha384<Self>;
+    type P256 = crypto::SoftwareP256<Self>;
+    type P384 = crypto::SoftwareP384<Self>;
+    type Sha256 = crypto::SoftwareSha256;
+    type Sha384 = crypto::SoftwareSha384;
 }

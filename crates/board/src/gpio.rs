@@ -14,7 +14,7 @@
 
 //! Low-level GPIO interface.
 
-use crate::{Error, Id, Support, Unsupported};
+use crate::{Error, Id, Support};
 
 #[derive(Debug, Copy, Clone, bytemuck::CheckedBitPattern)]
 #[repr(u8)]
@@ -53,18 +53,4 @@ pub trait Api: Support<usize> + Send {
 
     /// Writes to a GPIO (must be configured as output).
     fn write(gpio: Id<Self>, value: bool) -> Result<(), Error>;
-}
-
-impl Api for Unsupported {
-    fn configure(_: Id<Self>, _: Config) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn read(_: Id<Self>) -> Result<bool, Error> {
-        unreachable!()
-    }
-
-    fn write(_: Id<Self>, _: bool) -> Result<(), Error> {
-        unreachable!()
-    }
 }

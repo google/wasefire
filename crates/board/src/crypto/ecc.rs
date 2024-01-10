@@ -18,7 +18,7 @@ use generic_array::{ArrayLength, GenericArray};
 #[cfg(feature = "internal-software-crypto-ecc")]
 pub use software::*;
 
-use crate::{Error, Support, Unsupported};
+use crate::{Error, Support};
 
 /// Elliptic-curve cryptography interface.
 pub trait Api<N: ArrayLength<u8>>: Support<bool> + Send {
@@ -47,36 +47,6 @@ pub trait Api<N: ArrayLength<u8>>: Support<bool> + Send {
 
 /// SEC-1 encoding of an `N` bytes integer.
 pub type Int<N> = GenericArray<u8, N>;
-
-impl<N: ArrayLength<u8>> Api<N> for Unsupported {
-    fn is_valid_scalar(_: &Int<N>) -> bool {
-        unreachable!()
-    }
-
-    fn is_valid_point(_: &Int<N>, _: &Int<N>) -> bool {
-        unreachable!()
-    }
-
-    fn base_point_mul(_: &Int<N>, _: &mut Int<N>, _: &mut Int<N>) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn point_mul(
-        _: &Int<N>, _: &Int<N>, _: &Int<N>, _: &mut Int<N>, _: &mut Int<N>,
-    ) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn ecdsa_sign(_: &Int<N>, _: &Int<N>, _: &mut Int<N>, _: &mut Int<N>) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn ecdsa_verify(
-        _: &Int<N>, _: &Int<N>, _: &Int<N>, _: &Int<N>, _: &Int<N>,
-    ) -> Result<bool, Error> {
-        unreachable!()
-    }
-}
 
 #[cfg(feature = "internal-software-crypto-ecc")]
 mod software {

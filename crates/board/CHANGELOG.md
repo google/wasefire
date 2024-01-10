@@ -4,6 +4,8 @@
 
 ### Major
 
+- Add `crypto::Software*` and `debug::Impl` implementations
+- Remove `Unsupported` and `UnsupportedCrypto` implementations
 - Change `syscall` return type to `Option<Result<u31, Error>>`
 - Add API features (disabled by default)
 - Add `Event::Impossible` to always mention the type parameter `B`

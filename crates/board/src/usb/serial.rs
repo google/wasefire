@@ -19,7 +19,7 @@ use usb_device::UsbError;
 use usbd_serial::SerialPort;
 use wasefire_logger as log;
 
-use crate::{Error, Unsupported};
+use crate::Error;
 
 /// USB serial event.
 #[derive(Debug, PartialEq, Eq)]
@@ -57,28 +57,6 @@ pub trait Api: Send {
 
     /// Disables a given event from being triggered.
     fn disable(event: &Event) -> Result<(), Error>;
-}
-
-impl Api for Unsupported {
-    fn read(_: &mut [u8]) -> Result<usize, Error> {
-        unreachable!()
-    }
-
-    fn write(_: &[u8]) -> Result<usize, Error> {
-        unreachable!()
-    }
-
-    fn flush() -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn enable(_: &Event) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn disable(_: &Event) -> Result<(), Error> {
-        unreachable!()
-    }
 }
 
 /// Helper trait for boards using the `usbd_serial` crate.

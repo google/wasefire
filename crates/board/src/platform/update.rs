@@ -16,9 +16,7 @@
 
 use alloc::boxed::Box;
 
-use wasefire_error::Code;
-
-use crate::{Error, Support, Unsupported};
+use crate::{Error, Support};
 
 /// Platform update interface.
 pub trait Api: Support<bool> + Send {
@@ -40,22 +38,4 @@ pub trait Api: Support<bool> + Send {
     /// This function will reboot when the update is successful and thus only returns in case of
     /// errors or in dry-run mode.
     fn finalize() -> Result<(), Error>;
-}
-
-impl Api for Unsupported {
-    fn metadata() -> Result<Box<[u8]>, Error> {
-        Err(Error::user(Code::NotImplemented))
-    }
-
-    fn initialize(_: bool) -> Result<(), Error> {
-        Err(Error::user(Code::NotImplemented))
-    }
-
-    fn process(_: &[u8]) -> Result<(), Error> {
-        Err(Error::user(Code::NotImplemented))
-    }
-
-    fn finalize() -> Result<(), Error> {
-        Err(Error::user(Code::NotImplemented))
-    }
 }

@@ -14,8 +14,6 @@
 
 //! USB interface.
 
-use crate::Unsupported;
-
 #[cfg(feature = "api-usb-serial")]
 pub mod serial;
 
@@ -41,8 +39,3 @@ pub trait Api: Send {
 
 #[cfg(feature = "api-usb-serial")]
 pub type Serial<B> = <super::Usb<B> as Api>::Serial;
-
-impl Api for Unsupported {
-    #[cfg(feature = "api-usb-serial")]
-    type Serial = Unsupported;
-}
