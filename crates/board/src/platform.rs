@@ -16,7 +16,6 @@
 
 #[cfg(feature = "api-platform")]
 use crate::Error;
-use crate::Unsupported;
 
 #[cfg(feature = "api-platform-update")]
 pub mod update;
@@ -42,18 +41,3 @@ pub trait Api: Send {
 
 #[cfg(feature = "api-platform-update")]
 pub type Update<B> = <super::Platform<B> as Api>::Update;
-
-impl Api for Unsupported {
-    #[cfg(feature = "api-platform-update")]
-    type Update = Unsupported;
-
-    #[cfg(feature = "api-platform")]
-    fn version(_: &mut [u8]) -> usize {
-        0
-    }
-
-    #[cfg(feature = "api-platform")]
-    fn reboot() -> Result<!, Error> {
-        Err(Error::internal(wasefire_error::Code::NotImplemented))
-    }
-}

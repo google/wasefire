@@ -22,8 +22,7 @@ ensure_applet
 test_helper
 
 cargo check --target=thumbv7em-none-eabi --features=wasm,debug
-cargo check --target=thumbv7em-none-eabi \
-  --features=wasm,debug,software-crypto-sha256
+cargo check --target=thumbv7em-none-eabi --features=wasm,debug,software-crypto
 DEFMT_LOG=trace cargo check --target=thumbv7em-none-eabi --features=wasm,debug
 cargo check --target=thumbv7em-none-eabi --features=wasm,release
 cargo check --target=thumbv7em-none-eabi --features=native,release

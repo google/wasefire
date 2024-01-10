@@ -173,18 +173,7 @@ full-board-api = [
   "board-api-usb-serial",
 ]
 # Software crypto features. Enabling a software crypto feature automatically
-# enables its board API feature. Only the `software-crypto-` features are
-# stable. The `software-crypto` feature is unstable.
-software-crypto = [
-  "software-crypto-aes128-ccm",
-  "software-crypto-aes256-gcm",
-  "software-crypto-hmac-sha256",
-  "software-crypto-hmac-sha384",
-  "software-crypto-p256",
-  "software-crypto-p384",
-  "software-crypto-sha256",
-  "software-crypto-sha384",
-]
+# enables its board API feature.
 software-crypto-aes128-ccm = [
   "board-api-crypto-aes128-ccm",
   "wasefire-board-api/software-crypto-aes128-ccm",

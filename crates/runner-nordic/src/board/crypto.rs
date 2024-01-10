@@ -12,18 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::crypto::Api;
-#[allow(unused_imports)]
-use wasefire_board_api::crypto::UnsupportedCrypto;
+use wasefire_board_api::crypto;
 
 mod ccm;
 
 pub enum Impl {}
 
-impl Api for Impl {
+impl crypto::Api for Impl {
     type Aes128Ccm = ccm::Impl;
     #[cfg(feature = "software-crypto-aes256-gcm")]
-    type Aes256Gcm = <UnsupportedCrypto<Self> as Api>::Aes256Gcm;
+    type Aes256Gcm = crypto::SoftwareAes256Gcm;
     #[cfg(feature = "software-crypto-sha256")]
-    type Sha256 = <UnsupportedCrypto<Self> as Api>::Sha256;
+    type Sha256 = crypto::SoftwareSha256;
 }

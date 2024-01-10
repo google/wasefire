@@ -42,6 +42,15 @@ ensure_submodule() {
 # <clippy-args> = "--all-targets" or "--target=wasm32-unknown-unknown"
 check_applet_api() { _test_check_api "$_TEST_APPLET_API" "$@"; }
 check_board_api() { _test_check_api "$_TEST_BOARD_API" "$@"; }
+check_software_crypto() {
+  _test_diff 'the software crypto features' "$_TEST_SOFTWARE_CRYPTO" \
+    $(package_features | sed -n "s/^software-crypto-//p")
+  if package_features | grep -q '^internal-software-crypto$'; then
+    _test_diff "the internal-software-crypto feature dependencies" \
+      "$_TEST_SOFTWARE_CRYPTO" \
+      $(_test_full_deps internal-software-crypto software-crypto-)
+  fi
+}
 
 test_helper() {
   _test_desc | grep -v -e '^$' -e '^#' -e 'cargo \(check\|test\)' \
@@ -152,4 +161,15 @@ storage
 timer
 uart
 usb-serial
+'
+
+_TEST_SOFTWARE_CRYPTO='
+aes128-ccm
+aes256-gcm
+hmac-sha256
+hmac-sha384
+p256
+p384
+sha256
+sha384
 '

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 pub mod button;
+mod crypto;
 mod debug;
 mod led;
 mod rng;
@@ -62,7 +63,7 @@ impl Api for Board {
     }
 
     type Button = button::Impl;
-    type Crypto = wasefire_board_api::Unsupported;
+    type Crypto = crypto::Impl;
     type Debug = debug::Impl;
     type Led = led::Impl;
     type Rng = rng::Impl;

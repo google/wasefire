@@ -16,7 +16,7 @@
 
 use derivative::Derivative;
 
-use crate::{Error, Id, Support, Unsupported};
+use crate::{Error, Id, Support};
 
 /// UART event.
 #[derive(Derivative)]
@@ -62,22 +62,4 @@ pub trait Api: Support<usize> + Send {
 
     /// Disables a given event from being triggered.
     fn disable(uart: Id<Self>, direction: Direction) -> Result<(), Error>;
-}
-
-impl Api for Unsupported {
-    fn read(_: Id<Self>, _: &mut [u8]) -> Result<usize, Error> {
-        unreachable!()
-    }
-
-    fn write(_: Id<Self>, _: &[u8]) -> Result<usize, Error> {
-        unreachable!()
-    }
-
-    fn enable(_: Id<Self>, _: Direction) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn disable(_: Id<Self>, _: Direction) -> Result<(), Error> {
-        unreachable!()
-    }
 }
