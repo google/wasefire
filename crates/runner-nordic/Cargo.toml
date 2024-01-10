@@ -50,8 +50,6 @@ features = [
   "board-api-timer",
   "board-api-uart",
   "board-api-usb-serial",
-  # TODO: Remove once the scheduler accepts all function imports.
-  "full-applet-api",
 ]
 
 [features]

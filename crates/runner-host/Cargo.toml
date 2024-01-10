@@ -33,8 +33,6 @@ features = [
   "board-api-uart",
   "software-crypto",
   "std",
-  # TODO: Remove once the scheduler accepts all function imports.
-  "full-applet-api",
 ]
 
 [features]
