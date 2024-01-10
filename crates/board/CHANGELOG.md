@@ -4,7 +4,6 @@
 
 ### Major
 
-- Add `crypto::Software*` and `debug::Impl` implementations
 - Remove `Unsupported` and `UnsupportedCrypto` implementations
 - Change `syscall` return type to `Option<Result<u31, Error>>`
 - Add API features (disabled by default)
@@ -18,6 +17,11 @@
 - Add `platform::Api::Update` (fix #47)
 - Add `Api::Platform` with `platform::Api::reboot()` function
 - Require the APIs to be `Send` and the top-level API to be `'static` too
+
+### Minor
+
+- Add `crypto::Software*` and `debug::Impl` implementations
+- Remove unstable `software-crypto` feature
 
 ### Patch
 
