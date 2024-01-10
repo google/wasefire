@@ -53,8 +53,8 @@ features = [
 ]
 
 [features]
-# Software crypto features.
-# Keep in sync with the internal-software-crypto feature.
+# Software crypto features. The software-crypto feature enables all of them.
+software-crypto = ["software-crypto-aes256-gcm", "software-crypto-sha256"]
 software-crypto-aes256-gcm = ["wasefire-scheduler/software-crypto-aes256-gcm"]
 software-crypto-sha256 = ["wasefire-scheduler/software-crypto-sha256"]
 # Exactly one is enabled by xtask.
@@ -71,8 +71,6 @@ release = ["dep:panic-abort"]
 # Exactly one is enabled by xtask.
 native = ["wasefire-scheduler/native"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
-# Internal features.
-internal-software-crypto = ["software-crypto-aes256-gcm", "software-crypto-sha256"]
 
 [patch.crates-io]
 nrf-usbd = { git = "https://github.com/ia0/nrf-usbd.git", branch = "bump" }
