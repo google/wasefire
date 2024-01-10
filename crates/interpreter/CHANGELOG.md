@@ -6,6 +6,12 @@
 
 - Change `Error::Unsupported` to take a reason with the `debug` feature
 
+### Minor
+
+- Support generating fake host functions (with out-of-bound indices) for
+  imported functions (with a given module name) that don't have an associated
+  host function
+
 ### Patch
 
 - Update dependencies

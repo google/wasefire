@@ -10,6 +10,7 @@
 
 ### Minor
 
+- Support applets calling unknown host functions by returning an error
 - Migrate to applet API functions always returning `isize`
 - Support `debug::time()` new return type
 - Migrate to `platform::update` returning `Error`

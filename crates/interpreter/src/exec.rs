@@ -52,6 +52,9 @@ pub struct Store<'m> {
     // TODO: This should be an Linker struct that can be shared between stores. The FuncType can be
     // reconstructed on demand (only counts can be stored).
     funcs: Vec<(HostName<'m>, FuncType<'m>)>,
+    // If some, any unresolved imported function is appended to funcs (one per type) with an empty
+    // name. The length of real host functions in funcs is also stored.
+    func_default: Option<(&'m str, usize)>,
     threads: Vec<Continuation<'m>>,
 }
 
@@ -88,7 +91,13 @@ pub struct Call<'a, 'm> {
 
 impl<'m> Default for Store<'m> {
     fn default() -> Self {
-        Self { id: STORE_ID.next(), insts: vec![], funcs: vec![], threads: vec![] }
+        Self {
+            id: STORE_ID.next(),
+            insts: vec![],
+            funcs: vec![],
+            func_default: None,
+            threads: vec![],
+        }
     }
 }
 
@@ -251,11 +260,22 @@ impl<'m> Store<'m> {
     ) -> Result<(), Error> {
         static TYPES: &[ValType] = &[ValType::I32; 8];
         let name = HostName { module, name };
+        check(self.func_default.is_none())?;
         check(self.insts.is_empty())?;
         check(self.funcs.last().map_or(true, |x| x.0 < name))?;
         check(params <= TYPES.len() && results <= TYPES.len())?;
         let type_ = FuncType { params: TYPES[.. params].into(), results: TYPES[.. results].into() };
         self.funcs.push((name, type_));
+        Ok(())
+    }
+
+    /// Links a catch-all host function.
+    ///
+    /// Indices past the last one added by [`Self::link_func()`] represent the catch-all host
+    /// function. They only differ by their type (and there's only one index per type).
+    pub fn link_func_default(&mut self, module: &'m str) -> Result<(), Error> {
+        check(self.func_default.is_none())?;
+        self.func_default = Some((module, self.funcs.len()));
         Ok(())
     }
 
@@ -519,11 +539,31 @@ impl<'m> Store<'m> {
         &mut self.insts[x].globals.int[ptr.index() as usize]
     }
 
-    fn resolve(&self, import: &Import<'m>, imp_type_: ExternType<'m>) -> Result<Ptr, Error> {
+    fn resolve(&mut self, import: &Import<'m>, imp_type_: ExternType<'m>) -> Result<Ptr, Error> {
         let host_name = HostName { module: import.module, name: import.name };
         let mut found = None;
-        if let Ok(x) = self.funcs.binary_search_by(|x| x.0.cmp(&host_name)) {
+        let funcs_len = match self.func_default {
+            Some((_, x)) => x,
+            None => self.funcs.len(),
+        };
+        if let Ok(x) = self.funcs[.. funcs_len].binary_search_by(|x| x.0.cmp(&host_name)) {
             found = Some((Ptr::new(Side::Host, x as u32), ExternType::Func(self.funcs[x].1)));
+        } else if matches!(imp_type_, ExternType::Func(_))
+            && matches!(self.func_default, Some((x, _)) if x == host_name.module)
+        {
+            let type_ = match imp_type_ {
+                ExternType::Func(x) => x,
+                _ => unreachable!(),
+            };
+            let idx = match self.funcs[funcs_len ..].iter().position(|x| x.1 == type_) {
+                Some(x) => x,
+                None => {
+                    let idx = self.funcs.len();
+                    self.funcs.push((host_name, type_));
+                    idx
+                }
+            };
+            found = Some((Ptr::new(Side::Host, idx as u32), ExternType::Func(type_)));
         } else {
             let inst_id = self.resolve_inst(import.module)?;
             let inst = &self.insts[inst_id];

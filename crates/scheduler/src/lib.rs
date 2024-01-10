@@ -261,7 +261,10 @@ impl<B: Board> Scheduler<B> {
         let name = link.to_str().unwrap();
         let index = match self.host_funcs.binary_search_by_key(&name, |x| x.descriptor().name) {
             Ok(x) => x,
-            Err(_) => log::panic!("Failed to find {:?}.", name),
+            Err(_) => {
+                let error = Error::world(wasefire_error::Code::NotImplemented);
+                return Error::encode(Err(error)) as isize;
+            }
         };
         let api_id = self.host_funcs[index].id();
         let desc = api_id.descriptor();
@@ -287,6 +290,7 @@ impl<B: Board> Scheduler<B> {
                 let d = f.descriptor();
                 store.link_func("env", d.name, d.params, 1).unwrap();
             }
+            store.link_func_default("env").unwrap();
             applet
         };
         #[cfg(feature = "native")]
@@ -369,7 +373,15 @@ impl<B: Board> Scheduler<B> {
                 return;
             }
         };
-        let api_id = self.host_funcs[call.index()].id();
+        let api_id = match self.host_funcs.get(call.index()) {
+            Some(x) => x.id(),
+            None => {
+                let error = Error::encode(Err(Error::world(wasefire_error::Code::NotImplemented)));
+                let answer = call.resume(&[Val::I32(error as u32)]).map(|x| x.forget());
+                self.process_answer(answer);
+                return;
+            }
+        };
         let args = call.args();
         debug_assert_eq!(args.len(), api_id.descriptor().params);
         let args = args.iter().map(|x| x.unwrap_i32()).collect();
