@@ -52,8 +52,10 @@ pub struct Store<'m> {
     // TODO: This should be an Linker struct that can be shared between stores. The FuncType can be
     // reconstructed on demand (only counts can be stored).
     funcs: Vec<(HostName<'m>, FuncType<'m>)>,
-    // If some, any unresolved imported function is appended to funcs (one per type) with an empty
-    // name. The length of real host functions in funcs is also stored.
+    // When present, contains a module name and a length. In that case, any unresolved imported
+    // function for that module name is appended to funcs (one per type, so the function name is the
+    // name of the first unresolved function of that type). The length of resolvable host functions
+    // in `funcs` is stored to limit normal linking to that part.
     func_default: Option<(&'m str, usize)>,
     threads: Vec<Continuation<'m>>,
 }
@@ -269,10 +271,14 @@ impl<'m> Store<'m> {
         Ok(())
     }
 
-    /// Links a catch-all host function.
+    /// Enables linking unresolved imported function for the given module.
     ///
-    /// Indices past the last one added by [`Self::link_func()`] represent the catch-all host
-    /// function. They only differ by their type (and there's only one index per type).
+    /// For each unresolved imported function type, a fake host function is created (as if
+    /// `link_func` was used). As such, out-of-bound indices with respect to real calls to
+    /// [`Self::link_func()`] represent such fake host functions. Callers must thus expect and
+    /// support out-of-bound indices returned by [`Call::index()`].
+    ///
+    /// This function can be called at most once, and once called `link_func` cannot be called.
     pub fn link_func_default(&mut self, module: &'m str) -> Result<(), Error> {
         check(self.func_default.is_none())?;
         self.func_default = Some((module, self.funcs.len()));

@@ -8,9 +8,8 @@
 
 ### Minor
 
-- Support generating fake host functions (with out-of-bound indices) for
-  imported functions (with a given module name) that don't have an associated
-  host function
+- Add `Store::link_func_default()` to generate fake host functions for
+  unresolved imported functions
 
 ### Patch
 
