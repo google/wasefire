@@ -52,6 +52,11 @@ pub struct Store<'m> {
     // TODO: This should be an Linker struct that can be shared between stores. The FuncType can be
     // reconstructed on demand (only counts can be stored).
     funcs: Vec<(HostName<'m>, FuncType<'m>)>,
+    // When present, contains a module name and a length. In that case, any unresolved imported
+    // function for that module name is appended to funcs (one per type, so the function name is the
+    // name of the first unresolved function of that type). The length of resolvable host functions
+    // in `funcs` is stored to limit normal linking to that part.
+    func_default: Option<(&'m str, usize)>,
     threads: Vec<Continuation<'m>>,
 }
 
@@ -88,7 +93,13 @@ pub struct Call<'a, 'm> {
 
 impl<'m> Default for Store<'m> {
     fn default() -> Self {
-        Self { id: STORE_ID.next(), insts: vec![], funcs: vec![], threads: vec![] }
+        Self {
+            id: STORE_ID.next(),
+            insts: vec![],
+            funcs: vec![],
+            func_default: None,
+            threads: vec![],
+        }
     }
 }
 
@@ -251,11 +262,26 @@ impl<'m> Store<'m> {
     ) -> Result<(), Error> {
         static TYPES: &[ValType] = &[ValType::I32; 8];
         let name = HostName { module, name };
+        check(self.func_default.is_none())?;
         check(self.insts.is_empty())?;
         check(self.funcs.last().map_or(true, |x| x.0 < name))?;
         check(params <= TYPES.len() && results <= TYPES.len())?;
         let type_ = FuncType { params: TYPES[.. params].into(), results: TYPES[.. results].into() };
         self.funcs.push((name, type_));
+        Ok(())
+    }
+
+    /// Enables linking unresolved imported function for the given module.
+    ///
+    /// For each unresolved imported function type that returns exactly one `i32`, a fake host
+    /// function is created (as if `link_func` was used). As such, out-of-bound indices with respect
+    /// to real calls to [`Self::link_func()`] represent such fake host functions. Callers must thus
+    /// expect and support out-of-bound indices returned by [`Call::index()`].
+    ///
+    /// This function can be called at most once, and once called `link_func` cannot be called.
+    pub fn link_func_default(&mut self, module: &'m str) -> Result<(), Error> {
+        check(self.func_default.is_none())?;
+        self.func_default = Some((module, self.funcs.len()));
         Ok(())
     }
 
@@ -519,11 +545,31 @@ impl<'m> Store<'m> {
         &mut self.insts[x].globals.int[ptr.index() as usize]
     }
 
-    fn resolve(&self, import: &Import<'m>, imp_type_: ExternType<'m>) -> Result<Ptr, Error> {
+    fn resolve(&mut self, import: &Import<'m>, imp_type_: ExternType<'m>) -> Result<Ptr, Error> {
         let host_name = HostName { module: import.module, name: import.name };
         let mut found = None;
-        if let Ok(x) = self.funcs.binary_search_by(|x| x.0.cmp(&host_name)) {
+        let funcs_len = match self.func_default {
+            Some((_, x)) => x,
+            None => self.funcs.len(),
+        };
+        if let Ok(x) = self.funcs[.. funcs_len].binary_search_by(|x| x.0.cmp(&host_name)) {
             found = Some((Ptr::new(Side::Host, x as u32), ExternType::Func(self.funcs[x].1)));
+        } else if matches!(imp_type_, ExternType::Func(x) if *x.results == [ValType::I32])
+            && matches!(self.func_default, Some((x, _)) if x == host_name.module)
+        {
+            let type_ = match imp_type_ {
+                ExternType::Func(x) => x,
+                _ => unreachable!(),
+            };
+            let idx = match self.funcs[funcs_len ..].iter().position(|x| x.1 == type_) {
+                Some(x) => funcs_len + x,
+                None => {
+                    let idx = self.funcs.len();
+                    self.funcs.push((host_name, type_));
+                    idx
+                }
+            };
+            found = Some((Ptr::new(Side::Host, idx as u32), ExternType::Func(type_)));
         } else {
             let inst_id = self.resolve_inst(import.module)?;
             let inst = &self.insts[inst_id];

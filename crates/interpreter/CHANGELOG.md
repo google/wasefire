@@ -6,6 +6,11 @@
 
 - Change `Error::Unsupported` to take a reason with the `debug` feature
 
+### Minor
+
+- Add `Store::link_func_default()` to generate fake host functions for
+  unresolved imported functions returning a single `i32`
+
 ### Patch
 
 - Update dependencies
