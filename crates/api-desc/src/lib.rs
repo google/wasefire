@@ -21,8 +21,6 @@ use quote::{format_ident, quote};
 
 #[cfg(feature = "api-button")]
 mod button;
-#[cfg(feature = "api-timer")]
-mod clock;
 #[cfg(feature = "internal-api-crypto")]
 mod crypto;
 mod debug;
@@ -41,6 +39,8 @@ mod rng;
 mod scheduling;
 #[cfg(feature = "internal-api-store")]
 mod store;
+#[cfg(feature = "api-timer")]
+mod timer;
 #[cfg(feature = "api-uart")]
 mod uart;
 #[cfg(feature = "internal-api-usb")]
@@ -56,8 +56,6 @@ impl Default for Api {
         Api(vec![
             #[cfg(feature = "api-button")]
             button::new(),
-            #[cfg(feature = "api-timer")]
-            clock::new(),
             #[cfg(feature = "internal-api-crypto")]
             crypto::new(),
             debug::new(),
@@ -74,6 +72,8 @@ impl Default for Api {
             scheduling::new(),
             #[cfg(feature = "internal-api-store")]
             store::new(),
+            #[cfg(feature = "api-timer")]
+            timer::new(),
             #[cfg(feature = "api-uart")]
             uart::new(),
             #[cfg(feature = "internal-api-usb")]

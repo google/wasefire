@@ -57,9 +57,9 @@ use wasefire_logger as log;
 use wasefire_scheduler::Scheduler;
 
 use crate::board::button::{channel, Button};
-use crate::board::clock::Timers;
 use crate::board::gpio::Gpio;
 use crate::board::radio::ble::Ble;
+use crate::board::timer::Timers;
 use crate::board::uart::Uarts;
 use crate::board::usb::Usb;
 use crate::board::{button, led, Events};

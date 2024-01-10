@@ -32,10 +32,10 @@ fn main() {
         // Turn on the current LED.
         led::set(led_index, led::On);
         // Wait before turning it off.
-        clock::sleep(Duration::from_millis(500));
+        timer::sleep(Duration::from_millis(500));
 
         // Turn it off and wait before turning on the next LED.
         led::set(led_index, led::Off);
-        clock::sleep(Duration::from_millis(500));
+        timer::sleep(Duration::from_millis(500));
     }
 }

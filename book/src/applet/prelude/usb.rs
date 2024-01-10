@@ -100,11 +100,11 @@ fn process(
 //} ANCHOR_END: process
     //{ ANCHOR: process_setup
     let secs = Rc::new(Cell::new(0));
-    let timer = clock::Timer::new({
+    let timer = timer::Timer::new({
         let time = secs.clone();
         move || time.set(time.get() + 1)
     });
-    timer.start(clock::Periodic, Duration::from_secs(1));
+    timer.start(timer::Periodic, Duration::from_secs(1));
     //} ANCHOR_END: process_setup
     //{ ANCHOR: process_loop
     let mut done = false;

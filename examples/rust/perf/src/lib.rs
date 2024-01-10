@@ -23,13 +23,13 @@ use core::time::Duration;
 fn main() {
     let prev = sync::Mutex::new(debug::perf());
     let idle = sync::AtomicBool::new(true);
-    let timer = clock::Timer::new(move || {
+    let timer = timer::Timer::new(move || {
         let next = debug::perf();
         debug!("{:?}", next - core::mem::replace(&mut prev.lock(), next));
         if idle.fetch_xor(true, sync::Ordering::SeqCst) {
             while scheduling::num_pending_callbacks() == 0 {}
         }
     });
-    timer.start(clock::Periodic, Duration::from_secs(1));
+    timer.start(timer::Periodic, Duration::from_secs(1));
     timer.leak();
 }

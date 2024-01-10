@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_applet_api::clock::{self as api, Api};
+use wasefire_applet_api::timer::{self as api, Api};
 #[cfg(feature = "board-api-timer")]
 use wasefire_board_api::timer::{Api as _, Command};
 use wasefire_board_api::Api as Board;

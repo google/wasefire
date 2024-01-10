@@ -16,7 +16,7 @@ use `Cell<bool>` neither because the state must be in the heap[^heap]. So we use
 {{#include timer.rs:blinking}}
 ```
 
-We can now allocate a timer for the blinking behavior using `clock::Timer::new`.
+We can now allocate a timer for the blinking behavior using `timer::Timer::new`.
 This function takes the handler that will be called each time the timer fires.
 The handler simply toggles the LED if we must be blinking. Note how we must move
 a clone of the state to the callback. This is also a common pattern when using

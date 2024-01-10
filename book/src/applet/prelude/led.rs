@@ -40,13 +40,13 @@ fn main() {
         //} ANCHOR_END: set
         //{ ANCHOR: sleep
         // Wait before turning it off.
-        clock::sleep(Duration::from_millis(500));
+        timer::sleep(Duration::from_millis(500));
         //} ANCHOR_END: sleep
 
         //{ ANCHOR: repeat
         // Turn it off and wait before turning on the next LED.
         led::set(led_index, led::Off);
-        clock::sleep(Duration::from_millis(500));
+        timer::sleep(Duration::from_millis(500));
         //} ANCHOR_END: repeat
     }
 }

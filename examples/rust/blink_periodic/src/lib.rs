@@ -37,7 +37,7 @@ fn main() {
         i.set((i_ + matches!(!x_, led::On) as usize) % n);
     };
     step();
-    let timer = clock::Timer::new(step);
-    timer.start(clock::Periodic, Duration::from_millis(500));
+    let timer = timer::Timer::new(step);
+    timer.start(timer::Periodic, Duration::from_millis(500));
     scheduling::wait_indefinitely();
 }

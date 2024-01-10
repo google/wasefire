@@ -44,8 +44,6 @@ mod allocator;
 #[cfg(feature = "api-button")]
 pub mod button;
 mod callback;
-#[cfg(feature = "api-timer")]
-pub mod clock;
 #[cfg(feature = "internal-api-crypto")]
 pub mod crypto;
 pub mod debug;
@@ -65,6 +63,8 @@ pub mod serial;
 #[cfg(feature = "internal-api-store")]
 pub mod store;
 pub mod sync;
+#[cfg(feature = "api-timer")]
+pub mod timer;
 #[cfg(feature = "api-uart")]
 pub mod uart;
 #[cfg(feature = "internal-api-usb")]

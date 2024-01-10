@@ -58,8 +58,6 @@ macro_rules! trap_use {
 
 #[cfg(feature = "applet-api-button")]
 mod button;
-#[cfg(feature = "applet-api-timer")]
-mod clock;
 #[cfg(feature = "internal-applet-api-crypto")]
 mod crypto;
 mod debug;
@@ -76,6 +74,8 @@ mod rng;
 mod scheduling;
 #[cfg(feature = "internal-applet-api-store")]
 mod store;
+#[cfg(feature = "applet-api-timer")]
+mod timer;
 #[cfg(feature = "applet-api-uart")]
 mod uart;
 #[cfg(feature = "internal-applet-api-usb")]
@@ -85,8 +85,6 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         #[cfg(feature = "applet-api-button")]
         Api::Button(call) => button::process(call),
-        #[cfg(feature = "applet-api-timer")]
-        Api::Clock(call) => clock::process(call),
         #[cfg(feature = "internal-applet-api-crypto")]
         Api::Crypto(call) => crypto::process(call),
         Api::Debug(call) => debug::process(call),
@@ -104,6 +102,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         #[cfg(feature = "internal-applet-api-store")]
         Api::Store(call) => store::process(call),
         Api::Syscall(call) => syscall(call),
+        #[cfg(feature = "applet-api-timer")]
+        Api::Timer(call) => timer::process(call),
         #[cfg(feature = "applet-api-uart")]
         Api::Uart(call) => uart::process(call),
         #[cfg(feature = "internal-applet-api-usb")]

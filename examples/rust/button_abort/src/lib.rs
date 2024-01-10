@@ -35,7 +35,7 @@ fn main() {
     let blinking = Rc::new(Cell::new(false));
 
     // Allocate a timer for blinking the LED.
-    let blink = clock::Timer::new({
+    let blink = timer::Timer::new({
         // Move a clone of the state to the callback.
         let blinking = blinking.clone();
         move || {
@@ -70,11 +70,11 @@ fn main() {
 
         // Start the timeout to decide between short and long press.
         let timed_out = Rc::new(Cell::new(false));
-        let timer = clock::Timer::new({
+        let timer = timer::Timer::new({
             let timed_out = timed_out.clone();
             move || timed_out.set(true)
         });
-        timer.start(clock::Oneshot, Duration::from_secs(1));
+        timer.start(timer::Oneshot, Duration::from_secs(1));
 
         // Wait for the button to be released or the timeout to fire.
         scheduling::wait_until(|| released.get() || timed_out.get());
@@ -85,7 +85,7 @@ fn main() {
         // Start blinking if short press.
         if !timed_out.get() {
             blinking.set(true);
-            blink.start(clock::Periodic, Duration::from_millis(200));
+            blink.start(timer::Periodic, Duration::from_millis(200));
         }
     }
 }

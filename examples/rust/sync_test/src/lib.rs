@@ -40,14 +40,14 @@ fn test_mutex() {
     debug::assert(GLOBAL.try_lock().is_none());
     debug!("- try to double lock from a callback");
     let has_run = Rc::new(Cell::new(false));
-    let timer = clock::Timer::new({
+    let timer = timer::Timer::new({
         let has_run = has_run.clone();
         move || {
             has_run.set(true);
             debug::assert(GLOBAL.try_lock().is_none());
         }
     });
-    timer.start_ms(clock::Oneshot, 100);
+    timer.start_ms(timer::Oneshot, 100);
     scheduling::wait_for_callback();
     debug::assert(has_run.get());
 }

@@ -16,9 +16,9 @@ use crate::*;
 
 pub(crate) fn new() -> Item {
     let docs = docs! {
-        /// Clock and timer operations.
+        /// Timer operations.
     };
-    let name = "clock".into();
+    let name = "timer".into();
     let items = vec![
         item! {
             /// Whether a timer should periodically trigger.

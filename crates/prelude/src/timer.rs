@@ -12,16 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides API for clocks and timers.
-//!
-//! For now, only timers are provided.
+//! Provides API for timers.
 
 use alloc::boxed::Box;
 use alloc::rc::Rc;
 use core::cell::Cell;
 use core::time::Duration;
 
-use wasefire_applet_api::clock as api;
+use wasefire_applet_api::timer as api;
 
 pub use self::api::Mode;
 pub use self::api::Mode::*;

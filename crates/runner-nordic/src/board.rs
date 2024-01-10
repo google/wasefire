@@ -19,7 +19,6 @@ use wasefire_scheduler as scheduler;
 use crate::{with_state, Board};
 
 pub mod button;
-pub mod clock;
 mod crypto;
 mod debug;
 pub mod gpio;
@@ -27,6 +26,7 @@ pub mod led;
 pub mod platform;
 pub mod radio;
 mod rng;
+pub mod timer;
 pub mod uart;
 pub mod usb;
 
@@ -61,7 +61,7 @@ impl board::Api for Board {
     type Radio = radio::Impl;
     type Rng = rng::Impl;
     type Storage = crate::storage::Storage;
-    type Timer = clock::Impl;
+    type Timer = timer::Impl;
     type Uart = uart::Impl;
     type Usb = usb::Impl;
 }
