@@ -9,7 +9,7 @@
 ### Minor
 
 - Add `Store::link_func_default()` to generate fake host functions for
-  unresolved imported functions
+  unresolved imported functions returning a single `i32`
 
 ### Patch
 

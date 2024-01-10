@@ -273,10 +273,10 @@ impl<'m> Store<'m> {
 
     /// Enables linking unresolved imported function for the given module.
     ///
-    /// For each unresolved imported function type, a fake host function is created (as if
-    /// `link_func` was used). As such, out-of-bound indices with respect to real calls to
-    /// [`Self::link_func()`] represent such fake host functions. Callers must thus expect and
-    /// support out-of-bound indices returned by [`Call::index()`].
+    /// For each unresolved imported function type that returns exactly one `i32`, a fake host
+    /// function is created (as if `link_func` was used). As such, out-of-bound indices with respect
+    /// to real calls to [`Self::link_func()`] represent such fake host functions. Callers must thus
+    /// expect and support out-of-bound indices returned by [`Call::index()`].
     ///
     /// This function can be called at most once, and once called `link_func` cannot be called.
     pub fn link_func_default(&mut self, module: &'m str) -> Result<(), Error> {
@@ -554,7 +554,7 @@ impl<'m> Store<'m> {
         };
         if let Ok(x) = self.funcs[.. funcs_len].binary_search_by(|x| x.0.cmp(&host_name)) {
             found = Some((Ptr::new(Side::Host, x as u32), ExternType::Func(self.funcs[x].1)));
-        } else if matches!(imp_type_, ExternType::Func(_))
+        } else if matches!(imp_type_, ExternType::Func(x) if *x.results == [ValType::I32])
             && matches!(self.func_default, Some((x, _)) if x == host_name.module)
         {
             let type_ = match imp_type_ {
