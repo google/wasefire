@@ -562,7 +562,7 @@ impl<'m> Store<'m> {
                 _ => unreachable!(),
             };
             let idx = match self.funcs[funcs_len ..].iter().position(|x| x.1 == type_) {
-                Some(x) => x,
+                Some(x) => funcs_len + x,
                 None => {
                     let idx = self.funcs.len();
                     self.funcs.push((host_name, type_));

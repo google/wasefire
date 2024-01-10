@@ -25,6 +25,7 @@ fn main() {
     debug!("Calling unknown host functions:");
     test(|| unsafe { test_only_0() });
     test(|| unsafe { test_only_1(0) });
+    test(|| unsafe { test_only_1b(0) });
     test(|| unsafe { test_only_10(0, 0, 0, 0, 0, 0, 0, 0, 0, 0) });
     debug::exit(true);
 }
@@ -40,6 +41,7 @@ fn test(f: impl FnOnce() -> isize) {
 extern "C" {
     fn test_only_0() -> isize;
     fn test_only_1(_: usize) -> isize;
+    fn test_only_1b(_: usize) -> isize;
     fn test_only_10(
         _: usize, _: usize, _: usize, _: usize, _: usize, _: usize, _: usize, _: usize, _: usize,
         _: usize,
@@ -65,6 +67,10 @@ mod native {
 
     pub unsafe fn test_only_1(x: usize) -> isize {
         test_only("test_only_1\0", &[x as u32])
+    }
+
+    pub unsafe fn test_only_1b(x: usize) -> isize {
+        test_only("test_only_1b\0", &[x as u32])
     }
 
     pub unsafe fn test_only_10(
