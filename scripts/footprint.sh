@@ -20,18 +20,21 @@ set -e
 # different configurations. The continuous integration will use this to show
 # footprint impact in pull requests.
 
+[ -e footprint.toml ] && e "footprint.toml already exists"
+
 bool() { if [ -n "$1" ]; then echo "$2"; else echo "$3"; fi; }
 
+applet=exercises/part-7-sol
 runner=nordic
-for applet in hello hsm; do
-  for release in '' --release; do
-    for native in '' --native-target=thumbv7em-none-eabi; do
-      config="$(bool "$release" release debug)"
-      config="$config $(bool "$native" native wasm)"
-      x cargo xtask --footprint="applet $applet $config" \
-        $release $native applet rust $applet
-      x cargo xtask --footprint="runner $runner $config" \
-        $release ${native:+--native} runner $runner
+for native in '' --native-target=thumbv7em-none-eabi; do
+  for opt_level in '' --opt-level=z; do
+    for release in '' --release; do
+      config="$(bool "$release" release debug) $(bool "$native" native wasm)"
+      config="$config $(bool "$opt_level" small fast)"
+      x cargo xtask --footprint="$config" \
+        $release $native applet rust $applet $opt_level
+      x cargo xtask --footprint="$config" \
+        $release ${native:+--native} runner $runner $opt_level
     done
   done
 done

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![feature(try_blocks)]
+
 use std::cell::Cell;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
@@ -69,7 +71,7 @@ struct MainOptions {
     #[clap(long)]
     size: bool,
 
-    /// Updates footprint.toml to make the measured footprint to the provided key.
+    /// Updates footprint.toml with the measured footprint for the provided key.
     ///
     /// The key is a space-separated list of strings.
     #[clap(long)]
@@ -91,10 +93,13 @@ enum MainCommand {
         features: Vec<String>,
     },
 
-    /// Dumps a table comparison between footprint-base.toml and footprint-pull_request.toml.
+    /// Appends a comparison between footprint-base.toml and footprint-pull_request.toml.
     ///
-    /// If footprint-base.toml is missing, it is omitted from the table.
-    Footprint,
+    /// If any file is missing, it is assumed to have no measurements.
+    Footprint {
+        /// The markdown table is written to this file.
+        output: String,
+    },
 }
 
 #[derive(clap::Args)]
@@ -279,7 +284,7 @@ impl Flags {
                 cargo.arg(format!("--output=examples/{lang}/api.{ext}"));
                 execute_command(&mut cargo)?;
             }
-            MainCommand::Footprint => footprint::compare()?,
+            MainCommand::Footprint { output } => footprint::compare(&output)?,
         }
         Ok(())
     }
@@ -386,8 +391,7 @@ impl AppletOptions {
                 }
             }
             if let Some(key) = &main.footprint {
-                let value = footprint::rust_size(applet)?;
-                footprint::update(key, value)?;
+                footprint::update_applet(key, footprint::rust_size(applet)?)?;
             }
         }
         if native.is_none() && changed {
@@ -447,7 +451,7 @@ impl AppletOptions {
             }
         }
         if let Some(key) = &main.footprint {
-            footprint::update(key, fs::metadata(wasm)?.len() as usize)?;
+            footprint::update_applet(key, fs::metadata(wasm)?.len() as usize)?;
         }
         Ok(())
     }
@@ -607,8 +611,7 @@ impl RunnerOptions {
             execute_command(&mut size)?;
         }
         if let Some(key) = &main.footprint {
-            let value = footprint::rust_size(&elf)?;
-            footprint::update(key, value)?;
+            footprint::update_runner(key, footprint::rust_size(&elf)?)?;
         }
         if let Some(stack_sizes) = self.stack_sizes {
             let elf = fs::read(&elf)?;
