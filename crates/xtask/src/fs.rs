@@ -63,7 +63,7 @@ pub fn read_toml<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {
     let name = path.as_ref().display();
     let contents = read(path.as_ref())?;
     let data = String::from_utf8(contents).with_context(|| format!("reading {name}"))?;
-    Ok(toml::from_str(&data).with_context(|| format!("parsing {name}"))?)
+    toml::from_str(&data).with_context(|| format!("parsing {name}"))
 }
 
 pub fn remove_file(path: impl AsRef<Path>) -> Result<()> {
