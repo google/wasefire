@@ -31,6 +31,7 @@ use rustc_demangle::demangle;
 use sha2::{Digest, Sha256};
 use strum::{Display, EnumString};
 
+mod footprint;
 mod fs;
 mod lazy;
 
@@ -67,8 +68,12 @@ struct MainOptions {
     /// Prints basic size information.
     #[clap(long)]
     size: bool,
-    // TODO: Add a flag to add "-C link-arg=-Map=output.map" to get the map of why the linker
-    // added/kept something.
+
+    /// Updates footprint.toml to make the measured footprint to the provided key.
+    ///
+    /// The key is a space-separated list of strings.
+    #[clap(long)]
+    footprint: Option<String>,
 }
 
 #[derive(clap::Subcommand)]
@@ -85,6 +90,11 @@ enum MainCommand {
         #[clap(long, default_values_t = ["full-api".to_string()])]
         features: Vec<String>,
     },
+
+    /// Dumps a table comparison between footprint-base.toml and footprint-pull_request.toml.
+    ///
+    /// If footprint-base.toml is missing, it is omitted from the table.
+    Footprint,
 }
 
 #[derive(clap::Args)]
@@ -269,6 +279,7 @@ impl Flags {
                 cargo.arg(format!("--output=examples/{lang}/api.{ext}"));
                 execute_command(&mut cargo)?;
             }
+            MainCommand::Footprint => footprint::compare()?,
         }
         Ok(())
     }
@@ -364,13 +375,19 @@ impl AppletOptions {
             None => "target/wasefire/applet.wasm",
         };
         let changed = copy_if_changed(&out, applet)?;
-        if native.is_some() && main.size {
-            let mut size = wrap_command()?;
-            size.args(["rust-size", applet]);
-            let output = String::from_utf8(output_command(&mut size)?.stdout)?;
-            // We assume the interesting part is the first line after the header.
-            for line in output.lines().take(2) {
-                println!("{line}");
+        if native.is_some() {
+            if main.size {
+                let mut size = wrap_command()?;
+                size.args(["rust-size", applet]);
+                let output = String::from_utf8(output_command(&mut size)?.stdout)?;
+                // We assume the interesting part is the first line after the header.
+                for line in output.lines().take(2) {
+                    println!("{line}");
+                }
+            }
+            if let Some(key) = &main.footprint {
+                let value = footprint::rust_size(applet)?;
+                footprint::update(key, value)?;
             }
         }
         if native.is_none() && changed {
@@ -428,6 +445,9 @@ impl AppletOptions {
             if main.size {
                 println!("Applet size (after wasm-opt): {}", fs::metadata(wasm)?.len());
             }
+        }
+        if let Some(key) = &main.footprint {
+            footprint::update(key, fs::metadata(wasm)?.len() as usize)?;
         }
         Ok(())
     }
@@ -585,6 +605,10 @@ impl RunnerOptions {
             size.arg("rust-size");
             size.arg(&elf);
             execute_command(&mut size)?;
+        }
+        if let Some(key) = &main.footprint {
+            let value = footprint::rust_size(&elf)?;
+            footprint::update(key, value)?;
         }
         if let Some(stack_sizes) = self.stack_sizes {
             let elf = fs::read(&elf)?;
