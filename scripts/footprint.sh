@@ -22,19 +22,22 @@ set -e
 
 [ -e footprint.toml ] && e "footprint.toml already exists"
 
-bool() { if [ -n "$1" ]; then echo "$2"; else echo "$3"; fi; }
+APPLET=exercises/part-7-sol
+RUNNER=nordic
 
-applet=exercises/part-7-sol
-runner=nordic
-for native in '' --native-target=thumbv7em-none-eabi; do
-  for opt_level in '' --opt-level=z; do
-    for release in '' --release; do
-      config="$(bool "$release" release debug) $(bool "$native" native wasm)"
-      config="$config $(bool "$opt_level" small fast)"
-      x cargo xtask --footprint="$config" \
-        $release $native applet rust $applet $opt_level
-      x cargo xtask --footprint="$config" \
-        $release ${native:+--native} runner $runner $opt_level
-    done
-  done
-done
+measure() {
+  local release
+  local native
+  local opt_level
+  [ $1 = release ] && release=--release
+  [ $2 = native ] && native=--native-target=thumbv7em-none-eabi
+  [ $3 = small ] && opt_level=--opt-level=z
+  x cargo xtask --footprint="$*" $release $native applet rust $APPLET $opt_level
+  [ $2 = native ] && native=--native
+  x cargo xtask --footprint="$*" $release $native runner $RUNNER $opt_level
+}
+
+measure debug wasm fast
+measure release wasm fast
+measure release native fast
+measure release native small
