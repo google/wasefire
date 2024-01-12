@@ -12,57 +12,97 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::hash_map::Entry;
+use std::collections::{BTreeSet, HashMap};
+use std::fs::{File, OpenOptions};
+use std::io::Write;
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::{fs, output_command, wrap_command};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 struct Footprint {
-    version: usize,
-    measurements: Vec<Measurement>,
+    row: Vec<Row>,
 }
 
 #[derive(Serialize, Deserialize)]
-struct Measurement {
-    key: Vec<String>,
-    value: usize,
+struct Row {
+    config: String,
+    #[serde(flatten)]
+    value: HashMap<String, usize>,
 }
 
-pub fn update(key: &str, value: usize) -> Result<()> {
+pub fn update_applet(config: &str, value: usize) -> Result<()> {
+    update("applet", config, value)
+}
+
+pub fn update_runner(config: &str, value: usize) -> Result<()> {
+    update("runner", config, value)
+}
+
+fn update(key: &str, config: &str, value: usize) -> Result<()> {
     const PATH: &str = "footprint.toml";
-    let mut footprint = Footprint::read(PATH)?;
-    let key = key.split_whitespace().map(|x| x.to_string()).collect();
-    let measurement = Measurement { key, value };
-    match footprint.measurements.iter_mut().find(|x| x.key == measurement.key) {
-        Some(x) => x.value = value,
-        None => footprint.measurements.push(measurement),
-    }
+    let mut footprint = match fs::exists(PATH) {
+        true => fs::read_toml(PATH)?,
+        false => Footprint::default(),
+    };
+    let idx = match footprint.row.binary_search_by_key(&config, |x| &x.config) {
+        Ok(x) => x,
+        Err(x) => {
+            let row = Row { config: config.to_string(), value: HashMap::new() };
+            footprint.row.insert(x, row);
+            x
+        }
+    };
+    ensure!(
+        footprint.row[idx].value.insert(key.to_string(), value).is_none(),
+        "{key} is already defined for {config:?}"
+    );
     fs::write_toml(PATH, &footprint)?;
     Ok(())
 }
 
-pub fn compare() -> Result<()> {
-    let base = Footprint::read_measurements("footprint-push.toml")?;
-    let head = Footprint::read_measurements("footprint-pull_request.toml")?;
-    let keys: HashSet<&Vec<String>> = base.keys().chain(head.keys()).collect();
-    let mut keys: Vec<&Vec<String>> = keys.into_iter().collect();
-    keys.sort();
-    let print = |k, x| match x {
-        Some(x) => print!(" {x}"),
-        None => print!(" no-{k}"),
+pub fn compare(output: &str) -> Result<()> {
+    let mut output = OpenOptions::new().create(true).append(true).open(output)?;
+    let base = Footprint::read("footprint-push.toml");
+    let head = Footprint::read("footprint-pull_request.toml");
+    let configs: BTreeSet<&String> = base.keys().chain(head.keys()).collect();
+    writeln!(output, "### Footprint impact\n")?;
+    writeln!(output, "| Config | Key | Base | Head | Diff | Ratio |")?;
+    writeln!(output, "| --- | --- | ---: | ---: | ---: | ---: |")?;
+    let write = |output: &mut File, x| match x {
+        Some(x) => write!(output, " {x} |"),
+        None => write!(output, " |"),
     };
-    for key in keys {
-        print!("{key:?}");
-        let base = base.get(key).cloned();
-        let head = head.get(key).cloned();
-        let diff = base.and_then(|base| head.map(|head| head - base));
-        print("base", base);
-        print("head", head);
-        print("diff", diff);
-        println!();
+    for config in configs {
+        for key in ["total", "applet", "runner"] {
+            let base = base.get(config).map(|x| x[key]);
+            let head = head.get(config).map(|x| x[key]);
+            let diff = base.and_then(|base| head.map(|head| head - base));
+            write!(output, "| {config} | {key} |")?;
+            write(&mut output, base)?;
+            write(&mut output, head)?;
+            write(&mut output, diff)?;
+            match diff {
+                Some(diff) => {
+                    let base = base.unwrap();
+                    let ratio = (diff as f64 / base as f64 * 100.) as i64;
+                    let emoji = match ratio {
+                        i64::MIN ..= -10 => ":+1: ",
+                        -9 ..= 29 => "",
+                        30 ..= i64::MAX => ":-1: ",
+                    };
+                    if !emoji.is_empty() {
+                        println!("::notice::{config:?} {key} {emoji}{ratio}%");
+                    }
+                    write!(output, " {emoji}{ratio}% |")?;
+                }
+                None => write!(output, " |")?,
+            }
+            writeln!(output)?;
+        }
     }
     Ok(())
 }
@@ -79,24 +119,38 @@ pub fn rust_size(elf: &str) -> Result<usize> {
 }
 
 impl Footprint {
-    fn read(path: &str) -> Result<Self> {
-        let footprint = if fs::exists(path) {
-            fs::read_toml(path)?
-        } else {
-            Footprint { version: VERSION, measurements: Vec::new() }
-        };
-        ensure!(footprint.version == VERSION);
-        Ok(footprint)
-    }
-
-    fn read_measurements(path: &str) -> Result<HashMap<Vec<String>, usize>> {
+    fn read(path: &str) -> HashMap<String, HashMap<&'static str, i64>> {
         let mut result = HashMap::new();
-        let footprint = Self::read(path)?;
-        for Measurement { key, value } in footprint.measurements {
-            ensure!(result.insert(key, value).is_none(), "duplicate key in {path}");
+        let footprint = fs::read_toml(path).unwrap_or_else(|err| {
+            println!("::warning::{err}");
+            Footprint::default()
+        });
+        for Row { config, mut value } in footprint.row {
+            let value: Result<_> = try {
+                let missing = |key| format!("Missing {key} for {config:?} in {path}");
+                let applet = value.remove("applet").with_context(|| missing("applet"))?;
+                let runner = value.remove("runner").with_context(|| missing("runner"))?;
+                if !value.is_empty() {
+                    Err(anyhow!("Extra keys for {config:?} in {path}"))?;
+                }
+                let mut value = HashMap::new();
+                value.insert("applet", applet as i64);
+                value.insert("total", runner as i64);
+                value.insert("runner", runner as i64 - applet as i64);
+                value
+            };
+            let value = match value {
+                Ok(x) => x,
+                Err(err) => {
+                    println!("::warning::{err}");
+                    continue;
+                }
+            };
+            match result.entry(config) {
+                Entry::Occupied(x) => println!("::warning::Duplicate {:?} in {path}", x.key()),
+                Entry::Vacant(x) => drop(x.insert(value)),
+            }
         }
-        Ok(result)
+        result
     }
 }
-
-const VERSION: usize = 1;
