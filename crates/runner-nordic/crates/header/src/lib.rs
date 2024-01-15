@@ -14,6 +14,8 @@
 
 #![no_std]
 
+use core::ptr::addr_of;
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Header(u32);
 
@@ -63,7 +65,7 @@ impl Side {
         extern "C" {
             static mut __header_origin: u32;
         }
-        Self::new(unsafe { &__header_origin as *const u32 } as u32)
+        Self::new(unsafe { addr_of!(__header_origin) } as u32)
     }
 
     fn new(addr: u32) -> Option<Self> {

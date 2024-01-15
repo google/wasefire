@@ -31,6 +31,7 @@
 
 ### Patch
 
+- Fix lints of nightly-2024-01-24
 - Support zero-length slices in native
 - Fix board API feature gates for AES-128-CCM and AES-256-GCM
 - Remove unreachable `multivalue` feature gates
