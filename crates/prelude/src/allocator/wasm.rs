@@ -30,8 +30,7 @@ extern "C" fn init() {
     struct Pool(MaybeUninit<[u8; SIZE]>);
     static mut POOL: Pool = Pool(MaybeUninit::uninit());
     // SAFETY: This function is called at most once and POOL is only accessed here.
-    let pool = unsafe { &mut POOL };
-    let pool_ptr = NonNull::new(pool.0.as_mut_ptr()).unwrap();
+    let pool_ptr = NonNull::new(unsafe { POOL.0.as_mut_ptr() }).unwrap();
     let mut allocator = ALLOCATOR.0.lock();
     // SAFETY: POOL is static and won't be used again.
     let size = unsafe { allocator.insert_free_block_ptr(pool_ptr) };

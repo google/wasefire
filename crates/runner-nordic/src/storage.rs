@@ -14,6 +14,7 @@
 
 use alloc::borrow::Cow;
 use alloc::vec;
+use core::ptr::addr_of_mut;
 use core::slice;
 
 use embedded_storage::nor_flash::{
@@ -41,8 +42,8 @@ macro_rules! take_storage {
             static mut $start: u32;
             static mut $end: u32;
         }
-        let start = unsafe { &mut $start as *mut u32 as *mut u8 };
-        let end = unsafe { &mut $end as *mut u32 as usize };
+        let start = unsafe { addr_of_mut!($start) as *mut u8 };
+        let end = unsafe { addr_of_mut!($end) as usize };
         let length = end.checked_sub(start as usize).unwrap();
         assert_eq!(length % PAGE_SIZE, 0);
         unsafe { slice::from_raw_parts_mut(start, length) }

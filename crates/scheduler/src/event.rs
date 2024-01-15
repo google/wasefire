@@ -181,7 +181,7 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
 
         #[derive(Copy, Clone)]
         #[repr(transparent)]
-        struct U8(*const u8);
+        struct U8(#[allow(dead_code)] *const u8);
         unsafe impl Send for U8 {}
 
         let InstId = inst;
