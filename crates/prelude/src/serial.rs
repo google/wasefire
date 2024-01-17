@@ -221,7 +221,7 @@ impl<'a, T: Serial> Writer<'a, T> {
 }
 
 struct Updater<'a, T: Serial> {
-    // The notifier is alive as long as not done.
+    // The listener is alive as long as not done (see `should_listen()`).
     listener: Option<Listener<'a, T>>,
     kind: Kind<'a>,
     result: Result<usize, Error>,
@@ -290,8 +290,8 @@ impl<'a> Kind<'a> {
 
     fn len(&self) -> usize {
         match self {
-            Kind::Reader { buffer, .. } => buffer.len(),
-            Kind::Writer { buffer, .. } => buffer.len(),
+            Kind::Reader { buffer } => buffer.len(),
+            Kind::Writer { buffer } => buffer.len(),
         }
     }
 
