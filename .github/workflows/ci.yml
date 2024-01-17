@@ -55,7 +55,9 @@ jobs:
       - run: ./scripts/setup.sh
       - run: ./scripts/ci.sh
       - run: ./scripts/footprint.sh
+        if: github.event_name != 'schedule'
       - run: mv footprint.toml footprint-${{ github.event_name }}.toml
+        if: github.event_name != 'schedule'
       - uses: actions/upload-artifact@v4
         if: github.event_name == 'push'
         with:
@@ -70,6 +72,8 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'ci.yml',
+              branch: 'main',
+              event: 'push',
               head_sha: '${{ github.event.pull_request.base.sha }}',
             });
             return data.workflow_runs[0]?.id ?? 0;
