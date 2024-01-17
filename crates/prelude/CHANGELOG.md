@@ -12,6 +12,7 @@
 
 ### Minor
 
+- Add `serial::Listener` to listen for serial events
 - Migrate to low-level applet API returning `isize`
 - Remove experimental `multivalue` support for #355
 - Add API features (enabled by default)
