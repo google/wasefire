@@ -15,20 +15,40 @@
 use alloc::string::String;
 
 use interface::{deserialize, serialize, Request, Response};
-use wasefire::serial;
+use wasefire::{debug, scheduling, serial};
 
-pub struct Serial<T: serial::Serial>(T);
+pub struct Serial<'a, T: serial::Serial> {
+    serial: &'a T,
+    reader: serial::DelimitedReader<'a, T>,
+}
 
-impl<T: serial::Serial> Serial<T> {
-    pub fn new(serial: T) -> Self {
-        Serial(serial)
+impl<'a, T: serial::Serial> Serial<'a, T> {
+    pub fn new(serial: &'a T) -> Self {
+        // Requests are delimited by bytes equal to zero.
+        let reader = serial::DelimitedReader::new(serial, 0);
+        Serial { serial, reader }
     }
 
-    pub fn receive(&self) -> Request {
-        deserialize(|x| serial::read_any(&self.0, x).unwrap())
+    pub fn receive(&mut self) -> Request {
+        // Wait until we receive a full request.
+        let mut request = loop {
+            if let Some(x) = self.reader.next_frame() {
+                break x;
+            }
+            scheduling::wait_for_callback();
+        };
+        // Ignore all requests but the last one.
+        while let Some(x) = self.reader.next_frame() {
+            debug!("Dropping old request.");
+            request = x;
+        }
+        deserialize(&mut request)
     }
 
     pub fn send(&self, response: Result<Response, String>) {
-        serial::write_all(&self.0, &serialize(&response)).unwrap();
+        match serial::write_all(self.serial, &serialize(&response)) {
+            Ok(()) => (),
+            Err(err) => debug!("Sending response failed with {err}"),
+        }
     }
 }

@@ -83,26 +83,11 @@ pub enum Response {
     Delete,
 }
 
-/// Reads until an object is deserialized.
+/// Deserializes an object.
 ///
-/// The `read` function parameter must block until at least one byte can be read. Then, it should
-/// read as much as possible without blocking and return that length.
-pub fn deserialize<T: DeserializeOwned>(mut read: impl FnMut(&mut [u8]) -> usize) -> T {
-    let mut buffer = Vec::new();
-    loop {
-        const SIZE: usize = 32;
-        let len = buffer.len();
-        buffer.resize(len + SIZE, 0);
-        let read = read(&mut buffer[len ..]);
-        buffer.truncate(len + read);
-        if buffer[len ..].iter().any(|&x| x == 0) {
-            break;
-        }
-    }
-    let len = buffer.len();
-    assert_eq!(buffer[len - 1], 0);
-    assert!(buffer[.. len - 1].iter().all(|&x| x != 0));
-    postcard::from_bytes_cobs(&mut buffer).unwrap()
+/// Taking the buffer as mutable is a quirk from postcard.
+pub fn deserialize<T: DeserializeOwned>(x: &mut [u8]) -> T {
+    postcard::from_bytes_cobs(x).unwrap()
 }
 
 /// Serializes an object.

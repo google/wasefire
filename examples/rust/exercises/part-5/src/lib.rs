@@ -32,7 +32,8 @@ mod store;
 mod touch; // TODO: Implement this module.
 
 fn main() {
-    let serial = Serial::new(uart::Uart(0));
+    let uart = uart::Uart(0);
+    let mut serial = Serial::new(&uart);
     let mut logic = Logic::new();
     loop {
         let request = serial.receive();

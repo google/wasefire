@@ -15,6 +15,7 @@
 //! Provides a generic API for serial communication.
 
 use alloc::boxed::Box;
+use alloc::vec::Vec;
 use core::cell::Cell;
 use core::fmt::Debug;
 
@@ -143,7 +144,7 @@ pub struct Listener<'a, T: Serial> {
 impl<'a, T: Serial> Listener<'a, T> {
     /// Starts listening for the provided event until dropped.
     pub fn new(serial: &'a T, event: Event) -> Self {
-        let notified = Box::leak(Box::new(Cell::new(false)));
+        let notified = Box::leak(Box::new(Cell::new(true)));
         let func = Self::call;
         let data = notified.as_ptr() as *const u8;
         unsafe { serial.register(event, func, data) }.unwrap();
@@ -168,7 +169,71 @@ impl<'a, T: Serial> Drop for Listener<'a, T> {
     }
 }
 
-/// Provides asynchronous read support.
+/// Asynchronously reads delimited frames.
+///
+/// If you want to read at most a given amount instead, use [`Reader`].
+pub struct DelimitedReader<'a, T: Serial> {
+    listener: Listener<'a, T>,
+    buffer: Vec<u8>,
+    frame: Option<usize>, // index of first delimiter in buffer, if any
+    delimiter: u8,
+}
+
+impl<'a, T: Serial> DelimitedReader<'a, T> {
+    /// Starts reading delimited frames from a serial.
+    pub fn new(serial: &'a T, delimiter: u8) -> Self {
+        let listener = Listener::new(serial, Event::Read);
+        DelimitedReader { listener, buffer: Vec::new(), frame: None, delimiter }
+    }
+
+    /// Returns the next delimited frame (including the delimiter), if any.
+    ///
+    /// This function should be called until it returns `None` before waiting for callback again.
+    /// Otherwise, it may be possible that the platform doesn't notify for new data if the existing
+    /// data has not been read.
+    pub fn next_frame(&mut self) -> Option<Vec<u8>> {
+        if self.frame.is_none() && self.listener.is_notified() {
+            self.flush();
+        }
+        self.frame.map(|len| {
+            let mut frame = self.buffer.split_off(len + 1);
+            core::mem::swap(&mut frame, &mut self.buffer);
+            self.frame = self.buffer.iter().position(|&x| x == self.delimiter);
+            frame
+        })
+    }
+
+    /// Stops reading and returns the current buffer.
+    ///
+    /// The buffer may contain multiple delimited frames.
+    pub fn stop(self) -> Vec<u8> {
+        self.buffer
+    }
+
+    fn flush(&mut self) {
+        while self.read() {}
+    }
+
+    fn read(&mut self) -> bool {
+        let mut data = [0; 32];
+        let len = self.listener.serial.read(&mut data).unwrap();
+        let pos = self.buffer.len();
+        self.buffer.extend_from_slice(&data[.. len]);
+        if self.frame.is_none() {
+            for i in pos .. pos + len {
+                if self.buffer[i] == self.delimiter {
+                    self.frame = Some(i);
+                    break;
+                }
+            }
+        }
+        len == data.len()
+    }
+}
+
+/// Asynchronously reads into the provided buffer.
+///
+/// If instead you want to continuously read delimited frames, use [`DelimitedReader`].
 #[must_use]
 pub struct Reader<'a, T: Serial>(Updater<'a, T>);
 
@@ -194,7 +259,7 @@ impl<'a, T: Serial> Reader<'a, T> {
     }
 }
 
-/// Provides asynchronous write support.
+/// Asynchronously writes from the provided buffer.
 #[must_use]
 pub struct Writer<'a, T: Serial>(Updater<'a, T>);
 
@@ -252,15 +317,15 @@ impl<'a, T: Serial> Updater<'a, T> {
     }
 
     fn update(&mut self) -> Result<usize, Error> {
-        let notifier = match &mut self.listener {
+        let listener = match &mut self.listener {
             Some(x) => x,
             None => return self.result,
         };
-        if !notifier.is_notified() {
+        if !listener.is_notified() {
             return self.result;
         }
         let pos = self.result.as_mut().unwrap();
-        match self.kind.update(notifier.serial, *pos) {
+        match self.kind.update(listener.serial, *pos) {
             Ok(len) => *pos += len,
             err => self.result = err,
         }
