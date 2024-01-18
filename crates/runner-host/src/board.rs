@@ -16,6 +16,7 @@ pub mod button;
 mod crypto;
 mod debug;
 mod led;
+mod platform;
 mod rng;
 mod storage;
 pub mod timer;
@@ -66,6 +67,7 @@ impl Api for Board {
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;
     type Led = led::Impl;
+    type Platform = platform::Impl;
     type Rng = rng::Impl;
     type Storage = storage::Impl;
     type Timer = timer::Impl;

@@ -1193,6 +1193,7 @@ name = "runner-host"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "data-encoding",
  "env_logger",
  "rand",
  "tokio",
