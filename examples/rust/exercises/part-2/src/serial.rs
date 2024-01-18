@@ -15,12 +15,16 @@
 use alloc::string::String;
 
 use interface::{deserialize, serialize, Request, Response};
-use wasefire::serial;
+use wasefire::{scheduling, serial};
 
-pub struct Serial<T: serial::Serial>(T);
+pub struct Serial<'a, T: serial::Serial> {
+    serial: &'a T,
+    reader: serial::DelimitedReader<'a, T>,
+}
 
-impl<T: serial::Serial> Serial<T> {
-    pub fn new(serial: T) -> Self {
+impl<'a, T: serial::Serial> Serial<'a, T> {
+    pub fn new(serial: &'a T) -> Self {
+        // TODO: Use serial::DelimitedReader
         todo!()
     }
 

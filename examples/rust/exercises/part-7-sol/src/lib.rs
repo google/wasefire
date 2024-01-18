@@ -25,9 +25,10 @@ mod touch;
 
 fn main() {
     #[cfg(feature = "usb")]
-    let serial = Serial::new(wasefire::usb::serial::UsbSerial);
+    let serial = wasefire::usb::serial::UsbSerial;
     #[cfg(not(feature = "usb"))]
-    let serial = Serial::new(wasefire::uart::Uart(0));
+    let serial = wasefire::uart::Uart(0);
+    let mut serial = Serial::new(&serial);
 
     let mut logic = Logic::new();
     loop {
