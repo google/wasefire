@@ -20,6 +20,7 @@
 
 ### Minor
 
+- Add `platform::version_helper()` to help implement `platform::Api::version()`
 - Add `crypto::Software*` and `debug::Impl` implementations
 - Remove unstable `software-crypto` feature
 

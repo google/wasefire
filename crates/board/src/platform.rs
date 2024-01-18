@@ -30,7 +30,8 @@ pub trait Api: Send {
     /// Versions are comparable with lexicographical order.
     ///
     /// The returned length may be larger than the buffer length, in which case the buffer only
-    /// contains a prefix of the version.
+    /// contains a prefix of the version. You can use the [`version_helper()`] to copy and return
+    /// appropriately given a full version.
     #[cfg(feature = "api-platform")]
     fn version(output: &mut [u8]) -> usize;
 
@@ -41,3 +42,12 @@ pub trait Api: Send {
 
 #[cfg(feature = "api-platform-update")]
 pub type Update<B> = <super::Platform<B> as Api>::Update;
+
+/// Copies the longest prefix of a full version and returns its length.
+///
+/// You can use this function to implement [`Api::version()`] given a full version.
+pub fn version_helper(version: &[u8], output: &mut [u8]) -> usize {
+    let len = core::cmp::min(version.len(), output.len());
+    output[.. len].copy_from_slice(&version[.. len]);
+    version.len()
+}
