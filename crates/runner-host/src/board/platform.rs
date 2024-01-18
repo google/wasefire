@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use data_encoding::HEXLOWER_PERMISSIVE;
-use wasefire_board_api::platform::Api;
+use wasefire_board_api::platform::{version_helper, Api};
 use wasefire_board_api::Error;
 use wasefire_error::Code;
 
@@ -24,9 +24,7 @@ impl Api for Impl {
         const VERSION: Option<&str> = option_env!("WASEFIRE_HOST_VERSION");
         let version = VERSION.unwrap_or_default().as_bytes();
         let version = HEXLOWER_PERMISSIVE.decode(version).expect("--version must be hexadecimal");
-        let len = std::cmp::min(output.len(), version.len());
-        output[.. len].copy_from_slice(&version[.. len]);
-        version.len()
+        version_helper(&version, output)
     }
 
     fn reboot() -> Result<!, Error> {

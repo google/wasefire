@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use header::{Header, Side};
-use wasefire_board_api::platform::Api;
+use wasefire_board_api::platform::{version_helper, Api};
 use wasefire_board_api::Error;
 
 pub mod update;
@@ -26,10 +26,7 @@ impl Api for Impl {
     fn version(output: &mut [u8]) -> usize {
         let side = Side::current().unwrap();
         let header = Header::new(side);
-        const N: usize = 4;
-        let len = core::cmp::min(output.len(), N);
-        output[.. len].copy_from_slice(&header.timestamp().to_be_bytes()[.. len]);
-        N
+        version_helper(&header.timestamp().to_be_bytes(), output)
     }
 
     fn reboot() -> Result<!, Error> {
