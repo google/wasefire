@@ -175,7 +175,7 @@ struct RunnerOptions {
     /// Platform version.
     ///
     /// How the version string is interpreted is up to the runner. For Nordic, it must be a u32
-    /// smaller than u32::MAX.
+    /// smaller than u32::MAX. For the host, it must be an hexadecimal byte sequence.
     #[clap(long)]
     version: Option<String>,
 
@@ -508,6 +508,11 @@ impl RunnerOptions {
             Some(1) => "_b",
             _ => unimplemented!(),
         };
+        if self.name == "host" {
+            if let Some(version) = &self.version {
+                cargo.env("WASEFIRE_HOST_VERSION", version);
+            };
+        }
         if self.name == "nordic" {
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
             let version = match &self.version {
