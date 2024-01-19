@@ -20,33 +20,28 @@ pub(crate) fn new() -> Item {
     let items = vec![
         item! {
             /// Reads from USB serial into a buffer.
+            ///
+            /// Returns the number of bytes read. This function does not block and may return zero.
             fn read "usr" {
                 /// Address of the buffer.
                 ptr: *mut u8,
 
                 /// Length of the buffer in bytes.
                 len: usize,
-            } -> {
-                /// Number of bytes read (or negative value for errors).
-                ///
-                /// This function does not block and may return zero.
-                len: isize,
-            }
+            } -> usize
         },
         item! {
             /// Writes to USB serial from a buffer.
+            ///
+            /// Returns the number of bytes written. This function does not block and may return
+            /// zero.
             fn write "usw" {
                 /// Address of the buffer.
                 ptr: *const u8,
 
                 /// Length of the buffer in bytes.
                 len: usize,
-            } -> {
-                /// Number of bytes written (or negative value for errors).
-                ///
-                /// This function does not block and may return zero.
-                len: isize,
-            }
+            } -> usize
         },
         item! {
             /// USB serial events.
@@ -63,22 +58,19 @@ pub(crate) fn new() -> Item {
             /// It is possible that the callback is spuriously called.
             fn register "use" {
                 event: usize,
-                handler_func: fn { data: *const u8 },
-                handler_data: *const u8,
-            } -> {}
+                handler_func: fn { data: *const void },
+                handler_data: *const void,
+            } -> ()
         },
         item! {
             /// Unregisters a callback.
             fn unregister "usd" {
                 event: usize,
-            } -> {}
+            } -> ()
         },
         item! {
             /// Flushs the USB serial.
-            fn flush "usf" {} -> {
-                /// Zero on success, -1 on error.
-                res: isize,
-            }
+            fn flush "usf" {} -> ()
         },
     ];
     Item::Mod(Mod { docs, name, items })

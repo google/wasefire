@@ -4,6 +4,8 @@
 
 ### Major
 
+- Remove unstable `multivalue` support for #355
+- Add API features (disabled by default)
 - Update `wasefire-applet-api-desc` version
 
 ### Patch

@@ -19,7 +19,7 @@ fn main() {
     Api::<Id>::iter(&mut Vec::new(), |x| {
         let ptr = &x as *const Api<Id> as *const u8;
         let repr = unsafe { core::slice::from_raw_parts(ptr, LEN) };
-        let Descriptor { name, params, results } = x.descriptor();
-        println!("{repr:02x?} {name}: {params} -> {results}");
+        let Descriptor { name, params } = x.descriptor();
+        println!("{repr:02x?} {name}: {params}");
     });
 }

@@ -18,7 +18,7 @@
 
 use derivative::Derivative;
 
-use crate::{Error, Id, Support, Unsupported};
+use crate::{Error, Id, Support};
 
 /// Timer event.
 #[derive(Derivative)]
@@ -43,16 +43,6 @@ pub trait Api: Support<usize> + Send {
     ///
     /// The timer won't trigger further events.
     fn disarm(timer: Id<Self>) -> Result<(), Error>;
-}
-
-impl Api for Unsupported {
-    fn arm(_: Id<Self>, _: &Command) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn disarm(_: Id<Self>) -> Result<(), Error> {
-        unreachable!()
-    }
 }
 
 #[derive(Debug, Clone)]

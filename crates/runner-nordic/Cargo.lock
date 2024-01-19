@@ -145,18 +145,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
 
 [[package]]
-name = "ccm"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ae3c82e4355234767756212c570e29833699ab63e6ffd161887314cc5b43847"
-dependencies = [
- "aead",
- "cipher",
- "ctr",
- "subtle",
-]
-
-[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -755,18 +743,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "p384"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70786f51bcc69f6a4c0360e063a4cac5419ef7c5cd5b3c99ad70f3be5ba79209"
-dependencies = [
- "ecdsa",
- "elliptic-curve",
- "primeorder",
- "sha2",
-]
-
-[[package]]
 name = "panic-abort"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -921,6 +897,7 @@ dependencies = [
  "usbd-serial",
  "wasefire-applet-api",
  "wasefire-board-api",
+ "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
  "wasefire-scheduler",
@@ -1160,6 +1137,7 @@ dependencies = [
  "bytemuck",
  "sealed",
  "wasefire-applet-api-macro",
+ "wasefire-error",
 ]
 
 [[package]]
@@ -1188,9 +1166,8 @@ name = "wasefire-board-api"
 version = "0.6.0-git"
 dependencies = [
  "aead",
- "aes",
  "aes-gcm",
- "ccm",
+ "bytemuck",
  "crypto-common",
  "defmt",
  "derivative",
@@ -1198,17 +1175,24 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "generic-array",
- "hmac",
  "p256",
- "p384",
  "sha2",
  "signature",
  "typenum",
  "usb-device",
  "usbd-serial",
  "wasefire-applet-api",
+ "wasefire-error",
  "wasefire-logger",
  "wasefire-store",
+]
+
+[[package]]
+name = "wasefire-error"
+version = "0.1.0-git"
+dependencies = [
+ "defmt",
+ "num_enum 0.7.1",
 ]
 
 [[package]]
@@ -1241,6 +1225,7 @@ dependencies = [
  "typenum",
  "wasefire-applet-api",
  "wasefire-board-api",
+ "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
  "wasefire-store",

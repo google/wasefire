@@ -16,7 +16,7 @@
 
 use wasefire_applet_api::radio::ble::Advertisement;
 
-use crate::{Error, Support, Unsupported};
+use crate::{Error, Support};
 
 /// BLE event.
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -43,18 +43,4 @@ pub trait Api: Support<bool> {
     ///
     /// Returns whether a packet was read.
     fn read_advertisement(packet: &mut Advertisement) -> Result<bool, Error>;
-}
-
-impl Api for Unsupported {
-    fn enable(_: &Event) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn disable(_: &Event) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn read_advertisement(_: &mut Advertisement) -> Result<bool, Error> {
-        unreachable!()
-    }
 }

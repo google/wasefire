@@ -4,10 +4,20 @@
 
 ### Major
 
+- Do not expose internal details
+- Add applet API and board API features (disabled by default)
 - Add `native` and `wasm` features (exactly one must be chosen)
 
 ### Minor
 
+- Migrate `clock` module to `timer`
+- Remove unstable `software-crypto` feature
+- Support applets calling unknown host functions by returning an error
+- Migrate to applet API functions always returning `isize`
+- Support `debug::time()` new return type
+- Migrate to `platform::update` returning `Error`
+- Migrate to `wasefire-error`
+- Support `gpio` module
 - Support `platform::version()`
 - Support `radio::ble` module
 - Support configuring the memory size with `WASEFIRE_MEMORY_PAGE_COUNT`
@@ -21,6 +31,13 @@
 
 ### Patch
 
+- Fix lints of nightly-2024-01-24
+- Support zero-length slices in native
+- Fix board API feature gates for AES-128-CCM and AES-256-GCM
+- Remove unreachable `multivalue` feature gates
+- Correctly gate events of nested APIs
+- Rename `debug` internal feature to `internal-debug`
+- Fix double-lock issue for native callbacks
 - Fix parsing of `WASEFIRE_MEMORY_PAGE_COUNT`
 - Fix docs.rs build
 - Use `wasefire-sync`
@@ -93,4 +110,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 24 -->
+<!-- Increment to skip CHANGELOG.md test: 29 -->

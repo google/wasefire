@@ -12,40 +12,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_applet_api::platform::{self as api, Api};
+#[cfg(feature = "board-api-platform")]
+use wasefire_applet_api::platform as api;
+use wasefire_applet_api::platform::Api;
+#[cfg(feature = "board-api-platform")]
+use wasefire_board_api as board;
+#[cfg(feature = "board-api-platform")]
 use wasefire_board_api::platform::Api as _;
-use wasefire_board_api::{self as board, Api as Board};
+use wasefire_board_api::Api as Board;
 
+#[cfg(feature = "board-api-platform")]
 use crate::applet::store::MemoryApi;
-use crate::{DispatchSchedulerCall, SchedulerCall};
+use crate::DispatchSchedulerCall;
+#[cfg(feature = "board-api-platform")]
+use crate::SchedulerCall;
 
+#[cfg(feature = "applet-api-platform-update")]
 mod update;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
+        #[cfg(feature = "applet-api-platform-update")]
         Api::Update(call) => update::process(call),
-        Api::Version(call) => version(call),
-        Api::Reboot(call) => reboot(call),
+        #[cfg(feature = "applet-api-platform")]
+        Api::Version(call) => or_fail!("board-api-platform", version(call)),
+        #[cfg(feature = "applet-api-platform")]
+        Api::Reboot(call) => or_fail!("board-api-platform", reboot(call)),
     }
 }
 
+#[cfg(feature = "board-api-platform")]
 fn version<B: Board>(mut call: SchedulerCall<B, api::version::Sig>) {
     let api::version::Params { ptr, len } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
+    let result = try {
         let output = memory.get_mut(*ptr, *len)?;
-        let len = board::Platform::<B>::version(output) as u32;
-        api::version::Results { len: len.into() }
+        Ok(board::Platform::<B>::version(output) as u32)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
+#[cfg(feature = "board-api-platform")]
 fn reboot<B: Board>(call: SchedulerCall<B, api::reboot::Sig>) {
     let api::reboot::Params {} = call.read();
-    let res = match board::Platform::<B>::reboot() {
-        Ok(x) => match x {},
-        Err(_) => u32::MAX,
-    };
-    call.reply(Ok(api::reboot::Results { res: res.into() }));
+    call.reply(Ok(board::Platform::<B>::reboot()));
 }

@@ -15,10 +15,12 @@
 use wasefire_board_api::radio::Event;
 use wasefire_board_api::Api as Board;
 
+#[cfg(all(feature = "board-api-radio-ble", feature = "applet-api-radio-ble"))]
 pub mod ble;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
+    #[cfg(all(feature = "board-api-radio-ble", feature = "applet-api-radio-ble"))]
     Ble(ble::Key),
 }
 
@@ -31,6 +33,7 @@ impl<B: Board> From<Key> for crate::event::Key<B> {
 impl<'a> From<&'a Event> for Key {
     fn from(event: &'a Event) -> Self {
         match event {
+            #[cfg(all(feature = "board-api-radio-ble", feature = "applet-api-radio-ble"))]
             Event::Ble(event) => Key::Ble(event.into()),
         }
     }
@@ -38,6 +41,7 @@ impl<'a> From<&'a Event> for Key {
 
 pub fn process(event: Event) {
     match event {
+        #[cfg(all(feature = "board-api-radio-ble", feature = "applet-api-radio-ble"))]
         Event::Ble(_) => ble::process(),
     }
 }

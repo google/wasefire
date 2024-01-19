@@ -26,8 +26,7 @@
   // Returns how many buttons are on the device.
   @external("env", "bc")
   export declare function button_count(
-  // How many buttons are on the device.
-  ): usize
+  ): i32
 
   // Register a handler for button events.
   @external("env", "br")
@@ -42,94 +41,24 @@
 
     // The opaque data to use when calling the handler function.
     handler_data: usize,
-  ): void
+  ): i32
 
   // Unregister handlers for button events.
   @external("env", "bu")
   export declare function button_unregister(
     // Index of the button to stop listening to.
     button: usize,
-  ): void
+  ): i32
 // END OF MODULE button
-
-// START OF MODULE clock
-// Clock and timer operations.
-  // Whether a timer should periodically trigger.
-  enum clock_Mode {
-    // The timer fires only once.
-    Oneshot = 0,
-
-    // The timer fires periodically.
-    Periodic = 1,
-  }
-
-  // Allocates a timer (initially stopped).
-  @external("env", "ta")
-  export declare function clock_allocate(
-    // Function called when the timer triggers.
-    handler_func: usize,
-
-    // The opaque data to use when calling the handler function.
-    handler_data: usize,
-  // Identifier for this timer.
-  ): usize
-
-  // Starts a stopped timer given its id.
-  @external("env", "tb")
-  export declare function clock_start(
-    // The identifier of the timer to start.
-    //
-    // It must come from an allocated timer that wasn't stopped.
-    id: usize,
-
-    // Whether the timer should periodically fire.
-    //
-    // Valid values are defined by [`Mode`](super::Mode).
-    mode: usize,
-
-    // How long until the timer triggers in milli-seconds.
-    duration_ms: usize,
-  ): void
-
-  // Stops a running timer given its id.
-  //
-  // Note that if the timer triggers while being stopped, the handler may still be
-  // called.
-  @external("env", "tc")
-  export declare function clock_stop(
-    // The identifier of the timer to start.
-    id: usize,
-  ): void
-
-  // Deallocates a stopped timer given its id.
-  @external("env", "td")
-  export declare function clock_free(
-    // The identifier of the timer to start.
-    id: usize,
-  ): void
-// END OF MODULE clock
 
 // START OF MODULE crypto
 // Cryptographic operations.
-  // Describes errors on cryptographic operations.
-  enum crypto_Error {
-    // A function pre-condition was broken.
-    InvalidArgument = 0,
-
-    // An operation is unsupported.
-    Unsupported = 1,
-
-    // An RNG operation failed.
-    RngFailure = 2,
-  }
-
   // START OF MODULE crypto_ccm
   // AES-CCM according to Bluetooth.
     // Whether AES-CCM is supported.
     @external("env", "ccs")
     export declare function crypto_ccm_is_supported(
-    // 1 if supported, 0 otherwise.
-    ): usize
+    ): i32
 
     // Encrypts a clear text given a key and IV.
     @external("env", "cce")
@@ -155,9 +84,7 @@
       //
       // Its length must be `len + 4` bytes.
       cipher: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
-    ): isize
+    ): i32
 
     // Decrypts a cipher text given a key and IV.
     @external("env", "ccd")
@@ -183,9 +110,7 @@
       //
       // Its length must be provided in the `len` field.
       clear: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
-    ): isize
+    ): i32
   // END OF MODULE crypto_ccm
 
   // START OF MODULE crypto_ec
@@ -201,8 +126,7 @@
     export declare function crypto_ec_is_supported(
       // The enum value of the [curve][super::Curve].
       curve: usize,
-    // 1 when supported, 0 otherwise.
-    ): usize
+    ): i32
 
     // Returns whether a scalar is valid.
     //
@@ -214,8 +138,7 @@
 
       // The scalar in SEC1 encoding.
       n: usize,
-    // 1 if valid, 0 otherwise.
-    ): usize
+    ): i32
 
     // Returns whether a point is valid.
     @external("env", "ceq")
@@ -228,8 +151,7 @@
 
       // The y-coordinate in SEC1 encoding.
       y: usize,
-    // 1 if valid, 0 otherwise.
-    ): usize
+    ): i32
 
     // Performs base point multiplication.
     @external("env", "ceb")
@@ -245,9 +167,7 @@
 
       // The y coordinate in SEC1 encoding.
       y: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
-    ): isize
+    ): i32
 
     // Performs point multiplication.
     @external("env", "cep")
@@ -269,9 +189,7 @@
 
       // The y coordinate of the output point in SEC1 encoding.
       out_y: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
-    ): isize
+    ): i32
 
     // Signs a message with ECDSA.
     @external("env", "cei")
@@ -290,9 +208,7 @@
 
       // The s signature component in SEC1 encoding.
       s: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
-    ): isize
+    ): i32
 
     // Verifies an ECDSA signature.
     @external("env", "cev")
@@ -314,9 +230,7 @@
 
       // The s signature component in SEC1 encoding.
       s: usize,
-    // 1 if the signature is valid, 0 if invalid, and bitwise complement of
-    // [`Error`](crate::crypto::Error) otherwise.
-    ): isize
+    ): i32
   // END OF MODULE crypto_ec
 
   // START OF MODULE crypto_gcm
@@ -335,17 +249,18 @@
     }
 
     // Describes how AES-256-GCM is supported.
+    //
+    // Returns a bit-flag described by [`super::Support`] on success.
     @external("env", "cgs")
     export declare function crypto_gcm_support(
-    // Bit-flag as described by [`super::Support`].
-    ): usize
+    ): i32
 
     // Returns the supported tag length.
     //
     // The tag argument to [`encrypt()`] and [`decrypt()`] must be of that length.
     @external("env", "cgt")
     export declare function crypto_gcm_tag_length(
-    ): usize
+    ): i32
 
     // Encrypts and authenticates a clear text with associated data given a key and IV.
     @external("env", "cge")
@@ -376,9 +291,7 @@
 
       // The authentication tag (see [`super::tag_length()`]).
       tag: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
-    ): isize
+    ): i32
 
     // Decrypts and authenticates a cipher text with associated data given a key and IV.
     @external("env", "cgd")
@@ -409,9 +322,7 @@
 
       // The clear text.
       clear: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
-    ): isize
+    ): i32
   // END OF MODULE crypto_gcm
 
   // START OF MODULE crypto_hash
@@ -430,17 +341,14 @@
     export declare function crypto_hash_is_supported(
       // The hash algorithm.
       algorithm: usize,
-    // 1 if supported, 0 otherwise.
-    ): usize
+    ): i32
 
-    // Initializes a hash.
+    // Initializes a hash and returns its identifier.
     @external("env", "chi")
     export declare function crypto_hash_initialize(
       // The hash algorithm.
       algorithm: usize,
-    // A non-negative identifier on success, bitwise complement of
-    // [`Error`](crate::crypto::Error) otherwise.
-    ): isize
+    ): i32
 
     // Updates a hash.
     //
@@ -455,7 +363,7 @@
 
       // The length of the data to hash.
       length: usize,
-    ): void
+    ): i32
 
     // Finalizes a hash.
     @external("env", "chf")
@@ -473,19 +381,16 @@
       // The pointer may be null, in which case this function deallocates the identifier
       // without computing the digest.
       digest: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
-    ): isize
+    ): i32
 
     // Whether the algorithm is supported for hmac.
     @external("env", "cht")
     export declare function crypto_hash_is_hmac_supported(
       // The hash algorithm.
       algorithm: usize,
-    // 1 if supported, 0 otherwise.
-    ): usize
+    ): i32
 
-    // Initializes an hmac.
+    // Initializes an hmac and returns its identifier.
     @external("env", "chj")
     export declare function crypto_hash_hmac_initialize(
       // The hash algorithm.
@@ -498,9 +403,7 @@
       //
       // If greater than 64 bytes, the key will be itself hashed.
       key_len: usize,
-    // A non-negative identifier on success, bitwise complement of
-    // [`Error`](crate::crypto::Error) otherwise.
-    ): isize
+    ): i32
 
     // Updates an hmac.
     //
@@ -515,7 +418,7 @@
 
       // The length of the data to hmac.
       length: usize,
-    ): void
+    ): i32
 
     // Finalizes an hmac.
     @external("env", "chg")
@@ -533,17 +436,14 @@
       // The pointer may be null, in which case this function deallocates the identifier
       // without computing the hmac.
       hmac: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
-    ): isize
+    ): i32
 
     // Whether the algorithm is supported for hkdf.
     @external("env", "chr")
     export declare function crypto_hash_is_hkdf_supported(
       // The hash algorithm.
       algorithm: usize,
-    // 1 if supported, 0 otherwise.
-    ): usize
+    ): i32
 
     // Expands with RFC5869 HKDF.
     @external("env", "che")
@@ -576,9 +476,7 @@
       //
       // Must be at most 255 times the output length of the hash algorithm.
       okm_len: usize,
-    // Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-    // otherwise.
-    ): isize
+    ): i32
   // END OF MODULE crypto_hash
 // END OF MODULE crypto
 
@@ -596,18 +494,19 @@
 
     // The length of the message in bytes.
     len: usize,
-  ): void
+  ): i32
 
   // Returns the time spent since some initial event.
   //
-  // The time is in micro-seconds and may wrap before using all 64 bits. In particular,
-  // this function may constantly return zero if time is not supported.
+  // The time is in micro-seconds and may wrap before using all 64 bits.
   @external("env", "dt")
   export declare function debug_time(
-    // Pointer to the upper 32-bits (may be null).
+    // Pointer to the 64-bits time (may be null).
+    //
+    // The least significant 31 bits are always returned, regardless of whether the
+    // pointer is null.
     ptr: usize,
-  // Lower 32-bits of the time.
-  ): usize
+  ): i32
 
   // Time in micro-seconds since the scheduler started.
   //
@@ -634,7 +533,7 @@
   export declare function debug_perf(
     // Pointer to the output [`super::Perf`] struct.
     ptr: usize,
-  ): void
+  ): i32
 
   // Exits the platform with an error code.
   //
@@ -642,18 +541,102 @@
   // result.
   @external("env", "de")
   export declare function debug_exit(
-    // 0 for success, 1 for failure
+    // 0 for success, 1 for failure.
     code: usize,
-  ): void
+  ): i32
 // END OF MODULE debug
+
+// START OF MODULE gpio
+// Low-level GPIO operations.
+//
+// See [`crate::button`] and [`crate::led`] for higher-level GPIO operations.
+  // Returns how many GPIOs are on the device.
+  @external("env", "gc")
+  export declare function gpio_count(
+  ): i32
+
+  // Input configuration.
+  enum gpio_InputConfig {
+    // Input is disabled.
+    Disabled = 0,
+
+    // Floating input (most common configuration).
+    //
+    // Reading while the voltage is not driven may return 0 or 1.
+    Floating = 1,
+
+    // Pull-down input.
+    //
+    // Reading while the voltage is not driven returns 0.
+    PullDown = 2,
+
+    // Pull-up input.
+    //
+    // Reading while the voltage is not driven returns 1.
+    PullUp = 3,
+  }
+
+  // Output configuration.
+  enum gpio_OutputConfig {
+    // Output is disabled.
+    Disabled = 0,
+
+    // Push-pull output (most common configuration).
+    //
+    // Writing 0 (resp. 1) drives the voltage to 0 (resp. 1).
+    PushPull = 3,
+
+    // Open-drain output.
+    //
+    // Writing 0 drives the voltage to 0. Writing 1 doesn't drive the voltage.
+    OpenDrain = 1,
+
+    // Open-source output.
+    //
+    // Writing 0 doesn't drive the voltage. Writing 1 drives the voltage to 1.
+    OpenSource = 2,
+  }
+
+  // Configures a GPIO.
+  @external("env", "gf")
+  export declare function gpio_configure(
+    // Index of the GPIO to configure.
+    gpio: usize,
+
+    // Bit-field describing the configuration.
+    //
+    // | Bits  | Description          |
+    // | ---   | ---                  |
+    // | 01:00 | Input configuration  |
+    // | 09:08 | Output configuration |
+    // | 16:16 | Output initial value |
+    mode: usize,
+  ): i32
+
+  // Reads from a GPIO.
+  @external("env", "gr")
+  export declare function gpio_read(
+    // Index of the GPIO to read from (must be configured as input).
+    gpio: usize,
+  ): i32
+
+  // Writes to a GPIO.
+  @external("env", "gw")
+  export declare function gpio_write(
+    // Index of the GPIO to write to (must be configured as output).
+    gpio: usize,
+
+    // Logical value (0 or 1).
+    val: usize,
+  ): i32
+// END OF MODULE gpio
 
 // START OF MODULE led
 // LED operations.
   // Returns how many LEDs are on the device.
   @external("env", "lc")
   export declare function led_count(
-  // How many LEDs are on the device.
-  ): usize
+  ): i32
 
   // Describes the state of a LED.
   enum led_Status {
@@ -664,13 +647,12 @@
     On = 1,
   }
 
-  // Returns a LED status.
+  // Returns whether a LED is on.
   @external("env", "lg")
   export declare function led_get(
     // Index of the LED to set.
     led: usize,
-  // 0 for off and 1 for on.
-  ): usize
+  ): i32
 
   // Sets a LED status.
   @external("env", "ls")
@@ -680,7 +662,7 @@
 
     // 0 for off and 1 for on.
     status: usize,
-  ): void
+  ): i32
 // END OF MODULE led
 
 // START OF MODULE platform
@@ -694,8 +676,7 @@
     // Whether platform update is supported.
     @external("env", "pus")
     export declare function platform_update_is_supported(
-    // 1 if supported, 0 otherwise.
-    ): usize
+    ): i32
 
     // Returns the metadata of the platform.
     //
@@ -707,8 +688,7 @@
 
       // Where to write the metadata length.
       len: usize,
-    // Zero on success. Negative on error.
-    ): isize
+    ): i32
 
     // Starts a platform update process.
     @external("env", "pui")
@@ -718,8 +698,7 @@
       // During a dry-run, any mutable operation is skipped and only checks are
       // performed.
       dry_run: usize,
-    // Zero on success. Negative on error.
-    ): isize
+    ): i32
 
     // Processes the next chunk of a platform update.
     @external("env", "pup")
@@ -729,8 +708,7 @@
 
       // Length of the chunk in bytes.
       len: usize,
-    // Zero on success. Negative on error.
-    ): isize
+    ): i32
 
     // Finalizes a platform update process.
     //
@@ -738,11 +716,13 @@
     // case of errors or in dry-run mode.
     @external("env", "puf")
     export declare function platform_update_finalize(
-    // Negative on error.
-    ): isize
+    ): i32
   // END OF MODULE platform_update
 
   // Returns the version of the platform.
+  //
+  // Returns the length of the version in bytes. This may be larger than the capacity, in
+  // which case only a prefix was written.
   @external("env", "pv")
   export declare function platform_version(
     // Where to write the version.
@@ -750,25 +730,18 @@
 
     // Capacity of the buffer.
     len: usize,
-  // Length of the version in bytes.
-  //
-  // This may be larger than the capacity, in which case only a prefix was written.
-  ): usize
+  ): i32
 
   // Reboots the device (thus platform and applets).
+  //
+  // Does not return on success.
   @external("env", "pr")
   export declare function platform_reboot(
-  // Complement of error number.
-  ): isize
+  ): i32
 // END OF MODULE platform
 
 // START OF MODULE radio
 // Radio operations.
-  // Describes errors on radio operations.
-  enum radio_Error {
-    Unknown = 0,
-  }
-
   // START OF MODULE radio_ble
   // Bluetooth Low Energy (BLE) operations.
     // BLE events.
@@ -797,13 +770,13 @@
     }
 
     // Reads the next advertisement packet into a buffer, if any.
+    //
+    // Returns whether a packet was read.
     @external("env", "rlra")
     export declare function radio_ble_read_advertisement(
       // Pointer to the [`super::Advertisement`] packet.
       ptr: usize,
-    // One if a packet was read. Zero if there was no packet to read. Otherwise
-    // complement of error number.
-    ): isize
+    ): i32
 
     // Register a handler for radio events.
     @external("env", "rle")
@@ -818,14 +791,14 @@
 
       // The opaque data to use when calling the handler function.
       handler_data: usize,
-    ): void
+    ): i32
 
     // Unregister handlers for radio events.
     @external("env", "rld")
     export declare function radio_ble_unregister(
       // Radio [`super::Event`] to stop listening to.
       event: u32,
-    ): void
+    ): i32
   // END OF MODULE radio_ble
 // END OF MODULE radio
 
@@ -839,10 +812,7 @@
 
     // The length of the slice.
     len: usize,
-  // Error code: 0 on success, -1 on error
-  //
-  // The buffer may be modified on error and should not be used.
-  ): isize
+  ): i32
 // END OF MODULE rng
 
 // START OF MODULE scheduling
@@ -851,42 +821,21 @@
   // This can be used as power management, since the CPU will sleep while waiting.
   @external("env", "sw")
   export declare function scheduling_wait_for_callback(
-  ): void
+  ): i32
 
   // Returns how many callbacks are pending.
   @external("env", "sh")
   export declare function scheduling_num_pending_callbacks(
-  // How many callbacks are pending.
-  ): usize
+  ): i32
 
   // Aborts the applet.
-  //
-  // This call doesn't return.
   @external("env", "sa")
   export declare function scheduling_abort(
-  ): void
+  ): i32
 // END OF MODULE scheduling
 
 // START OF MODULE store
 // Persistent storage operations.
-  // Describes errors interacting with the store.
-  enum store_Error {
-    // A function pre-condition was broken.
-    InvalidArgument = 0,
-
-    // The store is full.
-    NoCapacity = 1,
-
-    // The store reached its end of life.
-    NoLifetime = 2,
-
-    // An operation to the underlying storage failed.
-    StorageError = 3,
-
-    // The underlying storage doesn't match the store invariant.
-    InvalidStorage = 4,
-  }
-
   // Inserts an entry in the store.
   //
   // If an entry for that key was already present, it is overwritten.
@@ -902,8 +851,7 @@
 
     // Length of the value.
     len: usize,
-  // Zero for success. Otherwise complement of error number.
-  ): isize
+  ): i32
 
   // Removes an entry from the store.
   //
@@ -912,10 +860,11 @@
   export declare function store_remove(
     // Key of the entry.
     key: usize,
-  // Zero for success. Otherwise complement of error number.
-  ): isize
+  ): i32
 
   // Finds an entry in the store, if any.
+  //
+  // Returns whether an entry was found.
   @external("env", "sf")
   export declare function store_find(
     // Key of the entry to find.
@@ -929,8 +878,7 @@
 
     // Where to write the length of the value, if found.
     len: usize,
-  // One if found. Zero if not found. Otherwise complement of error number.
-  ): isize
+  ): i32
 
   // START OF MODULE store_fragment
   // Support for fragmented entries.
@@ -952,8 +900,7 @@
 
       // Length of the value.
       len: usize,
-    // Zero for success. Otherwise complement of error number.
-    ): isize
+    ): i32
 
     // Removes an entry from the store.
     //
@@ -964,12 +911,13 @@
     export declare function store_fragment_remove(
       // Range of keys to remove.
       keys: u32,
-    // Zero for success. Otherwise complement of error number.
-    ): isize
+    ): i32
 
     // Finds an entry in the store, if any.
     //
     // The entry may be fragmented withen the provided range.
+    //
+    // Returns whether an entry was found.
     @external("env", "sff")
     export declare function store_fragment_find(
       // Range of keys to concatenate as an entry.
@@ -983,18 +931,75 @@
 
       // Where to write the length of the value, if found.
       len: usize,
-    // One if found. Zero if not found. Otherwise complement of error number.
-    ): isize
+    ): i32
   // END OF MODULE store_fragment
 // END OF MODULE store
+
+// START OF MODULE timer
+// Timer operations.
+  // Whether a timer should periodically trigger.
+  enum timer_Mode {
+    // The timer fires only once.
+    Oneshot = 0,
+
+    // The timer fires periodically.
+    Periodic = 1,
+  }
+
+  // Allocates a timer (initially stopped) and returns its identifier.
+  @external("env", "ta")
+  export declare function timer_allocate(
+    // Function called when the timer triggers.
+    handler_func: usize,
+
+    // The opaque data to use when calling the handler function.
+    handler_data: usize,
+  ): i32
+
+  // Starts a stopped timer given its identifier.
+  @external("env", "tb")
+  export declare function timer_start(
+    // The identifier of the timer to start.
+    //
+    // It must come from an allocated timer that wasn't stopped.
+    id: usize,
+
+    // Whether the timer should periodically fire.
+    //
+    // Valid values are defined by [`Mode`](super::Mode).
+    mode: usize,
+
+    // How long until the timer triggers in milli-seconds.
+    duration_ms: usize,
+  ): i32
+
+  // Stops a running timer given its identifier.
+  //
+  // Note that if the timer triggers while being stopped, the handler may still be
+  // called.
+  @external("env", "tc")
+  export declare function timer_stop(
+    // The identifier of the timer to start.
+    id: usize,
+  ): i32
+
+  // Deallocates a stopped timer given its identifier.
+  @external("env", "td")
+  export declare function timer_free(
+    // The identifier of the timer to start.
+    id: usize,
+  ): i32
+// END OF MODULE timer
 
 // START OF MODULE uart
   // Returns how many UARTs are on the device.
   @external("env", "uac")
   export declare function uart_count(
-  ): usize
+  ): i32
 
   // Reads from a UART into a buffer.
+  //
+  // Returns the number of bytes read. This function does not block and may return zero.
   @external("env", "uar")
   export declare function uart_read(
     // Index of the UART to read from.
@@ -1005,12 +1010,12 @@
 
     // Length of the buffer in bytes.
     len: usize,
-  // Number of bytes read (or negative value for errors).
-  //
-  // This function does not block and may return zero.
-  ): isize
+  ): i32
 
   // Writes to a UART from a buffer.
+  //
+  // Returns the number of bytes written. This function does not block and may return
+  // zero.
   @external("env", "uaw")
   export declare function uart_write(
     // Index of the UART to write to.
@@ -1021,10 +1026,7 @@
 
     // Length of the buffer in bytes.
     len: usize,
-  // Number of bytes written (or negative value for errors).
-  //
-  // This function does not block and may return zero.
-  ): isize
+  ): i32
 
   // UART events.
   enum uart_Event {
@@ -1051,7 +1053,7 @@
 
     // Opaque data of the closure to call on events.
     handler_data: usize,
-  ): void
+  ): i32
 
   // Unregisters a callback.
   @external("env", "uad")
@@ -1061,18 +1063,15 @@
 
     // Event to stop listening to.
     event: usize,
-  ): void
+  ): i32
 // END OF MODULE uart
 
 // START OF MODULE usb
 // USB operations.
-  // Describes errors on USB operations.
-  enum usb_Error {
-    Unknown = 0,
-  }
-
   // START OF MODULE usb_serial
     // Reads from USB serial into a buffer.
+    //
+    // Returns the number of bytes read. This function does not block and may return zero.
     @external("env", "usr")
     export declare function usb_serial_read(
       // Address of the buffer.
@@ -1080,12 +1079,12 @@
 
       // Length of the buffer in bytes.
       len: usize,
-    // Number of bytes read (or negative value for errors).
-    //
-    // This function does not block and may return zero.
-    ): isize
+    ): i32
 
     // Writes to USB serial from a buffer.
+    //
+    // Returns the number of bytes written. This function does not block and may return
+    // zero.
     @external("env", "usw")
     export declare function usb_serial_write(
       // Address of the buffer.
@@ -1093,10 +1092,7 @@
 
       // Length of the buffer in bytes.
       len: usize,
-    // Number of bytes written (or negative value for errors).
-    //
-    // This function does not block and may return zero.
-    ): isize
+    ): i32
 
     // USB serial events.
     enum usb_serial_Event {
@@ -1117,19 +1113,18 @@
       handler_func: usize,
 
       handler_data: usize,
-    ): void
+    ): i32
 
     // Unregisters a callback.
     @external("env", "usd")
     export declare function usb_serial_unregister(
       event: usize,
-    ): void
+    ): i32
 
     // Flushs the USB serial.
     @external("env", "usf")
     export declare function usb_serial_flush(
-    // Zero on success, -1 on error.
-    ): isize
+    ): i32
   // END OF MODULE usb_serial
 // END OF MODULE usb
 
@@ -1145,4 +1140,4 @@ export declare function syscall(
   x3: usize,
 
   x4: usize,
-): usize
+): i32

@@ -14,15 +14,12 @@
 
 //! Provides elliptic curve cryptography.
 
-use alloc::vec;
-use alloc::vec::Vec;
-
 use generic_array::{ArrayLength, GenericArray};
 use wasefire_applet_api::crypto::ec as api;
+#[cfg(any(feature = "api-crypto-hash", feature = "api-crypto-hkdf"))]
 use wasefire_applet_api::crypto::hash::Algorithm;
 
-use super::hash::hkdf;
-use super::Error;
+use crate::{convert_bool, convert_unit, Error};
 
 /// ECDSA private key.
 pub struct EcdsaPrivate<C: Curve>(Private<C>);
@@ -38,6 +35,7 @@ pub struct EcdsaSignature<C: Curve> {
 
 impl<C: Curve> EcdsaPrivate<C> {
     /// Returns a random (with uniform distribution) ECDSA private key.
+    #[cfg(feature = "api-rng")]
     pub fn random() -> Result<Self, Error> {
         Ok(Self(Private::random()?))
     }
@@ -58,6 +56,7 @@ impl<C: Curve> EcdsaPrivate<C> {
     }
 
     /// Signs a message.
+    #[cfg(feature = "api-crypto-hash")]
     pub fn sign(&self, message: &[u8]) -> Result<EcdsaSignature<C>, Error> {
         EcdsaSignature::new(self, message)
     }
@@ -90,6 +89,7 @@ impl<C: Curve> EcdsaPublic<C> {
     }
 
     /// Verifies the signature of a message.
+    #[cfg(feature = "api-crypto-hash")]
     pub fn verify(&self, message: &[u8], signature: &EcdsaSignature<C>) -> Result<bool, Error> {
         signature.verify(self, message)
     }
@@ -104,6 +104,7 @@ impl<C: Curve> EcdsaPublic<C> {
 
 impl<C: Curve> EcdsaSignature<C> {
     /// Creates a signature for a message.
+    #[cfg(feature = "api-crypto-hash")]
     pub fn new(private: &EcdsaPrivate<C>, message: &[u8]) -> Result<Self, Error> {
         Self::new_prehash(private, prehash::<C>(message)?.as_slice().into())
     }
@@ -132,6 +133,7 @@ impl<C: Curve> EcdsaSignature<C> {
     }
 
     /// Verifies a signature.
+    #[cfg(feature = "api-crypto-hash")]
     pub fn verify(&self, public: &EcdsaPublic<C>, message: &[u8]) -> Result<bool, Error> {
         self.verify_prehash(public, prehash::<C>(message)?.as_slice().into())
     }
@@ -153,6 +155,7 @@ pub struct EcdhShared<C: Curve>(Int<C>);
 
 impl<C: Curve> EcdhPrivate<C> {
     /// Returns a random (with uniform distribution) ECDH private key.
+    #[cfg(feature = "api-rng")]
     pub fn random() -> Result<Self, Error> {
         Ok(Self(Private::random()?))
     }
@@ -210,10 +213,11 @@ impl<C: Curve> EcdhShared<C> {
     }
 
     /// Derives a key material from the shared secret using HKDF.
+    #[cfg(feature = "api-crypto-hkdf")]
     pub fn derive(
         &self, algorithm: Algorithm, salt: Option<&[u8]>, info: &[u8], okm: &mut [u8],
     ) -> Result<(), Error> {
-        hkdf(algorithm, salt, self.raw_bytes(), info, okm)
+        super::hash::hkdf(algorithm, salt, self.raw_bytes(), info, okm)
     }
 
     /// Returns the shared secret as an integer.
@@ -234,6 +238,7 @@ pub trait Curve {
     type N: ArrayLength<u8>;
 
     /// Hash to use for ECDSA signatures.
+    #[cfg(feature = "api-crypto-hash")]
     const H: Algorithm;
 
     /// Whether the curve is supported.
@@ -279,6 +284,7 @@ pub struct P384;
 pub trait InternalHelper {
     type N: ArrayLength<u8>;
     const C: api::Curve;
+    #[cfg(feature = "api-crypto-hash")]
     const H: Algorithm;
 }
 
@@ -286,6 +292,7 @@ pub trait InternalHelper {
 impl InternalHelper for P256 {
     type N = typenum::consts::U32;
     const C: api::Curve = api::Curve::P256;
+    #[cfg(feature = "api-crypto-hash")]
     const H: Algorithm = Algorithm::Sha256;
 }
 
@@ -293,31 +300,30 @@ impl InternalHelper for P256 {
 impl InternalHelper for P384 {
     type N = typenum::consts::U48;
     const C: api::Curve = api::Curve::P384;
+    #[cfg(feature = "api-crypto-hash")]
     const H: Algorithm = Algorithm::Sha384;
 }
 
 #[sealed::sealed]
 impl<T: InternalHelper> Curve for T {
     type N = T::N;
+    #[cfg(feature = "api-crypto-hash")]
     const H: Algorithm = T::H;
 
     fn is_supported() -> bool {
         let params = api::is_supported::Params { curve: T::C as usize };
-        let api::is_supported::Results { support } = unsafe { api::is_supported(params) };
-        support != 0
+        convert_bool(unsafe { api::is_supported(params) }).unwrap_or(false)
     }
 
     fn is_valid_scalar(n: &Int<Self>) -> bool {
         let params = api::is_valid_scalar::Params { curve: T::C as usize, n: n.as_ptr() };
-        let api::is_valid_scalar::Results { valid } = unsafe { api::is_valid_scalar(params) };
-        valid != 0
+        convert_bool(unsafe { api::is_valid_scalar(params) }).unwrap()
     }
 
     fn is_valid_point(x: &Int<Self>, y: &Int<Self>) -> bool {
         let params =
             api::is_valid_point::Params { curve: T::C as usize, x: x.as_ptr(), y: y.as_ptr() };
-        let api::is_valid_point::Results { valid } = unsafe { api::is_valid_point(params) };
-        valid != 0
+        convert_bool(unsafe { api::is_valid_point(params) }).unwrap()
     }
 
     fn base_point_mul(n: &Int<Self>, x: &mut Int<Self>, y: &mut Int<Self>) -> Result<(), Error> {
@@ -327,9 +333,7 @@ impl<T: InternalHelper> Curve for T {
             x: x.as_mut_ptr(),
             y: y.as_mut_ptr(),
         };
-        let api::base_point_mul::Results { res } = unsafe { api::base_point_mul(params) };
-        Error::to_result(res)?;
-        Ok(())
+        convert_unit(unsafe { api::base_point_mul(params) })
     }
 
     fn point_mul(
@@ -344,9 +348,7 @@ impl<T: InternalHelper> Curve for T {
             out_x: out_x.as_mut_ptr(),
             out_y: out_y.as_mut_ptr(),
         };
-        let api::point_mul::Results { res } = unsafe { api::point_mul(params) };
-        Error::to_result(res)?;
-        Ok(())
+        convert_unit(unsafe { api::point_mul(params) })
     }
 
     fn ecdsa_sign(
@@ -359,9 +361,7 @@ impl<T: InternalHelper> Curve for T {
             r: r.as_mut_ptr(),
             s: s.as_mut_ptr(),
         };
-        let api::ecdsa_sign::Results { res } = unsafe { api::ecdsa_sign(params) };
-        Error::to_result(res)?;
-        Ok(())
+        convert_unit(unsafe { api::ecdsa_sign(params) })
     }
 
     fn ecdsa_verify(
@@ -375,8 +375,7 @@ impl<T: InternalHelper> Curve for T {
             r: r.as_ptr(),
             s: s.as_ptr(),
         };
-        let api::ecdsa_verify::Results { res } = unsafe { api::ecdsa_verify(params) };
-        Ok(Error::to_result(res)? == 1)
+        convert_bool(unsafe { api::ecdsa_verify(params) })
     }
 }
 
@@ -391,14 +390,15 @@ struct Public<C: Curve> {
 
 impl<C: Curve> Private<C> {
     /// Returns a random (with uniform distribution) private key.
+    #[cfg(feature = "api-rng")]
     fn random() -> Result<Self, Error> {
         let mut scalar = Int::<C>::default();
         loop {
             // TODO(#163): Use a DRBG (possibly taking it as argument).
-            crate::rng::fill_bytes(&mut scalar).map_err(|_| Error::RngFailure)?;
+            crate::rng::fill_bytes(&mut scalar)?;
             if is_zero_scalar::<C>(&scalar) {
                 // The probability is very low for this to happen during normal operation.
-                return Err(Error::RngFailure);
+                return Err(Error::world(0));
             }
             if C::is_valid_scalar(&scalar) {
                 return Ok(Self(scalar));
@@ -409,7 +409,7 @@ impl<C: Curve> Private<C> {
     /// Creates a private key from its non-zero scalar SEC1 encoding.
     fn from_non_zero_scalar(n: Int<C>) -> Result<Self, Error> {
         if is_zero_scalar::<C>(&n) || !C::is_valid_scalar(&n) {
-            return Err(Error::InvalidArgument);
+            return Err(Error::user(0));
         }
         Ok(Self(n))
     }
@@ -432,7 +432,7 @@ impl<C: Curve> Public<C> {
     /// Creates a public key from its coordinates in SEC1 encoding.
     fn from_coordinates(x: Int<C>, y: Int<C>) -> Result<Self, Error> {
         if !C::is_valid_point(&x, &y) {
-            return Err(Error::InvalidArgument);
+            return Err(Error::user(0));
         }
         Ok(Self { x, y })
     }
@@ -452,8 +452,9 @@ fn is_zero_scalar<C: Curve>(n: &Int<C>) -> bool {
     n.iter().all(|&x| x == 0)
 }
 
-fn prehash<C: Curve>(message: &[u8]) -> Result<Vec<u8>, Error> {
-    let mut prehash = vec![0; C::H.digest_len()];
+#[cfg(feature = "api-crypto-hash")]
+fn prehash<C: Curve>(message: &[u8]) -> Result<alloc::vec::Vec<u8>, Error> {
+    let mut prehash = alloc::vec![0; C::H.digest_len()];
     crate::crypto::hash::Digest::digest(C::H, message, &mut prehash)?;
     Ok(prehash)
 }

@@ -4,6 +4,14 @@
 
 ### Minor
 
+- Rename `clock` module to `timer`
+- Make all API functions return `isize`
+- Change `debug::time()` to return `isize` and take `*mut u64`
+- Remove unstable `multivalue` support for #355
+- Add API features (disabled by default)
+- Remove isize conversion functions for enums
+- Remove custom error types
+- Add `gpio` module
 - Add `platform::version()`
 - Add `radio::ble` module
 - Support array types and all `{i,u}{8,16,32,64}` integers
@@ -16,6 +24,9 @@
 
 ### Patch
 
+- Fix clippy lint
+- Make sure enum values don't skip any value, essentially mapping to `0..N`
+- Use `*const void` instead of `*const u8` for opaque data
 - Update dependencies
 - Fix lints
 
@@ -81,4 +92,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 13 -->
+<!-- Increment to skip CHANGELOG.md test: 16 -->

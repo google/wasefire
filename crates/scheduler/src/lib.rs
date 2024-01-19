@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #![no_std]
+#![feature(never_type)]
 #![feature(try_blocks)]
 
 extern crate alloc;
@@ -20,7 +21,6 @@ extern crate alloc;
 extern crate std;
 
 use alloc::collections::VecDeque;
-use alloc::vec;
 use alloc::vec::Vec;
 #[cfg(feature = "native")]
 use core::ffi::CStr;
@@ -28,11 +28,18 @@ use core::marker::PhantomData;
 
 use derivative::Derivative;
 use event::Key;
-use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature};
-use wasefire_board_api::{self as board, Api as Board, Singleton, Support};
+use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature, U32};
+#[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
+use wasefire_board_api::Singleton;
+#[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
+use wasefire_board_api::Support;
+use wasefire_board_api::{self as board, Api as Board};
+use wasefire_error::Error;
 #[cfg(feature = "wasm")]
-use wasefire_interpreter::{self as interpreter, Call, Error, Module, RunAnswer, Val};
-use {wasefire_logger as log, wasefire_store as store};
+use wasefire_interpreter::{self as interpreter, Call, Module, RunAnswer, Val};
+use wasefire_logger as log;
+#[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
+use wasefire_store as store;
 
 use crate::applet::store::{Memory, Store, StoreApi};
 use crate::applet::{Applet, EventAction};
@@ -43,7 +50,7 @@ mod call;
 mod event;
 #[cfg(feature = "native")]
 mod native;
-#[cfg(feature = "debug")]
+#[cfg(feature = "internal-debug")]
 mod perf;
 
 #[cfg(all(feature = "native", not(target_pointer_width = "32")))]
@@ -80,11 +87,13 @@ impl<B: Board> Events<B> {
 }
 
 pub struct Scheduler<B: Board> {
+    #[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
     store: store::Store<B::Storage>,
     host_funcs: Vec<Api<Id>>,
     applet: Applet<B>,
+    #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
     timers: Vec<Option<Timer>>,
-    #[cfg(feature = "debug")]
+    #[cfg(feature = "internal-debug")]
     perf: perf::Perf<B>,
 }
 
@@ -99,14 +108,14 @@ impl<B: Board> core::fmt::Debug for Scheduler<B> {
     }
 }
 
-pub struct SchedulerCallT<'a, B: Board> {
+struct SchedulerCallT<'a, B: Board> {
     scheduler: &'a mut Scheduler<B>,
     #[cfg(feature = "wasm")]
     args: Vec<u32>,
     #[cfg(feature = "native")]
     params: &'a [u32],
     #[cfg(feature = "native")]
-    results: &'a mut [u32],
+    result: &'a mut i32,
 }
 
 impl<'a, B: Board> core::fmt::Debug for SchedulerCallT<'a, B> {
@@ -115,7 +124,7 @@ impl<'a, B: Board> core::fmt::Debug for SchedulerCallT<'a, B> {
     }
 }
 
-pub struct SchedulerCall<'a, B: Board, T> {
+struct SchedulerCall<'a, B: Board, T> {
     erased: SchedulerCallT<'a, B>,
     phantom: PhantomData<T>,
 }
@@ -126,14 +135,8 @@ impl<'a, B: Board, T> core::fmt::Debug for SchedulerCall<'a, B, T> {
     }
 }
 
-pub struct DispatchSchedulerCall<'a, B> {
+struct DispatchSchedulerCall<'a, B> {
     phantom: PhantomData<&'a B>,
-}
-
-pub enum SchedulerResult<'a, B: Board> {
-    Call(Api<DispatchSchedulerCall<'a, B>>),
-    Yield,
-    Wait,
 }
 
 impl<'a, B: Board> Dispatch for DispatchSchedulerCall<'a, B> {
@@ -150,7 +153,7 @@ impl<'a, B: Board> Dispatch for DispatchSchedulerCall<'a, B> {
 }
 
 impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
-    pub fn read(&self) -> T::Params {
+    fn read(&self) -> T::Params {
         #[cfg(feature = "wasm")]
         let params = &self.erased.args;
         #[cfg(feature = "native")]
@@ -158,7 +161,8 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
         *<T::Params as ArrayU32>::from(params)
     }
 
-    pub fn inst(&mut self) -> InstId {
+    #[cfg_attr(not(feature = "board-api-button"), allow(dead_code))]
+    fn inst(&mut self) -> InstId {
         #[cfg(feature = "wasm")]
         let id = self.call().inst();
         #[cfg(feature = "native")]
@@ -166,33 +170,38 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
         id
     }
 
-    pub fn memory(&mut self) -> Memory<'_> {
+    fn memory(&mut self) -> Memory<'_> {
         self.store().memory()
     }
 
-    pub fn scheduler(&mut self) -> &mut Scheduler<B> {
+    fn scheduler(&mut self) -> &mut Scheduler<B> {
         self.erased.scheduler
     }
 
-    pub fn reply(self, results: Result<T::Results, Trap>) {
-        match results {
-            #[cfg(feature = "wasm")]
-            Ok(results) => {
-                let mut this = self;
-                let results = convert_results::<T>(results);
-                #[cfg(feature = "debug")]
-                this.scheduler().perf.record(perf::Slot::Platform);
-                let answer = this.call().resume(&results).map(|x| x.forget());
-                #[cfg(feature = "debug")]
-                this.scheduler().perf.record(perf::Slot::Applets);
-                this.erased.scheduler.process_answer(answer);
-            }
-            #[cfg(feature = "native")]
-            Ok(results) => {
-                let results = <T::Results as ArrayU32>::into(&results);
-                self.erased.results.copy_from_slice(results);
-            }
+    fn reply(self, result: Result<Result<impl Into<U32<T::Result>>, Error>, Trap>) {
+        self.reply_(result.map(|x| x.map(|x| x.into())))
+    }
+
+    fn reply_(self, result: Result<Result<U32<T::Result>, Error>, Trap>) {
+        let result = match result {
+            Ok(x) => x,
             Err(Trap) => applet_trapped::<B>(Some(T::NAME)),
+        };
+        let result = Error::encode(result.map(|x| *x));
+        #[cfg(feature = "wasm")]
+        {
+            let mut this = self;
+            let results = [Val::I32(result as u32)];
+            #[cfg(feature = "internal-debug")]
+            this.scheduler().perf.record(perf::Slot::Platform);
+            let answer = this.call().resume(&results).map(|x| x.forget());
+            #[cfg(feature = "internal-debug")]
+            this.scheduler().perf.record(perf::Slot::Applets);
+            this.erased.scheduler.process_answer(answer);
+        }
+        #[cfg(feature = "native")]
+        {
+            *self.erased.result = result;
         }
     }
 
@@ -229,13 +238,13 @@ impl<B: Board> Scheduler<B> {
             fn applet_init();
             fn applet_main();
         }
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         native::with_scheduler(|x| x.perf_record(perf::Slot::Platform));
         log::debug!("Execute init.");
         unsafe { applet_init() };
         log::debug!("Execute main.");
         unsafe { applet_main() };
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         native::with_scheduler(|x| x.perf_record(perf::Slot::Applets));
         log::debug!("Returned from main, executing callbacks only.");
         loop {
@@ -248,20 +257,24 @@ impl<B: Board> Scheduler<B> {
     }
 
     #[cfg(feature = "native")]
-    fn dispatch(&mut self, link: &CStr, params: *const u32, results: *mut u32) {
+    fn dispatch(&mut self, link: &CStr, params: *const u32) -> isize {
         let name = link.to_str().unwrap();
         let index = match self.host_funcs.binary_search_by_key(&name, |x| x.descriptor().name) {
             Ok(x) => x,
-            Err(_) => log::panic!("Failed to find {:?}.", name),
+            Err(_) => {
+                let error = Error::world(wasefire_error::Code::NotImplemented);
+                return Error::encode(Err(error)) as isize;
+            }
         };
         let api_id = self.host_funcs[index].id();
         let desc = api_id.descriptor();
         let params = unsafe { core::slice::from_raw_parts(params, desc.params) };
-        let results = unsafe { core::slice::from_raw_parts_mut(results, desc.results) };
-        let erased = SchedulerCallT { scheduler: self, params, results };
+        let mut result = 0;
+        let erased = SchedulerCallT { scheduler: self, params, result: &mut result };
         let call = api_id.merge(erased);
         log::debug!("Calling {}", log::Debug2Format(&call.id()));
         call::process(call);
+        result as isize
     }
 
     fn new() -> Self {
@@ -275,18 +288,21 @@ impl<B: Board> Scheduler<B> {
             let store = applet.store_mut();
             for f in &host_funcs {
                 let d = f.descriptor();
-                store.link_func("env", d.name, d.params, d.results).unwrap();
+                store.link_func("env", d.name, d.params, 1).unwrap();
             }
+            store.link_func_default("env").unwrap();
             applet
         };
         #[cfg(feature = "native")]
         let applet = Applet::default();
         Self {
+            #[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
             store: store::Store::new(board::Storage::<B>::take().unwrap()).ok().unwrap(),
             host_funcs,
             applet,
-            timers: vec![None; board::Timer::<B>::SUPPORT],
-            #[cfg(feature = "debug")]
+            #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
+            timers: alloc::vec![None; board::Timer::<B>::SUPPORT],
+            #[cfg(feature = "internal-debug")]
             perf: perf::Perf::default(),
         }
     }
@@ -305,7 +321,7 @@ impl<B: Board> Scheduler<B> {
         let store = self.applet.store_mut();
         // SAFETY: This function is called once in `run()`.
         let inst = store.instantiate(module, unsafe { &mut MEMORY.0 }).unwrap();
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Platform);
         self.call(inst, "init", &[]);
         while let Some(call) = self.applet.store_mut().last_call() {
@@ -316,7 +332,7 @@ impl<B: Board> Scheduler<B> {
             self.process_applet();
         }
         assert!(matches!(self.applet.pop(), EventAction::Reply));
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Applets);
         self.call(inst, "main", &[]);
     }
@@ -333,10 +349,10 @@ impl<B: Board> Scheduler<B> {
             match self.applet.pop() {
                 EventAction::Handle(event) => break event,
                 EventAction::Wait => {
-                    #[cfg(feature = "debug")]
+                    #[cfg(feature = "internal-debug")]
                     self.perf.record(perf::Slot::Platform);
                     let event = B::wait_event();
-                    #[cfg(feature = "debug")]
+                    #[cfg(feature = "internal-debug")]
                     self.perf.record(perf::Slot::Waiting);
                     self.applet.push(event);
                 }
@@ -357,7 +373,15 @@ impl<B: Board> Scheduler<B> {
                 return;
             }
         };
-        let api_id = self.host_funcs[call.index()].id();
+        let api_id = match self.host_funcs.get(call.index()) {
+            Some(x) => x.id(),
+            None => {
+                let error = Error::encode(Err(Error::world(wasefire_error::Code::NotImplemented)));
+                let answer = call.resume(&[Val::I32(error as u32)]).map(|x| x.forget());
+                self.process_answer(answer);
+                return;
+            }
+        };
         let args = call.args();
         debug_assert_eq!(args.len(), api_id.descriptor().params);
         let args = args.iter().map(|x| x.unwrap_i32()).collect();
@@ -367,6 +391,7 @@ impl<B: Board> Scheduler<B> {
         call::process(call);
     }
 
+    #[allow(dead_code)] // in case there are no events
     fn disable_event(&mut self, key: Key<B>) -> Result<(), Trap> {
         self.applet.disable(key)?;
         self.flush_events();
@@ -377,10 +402,10 @@ impl<B: Board> Scheduler<B> {
     fn call(&mut self, inst: InstId, name: &str, args: &[u32]) {
         log::debug!("Schedule thread {}{:?}.", name, args);
         let args = args.iter().map(|&x| Val::I32(x)).collect();
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Platform);
         let answer = self.applet.store_mut().invoke(inst, name, args).map(|x| x.forget());
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Applets);
         self.process_answer(answer);
     }
@@ -394,15 +419,10 @@ impl<B: Board> Scheduler<B> {
                 self.applet.done();
             }
             Ok(RunAnswer::Host) => (),
-            Err(Error::Trap) => applet_trapped::<B>(None),
+            Err(interpreter::Error::Trap) => applet_trapped::<B>(None),
             Err(e) => log::panic!("{}", log::Debug2Format(&e)),
         }
     }
-}
-
-#[cfg(feature = "wasm")]
-fn convert_results<T: Signature>(results: T::Results) -> Vec<Val> {
-    <T::Results as ArrayU32>::into(&results).iter().map(|&x| Val::I32(x)).collect()
 }
 
 fn applet_trapped<B: Board>(reason: Option<&'static str>) -> ! {
@@ -415,10 +435,10 @@ fn applet_trapped<B: Board>(reason: Option<&'static str>) -> ! {
     <board::Debug<B> as board::debug::Api>::exit(false);
 }
 
-pub struct Trap;
+struct Trap;
 
-impl From<()> for Trap {
-    fn from(_: ()) -> Self {
+impl From<wasefire_error::Error> for Trap {
+    fn from(_: wasefire_error::Error) -> Self {
         Trap
     }
 }

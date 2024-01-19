@@ -33,7 +33,12 @@ features() {
 for name in $(list); do
   x cargo xtask applet rust $name runner "$@"
   for feature in $(cd examples/rust/$name && features); do
-    x cargo xtask applet rust $name --features=$feature runner "$@"
+    native=
+    if [ $feature = native ]; then
+      [ "$1" = host ] && continue
+      native=--native
+    fi
+    x cargo xtask $native applet rust $name --features=$feature runner "$@"
   done
 done
 for name in $(list); do

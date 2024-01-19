@@ -14,6 +14,7 @@
 
 use crate::*;
 
+#[cfg(feature = "api-store-fragment")]
 mod fragment;
 
 pub(crate) fn new() -> Item {
@@ -22,25 +23,7 @@ pub(crate) fn new() -> Item {
     };
     let name = "store".into();
     let items = vec![
-        item! {
-            /// Describes errors interacting with the store.
-            enum Error {
-                /// A function pre-condition was broken.
-                InvalidArgument = 0,
-
-                /// The store is full.
-                NoCapacity = 1,
-
-                /// The store reached its end of life.
-                NoLifetime = 2,
-
-                /// An operation to the underlying storage failed.
-                StorageError = 3,
-
-                /// The underlying storage doesn't match the store invariant.
-                InvalidStorage = 4,
-            }
-        },
+        #[cfg(feature = "api-store")]
         item! {
             /// Inserts an entry in the store.
             ///
@@ -56,11 +39,9 @@ pub(crate) fn new() -> Item {
 
                 /// Length of the value.
                 len: usize,
-            } -> {
-                /// Zero for success. Otherwise complement of error number.
-                res: isize,
-            }
+            } -> ()
         },
+        #[cfg(feature = "api-store")]
         item! {
             /// Removes an entry from the store.
             ///
@@ -68,13 +49,13 @@ pub(crate) fn new() -> Item {
             fn remove "sr" {
                 /// Key of the entry.
                 key: usize,
-            } -> {
-                /// Zero for success. Otherwise complement of error number.
-                res: isize,
-            }
+            } -> ()
         },
+        #[cfg(feature = "api-store")]
         item! {
             /// Finds an entry in the store, if any.
+            ///
+            /// Returns whether an entry was found.
             fn find "sf" {
                 /// Key of the entry to find.
                 key: usize,
@@ -83,29 +64,13 @@ pub(crate) fn new() -> Item {
                 ///
                 /// The (inner) pointer will be allocated by the callee and must be freed by the
                 /// caller. It is thus owned by the caller when the function returns.
-                #[cfg(not(feature = "multivalue"))]
                 ptr: *mut *mut u8,
 
                 /// Where to write the length of the value, if found.
-                #[cfg(not(feature = "multivalue"))]
                 len: *mut usize,
-            } -> {
-                /// Value of the entry if found. Null if not found.
-                ///
-                /// The pointer is allocated by the callee and must be freed by the caller. It is
-                /// thus owned by the caller when the function returns.
-                #[cfg(feature = "multivalue")]
-                ptr: *mut u8,
-
-                /// Length of the value if non-negative. Otherwise complement of error number.
-                #[cfg(feature = "multivalue")]
-                len: isize,
-
-                /// One if found. Zero if not found. Otherwise complement of error number.
-                #[cfg(not(feature = "multivalue"))]
-                res: isize,
-            }
+            } -> bool
         },
+        #[cfg(feature = "api-store-fragment")]
         fragment::new(),
     ];
     Item::Mod(Mod { docs, name, items })

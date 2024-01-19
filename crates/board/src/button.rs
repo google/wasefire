@@ -19,7 +19,7 @@
 
 use derivative::Derivative;
 
-use crate::{Error, Id, Support, Unsupported};
+use crate::{Error, Id, Support};
 
 /// Button event.
 #[derive(Derivative)]
@@ -45,14 +45,4 @@ pub trait Api: Support<usize> + Send {
 
     /// Disables events for a given button.
     fn disable(button: Id<Self>) -> Result<(), Error>;
-}
-
-impl Api for Unsupported {
-    fn enable(_: Id<Self>) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn disable(_: Id<Self>) -> Result<(), Error> {
-        unreachable!()
-    }
 }

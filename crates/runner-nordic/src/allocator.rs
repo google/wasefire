@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use core::ptr::addr_of_mut;
+
 use embedded_alloc::Heap;
 
 #[global_allocator]
@@ -22,8 +24,8 @@ pub fn init() {
         static mut __sheap: u32;
         static mut __eheap: u32;
     }
-    let sheap = unsafe { &mut __sheap } as *mut u32 as usize;
-    let eheap = unsafe { &mut __eheap } as *mut u32 as usize;
+    let sheap = unsafe { addr_of_mut!(__sheap) as usize };
+    let eheap = unsafe { addr_of_mut!(__eheap) as usize };
     assert!(sheap < eheap);
     // Unsafe: Called only once before any allocation.
     unsafe { ALLOCATOR.init(sheap, eheap - sheap) }

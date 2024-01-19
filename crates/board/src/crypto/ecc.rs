@@ -15,10 +15,10 @@
 //! Elliptic-curve cryptography.
 
 use generic_array::{ArrayLength, GenericArray};
-#[cfg(feature = "internal-ecc")]
+#[cfg(feature = "internal-software-crypto-ecc")]
 pub use software::*;
 
-use crate::{Error, Support, Unsupported};
+use crate::{Error, Support};
 
 /// Elliptic-curve cryptography interface.
 pub trait Api<N: ArrayLength<u8>>: Support<bool> + Send {
@@ -48,37 +48,7 @@ pub trait Api<N: ArrayLength<u8>>: Support<bool> + Send {
 /// SEC-1 encoding of an `N` bytes integer.
 pub type Int<N> = GenericArray<u8, N>;
 
-impl<N: ArrayLength<u8>> Api<N> for Unsupported {
-    fn is_valid_scalar(_: &Int<N>) -> bool {
-        unreachable!()
-    }
-
-    fn is_valid_point(_: &Int<N>, _: &Int<N>) -> bool {
-        unreachable!()
-    }
-
-    fn base_point_mul(_: &Int<N>, _: &mut Int<N>, _: &mut Int<N>) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn point_mul(
-        _: &Int<N>, _: &Int<N>, _: &Int<N>, _: &mut Int<N>, _: &mut Int<N>,
-    ) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn ecdsa_sign(_: &Int<N>, _: &Int<N>, _: &mut Int<N>, _: &mut Int<N>) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn ecdsa_verify(
-        _: &Int<N>, _: &Int<N>, _: &Int<N>, _: &Int<N>, _: &Int<N>,
-    ) -> Result<bool, Error> {
-        unreachable!()
-    }
-}
-
-#[cfg(feature = "internal-ecc")]
+#[cfg(feature = "internal-software-crypto-ecc")]
 mod software {
     use core::marker::PhantomData;
 
@@ -142,7 +112,7 @@ mod software {
         fn ecdsa_sign(d: &Int<C>, m: &Int<C>, r: &mut Int<C>, s: &mut Int<C>) -> Result<(), Error> {
             let d = Self::scalar_from_int(d)?;
             let (signature, _) =
-                d.try_sign_prehashed_rfc6979::<D>(m, &[]).map_err(|_| Error::World)?;
+                d.try_sign_prehashed_rfc6979::<D>(m, &[]).map_err(|_| Error::world(0))?;
             r.copy_from_slice(&Self::scalar_to_int(signature.r()));
             s.copy_from_slice(&Self::scalar_to_int(signature.s()));
             Ok(())
@@ -152,9 +122,9 @@ mod software {
             m: &Int<C>, x: &Int<C>, y: &Int<C>, r: &Int<C>, s: &Int<C>,
         ) -> Result<bool, Error> {
             let p = EncodedPoint::<C>::from_affine_coordinates(x, y, false);
-            let p = VerifyingKey::<C>::from_encoded_point(&p).map_err(|_| Error::User)?;
+            let p = VerifyingKey::<C>::from_encoded_point(&p).map_err(|_| Error::user(0))?;
             let signature =
-                Signature::from_scalars(r.clone(), s.clone()).map_err(|_| Error::User)?;
+                Signature::from_scalars(r.clone(), s.clone()).map_err(|_| Error::user(0))?;
             Ok(p.verify_prehash(m, &signature).is_ok())
         }
     }
@@ -181,13 +151,13 @@ mod software {
 
         fn point_to_ints(p: &AffinePoint<C>, x: &mut Int<C>, y: &mut Int<C>) -> Result<(), Error> {
             let p = p.to_encoded_point(false);
-            x.copy_from_slice(p.x().ok_or(Error::User)?);
-            y.copy_from_slice(p.y().ok_or(Error::User)?);
+            x.copy_from_slice(p.x().ok_or(Error::user(0))?);
+            y.copy_from_slice(p.y().ok_or(Error::user(0))?);
             Ok(())
         }
     }
 
     fn convert<T>(x: CtOption<T>) -> Result<T, Error> {
-        Option::<T>::from(x).ok_or(Error::User)
+        Option::<T>::from(x).ok_or(Error::user(0))
     }
 }

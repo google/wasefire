@@ -38,10 +38,7 @@ pub(crate) fn new() -> Item {
 
                 /// Length of the value.
                 len: usize,
-            } -> {
-                /// Zero for success. Otherwise complement of error number.
-                res: isize,
-            }
+            } -> ()
         },
         item! {
             /// Removes an entry from the store.
@@ -52,15 +49,14 @@ pub(crate) fn new() -> Item {
             fn remove "sfr" {
                 /// Range of keys to remove.
                 keys: u32,
-            } -> {
-                /// Zero for success. Otherwise complement of error number.
-                res: isize,
-            }
+            } -> ()
         },
         item! {
             /// Finds an entry in the store, if any.
             ///
             /// The entry may be fragmented withen the provided range.
+            ///
+            /// Returns whether an entry was found.
             fn find "sff" {
                 /// Range of keys to concatenate as an entry.
                 keys: u32,
@@ -73,10 +69,7 @@ pub(crate) fn new() -> Item {
 
                 /// Where to write the length of the value, if found.
                 len: *mut usize,
-            } -> {
-                /// One if found. Zero if not found. Otherwise complement of error number.
-                res: isize,
-            }
+            } -> bool
         },
     ];
     Item::Mod(Mod { docs, name, items })

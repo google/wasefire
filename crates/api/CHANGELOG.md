@@ -4,7 +4,14 @@
 
 ### Major
 
+- Make all API functions return `isize`
+- Add API features (disabled by default)
 - Update `wasefire-applet-api-macro` version
+
+### Minor
+
+- Remove unstable `multivalue` support for #355
+- Implement conversion from types involving `Error` to `U32`
 
 ### Patch
 
@@ -68,4 +75,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 6 -->
+<!-- Increment to skip CHANGELOG.md test: 8 -->

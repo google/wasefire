@@ -14,10 +14,11 @@
 
 //! Provides API for cryptography.
 
+#[cfg(feature = "api-crypto-ccm")]
 pub mod ccm;
+#[cfg(feature = "api-crypto-ec")]
 pub mod ec;
+#[cfg(feature = "api-crypto-gcm")]
 pub mod gcm;
+#[cfg(feature = "internal-api-crypto-hash")]
 pub mod hash;
-
-/// Errors returned by cryptographic operations.
-pub use wasefire_applet_api::crypto::Error;

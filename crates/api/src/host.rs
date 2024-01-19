@@ -27,16 +27,12 @@ pub trait Signature: Default + Debug {
     /// The type of params for this function.
     type Params: ArrayU32;
 
-    /// The type of results for this function.
-    type Results: ArrayU32;
+    /// The success result type for this function.
+    type Result;
 
     /// Returns the descriptor of this function.
     fn descriptor() -> Descriptor {
-        Descriptor {
-            name: Self::NAME,
-            params: Self::Params::LENGTH,
-            results: Self::Results::LENGTH,
-        }
+        Descriptor { name: Self::NAME, params: Self::Params::LENGTH }
     }
 }
 
@@ -48,9 +44,6 @@ pub struct Descriptor {
 
     /// Number of (u32) params.
     pub params: usize,
-
-    /// Number of (u32) results.
-    pub results: usize,
 }
 
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -78,6 +71,24 @@ impl<T> Deref for U32<T> {
 impl<T> From<u32> for U32<T> {
     fn from(value: u32) -> Self {
         U32 { value, phantom: PhantomData }
+    }
+}
+
+impl From<bool> for U32<bool> {
+    fn from(x: bool) -> Self {
+        (x as u32).into()
+    }
+}
+
+impl From<()> for U32<()> {
+    fn from(_: ()) -> Self {
+        0u32.into()
+    }
+}
+
+impl From<!> for U32<!> {
+    fn from(x: !) -> Self {
+        match x {}
     }
 }
 

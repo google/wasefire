@@ -34,24 +34,26 @@ fn process(request: Request) -> Result<Response, Error> {
     match request {
         Request::GenerateKey { key } => {
             let mut secret = [0; 16];
-            rng::fill_bytes(&mut secret)?;
-            store::insert(key, &secret)?;
+            rng::fill_bytes(&mut secret).map_err(|_| Error::RngError)?;
+            store::insert(key, &secret).map_err(|_| Error::StoreError)?;
             Ok(Response::GenerateKey)
         }
         Request::DeleteKey { key } => {
-            store::remove(key)?;
+            store::remove(key).map_err(|_| Error::StoreError)?;
             Ok(Response::DeleteKey)
         }
         Request::Encrypt { key, nonce, data } => {
-            let data = crypto::ccm::encrypt(&find(key)?, &nonce, &data)?;
+            let data =
+                crypto::ccm::encrypt(&find(key)?, &nonce, &data).map_err(|_| Error::CryptoError)?;
             Ok(Response::Encrypt { data })
         }
         Request::Decrypt { key, nonce, data } => {
-            let data = crypto::ccm::decrypt(&find(key)?, &nonce, &data)?;
+            let data =
+                crypto::ccm::decrypt(&find(key)?, &nonce, &data).map_err(|_| Error::CryptoError)?;
             Ok(Response::Decrypt { data })
         }
         Request::ImportKey { key, secret } => {
-            store::insert(key, &secret)?;
+            store::insert(key, &secret).map_err(|_| Error::StoreError)?;
             Ok(Response::ImportKey)
         }
         Request::ExportKey { key } => Ok(Response::ExportKey { secret: find(key)? }),
@@ -60,7 +62,7 @@ fn process(request: Request) -> Result<Response, Error> {
 
 fn find(key: usize) -> Result<[u8; 16], Error> {
     let mut result = [0; 16];
-    let key = store::find(key)?.ok_or(Error::BadHandle)?;
+    let key = store::find(key).map_err(|_| Error::StoreError)?.ok_or(Error::BadHandle)?;
     if key.len() != result.len() {
         return Err(Error::BadHandle);
     }

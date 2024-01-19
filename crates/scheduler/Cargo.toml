@@ -25,8 +25,9 @@ portable-atomic = { version = "1.6.0", default-features = false }
 typenum = { version = "1.17.0", default-features = false }
 wasefire-applet-api = { version = "0.6.0-git", path = "../api", features = ["host"] }
 wasefire-board-api = { version = "0.6.0-git", path = "../board" }
+wasefire-error = { version = "0.1.0-git", path = "../error" }
 wasefire-logger = { version = "0.1.4-git", path = "../logger" }
-wasefire-store = { version = "0.2.3-git", path = "../store" }
+wasefire-store = { version = "0.2.3-git", path = "../store", optional = true }
 wasefire-sync = { version = "0.1.0-git", path = "../sync" }
 
 [dependencies.wasefire-interpreter]
@@ -36,14 +37,178 @@ features = ["toctou"]
 optional = true
 
 [features]
-defmt = ["debug", "dep:defmt", "wasefire-board-api/defmt", "wasefire-logger/defmt"]
-log = ["debug", "wasefire-board-api/log", "wasefire-logger/log"]
-std = ["wasefire-board-api/std", "wasefire-store/std"]
+std = ["wasefire-board-api/std", "wasefire-store?/std"]
+# Logging features (enable at most one).
+defmt = [
+  "dep:defmt",
+  "internal-debug",
+  "wasefire-board-api/defmt",
+  "wasefire-error/defmt",
+  "wasefire-logger/defmt",
+]
+log = ["internal-debug", "wasefire-board-api/log", "wasefire-logger/log"]
+# Applet API features (automatically enabled by board API features).
+applet-api-button = ["wasefire-applet-api/api-button"]
+applet-api-crypto-ccm = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ccm"]
+applet-api-crypto-ec = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ec"]
+applet-api-crypto-gcm = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-gcm"]
+applet-api-crypto-hash = [
+  "internal-applet-api-crypto-hash",
+  "internal-hash-context",
+  "wasefire-applet-api/api-crypto-hash",
+]
+applet-api-crypto-hkdf = ["internal-applet-api-crypto-hash", "wasefire-applet-api/api-crypto-hkdf"]
+applet-api-crypto-hmac = [
+  "internal-applet-api-crypto-hash",
+  "internal-hash-context",
+  "wasefire-applet-api/api-crypto-hmac",
+]
+applet-api-gpio = ["wasefire-applet-api/api-gpio"]
+applet-api-led = ["wasefire-applet-api/api-led"]
+applet-api-platform = ["internal-applet-api-platform", "wasefire-applet-api/api-platform"]
+applet-api-platform-update = [
+  "internal-applet-api-platform",
+  "wasefire-applet-api/api-platform-update",
+]
+applet-api-radio-ble = ["internal-applet-api-radio", "wasefire-applet-api/api-radio-ble"]
+applet-api-rng = ["wasefire-applet-api/api-rng"]
+applet-api-store = ["internal-applet-api-store", "wasefire-applet-api/api-store"]
+applet-api-store-fragment = ["internal-applet-api-store", "wasefire-applet-api/api-store-fragment"]
+applet-api-timer = ["wasefire-applet-api/api-timer"]
+applet-api-uart = ["wasefire-applet-api/api-uart"]
+applet-api-usb-serial = ["internal-applet-api-usb", "wasefire-applet-api/api-usb-serial"]
+# Board API features. Enabling a board API feature automatically enables all
+# applet API features that would be implemented.
+board-api-button = ["applet-api-button", "wasefire-board-api/api-button"]
+board-api-crypto-aes128-ccm = ["applet-api-crypto-ccm", "wasefire-board-api/api-crypto-aes128-ccm"]
+board-api-crypto-aes256-gcm = ["applet-api-crypto-gcm", "wasefire-board-api/api-crypto-aes256-gcm"]
+board-api-crypto-hmac-sha256 = [
+  "applet-api-crypto-hkdf",
+  "applet-api-crypto-hmac",
+  "wasefire-board-api/api-crypto-hmac-sha256",
+]
+board-api-crypto-hmac-sha384 = [
+  "applet-api-crypto-hkdf",
+  "applet-api-crypto-hmac",
+  "wasefire-board-api/api-crypto-hmac-sha384",
+]
+board-api-crypto-p256 = [
+  "applet-api-crypto-ec",
+  "internal-board-api-crypto-ecc",
+  "wasefire-board-api/api-crypto-p256",
+]
+board-api-crypto-p384 = [
+  "applet-api-crypto-ec",
+  "internal-board-api-crypto-ecc",
+  "wasefire-board-api/api-crypto-p384",
+]
+board-api-crypto-sha256 = ["applet-api-crypto-hash", "wasefire-board-api/api-crypto-sha256"]
+board-api-crypto-sha384 = ["applet-api-crypto-hash", "wasefire-board-api/api-crypto-sha384"]
+board-api-gpio = ["applet-api-gpio", "wasefire-board-api/api-gpio"]
+board-api-led = ["applet-api-led", "wasefire-board-api/api-led"]
+board-api-platform = ["applet-api-platform", "wasefire-board-api/api-platform"]
+board-api-platform-update = ["applet-api-platform-update", "wasefire-board-api/api-platform-update"]
+board-api-radio-ble = [
+  "applet-api-radio-ble",
+  "internal-board-api-radio",
+  "wasefire-board-api/api-radio-ble",
+]
+board-api-rng = ["applet-api-rng", "wasefire-board-api/api-rng"]
+board-api-storage = [
+  "applet-api-store",
+  "applet-api-store-fragment",
+  "dep:wasefire-store",
+  "wasefire-board-api/api-storage",
+]
+board-api-timer = ["applet-api-timer", "wasefire-board-api/api-timer"]
+board-api-uart = ["applet-api-uart", "wasefire-board-api/api-uart"]
+board-api-usb-serial = [
+  "applet-api-usb-serial",
+  "internal-board-api-usb",
+  "wasefire-board-api/api-usb-serial",
+]
+# Enables all API features (unstable).
+full-api = ["full-applet-api", "full-board-api"]
+# Enables all applet API features (unstable).
+full-applet-api = [
+  "applet-api-button",
+  "applet-api-crypto-ccm",
+  "applet-api-crypto-ec",
+  "applet-api-crypto-gcm",
+  "applet-api-crypto-hash",
+  "applet-api-crypto-hkdf",
+  "applet-api-crypto-hmac",
+  "applet-api-gpio",
+  "applet-api-led",
+  "applet-api-platform",
+  "applet-api-platform-update",
+  "applet-api-radio-ble",
+  "applet-api-rng",
+  "applet-api-store",
+  "applet-api-store-fragment",
+  "applet-api-timer",
+  "applet-api-uart",
+  "applet-api-usb-serial",
+]
+# Enables all board API features (unstable).
+full-board-api = [
+  "board-api-button",
+  "board-api-crypto-aes128-ccm",
+  "board-api-crypto-aes256-gcm",
+  "board-api-crypto-hmac-sha256",
+  "board-api-crypto-hmac-sha384",
+  "board-api-crypto-p256",
+  "board-api-crypto-p384",
+  "board-api-crypto-sha256",
+  "board-api-crypto-sha384",
+  "board-api-gpio",
+  "board-api-led",
+  "board-api-platform",
+  "board-api-platform-update",
+  "board-api-radio-ble",
+  "board-api-rng",
+  "board-api-storage",
+  "board-api-timer",
+  "board-api-uart",
+  "board-api-usb-serial",
+]
+# Software crypto features. Enabling a software crypto feature automatically
+# enables its board API feature.
+software-crypto-aes128-ccm = [
+  "board-api-crypto-aes128-ccm",
+  "wasefire-board-api/software-crypto-aes128-ccm",
+]
+software-crypto-aes256-gcm = [
+  "board-api-crypto-aes256-gcm",
+  "wasefire-board-api/software-crypto-aes256-gcm",
+]
+software-crypto-hmac-sha256 = [
+  "board-api-crypto-hmac-sha256",
+  "wasefire-board-api/software-crypto-hmac-sha256",
+]
+software-crypto-hmac-sha384 = [
+  "board-api-crypto-hmac-sha384",
+  "wasefire-board-api/software-crypto-hmac-sha384",
+]
+software-crypto-p256 = ["board-api-crypto-p256", "wasefire-board-api/software-crypto-p256"]
+software-crypto-p384 = ["board-api-crypto-p384", "wasefire-board-api/software-crypto-p384"]
+software-crypto-sha256 = ["board-api-crypto-sha256", "wasefire-board-api/software-crypto-sha256"]
+software-crypto-sha384 = ["board-api-crypto-sha384", "wasefire-board-api/software-crypto-sha384"]
 # Selects between Wasm applet or native applet (choose exactly one).
 native = []
 wasm = ["dep:wasefire-interpreter"]
 # Assume WASM modules being loaded are valid and do not validate them. This is a
 # safety invariant.
 unsafe-skip-validation = []
-# Internal features:
-debug = []
+# Internal features.
+internal-applet-api-crypto = []
+internal-applet-api-crypto-hash = ["internal-applet-api-crypto"]
+internal-applet-api-platform = []
+internal-applet-api-radio = []
+internal-applet-api-store = []
+internal-applet-api-usb = []
+internal-board-api-crypto-ecc = []
+internal-board-api-radio = []
+internal-board-api-usb = []
+internal-debug = []
+internal-hash-context = []

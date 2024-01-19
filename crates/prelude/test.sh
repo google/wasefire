@@ -17,9 +17,17 @@ set -e
 
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
+check_applet_api api- --features=rust-crypto, --target=wasm32-unknown-unknown \
+  --no-default-features
+
+for api in api-rng api-crypto-hash api-crypto-hkdf; do
+  cargo clippy --target=wasm32-unknown-unknown --no-default-features \
+    --features=api-crypto-ec,$api -- --deny=warnings
+done
+
 test_helper
 
-cargo check --target=wasm32-unknown-unknown
-cargo check --target=wasm32-unknown-unknown --features=rust-crypto
-cargo check --features=native
-cargo test --features=test
+cargo check --target=wasm32-unknown-unknown --features=full-api
+cargo check --target=wasm32-unknown-unknown --features=full-api,rust-crypto
+cargo check --features=full-api,native
+cargo test --features=full-api,test

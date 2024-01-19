@@ -14,9 +14,13 @@
 
 use crate::*;
 
+#[cfg(feature = "api-crypto-ccm")]
 mod ccm;
+#[cfg(feature = "api-crypto-ec")]
 mod ec;
+#[cfg(feature = "api-crypto-gcm")]
 mod gcm;
+#[cfg(feature = "internal-api-crypto-hash")]
 mod hash;
 
 pub(crate) fn new() -> Item {
@@ -25,22 +29,13 @@ pub(crate) fn new() -> Item {
     };
     let name = "crypto".into();
     let items = vec![
-        item! {
-            /// Describes errors on cryptographic operations.
-            enum Error {
-                /// A function pre-condition was broken.
-                InvalidArgument = 0,
-
-                /// An operation is unsupported.
-                Unsupported = 1,
-
-                /// An RNG operation failed.
-                RngFailure = 2,
-            }
-        },
+        #[cfg(feature = "api-crypto-ccm")]
         ccm::new(),
+        #[cfg(feature = "api-crypto-ec")]
         ec::new(),
+        #[cfg(feature = "api-crypto-gcm")]
         gcm::new(),
+        #[cfg(feature = "internal-api-crypto-hash")]
         hash::new(),
     ];
     Item::Mod(Mod { docs, name, items })

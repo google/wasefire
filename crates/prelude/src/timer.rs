@@ -12,19 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides API for clocks and timers.
-//!
-//! For now, only timers are provided.
+//! Provides API for timers.
 
 use alloc::boxed::Box;
 use alloc::rc::Rc;
 use core::cell::Cell;
 use core::time::Duration;
 
-use wasefire_applet_api::clock as api;
+use wasefire_applet_api::timer as api;
 
 pub use self::api::Mode;
 pub use self::api::Mode::*;
+use crate::{convert, convert_unit};
 
 /// Provides callback support for timer events.
 pub trait Handler: 'static {
@@ -58,7 +57,7 @@ impl<H: Handler> Timer<H> {
         let handler = Box::into_raw(Box::new(handler));
         let handler_data = handler as *const u8;
         let params = api::allocate::Params { handler_func, handler_data };
-        let api::allocate::Results { id } = unsafe { api::allocate(params) };
+        let id = convert(unsafe { api::allocate(params) }).unwrap();
         Timer { id, running: Cell::new(false), handler }
     }
 
@@ -70,7 +69,7 @@ impl<H: Handler> Timer<H> {
             return;
         }
         let params = api::start::Params { id: self.id, mode: mode as usize, duration_ms };
-        unsafe { api::start(params) };
+        convert_unit(unsafe { api::start(params) }).unwrap();
     }
 
     /// Starts the timer.
@@ -91,7 +90,7 @@ impl<H: Handler> Timer<H> {
         if !self.running.replace(false) {
             return;
         }
-        unsafe { api::stop(api::stop::Params { id: self.id }) };
+        convert_unit(unsafe { api::stop(api::stop::Params { id: self.id }) }).unwrap();
     }
 
     /// Drops the timer but keeps it running.
@@ -113,7 +112,7 @@ impl<H: Handler> Drop for Timer<H> {
             self.stop();
         }
         let params = api::free::Params { id: self.id };
-        unsafe { api::free(params) };
+        convert_unit(unsafe { api::free(params) }).unwrap();
         drop(unsafe { Box::from_raw(self.handler as *mut H) });
     }
 }

@@ -16,17 +16,22 @@ use alloc::vec;
 use core::borrow::Borrow;
 
 use derivative::Derivative;
-use wasefire_board_api::{Api as Board, Event};
+use wasefire_board_api::{Api as Board, Event, Impossible};
 #[cfg(feature = "wasm")]
 pub use wasefire_interpreter::InstId;
 use wasefire_logger as log;
 
 use crate::Scheduler;
 
+#[cfg(all(feature = "board-api-button", feature = "applet-api-button"))]
 pub mod button;
+#[cfg(all(feature = "internal-board-api-radio", feature = "internal-applet-api-radio"))]
 pub mod radio;
+#[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
 pub mod timer;
+#[cfg(all(feature = "board-api-uart", feature = "applet-api-uart"))]
 pub mod uart;
+#[cfg(all(feature = "internal-board-api-usb", feature = "internal-applet-api-usb"))]
 pub mod usb;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -39,11 +44,17 @@ pub struct InstId;
 #[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
 #[derivative(Ord = "feature_allow_slow_enum")]
 pub enum Key<B: Board> {
+    #[cfg(all(feature = "board-api-button", feature = "applet-api-button"))]
     Button(button::Key<B>),
+    #[cfg(all(feature = "internal-board-api-radio", feature = "internal-applet-api-radio"))]
     Radio(radio::Key),
+    #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
     Timer(timer::Key<B>),
+    #[cfg(all(feature = "board-api-uart", feature = "applet-api-uart"))]
     Uart(uart::Key<B>),
+    #[cfg(all(feature = "internal-board-api-usb", feature = "internal-applet-api-usb"))]
     Usb(usb::Key),
+    _Impossible(Impossible<B>),
 }
 
 // TODO(https://github.com/mcarton/rust-derivative/issues/112): Use Clone(bound = "") instead.
@@ -60,14 +71,41 @@ impl<B: Board> PartialOrd for Key<B> {
     }
 }
 
+#[cfg_attr(not(feature = "board-api-button"), allow(unused_macros))]
+macro_rules! or_unreachable {
+    ($feature:literal, [$($event:ident)*], $expr:expr) => {{
+        $( #[cfg(not(feature = $feature))] let _ = $event; )*
+        #[cfg(not(feature = $feature))]
+        unreachable!();
+        #[cfg(feature = $feature)]
+        $expr
+    }};
+}
+
 impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
     fn from(event: &'a Event<B>) -> Self {
         match event {
-            Event::Button(event) => Key::Button(event.into()),
-            Event::Radio(event) => Key::Radio(event.into()),
-            Event::Timer(event) => Key::Timer(event.into()),
-            Event::Uart(event) => Key::Uart(event.into()),
-            Event::Usb(event) => Key::Usb(event.into()),
+            #[cfg(feature = "board-api-button")]
+            Event::Button(event) => {
+                or_unreachable!("applet-api-button", [event], Key::Button(event.into()))
+            }
+            #[cfg(feature = "internal-board-api-radio")]
+            Event::Radio(event) => {
+                or_unreachable!("internal-applet-api-radio", [event], Key::Radio(event.into()))
+            }
+            #[cfg(feature = "board-api-timer")]
+            Event::Timer(event) => {
+                or_unreachable!("applet-api-timer", [event], Key::Timer(event.into()))
+            }
+            #[cfg(feature = "board-api-uart")]
+            Event::Uart(event) => {
+                or_unreachable!("applet-api-uart", [event], Key::Uart(event.into()))
+            }
+            #[cfg(feature = "internal-board-api-usb")]
+            Event::Usb(event) => {
+                or_unreachable!("internal-applet-api-usb", [event], Key::Usb(event.into()))
+            }
+            Event::Impossible(x) => x.unreachable(),
         }
     }
 }
@@ -107,19 +145,34 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
         }
     };
     let mut params = vec![*func, *data];
+    let _ = (&inst, &mut params); // in case there are no events
     match event {
-        Event::Button(event) => button::process(event, &mut params),
-        Event::Radio(event) => radio::process(event),
-        Event::Timer(_) => timer::process(),
-        Event::Uart(_) => uart::process(),
-        Event::Usb(event) => usb::process(event),
+        #[cfg(feature = "board-api-button")]
+        Event::Button(event) => {
+            or_unreachable!("applet-api-button", [event], button::process(event, &mut params))
+        }
+        #[cfg(feature = "internal-board-api-radio")]
+        Event::Radio(event) => {
+            or_unreachable!("internal-applet-api-radio", [event], radio::process(event))
+        }
+        #[cfg(feature = "board-api-timer")]
+        Event::Timer(_) => or_unreachable!("applet-api-timer", [], timer::process()),
+        #[cfg(feature = "board-api-uart")]
+        Event::Uart(_) => or_unreachable!("applet-api-uart", [], uart::process()),
+        #[cfg(feature = "internal-board-api-usb")]
+        Event::Usb(event) => {
+            or_unreachable!("internal-applet-api-usb", [event], usb::process(event))
+        }
+        Event::Impossible(x) => x.unreachable(),
     }
+    #[allow(unreachable_code)] // when there are no events
     #[cfg(feature = "wasm")]
     {
         use alloc::format;
         let name = format!("cb{}", params.len() - 2);
         scheduler.call(*inst, &name, &params);
     }
+    #[allow(unreachable_code)] // when there are no events
     #[cfg(feature = "native")]
     {
         use alloc::boxed::Box;
@@ -128,7 +181,7 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
 
         #[derive(Copy, Clone)]
         #[repr(transparent)]
-        struct U8(*const u8);
+        struct U8(#[allow(dead_code)] *const u8);
         unsafe impl Send for U8 {}
 
         let InstId = inst;

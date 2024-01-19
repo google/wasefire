@@ -4,6 +4,8 @@
 
 ### Minor
 
+- Migrate to applet API always returning `isize`
+- Migrate to `wasefire-error`
 - Use `wasefire-logger` for panics
 
 ### Patch
@@ -24,4 +26,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 7 -->
+<!-- Increment to skip CHANGELOG.md test: 8 -->

@@ -12,27 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_applet_api::clock::{self as api, Api};
+use wasefire_applet_api::timer::{self as api, Api};
+#[cfg(feature = "board-api-timer")]
 use wasefire_board_api::timer::{Api as _, Command};
-use wasefire_board_api::{self as board, Api as Board, Id};
+use wasefire_board_api::Api as Board;
+#[cfg(feature = "board-api-timer")]
+use wasefire_board_api::{self as board, Id};
 
-use crate::event::timer::Key;
-use crate::event::Handler;
-use crate::{DispatchSchedulerCall, Scheduler, SchedulerCall, Timer, Trap};
+#[cfg(feature = "board-api-timer")]
+use crate::event::{timer::Key, Handler};
+#[cfg(feature = "board-api-timer")]
+use crate::Trap;
+use crate::{DispatchSchedulerCall, SchedulerCall};
+#[cfg(feature = "board-api-timer")]
+use crate::{Scheduler, Timer};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Allocate(call) => allocate(call),
-        Api::Start(call) => start(call),
-        Api::Stop(call) => stop(call),
-        Api::Free(call) => free(call),
+        Api::Start(call) => or_trap!("board-api-timer", start(call)),
+        Api::Stop(call) => or_trap!("board-api-timer", stop(call)),
+        Api::Free(call) => or_trap!("board-api-timer", free(call)),
     }
 }
 
+#[cfg(not(feature = "board-api-timer"))]
+fn allocate<B: Board>(call: SchedulerCall<B, api::allocate::Sig>) {
+    use wasefire_error::{Code, Error};
+    call.reply_(Ok(Err(Error::world(Code::NotEnough))))
+}
+
+#[cfg(feature = "board-api-timer")]
 fn allocate<B: Board>(mut call: SchedulerCall<B, api::allocate::Sig>) {
     let api::allocate::Params { handler_func, handler_data } = call.read();
     let inst = call.inst();
-    let results = try {
+    let result = try {
         let timers = &mut call.scheduler().timers;
         let timer = timers.iter().position(|x| x.is_none()).ok_or(Trap)?;
         timers[timer] = Some(Timer {});
@@ -42,49 +56,51 @@ fn allocate<B: Board>(mut call: SchedulerCall<B, api::allocate::Sig>) {
             func: *handler_func,
             data: *handler_data,
         })?;
-        api::allocate::Results { id: (timer as u32).into() }
+        Ok(timer as u32)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
+#[cfg(feature = "board-api-timer")]
 fn start<B: Board>(mut call: SchedulerCall<B, api::start::Sig>) {
     let api::start::Params { id, mode, duration_ms } = call.read();
     let timer = *id as usize;
-    let results = try {
+    let result = try {
         let id = get_timer(call.scheduler(), timer)?;
         let periodic = matches!(api::Mode::try_from(*mode)?, api::Mode::Periodic);
         let duration_ms = *duration_ms as usize;
         let command = Command { periodic, duration_ms };
-        board::Timer::<B>::arm(id, &command).map_err(|_| Trap)?;
-        api::start::Results {}
+        board::Timer::<B>::arm(id, &command)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
+#[cfg(feature = "board-api-timer")]
 fn stop<B: Board>(mut call: SchedulerCall<B, api::stop::Sig>) {
     let api::stop::Params { id } = call.read();
     let timer = *id as usize;
-    let results = try {
+    let result = try {
         let id = get_timer(call.scheduler(), timer)?;
-        board::Timer::<B>::disarm(id).map_err(|_| Trap)?;
-        api::stop::Results {}
+        board::Timer::<B>::disarm(id)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
+#[cfg(feature = "board-api-timer")]
 fn free<B: Board>(mut call: SchedulerCall<B, api::free::Sig>) {
     let api::free::Params { id } = call.read();
     let timer = *id as usize;
-    let results = try {
+    let result = try {
         let timer = get_timer(call.scheduler(), timer)?;
         call.scheduler().disable_event(Key { timer }.into())?;
         call.scheduler().timers[*timer] = None;
-        api::free::Results {}
+        Ok(())
     };
-    call.reply(results);
+    call.reply(result);
 }
 
 // TODO: Should also check that the timer belongs to the calling applet.
+#[cfg(feature = "board-api-timer")]
 fn get_timer<B: Board>(
     scheduler: &Scheduler<B>, timer: usize,
 ) -> Result<Id<board::Timer<B>>, Trap> {

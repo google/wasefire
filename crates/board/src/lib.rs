@@ -18,6 +18,7 @@
 //! support triggering [events][Event].
 
 #![no_std]
+#![feature(doc_auto_cfg)]
 #![feature(never_type)]
 
 extern crate alloc;
@@ -26,17 +27,28 @@ use core::marker::PhantomData;
 use core::ops::Deref;
 
 use derivative::Derivative;
+pub use wasefire_error::Error;
 
+#[cfg(feature = "api-button")]
 pub mod button;
+#[cfg(feature = "internal-api-crypto")]
 pub mod crypto;
 pub mod debug;
+#[cfg(feature = "api-gpio")]
+pub mod gpio;
+#[cfg(feature = "api-led")]
 pub mod led;
+#[cfg(feature = "internal-api-platform")]
 pub mod platform;
+#[cfg(feature = "internal-api-radio")]
 pub mod radio;
+#[cfg(feature = "api-rng")]
 pub mod rng;
-mod storage;
+#[cfg(feature = "api-timer")]
 pub mod timer;
+#[cfg(feature = "api-uart")]
 pub mod uart;
+#[cfg(feature = "internal-api-usb")]
 pub mod usb;
 
 /// Board interface.
@@ -44,9 +56,6 @@ pub mod usb;
 /// This is essentially a type hierarchy. The implementation is responsible for handling a possible
 /// explicit global state. The type implementing this API may be equivalent to the never type (e.g.
 /// an empty enum) because it is never used, i.e. there are no functions which take `self`.
-///
-/// All interfaces are implemented by [`Unsupported`]. This can be used for interfaces that don't
-/// have hardware support, are not yet implemented, or should use a software implementation.
 pub trait Api: Send + 'static {
     /// Returns the oldest triggered event, if any.
     ///
@@ -62,21 +71,34 @@ pub trait Api: Send + 'static {
     /// Board-specific syscalls.
     ///
     /// Those calls are directly forwarded from the applet by the scheduler. The default
-    /// implementation traps.
-    fn syscall(_x1: u32, _x2: u32, _x3: u32, _x4: u32) -> Option<u32> {
+    /// implementation traps by returning `None`. The platform will panic if `Some(Ok(x))` is
+    /// returned when `x as i32` would be negative.
+    fn syscall(_x1: u32, _x2: u32, _x3: u32, _x4: u32) -> Option<Result<u32, Error>> {
         None
     }
 
+    #[cfg(feature = "api-button")]
     type Button: button::Api;
+    #[cfg(feature = "internal-api-crypto")]
     type Crypto: crypto::Api;
     type Debug: debug::Api;
+    #[cfg(feature = "api-gpio")]
+    type Gpio: gpio::Api;
+    #[cfg(feature = "api-led")]
     type Led: led::Api;
+    #[cfg(feature = "internal-api-platform")]
     type Platform: platform::Api;
+    #[cfg(feature = "internal-api-radio")]
     type Radio: radio::Api;
+    #[cfg(feature = "api-rng")]
     type Rng: rng::Api;
+    #[cfg(feature = "api-storage")]
     type Storage: Singleton + wasefire_store::Storage + Send;
+    #[cfg(feature = "api-timer")]
     type Timer: timer::Api;
+    #[cfg(feature = "api-uart")]
     type Uart: uart::Api;
+    #[cfg(feature = "internal-api-usb")]
     type Usb: usb::Api;
 }
 
@@ -91,7 +113,7 @@ pub trait Support<Value> {
 /// Marker trait for supported API.
 pub trait Supported {}
 
-/// Provides access to a (possibly unsupported) singleton API.
+/// Provides access to a singleton API.
 pub trait Singleton: Sized {
     /// Returns the singleton.
     ///
@@ -107,51 +129,85 @@ pub trait Singleton: Sized {
 #[derivative(Debug(bound = ""), PartialEq(bound = ""), Eq(bound = ""))]
 pub enum Event<B: Api + ?Sized> {
     /// Button event.
+    #[cfg(feature = "api-button")]
     Button(button::Event<B>),
 
     /// Radio event.
+    #[cfg(feature = "internal-api-radio")]
     Radio(radio::Event),
 
     /// Timer event.
+    #[cfg(feature = "api-timer")]
     Timer(timer::Event<B>),
 
     /// UART event.
+    #[cfg(feature = "api-uart")]
     Uart(uart::Event<B>),
 
     /// USB event.
+    #[cfg(feature = "internal-api-usb")]
     Usb(usb::Event),
+
+    /// Dummy event for typing purposes.
+    Impossible(Impossible<B>),
 }
 
-/// Errors that interfaces may return.
+/// Impossible type with board parameter.
 ///
-/// Because a board interfaces between the user and the world, there's 2 types of errors: those due
-/// to the user and those due to the world. If the board itself errors, the error should be handled
-/// internally: either by an automatic reset (in production) or by halting execution until a manual
-/// reset (during testing to permit debugging).
-#[derive(Debug, Copy, Clone)]
-pub enum Error {
-    /// The user made an error.
-    User,
+/// This type is useful when the type parameter `B` needs to be mentioned in an enum. This type can
+/// be destructed by calling its unreachable method.
+#[derive(Derivative)]
+#[derivative(Debug(bound = ""), Copy(bound = ""), Hash(bound = ""))]
+#[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
+#[derivative(Ord = "feature_allow_slow_enum")]
+pub struct Impossible<B: Api + ?Sized>(Void, PhantomData<B>);
 
-    /// The world made an error.
-    World,
+// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use Clone(bound = "") instead.
+impl<B: Api + ?Sized> Clone for Impossible<B> {
+    fn clone(&self) -> Self {
+        *self
+    }
 }
 
+// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use PartialOrd(bound = "") instead.
+impl<B: Api + ?Sized> PartialOrd for Impossible<B> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<B: Api + ?Sized> Impossible<B> {
+    pub fn unreachable(&self) -> ! {
+        match self.0 {}
+    }
+}
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+enum Void {}
+
+#[cfg(feature = "api-button")]
 pub type Button<B> = <B as Api>::Button;
+#[cfg(feature = "internal-api-crypto")]
 pub type Crypto<B> = <B as Api>::Crypto;
 pub type Debug<B> = <B as Api>::Debug;
+#[cfg(feature = "api-gpio")]
+pub type Gpio<B> = <B as Api>::Gpio;
+#[cfg(feature = "api-led")]
 pub type Led<B> = <B as Api>::Led;
+#[cfg(feature = "internal-api-platform")]
 pub type Platform<B> = <B as Api>::Platform;
+#[cfg(feature = "internal-api-radio")]
 pub type Radio<B> = <B as Api>::Radio;
+#[cfg(feature = "api-rng")]
 pub type Rng<B> = <B as Api>::Rng;
+#[cfg(feature = "api-storage")]
 pub type Storage<B> = <B as Api>::Storage;
+#[cfg(feature = "api-timer")]
 pub type Timer<B> = <B as Api>::Timer;
+#[cfg(feature = "api-uart")]
 pub type Uart<B> = <B as Api>::Uart;
+#[cfg(feature = "internal-api-usb")]
 pub type Usb<B> = <B as Api>::Usb;
-
-/// Unsupported interface.
-#[derive(Debug)]
-pub enum Unsupported {}
 
 /// Valid identifier for a countable API.
 #[derive(Derivative)]
@@ -191,51 +247,6 @@ impl<T: Support<usize>> Deref for Id<T> {
     }
 }
 
-impl Support<bool> for Unsupported {
-    const SUPPORT: bool = false;
-}
-
-impl Support<usize> for Unsupported {
-    const SUPPORT: usize = 0;
-}
-
 impl<T: Supported> Support<bool> for T {
     const SUPPORT: bool = true;
-}
-
-impl Singleton for Unsupported {
-    fn take() -> Option<Self> {
-        None
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn unsupported() {
-        enum Test {}
-        impl Api for Test {
-            fn try_event() -> Option<Event<Self>> {
-                todo!()
-            }
-
-            fn wait_event() -> Event<Self> {
-                todo!()
-            }
-
-            type Button = Unsupported;
-            type Crypto = Unsupported;
-            type Debug = Unsupported;
-            type Led = Unsupported;
-            type Platform = Unsupported;
-            type Radio = Unsupported;
-            type Rng = Unsupported;
-            type Storage = Unsupported;
-            type Timer = Unsupported;
-            type Uart = Unsupported;
-            type Usb = Unsupported;
-        }
-    }
 }

@@ -1,0 +1,19 @@
+[package]
+name = "wasefire-error"
+version = "0.1.0-git"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = true
+edition = "2021"
+description = "Wasefire API errors"
+repository = "https://github.com/google/wasefire"
+include = ["/src"]
+keywords = ["embedded", "framework", "no-std"]
+categories = ["embedded", "no-std"]
+
+[dependencies]
+defmt = { version = "0.3.5", default-features = false, optional = true }
+num_enum = { version = "0.7.1", default-features = false }
+
+[features]
+defmt = ["dep:defmt"]

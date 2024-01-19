@@ -19,13 +19,18 @@ set -e
 
 ensure_applet
 
+check_software_crypto
+check_applet_api applet-api- --features=wasm,std, --all-targets
+check_board_api board-api- --features=wasm,std, --all-targets
+
 test_helper
 
-cargo test --features=wasm,std
-cargo check --features=wasm,std,log
-cargo check --target=i686-unknown-linux-gnu --features=native,std
-cargo check --target=i686-unknown-linux-gnu --features=native,std,log
-cargo check --target=thumbv7em-none-eabi --features=wasm
-cargo check --target=thumbv7em-none-eabi --features=wasm,defmt
-cargo check --target=thumbv7em-none-eabi --features=native
-cargo check --target=thumbv7em-none-eabi --features=native,defmt
+cargo test --features=full-api,wasm,std
+cargo check --features=full-api,wasm,std,log
+cargo check --target=i686-unknown-linux-gnu --features=full-api,native,std
+cargo check --target=i686-unknown-linux-gnu \
+  --features=full-api,native,std,log
+cargo check --target=thumbv7em-none-eabi --features=full-api,wasm
+cargo check --target=thumbv7em-none-eabi --features=full-api,wasm,defmt
+cargo check --target=thumbv7em-none-eabi --features=full-api,native
+cargo check --target=thumbv7em-none-eabi --features=full-api,native,defmt

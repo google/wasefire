@@ -1193,6 +1193,7 @@ name = "runner-host"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "data-encoding",
  "env_logger",
  "rand",
  "tokio",
@@ -1201,6 +1202,7 @@ dependencies = [
  "usbip-device",
  "wasefire-applet-api",
  "wasefire-board-api",
+ "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
  "wasefire-scheduler",
@@ -1773,6 +1775,7 @@ dependencies = [
  "bytemuck",
  "sealed",
  "wasefire-applet-api-macro",
+ "wasefire-error",
 ]
 
 [[package]]
@@ -1803,6 +1806,7 @@ dependencies = [
  "aead",
  "aes",
  "aes-gcm",
+ "bytemuck",
  "ccm",
  "crypto-common",
  "derivative",
@@ -1819,8 +1823,16 @@ dependencies = [
  "usb-device",
  "usbd-serial",
  "wasefire-applet-api",
+ "wasefire-error",
  "wasefire-logger",
  "wasefire-store",
+]
+
+[[package]]
+name = "wasefire-error"
+version = "0.1.0-git"
+dependencies = [
+ "num_enum 0.7.1",
 ]
 
 [[package]]
@@ -1852,6 +1864,7 @@ dependencies = [
  "typenum",
  "wasefire-applet-api",
  "wasefire-board-api",
+ "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
  "wasefire-store",

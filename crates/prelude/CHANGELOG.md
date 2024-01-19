@@ -4,10 +4,21 @@
 
 ### Major
 
+- Rename `clock` module to `timer`
+- Change `debug::time()` to return `Result<u64>` instead of `u64`
+- Migrate `platform::update` to use `Error` instead of `usize`
+- Remove custom error types and use `wasefire-error` instead
 - Rename `native` to `test` and use `native` for native applets
 
 ### Minor
 
+- Add `serial::DelimitedReader` to read delimited frames from serial
+- Add `serial::Listener` to listen for serial events
+- Migrate to low-level applet API returning `isize`
+- Remove experimental `multivalue` support for #355
+- Add API features (enabled by default)
+- Add `gpio` module
+- Add `unsafe-assume-single-core` feature for convenience
 - Add `platform::version()`
 - Add `radio::ble` module
 - Add `platform::update::is_supported()`
@@ -19,6 +30,7 @@
 
 ### Patch
 
+- Fix lints of nightly-2024-01-14
 - Use `ENUM::to_result()` to convert errors
 - Only depend on `portable-atomic` through `wasefire-sync`
 - Use `wasefire-sync::executed!()` to ensure the allocator is initialized at
@@ -113,4 +125,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 17 -->
+<!-- Increment to skip CHANGELOG.md test: 23 -->

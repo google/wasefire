@@ -39,7 +39,9 @@ impl Api for Impl {
                 true => timer.slot.set_periodic(),
                 false => timer.slot.set_oneshot(),
             }
-            timer.slot.start(command.duration_ms as u32 * 1000);
+            // Timers trigger after incrementing the counter, so 0 is the longest timer while 1 is
+            // the shortest.
+            timer.slot.start(core::cmp::max(1, command.duration_ms as u32 * 1000));
             Ok(())
         })
     }

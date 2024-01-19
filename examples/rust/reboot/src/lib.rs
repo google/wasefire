@@ -47,13 +47,13 @@ fn blink(seconds: u64) {
     debug!("Waiting {seconds} seconds...");
     let duration = Duration::from_secs(seconds);
     if led::count() == 0 {
-        clock::sleep(duration);
+        timer::sleep(duration);
         return;
     }
     led::set(0, led::On);
-    let blink = clock::Timer::new(|| led::set(0, !led::get(0)));
-    blink.start(clock::Periodic, Duration::from_millis(300));
-    clock::sleep(duration);
+    let blink = timer::Timer::new(|| led::set(0, !led::get(0)));
+    blink.start(timer::Periodic, Duration::from_millis(300));
+    timer::sleep(duration);
     drop(blink);
     led::set(0, led::Off);
 }

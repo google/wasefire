@@ -14,33 +14,36 @@
 
 //! Provides API to interact with the platform.
 
-use alloc::boxed::Box;
-use alloc::vec;
-
+#[cfg(feature = "api-platform")]
 use wasefire_applet_api::platform as api;
-use wasefire_sync::Mutex;
 
+#[cfg(feature = "api-platform")]
+use crate::{convert, convert_never};
+
+#[cfg(feature = "api-platform-update")]
 pub mod update;
 
 /// Returns the version of the platform.
+#[cfg(feature = "api-platform")]
 pub fn version() -> &'static [u8] {
+    use wasefire_sync::Mutex;
     static VERSION: Mutex<Option<&'static [u8]>> = Mutex::new(None);
     let mut guard = VERSION.lock();
     if let Some(version) = *guard {
         return version;
     }
     let params = api::version::Params { ptr: core::ptr::null_mut(), len: 0 };
-    let api::version::Results { len } = unsafe { api::version(params) };
-    let mut version = vec![0; len];
+    let len = convert(unsafe { api::version(params) }).unwrap();
+    let mut version = alloc::vec![0; len];
     let params = api::version::Params { ptr: version[..].as_mut_ptr(), len };
-    let api::version::Results { .. } = unsafe { api::version(params) };
-    let version = Box::leak(version.into_boxed_slice());
+    convert(unsafe { api::version(params) }).unwrap();
+    let version = alloc::boxed::Box::leak(version.into_boxed_slice());
     *guard = Some(version);
     version
 }
 
 /// Reboots the device (thus platform and applets).
+#[cfg(feature = "api-platform")]
 pub fn reboot() -> ! {
-    let api::reboot::Results { res } = unsafe { api::reboot() };
-    unreachable!("reboot() returned {res}");
+    convert_never(unsafe { api::reboot() }).unwrap();
 }

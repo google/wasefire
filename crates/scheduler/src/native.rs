@@ -19,21 +19,21 @@ use wasefire_board_api::Api as Board;
 use wasefire_logger as log;
 use wasefire_sync::Mutex;
 
-#[cfg(feature = "debug")]
+#[cfg(feature = "internal-debug")]
 use crate::perf::Slot;
 use crate::Scheduler;
 
 pub(crate) trait ErasedScheduler: Send {
-    fn dispatch(&mut self, link: &CStr, params: *const u32, results: *mut u32);
+    fn dispatch(&mut self, link: &CStr, params: *const u32) -> isize;
     fn flush_events(&mut self);
     fn process_event(&mut self);
-    #[cfg(feature = "debug")]
+    #[cfg(feature = "internal-debug")]
     fn perf_record(&mut self, slot: Slot);
 }
 
 impl<B: Board> ErasedScheduler for Scheduler<B> {
-    fn dispatch(&mut self, link: &CStr, params: *const u32, results: *mut u32) {
-        self.dispatch(link, params, results);
+    fn dispatch(&mut self, link: &CStr, params: *const u32) -> isize {
+        self.dispatch(link, params)
     }
 
     fn flush_events(&mut self) {
@@ -44,7 +44,7 @@ impl<B: Board> ErasedScheduler for Scheduler<B> {
         self.process_event();
     }
 
-    #[cfg(feature = "debug")]
+    #[cfg(feature = "internal-debug")]
     fn perf_record(&mut self, slot: Slot) {
         self.perf.record(slot);
     }
@@ -66,26 +66,30 @@ pub(crate) fn schedule_callback(callback: Box<dyn Fn() + Send>) {
 }
 
 pub(crate) fn execute_callback() {
-    if let Some(callback) = CALLBACK.lock().take() {
-        #[cfg(feature = "debug")]
+    // We cannot inline the callback expression in the `if let` because the lifetime of the guard
+    // would extend to the end of the `if let` block.
+    let callback = CALLBACK.lock().take();
+    if let Some(callback) = callback {
+        #[cfg(feature = "internal-debug")]
         with_scheduler(|x| x.perf_record(Slot::Platform));
         callback();
-        #[cfg(feature = "debug")]
+        #[cfg(feature = "internal-debug")]
         with_scheduler(|x| x.perf_record(Slot::Applets));
         log::debug!("Callback executed.");
     }
 }
 
 #[no_mangle]
-extern "C" fn env_dispatch(link: *const c_char, params: *const u32, results: *mut u32) {
+extern "C" fn env_dispatch(link: *const c_char, params: *const u32) -> isize {
     let link = unsafe { CStr::from_ptr(link) };
-    with_scheduler(|scheduler| {
-        #[cfg(feature = "debug")]
+    let result = with_scheduler(|scheduler| {
+        #[cfg(feature = "internal-debug")]
         scheduler.perf_record(Slot::Applets);
         scheduler.flush_events();
-        scheduler.dispatch(link, params, results);
+        scheduler.dispatch(link, params)
     });
     execute_callback();
-    #[cfg(feature = "debug")]
+    #[cfg(feature = "internal-debug")]
     with_scheduler(|x| x.perf_record(Slot::Platform));
+    result
 }

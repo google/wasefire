@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![feature(try_blocks)]
+
 use std::cell::Cell;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
@@ -31,6 +33,7 @@ use rustc_demangle::demangle;
 use sha2::{Digest, Sha256};
 use strum::{Display, EnumString};
 
+mod footprint;
 mod fs;
 mod lazy;
 
@@ -45,10 +48,6 @@ struct Flags {
 
 #[derive(clap::Args)]
 struct MainOptions {
-    /// (unstable) Compiles with multivalue support.
-    #[clap(long)]
-    multivalue: bool,
-
     /// Compiles without debugging support.
     #[clap(long)]
     release: bool,
@@ -71,8 +70,12 @@ struct MainOptions {
     /// Prints basic size information.
     #[clap(long)]
     size: bool,
-    // TODO: Add a flag to add "-C link-arg=-Map=output.map" to get the map of why the linker
-    // added/kept something.
+
+    /// Updates footprint.toml with the measured footprint for the provided key.
+    ///
+    /// The key is a space-separated list of strings.
+    #[clap(long)]
+    footprint: Option<String>,
 }
 
 #[derive(clap::Subcommand)]
@@ -84,7 +87,19 @@ enum MainCommand {
     Runner(Runner),
 
     /// Updates the applet API for all languages.
-    UpdateApis,
+    UpdateApis {
+        /// Cargo features.
+        #[clap(long, default_values_t = ["full-api".to_string()])]
+        features: Vec<String>,
+    },
+
+    /// Appends a comparison between footprint-base.toml and footprint-pull_request.toml.
+    ///
+    /// If any file is missing, it is assumed to have no measurements.
+    Footprint {
+        /// The markdown table is written to this file.
+        output: String,
+    },
 }
 
 #[derive(clap::Args)]
@@ -160,7 +175,7 @@ struct RunnerOptions {
     /// Platform version.
     ///
     /// How the version string is interpreted is up to the runner. For Nordic, it must be a u32
-    /// smaller than u32::MAX.
+    /// smaller than u32::MAX. For the host, it must be an hexadecimal byte sequence.
     #[clap(long)]
     version: Option<String>,
 
@@ -180,9 +195,9 @@ struct RunnerOptions {
     #[clap(long)]
     bundle: bool,
 
-    /// Erases all the flash first.
+    /// Resets the persistent storage before running.
     #[clap(long)]
-    erase_flash: bool,
+    reset_storage: bool,
 
     /// Prints the command lines to use GDB.
     #[clap(long)]
@@ -257,14 +272,19 @@ impl Flags {
         match self.command {
             MainCommand::Applet(applet) => applet.execute(&self.options)?,
             MainCommand::Runner(runner) => runner.execute(&self.options)?,
-            MainCommand::UpdateApis => {
+            MainCommand::UpdateApis { features } => {
                 let (lang, ext) = ("assemblyscript", "ts");
                 let mut cargo = Command::new("cargo");
-                cargo.args(["run", "--manifest-path=crates/api-desc/Cargo.toml", "--"]);
+                cargo.args(["run", "--manifest-path=crates/api-desc/Cargo.toml"]);
+                for features in features {
+                    cargo.arg(format!("--features={features}"));
+                }
+                cargo.arg("--");
                 cargo.arg(format!("--lang={lang}"));
                 cargo.arg(format!("--output=examples/{lang}/api.{ext}"));
                 execute_command(&mut cargo)?;
             }
+            MainCommand::Footprint { output } => footprint::compare(&output)?,
         }
         Ok(())
     }
@@ -333,9 +353,6 @@ impl AppletOptions {
         match native {
             None => {
                 rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
-                if main.multivalue {
-                    rustflags.push("-C target-feature=+multivalue".to_string());
-                }
                 cargo.args(["--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
             }
             Some(target) => {
@@ -363,13 +380,18 @@ impl AppletOptions {
             None => "target/wasefire/applet.wasm",
         };
         let changed = copy_if_changed(&out, applet)?;
-        if native.is_some() && main.size {
-            let mut size = wrap_command()?;
-            size.args(["rust-size", applet]);
-            let output = String::from_utf8(output_command(&mut size)?.stdout)?;
-            // We assume the interesting part is the first line after the header.
-            for line in output.lines().take(2) {
-                println!("{line}");
+        if native.is_some() {
+            if main.size {
+                let mut size = wrap_command()?;
+                size.args(["rust-size", applet]);
+                let output = String::from_utf8(output_command(&mut size)?.stdout)?;
+                // We assume the interesting part is the first line after the header.
+                for line in output.lines().take(2) {
+                    println!("{line}");
+                }
+            }
+            if let Some(key) = &main.footprint {
+                footprint::update_applet(key, footprint::rust_size(applet)?)?;
             }
         }
         if native.is_none() && changed {
@@ -417,9 +439,6 @@ impl AppletOptions {
         if self.opt.get() {
             let mut opt = wrap_command()?;
             opt.arg("wasm-opt");
-            if main.multivalue {
-                opt.arg("--enable-multivalue");
-            }
             opt.args(["--enable-bulk-memory", "--enable-sign-ext"]);
             match self.opt_level {
                 Some(level) => drop(opt.arg(format!("-O{level}"))),
@@ -430,6 +449,9 @@ impl AppletOptions {
             if main.size {
                 println!("Applet size (after wasm-opt): {}", fs::metadata(wasm)?.len());
             }
+        }
+        if let Some(key) = &main.footprint {
+            footprint::update_applet(key, fs::metadata(wasm)?.len() as usize)?;
         }
         Ok(())
     }
@@ -486,6 +508,11 @@ impl RunnerOptions {
             Some(1) => "_b",
             _ => unimplemented!(),
         };
+        if self.name == "host" {
+            if let Some(version) = &self.version {
+                cargo.env("WASEFIRE_HOST_VERSION", version);
+            };
+        }
         if self.name == "nordic" {
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
             let version = match &self.version {
@@ -551,7 +578,7 @@ impl RunnerOptions {
         fs::touch("target/wasefire/applet.wasm")?;
         if run && self.name == "host" {
             let path = "target/wasefire/storage.bin";
-            if self.erase_flash && fs::exists(path) {
+            if self.reset_storage && fs::exists(path) {
                 fs::remove_file(path)?;
             }
             replace_command(cargo);
@@ -587,6 +614,9 @@ impl RunnerOptions {
             size.arg("rust-size");
             size.arg(&elf);
             execute_command(&mut size)?;
+        }
+        if let Some(key) = &main.footprint {
+            footprint::update_runner(key, footprint::rust_size(&elf)?)?;
         }
         if let Some(stack_sizes) = self.stack_sizes {
             let elf = fs::read(&elf)?;
@@ -635,9 +665,10 @@ impl RunnerOptions {
                 Permissions::default(),
             )?)
         });
-        if self.erase_flash {
-            println!("Erasing the flash of {}", session.get()?.target().name);
-            flashing::erase_all(session.get()?, None)?;
+        if self.reset_storage {
+            println!("Erasing the persistent storage.");
+            // Keep those values in sync with crates/runner-nordic/memory.x.
+            flashing::erase_sectors(session.get()?, None, 240, 16)?;
         }
         if self.name == "nordic" {
             let mut cargo = Command::new("cargo");

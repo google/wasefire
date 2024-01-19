@@ -29,22 +29,42 @@ usb-device = "0.3.1"
 usbd-serial = "0.2.0"
 wasefire-applet-api = { path = "../api" }
 wasefire-board-api = { path = "../board" }
+wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
-wasefire-scheduler = { path = "../scheduler" }
 wasefire-store = { path = "../store" }
 wasefire-sync = { path = "../sync" }
 
+[dependencies.wasefire-scheduler]
+path = "../scheduler"
+features = [
+  "board-api-button",
+  "board-api-crypto-aes128-ccm",
+  "board-api-gpio",
+  "board-api-led",
+  "board-api-platform",
+  "board-api-platform-update",
+  "board-api-radio-ble",
+  "board-api-rng",
+  "board-api-storage",
+  "board-api-timer",
+  "board-api-uart",
+  "board-api-usb-serial",
+]
+
 [features]
-software-crypto = ["wasefire-board-api/software-crypto"]
-software-crypto-aes256-gcm = ["wasefire-board-api/software-crypto-aes256-gcm"]
-software-crypto-sha256 = ["wasefire-board-api/software-crypto-sha256"]
+# Software crypto features. The software-crypto feature enables all of them.
+software-crypto = ["software-crypto-aes256-gcm", "software-crypto-p256", "software-crypto-sha256"]
+software-crypto-aes256-gcm = ["wasefire-scheduler/software-crypto-aes256-gcm"]
+software-crypto-p256 = ["wasefire-scheduler/software-crypto-p256"]
+software-crypto-sha256 = ["wasefire-scheduler/software-crypto-sha256"]
 # Exactly one is enabled by xtask.
 debug = [
   "dep:defmt",
   "dep:defmt-rtt",
   "dep:panic-probe",
   "wasefire-board-api/defmt",
+  "wasefire-error/defmt",
   "wasefire-logger/defmt",
   "wasefire-scheduler/defmt",
 ]

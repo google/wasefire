@@ -492,7 +492,16 @@ version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a015b430d3c108a207fd776d2e2196aaf8b1cf8cf93253e3a097ff3085076a1"
 dependencies = [
- "num_enum_derive",
+ "num_enum_derive 0.6.1",
+]
+
+[[package]]
+name = "num_enum"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "683751d591e6d81200c39fb0d1032608b77724f34114db54f571ff1317b337c0"
+dependencies = [
+ "num_enum_derive 0.7.1",
 ]
 
 [[package]]
@@ -500,6 +509,17 @@ name = "num_enum_derive"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96667db765a921f7b295ffee8b60472b686a51d4f21c2ee4ffdb94c7013b65a6"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.41",
+]
+
+[[package]]
+name = "num_enum_derive"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c11e44798ad209ccdd91fc192f0526a369a01234f7373e1b141c96d7cee4f0e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -780,7 +800,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e73e438f527e567fb3982f2370967821fab4f5aea84c42e218a211dd2002b6a2"
 dependencies = [
  "heapless",
- "num_enum",
+ "num_enum 0.6.1",
  "portable-atomic",
 ]
 
@@ -814,6 +834,7 @@ dependencies = [
  "bytemuck",
  "sealed",
  "wasefire-applet-api-macro",
+ "wasefire-error",
 ]
 
 [[package]]
@@ -844,6 +865,7 @@ dependencies = [
  "aead",
  "aes",
  "aes-gcm",
+ "bytemuck",
  "ccm",
  "crypto-common",
  "defmt",
@@ -861,8 +883,17 @@ dependencies = [
  "usb-device",
  "usbd-serial",
  "wasefire-applet-api",
+ "wasefire-error",
  "wasefire-logger",
  "wasefire-store",
+]
+
+[[package]]
+name = "wasefire-error"
+version = "0.1.0-git"
+dependencies = [
+ "defmt",
+ "num_enum 0.7.1",
 ]
 
 [[package]]

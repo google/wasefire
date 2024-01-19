@@ -16,7 +16,7 @@
 //!
 //! A LED is an output interface with 2 states: on and off.
 
-use crate::{Error, Id, Support, Unsupported};
+use crate::{Error, Id, Support};
 
 /// LED interface.
 pub trait Api: Support<usize> + Send {
@@ -25,14 +25,4 @@ pub trait Api: Support<usize> + Send {
 
     /// Sets the state of a given LED.
     fn set(led: Id<Self>, on: bool) -> Result<(), Error>;
-}
-
-impl Api for Unsupported {
-    fn get(_: Id<Self>) -> Result<bool, Error> {
-        unreachable!()
-    }
-
-    fn set(_: Id<Self>, _: bool) -> Result<(), Error> {
-        unreachable!()
-    }
 }

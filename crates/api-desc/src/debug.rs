@@ -32,20 +32,19 @@ pub(crate) fn new() -> Item {
 
                 /// The length of the message in bytes.
                 len: usize,
-            } -> {}
+            } -> ()
         },
         item! {
             /// Returns the time spent since some initial event.
             ///
-            /// The time is in micro-seconds and may wrap before using all 64 bits. In particular,
-            /// this function may constantly return zero if time is not supported.
+            /// The time is in micro-seconds and may wrap before using all 64 bits.
             fn time "dt" {
-                /// Pointer to the upper 32-bits (may be null).
-                ptr: *mut usize,
-            } -> {
-                /// Lower 32-bits of the time.
-                res: usize,
-            }
+                /// Pointer to the 64-bits time (may be null).
+                ///
+                /// The least significant 31 bits are always returned, regardless of whether the
+                /// pointer is null.
+                ptr: *mut u64,
+            } -> usize
         },
         item! {
             /// Time in micro-seconds since the scheduler started.
@@ -71,7 +70,7 @@ pub(crate) fn new() -> Item {
             fn perf "dq" {
                 /// Pointer to the output [`super::Perf`] struct.
                 ptr: *mut u8,
-            } -> {}
+            } -> ()
         },
         item! {
             /// Exits the platform with an error code.
@@ -79,9 +78,9 @@ pub(crate) fn new() -> Item {
             /// This is used by test applets to terminate the platform and propagate the test
             /// result.
             fn exit "de" {
-                /// 0 for success, 1 for failure
+                /// 0 for success, 1 for failure.
                 code: usize,
-            } -> {}
+            } -> !
         },
     ];
     Item::Mod(Mod { docs, name, items })

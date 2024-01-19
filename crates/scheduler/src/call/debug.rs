@@ -31,41 +31,39 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 fn println<B: Board>(mut call: SchedulerCall<B, api::println::Sig>) {
     let api::println::Params { ptr, len } = call.read();
     let memory = call.memory();
-    let results = try {
+    let result = try {
         let line = core::str::from_utf8(memory.get(*ptr, *len)?).map_err(|_| Trap)?;
         board::Debug::<B>::println(line);
-        api::println::Results {}
+        Ok(())
     };
-    call.reply(results)
+    call.reply(result)
 }
 
 fn time<B: Board>(mut call: SchedulerCall<B, api::time::Sig>) {
     let api::time::Params { ptr } = call.read();
     let memory = call.memory();
-    let results = try {
+    let result = try {
         let time = board::Debug::<B>::time();
-        let high = (time >> 32) as u32;
-        let low = time as u32;
         if *ptr != 0 {
-            memory.get_mut(*ptr, 4)?.copy_from_slice(&high.to_le_bytes());
+            memory.get_mut(*ptr, 8)?.copy_from_slice(&time.to_le_bytes());
         }
-        api::time::Results { res: low.into() }
+        Ok(time as u32 & 0x7fffffff)
     };
-    call.reply(results)
+    call.reply(result)
 }
 
 fn perf<B: Board>(mut call: SchedulerCall<B, api::perf::Sig>) {
     let api::perf::Params { ptr } = call.read();
-    #[cfg(feature = "debug")]
+    #[cfg(feature = "internal-debug")]
     let perf = call.scheduler().perf.read();
-    #[cfg(not(feature = "debug"))]
+    #[cfg(not(feature = "internal-debug"))]
     let perf = Perf { platform: 0, applets: 0, waiting: 0 };
     let memory = call.memory();
-    let results = try {
+    let result = try {
         *memory.from_bytes_mut::<Perf>(*ptr)? = perf;
-        api::perf::Results {}
+        Ok(())
     };
-    call.reply(results)
+    call.reply(result)
 }
 
 fn exit<B: Board>(call: SchedulerCall<B, api::exit::Sig>) {

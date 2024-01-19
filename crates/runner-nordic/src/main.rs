@@ -20,10 +20,10 @@
 extern crate alloc;
 
 mod allocator;
+mod board;
 mod storage;
 #[cfg(feature = "debug")]
 mod systick;
-mod tasks;
 
 use core::cell::RefCell;
 use core::mem::MaybeUninit;
@@ -53,16 +53,17 @@ use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidP
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Id, Support};
+use wasefire_logger as log;
 use wasefire_scheduler::Scheduler;
-use {wasefire_board_api as board, wasefire_logger as log};
 
+use crate::board::button::{channel, Button};
+use crate::board::gpio::Gpio;
+use crate::board::radio::ble::Ble;
+use crate::board::timer::Timers;
+use crate::board::uart::Uarts;
+use crate::board::usb::Usb;
+use crate::board::{button, led, Events};
 use crate::storage::Storage;
-use crate::tasks::button::{self, channel, Button};
-use crate::tasks::clock::Timers;
-use crate::tasks::radio::ble::Ble;
-use crate::tasks::uart::Uarts;
-use crate::tasks::usb::Usb;
-use crate::tasks::{led, Events};
 
 #[cfg(feature = "debug")]
 #[defmt::panic_handler]
@@ -80,6 +81,7 @@ struct State {
     timers: Timers,
     ble: Ble,
     ccm: Ccm,
+    gpios: [Gpio; <board::gpio::Impl as Support<usize>>::SUPPORT],
     leds: [Pin<Output<PushPull>>; <led::Impl as Support<usize>>::SUPPORT],
     rng: Rng,
     storage: Option<Storage>,
@@ -111,6 +113,7 @@ fn main() -> ! {
     log::debug!("Runner starts.");
     let p = nrf52840_hal::pac::Peripherals::take().unwrap();
     let port0 = gpio::p0::Parts::new(p.P0);
+    let port1 = gpio::p1::Parts::new(p.P1);
     let buttons = [
         Button::new(port0.p0_11.into_pullup_input().degrade()),
         Button::new(port0.p0_12.into_pullup_input().degrade()),
@@ -122,6 +125,12 @@ fn main() -> ! {
         port0.p0_14.into_push_pull_output(Level::High).degrade(),
         port0.p0_15.into_push_pull_output(Level::High).degrade(),
         port0.p0_16.into_push_pull_output(Level::High).degrade(),
+    ];
+    let gpios = [
+        Gpio::new(port1.p1_01.degrade()),
+        Gpio::new(port1.p1_02.degrade()),
+        Gpio::new(port1.p1_03.degrade()),
+        Gpio::new(port1.p1_04.degrade()),
     ];
     let timers = Timers::new(p.TIMER1, p.TIMER2, p.TIMER3, p.TIMER4);
     let gpiote = Gpiote::new(p.GPIOTE);
@@ -147,7 +156,7 @@ fn main() -> ! {
     let ccm = Ccm::init(p.CCM, p.AAR, DataRate::_1Mbit);
     storage::init(p.NVMC);
     let storage = Some(Storage::new_store());
-    crate::tasks::platform::update::init(Storage::new_other());
+    crate::board::platform::update::init(Storage::new_other());
     let pins = uarte::Pins {
         txd: port0.p0_06.into_push_pull_output(gpio::Level::High).degrade(),
         rxd: port0.p0_08.into_floating_input().degrade(),
@@ -164,6 +173,7 @@ fn main() -> ! {
         timers,
         ble,
         ccm,
+        gpios,
         leds,
         rng,
         storage,
@@ -201,10 +211,10 @@ interrupts! {
     GPIOTE = gpiote(),
     RADIO = radio(),
     TIMER0 = radio_timer(),
-    TIMER1 = timer(1),
-    TIMER2 = timer(2),
-    TIMER3 = timer(3),
-    TIMER4 = timer(4),
+    TIMER1 = timer(0),
+    TIMER2 = timer(1),
+    TIMER3 = timer(2),
+    TIMER4 = timer(3),
     UARTE0_UART0 = uarte(0),
     UARTE1 = uarte(1),
     USBD = usbd(),
@@ -216,7 +226,7 @@ fn gpiote() {
             let id = Id::new(i).unwrap();
             if channel(&state.gpiote, id).is_event_triggered() {
                 let pressed = button.pin.is_low().unwrap();
-                state.events.push(board::button::Event { button: id, pressed }.into());
+                state.events.push(wasefire_board_api::button::Event { button: id, pressed }.into());
             }
         }
         state.gpiote.reset_events();
@@ -234,7 +244,7 @@ fn radio_timer() {
 fn timer(timer: usize) {
     let timer = Id::new(timer).unwrap();
     with_state(|state| {
-        state.events.push(board::timer::Event { timer }.into());
+        state.events.push(wasefire_board_api::timer::Event { timer }.into());
         state.timers.tick(*timer);
     })
 }

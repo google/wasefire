@@ -14,14 +14,14 @@
 
 //! Radio interface.
 
-use crate::Unsupported;
-
+#[cfg(feature = "api-radio-ble")]
 pub mod ble;
 
 /// Radio event.
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Event {
     /// BLE event.
+    #[cfg(feature = "api-radio-ble")]
     Ble(ble::Event),
 }
 
@@ -33,11 +33,9 @@ impl<B: crate::Api> From<Event> for crate::Event<B> {
 
 /// Radio interface.
 pub trait Api: Send {
+    #[cfg(feature = "api-radio-ble")]
     type Ble: ble::Api;
 }
 
+#[cfg(feature = "api-radio-ble")]
 pub type Ble<B> = <super::Radio<B> as Api>::Ble;
-
-impl Api for Unsupported {
-    type Ble = Unsupported;
-}

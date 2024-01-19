@@ -12,28 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_applet_api::radio::ble::{self as api, Advertisement, Api};
+use wasefire_applet_api::radio::ble::Api;
+#[cfg(feature = "board-api-radio-ble")]
+use wasefire_applet_api::radio::ble::{self as api, Advertisement};
+#[cfg(feature = "board-api-radio-ble")]
 use wasefire_board_api::radio::ble::{Api as _, Event};
-use wasefire_board_api::{self as board, Api as Board};
+use wasefire_board_api::Api as Board;
+#[cfg(feature = "board-api-radio-ble")]
+use wasefire_board_api::{self as board};
 
+#[cfg(feature = "board-api-radio-ble")]
 use crate::applet::store::MemoryApi;
-use crate::event::radio::ble::Key;
-use crate::event::Handler;
-use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
+#[cfg(feature = "board-api-radio-ble")]
+use crate::event::{radio::ble::Key, Handler};
+use crate::DispatchSchedulerCall;
+#[cfg(feature = "board-api-radio-ble")]
+use crate::{SchedulerCall, Trap};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
-        Api::Register(call) => register(call),
-        Api::Unregister(call) => unregister(call),
-        Api::ReadAdvertisement(call) => read_advertisement(call),
+        Api::Register(call) => or_fail!("board-api-radio-ble", register(call)),
+        Api::Unregister(call) => or_fail!("board-api-radio-ble", unregister(call)),
+        Api::ReadAdvertisement(call) => or_fail!("board-api-radio-ble", read_advertisement(call)),
     }
 }
 
+#[cfg(feature = "board-api-radio-ble")]
 fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { event, handler_func, handler_data } = call.read();
     let inst = call.inst();
     let scheduler = call.scheduler();
-    let results = try {
+    let result = try {
         let event = convert_event(event)?;
         scheduler.applet.enable(Handler {
             key: Key::from(&event).into(),
@@ -41,39 +50,37 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
             func: *handler_func,
             data: *handler_data,
         })?;
-        board::radio::Ble::<B>::enable(&event).map_err(|_| Trap)?;
-        api::register::Results {}
+        board::radio::Ble::<B>::enable(&event)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
+#[cfg(feature = "board-api-radio-ble")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { event } = call.read();
     let scheduler = call.scheduler();
-    let results = try {
+    let result = try {
         let event = convert_event(event)?;
         board::radio::Ble::<B>::disable(&event).map_err(|_| Trap)?;
         scheduler.disable_event(Key::from(&event).into())?;
-        api::unregister::Results {}
+        Ok(())
     };
-    call.reply(results);
+    call.reply(result);
 }
 
+#[cfg(feature = "board-api-radio-ble")]
 fn read_advertisement<B: Board>(mut call: SchedulerCall<B, api::read_advertisement::Sig>) {
     let api::read_advertisement::Params { ptr } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
+    let result = try {
         let packet = memory.from_bytes_mut::<Advertisement>(*ptr)?;
-        let res = match board::radio::Ble::<B>::read_advertisement(packet) {
-            Ok(read) => (read as u32).into(),
-            Err(_) => u32::MAX.into(),
-        };
-        api::read_advertisement::Results { res }
+        board::radio::Ble::<B>::read_advertisement(packet)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
+#[cfg(feature = "board-api-radio-ble")]
 fn convert_event(event: u32) -> Result<Event, Trap> {
     Ok(match api::Event::try_from(event)? {
         api::Event::Advertisement => Event::Advertisement,

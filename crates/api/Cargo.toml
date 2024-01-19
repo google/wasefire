@@ -13,22 +13,59 @@ categories = ["embedded", "no-std", "wasm"]
 
 [package.metadata.docs.rs]
 default-target = "wasm32-unknown-unknown"
-features = ["wasm"]
+features = ["full-api", "wasm"]
 
 [dependencies]
 bytemuck = { version = "1.14.0", default-features = false, features = ["derive"] }
 sealed = { version = "0.5.0", default-features = false, optional = true }
 wasefire-applet-api-macro = { version = "0.6.0-git", path = "../api-macro" }
+wasefire-error = { version = "0.1.0-git", path = "../error" }
 wasefire-logger = { version = "0.1.4-git", path = "../logger", optional = true }
 
 [features]
 # Compiles for host or wasm (choose exactly one).
 host = ["dep:sealed"]
 wasm = []
-
-# Enables multivalue support (unstable).
-multivalue = ["wasefire-applet-api-macro/multivalue"]
-
+# API features.
+api-button = ["wasefire-applet-api-macro/api-button"]
+api-crypto-ccm = ["wasefire-applet-api-macro/api-crypto-ccm"]
+api-crypto-ec = ["wasefire-applet-api-macro/api-crypto-ec"]
+api-crypto-gcm = ["wasefire-applet-api-macro/api-crypto-gcm"]
+api-crypto-hash = ["internal-api-crypto-hash", "wasefire-applet-api-macro/api-crypto-hash"]
+api-crypto-hkdf = ["internal-api-crypto-hash", "wasefire-applet-api-macro/api-crypto-hkdf"]
+api-crypto-hmac = ["internal-api-crypto-hash", "wasefire-applet-api-macro/api-crypto-hmac"]
+api-gpio = ["wasefire-applet-api-macro/api-gpio"]
+api-led = ["wasefire-applet-api-macro/api-led"]
+api-platform = ["wasefire-applet-api-macro/api-platform"]
+api-platform-update = ["wasefire-applet-api-macro/api-platform-update"]
+api-radio-ble = ["wasefire-applet-api-macro/api-radio-ble"]
+api-rng = ["wasefire-applet-api-macro/api-rng"]
+api-store = ["wasefire-applet-api-macro/api-store"]
+api-store-fragment = ["wasefire-applet-api-macro/api-store-fragment"]
+api-timer = ["wasefire-applet-api-macro/api-timer"]
+api-uart = ["wasefire-applet-api-macro/api-uart"]
+api-usb-serial = ["wasefire-applet-api-macro/api-usb-serial"]
+# Enables all API features (unstable for host).
+full-api = [
+  "api-button",
+  "api-crypto-ccm",
+  "api-crypto-ec",
+  "api-crypto-gcm",
+  "api-crypto-hash",
+  "api-crypto-hkdf",
+  "api-crypto-hmac",
+  "api-gpio",
+  "api-led",
+  "api-platform",
+  "api-platform-update",
+  "api-radio-ble",
+  "api-rng",
+  "api-store",
+  "api-store-fragment",
+  "api-timer",
+  "api-uart",
+  "api-usb-serial",
+]
 # Implements the API with weak symbols to permit custom definitions (only
 # relevant in wasm mode).
 #
@@ -37,3 +74,5 @@ multivalue = ["wasefire-applet-api-macro/multivalue"]
 # panicking. The `env_dispatch` function takes 3 arguments: the link name, a
 # pointer to the parameters, and a pointer to the results.
 native = ["dep:wasefire-logger"]
+# Internal features.
+internal-api-crypto-hash = []

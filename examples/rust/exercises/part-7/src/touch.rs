@@ -17,7 +17,7 @@ use alloc::string::String;
 use core::cell::{Cell, RefCell};
 use core::time::Duration;
 
-use wasefire::{button, clock, debug, led, scheduling};
+use wasefire::{button, debug, led, scheduling, timer};
 
 #[derive(Default, Clone)]
 pub struct Touch(Rc<RefCell<Option<TouchImpl>>>);
@@ -27,9 +27,9 @@ struct TouchImpl {
     // TODO: Store the always listening button::Listener. You need to implement button::Handler for
     // Touch.
     // TODO: Store the timer for blinking the LED. You may create a unit struct Blink and implement
-    // clock::Handler for it (toggling the LED).
+    // timer::Handler for it (toggling the LED).
     // TODO: Store the timer for timeout (either the timeout of a button touch until consumed, or
-    // the timeout waiting for a touch). You need to implement clock::Handler for Touch.
+    // the timeout waiting for a touch). You need to implement timer::Handler for Touch.
 }
 
 impl Touch {

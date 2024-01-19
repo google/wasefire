@@ -60,38 +60,7 @@ where
 
 pub type Array<N> = GenericArray<u8, N>;
 
-pub struct Unsupported<Tag: ArrayLength<u8> + Send> {
-    _never: !,
-    _tag: Tag,
-}
-
-impl<Tag: ArrayLength<u8> + Send> Support<AeadSupport> for Unsupported<Tag> {
-    const SUPPORT: AeadSupport = AeadSupport { no_copy: false, in_place_no_copy: false };
-}
-
-impl<Key, Iv, Tag: ArrayLength<u8> + Send> Api<Key, Iv> for Unsupported<Tag>
-where
-    Key: ArrayLength<u8>,
-    Iv: ArrayLength<u8>,
-{
-    type Tag = Tag;
-
-    fn encrypt(
-        _: &Array<Key>, _: &Array<Iv>, _: &[u8], _: Option<&[u8]>, _: &mut [u8],
-        _: &mut Array<Self::Tag>,
-    ) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn decrypt(
-        _: &Array<Key>, _: &Array<Iv>, _: &[u8], _: Option<&[u8]>, _: &Array<Self::Tag>,
-        _: &mut [u8],
-    ) -> Result<(), Error> {
-        unreachable!()
-    }
-}
-
-#[cfg(feature = "internal-aead")]
+#[cfg(feature = "internal-software-crypto-aead")]
 mod software {
     use aead::{AeadCore, AeadInPlace};
     use crypto_common::{KeyInit, KeySizeUser};
@@ -121,7 +90,7 @@ mod software {
                 cipher.copy_from_slice(clear);
             }
             tag.copy_from_slice(
-                &aead.encrypt_in_place_detached(iv, aad, cipher).map_err(|_| Error::World)?,
+                &aead.encrypt_in_place_detached(iv, aad, cipher).map_err(|_| Error::world(0))?,
             );
             Ok(())
         }
@@ -134,7 +103,7 @@ mod software {
             if let Some(cipher) = cipher {
                 clear.copy_from_slice(cipher);
             }
-            aead.decrypt_in_place_detached(iv, aad, clear, tag).map_err(|_| Error::World)
+            aead.decrypt_in_place_detached(iv, aad, clear, tag).map_err(|_| Error::world(0))
         }
     }
 }

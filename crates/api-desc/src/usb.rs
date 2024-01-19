@@ -14,6 +14,7 @@
 
 use crate::*;
 
+#[cfg(feature = "api-usb-serial")]
 mod serial;
 
 pub(crate) fn new() -> Item {
@@ -22,12 +23,7 @@ pub(crate) fn new() -> Item {
     };
     let name = "usb".into();
     let items = vec![
-        item! {
-            /// Describes errors on USB operations.
-            enum Error {
-                Unknown = 0,
-            }
-        },
+        #[cfg(feature = "api-usb-serial")]
         serial::new(),
     ];
     Item::Mod(Mod { docs, name, items })

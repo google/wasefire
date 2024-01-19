@@ -31,10 +31,7 @@ pub(crate) fn new() -> Item {
             fn is_supported "ces" {
                 /// The enum value of the [curve][super::Curve].
                 curve: usize,
-            } -> {
-                /// 1 when supported, 0 otherwise.
-                support: usize,
-            }
+            } -> bool
         },
         item! {
             /// Returns whether a scalar is valid.
@@ -46,10 +43,7 @@ pub(crate) fn new() -> Item {
 
                 /// The scalar in SEC1 encoding.
                 n: *const u8,
-            } -> {
-                /// 1 if valid, 0 otherwise.
-                valid: usize,
-            }
+            } -> bool
         },
         item! {
             /// Returns whether a point is valid.
@@ -62,10 +56,7 @@ pub(crate) fn new() -> Item {
 
                 /// The y-coordinate in SEC1 encoding.
                 y: *const u8,
-            } -> {
-                /// 1 if valid, 0 otherwise.
-                valid: usize,
-            }
+            } -> bool
         },
         item! {
             /// Performs base point multiplication.
@@ -81,11 +72,7 @@ pub(crate) fn new() -> Item {
 
                 /// The y coordinate in SEC1 encoding.
                 y: *mut u8,
-            } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
-                res: isize,
-            }
+            } -> ()
         },
         item! {
             /// Performs point multiplication.
@@ -107,11 +94,7 @@ pub(crate) fn new() -> Item {
 
                 /// The y coordinate of the output point in SEC1 encoding.
                 out_y: *mut u8,
-            } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
-                res: isize,
-            }
+            } -> ()
         },
         item! {
             /// Signs a message with ECDSA.
@@ -130,11 +113,7 @@ pub(crate) fn new() -> Item {
 
                 /// The s signature component in SEC1 encoding.
                 s: *mut u8,
-            } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
-                res: isize,
-            }
+            } -> ()
         },
         item! {
             /// Verifies an ECDSA signature.
@@ -156,11 +135,7 @@ pub(crate) fn new() -> Item {
 
                 /// The s signature component in SEC1 encoding.
                 s: *const u8,
-            } -> {
-                /// 1 if the signature is valid, 0 if invalid, and bitwise complement of
-                /// [`Error`](crate::crypto::Error) otherwise.
-                res: isize,
-            }
+            } -> bool
         },
     ];
     Item::Mod(Mod { docs, name, items })

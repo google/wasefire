@@ -15,10 +15,12 @@
 use wasefire_board_api::usb::Event;
 use wasefire_board_api::Api as Board;
 
+#[cfg(all(feature = "board-api-usb-serial", feature = "applet-api-usb-serial"))]
 pub mod serial;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
+    #[cfg(all(feature = "board-api-usb-serial", feature = "applet-api-usb-serial"))]
     Serial(serial::Key),
 }
 
@@ -31,6 +33,7 @@ impl<B: Board> From<Key> for crate::event::Key<B> {
 impl<'a> From<&'a Event> for Key {
     fn from(event: &'a Event) -> Self {
         match event {
+            #[cfg(all(feature = "board-api-usb-serial", feature = "applet-api-usb-serial"))]
             Event::Serial(event) => Key::Serial(event.into()),
         }
     }
@@ -38,6 +41,7 @@ impl<'a> From<&'a Event> for Key {
 
 pub fn process(event: Event) {
     match event {
+        #[cfg(all(feature = "board-api-usb-serial", feature = "applet-api-usb-serial"))]
         Event::Serial(_) => serial::process(),
     }
 }

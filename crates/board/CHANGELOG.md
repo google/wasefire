@@ -4,12 +4,25 @@
 
 ### Major
 
+- Remove `Unsupported` and `UnsupportedCrypto` implementations
+- Change `syscall` return type to `Option<Result<u31, Error>>`
+- Add API features (disabled by default)
+- Add `Event::Impossible` to always mention the type parameter `B`
+- Update `platform::update::Api` to return `Error` instead of `usize`
+- Replace `Error` type with `wasefire-error`
+- Add `Api::Gpio` for low-level GPIOs
 - Add `platform::Api::version()`
 - Add `Api::Radio` for radio APIs
 - Add `radio::Api::Ble` for Bluetooth Low Energy
 - Add `platform::Api::Update` (fix #47)
 - Add `Api::Platform` with `platform::Api::reboot()` function
 - Require the APIs to be `Send` and the top-level API to be `'static` too
+
+### Minor
+
+- Add `platform::version_helper()` to help implement `platform::Api::version()`
+- Add `crypto::Software*` and `debug::Impl` implementations
+- Remove unstable `software-crypto` feature
 
 ### Patch
 
@@ -96,4 +109,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 15 -->
+<!-- Increment to skip CHANGELOG.md test: 17 -->

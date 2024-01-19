@@ -12,33 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use typenum::U13;
 use wasefire_applet_api::crypto::ccm::{self as api, Api};
+#[cfg(feature = "board-api-crypto-aes128-ccm")]
 use wasefire_board_api::crypto::aead::{Api as _, Array};
-use wasefire_board_api::{self as board, Api as Board, Support};
+use wasefire_board_api::Api as Board;
+#[cfg(feature = "board-api-crypto-aes128-ccm")]
+use wasefire_board_api::{self as board, Support};
 
+#[cfg(feature = "board-api-crypto-aes128-ccm")]
 use crate::applet::store::MemoryApi;
-use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
+#[cfg(feature = "board-api-crypto-aes128-ccm")]
+use crate::Trap;
+use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::IsSupported(call) => is_supported(call),
-        Api::Encrypt(call) => encrypt(call),
-        Api::Decrypt(call) => decrypt(call),
+        Api::Encrypt(call) => or_trap!("board-api-crypto-aes128-ccm", encrypt(call)),
+        Api::Decrypt(call) => or_trap!("board-api-crypto-aes128-ccm", decrypt(call)),
     }
 }
 
 fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
     let api::is_supported::Params {} = call.read();
+    #[cfg(feature = "board-api-crypto-aes128-ccm")]
     let supported = bool::from(board::crypto::Aes128Ccm::<B>::SUPPORT) as u32;
-    call.reply(Ok(api::is_supported::Results { supported: supported.into() }))
+    #[cfg(not(feature = "board-api-crypto-aes128-ccm"))]
+    let supported = 0;
+    call.reply(Ok(Ok(supported)))
 }
 
+#[cfg(feature = "board-api-crypto-aes128-ccm")]
 fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
     let api::encrypt::Params { key, iv, len, clear, cipher } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
+    let result = try {
         ensure_support::<B>()?;
         let key = memory.get(*key, 16)?.into();
         let iv = expand_iv(memory.get(*iv, 8)?);
@@ -46,20 +55,17 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
         let clear = Some(memory.get(*clear, *len)?);
         let (cipher, tag) = memory.get_mut(*cipher, *len + 4)?.split_at_mut(*len as usize);
         let tag = tag.into();
-        let res = match board::crypto::Aes128Ccm::<B>::encrypt(key, &iv, aad, clear, cipher, tag) {
-            Ok(()) => 0u32.into(),
-            Err(_) => u32::MAX.into(),
-        };
-        api::encrypt::Results { res }
+        board::crypto::Aes128Ccm::<B>::encrypt(key, &iv, aad, clear, cipher, tag)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
+#[cfg(feature = "board-api-crypto-aes128-ccm")]
 fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
     let api::decrypt::Params { key, iv, len, cipher, clear } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let results = try {
+    let result = try {
         ensure_support::<B>()?;
         let key = memory.get(*key, 16)?.into();
         let iv = expand_iv(memory.get(*iv, 8)?);
@@ -68,19 +74,17 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         let cipher = Some(cipher);
         let tag = tag.into();
         let clear = memory.get_mut(*clear, *len)?;
-        let res = match board::crypto::Aes128Ccm::<B>::decrypt(key, &iv, aad, cipher, tag, clear) {
-            Ok(()) => 0u32.into(),
-            Err(_) => u32::MAX.into(),
-        };
-        api::decrypt::Results { res }
+        board::crypto::Aes128Ccm::<B>::decrypt(key, &iv, aad, cipher, tag, clear)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
-fn expand_iv(iv: &[u8]) -> Array<U13> {
+#[cfg(feature = "board-api-crypto-aes128-ccm")]
+fn expand_iv(iv: &[u8]) -> Array<typenum::U13> {
     core::array::from_fn(|i| i.checked_sub(5).map(|i| iv[i]).unwrap_or(0)).into()
 }
 
+#[cfg(feature = "board-api-crypto-aes128-ccm")]
 fn ensure_support<B: Board>() -> Result<(), Trap> {
     match bool::from(board::crypto::Aes128Ccm::<B>::SUPPORT) {
         true => Ok(()),

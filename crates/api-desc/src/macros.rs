@@ -14,6 +14,9 @@
 
 #[macro_export]
 macro_rules! type_ {
+    (!) => (Type::Never);
+    (()) => (Type::Unit);
+    (bool) => (Type::Bool);
     (usize) => (Type::Integer { signed: false, bits: None });
     (isize) => (Type::Integer { signed: true, bits: None });
     (u8) => (Type::Integer { signed: false, bits: Some(8) });
@@ -29,7 +32,7 @@ macro_rules! type_ {
     };
     (*const $($type:tt)*) => (type_!(*false $($type)*));
     (*mut $($type:tt)*) => (type_!(*true $($type)*));
-    (*$mut:tt u8) => (Type::Pointer { mutable: $mut, type_: None });
+    (*$mut:tt void) => (Type::Pointer { mutable: $mut, type_: None });
     (*$mut:tt $($type:tt)*) => {
         Type::Pointer { mutable: $mut, type_: Some(Box::new(type_!($($type)*))) }
     };
@@ -108,13 +111,13 @@ macro_rules! item {
         })
     };
 
-    ($(#[doc = $doc:literal])* fn $name:ident $link:literal $params:tt -> $results:tt) => {
+    ($(#[doc = $doc:literal])* fn $name:ident $link:literal $params:tt -> $($result:tt)*) => {
         Item::Fn(Fn {
             docs: vec![$($doc.into()),*],
             name: stringify!($name).into(),
             link: $link.into(),
             params: fields!($params),
-            results: fields!($results),
+            result: type_!($($result)*),
         })
     };
 }

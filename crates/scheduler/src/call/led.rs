@@ -13,45 +13,50 @@
 // limitations under the License.
 
 use wasefire_applet_api::led::{self as api, Api};
+#[cfg(feature = "board-api-led")]
 use wasefire_board_api::led::Api as _;
-use wasefire_board_api::{self as board, Api as Board, Id, Support};
+use wasefire_board_api::Api as Board;
+#[cfg(feature = "board-api-led")]
+use wasefire_board_api::{self as board, Id, Support};
 
-use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
+#[cfg(feature = "board-api-led")]
+use crate::Trap;
+use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Count(call) => count(call),
-        Api::Get(call) => get(call),
-        Api::Set(call) => set(call),
+        Api::Get(call) => or_trap!("board-api-led", get(call)),
+        Api::Set(call) => or_trap!("board-api-led", set(call)),
     }
 }
 
 fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     let api::count::Params {} = call.read();
+    #[cfg(feature = "board-api-led")]
     let count = board::Led::<B>::SUPPORT as u32;
-    call.reply(Ok(api::count::Results { cnt: count.into() }));
+    #[cfg(not(feature = "board-api-led"))]
+    let count = 0;
+    call.reply(Ok(Ok(count)));
 }
 
+#[cfg(feature = "board-api-led")]
 fn get<B: Board>(call: SchedulerCall<B, api::get::Sig>) {
     let api::get::Params { led } = call.read();
-    let results = try {
+    let result = try {
         let id = Id::new(*led as usize).ok_or(Trap)?;
-        let status = match board::Led::<B>::get(id).map_err(|_| Trap)? {
-            false => api::Status::Off.into(),
-            true => api::Status::On.into(),
-        };
-        api::get::Results { status }
+        board::Led::<B>::get(id)
     };
-    call.reply(results);
+    call.reply(result);
 }
 
+#[cfg(feature = "board-api-led")]
 fn set<B: Board>(call: SchedulerCall<B, api::set::Sig>) {
     let api::set::Params { led, status } = call.read();
-    let results = try {
+    let result = try {
         let id = Id::new(*led as usize).ok_or(Trap)?;
         let on = matches!(api::Status::try_from(*status)?, api::Status::On);
-        board::Led::<B>::set(id, on).map_err(|_| Trap)?;
-        api::set::Results {}
+        board::Led::<B>::set(id, on)
     };
-    call.reply(results);
+    call.reply(result);
 }

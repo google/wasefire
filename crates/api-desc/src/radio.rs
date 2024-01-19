@@ -14,6 +14,7 @@
 
 use crate::*;
 
+#[cfg(feature = "api-radio-ble")]
 mod ble;
 
 pub(crate) fn new() -> Item {
@@ -22,12 +23,7 @@ pub(crate) fn new() -> Item {
     };
     let name = "radio".into();
     let items = vec![
-        item! {
-            /// Describes errors on radio operations.
-            enum Error {
-                Unknown = 0,
-            }
-        },
+        #[cfg(feature = "api-radio-ble")]
         ble::new(),
     ];
     Item::Mod(Mod { docs, name, items })

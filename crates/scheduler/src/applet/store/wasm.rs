@@ -42,6 +42,10 @@ impl Store {
         self.0.link_func(module, name, params, results)
     }
 
+    pub fn link_func_default(&mut self, module: &'static str) -> Result<(), Error> {
+        self.0.link_func_default(module)
+    }
+
     pub fn invoke<'a>(
         &'a mut self, inst: InstId, name: &str, args: Vec<Val>,
     ) -> Result<RunResult<'a, 'static>, Error> {

@@ -30,27 +30,23 @@ pub(crate) fn new() -> Item {
                 Sha384 = 1,
             }
         },
+        #[cfg(feature = "api-crypto-hash")]
         item! {
             /// Whether the algorithm is supported.
             fn is_supported "chs" {
                 /// The hash algorithm.
                 algorithm: usize,
-            } -> {
-                /// 1 if supported, 0 otherwise.
-                supported: usize,
-            }
+            } -> bool
         },
+        #[cfg(feature = "api-crypto-hash")]
         item! {
-            /// Initializes a hash.
+            /// Initializes a hash and returns its identifier.
             fn initialize "chi" {
                 /// The hash algorithm.
                 algorithm: usize,
-            } -> {
-                /// A non-negative identifier on success, bitwise complement of
-                /// [`Error`](crate::crypto::Error) otherwise.
-                id: isize,
-            }
+            } -> usize
         },
+        #[cfg(feature = "api-crypto-hash")]
         item! {
             /// Updates a hash.
             ///
@@ -64,8 +60,9 @@ pub(crate) fn new() -> Item {
 
                 /// The length of the data to hash.
                 length: usize,
-            } -> {}
+            } -> ()
         },
+        #[cfg(feature = "api-crypto-hash")]
         item! {
             /// Finalizes a hash.
             fn finalize "chf" {
@@ -82,24 +79,19 @@ pub(crate) fn new() -> Item {
                 /// The pointer may be null, in which case this function deallocates the identifier
                 /// without computing the digest.
                 digest: *mut u8,
-            } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
-                res: isize,
-            }
+            } -> ()
         },
+        #[cfg(feature = "api-crypto-hmac")]
         item! {
             /// Whether the algorithm is supported for hmac.
             fn is_hmac_supported "cht" {
                 /// The hash algorithm.
                 algorithm: usize,
-            } -> {
-                /// 1 if supported, 0 otherwise.
-                supported: usize,
-            }
+            } -> bool
         },
+        #[cfg(feature = "api-crypto-hmac")]
         item! {
-            /// Initializes an hmac.
+            /// Initializes an hmac and returns its identifier.
             fn hmac_initialize "chj" {
                 /// The hash algorithm.
                 algorithm: usize,
@@ -111,12 +103,9 @@ pub(crate) fn new() -> Item {
                 ///
                 /// If greater than 64 bytes, the key will be itself hashed.
                 key_len: usize,
-            } -> {
-                /// A non-negative identifier on success, bitwise complement of
-                /// [`Error`](crate::crypto::Error) otherwise.
-                id: isize,
-            }
+            } -> usize
         },
+        #[cfg(feature = "api-crypto-hmac")]
         item! {
             /// Updates an hmac.
             ///
@@ -130,8 +119,9 @@ pub(crate) fn new() -> Item {
 
                 /// The length of the data to hmac.
                 length: usize,
-            } -> {}
+            } -> ()
         },
+        #[cfg(feature = "api-crypto-hmac")]
         item! {
             /// Finalizes an hmac.
             fn hmac_finalize "chg" {
@@ -148,22 +138,17 @@ pub(crate) fn new() -> Item {
                 /// The pointer may be null, in which case this function deallocates the identifier
                 /// without computing the hmac.
                 hmac: *mut u8,
-            } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
-                res: isize,
-            }
+            } -> ()
         },
+        #[cfg(feature = "api-crypto-hkdf")]
         item! {
             /// Whether the algorithm is supported for hkdf.
             fn is_hkdf_supported "chr" {
                 /// The hash algorithm.
                 algorithm: usize,
-            } -> {
-                /// 1 if supported, 0 otherwise.
-                supported: usize,
-            }
+            } -> bool
         },
+        #[cfg(feature = "api-crypto-hkdf")]
         item! {
             /// Expands with RFC5869 HKDF.
             fn hkdf_expand "che" {
@@ -196,11 +181,7 @@ pub(crate) fn new() -> Item {
                 /// Must be at most 255 times the output length of the hash algorithm.
                 okm_len: usize,
 
-            } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
-                res: isize,
-            }
+            } -> ()
         },
     ];
     Item::Mod(Mod { docs, name, items })

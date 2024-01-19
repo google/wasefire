@@ -16,8 +16,6 @@
 
 use wasefire_logger as log;
 
-use crate::Unsupported;
-
 /// Debugging and testing interface.
 pub trait Api: Send {
     /// Maximum value returned by [`Self::time()`] before wrapping.
@@ -39,7 +37,10 @@ pub trait Api: Send {
     fn exit(success: bool) -> !;
 }
 
-impl Api for Unsupported {
+/// Default implementation.
+pub enum Impl {}
+
+impl Api for Impl {
     const MAX_TIME: u64 = 0;
 
     fn time() -> u64 {

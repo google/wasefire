@@ -22,11 +22,7 @@ pub(crate) fn new() -> Item {
     let items = vec![
         item! {
             /// Whether AES-CCM is supported.
-            fn is_supported "ccs" {
-            } -> {
-                /// 1 if supported, 0 otherwise.
-                supported: usize,
-            }
+            fn is_supported "ccs" {} -> bool
         },
         item! {
             /// Encrypts a clear text given a key and IV.
@@ -52,11 +48,7 @@ pub(crate) fn new() -> Item {
                 ///
                 /// Its length must be `len + 4` bytes.
                 cipher: *mut u8,
-            } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
-                res: isize,
-            }
+            } -> ()
         },
         item! {
             /// Decrypts a cipher text given a key and IV.
@@ -82,11 +74,7 @@ pub(crate) fn new() -> Item {
                 ///
                 /// Its length must be provided in the `len` field.
                 clear: *mut u8,
-            } -> {
-                /// Zero on success, bitwise complement of [`Error`](crate::crypto::Error)
-                /// otherwise.
-                res: isize,
-            }
+            } -> ()
         },
     ];
     Item::Mod(Mod { docs, name, items })

@@ -19,7 +19,7 @@ use usb_device::UsbError;
 use usbd_serial::SerialPort;
 use wasefire_logger as log;
 
-use crate::{Error, Unsupported};
+use crate::Error;
 
 /// USB serial event.
 #[derive(Debug, PartialEq, Eq)]
@@ -57,28 +57,6 @@ pub trait Api: Send {
 
     /// Disables a given event from being triggered.
     fn disable(event: &Event) -> Result<(), Error>;
-}
-
-impl Api for Unsupported {
-    fn read(_: &mut [u8]) -> Result<usize, Error> {
-        unreachable!()
-    }
-
-    fn write(_: &[u8]) -> Result<usize, Error> {
-        unreachable!()
-    }
-
-    fn flush() -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn enable(_: &Event) -> Result<(), Error> {
-        unreachable!()
-    }
-
-    fn disable(_: &Event) -> Result<(), Error> {
-        unreachable!()
-    }
 }
 
 /// Helper trait for boards using the `usbd_serial` crate.
@@ -138,7 +116,7 @@ impl<T: HasSerial> Api for WithSerial<T> {
             Err(UsbError::WouldBlock) => Ok(0),
             Err(e) => {
                 log::debug!("{} = read({})", log::Debug2Format(&e), output.len());
-                Err(Error::World)
+                Err(Error::world(0))
             }
         }
     }
@@ -156,7 +134,7 @@ impl<T: HasSerial> Api for WithSerial<T> {
             Err(UsbError::WouldBlock) => Ok(0),
             Err(e) => {
                 log::debug!("{} = write({}{:?})", log::Debug2Format(&e), input.len(), input);
-                Err(Error::World)
+                Err(Error::world(0))
             }
         }
     }
@@ -174,7 +152,7 @@ impl<T: HasSerial> Api for WithSerial<T> {
                 }
                 Err(e) => {
                     log::debug!("{} = flush()", log::Debug2Format(&e));
-                    break Err(Error::World);
+                    break Err(Error::world(0));
                 }
             }
         }

@@ -13,8 +13,10 @@
 // limitations under the License.
 
 pub mod button;
+mod crypto;
 mod debug;
 mod led;
+mod platform;
 mod rng;
 mod storage;
 pub mod timer;
@@ -23,7 +25,8 @@ pub mod uart;
 pub mod usb;
 
 use tokio::sync::mpsc::Sender;
-use wasefire_board_api::{Api, Event, Unsupported};
+use wasefire_board_api::{Api, Event};
+use wasefire_error::Error;
 use wasefire_store::FileStorage;
 
 use crate::RECEIVER;
@@ -52,26 +55,23 @@ impl Api for Board {
         RECEIVER.lock().unwrap().as_mut().unwrap().blocking_recv().unwrap()
     }
 
-    fn syscall(x1: u32, x2: u32, x3: u32, x4: u32) -> Option<u32> {
+    fn syscall(x1: u32, x2: u32, x3: u32, x4: u32) -> Option<Result<u32, Error>> {
         match (x1, x2, x3, x4) {
             // The syscall_test example relies on this.
-            (1, 2, 3, 4) => Some(5),
+            (0, 0, 0, x) => Some(Error::decode(x as i32)),
             _ => None,
         }
     }
 
     type Button = button::Impl;
-    type Crypto = Unsupported;
+    type Crypto = crypto::Impl;
     type Debug = debug::Impl;
     type Led = led::Impl;
-    type Platform = Unsupported;
-    type Radio = Unsupported;
+    type Platform = platform::Impl;
     type Rng = rng::Impl;
     type Storage = storage::Impl;
     type Timer = timer::Impl;
     type Uart = uart::Impl;
     #[cfg(feature = "usb")]
     type Usb = usb::Impl;
-    #[cfg(not(feature = "usb"))]
-    type Usb = Unsupported;
 }

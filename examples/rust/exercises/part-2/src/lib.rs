@@ -30,7 +30,8 @@ use crate::serial::Serial;
 mod serial; // TODO: Implement this module.
 
 fn main() {
-    let serial = Serial::new(uart::Uart(0));
+    let uart = uart::Uart(0);
+    let serial = Serial::new(&uart);
     loop {
         let request = serial.receive();
         debug!("Received {request:02x?}.");

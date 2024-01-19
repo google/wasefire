@@ -32,10 +32,7 @@ pub(crate) fn new() -> Item {
         },
         item! {
             /// Returns how many buttons are on the device.
-            fn count "bc" {} -> {
-                /// How many buttons are on the device.
-                cnt: usize,
-            }
+            fn count "bc" {} -> usize
         },
         item! {
             /// Register a handler for button events.
@@ -46,18 +43,18 @@ pub(crate) fn new() -> Item {
                 /// Function called on button events.
                 ///
                 /// The function takes its opaque `data` and the new button `state` as arguments.
-                handler_func: fn { data: *const u8, state: usize },
+                handler_func: fn { data: *const void, state: usize },
 
                 /// The opaque data to use when calling the handler function.
-                handler_data: *const u8,
-            } -> {}
+                handler_data: *const void,
+            } -> ()
         },
         item! {
             /// Unregister handlers for button events.
             fn unregister "bu" {
                 /// Index of the button to stop listening to.
                 button: usize,
-            } -> {}
+            } -> ()
         },
     ];
     Item::Mod(Mod { docs, name, items })

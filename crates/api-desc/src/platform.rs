@@ -14,6 +14,7 @@
 
 use crate::*;
 
+#[cfg(feature = "api-platform-update")]
 mod update;
 
 pub(crate) fn new() -> Item {
@@ -22,28 +23,28 @@ pub(crate) fn new() -> Item {
     };
     let name = "platform".into();
     let items = vec![
+        #[cfg(feature = "api-platform-update")]
         update::new(),
+        #[cfg(feature = "api-platform")]
         item! {
             /// Returns the version of the platform.
+            ///
+            /// Returns the length of the version in bytes. This may be larger than the capacity, in
+            /// which case only a prefix was written.
             fn version "pv" {
                 /// Where to write the version.
                 ptr: *mut u8,
 
                 /// Capacity of the buffer.
                 len: usize,
-            } -> {
-                /// Length of the version in bytes.
-                ///
-                /// This may be larger than the capacity, in which case only a prefix was written.
-                len: usize,
-            }
+            } -> usize
         },
+        #[cfg(feature = "api-platform")]
         item! {
             /// Reboots the device (thus platform and applets).
-            fn reboot "pr" {} -> {
-                /// Complement of error number.
-                res: isize,
-            }
+            ///
+            /// Does not return on success.
+            fn reboot "pr" {} -> !
         },
     ];
     Item::Mod(Mod { docs, name, items })

@@ -36,8 +36,10 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
     [ -n "$ver" ] || e "CHANGELOG.md for $dir does not start with version"
     [ "$(package_version)" = "$ver" ] \
       || e "CHANGELOG.md and Cargo.toml for $dir have different versions"
-    package_features | grep -q '^default$' \
-      && e "Cargo.toml for $dir has default features"
+    if [ $dir != crates/prelude ]; then
+      package_features | grep -q '^default$' \
+        && e "Cargo.toml for $dir has default features"
+    fi
     sed -n '/^\[dependencies]$/,/^$/{/^wasefire-/d;/^[a-z]/!d;'\
 '/default-features = false/d;p;q1};/^\[dependencies\.wasefire-/d;'\
 '/^\[dependencies\./{h;:a;n;/default-features = false/d;/^$/{g;p;q1};ba}' \

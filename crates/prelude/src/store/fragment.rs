@@ -17,7 +17,9 @@
 use alloc::boxed::Box;
 use core::ops::Range;
 
-use wasefire_applet_api::store::{fragment as api, Error};
+use wasefire_applet_api::store::fragment as api;
+
+use crate::{convert_bool, convert_unit, Error};
 
 /// Inserts an entry in the store.
 ///
@@ -29,9 +31,7 @@ use wasefire_applet_api::store::{fragment as api, Error};
 pub fn insert(keys: Range<usize>, value: &[u8]) -> Result<(), Error> {
     let params =
         api::insert::Params { keys: encode_keys(keys)?, ptr: value.as_ptr(), len: value.len() };
-    let api::insert::Results { res } = unsafe { api::insert(params) };
-    Error::to_result(res)?;
-    Ok(())
+    convert_unit(unsafe { api::insert(params) })
 }
 
 /// Removes an entry from the store.
@@ -42,35 +42,26 @@ pub fn insert(keys: Range<usize>, value: &[u8]) -> Result<(), Error> {
 /// is zeroized from flash and the key is not associated.
 pub fn remove(keys: Range<usize>) -> Result<(), Error> {
     let params = api::remove::Params { keys: encode_keys(keys)? };
-    let api::remove::Results { res } = unsafe { api::remove(params) };
-    Error::to_result(res)?;
-    Ok(())
+    convert_unit(unsafe { api::remove(params) })
 }
 
 /// Returns the value associated to a key, if any.
 ///
 /// The entry may be fragmented withen the provided range.
 pub fn find(keys: Range<usize>) -> Result<Option<Box<[u8]>>, Error> {
-    find_impl(keys)
-}
-
-fn find_impl(keys: Range<usize>) -> Result<Option<Box<[u8]>>, Error> {
     let mut ptr = core::ptr::null_mut();
     let mut len = 0;
     let params = api::find::Params { keys: encode_keys(keys)?, ptr: &mut ptr, len: &mut len };
-    let api::find::Results { res } = unsafe { api::find(params) };
-    match Error::to_result(res)? {
-        0 => Ok(None),
-        1 => {
-            let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
-            Ok(Some(unsafe { Box::from_raw(ptr) }))
-        }
-        _ => unreachable!(),
+    if convert_bool(unsafe { api::find(params) })? {
+        let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
+        Ok(Some(unsafe { Box::from_raw(ptr) }))
+    } else {
+        Ok(None)
     }
 }
 
 fn encode_keys(keys: Range<usize>) -> Result<u32, Error> {
-    let start = u16::try_from(keys.start).map_err(|_| Error::InvalidArgument)? as u32;
-    let end = u16::try_from(keys.end).map_err(|_| Error::InvalidArgument)? as u32;
+    let start = u16::try_from(keys.start).map_err(|_| Error::user(0))? as u32;
+    let end = u16::try_from(keys.end).map_err(|_| Error::user(0))? as u32;
     Ok(end << 16 | start)
 }

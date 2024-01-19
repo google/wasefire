@@ -15,12 +15,13 @@
 //! Provides a generic API for serial communication.
 
 use alloc::boxed::Box;
+use alloc::vec::Vec;
 use core::cell::Cell;
 use core::fmt::Debug;
 
 use sealed::sealed;
 
-use crate::scheduling;
+use crate::{scheduling, Error};
 
 /// Serial events to be notified.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -38,22 +39,20 @@ pub enum Event {
 /// provide a unique interface to the different serials.
 #[sealed(pub(crate))]
 pub trait Serial {
-    type Error: Clone + Debug;
-
     /// Reads from the serial into a buffer without blocking.
     ///
     /// Returns how many bytes were read (and thus written to the buffer). This function does not
     /// block, so if there are no data available for read, zero is returned.
-    fn read(&self, buffer: &mut [u8]) -> Result<usize, Self::Error>;
+    fn read(&self, buffer: &mut [u8]) -> Result<usize, Error>;
 
     /// Writes from a buffer to the serial.
     ///
     /// Returns how many bytes were written (and thus read from the buffer). This function does not
     /// block, so if the serial is not ready for write, zero is returned.
-    fn write(&self, buffer: &[u8]) -> Result<usize, Self::Error>;
+    fn write(&self, buffer: &[u8]) -> Result<usize, Error>;
 
     /// Flushes the serial (in case reads or writes are buffered).
-    fn flush(&self) -> Result<(), Self::Error>;
+    fn flush(&self) -> Result<(), Error>;
 
     /// Registers a callback for an event.
     ///
@@ -63,24 +62,24 @@ pub trait Serial {
     /// concurrent calls.
     unsafe fn register(
         &self, event: Event, func: extern "C" fn(*const u8), data: *const u8,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<(), Error>;
 
     /// Unregisters the callback for an event.
-    fn unregister(&self, event: Event) -> Result<(), Self::Error>;
+    fn unregister(&self, event: Event) -> Result<(), Error>;
 }
 
 /// Reads from the serial into a buffer without blocking.
 ///
 /// Returns how many bytes were read (and thus written to the buffer). This function does not
 /// block, so if there are no data available for read, zero is returned.
-pub fn read<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<usize, T::Error> {
+pub fn read<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<usize, Error> {
     serial.read(buffer)
 }
 
 /// Synchronously reads at least one byte from a serial into a buffer.
 ///
 /// This function will block if necessary.
-pub fn read_any<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<usize, T::Error> {
+pub fn read_any<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<usize, Error> {
     let mut reader = Reader::new(serial, buffer);
     scheduling::wait_until(|| !reader.is_empty());
     reader.result()
@@ -89,7 +88,7 @@ pub fn read_any<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<usize, T::Er
 /// Synchronously reads from a serial into a buffer until it is filled.
 ///
 /// This function will block if necessary.
-pub fn read_all<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<(), T::Error> {
+pub fn read_all<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<(), Error> {
     let mut reader = Reader::new(serial, buffer);
     scheduling::wait_until(|| reader.is_done());
     reader.result()?;
@@ -97,7 +96,7 @@ pub fn read_all<T: Serial>(serial: &T, buffer: &mut [u8]) -> Result<(), T::Error
 }
 
 /// Synchronously reads exactly one byte.
-pub fn read_byte<T: Serial>(serial: &T) -> Result<u8, T::Error> {
+pub fn read_byte<T: Serial>(serial: &T) -> Result<u8, Error> {
     let mut byte = 0;
     read_any(serial, core::slice::from_mut(&mut byte))?;
     Ok(byte)
@@ -107,14 +106,14 @@ pub fn read_byte<T: Serial>(serial: &T) -> Result<u8, T::Error> {
 ///
 /// Returns how many bytes were written (and thus read from the buffer). This function does not
 /// block, so if the serial is not ready for write, zero is returned.
-pub fn write<T: Serial>(serial: &T, buffer: &[u8]) -> Result<usize, T::Error> {
+pub fn write<T: Serial>(serial: &T, buffer: &[u8]) -> Result<usize, Error> {
     serial.write(buffer)
 }
 
 /// Writes at least one byte from a buffer to a serial.
 ///
 /// This function will block if necessary.
-pub fn write_any<T: Serial>(serial: &T, buffer: &[u8]) -> Result<usize, T::Error> {
+pub fn write_any<T: Serial>(serial: &T, buffer: &[u8]) -> Result<usize, Error> {
     let mut writer = Writer::new(serial, buffer);
     scheduling::wait_until(|| !writer.is_empty());
     writer.result()
@@ -123,7 +122,7 @@ pub fn write_any<T: Serial>(serial: &T, buffer: &[u8]) -> Result<usize, T::Error
 /// Writes from a buffer to a serial until everything has been written.
 ///
 /// This function will block if necessary.
-pub fn write_all<T: Serial>(serial: &T, buffer: &[u8]) -> Result<(), T::Error> {
+pub fn write_all<T: Serial>(serial: &T, buffer: &[u8]) -> Result<(), Error> {
     let mut writer = Writer::new(serial, buffer);
     scheduling::wait_until(|| writer.is_done());
     writer.result()?;
@@ -131,18 +130,117 @@ pub fn write_all<T: Serial>(serial: &T, buffer: &[u8]) -> Result<(), T::Error> {
 }
 
 /// Flushes the serial (in case reads or writes are buffered).
-pub fn flush<T: Serial>(serial: &T) -> Result<(), T::Error> {
+pub fn flush<T: Serial>(serial: &T) -> Result<(), Error> {
     serial.flush()
 }
 
-/// Provides asynchronous read support.
+/// Asynchronously listens for event notifications.
+pub struct Listener<'a, T: Serial> {
+    serial: &'a T,
+    event: Event,
+    notified: &'static Cell<bool>,
+}
+
+impl<'a, T: Serial> Listener<'a, T> {
+    /// Starts listening for the provided event until dropped.
+    pub fn new(serial: &'a T, event: Event) -> Self {
+        let notified = Box::leak(Box::new(Cell::new(true)));
+        let func = Self::call;
+        let data = notified.as_ptr() as *const u8;
+        unsafe { serial.register(event, func, data) }.unwrap();
+        Listener { serial, event, notified }
+    }
+
+    /// Returns whether the event triggered since the last call.
+    pub fn is_notified(&mut self) -> bool {
+        self.notified.replace(false)
+    }
+
+    extern "C" fn call(data: *const u8) {
+        let notified = unsafe { &*(data as *const Cell<bool>) };
+        notified.set(true);
+    }
+}
+
+impl<'a, T: Serial> Drop for Listener<'a, T> {
+    fn drop(&mut self) {
+        self.serial.unregister(self.event).unwrap();
+        drop(unsafe { Box::from_raw(self.notified.as_ptr()) });
+    }
+}
+
+/// Asynchronously reads delimited frames.
+///
+/// If you want to read at most a given amount instead, use [`Reader`].
+pub struct DelimitedReader<'a, T: Serial> {
+    listener: Listener<'a, T>,
+    buffer: Vec<u8>,
+    frame: Option<usize>, // index of first delimiter in buffer, if any
+    delimiter: u8,
+}
+
+impl<'a, T: Serial> DelimitedReader<'a, T> {
+    /// Starts reading delimited frames from a serial.
+    pub fn new(serial: &'a T, delimiter: u8) -> Self {
+        let listener = Listener::new(serial, Event::Read);
+        DelimitedReader { listener, buffer: Vec::new(), frame: None, delimiter }
+    }
+
+    /// Returns the next delimited frame (including the delimiter), if any.
+    ///
+    /// This function should be called until it returns `None` before waiting for callback again.
+    /// Otherwise, it may be possible that the platform doesn't notify for new data if the existing
+    /// data has not been read.
+    pub fn next_frame(&mut self) -> Option<Vec<u8>> {
+        if self.frame.is_none() && self.listener.is_notified() {
+            self.flush();
+        }
+        self.frame.map(|len| {
+            let mut frame = self.buffer.split_off(len + 1);
+            core::mem::swap(&mut frame, &mut self.buffer);
+            self.frame = self.buffer.iter().position(|&x| x == self.delimiter);
+            frame
+        })
+    }
+
+    /// Stops reading and returns the current buffer.
+    ///
+    /// The buffer may contain multiple delimited frames.
+    pub fn stop(self) -> Vec<u8> {
+        self.buffer
+    }
+
+    fn flush(&mut self) {
+        while self.read() {}
+    }
+
+    fn read(&mut self) -> bool {
+        let mut data = [0; 32];
+        let len = self.listener.serial.read(&mut data).unwrap();
+        let pos = self.buffer.len();
+        self.buffer.extend_from_slice(&data[.. len]);
+        if self.frame.is_none() {
+            for i in pos .. pos + len {
+                if self.buffer[i] == self.delimiter {
+                    self.frame = Some(i);
+                    break;
+                }
+            }
+        }
+        len == data.len()
+    }
+}
+
+/// Asynchronously reads into the provided buffer.
+///
+/// If instead you want to continuously read delimited frames, use [`DelimitedReader`].
 #[must_use]
-pub struct Reader<'a, T: Serial>(Listener<'a, T>);
+pub struct Reader<'a, T: Serial>(Updater<'a, T>);
 
 impl<'a, T: Serial> Reader<'a, T> {
     /// Asynchronously reads from a serial into a buffer.
     pub fn new(serial: &'a T, buffer: &'a mut [u8]) -> Self {
-        Reader(Listener::new(Kind::Reader { serial, buffer }))
+        Reader(Updater::new(serial, Kind::Reader { buffer }))
     }
 
     /// Returns whether anything has been read (or an error occurred).
@@ -156,19 +254,19 @@ impl<'a, T: Serial> Reader<'a, T> {
     }
 
     /// Returns how many bytes were read (or if an error occurred).
-    pub fn result(self) -> Result<usize, T::Error> {
+    pub fn result(self) -> Result<usize, Error> {
         self.0.result()
     }
 }
 
-/// Provides asynchronous write support.
+/// Asynchronously writes from the provided buffer.
 #[must_use]
-pub struct Writer<'a, T: Serial>(Listener<'a, T>);
+pub struct Writer<'a, T: Serial>(Updater<'a, T>);
 
 impl<'a, T: Serial> Writer<'a, T> {
     /// Asynchronously writes from a buffer to a serial.
     pub fn new(serial: &'a T, buffer: &'a [u8]) -> Self {
-        Writer(Listener::new(Kind::Writer { serial, buffer }))
+        Writer(Updater::new(serial, Kind::Writer { buffer }))
     }
 
     /// Returns whether anything has been written (or an error occurred).
@@ -182,32 +280,27 @@ impl<'a, T: Serial> Writer<'a, T> {
     }
 
     /// Returns how many bytes were written (or if an error occurred).
-    pub fn result(self) -> Result<usize, T::Error> {
+    pub fn result(self) -> Result<usize, Error> {
         self.0.result()
     }
 }
 
-struct Listener<'a, T: Serial> {
-    kind: Kind<'a, T>,
-    // Whether the callback triggered since last operation.
-    ready: &'static Cell<bool>,
-    // The callback is registered as long as not done.
-    result: Result<usize, T::Error>,
+struct Updater<'a, T: Serial> {
+    // The listener is alive as long as not done (see `should_listen()`).
+    listener: Option<Listener<'a, T>>,
+    kind: Kind<'a>,
+    result: Result<usize, Error>,
 }
 
-impl<'a, T: Serial> Listener<'a, T> {
-    fn new(kind: Kind<'a, T>) -> Self {
-        let ready = Box::leak(Box::new(Cell::new(true)));
-        let mut listener = Listener { kind, ready, result: Ok(0) };
-        if listener.is_registered() {
-            let event = listener.kind.event();
-            let func = Self::call;
-            let data = ready.as_ptr() as *const u8;
-            let serial = listener.kind.serial();
-            unsafe { serial.register(event, func, data) }.unwrap();
+impl<'a, T: Serial> Updater<'a, T> {
+    fn new(serial: &'a T, kind: Kind<'a>) -> Self {
+        let event = kind.event();
+        let mut result = Updater { listener: None, kind, result: Ok(0) };
+        if result.should_listen() {
+            result.listener = Some(Listener::new(serial, event));
         }
-        let _ = listener.update();
-        listener
+        let _ = result.update();
+        result
     }
 
     fn is_empty(&mut self) -> bool {
@@ -216,57 +309,43 @@ impl<'a, T: Serial> Listener<'a, T> {
 
     fn is_done(&mut self) -> bool {
         let _ = self.update();
-        !self.is_registered()
+        self.listener.is_none()
     }
 
-    fn result(mut self) -> Result<usize, T::Error> {
+    fn result(mut self) -> Result<usize, Error> {
         self.update()
     }
 
-    fn update(&mut self) -> Result<usize, T::Error> {
-        if !self.is_registered() || !self.ready.replace(false) {
-            return self.result.clone();
+    fn update(&mut self) -> Result<usize, Error> {
+        let listener = match &mut self.listener {
+            Some(x) => x,
+            None => return self.result,
+        };
+        if !listener.is_notified() {
+            return self.result;
         }
         let pos = self.result.as_mut().unwrap();
-        match self.kind.update(*pos) {
+        match self.kind.update(listener.serial, *pos) {
             Ok(len) => *pos += len,
             err => self.result = err,
         }
-        if !self.is_registered() {
-            self.unregister();
+        if !self.should_listen() {
+            self.listener = None;
         }
-        self.result.clone()
+        self.result
     }
 
-    fn is_registered(&self) -> bool {
+    fn should_listen(&self) -> bool {
         matches!(self.result, Ok(len) if len < self.kind.len())
     }
-
-    fn unregister(&self) {
-        self.kind.serial().unregister(self.kind.event()).unwrap()
-    }
-
-    extern "C" fn call(data: *const u8) {
-        let ready = unsafe { &*(data as *const Cell<bool>) };
-        ready.set(true);
-    }
 }
 
-impl<'a, T: Serial> Drop for Listener<'a, T> {
-    fn drop(&mut self) {
-        if self.is_registered() {
-            self.unregister();
-        }
-        drop(unsafe { Box::from_raw(self.ready.as_ptr()) });
-    }
+enum Kind<'a> {
+    Reader { buffer: &'a mut [u8] },
+    Writer { buffer: &'a [u8] },
 }
 
-enum Kind<'a, T: Serial> {
-    Reader { serial: &'a T, buffer: &'a mut [u8] },
-    Writer { serial: &'a T, buffer: &'a [u8] },
-}
-
-impl<'a, T: Serial> Kind<'a, T> {
+impl<'a> Kind<'a> {
     fn event(&self) -> Event {
         match self {
             Kind::Reader { .. } => Event::Read,
@@ -274,23 +353,17 @@ impl<'a, T: Serial> Kind<'a, T> {
         }
     }
 
-    fn serial(&self) -> &T {
-        match self {
-            Kind::Reader { serial, .. } | Kind::Writer { serial, .. } => serial,
-        }
-    }
-
     fn len(&self) -> usize {
         match self {
-            Kind::Reader { buffer, .. } => buffer.len(),
-            Kind::Writer { buffer, .. } => buffer.len(),
+            Kind::Reader { buffer } => buffer.len(),
+            Kind::Writer { buffer } => buffer.len(),
         }
     }
 
-    fn update(&mut self, pos: usize) -> Result<usize, T::Error> {
+    fn update(&mut self, serial: &impl Serial, pos: usize) -> Result<usize, Error> {
         match self {
-            Kind::Reader { serial, buffer } => serial.read(&mut buffer[pos ..]),
-            Kind::Writer { serial, buffer } => serial.write(&buffer[pos ..]),
+            Kind::Reader { buffer } => serial.read(&mut buffer[pos ..]),
+            Kind::Writer { buffer } => serial.write(&buffer[pos ..]),
         }
     }
 }

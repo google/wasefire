@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::crypto::{Api, UnsupportedCrypto};
-
-mod ccm;
+use wasefire_board_api::crypto::{self, Api};
 
 pub enum Impl {}
 
 impl Api for Impl {
-    type Aes128Ccm = ccm::Impl;
-    type Aes256Gcm = <UnsupportedCrypto<Self> as Api>::Aes256Gcm;
-    type HmacSha256 = <UnsupportedCrypto<Self> as Api>::HmacSha256;
-    type HmacSha384 = <UnsupportedCrypto<Self> as Api>::HmacSha384;
-    type P256 = <UnsupportedCrypto<Self> as Api>::P256;
-    type P384 = <UnsupportedCrypto<Self> as Api>::P384;
-    type Sha256 = <UnsupportedCrypto<Self> as Api>::Sha256;
-    type Sha384 = <UnsupportedCrypto<Self> as Api>::Sha384;
+    type Aes128Ccm = crypto::SoftwareAes128Ccm;
+    type Aes256Gcm = crypto::SoftwareAes256Gcm;
+    type HmacSha256 = crypto::SoftwareHmacSha256<Self>;
+    type HmacSha384 = crypto::SoftwareHmacSha384<Self>;
+    type P256 = crypto::SoftwareP256<Self>;
+    type P384 = crypto::SoftwareP384<Self>;
+    type Sha256 = crypto::SoftwareSha256;
+    type Sha384 = crypto::SoftwareSha384;
 }

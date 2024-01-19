@@ -21,4 +21,50 @@ quote = { version = "1.0.33", default-features = false }
 syn = { version = "2.0.41", default-features = false, features = ["printing"] }
 
 [features]
-multivalue = []
+# API features.
+api-button = []
+api-crypto-ccm = ["internal-api-crypto"]
+api-crypto-ec = ["internal-api-crypto"]
+api-crypto-gcm = ["internal-api-crypto"]
+api-crypto-hash = ["internal-api-crypto-hash"]
+api-crypto-hkdf = ["internal-api-crypto-hash"]
+api-crypto-hmac = ["internal-api-crypto-hash"]
+api-gpio = []
+api-led = []
+api-platform = ["internal-api-platform"]
+api-platform-update = ["internal-api-platform"]
+api-radio-ble = ["internal-api-radio"]
+api-rng = []
+api-store = ["internal-api-store"]
+api-store-fragment = ["internal-api-store"]
+api-timer = []
+api-uart = []
+api-usb-serial = ["internal-api-usb"]
+# Enables all API features.
+full-api = [
+  "api-button",
+  "api-crypto-ccm",
+  "api-crypto-ec",
+  "api-crypto-gcm",
+  "api-crypto-hash",
+  "api-crypto-hkdf",
+  "api-crypto-hmac",
+  "api-gpio",
+  "api-led",
+  "api-platform",
+  "api-platform-update",
+  "api-radio-ble",
+  "api-rng",
+  "api-store",
+  "api-store-fragment",
+  "api-timer",
+  "api-uart",
+  "api-usb-serial",
+]
+# Internal features.
+internal-api-crypto = []
+internal-api-crypto-hash = ["internal-api-crypto"]
+internal-api-platform = []
+internal-api-radio = []
+internal-api-store = []
+internal-api-usb = []

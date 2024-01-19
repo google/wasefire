@@ -15,19 +15,16 @@
 use alloc::boxed::Box;
 
 use bytemuck::Zeroable;
-use wasefire_applet_api::radio::ble::{Advertisement, Event};
-use wasefire_applet_api::radio::{ble as api, Error};
+use wasefire_applet_api::radio::ble as api;
+pub use wasefire_applet_api::radio::ble::{Advertisement, Event};
+
+use crate::{convert_bool, convert_unit, Error};
 
 /// Reads the next advertisement packet, if any.
 pub fn read_advertisement() -> Result<Option<Advertisement>, Error> {
     let mut result = Advertisement::zeroed();
     let params = api::read_advertisement::Params { ptr: &mut result as *mut _ as *mut u8 };
-    let api::read_advertisement::Results { res } = unsafe { api::read_advertisement(params) };
-    Ok(match super::convert(res)? {
-        0 => None,
-        1 => Some(result),
-        _ => unreachable!(),
-    })
+    Ok(convert_bool(unsafe { api::read_advertisement(params) })?.then_some(result))
 }
 
 /// Provides callback support for BLE events.
@@ -57,8 +54,9 @@ impl<H: Handler> Listener<H> {
         let event = event as u32;
         let handler_func = Self::call;
         let handler = Box::into_raw(Box::new(handler));
-        let handler_data = handler as *mut u8;
-        unsafe { api::register(api::register::Params { event, handler_func, handler_data }) };
+        let handler_data = handler as *const u8;
+        let params = api::register::Params { event, handler_func, handler_data };
+        convert_unit(unsafe { api::register(params) }).unwrap();
         Listener { handler }
     }
 
@@ -78,8 +76,8 @@ impl<H: Handler> Listener<H> {
         core::mem::forget(self);
     }
 
-    extern "C" fn call(data: *mut u8) {
-        let handler = unsafe { &mut *(data as *mut H) };
+    extern "C" fn call(data: *const u8) {
+        let handler = unsafe { &*(data as *const H) };
         handler.event(Event::Advertisement);
     }
 }
@@ -87,7 +85,7 @@ impl<H: Handler> Listener<H> {
 impl<H: Handler> Drop for Listener<H> {
     fn drop(&mut self) {
         let params = api::unregister::Params { event: Event::Advertisement as u32 };
-        unsafe { api::unregister(params) };
+        convert_unit(unsafe { api::unregister(params) }).unwrap();
         drop(unsafe { Box::from_raw(self.handler) });
     }
 }

@@ -18,6 +18,8 @@ use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 pub fn canonicalize(path: impl AsRef<Path>) -> Result<PathBuf> {
     let name = path.as_ref().display();
@@ -57,6 +59,13 @@ pub fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
     std::fs::read(path.as_ref()).with_context(|| format!("reading {name}"))
 }
 
+pub fn read_toml<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {
+    let name = path.as_ref().display();
+    let contents = read(path.as_ref())?;
+    let data = String::from_utf8(contents).with_context(|| format!("reading {name}"))?;
+    toml::from_str(&data).with_context(|| format!("parsing {name}"))
+}
+
 pub fn remove_file(path: impl AsRef<Path>) -> Result<()> {
     let name = path.as_ref().display();
     std::fs::remove_file(path.as_ref()).with_context(|| format!("removing {name}"))
@@ -74,5 +83,12 @@ pub fn write(path: impl AsRef<Path>, contents: impl AsRef<[u8]>) -> Result<()> {
     let contents = contents.as_ref();
     create_parent(path.as_ref())?;
     std::fs::write(path.as_ref(), contents).with_context(|| format!("writing {name}"))?;
+    Ok(())
+}
+
+pub fn write_toml<T: Serialize>(path: impl AsRef<Path>, contents: &T) -> Result<()> {
+    let name = path.as_ref().display();
+    let contents = toml::to_string(contents).with_context(|| format!("displaying {name}"))?;
+    write(path.as_ref(), contents)?;
     Ok(())
 }

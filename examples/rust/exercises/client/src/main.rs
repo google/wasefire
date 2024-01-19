@@ -59,12 +59,7 @@ fn main() {
     let mut serial = connect();
     eprintln!("Sending {request:02x?}.");
     serial.write_all(&interface::serialize(&request)).unwrap();
-    let response = interface::deserialize::<Result<Response, String>>(|x| match serial.read(x) {
-        Err(e) if e.kind() == ErrorKind::WouldBlock => {
-            panic!("Device did not reply. Is it running?");
-        }
-        x => x.unwrap(),
-    });
+    let response = interface::deserialize::<Result<Response, String>>(&mut receive(&mut serial));
     eprintln!("Received {response:02x?}.");
     let response = match response {
         Ok(x) => x,
@@ -99,7 +94,33 @@ fn main() {
 }
 
 #[cfg(feature = "usb")]
-fn connect() -> Box<dyn serialport::SerialPort> {
+type Serial = Box<dyn serialport::SerialPort>;
+#[cfg(not(feature = "usb"))]
+type Serial = std::os::unix::net::UnixStream;
+
+fn receive(serial: &mut Serial) -> Vec<u8> {
+    let mut result = Vec::new();
+    let mut buffer = [0; 32];
+    loop {
+        let len = match serial.read(&mut buffer) {
+            Err(e) if e.kind() == ErrorKind::WouldBlock => {
+                panic!("Device did not reply. Is it running?");
+            }
+            x => x.unwrap(),
+        };
+        result.extend_from_slice(&buffer[.. len]);
+        if len < buffer.len() {
+            break;
+        }
+    }
+    let len = result.len();
+    assert!(result[len - 1] == 0);
+    assert!(result[.. len - 1].iter().all(|&x| x != 0));
+    result
+}
+
+#[cfg(feature = "usb")]
+fn connect() -> Serial {
     for info in serialport::available_ports().unwrap() {
         let path = info.port_name;
         if let serialport::SerialPortType::UsbPort(info) = info.port_type {
@@ -115,9 +136,8 @@ fn connect() -> Box<dyn serialport::SerialPort> {
 }
 
 #[cfg(not(feature = "usb"))]
-fn connect() -> std::os::unix::net::UnixStream {
-    use std::os::unix::net::UnixStream;
-    let serial = UnixStream::connect("../../../../target/wasefire/uart0").unwrap();
+fn connect() -> Serial {
+    let serial = Serial::connect("../../../../target/wasefire/uart0").unwrap();
     serial.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
     serial
 }

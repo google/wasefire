@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use core::ops::Not;
-
 #[cfg(feature = "native")]
 pub(crate) mod native;
 
-impl Not for crate::led::Status {
+#[cfg(feature = "api-led")]
+impl core::ops::Not for crate::led::Status {
     type Output = Self;
     fn not(self) -> Self {
         use crate::led::Status;
@@ -28,6 +27,7 @@ impl Not for crate::led::Status {
     }
 }
 
+#[cfg(feature = "internal-api-crypto-hash")]
 impl crate::crypto::hash::Algorithm {
     /// Returns the length in bytes of the algorithm digest.
     pub const fn digest_len(self) -> usize {
@@ -38,6 +38,7 @@ impl crate::crypto::hash::Algorithm {
     }
 }
 
+#[cfg(feature = "api-crypto-ec")]
 impl crate::crypto::ec::Curve {
     /// Returns the length in bytes of an integer.
     pub const fn int_len(self) -> usize {
