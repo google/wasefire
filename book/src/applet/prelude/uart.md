@@ -1,9 +1,9 @@
 # UART
 
 Using the UART is similar to using the USB serial, because the
-`uart::Uart(uart_id)` object implements `serial::Serial`, where `uart_id` is the
-UART id. The `uart::count()` function returns how many UARTs are available on
-the device. UART ids must be smaller than this count.
+`uart::Uart::new(uart_id)` object implements `serial::Serial`, where `uart_id`
+is the UART id. The `uart::count()` function returns how many UARTs are
+available on the device. UART ids must be smaller than this count.
 
 It is usually a good idea to write generic code over any serial without assuming
 a particular implementation. This can be done by using a `serial` variable
@@ -12,7 +12,7 @@ based on a compilation feature:
 
 ```rust,no_run,noplayground
 #[cfg(feature = "serial_uart")]
-let serial = uart::Uart(0);
+let serial = uart::Uart::new(0).unwrap();
 #[cfg(feature = "serial_usb")]
 let serial = usb::serial::UsbSerial;
 // ...

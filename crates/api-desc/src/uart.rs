@@ -23,6 +23,30 @@ pub(crate) fn new() -> Item {
             fn count "uac" {} -> usize
         },
         item! {
+            /// Sets the baudrate of a stopped UART.
+            fn set_baudrate "uaz" {
+                /// Index of the UART to configure.
+                uart: usize,
+
+                /// Baudrate to configure.
+                baudrate: usize,
+            } -> ()
+        },
+        item! {
+            /// Starts a UART.
+            fn start "uaa" {
+                /// Index of the UART to start.
+                uart: usize,
+            } -> ()
+        },
+        item! {
+            /// Stops a UART.
+            fn stop "uab" {
+                /// Index of the UART to stop.
+                uart: usize,
+            } -> ()
+        },
+        item! {
             /// Reads from a UART into a buffer.
             ///
             /// Returns the number of bytes read. This function does not block and may return zero.

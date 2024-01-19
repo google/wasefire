@@ -26,7 +26,45 @@ pub fn count() -> usize {
 }
 
 /// Implements the [`Serial`](crate::serial::Serial) interface for UART.
-pub struct Uart(pub usize);
+pub struct Uart(usize);
+
+impl Uart {
+    /// Builds and starts a UART with the default configuration.
+    pub fn new(uart: usize) -> Result<Self, Error> {
+        UartBuilder::new(uart).build()
+    }
+}
+
+/// UART configuration.
+pub struct UartBuilder {
+    uart: usize,
+    baudrate: Option<usize>,
+}
+
+impl UartBuilder {
+    /// Creates a new UART configuration.
+    pub fn new(uart: usize) -> Self {
+        UartBuilder { uart, baudrate: None }
+    }
+
+    /// Sets the UART baudrate.
+    pub fn set_baudrate(mut self, baudrate: usize) -> Self {
+        self.baudrate = Some(baudrate);
+        self
+    }
+
+    /// Builds and starts a UART with the given configuration.
+    pub fn build(self) -> Result<Uart, Error> {
+        let uart = self.uart;
+        if let Some(baudrate) = self.baudrate {
+            let params = api::set_baudrate::Params { uart, baudrate };
+            convert_unit(unsafe { api::set_baudrate(params) })?;
+        }
+        let params = api::start::Params { uart };
+        convert_unit(unsafe { api::start(params) })?;
+        Ok(Uart(uart))
+    }
+}
 
 #[sealed]
 impl crate::serial::Serial for Uart {

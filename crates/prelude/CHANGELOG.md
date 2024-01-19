@@ -4,6 +4,7 @@
 
 ### Major
 
+- Make `uart::Uart` field private
 - Rename `clock` module to `timer`
 - Change `debug::time()` to return `Result<u64>` instead of `u64`
 - Migrate `platform::update` to use `Error` instead of `usize`
@@ -12,6 +13,7 @@
 
 ### Minor
 
+- Add `uart::UartBuilder` and `uart::Uart::new()` to configure a UART
 - Add `serial::DelimitedReader` to read delimited frames from serial
 - Add `serial::Listener` to listen for serial events
 - Migrate to low-level applet API returning `isize`

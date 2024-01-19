@@ -21,6 +21,7 @@ use nrf52840_hal::target_constants::{EASY_DMA_SIZE, SRAM_LOWER, SRAM_UPPER};
 use nrf52840_hal::uarte;
 use wasefire_board_api::uart::{Api, Direction, Event};
 use wasefire_board_api::{Error, Id, Support};
+use wasefire_error::Code;
 
 use crate::{with_state, Board};
 
@@ -36,6 +37,7 @@ const READ_MAX: usize = READ_CAP - 8; // 8 bytes reserved to flush the RX FIFO
 struct State {
     read_ptr: *mut u8, // size READ_CAP
     read_len: usize,
+    running: bool,
     listen_read: bool,
     listen_write: bool,
 }
@@ -46,7 +48,7 @@ impl Default for State {
     fn default() -> Self {
         let read_ptr = Box::into_raw(Box::new([0; READ_CAP])) as *mut u8;
         let read_len = 0;
-        State { read_ptr, read_len, listen_read: false, listen_write: false }
+        State { read_ptr, read_len, running: false, listen_read: false, listen_write: false }
     }
 }
 
@@ -63,8 +65,6 @@ impl Uarts {
         uart.regs.psel.rts.write(|w| unsafe { w.bits(pins.rts.unwrap().psel_bits()) });
         uart.regs.config.write(|w| w.hwfc().set_bit().parity().variant(uarte::Parity::EXCLUDED));
         uart.regs.baudrate.write(|w| w.baudrate().variant(uarte::Baudrate::BAUD115200));
-        uart.regs.enable.write(|w| w.enable().enabled());
-        uart.start_rx();
         uarts
     }
 
@@ -152,9 +152,47 @@ impl Support<usize> for Impl {
 }
 
 impl Api for Impl {
+    fn set_baudrate(uart: Id<Self>, baudrate: usize) -> Result<(), Error> {
+        let baudrate = match baudrate {
+            9600 => uarte::Baudrate::BAUD9600,
+            38400 => uarte::Baudrate::BAUD38400,
+            115200 => uarte::Baudrate::BAUD115200,
+            _ => return Err(Error::world(Code::NotImplemented)),
+        };
+        with_state(|state| {
+            let uart = state.uarts.get(uart);
+            Error::user(Code::BadState).check(!uart.state.running)?;
+            uart.regs.baudrate.write(|w| w.baudrate().variant(baudrate));
+            Ok(())
+        })
+    }
+
+    fn start(uart: Id<Self>) -> Result<(), Error> {
+        with_state(|state| {
+            let uart = state.uarts.get(uart);
+            Error::user(Code::BadState).check(!uart.state.running)?;
+            uart.regs.enable.write(|w| w.enable().enabled());
+            uart.start_rx();
+            Ok(())
+        })
+    }
+
+    fn stop(uart: Id<Self>) -> Result<(), Error> {
+        with_state(|state| {
+            let mut uart = state.uarts.get(uart);
+            Error::user(Code::BadState).check(uart.state.running)?;
+            uart.stoptx();
+            uart.stop_rx();
+            uart.state.read_len = 0;
+            uart.regs.enable.write(|w| w.enable().disabled());
+            Ok(())
+        })
+    }
+
     fn read(uart: Id<Self>, output: &mut [u8]) -> Result<usize, Error> {
         with_state(|state| {
             let mut uart = state.uarts.get(uart);
+            Error::user(Code::BadState).check(uart.state.running)?;
             uart.stop_rx();
             let len = core::cmp::min(output.len(), uart.state.read_len);
             let data = unsafe {
@@ -177,6 +215,7 @@ impl Api for Impl {
         }
         with_state(|state| {
             let uart = state.uarts.get(uart);
+            Error::user(Code::BadState).check(uart.state.running)?;
             uart.regs.txd.ptr.write(|w| unsafe { w.ptr().bits(input.as_ptr() as u32) });
             uart.regs.txd.maxcnt.write(|w| unsafe { w.maxcnt().bits(input.len() as u16) });
             uart.regs.tasks_starttx.write(|w| w.tasks_starttx().set_bit());

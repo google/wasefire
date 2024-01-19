@@ -30,6 +30,9 @@ use crate::{DispatchSchedulerCall, SchedulerCall};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Count(call) => count(call),
+        Api::SetBaudrate(call) => or_trap!("board-api-uart", set_baudrate(call)),
+        Api::Start(call) => or_trap!("board-api-uart", start(call)),
+        Api::Stop(call) => or_trap!("board-api-uart", stop(call)),
         Api::Read(call) => or_trap!("board-api-uart", read(call)),
         Api::Write(call) => or_trap!("board-api-uart", write(call)),
         Api::Register(call) => or_trap!("board-api-uart", register(call)),
@@ -44,6 +47,36 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     #[cfg(not(feature = "board-api-uart"))]
     let count = 0;
     call.reply(Ok(Ok(count)));
+}
+
+#[cfg(feature = "board-api-uart")]
+fn set_baudrate<B: Board>(call: SchedulerCall<B, api::set_baudrate::Sig>) {
+    let api::set_baudrate::Params { uart, baudrate } = call.read();
+    let result = try {
+        let uart = Id::new(*uart as usize).ok_or(Trap)?;
+        board::Uart::<B>::set_baudrate(uart, *baudrate as usize)
+    };
+    call.reply(result);
+}
+
+#[cfg(feature = "board-api-uart")]
+fn start<B: Board>(call: SchedulerCall<B, api::start::Sig>) {
+    let api::start::Params { uart } = call.read();
+    let result = try {
+        let uart = Id::new(*uart as usize).ok_or(Trap)?;
+        board::Uart::<B>::start(uart)
+    };
+    call.reply(result);
+}
+
+#[cfg(feature = "board-api-uart")]
+fn stop<B: Board>(call: SchedulerCall<B, api::stop::Sig>) {
+    let api::stop::Params { uart } = call.read();
+    let result = try {
+        let uart = Id::new(*uart as usize).ok_or(Trap)?;
+        board::Uart::<B>::stop(uart)
+    };
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-uart")]

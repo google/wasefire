@@ -20,7 +20,7 @@ use crate::serial::Serial;
 mod serial;
 
 fn main() {
-    let uart = wasefire::uart::Uart(0);
+    let uart = wasefire::uart::Uart::new(0).unwrap();
     let mut serial = Serial::new(&uart);
     loop {
         let request = serial.receive();
