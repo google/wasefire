@@ -10,6 +10,7 @@
 
 ### Minor
 
+- Support `uart::{start,stop,set_baudrate}()` functions
 - Migrate `clock` module to `timer`
 - Remove unstable `software-crypto` feature
 - Support applets calling unknown host functions by returning an error

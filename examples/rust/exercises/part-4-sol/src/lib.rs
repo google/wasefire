@@ -23,7 +23,7 @@ mod serial;
 mod store;
 
 fn main() {
-    let uart = uart::Uart(0);
+    let uart = uart::Uart::new(0).unwrap();
     let mut serial = Serial::new(&uart);
     let mut logic = Logic::new();
     loop {

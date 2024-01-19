@@ -16,7 +16,7 @@
 wasefire::applet!();
 
 fn main() {
-    let serial = uart::Uart(0);
+    let serial = uart::Uart::new(0).unwrap();
     loop {
         let mut buffer = [0; 32];
         let len = serial::read_any(&serial, &mut buffer).unwrap();

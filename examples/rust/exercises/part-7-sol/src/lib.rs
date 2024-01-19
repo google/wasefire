@@ -27,7 +27,7 @@ fn main() {
     #[cfg(feature = "usb")]
     let serial = wasefire::usb::serial::UsbSerial;
     #[cfg(not(feature = "usb"))]
-    let serial = wasefire::uart::Uart(0);
+    let serial = wasefire::uart::Uart::new(0).unwrap();
     let mut serial = Serial::new(&serial);
 
     let mut logic = Logic::new();

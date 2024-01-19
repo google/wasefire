@@ -47,6 +47,15 @@ impl<B: crate::Api> From<Event<B>> for crate::Event<B> {
 
 /// UART interface.
 pub trait Api: Support<usize> + Send {
+    /// Sets the baudrate of a stopped UART.
+    fn set_baudrate(uart: Id<Self>, baudrate: usize) -> Result<(), Error>;
+
+    /// Starts a UART.
+    fn start(uart: Id<Self>) -> Result<(), Error>;
+
+    /// Stops a UART.
+    fn stop(uart: Id<Self>) -> Result<(), Error>;
+
     /// Reads from a UART into a buffer.
     ///
     /// Returns the number of bytes read. It could be zero if there's nothing to read.

@@ -22,7 +22,7 @@ wasefire::applet!();
 
 fn main() {
     #[cfg(feature = "uart")]
-    let serial = uart::Uart(0);
+    let serial = uart::Uart::new(0).unwrap();
     #[cfg(not(feature = "uart"))]
     let serial = usb::serial::UsbSerial;
     loop {

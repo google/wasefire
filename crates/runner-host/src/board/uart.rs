@@ -159,6 +159,18 @@ impl Support<usize> for Impl {
 }
 
 impl Api for Impl {
+    fn set_baudrate(_uart: Id<Self>, _baudrate: usize) -> Result<(), Error> {
+        Ok(())
+    }
+
+    fn start(_uart: Id<Self>) -> Result<(), Error> {
+        Ok(())
+    }
+
+    fn stop(_uart: Id<Self>) -> Result<(), Error> {
+        Ok(())
+    }
+
     fn read(uart: Id<Self>, output: &mut [u8]) -> Result<usize, Error> {
         with_state(|state| {
             let uart = state.uarts.get(uart);
