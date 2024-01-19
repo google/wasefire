@@ -19,8 +19,8 @@ use core::time::Duration;
 use opensk_lib::api::user_presence::UserPresenceError::{Fail, Timeout};
 use opensk_lib::api::user_presence::{UserPresence, UserPresenceResult};
 use wasefire::button::{self, Listener};
-use wasefire::clock::{Oneshot, Periodic};
-use wasefire::{clock, led, scheduling};
+use wasefire::timer::{Oneshot, Periodic};
+use wasefire::{led, scheduling, timer};
 
 use crate::WasefireEnv;
 
@@ -44,7 +44,7 @@ impl UserPresence for WasefireEnv {
         });
 
         // Start a periodic timer blinking the LED.
-        let blink_timer = clock::Timer::new(|| {
+        let blink_timer = timer::Timer::new(|| {
             led::set(0, !led::get(0));
         });
         led::set(0, led::On);
@@ -52,7 +52,7 @@ impl UserPresence for WasefireEnv {
 
         // Start a timer for timeout.
         let timeout = Cell::new(false);
-        let timeout_timer = clock::Timer::new({
+        let timeout_timer = timer::Timer::new({
             let timeout = timeout.clone();
             move || timeout.set(true)
         });

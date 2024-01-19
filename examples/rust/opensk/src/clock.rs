@@ -16,8 +16,8 @@ use alloc::rc::Rc;
 use core::cell::Cell;
 
 use opensk_lib::api::clock::Clock;
-use wasefire::clock::Mode::Oneshot;
-use wasefire::clock::{Handler, Timer};
+use wasefire::timer::Mode::Oneshot;
+use wasefire::timer::{Handler, Timer};
 
 #[derive(Default)]
 struct ClockHandler {
