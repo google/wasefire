@@ -48,6 +48,10 @@ impl board::Api for Board {
         match (x1, x2, x3, x4) {
             // The syscall_test example relies on this.
             (0, 0, 0, x) => Some(Error::decode(x as i32)),
+            (0x80000000, 0, 0, 0) => {
+                // TODO: Make sure the UART is stopped, and assert zero the RTS pin.
+                todo!();
+            }
             _ => None,
         }
     }

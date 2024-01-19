@@ -11,6 +11,7 @@
 ### Patch
 
 - Update dependencies
+- Update dependencies
 
 ## 0.5.0
 

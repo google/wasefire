@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 postcard = { version = "1.0.8", default-features = false, features = ["alloc"] }
-serde = { version = "1.0.193", default-features = false, features = ["alloc", "derive"] }
+serde = { version = "1.0.195", default-features = false, features = ["alloc", "derive"] }
 wasefire = { path = "../../../../crates/prelude" }

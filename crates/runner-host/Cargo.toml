@@ -7,11 +7,11 @@ publish = false
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.75"
+anyhow = "1.0.79"
 data-encoding = "2.5.0"
-env_logger = "0.10.1"
+env_logger = "0.10.2"
 rand = "0.8.5"
-tokio = { version = "1.35.0", features = ["full"] }
+tokio = { version = "1.35.1", features = ["full"] }
 usb-device = { version = "0.3.1", optional = true }
 usbd-serial = { version = "0.2.0", optional = true }
 usbip-device = { version = "0.2.0", optional = true }

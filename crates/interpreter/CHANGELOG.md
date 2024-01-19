@@ -14,6 +14,7 @@
 ### Patch
 
 - Update dependencies
+- Update dependencies
 
 ## 0.1.4
 

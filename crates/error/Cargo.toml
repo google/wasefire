@@ -13,7 +13,7 @@ categories = ["embedded", "no-std"]
 
 [dependencies]
 defmt = { version = "0.3.5", default-features = false, optional = true }
-num_enum = { version = "0.7.1", default-features = false }
+num_enum = { version = "0.7.2", default-features = false }
 
 [features]
 defmt = ["dep:defmt"]
