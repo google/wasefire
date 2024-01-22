@@ -17,72 +17,75 @@ concurrency:
 permissions: {}
 
 jobs:
-  changelog:
-    if: github.event_name == 'pull_request'
+  checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Compute the checks for ${{ github.event_name }}
+        id: checks
+        run: |
+          x() {
+            local check=$1
+            while [[ $# -gt 1 ]]; do
+              shift
+              if [[ $1 == ${{ github.event_name }} ]]; then
+                [[ -z "$CHECKS" ]] || CHECKS+=', '
+                CHECKS+="\"$check\""
+              fi
+            done
+            true
+          }
+          x  copyright  pull_request
+          x  changelog  pull_request
+          x       sync  pull_request  push  schedule
+          x      taplo  pull_request  push  schedule
+          x    applets  pull_request  push  schedule
+          x    runners  pull_request  push  schedule
+          x    tests-0  pull_request  push  schedule
+          x    tests-1  pull_request  push  schedule
+          x    tests-2  pull_request  push  schedule
+          x    hw-host  pull_request  push  schedule
+          x       book  pull_request  push  schedule
+          x  footprint  pull_request  push
+          echo "checks=[$CHECKS]" >> $GITHUB_OUTPUT
+    outputs:
+      checks: ${{ steps.checks.outputs.checks }}
+  cache:
+    runs-on: ubuntu-latest
+    needs: checks
+    steps:
+      - uses: actions/checkout@v4
+      - if: github.event_name != 'schedule'
+        id: cache
+        name: Restore and save the cache
+        uses: ./.github/actions/ci-cache
         with:
-          fetch-depth: 0
-      - run: ./scripts/ci-changelog.sh
-  copyright:
-    if: github.event_name == 'pull_request'
+          mode: save
+      - if: steps.cache.outputs.cache-hit != 'true'
+        name: Run all checks ${{ needs.checks.outputs.checks }}
+        uses: ./.github/actions/ci-checks
+        with:
+          checks: ${{ needs.checks.outputs.checks }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          use-cache: false
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: rm -rf target && cargo xtask help
+  matrix:
     runs-on: ubuntu-latest
+    needs: [checks, cache]
+    strategy:
+      matrix:
+        check: ${{ fromJSON(needs.checks.outputs.checks) }}
+    name: ${{ matrix.check }}
     steps:
       - uses: actions/checkout@v4
-      - run: ./scripts/ci-copyright.sh
+      - name: Run the ${{ matrix.check }} check
+        uses: ./.github/actions/ci-checks
+        with:
+          checks: "[\"${{ matrix.check }}\"]"
+          token: ${{ secrets.GITHUB_TOKEN }}
   ubuntu:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    needs: matrix
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v3
-        if: github.event_name != 'schedule'
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            .root/
-            target/
-          key: >-
-            ${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles(
-              '**/Cargo.lock', 'scripts/wrapper.sh'
-            ) }}
-          restore-keys: ${{ hashFiles('rust-toolchain.toml') }}
-      - run: ./scripts/setup.sh
-      - run: ./scripts/ci.sh
-      - run: ./scripts/footprint.sh
-        if: github.event_name != 'schedule'
-      - run: mv footprint.toml footprint-${{ github.event_name }}.toml
-        if: github.event_name != 'schedule'
-      - uses: actions/upload-artifact@v4
-        if: github.event_name == 'push'
-        with:
-          name: footprint
-          path: footprint-push.toml
-      - uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
-        id: main-run
-        with:
-          script: |
-            const { data } = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'ci.yml',
-              branch: 'main',
-              event: 'push',
-              head_sha: '${{ github.event.pull_request.base.sha }}',
-            });
-            return data.workflow_runs[0]?.id ?? 0;
-      - uses: actions/download-artifact@v4
-        if: github.event_name == 'pull_request'
-        with:
-          name: footprint
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ steps.main-run.outputs.result }}
-        continue-on-error: true
-      - run: cargo xtask footprint "$GITHUB_STEP_SUMMARY"
-        if: github.event_name == 'pull_request'
+      - run: true

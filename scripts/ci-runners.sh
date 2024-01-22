@@ -15,18 +15,12 @@
 
 set -e
 . scripts/log.sh
-. scripts/package.sh
 
-# This script runs the continuous integration tests.
+# This script runs the continuous integration tests for the runners.
 
-./scripts/ci-copyright.sh
-./scripts/ci-changelog.sh
-./scripts/sync.sh
-./scripts/ci-taplo.sh
-./scripts/ci-applets.sh
-./scripts/ci-runners.sh
-./scripts/ci-tests.sh
-./scripts/hwci.sh host --no-default-features
-./scripts/ci-book.sh
-./scripts/ci-footprint.sh
-rm footprint.toml
+for crate in $(ls crates); do
+  name=${crate#runner-}
+  [ $crate = $name ] && continue
+  x cargo xtask runner $name --log=trace
+  x cargo xtask --release runner $name
+done
