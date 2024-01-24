@@ -18,7 +18,7 @@ use nrf52840_hal::pac::uarte0::RegisterBlock;
 use nrf52840_hal::pac::{UARTE0, UARTE1};
 use nrf52840_hal::prelude::OutputPin;
 use nrf52840_hal::target_constants::{EASY_DMA_SIZE, SRAM_LOWER, SRAM_UPPER};
-use nrf52840_hal::uarte;
+use nrf52840_hal::{gpio, uarte};
 use wasefire_board_api::uart::{Api, Direction, Event};
 use wasefire_board_api::{Error, Id, Support};
 use wasefire_error::Code;
@@ -55,14 +55,15 @@ impl Default for State {
 pub enum Impl {}
 
 impl Uarts {
-    pub fn new(uarte0: UARTE0, pins: uarte::Pins, uarte1: UARTE1) -> Self {
+    pub fn new(
+        uarte0: UARTE0, rx: gpio::Pin<gpio::Input<gpio::Floating>>,
+        tx: gpio::Pin<gpio::Output<gpio::PushPull>>, uarte1: UARTE1,
+    ) -> Self {
         let mut uarts = Uarts { uarte0, uarte1, states: [State::default(), State::default()] };
         let uart = uarts.get(Id::new(0).unwrap());
-        uart.regs.psel.rxd.write(|w| unsafe { w.bits(pins.rxd.psel_bits()) });
-        uart.regs.psel.txd.write(|w| unsafe { w.bits(pins.txd.psel_bits()) });
-        uart.regs.psel.cts.write(|w| unsafe { w.bits(pins.cts.unwrap().psel_bits()) });
-        uart.regs.psel.rts.write(|w| unsafe { w.bits(pins.rts.unwrap().psel_bits()) });
-        uart.regs.config.write(|w| w.hwfc().set_bit().parity().variant(uarte::Parity::EXCLUDED));
+        uart.regs.psel.rxd.write(|w| unsafe { w.bits(rx.psel_bits()) });
+        uart.regs.psel.txd.write(|w| unsafe { w.bits(tx.psel_bits()) });
+        uart.regs.config.reset();
         uart.regs.baudrate.write(|w| w.baudrate().variant(uarte::Baudrate::BAUD115200));
         uarts
     }
@@ -172,7 +173,6 @@ impl Api for Impl {
             Error::user(Code::InvalidState).check(!uart.state.running)?;
             uart.state.running = true;
             set_high(uart.regs.psel.txd.read().bits());
-            set_high(uart.regs.psel.rts.read().bits());
             uart.regs.enable.write(|w| w.enable().enabled());
             uart.start_rx();
             Ok(())
@@ -214,7 +214,7 @@ impl Api for Impl {
             return Ok(0);
         }
         if EASY_DMA_SIZE < input.len() || !in_ram(input) {
-            return Err(Error::user(0));
+            return Err(Error::user(Code::InvalidArgument));
         }
         with_state(|state| {
             let uart = state.uarts.get(uart);
