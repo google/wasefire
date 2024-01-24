@@ -31,7 +31,7 @@ impl Supported for Impl {}
 impl Api for Impl {
     fn metadata() -> Result<Box<[u8]>, Error> {
         let mut metadata = Vec::new();
-        let side = Side::current().ok_or(Error::world(Code::BadState))?;
+        let side = Side::current().ok_or(Error::world(Code::InvalidState))?;
         push_header(&mut metadata, Header::new(side));
         push_header(&mut metadata, Header::new(!side));
         Ok(metadata.into_boxed_slice())

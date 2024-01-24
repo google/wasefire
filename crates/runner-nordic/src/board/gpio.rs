@@ -56,7 +56,7 @@ impl Api for Impl {
             match &state.gpios[*gpio] {
                 Gpio::Invalid => unreachable!(),
                 Gpio::Disconnected(_) | Gpio::OutputPushPull(_) | Gpio::OutputOpenDrain(_) => {
-                    return Err(Error::user(Code::BadState));
+                    return Err(Error::user(Code::InvalidState));
                 }
                 Gpio::InputFloating(x) => x.is_high(),
                 Gpio::InputPullDown(x) => x.is_high(),
@@ -75,7 +75,7 @@ impl Api for Impl {
                 Gpio::Disconnected(_)
                 | Gpio::InputFloating(_)
                 | Gpio::InputPullDown(_)
-                | Gpio::InputPullUp(_) => return Err(Error::user(Code::BadState)),
+                | Gpio::InputPullUp(_) => return Err(Error::user(Code::InvalidState)),
                 Gpio::OutputPushPull(x) => x.set_state(value),
                 Gpio::OutputOpenDrain(x) => x.set_state(value),
                 Gpio::OutputOpenDrainIO(x) => x.set_state(value),
