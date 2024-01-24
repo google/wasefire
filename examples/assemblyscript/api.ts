@@ -997,6 +997,30 @@
   export declare function uart_count(
   ): i32
 
+  // Sets the baudrate of a stopped UART.
+  @external("env", "uaz")
+  export declare function uart_set_baudrate(
+    // Index of the UART to configure.
+    uart: usize,
+
+    // Baudrate to configure.
+    baudrate: usize,
+  ): i32
+
+  // Starts a UART.
+  @external("env", "uaa")
+  export declare function uart_start(
+    // Index of the UART to start.
+    uart: usize,
+  ): i32
+
+  // Stops a UART.
+  @external("env", "uab")
+  export declare function uart_stop(
+    // Index of the UART to stop.
+    uart: usize,
+  ): i32
+
   // Reads from a UART into a buffer.
   //
   // Returns the number of bytes read. This function does not block and may return zero.

@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Update dependencies
 - Fix lints
 - Fix lints
 - Update dependencies

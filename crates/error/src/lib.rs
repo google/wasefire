@@ -90,6 +90,14 @@ impl Error {
             Err(Error(error)) => !error as i32,
         }
     }
+
+    /// Ensures a condition is true, otherwise returns the error.
+    pub fn check(self, cond: bool) -> Result<(), Self> {
+        match cond {
+            true => Ok(()),
+            false => Err(self),
+        }
+    }
 }
 
 pub trait SpaceParam: Into<u8> {}

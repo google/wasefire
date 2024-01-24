@@ -7,11 +7,11 @@ publish = false
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.75"
-futures-util = "0.3.29"
+anyhow = "1.0.79"
+futures-util = "0.3.30"
 opener = "0.6.1"
-serde_json = "1.0.108"
-tokio = { version = "1.35.0", features = ["full", "rt-multi-thread", "sync"] }
+serde_json = "1.0.111"
+tokio = { version = "1.35.1", features = ["full", "rt-multi-thread", "sync"] }
 tokio-stream = "0.1.14"
 warp = "0.3.6"
 wasefire-logger = { path = "../../../logger" }

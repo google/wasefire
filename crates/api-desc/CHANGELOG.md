@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `uart::{start,stop}()` and `uart::set_baudrate()` functions
 - Rename `clock` module to `timer`
 - Make all API functions return `isize`
 - Change `debug::time()` to return `isize` and take `*mut u64`
@@ -24,6 +25,7 @@
 
 ### Patch
 
+- Update dependencies
 - Fix clippy lint
 - Make sure enum values don't skip any value, essentially mapping to `0..N`
 - Use `*const void` instead of `*const u8` for opaque data
