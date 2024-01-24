@@ -1,6 +1,4 @@
 inputs:
-  mode:
-    default: restore
   token:
     required: true
 

@@ -28,5 +28,6 @@ set -e
 ./scripts/ci-tests.sh
 ./scripts/hwci.sh host --no-default-features
 ./scripts/ci-book.sh
-./scripts/ci-footprint.sh
+./scripts/footprint.sh
 rm footprint.toml
+git diff --exit-code
