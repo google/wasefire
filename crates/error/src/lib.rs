@@ -138,7 +138,6 @@ pub enum Space {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
 #[repr(u16)]
-// next: 9
 pub enum Code {
     Generic = 0,
 
@@ -168,8 +167,8 @@ pub enum Code {
 
     /// An input is invalid.
     ///
-    /// This is a generic error. More precise errors would be `InvalidLength`, `InvalidAlign`, or
-    /// `NotFound` for example.
+    /// This is a generic error. More precise errors would be `InvalidLength`, `InvalidAlign`,
+    /// `InvalidState`, or `NotFound` for example.
     InvalidArgument = 8,
 }
 
