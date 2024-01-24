@@ -57,6 +57,7 @@ runs:
       name: Compute footprint
       uses: ./.github/actions/ci-footprint
       with:
+        upload: ${{ toJSON(inputs.use-cache == 'false') }}
         token: ${{ inputs.token }}
     - run: git diff --exit-code
       shell: bash

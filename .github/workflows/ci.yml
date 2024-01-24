@@ -67,7 +67,7 @@ jobs:
         with:
           checks: ${{ needs.checks.outputs.checks }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          use-cache: false
+          use-cache: 'false'
       - if: steps.cache.outputs.cache-hit != 'true'
         run: rm -rf target && cargo xtask help
   matrix:
