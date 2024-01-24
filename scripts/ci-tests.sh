@@ -15,19 +15,18 @@
 
 set -e
 . scripts/log.sh
-. scripts/package.sh
 
 # This script runs the continuous integration tests.
 
-./scripts/ci-copyright.sh
-./scripts/ci-changelog.sh
-./scripts/sync.sh
-./scripts/ci-taplo.sh
-./scripts/ci-applets.sh
-./scripts/ci-runners.sh
-./scripts/ci-tests.sh
-./scripts/hwci.sh host --no-default-features
-./scripts/ci-book.sh
-./scripts/footprint.sh
-rm footprint.toml
-git diff --exit-code
+K=${1:-0}
+M=${2:-1}
+
+i=$(( M - 1 ))
+for dir in $(git ls-files '*/test.sh'); do
+  i=$(( (i + 1) % M ))
+  [ $i -eq $K ] || continue
+  grep -q test-helper $dir || e "$dir doesn't use test-helper.sh"
+  dir=$(dirname $dir)
+  i "Run tests in $dir"
+  ( cd $dir && ./test.sh )
+done

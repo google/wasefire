@@ -15,19 +15,10 @@
 
 set -e
 . scripts/log.sh
-. scripts/package.sh
 
-# This script runs the continuous integration tests.
+# This script runs the continuous integration tests for TOML files.
 
-./scripts/ci-copyright.sh
-./scripts/ci-changelog.sh
-./scripts/sync.sh
-./scripts/ci-taplo.sh
-./scripts/ci-applets.sh
-./scripts/ci-runners.sh
-./scripts/ci-tests.sh
-./scripts/hwci.sh host --no-default-features
-./scripts/ci-book.sh
-./scripts/footprint.sh
-rm footprint.toml
-git diff --exit-code
+x ./scripts/schemastore.sh
+x ./scripts/wrapper.sh taplo lint \
+--schema-catalog=file://"$PWD"/target/schemastore/catalog.json
+x ./scripts/wrapper.sh taplo format

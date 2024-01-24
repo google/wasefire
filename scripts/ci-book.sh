@@ -15,19 +15,9 @@
 
 set -e
 . scripts/log.sh
-. scripts/package.sh
 
-# This script runs the continuous integration tests.
+# This script runs the continuous integration tests for the book.
 
-./scripts/ci-copyright.sh
-./scripts/ci-changelog.sh
-./scripts/sync.sh
-./scripts/ci-taplo.sh
-./scripts/ci-applets.sh
-./scripts/ci-runners.sh
-./scripts/ci-tests.sh
-./scripts/hwci.sh host --no-default-features
-./scripts/ci-book.sh
-./scripts/footprint.sh
-rm footprint.toml
-git diff --exit-code
+i "Build the book"
+WASEFIRE_WRAPPER_EXEC=n ./scripts/wrapper.sh mdbook
+( cd book && ../scripts/wrapper.sh mdbook build 2>/dev/null )
