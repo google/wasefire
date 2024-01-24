@@ -161,7 +161,7 @@ impl Api for Impl {
         };
         with_state(|state| {
             let uart = state.uarts.get(uart);
-            Error::user(Code::BadState).check(!uart.state.running)?;
+            Error::user(Code::InvalidState).check(!uart.state.running)?;
             uart.regs.baudrate.write(|w| w.baudrate().variant(baudrate));
             Ok(())
         })
@@ -170,7 +170,7 @@ impl Api for Impl {
     fn start(uart: Id<Self>) -> Result<(), Error> {
         with_state(|state| {
             let uart = state.uarts.get(uart);
-            Error::user(Code::BadState).check(!uart.state.running)?;
+            Error::user(Code::InvalidState).check(!uart.state.running)?;
             uart.regs.enable.write(|w| w.enable().enabled());
             uart.start_rx();
             Ok(())
@@ -180,7 +180,7 @@ impl Api for Impl {
     fn stop(uart: Id<Self>) -> Result<(), Error> {
         with_state(|state| {
             let mut uart = state.uarts.get(uart);
-            Error::user(Code::BadState).check(uart.state.running)?;
+            Error::user(Code::InvalidState).check(uart.state.running)?;
             uart.stoptx();
             uart.stop_rx();
             uart.state.read_len = 0;
@@ -192,7 +192,7 @@ impl Api for Impl {
     fn read(uart: Id<Self>, output: &mut [u8]) -> Result<usize, Error> {
         with_state(|state| {
             let mut uart = state.uarts.get(uart);
-            Error::user(Code::BadState).check(uart.state.running)?;
+            Error::user(Code::InvalidState).check(uart.state.running)?;
             uart.stop_rx();
             let len = core::cmp::min(output.len(), uart.state.read_len);
             let data = unsafe {
@@ -215,7 +215,7 @@ impl Api for Impl {
         }
         with_state(|state| {
             let uart = state.uarts.get(uart);
-            Error::user(Code::BadState).check(uart.state.running)?;
+            Error::user(Code::InvalidState).check(uart.state.running)?;
             uart.regs.txd.ptr.write(|w| unsafe { w.ptr().bits(input.as_ptr() as u32) });
             uart.regs.txd.maxcnt.write(|w| unsafe { w.maxcnt().bits(input.len() as u16) });
             uart.regs.tasks_starttx.write(|w| w.tasks_starttx().set_bit());
