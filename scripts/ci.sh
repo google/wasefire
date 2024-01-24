@@ -19,15 +19,15 @@ set -e
 
 # This script runs the continuous integration tests.
 
-./scripts/ci-copyright.sh
-./scripts/ci-changelog.sh
-./scripts/sync.sh
-./scripts/ci-taplo.sh
-./scripts/ci-applets.sh
-./scripts/ci-runners.sh
-./scripts/ci-tests.sh
-./scripts/hwci.sh host --no-default-features
-./scripts/ci-book.sh
-./scripts/footprint.sh
-rm footprint.toml
-git diff --exit-code
+x ./scripts/ci-copyright.sh
+x ./scripts/ci-changelog.sh
+x ./scripts/sync.sh
+x ./scripts/ci-taplo.sh
+x ./scripts/ci-applets.sh
+x ./scripts/ci-runners.sh
+x ./scripts/ci-tests.sh
+x ./scripts/hwci.sh host --no-default-features
+x ./scripts/ci-book.sh
+x ./scripts/footprint.sh
+x rm footprint.toml
+x git diff --exit-code
