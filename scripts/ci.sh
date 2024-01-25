@@ -15,7 +15,6 @@
 
 set -e
 . scripts/log.sh
-. scripts/package.sh
 
 # This script runs the continuous integration tests.
 
@@ -30,4 +29,6 @@ x ./scripts/hwci.sh host --no-default-features
 x ./scripts/ci-book.sh
 x ./scripts/footprint.sh
 x rm footprint.toml
-x git diff --exit-code
+git diff --exit-code || e 'Modified files'
+[ -z "$(git status -s | tee /dev/stderr)" ] || e 'Untracked files'
+d "CI passed"

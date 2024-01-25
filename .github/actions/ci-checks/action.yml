@@ -61,3 +61,5 @@ runs:
         token: ${{ inputs.token }}
     - run: git diff --exit-code
       shell: bash
+    - run: '[ -z "$(git status -s | tee /dev/stderr)" ]'
+      shell: bash
