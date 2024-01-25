@@ -26,6 +26,8 @@ pub fn count() -> usize {
 }
 
 /// Implements the [`Serial`](crate::serial::Serial) interface for UART.
+///
+/// The UART is stopped when dropped.
 pub struct Uart(usize);
 
 impl Uart {
@@ -63,6 +65,13 @@ impl UartBuilder {
         let params = api::start::Params { uart };
         convert_unit(unsafe { api::start(params) })?;
         Ok(Uart(uart))
+    }
+}
+
+impl Drop for Uart {
+    fn drop(&mut self) {
+        let params = api::stop::Params { uart: self.0 };
+        convert_unit(unsafe { api::stop(params) }).unwrap();
     }
 }
 

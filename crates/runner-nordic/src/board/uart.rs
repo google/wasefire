@@ -55,11 +55,10 @@ impl Default for State {
 pub enum Impl {}
 
 impl Uarts {
-    pub fn new(uarte0: UARTE0, mut pins: uarte::Pins, uarte1: UARTE1) -> Self {
+    pub fn new(uarte0: UARTE0, pins: uarte::Pins, uarte1: UARTE1) -> Self {
         let mut uarts = Uarts { uarte0, uarte1, states: [State::default(), State::default()] };
         let uart = uarts.get(Id::new(0).unwrap());
         uart.regs.psel.rxd.write(|w| unsafe { w.bits(pins.rxd.psel_bits()) });
-        pins.txd.set_high().unwrap();
         uart.regs.psel.txd.write(|w| unsafe { w.bits(pins.txd.psel_bits()) });
         uart.regs.psel.cts.write(|w| unsafe { w.bits(pins.cts.unwrap().psel_bits()) });
         uart.regs.psel.rts.write(|w| unsafe { w.bits(pins.rts.unwrap().psel_bits()) });
@@ -171,6 +170,9 @@ impl Api for Impl {
         with_state(|state| {
             let uart = state.uarts.get(uart);
             Error::user(Code::InvalidState).check(!uart.state.running)?;
+            uart.state.running = true;
+            set_high(uart.regs.psel.txd.read().bits());
+            set_high(uart.regs.psel.rts.read().bits());
             uart.regs.enable.write(|w| w.enable().enabled());
             uart.start_rx();
             Ok(())
@@ -181,6 +183,7 @@ impl Api for Impl {
         with_state(|state| {
             let mut uart = state.uarts.get(uart);
             Error::user(Code::InvalidState).check(uart.state.running)?;
+            uart.state.running = false;
             uart.stoptx();
             uart.stop_rx();
             uart.state.read_len = 0;
@@ -266,4 +269,9 @@ impl Api for Impl {
 fn in_ram(xs: &[u8]) -> bool {
     let ptr = xs.as_ptr_range();
     SRAM_LOWER <= ptr.start as usize && ptr.end as usize <= SRAM_UPPER
+}
+
+fn set_high(psel_bits: u32) {
+    use nrf52840_hal::gpio::{Output, Pin, PushPull};
+    unsafe { Pin::<Output<PushPull>>::from_psel_bits(psel_bits) }.set_high().unwrap();
 }
