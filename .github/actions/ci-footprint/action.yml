@@ -40,3 +40,5 @@ runs:
     - if: github.event_name == 'pull_request'
       run: cargo xtask footprint "$GITHUB_STEP_SUMMARY"
       shell: bash
+    - run: rm footprint-*.toml
+      shell: bash
