@@ -35,13 +35,13 @@ use critical_section::Mutex;
 use defmt_rtt as _;
 use nrf52840_hal::ccm::{Ccm, DataRate};
 use nrf52840_hal::clocks::{self, ExternalOscillator, Internal, LfOscStopped};
+use nrf52840_hal::gpio;
 use nrf52840_hal::gpio::{Level, Output, Pin, PushPull};
 use nrf52840_hal::gpiote::Gpiote;
 use nrf52840_hal::pac::{interrupt, Interrupt};
 use nrf52840_hal::prelude::InputPin;
 use nrf52840_hal::rng::Rng;
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
-use nrf52840_hal::{gpio, uarte};
 #[cfg(feature = "release")]
 use panic_abort as _;
 #[cfg(feature = "debug")]
@@ -127,10 +127,14 @@ fn main() -> ! {
         port0.p0_16.into_push_pull_output(Level::High).degrade(),
     ];
     let gpios = [
-        Gpio::new(port1.p1_01.degrade()),
-        Gpio::new(port1.p1_02.degrade()),
-        Gpio::new(port1.p1_03.degrade()),
-        Gpio::new(port1.p1_04.degrade()),
+        Gpio::new(port1.p1_01.degrade(), 1, 1),
+        Gpio::new(port1.p1_02.degrade(), 1, 2),
+        Gpio::new(port1.p1_03.degrade(), 1, 3),
+        Gpio::new(port1.p1_04.degrade(), 1, 4),
+        Gpio::new(port0.p0_02.degrade(), 0, 2),
+        Gpio::new(port0.p0_27.degrade(), 0, 27),
+        Gpio::new(port0.p0_30.degrade(), 0, 30),
+        Gpio::new(port0.p0_31.degrade(), 0, 31),
     ];
     let timers = Timers::new(p.TIMER1, p.TIMER2, p.TIMER3, p.TIMER4);
     let gpiote = Gpiote::new(p.GPIOTE);
@@ -157,13 +161,9 @@ fn main() -> ! {
     storage::init(p.NVMC);
     let storage = Some(Storage::new_store());
     crate::board::platform::update::init(Storage::new_other());
-    let pins = uarte::Pins {
-        txd: port0.p0_06.into_push_pull_output(gpio::Level::High).degrade(),
-        rxd: port0.p0_08.into_floating_input().degrade(),
-        cts: Some(port0.p0_07.into_floating_input().degrade()),
-        rts: Some(port0.p0_05.into_push_pull_output(gpio::Level::High).degrade()),
-    };
-    let uarts = Uarts::new(p.UARTE0, pins, p.UARTE1);
+    let uart_rx = port0.p0_28.into_floating_input().degrade();
+    let uart_tx = port0.p0_29.into_push_pull_output(gpio::Level::High).degrade();
+    let uarts = Uarts::new(p.UARTE0, uart_rx, uart_tx, p.UARTE1);
     let events = Events::default();
     let state = State {
         events,
