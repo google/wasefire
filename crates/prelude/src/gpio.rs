@@ -91,6 +91,12 @@ pub fn write(gpio: usize, value: bool) {
     convert_unit(unsafe { api::write(params) }).unwrap();
 }
 
+/// Returns the last logical value written to a GPIO (must be configured as output).
+pub fn last_write(gpio: usize) -> bool {
+    let params = api::last_write::Params { gpio };
+    convert_bool(unsafe { api::last_write(params) }).unwrap()
+}
+
 /// GPIO that disconnects on drop.
 pub struct Gpio(usize);
 
@@ -115,5 +121,15 @@ impl Gpio {
     /// Writes to the GPIO (must be configured as output).
     pub fn write(&self, value: bool) {
         write(self.0, value)
+    }
+
+    /// Returns the last logical value written to a GPIO (must be configured as output).
+    pub fn last_write(&self) -> bool {
+        last_write(self.0)
+    }
+
+    /// Toggles the logical value of a GPIO (must be configured as output).
+    pub fn toggle(&self) {
+        self.write(!self.last_write());
     }
 }

@@ -13,6 +13,7 @@
 
 ### Minor
 
+- Add `gpio::Gpio::{last_write,toggle}()` for stateful output GPIOs
 - Add `uart::UartBuilder` and `uart::Uart::new()` to configure a UART
 - Add `serial::DelimitedReader` to read delimited frames from serial
 - Add `serial::Listener` to listen for serial events
