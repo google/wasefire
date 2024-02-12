@@ -53,4 +53,7 @@ pub trait Api: Support<usize> + Send {
 
     /// Writes to a GPIO (must be configured as output).
     fn write(gpio: Id<Self>, value: bool) -> Result<(), Error>;
+
+    /// Returns the last logical value written to a GPIO (must be configured as output).
+    fn last_write(gpio: Id<Self>) -> Result<bool, Error>;
 }

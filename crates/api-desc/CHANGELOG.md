@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `gpio::last_write()` function
 - Add `uart::{start,stop}()` and `uart::set_baudrate()` functions
 - Rename `clock` module to `timer`
 - Make all API functions return `isize`

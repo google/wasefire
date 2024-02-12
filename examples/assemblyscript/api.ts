@@ -629,6 +629,16 @@
     // Logical value (0 or 1).
     val: usize,
   ): i32
+
+  // Returns the last logical value written to a GPIO.
+  //
+  // The initial output value counts as a write and would be returned if `write()` was
+  // not called since last `configure()`.
+  @external("env", "gl")
+  export declare function gpio_last_write(
+    // Index of the GPIO to query (must be configured as output).
+    gpio: usize,
+  ): i32
 // END OF MODULE gpio
 
 // START OF MODULE led

@@ -29,6 +29,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Configure(call) => or_trap!("board-api-gpio", configure(call)),
         Api::Read(call) => or_trap!("board-api-gpio", read(call)),
         Api::Write(call) => or_trap!("board-api-gpio", write(call)),
+        Api::LastWrite(call) => or_trap!("board-api-gpio", last_write(call)),
     }
 }
 
@@ -73,6 +74,16 @@ fn write<B: Board>(call: SchedulerCall<B, api::write::Sig>) {
             _ => Err(Trap)?,
         };
         board::Gpio::<B>::write(gpio, value)
+    };
+    call.reply(result);
+}
+
+#[cfg(feature = "board-api-gpio")]
+fn last_write<B: Board>(call: SchedulerCall<B, api::last_write::Sig>) {
+    let api::last_write::Params { gpio } = call.read();
+    let result = try {
+        let gpio = Id::new(*gpio as usize).ok_or(Trap)?;
+        board::Gpio::<B>::last_write(gpio)
     };
     call.reply(result);
 }

@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add `gpio::Api::last_write()` for stateful output GPIOs
 - Add `uart::Api` functions to start, stop, and set the baudrate
 - Remove `Unsupported` and `UnsupportedCrypto` implementations
 - Change `syscall` return type to `Option<Result<u31, Error>>`

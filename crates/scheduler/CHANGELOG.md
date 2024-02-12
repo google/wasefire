@@ -10,6 +10,7 @@
 
 ### Minor
 
+- Support `gpio::last_write()` function
 - Support `uart::{start,stop,set_baudrate}()` functions
 - Migrate `clock` module to `timer`
 - Remove unstable `software-crypto` feature

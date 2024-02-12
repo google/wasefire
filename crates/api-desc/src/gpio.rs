@@ -103,6 +103,16 @@ pub(crate) fn new() -> Item {
                 val: usize,
             } -> ()
         },
+        item! {
+            /// Returns the last logical value written to a GPIO.
+            ///
+            /// The initial output value counts as a write and would be returned if `write()` was
+            /// not called since last `configure()`.
+            fn last_write "gl" {
+                /// Index of the GPIO to query (must be configured as output).
+                gpio: usize,
+            } -> bool
+        },
     ];
     Item::Mod(Mod { docs, name, items })
 }
