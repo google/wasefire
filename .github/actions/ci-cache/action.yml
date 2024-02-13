@@ -20,7 +20,7 @@ runs:
           ~/.cargo/git/db/
           .root/
           target/
-        key: ${{ hashFiles('rust-toolchain.toml') }}
+        key: ${{ hashFiles('rust-toolchain.toml', 'scripts/wrapper.sh') }}
     - if: inputs.mode == 'save'
       id: cache
       uses: actions/cache@v4
@@ -32,4 +32,4 @@ runs:
           ~/.cargo/git/db/
           .root/
           target/
-        key: ${{ hashFiles('rust-toolchain.toml') }}
+        key: ${{ hashFiles('rust-toolchain.toml', 'scripts/wrapper.sh') }}

@@ -34,26 +34,12 @@ run() {
 }
 
 ensure_cargo() {
-  local git_url
-  local git_commit
-  case "$1" in
-    # TODO(https://crates.io/crates/taplo-cli > 0.8.1): Remove.
-    taplo-cli)
-      git_url=https://github.com/tamasfe/taplo.git
-      git_commit=191852c018d142b99cd8f7b4987456a447b3afb7
-      ;;
-  esac
   local flags="$1@$2"
-  if [ -n "$git_url" ]; then
-      flags="$flags --git=$git_url --rev=$git_commit"
-      grep=" ($git_url?rev=$git_commit#.\{8\})"
-  fi
-  if ! cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2$grep:\$"
-  then
-    [ "$1" = cargo-edit ] && ensure lib openssl
-    shift 2
-    x cargo install --locked --root="$CARGO_ROOT" $flags "$@"
-  fi
+  { cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2:\$"
+  } && return
+  [ "$1" = cargo-edit ] && ensure lib openssl
+  shift 2
+  x cargo install --locked --root="$CARGO_ROOT" "$flags" "$@"
 }
 
 IS_CARGO=y
@@ -69,7 +55,7 @@ case "$1" in
   mdbook) ensure_cargo mdbook 0.4.36 ;;
   probe-rs) ensure_cargo probe-rs 0.22.0 --features=cli ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
-  taplo) ensure_cargo taplo-cli 0.8.1 ;;
+  taplo) ensure_cargo taplo-cli 0.9.0 ;;
   twiggy) ensure_cargo twiggy 0.7.0 ;;
   *) IS_CARGO=n ;;
 esac
