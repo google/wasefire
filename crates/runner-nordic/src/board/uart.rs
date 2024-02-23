@@ -155,9 +155,12 @@ impl Api for Impl {
     fn set_baudrate(uart: Id<Self>, baudrate: usize) -> Result<(), Error> {
         let baudrate = match baudrate {
             9600 => uarte::Baudrate::BAUD9600,
+            31250 => uarte::Baudrate::BAUD31250,
             38400 => uarte::Baudrate::BAUD38400,
             115200 => uarte::Baudrate::BAUD115200,
-            _ => return Err(Error::world(Code::NotImplemented)),
+            250000 => uarte::Baudrate::BAUD250000,
+            1000000 => uarte::Baudrate::BAUD1M,
+            _ => return Err(Error::internal(Code::NotImplemented)),
         };
         with_state(|state| {
             let uart = state.uarts.get(uart);
