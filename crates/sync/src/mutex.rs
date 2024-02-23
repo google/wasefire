@@ -12,35 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use core::cell::UnsafeCell;
-use core::ops::{Deref, DerefMut};
-
-use portable_atomic::AtomicBool;
-use portable_atomic::Ordering::{Acquire, Relaxed, Release};
-
 /// Non-blocking non-reentrant mutex.
 ///
 /// Locking this mutex will panic if it is already locked. In particular, it will not block.
-pub struct Mutex<T> {
-    lock: AtomicBool,
-    data: UnsafeCell<T>,
-}
+pub struct Mutex<T>(spin::Mutex<T>);
 
 /// Locks a mutex and provides access to its content until dropped.
-pub struct MutexGuard<'a, T>(&'a Mutex<T>);
-
-unsafe impl<T: Send> Sync for Mutex<T> {}
+pub type MutexGuard<'a, T> = spin::MutexGuard<'a, T>;
 
 impl<T> Mutex<T> {
     /// Creates a new mutex.
     pub const fn new(data: T) -> Self {
-        Mutex { lock: AtomicBool::new(false), data: UnsafeCell::new(data) }
+        Mutex(spin::Mutex::new(data))
     }
 
     /// Tries to lock the mutex.
     pub fn try_lock(&self) -> Option<MutexGuard<'_, T>> {
-        self.lock.compare_exchange(false, true, Acquire, Relaxed).ok()?;
-        Some(MutexGuard(self))
+        self.0.try_lock()
     }
 
     /// Locks the mutex.
@@ -51,26 +39,6 @@ impl<T> Mutex<T> {
     #[track_caller]
     pub fn lock(&self) -> MutexGuard<'_, T> {
         self.try_lock().unwrap()
-    }
-}
-
-impl<'a, T> Deref for MutexGuard<'a, T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*self.0.data.get() }
-    }
-}
-
-impl<'a, T> DerefMut for MutexGuard<'a, T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *self.0.data.get() }
-    }
-}
-
-impl<'a, T> Drop for MutexGuard<'a, T> {
-    fn drop(&mut self) {
-        self.0.lock.store(false, Release);
     }
 }
 
