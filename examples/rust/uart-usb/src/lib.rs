@@ -43,7 +43,7 @@ impl<Src: serial::Serial> Serial<Src> {
             if len == 0 {
                 break;
             }
-            let wlen = serial::write(&dst.port, &buf[.. len]).unwrap();
+            let wlen = serial::write_any(&dst.port, &buf[.. len]).unwrap();
             if wlen < len {
                 debug!("Only wrote {wlen} from {len} bytes to {}.", dst.name);
             }
