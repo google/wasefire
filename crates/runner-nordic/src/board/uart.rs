@@ -225,6 +225,7 @@ impl Api for Impl {
             let Uart { regs, state } = state.uarts.get(uart);
             Error::user(Code::InvalidState).check(state.running)?;
             state.running = false;
+            regs.shorts.write(|w| w.endrx_startrx().clear_bit());
             Uart::stoptx(regs);
             Uart::stoprx(regs);
             state.read_beg = 0;
