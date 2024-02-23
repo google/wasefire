@@ -207,6 +207,10 @@ struct RunnerOptions {
     #[clap(long)]
     log: Option<String>,
 
+    /// Additional flags for `probe-rs run`.
+    #[clap(long)]
+    probe_rs: Vec<String>,
+
     /// Creates a web interface for the host runner.
     #[clap(long)]
     web: bool,
@@ -690,6 +694,7 @@ impl RunnerOptions {
         let mut probe_rs = wrap_command()?;
         probe_rs.args(["probe-rs", "run"]);
         probe_rs.arg(format!("--chip={chip}"));
+        probe_rs.args(&self.probe_rs);
         probe_rs.arg(elf);
         println!("Replace `run` with `attach` in the following command to rerun:");
         replace_command(probe_rs);
