@@ -33,9 +33,13 @@ pub struct Event<B: crate::Api + ?Sized> {
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Direction {
     /// There might be data to read.
+    ///
+    /// This is only guaranteed to be triggered after a short read.
     Read,
 
     /// It might be possible to write data.
+    ///
+    /// This is only guaranteed to be triggered after a short write.
     Write,
 }
 

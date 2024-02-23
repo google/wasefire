@@ -90,7 +90,9 @@ pub(crate) fn new() -> Item {
         item! {
             /// Registers a callback when a UART is ready.
             ///
-            /// It is possible that the callback is spuriously called.
+            /// It is possible that the callback is spuriously called. The callback is only
+            /// guaranteed to be called after the associated operation processed less bytes than the
+            /// buffer size.
             fn register "uae" {
                 /// Index of the UART to listen to.
                 uart: usize,

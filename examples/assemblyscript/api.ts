@@ -1073,7 +1073,9 @@
 
   // Registers a callback when a UART is ready.
   //
-  // It is possible that the callback is spuriously called.
+  // It is possible that the callback is spuriously called. The callback is only
+  // guaranteed to be called after the associated operation processed less bytes than the
+  // buffer size.
   @external("env", "uae")
   export declare function uart_register(
     // Index of the UART to listen to.
@@ -1139,7 +1141,9 @@
 
     // Registers a callback when USB serial is ready.
     //
-    // It is possible that the callback is spuriously called.
+    // It is possible that the callback is spuriously called. The callback is only
+    // guaranteed to be called after the associated operation processed less bytes than the
+    // buffer size.
     @external("env", "use")
     export declare function usb_serial_register(
       event: usize,

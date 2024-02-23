@@ -28,6 +28,7 @@
 
 ### Patch
 
+- Clarify conditions when serial events trigger
 - Fix lints
 - Update dependencies
 - Use `logger` alias instead of `log` for `wasefire-logger` crate

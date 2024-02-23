@@ -55,7 +55,9 @@ pub(crate) fn new() -> Item {
         item! {
             /// Registers a callback when USB serial is ready.
             ///
-            /// It is possible that the callback is spuriously called.
+            /// It is possible that the callback is spuriously called. The callback is only
+            /// guaranteed to be called after the associated operation processed less bytes than the
+            /// buffer size.
             fn register "use" {
                 event: usize,
                 handler_func: fn { data: *const void },

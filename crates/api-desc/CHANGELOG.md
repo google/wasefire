@@ -26,6 +26,7 @@
 
 ### Patch
 
+- Clarify conditions when serial events trigger
 - Update dependencies
 - Fix clippy lint
 - Make sure enum values don't skip any value, essentially mapping to `0..N`
