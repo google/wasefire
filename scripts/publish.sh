@@ -23,6 +23,8 @@ set -e
 
 TOPOLOGICAL_ORDER=(
   logger
+  error
+  sync
   cli
   interpreter
   store

@@ -1824,7 +1824,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.6.0-git"
+version = "0.6.0"
 dependencies = [
  "bytemuck",
  "sealed",
@@ -1834,7 +1834,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.1.6-git"
+version = "0.1.6"
 dependencies = [
  "anyhow",
  "clap",
@@ -1847,7 +1847,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.6.0-git"
+version = "0.6.0"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
@@ -1855,7 +1855,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.6.0-git"
+version = "0.6.0"
 dependencies = [
  "aead",
  "aes",
@@ -1884,14 +1884,14 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "num_enum 0.7.2",
 ]
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.2.0-git"
+version = "0.2.0"
 dependencies = [
  "num_enum 0.7.2",
  "paste",
@@ -1900,14 +1900,14 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.4-git"
+version = "0.1.4"
 dependencies = [
  "log",
 ]
 
 [[package]]
 name = "wasefire-scheduler"
-version = "0.3.0-git"
+version = "0.3.0"
 dependencies = [
  "bytemuck",
  "critical-section",
@@ -1927,11 +1927,11 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.2.3-git"
+version = "0.2.3"
 
 [[package]]
 name = "wasefire-sync"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "portable-atomic",
  "spin",
