@@ -215,6 +215,13 @@ struct RunnerOptions {
     #[clap(long)]
     web: bool,
 
+    /// Host to start the webserver.
+    #[clap(long, default_value = "127.0.0.1")]
+    web_host: String,
+    /// Port to start the webserver.
+    #[clap(long, default_value = "5000")]
+    web_port: usize,
+
     /// Measures bloat after building.
     // TODO: Make this a subcommand taking additional options for cargo bloat.
     #[clap(long)]
@@ -494,6 +501,7 @@ impl RunnerOptions {
         let mut cargo = Command::new("cargo");
         let mut rustflags = Vec::new();
         let mut features = self.features.clone();
+        let mut runner_args = Vec::new();
         if run && self.name == "host" {
             cargo.arg("run");
         } else {
@@ -558,6 +566,10 @@ impl RunnerOptions {
         }
         if self.name == "host" && self.web {
             features.push("web".to_string());
+            runner_args.push("--web-host".to_string());
+            runner_args.push(self.web_host.clone());
+            runner_args.push("--web-port".to_string());
+            runner_args.push(format!("{}", self.web_port));
         }
         if self.stack_sizes.is_some() {
             rustflags.push("-Z emit-stack-sizes".to_string());
@@ -570,6 +582,10 @@ impl RunnerOptions {
         }
         if !features.is_empty() {
             cargo.arg(format!("--features={}", features.join(",")));
+        }
+        if !runner_args.is_empty() {
+            cargo.arg("--");
+            cargo.args(runner_args);
         }
         if let Some(n) = self.memory_page_count {
             ensure!((0 ..= 9).contains(&n), "--memory-page-count supports single digit only");

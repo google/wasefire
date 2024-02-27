@@ -20,6 +20,7 @@ use std::sync::Mutex;
 
 use anyhow::Result;
 use board::Board;
+use clap::Parser;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::{channel, Receiver};
 use wasefire_board_api::Event;
@@ -35,9 +36,28 @@ fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
     f(STATE.lock().unwrap().as_mut().unwrap())
 }
 
+#[derive(Parser)]
+struct Flags {
+    #[cfg(feature = "web")]
+    #[clap(flatten)]
+    web_options: WebOptions,
+}
+
+#[derive(clap::Args)]
+struct WebOptions {
+    /// Host to start the webserver.
+    #[clap(long, default_value = "127.0.0.1")]
+    web_host: String,
+    /// Port to start the webserver.
+    #[clap(long, default_value = "5000")]
+    web_port: usize,    
+}
+
+
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
+    let _flags = Flags::parse();
     // TODO: Should be a flag controlled by xtask (value is duplicated there).
     const STORAGE: &str = "../../target/wasefire/storage.bin";
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
@@ -56,8 +76,8 @@ async fn main() -> Result<()> {
                 }
             }
         });
-        // TODO: Make the URL a flag.
-        web_server::Client::new("127.0.0.1:5000", sender).await?
+        let url = format!("{}:{}", _flags.web_options.web_host, _flags.web_options.web_port);
+        web_server::Client::new(&url, sender).await?
     };
     *STATE.lock().unwrap() = Some(board::State {
         sender,
