@@ -184,7 +184,7 @@ checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.6.0-git"
+version = "0.6.0"
 dependencies = [
  "bytemuck",
  "sealed",
@@ -195,7 +195,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.1.6-git"
+version = "0.1.6"
 dependencies = [
  "anyhow",
  "clap",
@@ -208,7 +208,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.6.0-git"
+version = "0.6.0"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
@@ -216,11 +216,11 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "num_enum",
 ]
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.4-git"
+version = "0.1.4"
