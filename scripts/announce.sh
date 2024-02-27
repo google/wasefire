@@ -98,6 +98,9 @@ pri "## Platforms"
 ins board
 ins scheduler
 ins logger
+pri "## Common crates"
+ins error
+ins sync
 pri "## Tools"
 ins cli
 pri "## Internal crates"
