@@ -502,7 +502,6 @@ impl RunnerOptions {
         let mut cargo = Command::new("cargo");
         let mut rustflags = Vec::new();
         let mut features = self.features.clone();
-        let mut runner_args = Vec::new();
         if run && self.name == "host" {
             cargo.arg("run");
         } else {
@@ -565,14 +564,9 @@ impl RunnerOptions {
         if let Some(log) = &self.log {
             cargo.env(self.log_env(), log);
         }
-        if self.name == "host" && self.web {
+        let web = self.web || self.web_host.is_some() || self.web_port.is_some();
+        if self.name == "host" && web {
             features.push("web".to_string());
-            if let Some(host) = &self.web_host {
-                runner_args.push(format!("--web-host={host}"));
-            }
-            if let Some(port) = &self.web_port {
-                runner_args.push(format!("--web-port={port}"));
-            }
         }
         if self.stack_sizes.is_some() {
             rustflags.push("-Z emit-stack-sizes".to_string());
@@ -585,10 +579,6 @@ impl RunnerOptions {
         }
         if !features.is_empty() {
             cargo.arg(format!("--features={}", features.join(",")));
-        }
-        if !runner_args.is_empty() {
-            cargo.arg("--");
-            cargo.args(runner_args);
         }
         if let Some(n) = self.memory_page_count {
             ensure!((0 ..= 9).contains(&n), "--memory-page-count supports single digit only");
@@ -603,6 +593,13 @@ impl RunnerOptions {
             let path = "target/wasefire/storage.bin";
             if self.reset_storage && fs::exists(path) {
                 fs::remove_file(path)?;
+            }
+            cargo.arg("--");
+            if let Some(host) = &self.web_host {
+                cargo.arg(format!("--web-host={host}"));
+            }
+            if let Some(port) = &self.web_port {
+                cargo.arg(format!("--web-port={port}"));
             }
             replace_command(cargo);
         } else {
