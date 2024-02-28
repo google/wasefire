@@ -216,11 +216,12 @@ struct RunnerOptions {
     web: bool,
 
     /// Host to start the webserver.
-    #[clap(long, default_value = "127.0.0.1")]
-    web_host: String,
+    #[clap(long)]
+    web_host: Option<String>,
+
     /// Port to start the webserver.
-    #[clap(long, default_value = "5000")]
-    web_port: usize,
+    #[clap(long)]
+    web_port: Option<u16>,
 
     /// Measures bloat after building.
     // TODO: Make this a subcommand taking additional options for cargo bloat.
@@ -566,10 +567,12 @@ impl RunnerOptions {
         }
         if self.name == "host" && self.web {
             features.push("web".to_string());
-            runner_args.push("--web-host".to_string());
-            runner_args.push(self.web_host.clone());
-            runner_args.push("--web-port".to_string());
-            runner_args.push(format!("{}", self.web_port));
+            if let Some(host) = &self.web_host {
+                runner_args.push(format!("--web-host={host}"));
+            }
+            if let Some(port) = &self.web_port {
+                runner_args.push(format!("--web-port={port}"));
+            }
         }
         if self.stack_sizes.is_some() {
             rustflags.push("-Z emit-stack-sizes".to_string());

@@ -48,16 +48,17 @@ struct WebOptions {
     /// Host to start the webserver.
     #[clap(long, default_value = "127.0.0.1")]
     web_host: String,
+
     /// Port to start the webserver.
     #[clap(long, default_value = "5000")]
-    web_port: usize,    
+    web_port: u16,
 }
-
 
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
-    let _flags = Flags::parse();
+    #[cfg_attr(not(feature = "web"), allow(unused_variables))]
+    let flags = Flags::parse();
     // TODO: Should be a flag controlled by xtask (value is duplicated there).
     const STORAGE: &str = "../../target/wasefire/storage.bin";
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
@@ -76,7 +77,7 @@ async fn main() -> Result<()> {
                 }
             }
         });
-        let url = format!("{}:{}", _flags.web_options.web_host, _flags.web_options.web_port);
+        let url = format!("{}:{}", flags.web_options.web_host, flags.web_options.web_port);
         web_server::Client::new(&url, sender).await?
     };
     *STATE.lock().unwrap() = Some(board::State {
