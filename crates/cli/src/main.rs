@@ -12,7 +12,109 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-fn main() {
-    println!("The Wasefire CLI is not yet implemented.");
-    std::process::exit(1);
+use std::fs::File;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+
+use anyhow::{bail, Result};
+use clap::{CommandFactory, Parser, ValueHint};
+use clap_complete::Shell;
+use wasefire_cli_tools::{action, fs};
+
+#[derive(Parser)]
+#[command(version, about)]
+struct Flags {
+    #[command(flatten)]
+    options: Options,
+
+    #[command(subcommand)]
+    action: Action,
+}
+
+#[derive(clap::Args)]
+struct Options {}
+
+#[derive(clap::Subcommand)]
+enum Action {
+    /// Lists the applets installed on a platform.
+    AppletList,
+
+    /// Installs an applet on a platform.
+    AppletInstall,
+
+    /// Updates an applet on a platform.
+    AppletUpdate,
+
+    /// Uninstalls an applet from a platform.
+    AppletUninstall,
+
+    /// Lists the connected platforms.
+    PlatformList,
+
+    /// Updates a connected platform.
+    PlatformUpdate,
+
+    /// Creates a new Rust applet project.
+    RustAppletNew(action::RustAppletNew),
+
+    /// Builds a Rust applet from its project.
+    RustAppletBuild(action::RustAppletBuild),
+
+    /// Runs the unit-tests of a Rust applet project.
+    RustAppletTest(action::RustAppletTest),
+
+    /// Generates a shell completion file.
+    Completion(Completion),
+}
+
+#[derive(clap::Args)]
+struct Completion {
+    /// Generates a completion file for this shell (tries to guess by default).
+    shell: Option<Shell>,
+
+    /// Where to generate the completion file.
+    #[arg(long, default_value = "-", value_hint = ValueHint::FilePath)]
+    output: PathBuf,
+}
+
+impl Options {
+    fn run(&self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl Completion {
+    fn run(&self) -> Result<()> {
+        let shell = match self.shell.or_else(Shell::from_env) {
+            Some(x) => x,
+            None => bail!("failed to guess a shell"),
+        };
+        let mut cmd = Flags::command();
+        let name = "wasefire".to_string();
+        let mut output: Box<dyn Write> = if self.output == Path::new("-") {
+            Box::new(std::io::stdout())
+        } else {
+            fs::create_parent(&self.output)?;
+            Box::new(File::create(&self.output)?)
+        };
+        clap_complete::generate(shell, &mut cmd, name, &mut output);
+        Ok(())
+    }
+}
+
+fn main() -> Result<()> {
+    let flags = Flags::parse();
+    flags.options.run()?;
+    let dir = std::env::current_dir()?;
+    match flags.action {
+        Action::AppletList
+        | Action::AppletInstall
+        | Action::AppletUpdate
+        | Action::AppletUninstall => bail!("not implemented yet (depends on #56)"),
+        Action::PlatformList | Action::PlatformUpdate => bail!("not implemented yet"),
+        Action::RustAppletNew(x) => x.run(),
+        Action::RustAppletBuild(x) => x.run(dir),
+        Action::RustAppletTest(x) => x.run(dir),
+        Action::Completion(x) => x.run(),
+    }
 }

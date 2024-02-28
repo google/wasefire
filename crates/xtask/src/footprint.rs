@@ -19,8 +19,9 @@ use std::io::Write;
 
 use anyhow::{anyhow, ensure, Context, Result};
 use serde::{Deserialize, Serialize};
+use wasefire_cli_tools::{cmd, fs};
 
-use crate::{fs, output_command, wrap_command};
+use crate::wrap_command;
 
 #[derive(Default, Serialize, Deserialize)]
 struct Footprint {
@@ -111,7 +112,7 @@ pub fn compare(output: &str) -> Result<()> {
 pub fn rust_size(elf: &str) -> Result<usize> {
     let mut size = wrap_command()?;
     size.args(["rust-size", elf]);
-    let output = String::from_utf8(output_command(&mut size)?.stdout)?;
+    let output = String::from_utf8(cmd::output(&mut size)?.stdout)?;
     let line = output.lines().nth(1).context("parsing rust-size output")?;
     let words =
         line.split_whitespace().take(2).map(|x| Ok(x.parse()?)).collect::<Result<Vec<_>>>()?;
