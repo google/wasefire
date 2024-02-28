@@ -215,6 +215,14 @@ struct RunnerOptions {
     #[clap(long)]
     web: bool,
 
+    /// Host to start the webserver.
+    #[clap(long)]
+    web_host: Option<String>,
+
+    /// Port to start the webserver.
+    #[clap(long)]
+    web_port: Option<u16>,
+
     /// Measures bloat after building.
     // TODO: Make this a subcommand taking additional options for cargo bloat.
     #[clap(long)]
@@ -556,7 +564,8 @@ impl RunnerOptions {
         if let Some(log) = &self.log {
             cargo.env(self.log_env(), log);
         }
-        if self.name == "host" && self.web {
+        let web = self.web || self.web_host.is_some() || self.web_port.is_some();
+        if self.name == "host" && web {
             features.push("web".to_string());
         }
         if self.stack_sizes.is_some() {
@@ -584,6 +593,13 @@ impl RunnerOptions {
             let path = "target/wasefire/storage.bin";
             if self.reset_storage && fs::exists(path) {
                 fs::remove_file(path)?;
+            }
+            cargo.arg("--");
+            if let Some(host) = &self.web_host {
+                cargo.arg(format!("--web-host={host}"));
+            }
+            if let Some(port) = &self.web_port {
+                cargo.arg(format!("--web-port={port}"));
             }
             replace_command(cargo);
         } else {
