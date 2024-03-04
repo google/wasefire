@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1-git
+
+### Minor
+
+- Add `Sha384` and `HmacSha384` to the `rust-crypto` feature
+
 ## 0.5.0
 
 ### Major

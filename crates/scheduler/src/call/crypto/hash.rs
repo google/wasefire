@@ -233,7 +233,7 @@ fn hkdf<H: KeyInit + Update + FixedOutput>(
         return Err(InvalidLength);
     }
     let mut output = Output::<H>::default();
-    for (chunk, i) in okm.chunks_mut(32).zip(1u8 ..) {
+    for (chunk, i) in okm.chunks_mut(H::output_size()).zip(1u8 ..) {
         let mut hmac = <H as KeyInit>::new_from_slice(prk)?;
         if 1 < i {
             hmac.update(&output);
