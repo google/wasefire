@@ -327,7 +327,7 @@ mod rust_crypto {
 
     #[cfg(feature = "api-crypto-hmac")]
     impl KeySizeUser for HmacSha384 {
-        type KeySize = digest::consts::U64;
+        type KeySize = digest::consts::U128;
     }
 
     #[cfg(feature = "api-crypto-hmac")]
