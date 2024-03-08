@@ -153,5 +153,7 @@ mod valid;
 pub use error::{Error, Unsupported};
 pub use exec::{Call, InstId, RunAnswer, RunResult, Store, StoreId, Val, MEMORY_ALIGN};
 pub use module::Module;
-pub use syntax::{GlobalType, ImportDesc, Limits, Mut, RefType, TableType, ValType};
+pub use syntax::{
+    FuncType, GlobalType, ImportDesc, Limits, Mut, RefType, ResultType, TableType, ValType,
+};
 pub use valid::validate;

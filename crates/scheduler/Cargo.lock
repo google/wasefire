@@ -905,7 +905,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.2.0"
+version = "0.2.1-git"
 dependencies = [
  "num_enum 0.7.2",
  "paste",

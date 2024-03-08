@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1-git
+
+### Minor
+
+- Add `Store::link_func_custom()` to link functions with custom types
+- Expose `ResultType` and `FuncType` for custom types
+
 ## 0.2.0
 
 ### Major
