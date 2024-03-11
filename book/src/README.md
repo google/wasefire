@@ -4,50 +4,55 @@ This book is a walk through the _Wasefire_ project.
 
 ## Vision
 
-> Make it **easy** and **cheap** to build **secure** firmware.
+> Provide a **simple-to-use** and **secure-by-default** ecosystem for firmware development.
 
-The 3 aspects of the vision are realized through the 3 following pillars.
+### Simple-to-use
 
-### Developer experience
+The ecosystem aspires to be accessible to projects and developers regardless of their familiarity
+with developing secure firmware:
+- No embedded expertise required: Regular software engineers can develop firmware.
+- No security expertise required: The ecosystem provides secure-by-default options.
+- No enforced programming language: Developers may use the language of their choice, as long as it
+  compiles to WebAssembly or the target architecture.
+- No enforced development environment or build system: Developers may use their usual setup.
 
-The project tries to integrate with the pre-existing developer environments
-instead of creating a new one. The developer should be able to write firmware
-business logic the same way they write their non-firmware business logic. This
-is similar to the goal of [knurling-rs](https://knurling.ferrous-systems.com)
-but for more languages than just Rust.
+### Secure-by-default
 
-### Separation of concerns
+Security is the responsibility of the ecosystem, not the developer. The following security
+mechanisms are (or are planned to be) in place:
+- Sandboxing of the firmware functions (called applets) from each other and from the firmware
+  runtime (called platform).
+- Secure implementation within the platform boundaries (e.g. side-channel resistance, fault
+  injection protection, etc).
+- Security reviews for the supported boards (e.g. side-channel attacks, fault injection, etc).
+- User documentation when the security must rely on user behavior, for example when a configuration
+  is insecure.
 
-The project does not require a team to possess multiple expertise because this
-is costly. Instead, the project splits the firmware development into
-inter-operable components such that each component requires a single expertise.
-Development can thus be distributed over multiple teams having their own
-expertise (e.g. hardware design, embedded programming, security, and business
-logic). The project provides stable and pre-existing APIs for those teams and
-components to inter-operate.
+Even though the default is to be secure, the ecosystem will provide options to opt-out from some of
+the security features for performance or footprint reasons. In other words, the developer is able to
+choose the trade-off between security and performance, defaulting to security without explicit
+action.
 
-### Secure by design
+### Symbiosis
 
-The project is responsible for the security of the final firmware. This project
-provides the following security mechanisms:
-- Sandboxing of the applets between each other and with the platform.
-- Secure implementation within the platform boundaries (e.g. side-channel
-  resistance, fault injection protection, etc).
-- Security reviews for the supported boards (e.g. side-channel attacks, fault
-  injection, etc).
-- User documentation when the security must rely on user behavior, for example
-  when a configuration is insecure.
+Being both simple-to-use and secure-by-default actually goes hand in hand. It cannot be expected for
+humans to never do mistake, even if they have embedded and security expertise.
+- By being simple to use, developers will prefer using the ecosystem solution rather than
+  implementing their own, thus using a secure-by-default solution rather than a possibly insecure
+  implementation.
+- By not being concerned with security and embedded details, developers can be more productive and
+  focus on the actual firmware behavior, following the well-lit path for all security and embedded
+  questions.
 
 ## Non-goals
 
-The project is not trying to build a self-service applet store. In particular,
-users are developers. A self-service applet store may come at a later phase or
-may be done independently by another project. The project will provide anything
-needed for such applet store to be secure and easy to use.
+The project is not trying to build a self-service applet store. In particular, users are developers.
+A self-service applet store may come at a later phase or may be done independently by another
+project. The project will provide anything needed for such applet store to be secure and easy to
+use.
 
 ## Disclaimer
 
-The project is still work in progress and many components might change in the
-future. However, the project follows the usual [Rust semantic
-versioning](https://doc.rust-lang.org/cargo/reference/semver.html) to avoid
-unexpected breakages.
+The project is still work in progress and many components might change in the future. However, the
+project follows the usual [Rust semantic
+versioning](https://doc.rust-lang.org/cargo/reference/semver.html) to avoid unexpected breakages.
