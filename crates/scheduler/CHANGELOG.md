@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.3.0-git
+## 0.3.1-git
+
+### Patch
+
+- Update dependencies
+- Fix HKDF-SHA-384 for outputs longer than 32 bytes
+
+## 0.3.0
 
 ### Major
 

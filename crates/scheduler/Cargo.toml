@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-scheduler"
-version = "0.3.0-git"
+version = "0.3.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -23,15 +23,15 @@ digest = { version = "0.10.7", default-features = false, features = ["mac"] }
 generic-array = { version = "0.14.7", default-features = false }
 portable-atomic = { version = "1.6.0", default-features = false }
 typenum = { version = "1.17.0", default-features = false }
-wasefire-applet-api = { version = "0.6.0-git", path = "../api", features = ["host"] }
-wasefire-board-api = { version = "0.6.0-git", path = "../board" }
-wasefire-error = { version = "0.1.0-git", path = "../error" }
-wasefire-logger = { version = "0.1.4-git", path = "../logger" }
-wasefire-store = { version = "0.2.3-git", path = "../store", optional = true }
-wasefire-sync = { version = "0.1.0-git", path = "../sync" }
+wasefire-applet-api = { version = "0.6.0", path = "../api", features = ["host"] }
+wasefire-board-api = { version = "0.6.0", path = "../board" }
+wasefire-error = { version = "0.1.0", path = "../error" }
+wasefire-logger = { version = "0.1.4", path = "../logger" }
+wasefire-store = { version = "0.2.3", path = "../store", optional = true }
+wasefire-sync = { version = "0.1.0", path = "../sync" }
 
 [dependencies.wasefire-interpreter]
-version = "0.2.0-git"
+version = "0.2.1-git"
 path = "../interpreter"
 features = ["toctou"]
 optional = true
