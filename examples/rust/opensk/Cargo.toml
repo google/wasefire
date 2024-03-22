@@ -9,12 +9,11 @@ edition = "2021"
 opensk-lib = { path = "../../../third_party/OpenSK/libraries/opensk", package = "opensk" }
 persistent_store = { path = "../../../third_party/OpenSK/libraries/persistent_store" }
 rand_core = "0.6.4"
-uuid = { version = "1.8.0", features = ["v4"] }
 wasefire = { path = "../../../crates/prelude" }
 wasefire-stub = { path = "../../../crates/stub", optional = true }
 
 [build-dependencies]
-uuid = { version = "1.8.0", features = ["v4"] }
+uuid = { version = "1.8.0" }
 
 [features]
 test = ["dep:wasefire-stub", "opensk-lib/std", "persistent_store/std", "wasefire/test"]
