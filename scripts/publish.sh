@@ -25,6 +25,7 @@ TOPOLOGICAL_ORDER=(
   logger
   error
   sync
+  cli-tools
   cli
   interpreter
   store
