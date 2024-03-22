@@ -22,6 +22,7 @@ use clap::{ValueEnum, ValueHint};
 
 use crate::{cmd, fs};
 
+/// Creates a new Rust applet project.
 #[derive(clap::Args)]
 pub struct RustAppletNew {
     /// Where to create the applet project.
@@ -57,6 +58,7 @@ impl RustAppletNew {
     }
 }
 
+/// Builds a Rust applet from its project.
 #[derive(Default, clap::Args)]
 pub struct RustAppletBuild {
     /// Builds for production, disabling debugging facilities.
@@ -152,6 +154,7 @@ impl RustAppletBuild {
     }
 }
 
+/// Runs the unit-tests of a Rust applet project.
 #[derive(clap::Args)]
 pub struct RustAppletTest {
     /// Extra arguments to cargo, e.g. --features=foo.

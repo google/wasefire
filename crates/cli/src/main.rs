@@ -54,13 +54,8 @@ enum Action {
     /// Updates a connected platform.
     PlatformUpdate,
 
-    /// Creates a new Rust applet project.
     RustAppletNew(action::RustAppletNew),
-
-    /// Builds a Rust applet from its project.
     RustAppletBuild(action::RustAppletBuild),
-
-    /// Runs the unit-tests of a Rust applet project.
     RustAppletTest(action::RustAppletTest),
 
     /// Generates a shell completion file.
