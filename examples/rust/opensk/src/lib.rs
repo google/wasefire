@@ -128,7 +128,7 @@ impl Env for WasefireEnv {
 mod tests {
 
     use opensk_lib::api::crypto::ecdsa::SecretKey;
-    use opensk_lib::api::customizaton::is_valid;
+    use opensk_lib::api::customization::is_valid;
     use opensk_lib::api::private_key::PrivateKey;
     use opensk_lib::ctap::data_formats::CoseKey;
     use wasefire_stub as _;

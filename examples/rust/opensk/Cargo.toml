@@ -17,4 +17,4 @@ wasefire-stub = { path = "../../../crates/stub", optional = true }
 uuid = { version = "1.8.0", features = ["v4"] }
 
 [features]
-test = ["dep:wasefire-stub", "persistent_store/std", "wasefire/test"]
+test = ["dep:wasefire-stub", "opensk-lib/std", "persistent_store/std", "wasefire/test"]
