@@ -25,13 +25,7 @@ fn main() {
     println!("cargo:rerun-if-changed=crypto_data/aaguid.txt");
 
     let out_dir = env::var_os("OUT_DIR").unwrap();
-    let aaguid_bin_path = Path::new(&out_dir).join("opensk_aaguid.bin");
-
-    let mut aaguid_bin_file = File::create(aaguid_bin_path).unwrap();
-    let mut aaguid_txt_file = File::open("crypto_data/aaguid.txt").unwrap();
-    let mut content = String::new();
-    aaguid_txt_file.read_to_string(&mut content).unwrap();
-    content.truncate(36);
-    let aaguid = Uuid::parse_str(&content).unwrap();
-    aaguid_bin_file.write_all(aaguid.as_bytes()).unwrap();
+    let content = std::fs::read_to_string("crypto_data/aaguid.txt").unwrap();
+    let aaguid = Uuid::parse_str(content.trim()).unwrap();
+    std::fs::write(Path::new(&out_dir).join("opensk_aaguid.bin"), aaguid.as_bytes()).unwrap();
 }
