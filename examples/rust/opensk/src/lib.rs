@@ -20,8 +20,7 @@ wasefire::applet!();
 use opensk_lib::api::attestation_store::{Attestation, AttestationStore, Error, Id};
 use opensk_lib::api::connection::{HidConnection, SendOrRecvResult};
 use opensk_lib::api::crypto::software_crypto::SoftwareCrypto;
-// use opensk_lib::api::customization::{AAGUID_LENGTH, DEFAULT_CUSTOMIZATION};
-use opensk_lib::api::customization::CustomizationImpl;
+use opensk_lib::api::customization::{CustomizationImpl, AAGUID_LENGTH, DEFAULT_CUSTOMIZATION};
 use opensk_lib::env::Env;
 use persistent_store::Store;
 // use wasefire::clock::{Handler, Timer};
@@ -37,11 +36,11 @@ fn main() {
     debug!("hello world");
 }
 
-// pub const AAGUID: &[u8; AAGUID_LENGTH] = todo!();
-// include_bytes!(concat!(env!("OUT_DIR"), "/opensk_aaguid.bin"));
+pub const AAGUID: &[u8; AAGUID_LENGTH] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/opensk_aaguid.bin"));
 
-// const WASEFIRE_CUSTOMIZATION: CustomizationImpl =
-//     CustomizationImpl { aaguid: AAGUID, ..DEFAULT_CUSTOMIZATION };
+const WASEFIRE_CUSTOMIZATION: CustomizationImpl =
+    CustomizationImpl { aaguid: AAGUID, ..DEFAULT_CUSTOMIZATION };
 
 #[derive(Clone, Copy, Default)]
 pub struct WasefireHidConnection;
@@ -93,8 +92,7 @@ impl Env for WasefireEnv {
     }
 
     fn customization(&self) -> &Self::Customization {
-        todo!()
-        // &WASEFIRE_CUSTOMIZATION
+        &WASEFIRE_CUSTOMIZATION
     }
 
     fn user_presence(&mut self) -> &mut Self::UserPresence {
@@ -130,17 +128,17 @@ impl Env for WasefireEnv {
 mod tests {
 
     use opensk_lib::api::crypto::ecdsa::SecretKey;
-    // use opensk_lib::api::customizaton::is_valid;
+    use opensk_lib::api::customization::is_valid;
     use opensk_lib::api::private_key::PrivateKey;
     use opensk_lib::ctap::data_formats::CoseKey;
     use wasefire_stub as _;
 
     use super::*;
 
-    // #[test]
-    // fn test_invariants() {
-    // assert!(is_valid(&WASEFIRE_CUSTOMIZATION));
-    // }
+    #[test]
+    fn test_invariants() {
+        assert!(is_valid(&WASEFIRE_CUSTOMIZATION));
+    }
 
     // TODO: Add tests for Rng, Customization and others
 
