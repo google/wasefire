@@ -21,6 +21,7 @@ set -e
 x ./scripts/ci-copyright.sh
 x ./scripts/ci-changelog.sh
 x ./scripts/sync.sh
+x ./scripts/publish.sh --dry-run
 x ./scripts/ci-taplo.sh
 x ./scripts/ci-applets.sh
 x ./scripts/ci-runners.sh
