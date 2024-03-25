@@ -29,6 +29,9 @@ runs:
     - if: ${{ contains(fromJSON(inputs.checks), 'sync') }}
       run: ./scripts/sync.sh
       shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'publish') }}
+      run: ./scripts/publish.sh --dry-run
+      shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'taplo') }}
       run: ./scripts/ci-taplo.sh
       shell: bash

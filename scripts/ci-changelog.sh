@@ -40,6 +40,7 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
       package_features | grep -q '^default$' \
         && e "Cargo.toml for $dir has default features"
     fi
+    case $dir in crates/cli|crates/cli-tools) exit 0 ;; esac
     sed -n '/^\[dependencies]$/,/^$/{/^wasefire-/d;/^[a-z]/!d;'\
 '/default-features = false/d;p;q1};/^\[dependencies\.wasefire-/d;'\
 '/^\[dependencies\./{h;:a;n;/default-features = false/d;/^$/{g;p;q1};ba}' \

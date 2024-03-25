@@ -38,6 +38,7 @@ jobs:
           x  copyright  pull_request
           x  changelog  pull_request
           x       sync  pull_request  push  schedule
+          x    publish  pull_request  push  schedule
           x      taplo  pull_request  push  schedule
           x    applets  pull_request  push  schedule
           x    runners  pull_request  push  schedule
