@@ -253,6 +253,12 @@ impl Flags {
     }
 }
 
+impl MainOptions {
+    fn is_native(&self) -> bool {
+        self.native || self.native_target.is_some()
+    }
+}
+
 impl Applet {
     fn execute(self, main: &MainOptions) -> Result<()> {
         self.options.execute(main, &self.command)?;
@@ -265,6 +271,10 @@ impl Applet {
 
 impl AppletOptions {
     fn execute(self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
+        if !main.is_native() {
+            ensure_command(&["wasm-strip"])?;
+            ensure_command(&["wasm-opt"])?;
+        }
         match self.lang.as_str() {
             "rust" => self.execute_rust(main, command),
             "assemblyscript" => self.execute_assemblyscript(main),
@@ -319,6 +329,7 @@ impl AppletOptions {
     }
 
     fn execute_assemblyscript(&self, main: &MainOptions) -> Result<()> {
+        ensure!(!main.is_native(), "native applets are not supported for assemblyscript");
         let dir = format!("examples/{}", self.lang);
         ensure_assemblyscript()?;
         let mut asc = Command::new("./node_modules/.bin/asc");
