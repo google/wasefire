@@ -66,6 +66,8 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
   done
 done
 
+[ "$1" = --no-dry-run ] || d "Run with --no-dry-run to actually publish"
+
 i "Remove all -git suffixes"
 sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})
 if [ -n "$(git status -s)" ]; then
