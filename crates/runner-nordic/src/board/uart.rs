@@ -237,7 +237,7 @@ impl Api for Impl {
 
     fn read(uart: Id<Self>, mut output: &mut [u8]) -> Result<usize, Error> {
         with_state(|state| {
-            let Uart { regs, state: s } = state.uarts.get(uart);
+            let Uart { state: s, .. } = state.uarts.get(uart);
             Error::user(Code::InvalidState).check(s.running)?;
             let initial_len = output.len();
             s.copy(&mut output);
@@ -246,49 +246,6 @@ impl Api for Impl {
                 // the ready part was discontinuous.
                 assert_eq!(s.read_beg, 0);
                 s.copy(&mut output);
-            }
-            if output.is_empty() {
-                return Ok(initial_len);
-            }
-            assert!(s.is_empty());
-            // Reset RXDRDY before STOPRX to not miss any RXDRDY that would happen after.
-            regs.events_rxdrdy.reset();
-            let next_end = (regs.rxd.ptr.read().ptr().bits() - s.read_ptr as u32) as usize;
-            if next_end == s.read_end {
-                // Make sure that STOPRX would release the next BUSY_SIZE bytes.
-                let next_end = (s.read_end + BUSY_SIZE) % BUFFER_SIZE;
-                let next_ptr = s.read_ptr as u32 + next_end as u32;
-                assert!(BUSY_SIZE <= dist(next_end, s.read_beg));
-                regs.rxd.ptr.write(|w| unsafe { w.ptr().bits(next_ptr) });
-            } else {
-                assert_eq!(next_end, (s.read_end + BUSY_SIZE) % BUFFER_SIZE);
-            }
-            let rxstarted = regs.events_rxstarted.read().events_rxstarted().bit_is_set();
-            let amount = if rxstarted && next_end != s.read_end {
-                // We actually finished reading the next BUSY_SIZE bytes and we don't need to
-                // STOPRX.
-                BUSY_SIZE
-            } else {
-                // We may have a race condition between STOPRX below and the RXSTARTED read above
-                // overwriting some data (which is expected when not using control flow).
-                regs.events_endrx.reset();
-                regs.tasks_stoprx.write(|w| w.tasks_stoprx().set_bit());
-                while regs.events_endrx.read().events_endrx().bit_is_clear() {}
-                regs.rxd.amount.read().amount().bits() as usize
-            };
-            assert!(amount <= BUSY_SIZE);
-            let ptr = unsafe { s.read_ptr.add(s.read_end) };
-            let data = unsafe { core::slice::from_raw_parts_mut(ptr, BUSY_SIZE) };
-            let shift = BUSY_SIZE - amount;
-            data.copy_within(0 .. amount, shift);
-            s.read_beg = (s.read_end + shift) % BUFFER_SIZE;
-            // The RXSTARTED handler will set read_end to that same value, but we need it for the
-            // copy below, so we set it now. This is also cleaner to do so.
-            s.read_end = (s.read_end + BUSY_SIZE) % BUFFER_SIZE;
-            s.copy(&mut output);
-            if !output.is_empty() && s.listen_read {
-                regs.intenset.write(|w| w.rxdrdy().set_bit());
-                Uarts::tick_read(uart, regs, |x| state.events.push(x.into()));
             }
             Ok(initial_len - output.len())
         })
