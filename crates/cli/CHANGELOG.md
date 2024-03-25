@@ -4,7 +4,7 @@
 
 ### Minor
 
-- Support creating a skeleton applet
+- Support creating, building, and testing a Rust applet
 
 ## 0.1.0
 
