@@ -14,7 +14,7 @@
 
 use alloc::boxed::Box;
 
-use nrf52840_hal::pac::uarte0::RegisterBlock;
+use nrf52840_hal::pac::uarte0::{errorsrc, RegisterBlock};
 use nrf52840_hal::pac::{UARTE0, UARTE1};
 use nrf52840_hal::prelude::OutputPin;
 use nrf52840_hal::target_constants::{EASY_DMA_SIZE, SRAM_LOWER, SRAM_UPPER};
@@ -22,6 +22,7 @@ use nrf52840_hal::{gpio, uarte};
 use wasefire_board_api::uart::{Api, Direction, Event};
 use wasefire_board_api::{Error, Id, Support};
 use wasefire_error::Code;
+use wasefire_logger as log;
 
 use crate::{with_state, Board};
 
@@ -31,52 +32,102 @@ pub struct Uarts {
     states: [State; 2],
 }
 
-const READ_CAP: usize = 32;
-const READ_MAX: usize = READ_CAP - 8; // 8 bytes reserved to flush the RX FIFO
+const BUFFER_SIZE: usize = 8 * BUSY_SIZE;
+const BUSY_SIZE: usize = 128; // must divide BUFFER_SIZE and be smaller than EASY_DMA_SIZE
 
 struct State {
-    read_ptr: *mut u8, // size READ_CAP
-    read_len: usize,
+    // We use a cyclic buffer of size BUFFER_SIZE for reading, and partition it in 3 parts:
+    //
+    // - The uninitialized part (possibly empty) contains uninitialized data. Bytes in this part are
+    // never read nor written until they move to another part.
+    //
+    // - The ready part (possibly empty) contains initialized data that has been received but not
+    // yet read (thus ready to be read). Bytes in this part may be read but not written until they
+    // move to another part.
+    //
+    // - The busy part contains the data used or reserved for EasyDMA. Bytes in this part must not
+    // be read nor written until they move to another part. The busy part is BUSY_SIZE aligned and
+    // contains at least BUSY_SIZE bytes. It may contain an additional BUSY_SIZE bytes if the
+    // RXD.PTR field points right after the first BUSY_SIZE bytes (otherwise it must point to the
+    // first BUSY_SIZE bytes).
+    //
+    // This could be graphically be represented as (all values are modulo BUFFER_SIZE):
+    //
+    //     ... uninit  |   ready   |   busy   |  ... (cycles back to uninit)
+    //                 ^read_beg   ^read_end
+    //
+    // We have the following invariants:
+    // - `read_ptr` is a valid pointer of size BUFFER_SIZE
+    // - `read_beg` is less than BUFFER_SIZE
+    // - `read_end` is less than BUFFER_SIZE and divides BUSY_SIZE
+    read_ptr: *mut u8,
+    read_beg: usize,
+    read_end: usize,
+
     running: bool,
     listen_read: bool,
-    listen_write: bool,
 }
 
 unsafe impl Send for State {}
 
 impl Default for State {
     fn default() -> Self {
-        let read_ptr = Box::into_raw(Box::new([0; READ_CAP])) as *mut u8;
-        let read_len = 0;
-        State { read_ptr, read_len, running: false, listen_read: false, listen_write: false }
+        State {
+            read_ptr: Box::into_raw(Box::new([0; BUFFER_SIZE])) as *mut u8,
+            read_beg: 0,
+            read_end: 0,
+            running: false,
+            listen_read: false,
+        }
     }
 }
 
 pub enum Impl {}
 
 impl Uarts {
+    // We only support UARTE0 without control flow.
     pub fn new(
         uarte0: UARTE0, rx: gpio::Pin<gpio::Input<gpio::Floating>>,
         tx: gpio::Pin<gpio::Output<gpio::PushPull>>, uarte1: UARTE1,
     ) -> Self {
         let mut uarts = Uarts { uarte0, uarte1, states: [State::default(), State::default()] };
-        let uart = uarts.get(Id::new(0).unwrap());
-        uart.regs.psel.rxd.write(|w| unsafe { w.bits(rx.psel_bits()) });
-        uart.regs.psel.txd.write(|w| unsafe { w.bits(tx.psel_bits()) });
-        uart.regs.config.reset();
-        uart.regs.baudrate.write(|w| w.baudrate().variant(uarte::Baudrate::BAUD115200));
+        let Uart { regs, .. } = uarts.get(Id::new(0).unwrap());
+        regs.psel.rxd.write(|w| unsafe { w.bits(rx.psel_bits()) });
+        regs.psel.txd.write(|w| unsafe { w.bits(tx.psel_bits()) });
+        regs.config.reset();
+        regs.baudrate.write(|w| w.baudrate().variant(uarte::Baudrate::BAUD115200));
         uarts
     }
 
-    pub fn tick(&mut self, uart_id: Id<Impl>, mut push: impl FnMut(Event<Board>)) {
-        let uart = self.get(uart_id);
-        if uart.state.listen_read && uart.regs.events_rxdrdy.read().events_rxdrdy().bit_is_set() {
-            uart.regs.events_rxdrdy.reset();
-            push(Event { uart: uart_id, direction: Direction::Read });
+    pub fn tick(&mut self, uart_id: Id<Impl>, push: impl FnMut(Event<Board>)) {
+        let Uart { regs, state: s } = self.get(uart_id);
+        if regs.events_error.read().events_error().bit_is_set() {
+            regs.events_error.reset();
+            regs.errorsrc.modify(|r, w| {
+                log::warn!("{}", PrettyError(r));
+                unsafe { w.bits(r.bits()) };
+                w
+            });
         }
-        if uart.state.listen_write && uart.regs.events_cts.read().events_cts().bit_is_set() {
-            uart.regs.events_cts.reset();
-            push(Event { uart: uart_id, direction: Direction::Write });
+        if regs.events_rxstarted.read().events_rxstarted().bit_is_set() {
+            regs.events_rxstarted.reset();
+            s.read_end = (regs.rxd.ptr.read().ptr().bits() - s.read_ptr as u32) as usize;
+            let next_end = (s.read_end + BUSY_SIZE) % BUFFER_SIZE;
+            if BUSY_SIZE <= dist(next_end, s.read_beg) {
+                let next_ptr = s.read_ptr as u32 + next_end as u32;
+                regs.rxd.ptr.write(|w| unsafe { w.ptr().bits(next_ptr) });
+            }
+        }
+        if s.listen_read {
+            Self::tick_read(uart_id, regs, push);
+        }
+    }
+
+    fn tick_read(uart: Id<Impl>, regs: &RegisterBlock, mut push: impl FnMut(Event<Board>)) {
+        if regs.events_rxdrdy.read().events_rxdrdy().bit_is_set() {
+            regs.events_rxdrdy.reset();
+            regs.intenclr.write(|w| w.rxdrdy().set_bit());
+            push(Event { uart, direction: Direction::Read });
         }
     }
 
@@ -97,52 +148,35 @@ struct Uart<'a> {
 }
 
 impl<'a> Uart<'a> {
-    fn start_rx(&self) {
-        let ptr = unsafe { self.state.read_ptr.add(self.state.read_len) };
-        let cnt = match READ_MAX.checked_sub(self.state.read_len) {
-            None | Some(0) => return,
-            Some(x) => x,
-        };
-        self.regs.rxd.ptr.write(|w| unsafe { w.ptr().bits(ptr as u32) });
-        self.regs.rxd.maxcnt.write(|w| unsafe { w.maxcnt().bits(cnt as u16) });
-        self.regs.tasks_startrx.write(|w| w.tasks_startrx().set_bit());
+    fn stoptx(regs: &RegisterBlock) {
+        regs.tasks_stoptx.write(|w| w.tasks_stoptx().set_bit());
+        while regs.events_txstopped.read().events_txstopped().bit_is_clear() {}
+        regs.events_txstopped.reset();
     }
 
-    fn stop_rx(&mut self) {
-        if READ_MAX <= self.state.read_len {
-            // We don't start receiving in that case.
-            return;
-        }
-        self.regs.tasks_stoprx.write(|w| w.tasks_stoprx().set_bit());
-        self.wait_rxto();
-        let read_len = self.wait_endrx();
-        self.state.read_len += read_len;
-        let ptr = unsafe { self.state.read_ptr.add(self.state.read_len) };
-        let cnt = READ_CAP - self.state.read_len;
-        self.regs.rxd.ptr.write(|w| unsafe { w.ptr().bits(ptr as u32) });
-        self.regs.rxd.maxcnt.write(|w| unsafe { w.maxcnt().bits(cnt as u16) });
-        self.regs.tasks_flushrx.write(|w| w.tasks_flushrx().set_bit());
-        let flush_len = self.wait_endrx();
-        self.state.read_len += flush_len.saturating_sub(read_len);
+    fn stoprx(regs: &RegisterBlock) {
+        regs.tasks_stoprx.write(|w| w.tasks_stoprx().set_bit());
+        while regs.events_rxto.read().events_rxto().bit_is_clear() {}
+        regs.events_rxto.reset();
+    }
+}
+
+impl State {
+    /// Returns whether the ready part is empty.
+    fn is_empty(&self) -> bool {
+        self.read_end == self.read_beg
     }
 
-    fn wait_rxto(&self) {
-        // This loop is supposed to be short.
-        while self.regs.events_rxto.read().events_rxto().bit_is_clear() {}
-        self.regs.events_rxto.reset();
-    }
-
-    fn wait_endrx(&self) -> usize {
-        // This loop is supposed to be short.
-        while self.regs.events_endrx.read().events_endrx().bit_is_clear() {}
-        self.regs.events_endrx.reset();
-        self.regs.rxd.amount.read().amount().bits() as usize
-    }
-
-    fn stoptx(&self) {
-        self.regs.tasks_stoptx.write(|w| w.tasks_stoptx().set_bit());
-        while self.regs.events_txstopped.read().events_txstopped().bit_is_clear() {}
-        self.regs.events_txstopped.reset();
+    /// Copies the longest continuous prefix of the ready part to the output.
+    ///
+    /// Updates both the ready part and the output.
+    fn copy(&mut self, output: &mut &mut [u8]) {
+        let end = if self.read_end < self.read_beg { BUFFER_SIZE } else { self.read_end };
+        let len = core::cmp::min(end - self.read_beg, output.len());
+        let ptr = unsafe { self.read_ptr.add(self.read_beg) };
+        output[.. len].copy_from_slice(unsafe { core::slice::from_raw_parts(ptr, len) });
+        *output = &mut core::mem::take(output)[len ..];
+        self.read_beg = (self.read_beg + len) % BUFFER_SIZE;
     }
 }
 
@@ -163,52 +197,57 @@ impl Api for Impl {
             _ => return Err(Error::internal(Code::NotImplemented)),
         };
         with_state(|state| {
-            let uart = state.uarts.get(uart);
-            Error::user(Code::InvalidState).check(!uart.state.running)?;
-            uart.regs.baudrate.write(|w| w.baudrate().variant(baudrate));
+            let Uart { regs, state } = state.uarts.get(uart);
+            Error::user(Code::InvalidState).check(!state.running)?;
+            regs.baudrate.write(|w| w.baudrate().variant(baudrate));
             Ok(())
         })
     }
 
     fn start(uart: Id<Self>) -> Result<(), Error> {
         with_state(|state| {
-            let uart = state.uarts.get(uart);
-            Error::user(Code::InvalidState).check(!uart.state.running)?;
-            uart.state.running = true;
-            set_high(uart.regs.psel.txd.read().bits());
-            uart.regs.enable.write(|w| w.enable().enabled());
-            uart.start_rx();
+            let Uart { regs, state } = state.uarts.get(uart);
+            Error::user(Code::InvalidState).check(!state.running)?;
+            state.running = true;
+            set_high(regs.psel.txd.read().bits());
+            regs.enable.write(|w| w.enable().enabled());
+            regs.shorts.write(|w| w.endrx_startrx().set_bit());
+            regs.intenset.write(|w| w.error().set_bit().rxstarted().set_bit());
+            regs.rxd.ptr.write(|w| unsafe { w.ptr().bits(state.read_ptr as u32) });
+            regs.rxd.maxcnt.write(|w| unsafe { w.maxcnt().bits(BUSY_SIZE as u16) });
+            regs.tasks_startrx.write(|w| w.tasks_startrx().set_bit());
             Ok(())
         })
     }
 
     fn stop(uart: Id<Self>) -> Result<(), Error> {
         with_state(|state| {
-            let mut uart = state.uarts.get(uart);
-            Error::user(Code::InvalidState).check(uart.state.running)?;
-            uart.state.running = false;
-            uart.stoptx();
-            uart.stop_rx();
-            uart.state.read_len = 0;
-            uart.regs.enable.write(|w| w.enable().disabled());
+            let Uart { regs, state } = state.uarts.get(uart);
+            Error::user(Code::InvalidState).check(state.running)?;
+            state.running = false;
+            regs.shorts.write(|w| w.endrx_startrx().clear_bit());
+            Uart::stoptx(regs);
+            Uart::stoprx(regs);
+            state.read_beg = 0;
+            state.read_end = 0;
+            regs.enable.write(|w| w.enable().disabled());
             Ok(())
         })
     }
 
-    fn read(uart: Id<Self>, output: &mut [u8]) -> Result<usize, Error> {
+    fn read(uart: Id<Self>, mut output: &mut [u8]) -> Result<usize, Error> {
         with_state(|state| {
-            let mut uart = state.uarts.get(uart);
-            Error::user(Code::InvalidState).check(uart.state.running)?;
-            uart.stop_rx();
-            let len = core::cmp::min(output.len(), uart.state.read_len);
-            let data = unsafe {
-                core::slice::from_raw_parts_mut(uart.state.read_ptr, uart.state.read_len)
-            };
-            output[.. len].copy_from_slice(&data[.. len]);
-            data.copy_within(len .., 0);
-            uart.state.read_len = data.len() - len;
-            uart.start_rx();
-            Ok(len)
+            let Uart { state: s, .. } = state.uarts.get(uart);
+            Error::user(Code::InvalidState).check(s.running)?;
+            let initial_len = output.len();
+            s.copy(&mut output);
+            if !output.is_empty() && !s.is_empty() {
+                // We neither filled output nor consumed all the ready part. This can only happen if
+                // the ready part was discontinuous.
+                assert_eq!(s.read_beg, 0);
+                s.copy(&mut output);
+            }
+            Ok(initial_len - output.len())
         })
     }
 
@@ -220,32 +259,39 @@ impl Api for Impl {
             return Err(Error::user(Code::InvalidArgument));
         }
         with_state(|state| {
-            let uart = state.uarts.get(uart);
-            Error::user(Code::InvalidState).check(uart.state.running)?;
-            uart.regs.txd.ptr.write(|w| unsafe { w.ptr().bits(input.as_ptr() as u32) });
-            uart.regs.txd.maxcnt.write(|w| unsafe { w.maxcnt().bits(input.len() as u16) });
-            uart.regs.tasks_starttx.write(|w| w.tasks_starttx().set_bit());
-            while uart.regs.events_endtx.read().events_endtx().bit_is_clear()
-                && uart.regs.events_ncts.read().events_ncts().bit_is_clear()
-            {}
-            uart.stoptx();
-            uart.regs.events_endtx.reset();
-            Ok(uart.regs.txd.amount.read().amount().bits() as usize)
-        })
+            let Uart { regs, state } = state.uarts.get(uart);
+            Error::user(Code::InvalidState).check(state.running)?;
+            regs.txd.ptr.write(|w| unsafe { w.ptr().bits(input.as_ptr() as u32) });
+            regs.txd.maxcnt.write(|w| unsafe { w.maxcnt().bits(input.len() as u16) });
+            regs.tasks_starttx.write(|w| w.tasks_starttx().set_bit());
+            Ok(())
+        })?;
+        loop {
+            let get_amount = |state: &mut crate::State| {
+                let Uart { regs, .. } = state.uarts.get(uart);
+                if regs.events_endtx.read().events_endtx().bit_is_set() {
+                    regs.events_endtx.reset();
+                    Some(regs.txd.amount.read().amount().bits() as usize)
+                } else {
+                    None
+                }
+            };
+            match with_state(get_amount) {
+                Some(x) => break Ok(x),
+                None => continue,
+            }
+        }
     }
 
     fn enable(uart: Id<Self>, direction: Direction) -> Result<(), Error> {
         with_state(|state| {
-            let uart = state.uarts.get(uart);
+            let Uart { regs, state } = state.uarts.get(uart);
             match direction {
                 Direction::Read => {
-                    uart.regs.intenset.write(|w| w.rxdrdy().set_bit());
-                    uart.state.listen_read = true;
+                    regs.intenset.write(|w| w.rxdrdy().set_bit());
+                    state.listen_read = true;
                 }
-                Direction::Write => {
-                    uart.regs.intenset.write(|w| w.cts().set_bit());
-                    uart.state.listen_write = true;
-                }
+                Direction::Write => (),
             }
             Ok(())
         })
@@ -259,10 +305,7 @@ impl Api for Impl {
                     uart.regs.intenclr.write(|w| w.rxdrdy().set_bit());
                     uart.state.listen_read = false;
                 }
-                Direction::Write => {
-                    uart.regs.intenclr.write(|w| w.cts().set_bit());
-                    uart.state.listen_write = false;
-                }
+                Direction::Write => (),
             }
             Ok(())
         })
@@ -277,4 +320,36 @@ fn in_ram(xs: &[u8]) -> bool {
 fn set_high(psel_bits: u32) {
     use nrf52840_hal::gpio::{Output, Pin, PushPull};
     unsafe { Pin::<Output<PushPull>>::from_psel_bits(psel_bits) }.set_high().unwrap();
+}
+
+#[allow(dead_code)]
+struct PrettyError<'a>(&'a errorsrc::R);
+
+#[cfg(feature = "debug")]
+impl<'a> defmt::Format for PrettyError<'a> {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "UART error:");
+        if self.0.overrun().is_present() {
+            defmt::write!(fmt, " OVERRUN");
+        }
+        if self.0.parity().is_present() {
+            defmt::write!(fmt, " PARITY");
+        }
+        if self.0.framing().is_present() {
+            defmt::write!(fmt, " FRAMING");
+        }
+        if self.0.break_().is_present() {
+            defmt::write!(fmt, " BREAK");
+        }
+    }
+}
+
+/// Returns the distance between 2 ordered points in the cyclic buffer.
+///
+/// If both points are equal, the distance is zero.
+fn dist(a: usize, b: usize) -> usize {
+    match b.checked_sub(a) {
+        Some(x) => x,
+        None => b + BUFFER_SIZE - a,
+    }
 }
