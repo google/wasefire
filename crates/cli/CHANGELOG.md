@@ -5,6 +5,7 @@
 ### Minor
 
 - Support creating, building, and testing a Rust applet
+- Support generating a shell completion file
 
 ## 0.1.0
 

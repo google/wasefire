@@ -105,8 +105,9 @@ fn main() -> Result<()> {
         Action::AppletList
         | Action::AppletInstall
         | Action::AppletUpdate
-        | Action::AppletUninstall => bail!("not implemented yet (depends on #56)"),
-        Action::PlatformList | Action::PlatformUpdate => bail!("not implemented yet"),
+        | Action::AppletUninstall
+        | Action::PlatformList
+        | Action::PlatformUpdate => bail!("not implemented yet"),
         Action::RustAppletNew(x) => x.run(),
         Action::RustAppletBuild(x) => x.run(dir),
         Action::RustAppletTest(x) => x.run(dir),
