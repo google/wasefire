@@ -36,14 +36,14 @@ impl Api<U16, U13> for Impl {
         tag: &mut Array<U4>,
     ) -> Result<(), Error> {
         if aad != [0] {
-            return Err(Error::user(Code::BadSize));
+            return Err(Error::user(Code::InvalidLength));
         }
         let clear = match clear {
             Some(x) => x,
             None => cipher,
         };
         if 251 < clear.len() || cipher.len() != clear.len() {
-            return Err(Error::user(Code::BadSize));
+            return Err(Error::user(Code::InvalidLength));
         }
         let len = clear.len();
         let mut ccm_data = CcmData::new((*key).into(), truncate_iv(iv));
@@ -69,14 +69,14 @@ impl Api<U16, U13> for Impl {
         clear: &mut [u8],
     ) -> Result<(), Error> {
         if aad != [0] {
-            return Err(Error::user(Code::BadSize));
+            return Err(Error::user(Code::InvalidLength));
         }
         let cipher = match cipher {
             Some(x) => x,
             None => clear,
         };
         if 251 < clear.len() || cipher.len() != clear.len() {
-            return Err(Error::user(Code::BadSize));
+            return Err(Error::user(Code::InvalidLength));
         }
         let len = clear.len();
         let mut ccm_data = CcmData::new((*key).into(), truncate_iv(iv));

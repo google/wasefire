@@ -15,7 +15,6 @@
 
 set -e
 . scripts/log.sh
-. scripts/package.sh
 
 # This script runs the continuous integration tests.
 

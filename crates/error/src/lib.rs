@@ -140,13 +140,36 @@ pub enum Space {
 #[repr(u16)]
 pub enum Code {
     Generic = 0,
+
+    /// The operation is not implemented.
     NotImplemented = 1,
+
+    /// An input was not found.
     NotFound = 2,
-    BadSize = 3,
-    BadAlign = 4,
+
+    /// An input has an invalid length.
+    InvalidLength = 3,
+
+    /// An input has an invalid alignment.
+    InvalidAlign = 4,
+
+    /// The caller does not have permission for the operation.
     NoPermission = 5,
+
+    /// There is not enough resource for the operation.
     NotEnough = 6,
-    BadState = 7,
+
+    /// An input is invalid for the current state.
+    ///
+    /// This could also be that the current state is invalid for all inputs and cannot progress
+    /// anymore.
+    InvalidState = 7,
+
+    /// An input is invalid.
+    ///
+    /// This is a generic error. More precise errors would be `InvalidLength`, `InvalidAlign`,
+    /// `InvalidState`, or `NotFound` for example.
+    InvalidArgument = 8,
 }
 
 impl core::fmt::Debug for Error {
@@ -193,7 +216,7 @@ mod tests {
 
     #[test]
     fn new_ok() {
-        assert_eq!(Error::new(Space::User, Code::BadSize), Error(0x010003));
+        assert_eq!(Error::new(Space::User, Code::InvalidLength), Error(0x010003));
         assert_eq!(Error::new(0xab, 0x1234u16), Error(0xab1234));
     }
 }

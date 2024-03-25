@@ -90,6 +90,6 @@ fn convert(err: StoreError) -> Error {
         StoreError::InvalidArgument => Error::user(0),
         StoreError::NoCapacity | StoreError::NoLifetime => Error::user(Code::NotEnough),
         StoreError::StorageError => Error::world(0),
-        StoreError::InvalidStorage => Error::world(Code::BadState),
+        StoreError::InvalidStorage => Error::world(Code::InvalidState),
     }
 }

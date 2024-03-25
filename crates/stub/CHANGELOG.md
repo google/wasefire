@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.3-git
+## 0.1.3
 
 ### Minor
 

@@ -25,9 +25,13 @@ use crate::Error;
 #[derive(Debug, PartialEq, Eq)]
 pub enum Event {
     /// There might be data to read.
+    ///
+    /// This is only guaranteed to be triggered after a short read.
     Read,
 
     /// It might be possible to write data.
+    ///
+    /// This is only guaranteed to be triggered after a short write.
     Write,
 }
 

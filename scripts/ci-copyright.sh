@@ -19,10 +19,14 @@ set -e
 # This script checks that all source files have a copyright notice in the first
 # 2 lines.
 
-EXTENSIONS='cff\|css\|git[a-z]*\|html\|json\|lock\|md\|pdf\|png\|svg\|toml'
-EXTENSIONS="$EXTENSIONS"'\|wasm\|x\|yml'
-
-for file in $(git ls-files \
-  | grep -v -e '^third_party/' -e 'LICENSE$' -e '\.\('"$EXTENSIONS"'\)$'); do
+for file in $(git ls-files); do
+  case "$file" in
+    *.gitignore|.gitmodules) continue ;;
+    third_party/*) continue ;;
+    *LICENSE) continue ;;
+    *.css|*.html|*.pdf|*.png|*.svg) continue ;;
+    *.cff|*.json|*.lock|*.md|*.toml|*.x|*.wasm|*.yml) continue ;;
+    */data/*.rs) continue ;;
+  esac
   sed -n 'N;/Copyright/q;q1' $file || e "No copyright notice in $file"
 done

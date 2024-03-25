@@ -250,25 +250,16 @@ impl<'m> Store<'m> {
 
     /// Links a host function provided its signature.
     ///
-    /// Currently, only functions which take and return `i32` are supported. So the `params` and
-    /// `results` parameters describe how many `i32` are taken as parameters and returned as
-    /// results respectively.
-    ///
-    /// Note that the order in which functions are linked defines their index. The first linked
-    /// function has index 0, the second has index 1, etc. This index is used when a module calls in
-    /// the host to identify the function.
+    /// This is a convenient wrapper around [`Self::link_func_custom()`] for functions which
+    /// parameter and return types are only `i32`. The `params` and `results` parameters describe
+    /// how many `i32` are taken as parameters and returned as results respectively.
     pub fn link_func(
         &mut self, module: &'m str, name: &'m str, params: usize, results: usize,
     ) -> Result<(), Error> {
         static TYPES: &[ValType] = &[ValType::I32; 8];
-        let name = HostName { module, name };
-        check(self.func_default.is_none())?;
-        check(self.insts.is_empty())?;
-        check(self.funcs.last().map_or(true, |x| x.0 < name))?;
         check(params <= TYPES.len() && results <= TYPES.len())?;
         let type_ = FuncType { params: TYPES[.. params].into(), results: TYPES[.. results].into() };
-        self.funcs.push((name, type_));
-        Ok(())
+        self.link_func_custom(module, name, type_)
     }
 
     /// Enables linking unresolved imported function for the given module.
@@ -282,6 +273,22 @@ impl<'m> Store<'m> {
     pub fn link_func_default(&mut self, module: &'m str) -> Result<(), Error> {
         check(self.func_default.is_none())?;
         self.func_default = Some((module, self.funcs.len()));
+        Ok(())
+    }
+
+    /// Links a host function provided its signature.
+    ///
+    /// Note that the order in which functions are linked defines their index. The first linked
+    /// function has index 0, the second has index 1, etc. This index is used when a module calls in
+    /// the host to identify the function.
+    pub fn link_func_custom(
+        &mut self, module: &'m str, name: &'m str, type_: FuncType<'m>,
+    ) -> Result<(), Error> {
+        let name = HostName { module, name };
+        check(self.func_default.is_none())?;
+        check(self.insts.is_empty())?;
+        check(self.funcs.last().map_or(true, |x| x.0 < name))?;
+        self.funcs.push((name, type_));
         Ok(())
     }
 

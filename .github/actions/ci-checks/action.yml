@@ -1,0 +1,68 @@
+inputs:
+  checks:
+    required: true
+  token:
+    required: true
+  use-cache:
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - if: ${{ contains(fromJSON(inputs.checks), 'changelog') }}
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - if: inputs.use-cache == 'true'
+      name: Restore the cache
+      uses: ./.github/actions/ci-cache
+    - run: sudo apt-get update
+      shell: bash
+    - run: ./scripts/setup.sh
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'copyright') }}
+      run: ./scripts/ci-copyright.sh
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'changelog') }}
+      run: ./scripts/ci-changelog.sh
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'sync') }}
+      run: ./scripts/sync.sh
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'publish') }}
+      run: ./scripts/publish.sh --dry-run
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'taplo') }}
+      run: ./scripts/ci-taplo.sh
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'applets') }}
+      run: ./scripts/ci-applets.sh
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'runners') }}
+      run: ./scripts/ci-runners.sh
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'tests-0') }}
+      run: ./scripts/ci-tests.sh 0 3
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'tests-1') }}
+      run: ./scripts/ci-tests.sh 1 3
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'tests-2') }}
+      run: ./scripts/ci-tests.sh 2 3
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'hw-host') }}
+      run: ./scripts/hwci.sh host --no-default-features
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'book') }}
+      run: ./scripts/ci-book.sh
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'footprint') }}
+      name: Compute footprint
+      uses: ./.github/actions/ci-footprint
+      with:
+        upload: ${{ toJSON(inputs.use-cache == 'true') }}
+        token: ${{ inputs.token }}
+    - run: git diff --exit-code
+      shell: bash
+    - run: '[ -z "$(git status -s | tee /dev/stderr)" ]'
+      shell: bash

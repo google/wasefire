@@ -14,27 +14,20 @@
 
 #![feature(try_blocks)]
 
-use std::cell::Cell;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use std::fmt::Display;
-use std::num::ParseIntError;
-use std::os::unix::prelude::CommandExt;
-use std::process::{Command, Output};
-use std::str::FromStr;
+use std::process::Command;
 
 use anyhow::{bail, ensure, Context, Result};
-use cargo_metadata::MetadataCommand;
 use clap::Parser;
 use lazy_static::lazy_static;
 use probe_rs::config::TargetSelector;
 use probe_rs::{flashing, Permissions, Session};
 use rustc_demangle::demangle;
-use sha2::{Digest, Sha256};
 use strum::{Display, EnumString};
+use wasefire_cli_tools::{action, cmd, fs};
 
 mod footprint;
-mod fs;
 mod lazy;
 
 #[derive(Parser)]
@@ -120,45 +113,26 @@ struct AppletOptions {
     name: String,
 
     /// Cargo profile.
-    #[clap(long, default_value = "release")]
-    profile: String,
+    #[clap(long)]
+    profile: Option<String>,
 
     /// Cargo features.
     #[clap(long)]
     features: Vec<String>,
 
-    /// Optimization level (0, 1, 2, 3, s, z).
+    /// Optimization level.
     #[clap(long, short = 'O')]
-    opt_level: Option<OptLevel>,
+    opt_level: Option<action::OptLevel>,
 
     /// Stack size.
-    #[clap(long, default_value_t)]
-    stack_size: StackSize,
-
-    /// Whether to call wasm-strip on the applet.
-    #[clap(skip = Cell::new(true))]
-    strip: Cell<bool>,
-
-    /// Whether to call wasm-opt on the applet.
-    #[clap(skip = Cell::new(true))]
-    opt: Cell<bool>,
+    #[clap(long, default_value = "16384")]
+    stack_size: usize,
 }
 
 #[derive(clap::Subcommand)]
 enum AppletCommand {
     /// Compiles a runner with the applet.
     Runner(RunnerOptions),
-
-    /// Runs twiggy on the applet.
-    ///
-    /// If an argument is "APPLET", then it is replaced with the applet path. At most one argument
-    /// may be "APPLET". If none are used, the applet path is appended at the end.
-    ///
-    /// A typical example would be `cargo xtask applet lang name twiggy -- top`.
-    Twiggy {
-        #[clap(last = true)]
-        args: Vec<String>,
-    },
 }
 
 #[derive(clap::Args)]
@@ -207,9 +181,21 @@ struct RunnerOptions {
     #[clap(long)]
     log: Option<String>,
 
+    /// Additional flags for `probe-rs run`.
+    #[clap(long)]
+    probe_rs: Vec<String>,
+
     /// Creates a web interface for the host runner.
     #[clap(long)]
     web: bool,
+
+    /// Host to start the webserver.
+    #[clap(long)]
+    web_host: Option<String>,
+
+    /// Port to start the webserver.
+    #[clap(long)]
+    web_port: Option<u16>,
 
     /// Measures bloat after building.
     // TODO: Make this a subcommand taking additional options for cargo bloat.
@@ -226,29 +212,6 @@ struct RunnerOptions {
     /// missing is 1 page.
     #[clap(long)]
     memory_page_count: Option<usize>,
-}
-
-#[derive(Copy, Clone)]
-struct StackSize(usize);
-
-impl Default for StackSize {
-    fn default() -> Self {
-        Self(16384)
-    }
-}
-
-impl Display for StackSize {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl FromStr for StackSize {
-    type Err = ParseIntError;
-
-    fn from_str(input: &str) -> std::result::Result<Self, Self::Err> {
-        Ok(StackSize(usize::from_str(input)?))
-    }
 }
 
 #[derive(Copy, Clone, EnumString, Display)]
@@ -282,7 +245,7 @@ impl Flags {
                 cargo.arg("--");
                 cargo.arg(format!("--lang={lang}"));
                 cargo.arg(format!("--output=examples/{lang}/api.{ext}"));
-                execute_command(&mut cargo)?;
+                cmd::execute(&mut cargo)?;
             }
             MainCommand::Footprint { output } => footprint::compare(&output)?,
         }
@@ -290,15 +253,14 @@ impl Flags {
     }
 }
 
+impl MainOptions {
+    fn is_native(&self) -> bool {
+        self.native || self.native_target.is_some()
+    }
+}
+
 impl Applet {
-    fn execute(&self, main: &MainOptions) -> Result<()> {
-        if matches!(self.command, Some(AppletCommand::Twiggy { .. })) {
-            self.options.strip.set(false);
-            // TODO(https://github.com/rustwasm/twiggy/issues/326): Twiggy returns "should not parse
-            // the same key into multiple items" when using wasm-opt. Ideally we would be able to
-            // use twiggy on the wasm-opt output.
-            self.options.opt.set(false);
-        }
+    fn execute(self, main: &MainOptions) -> Result<()> {
         self.options.execute(main, &self.command)?;
         if let Some(command) = &self.command {
             command.execute(main)?;
@@ -308,7 +270,11 @@ impl Applet {
 }
 
 impl AppletOptions {
-    fn execute(&self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
+    fn execute(self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
+        if !main.is_native() {
+            ensure_command(&["wasm-strip"])?;
+            ensure_command(&["wasm-opt"])?;
+        }
         match self.lang.as_str() {
             "rust" => self.execute_rust(main, command),
             "assemblyscript" => self.execute_assemblyscript(main),
@@ -316,7 +282,7 @@ impl AppletOptions {
         }
     }
 
-    fn execute_rust(&self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
+    fn execute_rust(self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
         let dir = if self.name.starts_with(['.', '/']) {
             self.name.clone()
         } else {
@@ -334,73 +300,36 @@ impl AppletOptions {
             (true, None, _) => bail!("--native requires runner"),
             (false, _, _) => None,
         };
-        let metadata = MetadataCommand::new().current_dir(&dir).no_deps().exec()?;
-        let target_dir = &metadata.target_directory;
-        assert_eq!(metadata.packages.len(), 1);
-        let name = metadata.packages[0].name.replace('-', "_");
-        let out = match native {
-            None => format!("{target_dir}/wasm32-unknown-unknown/release/{name}.wasm"),
-            Some(target) => format!("{target_dir}/{target}/release/lib{name}.a"),
+        let mut action = action::RustAppletBuild {
+            prod: main.release,
+            native: native.map(|x| x.to_string()),
+            profile: self.profile.clone(),
+            opt_level: self.opt_level,
+            stack_size: self.stack_size,
+            ..Default::default()
         };
-        let mut cargo = Command::new("cargo");
-        let mut rustflags = vec![
-            "-C panic=abort".to_string(),
-            "-C codegen-units=1".to_string(),
-            "-C embed-bitcode=yes".to_string(),
-            "-C lto=fat".to_string(),
-        ];
-        cargo.args(["rustc", "--lib"]);
-        match native {
-            None => {
-                rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
-                cargo.args(["--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
-            }
-            Some(target) => {
-                cargo.args(["--crate-type=staticlib", "--features=wasefire/native"]);
-                cargo.arg(format!("--target={target}"));
-            }
-        }
-        cargo.arg(format!("--profile={}", self.profile));
-        if let Some(level) = self.opt_level {
-            rustflags.push(format!("-C opt-level={level}"));
-        }
         for features in &self.features {
-            cargo.arg(format!("--features={features}"));
+            action.cargo.push(format!("--features={features}"));
         }
-        if main.release {
-            cargo.args(["-Zbuild-std=core,alloc", "-Zbuild-std-features=panic_immediate_abort"]);
-        } else {
-            cargo.env("WASEFIRE_DEBUG", "");
+        action.run(dir)?;
+        if !main.size && main.footprint.is_none() {
+            return Ok(());
         }
-        cargo.env("RUSTFLAGS", rustflags.join(" "));
-        cargo.current_dir(dir);
-        execute_command(&mut cargo)?;
-        let applet = match native {
-            Some(_) => "target/wasefire/libapplet.a",
-            None => "target/wasefire/applet.wasm",
+        let size = match native {
+            Some(_) => footprint::rust_size("target/wasefire/libapplet.a")?,
+            None => fs::metadata("target/wasefire/applet.wasm")?.len() as usize,
         };
-        let changed = copy_if_changed(&out, applet)?;
-        if native.is_some() {
-            if main.size {
-                let mut size = wrap_command()?;
-                size.args(["rust-size", applet]);
-                let output = String::from_utf8(output_command(&mut size)?.stdout)?;
-                // We assume the interesting part is the first line after the header.
-                for line in output.lines().take(2) {
-                    println!("{line}");
-                }
-            }
-            if let Some(key) = &main.footprint {
-                footprint::update_applet(key, footprint::rust_size(applet)?)?;
-            }
+        if main.size {
+            println!("Size: {size}");
         }
-        if native.is_none() && changed {
-            self.optimize_wasm(main)?;
+        if let Some(key) = &main.footprint {
+            footprint::update_applet(key, size)?;
         }
         Ok(())
     }
 
     fn execute_assemblyscript(&self, main: &MainOptions) -> Result<()> {
+        ensure!(!main.is_native(), "native applets are not supported for assemblyscript");
         let dir = format!("examples/{}", self.lang);
         ensure_assemblyscript()?;
         let mut asc = Command::new("./node_modules/.bin/asc");
@@ -418,41 +347,8 @@ impl AppletOptions {
         }
         asc.arg(format!("{}/main.ts", self.name));
         asc.current_dir(dir);
-        execute_command(&mut asc)?;
-        self.optimize_wasm(main)
-    }
-
-    fn optimize_wasm(&self, main: &MainOptions) -> Result<()> {
-        let wasm = "target/wasefire/applet.wasm";
-        if main.size {
-            println!("Applet size: {}", fs::metadata(wasm)?.len());
-        }
-        if self.strip.get() {
-            let mut strip = wrap_command()?;
-            strip.arg("wasm-strip");
-            strip.arg(wasm);
-            execute_command(&mut strip)?;
-            if main.size {
-                println!("Applet size (after wasm-strip): {}", fs::metadata(wasm)?.len());
-            }
-        }
-        if self.opt.get() {
-            let mut opt = wrap_command()?;
-            opt.arg("wasm-opt");
-            opt.args(["--enable-bulk-memory", "--enable-sign-ext"]);
-            match self.opt_level {
-                Some(level) => drop(opt.arg(format!("-O{level}"))),
-                None => drop(opt.arg("-O")),
-            }
-            opt.args([wasm, "-o", wasm]);
-            execute_command(&mut opt)?;
-            if main.size {
-                println!("Applet size (after wasm-opt): {}", fs::metadata(wasm)?.len());
-            }
-        }
-        if let Some(key) = &main.footprint {
-            footprint::update_applet(key, fs::metadata(wasm)?.len() as usize)?;
-        }
+        cmd::execute(&mut asc)?;
+        action::optimize_wasm("target/wasefire/applet.wasm", self.opt_level)?;
         Ok(())
     }
 }
@@ -461,19 +357,6 @@ impl AppletCommand {
     fn execute(&self, main: &MainOptions) -> Result<()> {
         match self {
             AppletCommand::Runner(runner) => runner.execute(main, 0, true),
-            AppletCommand::Twiggy { args } => {
-                let mut twiggy = wrap_command()?;
-                twiggy.arg("twiggy");
-                let mut wasm = Some("target/wasefire/applet.wasm");
-                for arg in args {
-                    let _ = match arg.as_str() {
-                        "APPLET" => twiggy.arg(wasm.take().unwrap()),
-                        _ => twiggy.arg(arg),
-                    };
-                }
-                wasm.map(|x| twiggy.arg(x));
-                execute_command(&mut twiggy)
-            }
         }
     }
 }
@@ -552,7 +435,8 @@ impl RunnerOptions {
         if let Some(log) = &self.log {
             cargo.env(self.log_env(), log);
         }
-        if self.name == "host" && self.web {
+        let web = self.web || self.web_host.is_some() || self.web_port.is_some();
+        if self.name == "host" && web {
             features.push("web".to_string());
         }
         if self.stack_sizes.is_some() {
@@ -575,15 +459,24 @@ impl RunnerOptions {
             cargo.env("RUSTFLAGS", rustflags.join(" "));
         }
         cargo.current_dir(format!("crates/runner-{}", self.name));
-        fs::touch("target/wasefire/applet.wasm")?;
+        if !main.native {
+            fs::touch("target/wasefire/applet.wasm")?;
+        }
         if run && self.name == "host" {
             let path = "target/wasefire/storage.bin";
             if self.reset_storage && fs::exists(path) {
                 fs::remove_file(path)?;
             }
-            replace_command(cargo);
+            cargo.arg("--");
+            if let Some(host) = &self.web_host {
+                cargo.arg(format!("--web-host={host}"));
+            }
+            if let Some(port) = &self.web_port {
+                cargo.arg(format!("--web-port={port}"));
+            }
+            cmd::replace(cargo);
         } else {
-            execute_command(&mut cargo)?;
+            cmd::execute(&mut cargo)?;
         }
         if self.measure_bloat {
             ensure_command(&["cargo", "bloat"])?;
@@ -606,14 +499,14 @@ impl RunnerOptions {
                 }
             }
             bloat.args(["--crates", "--split-std"]);
-            execute_command(&mut bloat)?;
+            cmd::execute(&mut bloat)?;
         }
         let elf = self.board_target();
         if main.size {
             let mut size = wrap_command()?;
             size.arg("rust-size");
             size.arg(&elf);
-            execute_command(&mut size)?;
+            cmd::execute(&mut size)?;
         }
         if let Some(key) = &main.footprint {
             footprint::update_runner(key, footprint::rust_size(&elf)?)?;
@@ -645,7 +538,7 @@ impl RunnerOptions {
             let mut objcopy = wrap_command()?;
             objcopy.args(["rust-objcopy", "-O", "binary", &elf]);
             objcopy.arg(format!("target/wasefire/platform{side}.bin"));
-            execute_command(&mut objcopy)?;
+            cmd::execute(&mut objcopy)?;
             if step < max_step {
                 return self.execute(main, step + 1, run);
             }
@@ -675,7 +568,7 @@ impl RunnerOptions {
             cargo.current_dir("crates/runner-nordic/crates/bootloader");
             cargo.args(["build", "--release", "--target=thumbv7em-none-eabi"]);
             cargo.args(["-Zbuild-std=core", "-Zbuild-std-features=panic_immediate_abort"]);
-            execute_command(&mut cargo)?;
+            cmd::execute(&mut cargo)?;
             flashing::download_file(
                 session.get()?,
                 "target/thumbv7em-none-eabi/release/bootloader",
@@ -690,9 +583,10 @@ impl RunnerOptions {
         let mut probe_rs = wrap_command()?;
         probe_rs.args(["probe-rs", "run"]);
         probe_rs.arg(format!("--chip={chip}"));
+        probe_rs.args(&self.probe_rs);
         probe_rs.arg(elf);
         println!("Replace `run` with `attach` in the following command to rerun:");
-        replace_command(probe_rs);
+        cmd::replace(probe_rs);
     }
 
     fn target(&self) -> &'static str {
@@ -704,7 +598,7 @@ impl RunnerOptions {
             static ref HOST_TARGET: String = {
                 let mut sh = Command::new("sh");
                 sh.args(["-c", "rustc -vV | sed -n 's/^host: //p'"]);
-                read_output_line(&mut sh).unwrap()
+                cmd::output_line(&mut sh).unwrap()
             };
         }
         match self.name.as_str() {
@@ -727,56 +621,15 @@ impl RunnerOptions {
     }
 }
 
-fn execute_command(command: &mut Command) -> Result<()> {
-    println!("{command:?}");
-    let code = command.spawn()?.wait()?.code().context("no error code")?;
-    ensure!(code == 0, "failed with code {code}");
-    Ok(())
-}
-
-fn replace_command(mut command: Command) -> ! {
-    println!("{command:?}");
-    panic!("{}", command.exec());
-}
-
-fn output_command(command: &mut Command) -> Result<Output> {
-    println!("{command:?}");
-    let output = command.output()?;
-    ensure!(output.status.success(), "failed with status {}", output.status);
-    Ok(output)
-}
-
-fn read_output_line(command: &mut Command) -> Result<String> {
-    let mut output = output_command(command)?;
-    assert!(output.stderr.is_empty());
-    assert_eq!(output.stdout.pop(), Some(b'\n'));
-    Ok(String::from_utf8(output.stdout)?)
-}
-
 fn ensure_command(cmd: &[&str]) -> Result<()> {
     let mut wrapper = Command::new("./scripts/wrapper.sh");
     wrapper.args(cmd);
     wrapper.env("WASEFIRE_WRAPPER_EXEC", "n");
-    execute_command(&mut wrapper)
+    cmd::execute(&mut wrapper)
 }
 
 fn wrap_command() -> Result<Command> {
     Ok(Command::new(fs::canonicalize("./scripts/wrapper.sh")?))
-}
-
-/// Copies a file if its destination .hash changed.
-///
-/// Returns whether the copy took place.
-fn copy_if_changed(src: &str, dst: &str) -> Result<bool> {
-    let dst_hash = format!("{dst}.hash");
-    let src_hash = Sha256::digest(fs::read(src)?);
-    let changed = !fs::exists(dst) || !fs::exists(&dst_hash) || fs::read(&dst_hash)? != *src_hash;
-    if changed {
-        println!("cp {src} {dst}");
-        fs::copy(src, dst)?;
-        fs::write(&dst_hash, src_hash)?;
-    }
-    Ok(changed)
 }
 
 fn ensure_assemblyscript() -> Result<()> {
@@ -786,7 +639,7 @@ fn ensure_assemblyscript() -> Result<()> {
     if fs::exists(BIN) && fs::exists(JSON) {
         let mut sed = Command::new("sed");
         sed.args(["-n", r#"s/^  "version": "\(.*\)",$/\1/p"#, JSON]);
-        if read_output_line(&mut sed)? == ASC_VERSION {
+        if cmd::output_line(&mut sed)? == ASC_VERSION {
             return Ok(());
         }
     }
@@ -795,7 +648,7 @@ fn ensure_assemblyscript() -> Result<()> {
     npm.args(["npm", "install", "--no-save"]);
     npm.arg(format!("assemblyscript@{ASC_VERSION}"));
     npm.current_dir("examples/assemblyscript");
-    execute_command(&mut npm)
+    cmd::execute(&mut npm)
 }
 
 fn main() -> Result<()> {

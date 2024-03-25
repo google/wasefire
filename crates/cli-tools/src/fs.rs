@@ -15,7 +15,8 @@
 //! Wrappers around `std::fs` with descriptive errors.
 
 use std::fs::Metadata;
-use std::path::{Path, PathBuf};
+use std::io::ErrorKind;
+use std::path::{Component, Path, PathBuf};
 
 use anyhow::{Context, Result};
 use serde::de::DeserializeOwned;
@@ -26,21 +27,66 @@ pub fn canonicalize(path: impl AsRef<Path>) -> Result<PathBuf> {
     std::fs::canonicalize(path.as_ref()).with_context(|| format!("canonicalizing {name}"))
 }
 
+pub fn try_canonicalize(path: impl AsRef<Path>) -> Result<PathBuf> {
+    match canonicalize(&path) {
+        Err(x) if x.downcast_ref::<std::io::Error>().unwrap().kind() == ErrorKind::NotFound => {
+            // We could try to canonicalize the existing prefix.
+            Ok(path.as_ref().to_path_buf())
+        }
+        x => x,
+    }
+}
+
+pub fn try_relative(base: impl AsRef<Path>, path: impl AsRef<Path>) -> Result<PathBuf> {
+    let base = try_canonicalize(&base)?;
+    let path = try_canonicalize(&path)?;
+    let mut base = base.components().peekable();
+    let mut path = path.components().peekable();
+    // Advance the common prefix.
+    while matches!((base.peek(), path.peek()), (Some(x), Some(y)) if x == y) {
+        base.next();
+        path.next();
+    }
+    // Add necessary parent directory.
+    let mut result = PathBuf::new();
+    while base.next().is_some() {
+        result.push(Component::ParentDir);
+    }
+    // Add path suffix.
+    result.extend(path);
+    Ok(result)
+}
+
 pub fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     let src = from.as_ref().display();
     let dst = to.as_ref().display();
     create_parent(to.as_ref())?;
+    debug!("cp {src:?} {dst:?}");
     std::fs::copy(from.as_ref(), to.as_ref()).with_context(|| format!("copying {src} to {dst}"))
 }
 
-fn create_dir_all(path: impl AsRef<Path>) -> Result<()> {
+pub fn copy_if_changed(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<bool> {
+    let changed = !exists(&dst) || metadata(&dst)?.modified()? < metadata(&src)?.modified()?;
+    if changed {
+        copy(src, dst)?;
+    }
+    Ok(changed)
+}
+
+pub fn create_dir_all(path: impl AsRef<Path>) -> Result<()> {
     let name = path.as_ref().display();
+    if exists(path.as_ref()) {
+        return Ok(());
+    }
+    debug!("mkdir -p {name:?}");
     std::fs::create_dir_all(path.as_ref()).with_context(|| format!("creating {name}"))
 }
 
-fn create_parent(path: impl AsRef<Path>) -> Result<()> {
+pub fn create_parent(path: impl AsRef<Path>) -> Result<()> {
     if let Some(parent) = path.as_ref().parent() {
-        create_dir_all(parent)?;
+        if !parent.as_os_str().is_empty() {
+            create_dir_all(parent)?;
+        }
     }
     Ok(())
 }
@@ -56,6 +102,7 @@ pub fn metadata(path: impl AsRef<Path>) -> Result<Metadata> {
 
 pub fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
     let name = path.as_ref().display();
+    debug!("read < {name:?}");
     std::fs::read(path.as_ref()).with_context(|| format!("reading {name}"))
 }
 
@@ -68,6 +115,7 @@ pub fn read_toml<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {
 
 pub fn remove_file(path: impl AsRef<Path>) -> Result<()> {
     let name = path.as_ref().display();
+    debug!("rm {name:?}");
     std::fs::remove_file(path.as_ref()).with_context(|| format!("removing {name}"))
 }
 
@@ -82,6 +130,7 @@ pub fn write(path: impl AsRef<Path>, contents: impl AsRef<[u8]>) -> Result<()> {
     let name = path.as_ref().display();
     let contents = contents.as_ref();
     create_parent(path.as_ref())?;
+    debug!("write > {name:?}");
     std::fs::write(path.as_ref(), contents).with_context(|| format!("writing {name}"))?;
     Ok(())
 }
@@ -91,4 +140,20 @@ pub fn write_toml<T: Serialize>(path: impl AsRef<Path>, contents: &T) -> Result<
     let contents = toml::to_string(contents).with_context(|| format!("displaying {name}"))?;
     write(path.as_ref(), contents)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn try_relative_ok() {
+        #[track_caller]
+        fn test(base: &str, path: &str, res: &str) {
+            assert_eq!(try_relative(base, path).ok(), Some(PathBuf::from(res)));
+        }
+        test("/foo/bar", "/foo", "..");
+        test("/foo/bar", "/foo/baz/qux", "../baz/qux");
+        test("/foo/bar", "/foo/bar/qux", "qux");
+    }
 }

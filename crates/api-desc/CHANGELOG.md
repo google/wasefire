@@ -1,9 +1,10 @@
 # Changelog
 
-## 0.1.6-git
+## 0.1.6
 
 ### Minor
 
+- Add `gpio::last_write()` function
 - Add `uart::{start,stop}()` and `uart::set_baudrate()` functions
 - Rename `clock` module to `timer`
 - Make all API functions return `isize`
@@ -25,6 +26,7 @@
 
 ### Patch
 
+- Clarify conditions when serial events trigger
 - Update dependencies
 - Fix clippy lint
 - Make sure enum values don't skip any value, essentially mapping to `0..N`

@@ -1,9 +1,10 @@
 # Changelog
 
-## 0.6.0-git
+## 0.6.0
 
 ### Major
 
+- Add `gpio::Api::last_write()` for stateful output GPIOs
 - Add `uart::Api` functions to start, stop, and set the baudrate
 - Remove `Unsupported` and `UnsupportedCrypto` implementations
 - Change `syscall` return type to `Option<Result<u31, Error>>`
@@ -27,6 +28,7 @@
 
 ### Patch
 
+- Clarify conditions when serial events trigger
 - Fix lints
 - Update dependencies
 - Use `logger` alias instead of `log` for `wasefire-logger` crate

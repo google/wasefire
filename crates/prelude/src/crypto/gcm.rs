@@ -167,6 +167,14 @@ mod rust_crypto {
         key: [u8; 32],
     }
 
+    impl<const IN_PLACE: bool> core::ops::Deref for Key<IN_PLACE> {
+        type Target = aead::Key<Self>;
+
+        fn deref(&self) -> &Self::Target {
+            (&self.key).into()
+        }
+    }
+
     /// AES-256-GCM key to be used with the `Aead` trait.
     pub type Aes256Gcm = Key<false>;
 

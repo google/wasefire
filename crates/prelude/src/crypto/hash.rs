@@ -244,17 +244,35 @@ mod rust_crypto {
     #[cfg(feature = "api-crypto-hash")]
     pub struct Sha256(Digest);
 
+    /// SHA-384 implementing RustCrypto traits like `Digest`.
+    #[cfg(feature = "api-crypto-hash")]
+    pub struct Sha384(Digest);
+
     /// HMAC-SHA-256 implementing RustCrypto traits like `Mac`.
     #[cfg(feature = "api-crypto-hmac")]
     pub struct HmacSha256(Hmac);
+
+    /// HMAC-SHA-384 implementing RustCrypto traits like `Mac`.
+    #[cfg(feature = "api-crypto-hmac")]
+    pub struct HmacSha384(Hmac);
 
     #[cfg(feature = "api-crypto-hash")]
     impl HashMarker for Sha256 {}
 
     #[cfg(feature = "api-crypto-hash")]
+    impl HashMarker for Sha384 {}
+
+    #[cfg(feature = "api-crypto-hash")]
     impl Default for Sha256 {
         fn default() -> Self {
             Self(Digest::new(Algorithm::Sha256).unwrap())
+        }
+    }
+
+    #[cfg(feature = "api-crypto-hash")]
+    impl Default for Sha384 {
+        fn default() -> Self {
+            Self(Digest::new(Algorithm::Sha384).unwrap())
         }
     }
 
@@ -266,8 +284,20 @@ mod rust_crypto {
     }
 
     #[cfg(feature = "api-crypto-hash")]
+    impl Update for Sha384 {
+        fn update(&mut self, data: &[u8]) {
+            self.0.update(data);
+        }
+    }
+
+    #[cfg(feature = "api-crypto-hash")]
     impl OutputSizeUser for Sha256 {
         type OutputSize = digest::consts::U32;
+    }
+
+    #[cfg(feature = "api-crypto-hash")]
+    impl OutputSizeUser for Sha384 {
+        type OutputSize = digest::consts::U48;
     }
 
     #[cfg(feature = "api-crypto-hash")]
@@ -277,12 +307,27 @@ mod rust_crypto {
         }
     }
 
+    #[cfg(feature = "api-crypto-hash")]
+    impl FixedOutput for Sha384 {
+        fn finalize_into(self, out: &mut digest::Output<Self>) {
+            self.0.finalize(out).unwrap();
+        }
+    }
+
     #[cfg(feature = "api-crypto-hmac")]
     impl MacMarker for HmacSha256 {}
 
     #[cfg(feature = "api-crypto-hmac")]
+    impl MacMarker for HmacSha384 {}
+
+    #[cfg(feature = "api-crypto-hmac")]
     impl KeySizeUser for HmacSha256 {
         type KeySize = digest::consts::U64;
+    }
+
+    #[cfg(feature = "api-crypto-hmac")]
+    impl KeySizeUser for HmacSha384 {
+        type KeySize = digest::consts::U128;
     }
 
     #[cfg(feature = "api-crypto-hmac")]
@@ -297,7 +342,25 @@ mod rust_crypto {
     }
 
     #[cfg(feature = "api-crypto-hmac")]
+    impl KeyInit for HmacSha384 {
+        fn new(key: &digest::Key<Self>) -> Self {
+            Self::new_from_slice(key).unwrap()
+        }
+
+        fn new_from_slice(key: &[u8]) -> Result<Self, crypto_common::InvalidLength> {
+            Ok(Self(Hmac::new(Algorithm::Sha384, key).unwrap()))
+        }
+    }
+
+    #[cfg(feature = "api-crypto-hmac")]
     impl Update for HmacSha256 {
+        fn update(&mut self, data: &[u8]) {
+            self.0.update(data);
+        }
+    }
+
+    #[cfg(feature = "api-crypto-hmac")]
+    impl Update for HmacSha384 {
         fn update(&mut self, data: &[u8]) {
             self.0.update(data);
         }
@@ -309,7 +372,19 @@ mod rust_crypto {
     }
 
     #[cfg(feature = "api-crypto-hmac")]
+    impl OutputSizeUser for HmacSha384 {
+        type OutputSize = digest::consts::U48;
+    }
+
+    #[cfg(feature = "api-crypto-hmac")]
     impl FixedOutput for HmacSha256 {
+        fn finalize_into(self, out: &mut digest::Output<Self>) {
+            self.0.finalize(out).unwrap()
+        }
+    }
+
+    #[cfg(feature = "api-crypto-hmac")]
+    impl FixedOutput for HmacSha384 {
         fn finalize_into(self, out: &mut digest::Output<Self>) {
             self.0.finalize(out).unwrap()
         }

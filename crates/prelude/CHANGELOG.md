@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.5.0-git
+## 0.5.1-git
+
+### Minor
+
+- Add `Sha384` and `HmacSha384` to the `rust-crypto` feature
+
+## 0.5.0
 
 ### Major
 
@@ -13,6 +19,8 @@
 
 ### Minor
 
+- Add a deref implementation from `gcm::Key` to `aead::Key`
+- Add `gpio::Gpio::{last_write,toggle}()` for stateful output GPIOs
 - Add `uart::UartBuilder` and `uart::Uart::new()` to configure a UART
 - Add `serial::DelimitedReader` to read delimited frames from serial
 - Add `serial::Listener` to listen for serial events
@@ -127,4 +135,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 23 -->
+<!-- Increment to skip CHANGELOG.md test: 25 -->

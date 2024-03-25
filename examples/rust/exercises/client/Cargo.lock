@@ -741,6 +741,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "spin"
+version = "0.9.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
+dependencies = [
+ "portable-atomic",
+]
+
+[[package]]
 name = "spki"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -858,7 +867,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "wasefire"
-version = "0.5.0-git"
+version = "0.5.1-git"
 dependencies = [
  "bytemuck",
  "const-default",
@@ -873,7 +882,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.6.0-git"
+version = "0.6.0"
 dependencies = [
  "bytemuck",
  "wasefire-applet-api-macro",
@@ -882,7 +891,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.1.6-git"
+version = "0.1.6"
 dependencies = [
  "anyhow",
  "clap",
@@ -895,7 +904,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.6.0-git"
+version = "0.6.0"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
@@ -903,16 +912,17 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "num_enum",
 ]
 
 [[package]]
 name = "wasefire-sync"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "portable-atomic",
+ "spin",
 ]
 
 [[package]]

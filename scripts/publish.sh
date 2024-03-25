@@ -23,6 +23,9 @@ set -e
 
 TOPOLOGICAL_ORDER=(
   logger
+  error
+  sync
+  cli-tools
   cli
   interpreter
   store
@@ -63,6 +66,8 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
     occurs_before $name $crate || e "$crate depends on $name but occurs before"
   done
 done
+
+[ "$1" = --no-dry-run ] || d "Run with --no-dry-run to actually publish"
 
 i "Remove all -git suffixes"
 sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})

@@ -1654,6 +1654,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
+name = "wasefire-cli-tools"
+version = "0.1.0-git"
+dependencies = [
+ "anyhow",
+ "cargo_metadata",
+ "clap",
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "winapi"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1791,7 +1802,6 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cargo_metadata",
  "clap",
  "env_logger",
  "lazy_static",
@@ -1799,10 +1809,10 @@ dependencies = [
  "probe-rs",
  "rustc-demangle",
  "serde",
- "sha2",
  "stack-sizes",
  "strum 0.25.0",
  "toml",
+ "wasefire-cli-tools",
 ]
 
 [[package]]
