@@ -6,7 +6,6 @@ on:
       - main
   schedule:
     - cron: 32 12 * * 2
-  workflow_dispatch:
 
 permissions: read-all
 
@@ -32,6 +31,6 @@ jobs:
           name: SARIF file
           path: results.sarif
           retention-days: 5
-      - uses: github/codeql-action/upload-sarif@v2
+      - uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
