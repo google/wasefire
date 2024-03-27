@@ -14,6 +14,8 @@
 
 use crate::*;
 
+#[cfg(feature = "api-platform-protocol")]
+mod protocol;
 #[cfg(feature = "api-platform-update")]
 mod update;
 
@@ -23,6 +25,8 @@ pub(crate) fn new() -> Item {
     };
     let name = "platform".into();
     let items = vec![
+        #[cfg(feature = "api-platform-protocol")]
+        protocol::new(),
         #[cfg(feature = "api-platform-update")]
         update::new(),
         #[cfg(feature = "api-platform")]

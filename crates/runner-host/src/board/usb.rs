@@ -20,18 +20,27 @@ use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::StringDescriptors;
 use usb_device::prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
 use usb_device::UsbError;
-use usbd_serial::{SerialPort, USB_CLASS_CDC};
+use usbd_serial::SerialPort;
 use usbip_device::UsbIpBus;
 use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
 use wasefire_board_api::usb::Api;
+use wasefire_protocol_usb::{HasRpc, Rpc};
 
 use crate::board::State;
 use crate::with_state;
 
 pub enum Impl {}
 
+pub type ProtocolImpl = wasefire_protocol_usb::Impl<'static, UsbIpBus, crate::board::usb::Impl>;
+
 impl Api for Impl {
     type Serial = WithSerial<Impl>;
+}
+
+impl HasRpc<'static, UsbIpBus> for Impl {
+    fn with_rpc<R>(f: impl FnOnce(&mut Rpc<'static, UsbIpBus>) -> R) -> R {
+        with_state(|state| f(&mut state.usb.protocol))
+    }
 }
 
 impl HasSerial for Impl {
@@ -43,6 +52,7 @@ impl HasSerial for Impl {
 }
 
 pub struct Usb {
+    pub protocol: Rpc<'static, UsbIpBus>,
     pub serial: Serial<'static, UsbIpBus>,
     pub usb_dev: UsbDevice<'static, UsbIpBus>,
 }
@@ -50,13 +60,14 @@ pub struct Usb {
 impl Default for Usb {
     fn default() -> Self {
         let usb_bus = Box::leak(Box::new(UsbBusAllocator::new(UsbIpBus::new())));
+        let protocol = Rpc::new(usb_bus);
         let serial = Serial::new(SerialPort::new(usb_bus));
+        // TODO: VID and PID should be configurable.
         let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x16c0, 0x27dd))
-            .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Serial port")])
+            .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Wasefire")])
             .unwrap()
-            .device_class(USB_CLASS_CDC)
             .build();
-        Self { serial, usb_dev }
+        Self { protocol, serial, usb_dev }
     }
 }
 
@@ -80,13 +91,16 @@ impl Usb {
                 loop {
                     tokio::time::sleep(Duration::from_millis(1)).await;
                     with_state(|state| {
-                        let polled = state.usb.poll()
-                            && !matches!(
-                                state.usb.serial.port().read(&mut []),
-                                Err(UsbError::WouldBlock)
-                            );
-                        let State { sender, usb: Usb { serial, .. }, .. } = state;
-                        serial.tick(polled, |event| drop(sender.try_send(event.into())));
+                        let polled = state.usb.poll();
+                        let has_serial = !matches!(
+                            state.usb.serial.port().read(&mut []),
+                            Err(UsbError::WouldBlock)
+                        );
+                        let State { sender, usb: Usb { protocol, serial, .. }, .. } = state;
+                        protocol.tick(|event| drop(sender.try_send(event.into())));
+                        serial.tick(polled && has_serial, |event| {
+                            drop(sender.try_send(event.into()))
+                        });
                     });
                 }
             }
@@ -95,7 +109,7 @@ impl Usb {
     }
 
     pub fn poll(&mut self) -> bool {
-        self.usb_dev.poll(&mut [self.serial.port()])
+        self.usb_dev.poll(&mut [&mut self.protocol, self.serial.port()])
     }
 }
 

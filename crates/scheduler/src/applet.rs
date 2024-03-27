@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(feature = "board-api-platform-protocol")]
+use alloc::boxed::Box;
 use alloc::collections::{BTreeSet, VecDeque};
 
 #[cfg(feature = "internal-hash-context")]
 use wasefire_board_api as board;
 use wasefire_board_api::{Api as Board, Event};
+#[cfg(feature = "board-api-platform-protocol")]
+use wasefire_error::{Code, Error};
 use wasefire_logger as log;
 
 use self::store::{Memory, Store, StoreApi};
@@ -30,6 +34,10 @@ pub struct Applet<B: Board> {
 
     /// Pending events.
     events: VecDeque<Event<B>>,
+
+    /// Protocol request or response, if any.
+    #[cfg(feature = "board-api-platform-protocol")]
+    protocol: Protocol,
 
     /// Whether we returned from a callback.
     #[cfg(feature = "wasm")]
@@ -47,6 +55,8 @@ impl<B: Board> Default for Applet<B> {
         Self {
             store: Default::default(),
             events: Default::default(),
+            #[cfg(feature = "board-api-platform-protocol")]
+            protocol: Default::default(),
             #[cfg(feature = "wasm")]
             done: Default::default(),
             handlers: Default::default(),
@@ -54,6 +64,16 @@ impl<B: Board> Default for Applet<B> {
             hashes: Default::default(),
         }
     }
+}
+
+#[cfg(feature = "board-api-platform-protocol")]
+#[derive(Debug, Default)]
+enum Protocol {
+    #[default]
+    Empty,
+    Request(Box<[u8]>),
+    Processing,
+    Response(Box<[u8]>),
 }
 
 /// Currently alive hash contexts.
@@ -170,6 +190,52 @@ impl<B: Board> Applet<B> {
 
     pub fn len(&self) -> usize {
         self.events.len()
+    }
+
+    #[cfg(feature = "board-api-platform-protocol")]
+    pub fn put_request(&mut self, event: Event<B>, request: &[u8]) -> Result<(), Error> {
+        self.get(Key::from(&event)).ok_or(Error::world(Code::InvalidState))?;
+        // If the applet is processing a request, we'll send the event when they respond.
+        if !matches!(self.protocol, Protocol::Processing) {
+            self.push(event);
+        }
+        // We always overwrite the state, because requests from the host have priority.
+        self.protocol = Protocol::Request(request.into());
+        Ok(())
+    }
+
+    #[cfg(feature = "board-api-platform-protocol")]
+    pub fn get_request(&mut self) -> Result<Option<Box<[u8]>>, Error> {
+        let (update, result) = match core::mem::take(&mut self.protocol) {
+            x @ Protocol::Empty => (x, Ok(None)),
+            Protocol::Request(x) => (Protocol::Processing, Ok(Some(x))),
+            x @ Protocol::Processing => (x, Err(Error::user(Code::InvalidState))),
+            x @ Protocol::Response(_) => (x, Ok(None)),
+        };
+        self.protocol = update;
+        result
+    }
+
+    #[cfg(feature = "board-api-platform-protocol")]
+    pub fn put_response(&mut self, response: Box<[u8]>) -> Result<(), Error> {
+        match &self.protocol {
+            Protocol::Processing => self.protocol = Protocol::Response(response),
+            // We use World:InvalidState to know that there is a new request.
+            Protocol::Request(_) => return Err(Error::world(Code::InvalidState)),
+            _ => return Err(Error::user(Code::InvalidState)),
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "board-api-platform-protocol")]
+    pub fn get_response(&mut self) -> Result<Option<Box<[u8]>>, Error> {
+        let (update, result) = match core::mem::take(&mut self.protocol) {
+            Protocol::Processing => (Protocol::Processing, Ok(None)),
+            Protocol::Response(x) => (Protocol::Empty, Ok(Some(x))),
+            x => (x, Err(Error::world(Code::InvalidState))),
+        };
+        self.protocol = update;
+        result
     }
 }
 

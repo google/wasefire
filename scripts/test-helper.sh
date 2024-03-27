@@ -131,6 +131,7 @@ crypto-hmac
 gpio
 led
 platform
+platform-protocol
 platform-update
 radio-ble
 rng
@@ -154,6 +155,7 @@ crypto-sha384
 gpio
 led
 platform
+platform-protocol
 platform-update
 radio-ble
 rng

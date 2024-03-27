@@ -13,6 +13,10 @@
 - Add `crypto::NoError` helper for `crypto::WithError`
 - Add `crypto::WithError` to add error support to RustCrypto (fix #176)
 
+### Minor
+
+- Add `platform::Api::Protocol` for the platform protocol and its `api-platform-protocol` feature
+
 ### Patch
 
 - Change `Id::new()` to return `OutOfBounds` error instead of `InvalidArgument`

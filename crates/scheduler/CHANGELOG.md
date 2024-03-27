@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support `platform::protocol` with the `{applet,board}-api-platform-protocol` features
 - Change `button::{register, unregister}()` to never trap and return an error instead
 - Migrate to `Id::new` returning `Result` instead of `Option`
 - Migrate to `crypto::{Hash,Hmac}` depending on `crypto::WithError`

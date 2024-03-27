@@ -157,6 +157,10 @@ pub enum Event<B: Api + ?Sized> {
     #[cfg(feature = "api-button")]
     Button(button::Event<B>),
 
+    /// Platform event.
+    #[cfg(feature = "internal-api-platform")]
+    Platform(platform::Event),
+
     /// Radio event.
     #[cfg(feature = "internal-api-radio")]
     Radio(radio::Event),

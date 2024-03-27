@@ -921,6 +921,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasefire-protocol"
+version = "0.1.0-git"
+dependencies = [
+ "sealed",
+ "wasefire-error",
+]
+
+[[package]]
 name = "wasefire-scheduler"
 version = "0.3.1-git"
 dependencies = [
@@ -937,6 +945,7 @@ dependencies = [
  "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
+ "wasefire-protocol",
  "wasefire-store",
  "wasefire-sync",
 ]
