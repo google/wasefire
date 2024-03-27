@@ -29,16 +29,16 @@ use core::marker::PhantomData;
 use derivative::Derivative;
 use event::Key;
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature, U32};
-#[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
+#[cfg(feature = "board-api-storage")]
 use wasefire_board_api::Singleton;
-#[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
+#[cfg(feature = "board-api-timer")]
 use wasefire_board_api::Support;
 use wasefire_board_api::{self as board, Api as Board};
 use wasefire_error::Error;
 #[cfg(feature = "wasm")]
 use wasefire_interpreter::{self as interpreter, Call, Module, RunAnswer, Val};
 use wasefire_logger as log;
-#[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
+#[cfg(feature = "board-api-storage")]
 use wasefire_store as store;
 
 use crate::applet::store::{Memory, Store, StoreApi};
@@ -87,11 +87,11 @@ impl<B: Board> Events<B> {
 }
 
 pub struct Scheduler<B: Board> {
-    #[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
+    #[cfg(feature = "board-api-storage")]
     store: store::Store<B::Storage>,
     host_funcs: Vec<Api<Id>>,
     applet: Applet<B>,
-    #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
+    #[cfg(feature = "board-api-timer")]
     timers: Vec<Option<Timer>>,
     #[cfg(feature = "internal-debug")]
     perf: perf::Perf<B>,
@@ -296,11 +296,11 @@ impl<B: Board> Scheduler<B> {
         #[cfg(feature = "native")]
         let applet = Applet::default();
         Self {
-            #[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
+            #[cfg(feature = "board-api-storage")]
             store: store::Store::new(board::Storage::<B>::take().unwrap()).ok().unwrap(),
             host_funcs,
             applet,
-            #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
+            #[cfg(feature = "board-api-timer")]
             timers: alloc::vec![None; board::Timer::<B>::SUPPORT],
             #[cfg(feature = "internal-debug")]
             perf: perf::Perf::default(),
