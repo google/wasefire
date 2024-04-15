@@ -35,7 +35,6 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 }
 
 fn support<B: Board>(call: SchedulerCall<B, api::support::Sig>) {
-    let api::support::Params {} = call.read();
     #[cfg(feature = "board-api-crypto-aes256-gcm")]
     let support = {
         use wasefire_applet_api::crypto::gcm::Support;
@@ -50,7 +49,6 @@ fn support<B: Board>(call: SchedulerCall<B, api::support::Sig>) {
 
 #[cfg(feature = "board-api-crypto-aes256-gcm")]
 fn tag_length<B: Board>(call: SchedulerCall<B, api::tag_length::Sig>) {
-    let api::tag_length::Params {} = call.read();
     call.reply(Ok(Ok(tag_len::<B>() as u32)))
 }
 

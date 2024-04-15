@@ -34,7 +34,6 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 }
 
 fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
-    let api::count::Params {} = call.read();
     #[cfg(feature = "board-api-gpio")]
     let count = board::Gpio::<B>::SUPPORT as u32;
     #[cfg(not(feature = "board-api-gpio"))]

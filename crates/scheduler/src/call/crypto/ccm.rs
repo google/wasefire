@@ -34,7 +34,6 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 }
 
 fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
-    let api::is_supported::Params {} = call.read();
     #[cfg(feature = "board-api-crypto-aes128-ccm")]
     let supported = bool::from(board::crypto::Aes128Ccm::<B>::SUPPORT) as u32;
     #[cfg(not(feature = "board-api-crypto-aes128-ccm"))]

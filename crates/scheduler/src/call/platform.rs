@@ -55,6 +55,5 @@ fn version<B: Board>(mut call: SchedulerCall<B, api::version::Sig>) {
 
 #[cfg(feature = "board-api-platform")]
 fn reboot<B: Board>(call: SchedulerCall<B, api::reboot::Sig>) {
-    let api::reboot::Params {} = call.read();
     call.reply(Ok(board::Platform::<B>::reboot()));
 }

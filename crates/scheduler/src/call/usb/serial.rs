@@ -96,7 +96,6 @@ fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
 
 #[cfg(feature = "board-api-usb-serial")]
 fn flush<B: Board>(call: SchedulerCall<B, api::flush::Sig>) {
-    let api::flush::Params {} = call.read();
     let result = try { board::usb::Serial::<B>::flush() };
     call.reply(result);
 }

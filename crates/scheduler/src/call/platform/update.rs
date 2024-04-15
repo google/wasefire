@@ -36,7 +36,6 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 }
 
 fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
-    let api::is_supported::Params {} = call.read();
     #[cfg(feature = "board-api-platform-update")]
     let supported = board::platform::Update::<B>::SUPPORT as u32;
     #[cfg(not(feature = "board-api-platform-update"))]
@@ -93,7 +92,6 @@ fn process_<B: Board>(mut call: SchedulerCall<B, api::process::Sig>) {
 
 #[cfg(feature = "board-api-platform-update")]
 fn finalize<B: Board>(call: SchedulerCall<B, api::finalize::Sig>) {
-    let api::finalize::Params {} = call.read();
     let result = try { board::platform::Update::<B>::finalize() };
     call.reply(result);
 }
