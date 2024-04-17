@@ -18,9 +18,13 @@ use generic_array::{ArrayLength, GenericArray};
 
 use crate::{Error, Support};
 
+/// Describes how AEAD is supported.
 #[derive(Copy, Clone)]
 pub struct AeadSupport {
+    /// The implementation doesn't copy when the input and output are in distinct buffers.
     pub no_copy: bool,
+
+    /// The implementation doesn't copy when the input and output are in the same buffer.
     pub in_place_no_copy: bool,
 }
 
@@ -58,6 +62,7 @@ where
     ) -> Result<(), Error>;
 }
 
+/// Sequence of N bytes.
 pub type Array<N> = GenericArray<u8, N>;
 
 #[cfg(feature = "internal-software-crypto-aead")]

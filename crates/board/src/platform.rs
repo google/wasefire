@@ -22,6 +22,7 @@ pub mod update;
 
 /// Platform interface.
 pub trait Api: Send {
+    /// Platform update interface.
     #[cfg(feature = "api-platform-update")]
     type Update: update::Api;
 
@@ -40,6 +41,7 @@ pub trait Api: Send {
     fn reboot() -> Result<!, Error>;
 }
 
+/// Platform update interface.
 #[cfg(feature = "api-platform-update")]
 pub type Update<B> = <super::Platform<B> as Api>::Update;
 

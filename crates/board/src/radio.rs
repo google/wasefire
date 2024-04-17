@@ -33,9 +33,11 @@ impl<B: crate::Api> From<Event> for crate::Event<B> {
 
 /// Radio interface.
 pub trait Api: Send {
+    /// Bluetooth Low Energy (BLE) interface.
     #[cfg(feature = "api-radio-ble")]
     type Ble: ble::Api;
 }
 
+/// Bluetooth Low Energy (BLE) interface.
 #[cfg(feature = "api-radio-ble")]
 pub type Ble<B> = <super::Radio<B> as Api>::Ble;
