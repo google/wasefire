@@ -97,7 +97,10 @@ fn update<B: Board>(mut call: SchedulerCall<B, api::update::Sig>) {
                 context.last_error()?
             }
             #[cfg(feature = "board-api-crypto-sha384")]
-            HashContext::Sha384(context) => context.update(data),
+            HashContext::Sha384(context) => {
+                context.update(data);
+                context.last_error()?
+            }
             _ => trap_use!(data),
         }
         Ok(())
