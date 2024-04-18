@@ -88,3 +88,6 @@ internal-api-radio = []
 internal-api-store = []
 internal-api-usb = []
 internal-serial = []
+
+[lints.rust]
+missing-docs = "warn"

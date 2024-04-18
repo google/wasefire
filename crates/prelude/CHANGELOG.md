@@ -4,6 +4,8 @@
 
 ### Minor
 
+- Document all public API
+- Remove deprecated `println!` macro
 - Add `Sha384` and `HmacSha384` to the `rust-crypto` feature
 
 ## 0.5.0
