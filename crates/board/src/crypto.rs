@@ -18,13 +18,16 @@
 use crypto_common::BlockSizeUser;
 #[cfg(feature = "internal-api-crypto-hmac")]
 use crypto_common::KeyInit;
-#[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
-use digest::Update;
-#[cfg(feature = "internal-api-crypto-hmac")]
-use digest::{FixedOutput, MacMarker};
 #[cfg(feature = "internal-api-crypto-hash")]
-use digest::{FixedOutputReset, HashMarker};
+use digest::HashMarker;
+#[cfg(feature = "internal-api-crypto-hmac")]
+use digest::MacMarker;
+#[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
+use digest::{FixedOutputReset, Update};
+#[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
 use wasefire_error::Error;
+#[cfg(feature = "internal-api-crypto-hmac")]
+use wasefire_error::{Code, Space};
 
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
 use crate::Support;
@@ -172,8 +175,8 @@ impl crate::Supported for sha2::Sha256 {}
 impl crate::Supported for sha2::Sha384 {}
 
 #[cfg(feature = "internal-software-crypto-hmac")]
-impl<D: Support<bool> + Default + BlockSizeUser + Update + FixedOutput + HashMarker> Support<bool>
-    for hmac::SimpleHmac<D>
+impl<D: Support<bool> + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker>
+    Support<bool> for hmac::SimpleHmac<D>
 {
     const SUPPORT: bool = D::SUPPORT;
 }
@@ -182,32 +185,40 @@ impl<D: Support<bool> + Default + BlockSizeUser + Update + FixedOutput + HashMar
 ///
 /// Infallible operations may return incorrect values. Those results must not be used until
 /// `last_error()` is called and returns `Ok(())`, signifying that the return value is correct.
+#[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
 pub trait LastError {
     /// Returns the last error of infallible operations.
     fn last_error(&self) -> Result<(), Error>;
 }
 
-// Wrapper API around Hash/Hmac that calls last_error().
+// Wrapper API around Hash that calls last_error().
+#[cfg(feature = "internal-api-crypto-hash")]
 pub struct HashApi<T: Hash>(T);
+
+// Wrapper API around Hmac that calls last_error().
+#[cfg(feature = "internal-api-crypto-hmac")]
 pub struct HmacApi<T: Hmac>(T);
 
+#[cfg(feature = "internal-api-crypto-hash")]
 impl<T: Hash> HashApi<T> {
     pub fn new() -> Result<Self, Error> {
         let hash = T::default();
         let error = T::last_error(&hash);
         match error {
-            Ok(()) => Ok(hash),
+            Ok(()) => Ok(HashApi(hash)),
             Err(error) => Err(error),
         }
     }
 }
 
+#[cfg(feature = "internal-api-crypto-hmac")]
 impl<T: Hmac> HmacApi<T> {
     pub fn new(key: &[u8]) -> Result<Self, Error> {
-        let hash = T::new_from_slice(key).map_err(|_| Error)?;
+        let hash =
+            T::new_from_slice(key).map_err(|_| Error::new(Space::User, Code::InvalidLength))?;
         let error = T::last_error(&hash);
         match error {
-            Ok(()) => Ok(hash),
+            Ok(()) => Ok(HmacApi(hash)),
             Err(error) => Err(error),
         }
     }
