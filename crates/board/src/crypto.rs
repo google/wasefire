@@ -16,7 +16,6 @@
 
 #[cfg(feature = "internal-api-crypto-hash")]
 use crypto_common::BlockSizeUser;
-use crypto_common::Key;
 #[cfg(feature = "internal-api-crypto-hmac")]
 use crypto_common::KeyInit;
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
@@ -197,7 +196,7 @@ impl<T: Hash> HashApi<T> {
         let hash = T::default();
         let error = T::last_error(&hash);
         match error {
-            Ok(()) => hash,
+            Ok(()) => Ok(hash),
             Err(error) => Err(error),
         }
     }
@@ -205,10 +204,10 @@ impl<T: Hash> HashApi<T> {
 
 impl<T: Hmac> HmacApi<T> {
     pub fn new(key: &[u8]) -> Result<Self, Error> {
-        let hash = T::new_from_slice(key)?;
+        let hash = T::new_from_slice(key).map_err(|_| Error)?;
         let error = T::last_error(&hash);
         match error {
-            Ok(()) => hash,
+            Ok(()) => Ok(hash),
             Err(error) => Err(error),
         }
     }
