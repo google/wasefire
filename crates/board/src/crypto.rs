@@ -16,6 +16,7 @@
 
 #[cfg(feature = "internal-api-crypto-hash")]
 use crypto_common::BlockSizeUser;
+use crypto_common::Key;
 #[cfg(feature = "internal-api-crypto-hmac")]
 use crypto_common::KeyInit;
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
@@ -24,6 +25,7 @@ use digest::Update;
 use digest::{FixedOutput, MacMarker};
 #[cfg(feature = "internal-api-crypto-hash")]
 use digest::{FixedOutputReset, HashMarker};
+use wasefire_error::Error;
 
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
 use crate::Support;
@@ -68,24 +70,72 @@ pub trait Api: Send {
     type Sha384: Hash<BlockSize = typenum::U128, OutputSize = typenum::U48>;
 }
 
+/// Extends APIs with infallible operations to support errors.
+///
+/// Infallible operations may return incorrect values. Those results must not be used until
+/// `last_error()` is called and returns `Ok(())`, signifying that the return value is correct.
+pub trait LastError {
+    /// Returns the last error of infallible operations.
+    fn last_error(&self) -> Result<(), Error>;
+}
+
+// Wrapper API around Hash/Hmac that calls last_error().
+pub struct HashApi<T: Hash>(T);
+pub struct HmacApi<T: Hmac>(T);
+
+impl<T: Hash> HashApi<T> {
+    pub fn new() -> Result<Self, Error> {
+        let hash = T::default();
+        let error = T::last_error(&hash);
+        match error {
+            Ok(()) => hash,
+            Err(error) => Err(error),
+        }
+    }
+}
+
+impl<T: Hmac> HmacApi<T> {
+    pub fn new(key: &[u8]) -> Result<Self, Error> {
+        let hash = T::new_from_slice(key).map_err(Error)?;
+        let error = T::last_error(&hash);
+        match error {
+            Ok(()) => hash,
+            Err(error) => Err(error),
+        }
+    }
+}
+
 /// Hash interface.
 #[cfg(feature = "internal-api-crypto-hash")]
 pub trait Hash:
-    Support<bool> + Send + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker
+    Support<bool> + Send + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker + LastError
 {
 }
 /// HMAC interface.
 #[cfg(feature = "internal-api-crypto-hmac")]
-pub trait Hmac: Support<bool> + Send + KeyInit + Update + FixedOutput + MacMarker {}
+pub trait Hmac:
+    Support<bool> + Send + KeyInit + Update + FixedOutputReset + MacMarker + LastError
+{
+}
 
 #[cfg(feature = "internal-api-crypto-hash")]
 impl<
-        T: Support<bool> + Send + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker,
+        T: Support<bool>
+            + Send
+            + Default
+            + BlockSizeUser
+            + Update
+            + FixedOutputReset
+            + HashMarker
+            + LastError,
     > Hash for T
 {
 }
 #[cfg(feature = "internal-api-crypto-hmac")]
-impl<T: Support<bool> + Send + KeyInit + Update + FixedOutput + MacMarker> Hmac for T {}
+impl<T: Support<bool> + Send + KeyInit + Update + FixedOutputReset + MacMarker + LastError> Hmac
+    for T
+{
+}
 
 /// AES-128-CCM interface.
 #[cfg(feature = "api-crypto-aes128-ccm")]
