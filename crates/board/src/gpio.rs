@@ -14,7 +14,7 @@
 
 //! Low-level GPIO interface.
 
-// TODO(https://github.com/Lokathor/bytemuck/issues/235): Remove once fixed.
+// TODO(bytemuck > 1.15.0): Remove once released.
 #![allow(missing_docs)]
 
 use crate::{Error, Id, Support};
