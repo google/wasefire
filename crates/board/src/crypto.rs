@@ -70,41 +70,6 @@ pub trait Api: Send {
     type Sha384: Hash<BlockSize = typenum::U128, OutputSize = typenum::U48>;
 }
 
-/// Extends APIs with infallible operations to support errors.
-///
-/// Infallible operations may return incorrect values. Those results must not be used until
-/// `last_error()` is called and returns `Ok(())`, signifying that the return value is correct.
-pub trait LastError {
-    /// Returns the last error of infallible operations.
-    fn last_error(&self) -> Result<(), Error>;
-}
-
-// Wrapper API around Hash/Hmac that calls last_error().
-pub struct HashApi<T: Hash>(T);
-pub struct HmacApi<T: Hmac>(T);
-
-impl<T: Hash> HashApi<T> {
-    pub fn new() -> Result<Self, Error> {
-        let hash = T::default();
-        let error = T::last_error(&hash);
-        match error {
-            Ok(()) => hash,
-            Err(error) => Err(error),
-        }
-    }
-}
-
-impl<T: Hmac> HmacApi<T> {
-    pub fn new(key: &[u8]) -> Result<Self, Error> {
-        let hash = T::new_from_slice(key).map_err(Error)?;
-        let error = T::last_error(&hash);
-        match error {
-            Ok(()) => hash,
-            Err(error) => Err(error),
-        }
-    }
-}
-
 /// Hash interface.
 #[cfg(feature = "internal-api-crypto-hash")]
 pub trait Hash:
@@ -212,4 +177,39 @@ impl<D: Support<bool> + Default + BlockSizeUser + Update + FixedOutput + HashMar
     for hmac::SimpleHmac<D>
 {
     const SUPPORT: bool = D::SUPPORT;
+}
+
+/// Extends APIs with infallible operations to support errors.
+///
+/// Infallible operations may return incorrect values. Those results must not be used until
+/// `last_error()` is called and returns `Ok(())`, signifying that the return value is correct.
+pub trait LastError {
+    /// Returns the last error of infallible operations.
+    fn last_error(&self) -> Result<(), Error>;
+}
+
+// Wrapper API around Hash/Hmac that calls last_error().
+pub struct HashApi<T: Hash>(T);
+pub struct HmacApi<T: Hmac>(T);
+
+impl<T: Hash> HashApi<T> {
+    pub fn new() -> Result<Self, Error> {
+        let hash = T::default();
+        let error = T::last_error(&hash);
+        match error {
+            Ok(()) => hash,
+            Err(error) => Err(error),
+        }
+    }
+}
+
+impl<T: Hmac> HmacApi<T> {
+    pub fn new(key: &[u8]) -> Result<Self, Error> {
+        let hash = T::new_from_slice(key)?;
+        let error = T::last_error(&hash);
+        match error {
+            Ok(()) => hash,
+            Err(error) => Err(error),
+        }
+    }
 }
