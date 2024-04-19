@@ -19,7 +19,7 @@ use crypto_common::BlockSizeUser;
 #[cfg(feature = "internal-api-crypto-hmac")]
 use crypto_common::KeyInit;
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
-use crypto_common::Output;
+use crypto_common::{Output, OutputSizeUser};
 #[cfg(feature = "internal-api-crypto-hash")]
 use digest::HashMarker;
 #[cfg(feature = "internal-api-crypto-hmac")]
@@ -201,6 +201,15 @@ pub struct HashApi<T: Hash>(pub T);
 #[cfg(feature = "internal-api-crypto-hmac")]
 pub struct HmacApi<T: Hmac>(pub T);
 
+#[cfg(feature = "internal-api-crypto-hash")]
+impl<T: Hash> OutputSizeUser for HashApi<T> {
+    type OutputSize = T::OutputSize;
+}
+
+#[cfg(feature = "internal-api-crypto-hmac")]
+impl<T: Hmac> OutputSizeUser for HmacApi<T> {
+    type OutputSize = T::OutputSize;
+}
 
 #[cfg(feature = "internal-api-crypto-hash")]
 impl<T: Hash> HashApi<T> {
