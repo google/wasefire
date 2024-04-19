@@ -90,12 +90,16 @@ fn update<B: Board>(mut call: SchedulerCall<B, api::update::Sig>) {
     let memory = scheduler.applet.store.memory();
     let result = try {
         let data = memory.get(*data, *length)?;
-        match scheduler.applet.hashes.take(*id as usize)? {
+        let context = match scheduler.applet.hashes.take(*id as usize)? {
             #[cfg(feature = "board-api-crypto-sha256")]
             HashContext::Sha256(hash) => HashApi(hash).update(data),
             #[cfg(feature = "board-api-crypto-sha384")]
             HashContext::Sha384(hash) => HashApi(hash).update(data),
             _ => trap_use!(data),
+        };
+        match context {
+            Ok(()) => Ok(()),
+            Err(error) => Err(error),
         }
     };
     call.reply(result);
@@ -165,12 +169,16 @@ fn hmac_update<B: Board>(mut call: SchedulerCall<B, api::hmac_update::Sig>) {
     let memory = scheduler.applet.store.memory();
     let result = try {
         let data = memory.get(*data, *length)?;
-        match scheduler.applet.hashes.take(*id as usize)? {
+        let context = match scheduler.applet.hashes.take(*id as usize)? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
             HashContext::HmacSha256(hmac) => HmacApi(hmac).update(data),
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
             HashContext::HmacSha384(hmac) => HmacApi(hmac).update(data),
             _ => trap_use!(data),
+        };
+        match context {
+            Ok(()) => Ok(()),
+            Err(error) => Err(error),
         }
     };
     call.reply(result);
