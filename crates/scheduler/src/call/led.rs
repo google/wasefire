@@ -18,7 +18,7 @@ use wasefire_board_api::led::Api as _;
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-led")]
 use wasefire_board_api::{self as board, Id, Support};
-use wasefire_error::{Code, Error, Space};
+use wasefire_error::{Code, Error};
 
 #[cfg(feature = "board-api-led")]
 use crate::{DispatchSchedulerCall, SchedulerCall};
@@ -46,7 +46,7 @@ fn get<B: Board>(call: SchedulerCall<B, api::get::Sig>) {
     let result = try {
         match Id::new(*led as usize) {
             Some(id) => board::Led::<B>::get(id),
-            None => Err(Error::new(Space::User, Code::InvalidArgument)),
+            None => Err(Error::user(Code::InvalidArgument)),
         }
     };
     call.reply(result);
@@ -61,7 +61,7 @@ fn set<B: Board>(call: SchedulerCall<B, api::set::Sig>) {
                 let on = matches!(api::Status::try_from(*status)?, api::Status::On);
                 board::Led::<B>::set(id, on)
             }
-            None => Err(Error::new(Space::User, Code::InvalidArgument)),
+            None => Err(Error::user(Code::InvalidArgument)),
         }
     };
     call.reply(result);
