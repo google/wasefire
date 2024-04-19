@@ -109,6 +109,7 @@ macro_rules! applet {
         }
     };
 }
+#[allow(missing_docs)] // see above
 #[cfg(feature = "native")]
 #[macro_export]
 macro_rules! applet {
@@ -123,6 +124,7 @@ macro_rules! applet {
         }
     };
 }
+#[allow(missing_docs)] // see above
 #[cfg(feature = "test")]
 #[macro_export]
 macro_rules! applet {
