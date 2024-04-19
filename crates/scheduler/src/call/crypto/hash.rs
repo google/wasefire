@@ -109,21 +109,19 @@ fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
     let result = try {
         let context = scheduler.applet.hashes.take(*id as usize)?;
         match context {
-            _ if *digest == 0 => (),
+            _ if *digest == 0 => Ok(()),
             #[cfg(feature = "board-api-crypto-sha256")]
-            HashContext::Sha256(context) => {
+            HashContext::Sha256(hash) => {
                 let digest = memory.get_array_mut::<32>(*digest)?;
-                context.finalize_into(GenericArray::from_mut_slice(digest));
-                context.last_error()
+                HashApi(hash).finalize_into_reset(GenericArray::from_mut_slice(digest))
             }
             #[cfg(feature = "board-api-crypto-sha384")]
             HashContext::Sha384(context) => {
                 let digest = memory.get_array_mut::<48>(*digest)?;
-                context.finalize_into(GenericArray::from_mut_slice(digest));
-                context.last_error()
+                HashApi(hash).finalize_into_reset(GenericArray::from_mut_slice(digest))
             }
             _ => trap_use!(memory),
-        };
+        }
     };
     call.reply(result);
 }
@@ -186,18 +184,16 @@ fn hmac_finalize<B: Board>(mut call: SchedulerCall<B, api::hmac_finalize::Sig>) 
     let result = try {
         let context = scheduler.applet.hashes.take(*id as usize)?;
         match context {
-            _ if *hmac == 0 => (),
+            _ if *hmac == 0 => Ok(()),
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
             HashContext::HmacSha256(context) => {
                 let hmac = memory.get_array_mut::<32>(*hmac)?;
-                context.finalize_into(GenericArray::from_mut_slice(hmac));
-                context.last_error()
+                HmacApi(context).finalize_into_reset(GenericArray::from_mut_slice(hmac))
             }
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
             HashContext::HmacSha384(context) => {
                 let hmac = memory.get_array_mut::<48>(*hmac)?;
-                context.finalize_into(GenericArray::from_mut_slice(hmac));
-                context.last_error()
+                HmacApi(context).finalize_into_reset(GenericArray::from_mut_slice(hmac))
             }
             _ => trap_use!(memory),
         }

@@ -18,6 +18,8 @@
 use crypto_common::BlockSizeUser;
 #[cfg(feature = "internal-api-crypto-hmac")]
 use crypto_common::KeyInit;
+#[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
+use crypto_common::Output;
 #[cfg(feature = "internal-api-crypto-hash")]
 use digest::HashMarker;
 #[cfg(feature = "internal-api-crypto-hmac")]
@@ -199,6 +201,7 @@ pub struct HashApi<T: Hash>(pub T);
 #[cfg(feature = "internal-api-crypto-hmac")]
 pub struct HmacApi<T: Hmac>(pub T);
 
+
 #[cfg(feature = "internal-api-crypto-hash")]
 impl<T: Hash> HashApi<T> {
     /// Constructor of HmacApi.
@@ -210,6 +213,12 @@ impl<T: Hash> HashApi<T> {
     /// Call update from RustCrypto API and then last_error.
     pub fn update(&mut self, data: &[u8]) -> Result<(), Error> {
         self.0.update(data);
+        self.0.last_error()
+    }
+
+    /// Call finalize_into_reset from RustCrypto API and then last_error.
+    pub fn finalize_into_reset(&mut self, out: &mut Output<Self>) -> Result<(), Error> {
+        self.0.finalize_into_reset(out);
         self.0.last_error()
     }
 }
@@ -226,6 +235,12 @@ impl<T: Hmac> HmacApi<T> {
     /// Call update from RustCrypto API and then last_error.    
     pub fn update(&mut self, data: &[u8]) -> Result<(), Error> {
         self.0.update(data);
+        self.0.last_error()
+    }
+
+    /// Call finalize_into_reset from RustCrypto API and then last_error.
+    pub fn finalize_into_reset(&mut self, out: &mut Output<Self>) -> Result<(), Error> {
+        self.0.finalize_into_reset(out);
         self.0.last_error()
     }
 }
