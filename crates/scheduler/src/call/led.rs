@@ -18,9 +18,9 @@ use wasefire_board_api::led::Api as _;
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-led")]
 use wasefire_board_api::{self as board, Id, Support};
+use wasefire_error::{Code, Error, Space};
 
 #[cfg(feature = "board-api-led")]
-use crate::Trap;
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
@@ -44,8 +44,10 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
 fn get<B: Board>(call: SchedulerCall<B, api::get::Sig>) {
     let api::get::Params { led } = call.read();
     let result = try {
-        let id = Id::new(*led as usize).ok_or(Trap)?;
-        board::Led::<B>::get(id)
+        match Id::new(*led as usize) {
+            Some(id) => board::Led::<B>::get(id),
+            None => Err(Error::new(Space::User, Code::InvalidArgument)),
+        }
     };
     call.reply(result);
 }
@@ -54,9 +56,13 @@ fn get<B: Board>(call: SchedulerCall<B, api::get::Sig>) {
 fn set<B: Board>(call: SchedulerCall<B, api::set::Sig>) {
     let api::set::Params { led, status } = call.read();
     let result = try {
-        let id = Id::new(*led as usize).ok_or(Trap)?;
-        let on = matches!(api::Status::try_from(*status)?, api::Status::On);
-        board::Led::<B>::set(id, on)
+        match Id::new(*led as usize) {
+            Some(id) => {
+                let on = matches!(api::Status::try_from(*status)?, api::Status::On);
+                board::Led::<B>::set(id, on)
+            }
+            None => Err(Error::new(Space::User, Code::InvalidArgument)),
+        }
     };
     call.reply(result);
 }
