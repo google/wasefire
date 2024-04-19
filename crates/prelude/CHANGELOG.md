@@ -7,6 +7,7 @@
 - Document all public API
 - Remove deprecated `println!` macro
 - Add `Sha384` and `HmacSha384` to the `rust-crypto` feature
+- Led returns error instead of trapping when indexing out of bounds.
 
 ## 0.5.0
 
