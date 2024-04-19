@@ -111,14 +111,14 @@ fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
         match context {
             _ if *digest == 0 => Ok(()),
             #[cfg(feature = "board-api-crypto-sha256")]
-            HashContext::Sha256(hash) => {
+            HashContext::Sha256(context) => {
                 let digest = memory.get_array_mut::<32>(*digest)?;
-                HashApi(hash).finalize_into_reset(GenericArray::from_mut_slice(digest))
+                HashApi(context).finalize_into_reset(GenericArray::from_mut_slice(digest))
             }
             #[cfg(feature = "board-api-crypto-sha384")]
             HashContext::Sha384(context) => {
                 let digest = memory.get_array_mut::<48>(*digest)?;
-                HashApi(hash).finalize_into_reset(GenericArray::from_mut_slice(digest))
+                HashApi(context).finalize_into_reset(GenericArray::from_mut_slice(digest))
             }
             _ => trap_use!(memory),
         }
