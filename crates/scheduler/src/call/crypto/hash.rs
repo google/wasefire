@@ -65,27 +65,19 @@ fn initialize<B: Board>(mut call: SchedulerCall<B, api::initialize::Sig>) {
     let api::initialize::Params { algorithm } = call.read();
     let scheduler = call.scheduler();
     let result = try {
-        let context_or_error = match convert_hash_algorithm::<B>(*algorithm)?? {
+        let context = match convert_hash_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-sha256")]
             Algorithm::Sha256 => {
-                let hash_or_error = HashApi::<board::crypto::Sha256<B>>::new();
-                match hash_or_error {
-                    Ok(hash) => Ok(HashContext::Sha256(hash)),
-                    Err(error) => Err(error),
-                }
+                HashApi::<board::crypto::Sha256<B>>::new().map(HashContext::Sha256)
             }
             #[cfg(feature = "board-api-crypto-sha384")]
             Algorithm::Sha384 => {
-                let hash_or_error = HashApi::<board::crypto::Sha384<B>>::new();
-                match hash_or_error {
-                    Ok(hash) => Ok(HashContext::Sha384(hash)),
-                    Err(error) => Err(error),
-                }
+                HashApi::<board::crypto::Sha384<B>>::new().map(HashContext::Sha384)
             }
             #[allow(unreachable_patterns)]
             _ => Err(Trap)?,
         };
-        match context_or_error {
+        match context {
             Ok(context) => Ok(scheduler.applet.hashes.insert(context)? as u32),
             Err(error) => Err(error),
         }
@@ -157,27 +149,19 @@ fn hmac_initialize<B: Board>(mut call: SchedulerCall<B, api::hmac_initialize::Si
     let memory = scheduler.applet.memory();
     let result = try {
         let key = memory.get(*key, *key_len)?;
-        let context_or_error = match convert_hmac_algorithm::<B>(*algorithm)?? {
+        let context = match convert_hmac_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
             Algorithm::Sha256 => {
-                let hmac_or_error = HmacApi::<board::crypto::HmacSha256<B>>::new(key);
-                match hmac_or_error {
-                    Ok(hmac) => Ok(HashContext::HmacSha256(hmac)),
-                    Err(error) => Err(error),
-                }
+                HmacApi::<board::crypto::HmacSha256<B>>::new(key).map(HashContext::HmacSha256)
             }
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
             Algorithm::Sha384 => {
-                let hmac_or_error = HmacApi::<board::crypto::HmacSha384<B>>::new(key);
-                match hmac_or_error {
-                    Ok(hmac) => Ok(HashContext::HmacSha384(hmac)),
-                    Err(error) => Err(error),
-                }
+                HmacApi::<board::crypto::HmacSha384<B>>::new(key).map(HashContext::HmacSha384)
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(key),
         };
-        match context_or_error {
+        match context {
             Ok(context) => Ok(scheduler.applet.hashes.insert(context)? as u32),
             Err(error) => Err(error),
         }

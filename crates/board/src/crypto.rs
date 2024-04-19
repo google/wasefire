@@ -191,41 +191,29 @@ pub trait LastError {
     fn last_error(&self) -> Result<(), Error>;
 }
 
-// Wrapper API around Hash that calls last_error().
+/// Wrapper API around Hash that calls last_error.
 #[cfg(feature = "internal-api-crypto-hash")]
-#[allow(missing_docs)]
 pub struct HashApi<T: Hash>(T);
 
-// Wrapper API around Hmac that calls last_error().
+/// Wrapper API around Hmac that calls last_error.
 #[cfg(feature = "internal-api-crypto-hmac")]
-#[allow(missing_docs)]
 pub struct HmacApi<T: Hmac>(T);
 
-#[allow(missing_docs)]
 #[cfg(feature = "internal-api-crypto-hash")]
 impl<T: Hash> HashApi<T> {
-    // Constructor of HashApi
+    /// Constructor of HmacApi
     pub fn new() -> Result<Self, Error> {
         let hash = T::default();
-        let error = T::last_error(&hash);
-        match error {
-            Ok(()) => Ok(HashApi(hash)),
-            Err(error) => Err(error),
-        }
+        hash.last_error().map(|()| HashApi(hash))
     }
 }
 
-#[allow(missing_docs)]
 #[cfg(feature = "internal-api-crypto-hmac")]
 impl<T: Hmac> HmacApi<T> {
-    // Constructor of HmacApi
+    /// Constructor of HmacApi
     pub fn new(key: &[u8]) -> Result<Self, Error> {
         let hash =
             T::new_from_slice(key).map_err(|_| Error::new(Space::User, Code::InvalidLength))?;
-        let error = T::last_error(&hash);
-        match error {
-            Ok(()) => Ok(HmacApi(hash)),
-            Err(error) => Err(error),
-        }
+        hash.last_error().map(|()| HmacApi(hash))
     }
 }
