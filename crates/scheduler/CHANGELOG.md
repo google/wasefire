@@ -38,6 +38,7 @@
 - Permit applets to call `debup::println()` during `init()`
 - Use `debug::exit()` board API when the applet traps
 - Use `log::panic!()` on interpreter errors
+- Change led scheduler calls to return out of bounds errors instead of trapping
 
 ### Patch
 
