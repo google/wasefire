@@ -18,9 +18,9 @@ use wasefire_board_api::led::Api as _;
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-led")]
 use wasefire_board_api::{self as board, Id, Support};
+#[cfg(feature = "board-api-led")]
 use wasefire_error::{Code, Error};
 
-#[cfg(feature = "board-api-led")]
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
