@@ -67,13 +67,11 @@ fn initialize<B: Board>(mut call: SchedulerCall<B, api::initialize::Sig>) {
     let result = try {
         let context = match convert_hash_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-sha256")]
-            Algorithm::Sha256 => {
-                HashApi::<board::crypto::Sha256<B>>::new().map(HashContext::Sha256)
-            }
+            Algorithm::Sha256 => HashApi::<board::crypto::Sha256<B>>::new()
+                .map(|hash_api| HashContext::Sha256(hash_api.0)),
             #[cfg(feature = "board-api-crypto-sha384")]
-            Algorithm::Sha384 => {
-                HashApi::<board::crypto::Sha384<B>>::new().map(HashContext::Sha384)
-            }
+            Algorithm::Sha384 => HashApi::<board::crypto::Sha384<B>>::new()
+                .map(|hash_api| HashContext::Sha384(hash_api.0)),
             #[allow(unreachable_patterns)]
             _ => Err(Trap)?,
         };
@@ -151,13 +149,12 @@ fn hmac_initialize<B: Board>(mut call: SchedulerCall<B, api::hmac_initialize::Si
         let key = memory.get(*key, *key_len)?;
         let context = match convert_hmac_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
-            Algorithm::Sha256 => {
-                HmacApi::<board::crypto::HmacSha256<B>>::new(key).map(HashContext::HmacSha256)
-            }
+            Algorithm::Sha256 => HmacApi::<board::crypto::HmacSha256<B>>::new(key)
+                .map(|hash_api| HashContext::HmacSha256(hash_api.0)),
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
-            Algorithm::Sha384 => {
-                HmacApi::<board::crypto::HmacSha384<B>>::new(key).map(HashContext::HmacSha384)
-            }
+            Algorithm::Sha384 => HmacApi::<board::crypto::HmacSha384<B>>::new(key)
+                .map(|hash_api| HashContext::HmacSha384(hash_api.0)),
+
             #[allow(unreachable_patterns)]
             _ => trap_use!(key),
         };

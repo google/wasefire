@@ -193,11 +193,11 @@ pub trait LastError {
 
 /// Wrapper API around Hash that calls last_error.
 #[cfg(feature = "internal-api-crypto-hash")]
-pub struct HashApi<T: Hash>(T);
+pub struct HashApi<T: Hash>(pub T);
 
 /// Wrapper API around Hmac that calls last_error.
 #[cfg(feature = "internal-api-crypto-hmac")]
-pub struct HmacApi<T: Hmac>(T);
+pub struct HmacApi<T: Hmac>(pub T);
 
 #[cfg(feature = "internal-api-crypto-hash")]
 impl<T: Hash> HashApi<T> {
