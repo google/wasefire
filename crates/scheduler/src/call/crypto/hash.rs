@@ -16,7 +16,7 @@
 
 use std::ptr::hash;
 
-use digest::{FixedOutput, InvalidLength, KeyInit, Output, Update};
+use digest::{FixedOutput, InvalidLength, KeyInit, Mac, Output, Update};
 use generic_array::GenericArray;
 use wasefire_applet_api::crypto::hash::{self as api, Algorithm, Api};
 use wasefire_applet_api::crypto::Api::Hash;
@@ -90,17 +90,11 @@ fn update<B: Board>(mut call: SchedulerCall<B, api::update::Sig>) {
     let memory = scheduler.applet.store.memory();
     let result = try {
         let data = memory.get(*data, *length)?;
-        match scheduler.applet.hashes.get_mut(*id as usize)? {
+        match scheduler.applet.hashes.take(*id as usize)? {
             #[cfg(feature = "board-api-crypto-sha256")]
-            HashContext::Sha256(context) => {
-                context.update(data);
-                context.last_error()
-            }
+            HashContext::Sha256(hash) => HashApi(hash).update(data),
             #[cfg(feature = "board-api-crypto-sha384")]
-            HashContext::Sha384(context) => {
-                context.update(data);
-                context.last_error()
-            }
+            HashContext::Sha384(hash) => HashApi(hash).update(data),
             _ => trap_use!(data),
         }
     };
@@ -173,17 +167,11 @@ fn hmac_update<B: Board>(mut call: SchedulerCall<B, api::hmac_update::Sig>) {
     let memory = scheduler.applet.store.memory();
     let result = try {
         let data = memory.get(*data, *length)?;
-        match scheduler.applet.hashes.get_mut(*id as usize)? {
+        match scheduler.applet.hashes.take(*id as usize)? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
-            HashContext::HmacSha256(context) => {
-                context.update(data);
-                context.last_error()
-            }
+            HashContext::HmacSha256(hmac) => HmacApi(hmac).update(data),
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
-            HashContext::HmacSha384(context) => {
-                context.update(data);
-                context.last_error()
-            }
+            HashContext::HmacSha384(hmac) => HmacApi(hmac).update(data),
             _ => trap_use!(data),
         }
     };

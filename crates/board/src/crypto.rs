@@ -201,19 +201,31 @@ pub struct HmacApi<T: Hmac>(pub T);
 
 #[cfg(feature = "internal-api-crypto-hash")]
 impl<T: Hash> HashApi<T> {
-    /// Constructor of HmacApi
+    /// Constructor of HmacApi.
     pub fn new() -> Result<Self, Error> {
         let hash = T::default();
         hash.last_error().map(|()| HashApi(hash))
+    }
+
+    /// Call update from RustCrypto API and then last_error.
+    pub fn update(&mut self, data: &[u8]) -> Result<(), Error> {
+        self.0.update(data);
+        self.0.last_error()
     }
 }
 
 #[cfg(feature = "internal-api-crypto-hmac")]
 impl<T: Hmac> HmacApi<T> {
-    /// Constructor of HmacApi
+    /// Constructor of HmacApi.
     pub fn new(key: &[u8]) -> Result<Self, Error> {
         let hash =
             T::new_from_slice(key).map_err(|_| Error::new(Space::User, Code::InvalidLength))?;
         hash.last_error().map(|()| HmacApi(hash))
+    }
+
+    /// Call update from RustCrypto API and then last_error.    
+    pub fn update(&mut self, data: &[u8]) -> Result<(), Error> {
+        self.0.update(data);
+        self.0.last_error()
     }
 }
