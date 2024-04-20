@@ -2,6 +2,10 @@
 
 ## 0.3.1-git
 
+### Minor
+
+- Change `led::{get,set}()` to never trap and return an error instead
+
 ### Patch
 
 - Simplify `#[cfg(all)]` attributes between board and applet features
