@@ -4,6 +4,7 @@
 
 ### Major
 
+- Change `Id::new` to return `Result` instead of `Option`
 - Change `crypto::{Hash,Hmac}` to depend on `crypto::WithError`
 
 ### Minor

@@ -45,7 +45,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { button, handler_func, handler_data } = call.read();
     let inst = call.inst();
     let result = try {
-        let button = Id::new(*button as usize).ok_or(Trap)?;
+        let button = Id::new(*button as usize).map_err(|_| Trap)?;
         call.scheduler().applet.enable(Handler {
             key: Key { button }.into(),
             inst,
@@ -62,7 +62,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { button } = call.read();
     let result = try {
-        let button = Id::new(*button as usize).ok_or(Trap)?;
+        let button = Id::new(*button as usize).map_err(|_| Trap)?;
         board::Button::<B>::disable(button).map_err(|_| Trap)?;
         call.scheduler().disable_event(Key { button }.into())?;
         Ok(())
