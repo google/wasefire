@@ -2,6 +2,10 @@
 
 ## 0.3.1-git
 
+### Minor
+
+- Change `led::{get,set}()` to never trap and return an error instead
+
 ### Patch
 
 - Simplify `#[cfg(all)]` attributes between board and applet features
@@ -38,7 +42,6 @@
 - Permit applets to call `debup::println()` during `init()`
 - Use `debug::exit()` board API when the applet traps
 - Use `log::panic!()` on interpreter errors
-- Change led scheduler calls to return out of bounds errors instead of trapping
 
 ### Patch
 
