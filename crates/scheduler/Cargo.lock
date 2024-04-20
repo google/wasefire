@@ -943,7 +943,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.2.3"
+version = "0.2.4-git"
 
 [[package]]
 name = "wasefire-sync"
