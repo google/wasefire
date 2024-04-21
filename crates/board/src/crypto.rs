@@ -221,6 +221,7 @@ impl<T: Hash> HashApi<T> {
         self.0.last_error()
     }
 
+    /// Get the wrapped hash.
     pub fn get_hash(self) -> T {
         self.0
     }
@@ -247,6 +248,7 @@ impl<T: Hmac> HmacApi<T> {
         self.0.last_error()
     }
 
+    /// Get the wrapped hmac.
     pub fn get_hmac(self) -> T {
         self.0
     }
