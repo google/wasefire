@@ -26,10 +26,10 @@ use digest::HashMarker;
 use digest::MacMarker;
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
 use digest::{FixedOutputReset, Update};
+#[cfg(feature = "internal-api-crypto-hmac")]
+use wasefire_error::Code;
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
 use wasefire_error::Error;
-#[cfg(feature = "internal-api-crypto-hmac")]
-use wasefire_error::{Code, Space};
 
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
 use crate::Support;
@@ -195,11 +195,11 @@ pub trait LastError {
 
 /// Wrapper API around Hash that calls last_error.
 #[cfg(feature = "internal-api-crypto-hash")]
-pub struct HashApi<T: Hash>(pub T);
+pub struct HashApi<T: Hash>(T);
 
 /// Wrapper API around Hmac that calls last_error.
 #[cfg(feature = "internal-api-crypto-hmac")]
-pub struct HmacApi<T: Hmac>(pub T);
+pub struct HmacApi<T: Hmac>(T);
 
 #[cfg(feature = "internal-api-crypto-hash")]
 impl<T: Hash> HashApi<T> {
@@ -224,20 +224,19 @@ impl<T: Hash> HashApi<T> {
 
 #[cfg(feature = "internal-api-crypto-hmac")]
 impl<T: Hmac> HmacApi<T> {
-    /// Create a hmac wrapper.
+    /// Create a HMAC wrapper.
     pub fn new(key: &[u8]) -> Result<Self, Error> {
-        let hash =
-            T::new_from_slice(key).map_err(|_| Error::new(Space::User, Code::InvalidLength))?;
+        let hash = T::new_from_slice(key).map_err(|_| Error::user(Code::InvalidLength))?;
         hash.last_error().map(|()| HmacApi(hash))
     }
 
-    /// Update the hmac with the provided data.
+    /// Update the HMAC with the provided data.
     pub fn update(&mut self, data: &[u8]) -> Result<(), Error> {
         self.0.update(data);
         self.0.last_error()
     }
 
-    /// Finalize the hmac to the provided output.
+    /// Finalize the HMAC to the provided output.
     pub fn finalize_into(mut self, out: &mut Output<T>) -> Result<(), Error> {
         self.0.finalize_into_reset(out);
         self.0.last_error()
