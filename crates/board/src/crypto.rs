@@ -200,6 +200,36 @@ pub trait LastError {
     fn last_error(&self) -> Result<(), Error>;
 }
 
+#[cfg(feature = "software-crypto-sha256")]
+impl LastError for sha2::Sha256 {
+    fn last_error(&self) -> Result<(), Error> {
+        todo!()
+    }
+}
+
+#[cfg(feature = "software-crypto-sha384")]
+impl LastError for sha2::Sha384 {
+    fn last_error(&self) -> Result<(), Error> {
+        todo!()
+    }
+}
+
+#[cfg(feature = "internal-software-crypto-hmac")]
+impl<
+        D: Support<bool>
+            + Default
+            + BlockSizeUser
+            + Update
+            + FixedOutputReset
+            + HashMarker
+            + LastError,
+    > LastError for hmac::SimpleHmac<D>
+{
+    fn last_error(&self) -> Result<(), Error> {
+        todo!()
+    }
+}
+
 /// Wrapper API around Hash that calls last_error.
 #[cfg(feature = "internal-api-crypto-hash")]
 pub struct HashApi<T: Hash>(T);
