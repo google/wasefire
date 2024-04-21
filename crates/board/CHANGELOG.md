@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Update dependencies
 - Document all public API
 
 ## 0.6.0

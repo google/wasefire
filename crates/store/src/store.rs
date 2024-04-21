@@ -92,7 +92,7 @@ fn or_invalid<T>(x: Option<T>) -> StoreResult<T> {
 ///
 /// # Invariant
 ///
-/// - The used value does not exceed the total: `used` ≤ `total`.
+/// - The used value does not exceed the total: `used` <= `total`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct StoreRatio {
     /// How much of the metric is used.

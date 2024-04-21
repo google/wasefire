@@ -5,6 +5,7 @@
 ### Minor
 
 - Refactor `applet::HashContext` to take `board::crypto::{Hash,Hmac}Api`
+- Change `led::{get,set}()` to never trap and return an error instead
 
 ### Patch
 
@@ -124,4 +125,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 31 -->
+<!-- Increment to skip CHANGELOG.md test: 32 -->

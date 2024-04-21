@@ -1,0 +1,8 @@
+# All files are assumed to be reviewed in a printed form by default.
+* textreview
+# Binary files are not reviewed in printed form.
+*.pdf -textreview
+*.png -textreview
+*.wasm -textreview
+# Submodules are not reviewed in printed form.
+/third_party/** -textreview

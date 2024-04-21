@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4-git
+
+### Patch
+
+- Use pure ASCII instead of UTF-8 in documentation
+
 ## 0.2.3
 
 ### Minor

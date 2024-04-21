@@ -20,6 +20,7 @@ set -e
 
 x ./scripts/ci-copyright.sh
 x ./scripts/ci-changelog.sh
+x cargo xtask textreview
 x ./scripts/sync.sh
 x ./scripts/publish.sh --dry-run
 x ./scripts/ci-taplo.sh

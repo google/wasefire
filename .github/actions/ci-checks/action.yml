@@ -26,6 +26,9 @@ runs:
     - if: ${{ contains(fromJSON(inputs.checks), 'changelog') }}
       run: ./scripts/ci-changelog.sh
       shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'textreview') }}
+      run: cargo xtask textreview
+      shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'sync') }}
       run: ./scripts/sync.sh
       shell: bash

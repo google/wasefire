@@ -13,6 +13,11 @@
 # limitations under the License.
 
 x() { ( set -x; "$@"; ); }
-i() { echo "[1;36mInfo:[m $*"; }
-d() { echo "[1;32mDone:[m $*"; exit 0; }
-e() { echo "[1;31mError:[m $*"; exit 1; }
+i() { _log '1;36' Info "$*"; }
+d() { _log '1;32' Done "$*"; exit 0; }
+e() { _log '1;31' Error "$*"; exit 1; }
+
+# We put the escape character in a variable because bash doesn't interpret escaped characters and
+# some scripts use bash instead of sh.
+_LOG=$(printf '\e')
+_log() { echo "$_LOG[$1m$2:$_LOG[m $3"; }
