@@ -56,8 +56,8 @@ After a bunch of compilation steps, you should see something that ends like:
 
 ```plaintext
 ".../wrapper.sh" "probe-rs" "run" "--chip=nRF52840_xxAA" "target/.../runner-nordic"
-     Erasing sectors ✔ [00:00:05] [################################]
- Programming pages   ✔ [00:00:04] [################################]
+     Erasing sectors [00:00:05] [################################]
+ Programming pages   [00:00:04] [################################]
 0.090527: hello world
 ```
 

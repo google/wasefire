@@ -35,19 +35,20 @@ jobs:
             done
             true
           }
-          x  copyright  pull_request
-          x  changelog  pull_request
-          x       sync  pull_request  push  schedule
-          x    publish  pull_request  push  schedule
-          x      taplo  pull_request  push  schedule
-          x    applets  pull_request  push  schedule
-          x    runners  pull_request  push  schedule
-          x    tests-0  pull_request  push  schedule
-          x    tests-1  pull_request  push  schedule
-          x    tests-2  pull_request  push  schedule
-          x    hw-host  pull_request  push  schedule
-          x       book  pull_request  push  schedule
-          x  footprint  pull_request  push
+          x   copyright  pull_request
+          x   changelog  pull_request
+          x  textreview  pull_request
+          x        sync  pull_request  push  schedule
+          x     publish  pull_request  push  schedule
+          x       taplo  pull_request  push  schedule
+          x     applets  pull_request  push  schedule
+          x     runners  pull_request  push  schedule
+          x     tests-0  pull_request  push  schedule
+          x     tests-1  pull_request  push  schedule
+          x     tests-2  pull_request  push  schedule
+          x     hw-host  pull_request  push  schedule
+          x        book  pull_request  push  schedule
+          x   footprint  pull_request  push
           echo "checks=[$CHECKS]" >> $GITHUB_OUTPUT
     outputs:
       checks: ${{ steps.checks.outputs.checks }}

@@ -29,6 +29,7 @@ use wasefire_cli_tools::{action, cmd, fs};
 
 mod footprint;
 mod lazy;
+mod textreview;
 
 #[derive(Parser)]
 struct Flags {
@@ -93,6 +94,9 @@ enum MainCommand {
         /// The markdown table is written to this file.
         output: String,
     },
+
+    /// Ensures review can be done in printed form.
+    Textreview,
 }
 
 #[derive(clap::Args)]
@@ -248,6 +252,7 @@ impl Flags {
                 cmd::execute(&mut cargo)?;
             }
             MainCommand::Footprint { output } => footprint::compare(&output)?,
+            MainCommand::Textreview => textreview::execute()?,
         }
         Ok(())
     }

@@ -76,7 +76,7 @@
 //! -   The pages are sequentially indexed from 0. If the actual underlying storage is segmented,
 //!     then the storage layer should translate those indices to actual page addresses.
 //!
-//! The store has a _total capacity_ of C = (N - 1) × (P - 4) - M - 1 words, where:
+//! The store has a _total capacity_ of C = (N - 1) * (P - 4) - M - 1 words, where:
 //! -   P is the number of words per page
 //! -   [N](format::Format::num_pages) is the number of pages
 //! -   [M](format::Format::max_prefix_len) is the maximum length in words of a value (256 for large
@@ -95,7 +95,7 @@
 //!
 //! \*0 if the update is alone in the transaction, otherwise 1.
 //!
-//! The _total lifetime_ of the store is below L = ((E + 1) × N - 1) × (P - 2) and above L - M
+//! The _total lifetime_ of the store is below L = ((E + 1) * N - 1) * (P - 2) and above L - M
 //! words, where E is the maximum number of erase cycles. The lifetime is used when capacity is
 //! used, including transiently, as well as when compaction occurs. Compaction frequency and
 //! lifetime consumption are positively correlated to the store load factor (the ratio of used
@@ -132,15 +132,15 @@
 //! # Implementation
 //!
 //! We define the following constants:
-//! -   [E](format::Format::max_page_erases) ≤ [65535](format::MAX_ERASE_CYCLE) the number of times
+//! -   [E](format::Format::max_page_erases) <= [65535](format::MAX_ERASE_CYCLE) the number of times
 //!     a page can be erased.
-//! -   3 ≤ [N](format::Format::num_pages) < 64 the number of pages in the storage.
-//! -   8 ≤ P ≤ 1024 the number of words in a page.
+//! -   3 <= [N](format::Format::num_pages) < 64 the number of pages in the storage.
+//! -   8 <= P <= 1024 the number of words in a page.
 //! -   [Q](format::Format::virt_page_size) = P - 2 the number of words in a virtual page.
 //! -   [M](format::Format::max_prefix_len) = min(Q - 1, 256) the maximum length in words of a
 //!     value.
-//! -   [W](format::Format::window_size) = (N - 1) × Q - M the window size.
-//! -   [V](format::Format::virt_size) = (N - 1) × (Q - 1) - M the virtual capacity.
+//! -   [W](format::Format::window_size) = (N - 1) * Q - M the window size.
+//! -   [V](format::Format::virt_size) = (N - 1) * (Q - 1) - M the virtual capacity.
 //! -   [C](format::Format::total_capacity) = V - N the user capacity.
 //!
 //! We build a virtual storage from the physical storage using the first 2 words of each page:
@@ -148,27 +148,27 @@
 //! -   The second word contains the starting word to which this page is being moved during
 //!     compaction.
 //!
-//! The virtual storage has a length of (E + 1) × N × Q words and represents the lifetime of the
+//! The virtual storage has a length of (E + 1) * N * Q words and represents the lifetime of the
 //! store. (We reserve the last Q + M words to support adding emergency lifetime.) This virtual
 //! storage has a linear address space.
 //!
-//! We define a set of overlapping windows of N × Q words at each Q-aligned boundary. We call i the
-//! window spanning from i × Q to (i + N) × Q. Only those windows actually exist in the underlying
+//! We define a set of overlapping windows of N * Q words at each Q-aligned boundary. We call i the
+//! window spanning from i * Q to (i + N) * Q. Only those windows actually exist in the underlying
 //! storage. We use compaction to shift the current window from i to i + 1, preserving the content
 //! of the store.
 //!
 //! For a given state of the virtual storage, we define h\_i as the position of the first entry of
 //! the window i. We call it the head of the window i. Because entries are at most M + 1 words, they
-//! can overlap on the next page only by M words. So we have i × Q ≤ h_i ≤ i × Q + M . Since there
+//! can overlap on the next page only by M words. So we have i * Q <= h_i <= i * Q + M . Since there
 //! are no entries before the first page, we have h\_0 = 0.
 //!
 //! We define t\_i as one past the last entry of the window i. If there are no entries in that
 //! window, we have t\_i = h\_i. We call t\_i the tail of the window i. We define the compaction
-//! invariant as t\_i - h\_i ≤ V and the window invariant as t\_i - h\_i ≤ W. The compaction
+//! invariant as t\_i - h\_i <= V and the window invariant as t\_i - h\_i <= W. The compaction
 //! invariant may temporarily be broken during a sequence of (at most N - 1) compactions.
 //!
-//! We define |x| as the capacity used before position x. We have |x| ≤ x. We define the capacity
-//! invariant as |t\_i| - |h\_i| ≤ C.
+//! We define |x| as the capacity used before position x. We have |x| <= x. We define the capacity
+//! invariant as |t\_i| - |h\_i| <= C.
 //!
 //! Using this virtual storage, entries are appended to the tail as long as there is both virtual
 //! capacity to preserve the compaction invariant and capacity to preserve the capacity invariant.
@@ -218,7 +218,7 @@
 //! We first show that after each compaction, the window invariant is preserved.
 //!
 //! ```text
-//! ∀(1 ≤ i ≤ N - 1)   t_{I + i} - h_{I + i}  ≤  W
+//! for all (1 <= i <= N - 1)   t_{I + i} - h_{I + i}  <=  W
 //! ```
 //!
 //! We assume i between 1 and N - 1.
@@ -227,7 +227,7 @@
 //! window with the last entry possibly overlapping on the next page.
 //!
 //! ```text
-//! ∀j   t_{j + 1}  =  t_j + |h_{j + 1}| - |h_j| + 1
+//! for all j   t_{j + 1}  =  t_j + |h_{j + 1}| - |h_j| + 1
 //! ```
 //!
 //! By induction, we have:
@@ -239,56 +239,56 @@
 //! We have the following properties:
 //!
 //! ```text
-//! t_I  ≤  h_I + V
-//! |h_{I + i}| - |h_I|  ≤  h_{I + i} - h_I
+//! t_I  <=  h_I + V
+//! |h_{I + i}| - |h_I|  <=  h_{I + i} - h_I
 //! ```
 //!
 //! Replacing into our previous equality, we can conclude:
 //!
 //! ```text
 //! t_{I + i}  =  t_I + |h_{I + i}| - |h_I| + i
-//!            ≤  h_I + V + h_{I + 1} - h_I + i
+//!           <=  h_I + V + h_{I + 1} - h_I + i
 //! iff
-//! t_{I + i} - h_{I + 1}  ≤  V + i
-//!                        ≤  V + N - 1
-//!                        =  W
+//! t_{I + i} - h_{I + 1}  <=  V + i
+//!                        <=  V + N - 1
+//!                         =  W
 //! ```
 //!
 //! An important corollary is that the tail stays within the window:
 //!
 //! ```text
-//! t_{I + i}  ≤  (I + i + N - 1) × Q
+//! t_{I + i}  <=  (I + i + N - 1) * Q
 //! ```
 //!
 //! We have the following property:
 //!
 //! ```text
-//! h_{I + i}  ≤  (I + i) × Q + M
+//! h_{I + i}  <=  (I + i) * Q + M
 //! ```
 //!
 //! From which we conclude with the definition of W:
 //!
 //! ```text
-//! t_{I + i}  ≤  h_{I + i} + W
-//!            ≤  (I + i) × Q + M + (N - 1) × Q - M
-//!            =  (I + i + N - 1) × Q
+//! t_{I + i}  <=  h_{I + i} + W
+//!            <=  (I + i) * Q + M + (N - 1) * Q - M
+//!             =  (I + i + N - 1) * Q
 //! ```
 //!
 //! We finally show that after N - 1 compactions, the compaction invariant is restored. In
 //! particular, the remaining capacity is available without compaction.
 //!
 //! ```text
-//! V - (t_{I + N - 1} - h_{I + N - 1})  ≥  C - (|t_{I + N - 1}| - |h_{I + N - 1}|) + 1
-//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ~
-//!         immediate capacity                        remaining capacity              |
-//!                                                                         reserved for clear
+//! V - (t_{I + N - 1} - h_{I + N - 1})  >=  C - (|t_{I + N - 1}| - |h_{I + N - 1}|) + 1
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ~
+//!         immediate capacity                         remaining capacity              |
+//!                                                                          reserved for clear
 //! ```
 //!
 //! We can replace the definition of C and simplify:
 //!
 //! ```text
-//! V - (t_{I + N - 1} - h_{I + N - 1})  ≥  V - N - (|t_{I + N - 1}| - |h_{I + N - 1}|) + 1
-//! iff  t_{I + N - 1} - h_{I + N - 1}  ≤  |t_{I + N - 1}| - |h_{I + N - 1}| + N - 1
+//! V - (t_{I + N - 1} - h_{I + N - 1})  >=  V - N - (|t_{I + N - 1}| - |h_{I + N - 1}|) + 1
+//! iff  t_{I + N - 1} - h_{I + N - 1}  <=  |t_{I + N - 1}| - |h_{I + N - 1}| + N - 1
 //! ```
 //!
 //! We have the following properties:
@@ -296,16 +296,16 @@
 //! ```text
 //! t_{I + N - 1}  =  t_I + |h_{I + N - 1}| - |h_I| + N - 1
 //! |t_{I + N - 1}| - |h_{I + N - 1}|  =  |t_I| - |h_I|
-//! |h_{I + N - 1}| - |t_I|  ≤  h_{I + N - 1} - t_I
+//! |h_{I + N - 1}| - |t_I|  <=  h_{I + N - 1} - t_I
 //! ```
 //!
 //! From which we conclude:
 //!
 //! ```text
-//!      t_{I + N - 1} - h_{I + N - 1}  ≤  |t_{I + N - 1}| - |h_{I + N - 1}| + N - 1
-//! iff  t_I + |h_{I + N - 1}| - |h_I| + N - 1 - h_{I + N - 1}  ≤  |t_I| - |h_I| + N - 1
-//! iff  t_I + |h_{I + N - 1}| - h_{I + N - 1}  ≤  |t_I|
-//! iff  |h_{I + N - 1}| - |t_I|  ≤  h_{I + N - 1} - t_I
+//!      t_{I + N - 1} - h_{I + N - 1}  <=  |t_{I + N - 1}| - |h_{I + N - 1}| + N - 1
+//! iff  t_I + |h_{I + N - 1}| - |h_I| + N - 1 - h_{I + N - 1}  <=  |t_I| - |h_I| + N - 1
+//! iff  t_I + |h_{I + N - 1}| - h_{I + N - 1}  <=  |t_I|
+//! iff  |h_{I + N - 1}| - |t_I|  <=  h_{I + N - 1} - t_I
 //! ```
 //!
 //! ## Checksum

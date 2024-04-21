@@ -38,7 +38,7 @@ usbd-serial = { version = "0.2.0", default-features = false }
 wasefire-applet-api = { version = "0.6.0", path = "../api", features = ["host"] }
 wasefire-error = { version = "0.1.0", path = "../error" }
 wasefire-logger = { version = "0.1.4", path = "../logger" }
-wasefire-store = { version = "0.2.3", path = "../store", optional = true }
+wasefire-store = { version = "0.2.4-git", path = "../store", optional = true }
 
 [features]
 std = ["wasefire-store?/std"]

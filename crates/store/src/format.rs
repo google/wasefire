@@ -208,7 +208,7 @@ impl Format {
 
     /// The number of pages in the storage, denoted by N.
     ///
-    /// We have [`MIN_NUM_PAGES`] ≤ N ≤ [`MAX_PAGE_INDEX`] + 1.
+    /// We have [`MIN_NUM_PAGES`] <= N <= [`MAX_PAGE_INDEX`] + 1.
     pub fn num_pages(&self) -> Nat {
         self.num_pages
     }
@@ -222,7 +222,7 @@ impl Format {
 
     /// The maximum number of times a page can be erased, denoted by E.
     ///
-    /// We have E ≤ [`MAX_ERASE_CYCLE`].
+    /// We have E <= [`MAX_ERASE_CYCLE`].
     pub fn max_page_erases(&self) -> Nat {
         self.max_page_erases
     }
@@ -241,7 +241,7 @@ impl Format {
     ///
     /// A virtual page is stored in a physical page after the page header.
     ///
-    /// We have [`MIN_PAGE_SIZE`] - 2 ≤ Q ≤ [`MAX_VIRT_PAGE_SIZE`].
+    /// We have [`MIN_PAGE_SIZE`] - 2 <= Q <= [`MAX_VIRT_PAGE_SIZE`].
     pub fn virt_page_size(&self) -> Nat {
         self.page_size() / self.word_size() - CONTENT_WORD
     }
@@ -258,7 +258,7 @@ impl Format {
     /// A prefix is the first words of a virtual page that belong to the last entry of the previous
     /// virtual page. This happens because entries may overlap up to 2 virtual pages.
     ///
-    /// We have [`MIN_PAGE_SIZE`] - 3 ≤ M < Q.
+    /// We have [`MIN_PAGE_SIZE`] - 3 <= M < Q.
     pub fn max_prefix_len(&self) -> Nat {
         self.bytes_to_words(self.max_value_len())
     }
@@ -268,7 +268,7 @@ impl Format {
     /// This is the span of virtual storage that is accessible. In particular, all store content
     /// fits within this window.
     ///
-    /// We have W = (N - 1) × Q - M.
+    /// We have W = (N - 1) * Q - M.
     pub fn window_size(&self) -> Nat {
         (self.num_pages() - 1) * self.virt_page_size() - self.max_prefix_len()
     }
@@ -279,19 +279,19 @@ impl Format {
     /// than the virtual window because compaction may transiently overflow out of this virtual
     /// capacity.
     ///
-    /// We have V = W - (N - 1) = (N - 1) × (Q - 1) - M.
+    /// We have V = W - (N - 1) = (N - 1) * (Q - 1) - M.
     pub fn virt_size(&self) -> Nat {
         (self.num_pages() - 1) * (self.virt_page_size() - 1) - self.max_prefix_len()
     }
 
     /// The total user capacity in words, denoted by C.
     ///
-    /// We have C = V - N = (N - 1) × (Q - 2) - M - 1.
+    /// We have C = V - N = (N - 1) * (Q - 2) - M - 1.
     ///
-    /// We can show C ≥ (N - 2) × (Q - 2) - 2 with the following steps:
-    /// - M ≤ Q - 1 from M < Q from [M](Format::max_prefix_len)'s definition
-    /// - C ≥ (N - 1) × (Q - 2) - (Q - 1) - 1 from C's definition
-    /// - C ≥ (N - 2) × (Q - 2) - 2 by calculus
+    /// We can show C >= (N - 2) * (Q - 2) - 2 with the following steps:
+    /// - M <= Q - 1 from M < Q from [M](Format::max_prefix_len)'s definition
+    /// - C >= (N - 1) * (Q - 2) - (Q - 1) - 1 from C's definition
+    /// - C >= (N - 2) * (Q - 2) - 2 by calculus
     pub fn total_capacity(&self) -> Nat {
         // From the virtual capacity, we reserve N - 1 words for `Erase` entries and 1 word for a
         // `Clear` entry.
@@ -300,7 +300,7 @@ impl Format {
 
     /// The total virtual lifetime in words, denoted by L.
     ///
-    /// We have L = (E × N + N - 1) × Q.
+    /// We have L = (E * N + N - 1) * Q.
     pub fn total_lifetime(&self) -> Position {
         Position::new(self, self.max_page_erases(), self.num_pages() - 1, 0)
     }
@@ -705,7 +705,7 @@ bitfield! {
 /// - p denote a page offset, thus between 0 and N - 1
 /// - c denote the number of times a page was erased, thus between 0 and E
 ///
-/// The position of a word is (c × N + p) × Q + w. This position monotonically increases and
+/// The position of a word is (c * N + p) * Q + w. This position monotonically increases and
 /// represents the consumed lifetime of the storage.
 ///
 /// This type is kept abstract to avoid possible confusion with [`Nat`] and [`Word`] if they happen
