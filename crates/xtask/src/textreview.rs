@@ -26,8 +26,7 @@ pub fn execute() -> Result<()> {
         let content = std::fs::read(&path).with_context(|| format!("reading {path}"))?;
         verify_file(&path, content.as_slice(), &mut errors)?;
     }
-    for error in &errors {
-        let Error { path, count, kind, line } = error;
+    for Error { path, count, kind, line } in &errors {
         println!("{path}:{count}: {kind}\n{line}");
     }
     ensure!(errors.is_empty(), "Found {} errors.", errors.len());
@@ -35,27 +34,34 @@ pub fn execute() -> Result<()> {
 }
 
 fn verify_file(path: &str, mut content: &[u8], errors: &mut Vec<Error>) -> Result<()> {
-    for count in 1 .. {
+    let mut count = 0usize;
+    loop {
+        count = count.wrapping_add(1);
         let mut line = String::new();
         if content.read_line(&mut line)? == 0 {
-            return Ok(());
+            return Ok(()); // end of file
         }
         if let Err(kind) = verify_line(line.as_bytes()) {
             let path = path.to_string();
             errors.push(Error { path, count, kind, line });
         }
     }
-    Ok(())
 }
 
-// Verifies the following properties (that all lines in a file must satisfy):
-// - The line must end with a line-feed (0x0a).
-// - The line-feed may only be preceded by a graphic character (from 0x21 to 0x7f).
-// - The line may start with a sequence of tabs (0x09).
-// - Otherwise, the line must only contain space or graphic characters (from 0x20 to 0x7f).
+/// Ensures that a line can be reviewed in printed form.
+///
+/// The following properties must hold:
+/// - The line must end with a line-feed (0x0a).
+/// - The line-feed may only be preceded by a graphic character (from 0x21 to 0x7f).
+/// - The line may start with a sequence of tabs (0x09).
+/// - Otherwise, the line must only contain space or graphic characters (from 0x20 to 0x7f).
+///
+/// # Panics
+///
+/// Panics if the sequence of bytes is empty (which indicates the end of the file).
 fn verify_line(mut bytes: &[u8]) -> std::result::Result<(), Kind> {
     match bytes.split_last().unwrap() {
-        (b'\n', x) => bytes = x,
+        (b'\n', x) => bytes = x, // remove newline
         (&x, _) => return Err(Kind::End(x)),
     }
     match bytes.last() {
@@ -64,7 +70,7 @@ fn verify_line(mut bytes: &[u8]) -> std::result::Result<(), Kind> {
         None => return Ok(()), // empty line
     }
     while let Some((b'\t', x)) = bytes.split_first() {
-        bytes = x;
+        bytes = x; // skip leading tabs
     }
     for &byte in bytes {
         match byte {
