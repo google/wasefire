@@ -210,19 +210,19 @@ pub struct HmacApi<T: Hmac>(T);
 
 #[cfg(feature = "internal-api-crypto-hash")]
 impl<T: Hash> HashApi<T> {
-    /// Create a hash wrapper.
+    /// Creates a hash wrapper.
     pub fn new() -> Result<Self, Error> {
         let hash = T::default();
         hash.last_error().map(|()| HashApi(hash))
     }
 
-    /// Update the hash with the provided data.
+    /// Updates the hash with the provided data.
     pub fn update(&mut self, data: &[u8]) -> Result<(), Error> {
         self.0.update(data);
         self.0.last_error()
     }
 
-    /// Finalize the hash to the provided output.
+    /// Finalizes the hash to the provided output.
     pub fn finalize_into(mut self, out: &mut Output<T>) -> Result<(), Error> {
         self.0.finalize_into_reset(out);
         self.0.last_error()
@@ -231,7 +231,7 @@ impl<T: Hash> HashApi<T> {
 
 #[cfg(feature = "internal-api-crypto-hmac")]
 impl<T: Hmac> HmacApi<T> {
-    /// Create a HMAC wrapper.
+    /// Creates a HMAC wrapper.
     pub fn new(key: &[u8]) -> Result<Self, Error> {
         let hash = T::new_from_slice(key).map_err(|_| Error::user(Code::InvalidLength))?;
         hash.last_error().map(|()| HmacApi(hash))

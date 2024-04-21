@@ -14,13 +14,9 @@
 
 #![allow(unused_imports)]
 
-use std::ptr::hash;
-
-use digest::{FixedOutput, InvalidLength, KeyInit, Mac, Output, Update};
+use digest::{FixedOutput, InvalidLength, KeyInit, Output, Update};
 use generic_array::GenericArray;
 use wasefire_applet_api::crypto::hash::{self as api, Algorithm, Api};
-use wasefire_applet_api::crypto::Api::Hash;
-use wasefire_board_api::crypto::{HashApi, HmacApi, LastError};
 use wasefire_board_api::{self as board, Api as Board, Support};
 use wasefire_error::Error;
 
@@ -64,16 +60,12 @@ fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
 fn initialize<B: Board>(mut call: SchedulerCall<B, api::initialize::Sig>) {
     let api::initialize::Params { algorithm } = call.read();
     let scheduler = call.scheduler();
-    let result = try {
+    let result: Result<Result<u32, _>, _> = try {
         let context = match convert_hash_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-sha256")]
-            Algorithm::Sha256 => {
-                HashApi::<board::crypto::Sha256<B>>::new().map(HashContext::Sha256)
-            }
+            Algorithm::Sha256 => board::crypto::HashApi::new().map(HashContext::Sha256),
             #[cfg(feature = "board-api-crypto-sha384")]
-            Algorithm::Sha384 => {
-                HashApi::<board::crypto::Sha384<B>>::new().map(HashContext::Sha384)
-            }
+            Algorithm::Sha384 => board::crypto::HashApi::new().map(HashContext::Sha384),
             #[allow(unreachable_patterns)]
             _ => Err(Trap)?,
         };
@@ -139,18 +131,13 @@ fn hmac_initialize<B: Board>(mut call: SchedulerCall<B, api::hmac_initialize::Si
     let api::hmac_initialize::Params { algorithm, key, key_len } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let result = try {
+    let result: Result<Result<u32, _>, _> = try {
         let key = memory.get(*key, *key_len)?;
         let context = match convert_hmac_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
-            Algorithm::Sha256 => {
-                HmacApi::<board::crypto::HmacSha256<B>>::new(key).map(HashContext::HmacSha256)
-            }
+            Algorithm::Sha256 => board::crypto::HmacApi::new(key).map(HashContext::HmacSha256),
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
-            Algorithm::Sha384 => {
-                HmacApi::<board::crypto::HmacSha384<B>>::new(key).map(HashContext::HmacSha384)
-            }
-
+            Algorithm::Sha384 => board::crypto::HmacApi::new(key).map(HashContext::HmacSha384),
             #[allow(unreachable_patterns)]
             _ => trap_use!(key),
         };
