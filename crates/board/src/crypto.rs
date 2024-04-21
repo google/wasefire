@@ -195,11 +195,11 @@ pub trait LastError {
 
 /// Wrapper API around Hash that calls last_error.
 #[cfg(feature = "internal-api-crypto-hash")]
-pub struct HashApi<T: Hash>(T);
+pub struct HashApi<T: Hash>(pub T);
 
 /// Wrapper API around Hmac that calls last_error.
 #[cfg(feature = "internal-api-crypto-hmac")]
-pub struct HmacApi<T: Hmac>(T);
+pub struct HmacApi<T: Hmac>(pub T);
 
 #[cfg(feature = "internal-api-crypto-hash")]
 impl<T: Hash> HashApi<T> {
@@ -219,11 +219,6 @@ impl<T: Hash> HashApi<T> {
     pub fn finalize_into(mut self, out: &mut Output<T>) -> Result<(), Error> {
         self.0.finalize_into_reset(out);
         self.0.last_error()
-    }
-
-    /// Get the wrapped hash.
-    pub fn get_hash(self) -> T {
-        self.0
     }
 }
 
@@ -246,10 +241,5 @@ impl<T: Hmac> HmacApi<T> {
     pub fn finalize_into(mut self, out: &mut Output<T>) -> Result<(), Error> {
         self.0.finalize_into_reset(out);
         self.0.last_error()
-    }
-
-    /// Get the wrapped hmac.
-    pub fn get_hmac(self) -> T {
-        self.0
     }
 }
