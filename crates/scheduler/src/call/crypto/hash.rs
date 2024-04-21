@@ -68,10 +68,10 @@ fn initialize<B: Board>(mut call: SchedulerCall<B, api::initialize::Sig>) {
         let context = match convert_hash_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-sha256")]
             Algorithm::Sha256 => HashApi::<board::crypto::Sha256<B>>::new()
-                .map(|hash_api| HashContext::Sha256(hash_api.0)),
+                .map(|hash_api| HashContext::Sha256(hash_api.get_hash())),
             #[cfg(feature = "board-api-crypto-sha384")]
             Algorithm::Sha384 => HashApi::<board::crypto::Sha384<B>>::new()
-                .map(|hash_api| HashContext::Sha384(hash_api.0)),
+                .map(|hash_api| HashContext::Sha384(hash_api.get_hash())),
             #[allow(unreachable_patterns)]
             _ => Err(Trap)?,
         };
@@ -90,16 +90,12 @@ fn update<B: Board>(mut call: SchedulerCall<B, api::update::Sig>) {
     let memory = scheduler.applet.store.memory();
     let result = try {
         let data = memory.get(*data, *length)?;
-        let context = match scheduler.applet.hashes.take(*id as usize)? {
+        match scheduler.applet.hashes.take(*id as usize)? {
             #[cfg(feature = "board-api-crypto-sha256")]
             HashContext::Sha256(hash) => HashApi(hash).update(data),
             #[cfg(feature = "board-api-crypto-sha384")]
             HashContext::Sha384(hash) => HashApi(hash).update(data),
             _ => trap_use!(data),
-        };
-        match context {
-            Ok(()) => Ok(()),
-            Err(error) => Err(error),
         }
     };
     call.reply(result);
@@ -117,12 +113,12 @@ fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
             #[cfg(feature = "board-api-crypto-sha256")]
             HashContext::Sha256(context) => {
                 let digest = memory.get_array_mut::<32>(*digest)?;
-                HashApi(context).finalize_into_reset(GenericArray::from_mut_slice(digest))
+                HashApi(context).finalize_into(GenericArray::from_mut_slice(digest))
             }
             #[cfg(feature = "board-api-crypto-sha384")]
             HashContext::Sha384(context) => {
                 let digest = memory.get_array_mut::<48>(*digest)?;
-                HashApi(context).finalize_into_reset(GenericArray::from_mut_slice(digest))
+                HashApi(context).finalize_into(GenericArray::from_mut_slice(digest))
             }
             _ => trap_use!(memory),
         }
@@ -146,10 +142,10 @@ fn hmac_initialize<B: Board>(mut call: SchedulerCall<B, api::hmac_initialize::Si
         let context = match convert_hmac_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
             Algorithm::Sha256 => HmacApi::<board::crypto::HmacSha256<B>>::new(key)
-                .map(|hash_api| HashContext::HmacSha256(hash_api.0)),
+                .map(|hmac_api| HashContext::HmacSha256(hmac_api.get_hmac())),
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
             Algorithm::Sha384 => HmacApi::<board::crypto::HmacSha384<B>>::new(key)
-                .map(|hash_api| HashContext::HmacSha384(hash_api.0)),
+                .map(|hmac_api| HashContext::HmacSha384(hmac_api.get_hmac())),
 
             #[allow(unreachable_patterns)]
             _ => trap_use!(key),
@@ -169,16 +165,12 @@ fn hmac_update<B: Board>(mut call: SchedulerCall<B, api::hmac_update::Sig>) {
     let memory = scheduler.applet.store.memory();
     let result = try {
         let data = memory.get(*data, *length)?;
-        let context = match scheduler.applet.hashes.take(*id as usize)? {
+        match scheduler.applet.hashes.take(*id as usize)? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
             HashContext::HmacSha256(hmac) => HmacApi(hmac).update(data),
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
             HashContext::HmacSha384(hmac) => HmacApi(hmac).update(data),
             _ => trap_use!(data),
-        };
-        match context {
-            Ok(()) => Ok(()),
-            Err(error) => Err(error),
         }
     };
     call.reply(result);
@@ -196,12 +188,12 @@ fn hmac_finalize<B: Board>(mut call: SchedulerCall<B, api::hmac_finalize::Sig>) 
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
             HashContext::HmacSha256(context) => {
                 let hmac = memory.get_array_mut::<32>(*hmac)?;
-                HmacApi(context).finalize_into_reset(GenericArray::from_mut_slice(hmac))
+                HmacApi(context).finalize_into(GenericArray::from_mut_slice(hmac))
             }
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
             HashContext::HmacSha384(context) => {
                 let hmac = memory.get_array_mut::<48>(*hmac)?;
-                HmacApi(context).finalize_into_reset(GenericArray::from_mut_slice(hmac))
+                HmacApi(context).finalize_into(GenericArray::from_mut_slice(hmac))
             }
             _ => trap_use!(memory),
         }

@@ -19,7 +19,7 @@ use crypto_common::BlockSizeUser;
 #[cfg(feature = "internal-api-crypto-hmac")]
 use crypto_common::KeyInit;
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
-use crypto_common::{Output, OutputSizeUser};
+use crypto_common::Output;
 #[cfg(feature = "internal-api-crypto-hash")]
 use digest::HashMarker;
 #[cfg(feature = "internal-api-crypto-hmac")]
@@ -195,61 +195,59 @@ pub trait LastError {
 
 /// Wrapper API around Hash that calls last_error.
 #[cfg(feature = "internal-api-crypto-hash")]
-pub struct HashApi<T: Hash>(pub T);
+pub struct HashApi<T: Hash>(T);
 
 /// Wrapper API around Hmac that calls last_error.
 #[cfg(feature = "internal-api-crypto-hmac")]
-pub struct HmacApi<T: Hmac>(pub T);
-
-#[cfg(feature = "internal-api-crypto-hash")]
-impl<T: Hash> OutputSizeUser for HashApi<T> {
-    type OutputSize = T::OutputSize;
-}
-
-#[cfg(feature = "internal-api-crypto-hmac")]
-impl<T: Hmac> OutputSizeUser for HmacApi<T> {
-    type OutputSize = T::OutputSize;
-}
+pub struct HmacApi<T: Hmac>(T);
 
 #[cfg(feature = "internal-api-crypto-hash")]
 impl<T: Hash> HashApi<T> {
-    /// Constructor of HmacApi.
+    /// Create a hash wrapper.
     pub fn new() -> Result<Self, Error> {
         let hash = T::default();
         hash.last_error().map(|()| HashApi(hash))
     }
 
-    /// Call update from RustCrypto API and then last_error.
+    /// Update the hash with the provided data.
     pub fn update(&mut self, data: &[u8]) -> Result<(), Error> {
         self.0.update(data);
         self.0.last_error()
     }
 
-    /// Call finalize_into_reset from RustCrypto API and then last_error.
-    pub fn finalize_into_reset(&mut self, out: &mut Output<Self>) -> Result<(), Error> {
+    /// Finalize the hash to the provided output.
+    pub fn finalize_into(mut self, out: &mut Output<T>) -> Result<(), Error> {
         self.0.finalize_into_reset(out);
         self.0.last_error()
+    }
+
+    pub fn get_hash(self) -> T {
+        self.0
     }
 }
 
 #[cfg(feature = "internal-api-crypto-hmac")]
 impl<T: Hmac> HmacApi<T> {
-    /// Constructor of HmacApi.
+    /// Create a hmac wrapper.
     pub fn new(key: &[u8]) -> Result<Self, Error> {
         let hash =
             T::new_from_slice(key).map_err(|_| Error::new(Space::User, Code::InvalidLength))?;
         hash.last_error().map(|()| HmacApi(hash))
     }
 
-    /// Call update from RustCrypto API and then last_error.    
+    /// Update the hmac with the provided data.
     pub fn update(&mut self, data: &[u8]) -> Result<(), Error> {
         self.0.update(data);
         self.0.last_error()
     }
 
-    /// Call finalize_into_reset from RustCrypto API and then last_error.
-    pub fn finalize_into_reset(&mut self, out: &mut Output<Self>) -> Result<(), Error> {
+    /// Finalize the hmac to the provided output.
+    pub fn finalize_into(mut self, out: &mut Output<T>) -> Result<(), Error> {
         self.0.finalize_into_reset(out);
         self.0.last_error()
+    }
+
+    pub fn get_hmac(self) -> T {
+        self.0
     }
 }
