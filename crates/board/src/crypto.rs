@@ -270,13 +270,13 @@ impl<T: Hmac> HmacApi<T> {
         hash.last_error().map(|()| HmacApi(hash))
     }
 
-    /// Update the HMAC with the provided data.
+    /// Updates the HMAC with the provided data.
     pub fn update(&mut self, data: &[u8]) -> Result<(), Error> {
         self.0.update(data);
         self.0.last_error()
     }
 
-    /// Finalize the HMAC to the provided output.
+    /// Finalizes the HMAC to the provided output.
     pub fn finalize_into(mut self, out: &mut Output<T>) -> Result<(), Error> {
         self.0.finalize_into_reset(out);
         self.0.last_error()
