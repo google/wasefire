@@ -2,6 +2,10 @@
 
 ## 0.3.1-git
 
+### Minor
+
+- Refactor `applet::HashContext` to take `board::crypto::{Hash,Hmac}Api`
+
 ### Patch
 
 - Simplify `#[cfg(all)]` attributes between board and applet features
