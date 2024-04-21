@@ -203,6 +203,7 @@ pub trait LastError {
 #[cfg(feature = "software-crypto-sha256")]
 impl LastError for sha2::Sha256 {
     fn last_error(&self) -> Result<(), Error> {
+        // TODO: Implement the error.
         Ok(())
     }
 }
@@ -210,6 +211,7 @@ impl LastError for sha2::Sha256 {
 #[cfg(feature = "software-crypto-sha384")]
 impl LastError for sha2::Sha384 {
     fn last_error(&self) -> Result<(), Error> {
+        // TODO: Implement the error.
         Ok(())
     }
 }
@@ -226,6 +228,7 @@ impl<
     > LastError for hmac::SimpleHmac<D>
 {
     fn last_error(&self) -> Result<(), Error> {
+        // TODO: Implement the error.
         Ok(())
     }
 }

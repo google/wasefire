@@ -2,6 +2,10 @@
 
 ## 0.6.1-git
 
+### Major
+
+- Add `LastError` trait to check for error after using RustCrypto API.
+
 ### Patch
 
 - Document all public API
