@@ -27,6 +27,7 @@ use core::marker::PhantomData;
 use core::ops::Deref;
 
 use derivative::Derivative;
+use wasefire_error::Code;
 pub use wasefire_error::Error;
 
 #[cfg(feature = "api-button")]
@@ -283,8 +284,11 @@ impl<T: Support<usize> + ?Sized> PartialOrd for Id<T> {
 
 impl<T: Support<usize>> Id<T> {
     /// Creates a safe identifier for an API with countable support.
-    pub fn new(value: usize) -> Option<Self> {
-        (value < T::SUPPORT).then_some(Self { value, count: PhantomData })
+    pub fn new(value: usize) -> Result<Self, Error> {
+        match value < T::SUPPORT {
+            true => Ok(Self { value, count: PhantomData }),
+            false => Err(Error::user(Code::InvalidArgument)),
+        }
     }
 }
 

@@ -53,7 +53,7 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
 fn set_baudrate<B: Board>(call: SchedulerCall<B, api::set_baudrate::Sig>) {
     let api::set_baudrate::Params { uart, baudrate } = call.read();
     let result = try {
-        let uart = Id::new(*uart as usize).ok_or(Trap)?;
+        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         board::Uart::<B>::set_baudrate(uart, *baudrate as usize)
     };
     call.reply(result);
@@ -63,7 +63,7 @@ fn set_baudrate<B: Board>(call: SchedulerCall<B, api::set_baudrate::Sig>) {
 fn start<B: Board>(call: SchedulerCall<B, api::start::Sig>) {
     let api::start::Params { uart } = call.read();
     let result = try {
-        let uart = Id::new(*uart as usize).ok_or(Trap)?;
+        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         board::Uart::<B>::start(uart)
     };
     call.reply(result);
@@ -73,7 +73,7 @@ fn start<B: Board>(call: SchedulerCall<B, api::start::Sig>) {
 fn stop<B: Board>(call: SchedulerCall<B, api::stop::Sig>) {
     let api::stop::Params { uart } = call.read();
     let result = try {
-        let uart = Id::new(*uart as usize).ok_or(Trap)?;
+        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         board::Uart::<B>::stop(uart)
     };
     call.reply(result);
@@ -85,7 +85,7 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let result = try {
-        let uart = Id::new(*uart as usize).ok_or(Trap)?;
+        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         let output = memory.get_mut(*ptr, *len)?;
         board::Uart::<B>::read(uart, output).map(|x| x as u32)
     };
@@ -98,7 +98,7 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let result = try {
-        let uart = Id::new(*uart as usize).ok_or(Trap)?;
+        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         let input = memory.get(*ptr, *len)?;
         board::Uart::<B>::write(uart, input).map(|x| x as u32)
     };
@@ -111,7 +111,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let inst = call.inst();
     let scheduler = call.scheduler();
     let result = try {
-        let uart = Id::new(*uart as usize).ok_or(Trap)?;
+        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         let event = convert_event(uart, *event)?;
         scheduler.applet.enable(Handler {
             key: Key::from(&event).into(),
@@ -129,7 +129,7 @@ fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { uart, event } = call.read();
     let scheduler = call.scheduler();
     let result = try {
-        let uart = Id::new(*uart as usize).ok_or(Trap)?;
+        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         let event = convert_event(uart, *event)?;
         board::Uart::<B>::disable(uart, event.direction).map_err(|_| Trap)?;
         scheduler.disable_event(Key::from(&event).into())?;
