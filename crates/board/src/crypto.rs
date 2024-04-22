@@ -88,23 +88,19 @@ pub trait Hmac:
 }
 
 #[cfg(feature = "internal-api-crypto-hash")]
-impl<
-        T: Support<bool>
-            + Send
-            + Default
-            + BlockSizeUser
-            + Update
-            + FixedOutputReset
-            + HashMarker
-            + LastError,
-    > Hash for T
+impl<T> Hash for T where T: Support<bool>
+        + Send
+        + Default
+        + BlockSizeUser
+        + Update
+        + FixedOutputReset
+        + HashMarker
+        + LastError
 {
 }
 #[cfg(feature = "internal-api-crypto-hmac")]
-impl<T: Support<bool> + Send + KeyInit + Update + FixedOutputReset + MacMarker + LastError> Hmac
-    for T
-{
-}
+impl<T> Hmac for T where T: Support<bool> + Send + KeyInit + Update + FixedOutputReset + MacMarker + LastError
+{}
 
 /// AES-128-CCM interface.
 #[cfg(feature = "api-crypto-aes128-ccm")]
@@ -177,15 +173,8 @@ impl crate::Supported for sha2::Sha256 {}
 impl crate::Supported for sha2::Sha384 {}
 
 #[cfg(feature = "internal-software-crypto-hmac")]
-impl<
-        D: Support<bool>
-            + Default
-            + BlockSizeUser
-            + Update
-            + FixedOutputReset
-            + HashMarker
-            + LastError,
-    > Support<bool> for hmac::SimpleHmac<D>
+impl<D> Support<bool> for hmac::SimpleHmac<D>
+where D: Support<bool> + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker + LastError
 {
     const SUPPORT: bool = D::SUPPORT;
 }
@@ -217,15 +206,8 @@ impl LastError for sha2::Sha384 {
 }
 
 #[cfg(feature = "internal-software-crypto-hmac")]
-impl<
-        D: Support<bool>
-            + Default
-            + BlockSizeUser
-            + Update
-            + FixedOutputReset
-            + HashMarker
-            + LastError,
-    > LastError for hmac::SimpleHmac<D>
+impl<D> LastError for hmac::SimpleHmac<D>
+where D: Support<bool> + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker + LastError
 {
     fn last_error(&self) -> Result<(), Error> {
         // TODO: Implement the error.
