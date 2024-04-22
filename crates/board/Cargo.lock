@@ -860,7 +860,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.6.1-git"
+version = "0.7.0-git"
 dependencies = [
  "aead",
  "aes",

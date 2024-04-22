@@ -60,7 +60,7 @@ fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
 fn initialize<B: Board>(mut call: SchedulerCall<B, api::initialize::Sig>) {
     let api::initialize::Params { algorithm } = call.read();
     let scheduler = call.scheduler();
-    let result: Result<Result<u32, _>, _> = try {
+    let result = try {
         let context = match convert_hash_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-sha256")]
             Algorithm::Sha256 => board::crypto::HashApi::new().map(HashContext::Sha256),
@@ -131,7 +131,7 @@ fn hmac_initialize<B: Board>(mut call: SchedulerCall<B, api::hmac_initialize::Si
     let api::hmac_initialize::Params { algorithm, key, key_len } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let result: Result<Result<u32, _>, _> = try {
+    let result = try {
         let key = memory.get(*key, *key_len)?;
         let context = match convert_hmac_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
