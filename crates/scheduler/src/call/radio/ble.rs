@@ -82,7 +82,7 @@ fn read_advertisement<B: Board>(mut call: SchedulerCall<B, api::read_advertiseme
 
 #[cfg(feature = "board-api-radio-ble")]
 fn convert_event(event: u32) -> Result<Event, Trap> {
-    Ok(match api::Event::try_from(event)? {
+    Ok(match api::Event::try_from(event).map_err(|_| Trap)? {
         api::Event::Advertisement => Event::Advertisement,
     })
 }

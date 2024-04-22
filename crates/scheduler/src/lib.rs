@@ -437,12 +437,6 @@ fn applet_trapped<B: Board>(reason: Option<&'static str>) -> ! {
 
 struct Trap;
 
-impl From<wasefire_error::Error> for Trap {
-    fn from(_: wasefire_error::Error) -> Self {
-        Trap
-    }
-}
-
 #[cfg(feature = "wasm")]
 const fn memory_size() -> usize {
     let page = match option_env!("WASEFIRE_MEMORY_PAGE_COUNT") {

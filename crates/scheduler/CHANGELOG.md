@@ -4,6 +4,8 @@
 
 ### Minor
 
+- Migrate implicit conversions of Error to Trap to explicit conversions
+- Remove conversion from Error to Trap
 - Migrate to `Id::new` returning `Result` instead of `Option`
 - Migrate to `crypto::{Hash,Hmac}` depending on `crypto::WithError`
 - Change `led::{get,set}()` to never trap and return an error instead
