@@ -24,7 +24,7 @@ generic-array = { version = "0.14.7", default-features = false }
 portable-atomic = { version = "1.6.0", default-features = false }
 typenum = { version = "1.17.0", default-features = false }
 wasefire-applet-api = { version = "0.6.0", path = "../api", features = ["host"] }
-wasefire-board-api = { version = "0.6.1-git", path = "../board" }
+wasefire-board-api = { version = "0.7.0-git", path = "../board" }
 wasefire-error = { version = "0.1.0", path = "../error" }
 wasefire-logger = { version = "0.1.4", path = "../logger" }
 wasefire-store = { version = "0.2.4-git", path = "../store", optional = true }

@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Migrate to `crypto::{Hash,Hmac}` depending on `crypto::WithError`
 - Change `led::{get,set}()` to never trap and return an error instead
 
 ### Patch
@@ -124,4 +125,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 32 -->
+<!-- Increment to skip CHANGELOG.md test: 33 -->

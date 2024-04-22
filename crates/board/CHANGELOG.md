@@ -1,6 +1,16 @@
 # Changelog
 
-## 0.6.1-git
+## 0.7.0-git
+
+### Major
+
+- Change `crypto::{Hash,Hmac}` to depend on `crypto::WithError`
+
+### Minor
+
+- Add `crypto::{HashApi,HmacApi}` helpers for `crypto::{Hash,Hmac}`
+- Add `crypto::NoError` helper for `crypto::WithError`
+- Add `crypto::WithError` to add error support to RustCrypto (fix #176)
 
 ### Patch
 

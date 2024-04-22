@@ -71,13 +71,13 @@ impl<B: Board> Default for AppletHashes<B> {
 #[cfg(feature = "internal-hash-context")]
 pub enum HashContext<B: Board> {
     #[cfg(feature = "board-api-crypto-sha256")]
-    Sha256(board::crypto::Sha256<B>),
+    Sha256(board::crypto::HashApi<board::crypto::Sha256<B>>),
     #[cfg(feature = "board-api-crypto-sha384")]
-    Sha384(board::crypto::Sha384<B>),
+    Sha384(board::crypto::HashApi<board::crypto::Sha384<B>>),
     #[cfg(feature = "board-api-crypto-hmac-sha256")]
-    HmacSha256(board::crypto::HmacSha256<B>),
+    HmacSha256(board::crypto::HmacApi<board::crypto::HmacSha256<B>>),
     #[cfg(feature = "board-api-crypto-hmac-sha384")]
-    HmacSha384(board::crypto::HmacSha384<B>),
+    HmacSha384(board::crypto::HmacApi<board::crypto::HmacSha384<B>>),
     _Impossible(board::Impossible<B>),
 }
 
