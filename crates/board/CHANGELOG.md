@@ -4,7 +4,7 @@
 
 ### Major
 
-- Add `LastError` trait to check for error after using RustCrypto API.
+- Add `LastError` trait to check for error after using RustCrypto API
 
 ### Patch
 
