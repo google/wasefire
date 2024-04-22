@@ -9,6 +9,10 @@
 - Remove deprecated `println!` macro
 - Add `Sha384` and `HmacSha384` to the `rust-crypto` feature
 
+### Patch
+
+- Update dependencies
+
 ## 0.5.0
 
 ### Major

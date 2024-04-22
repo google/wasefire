@@ -15,6 +15,7 @@
 
 ### Patch
 
+- Change `Id::new()` to return `OutOfBounds` error instead of `InvalidArgument`
 - Update dependencies
 - Document all public API
 
@@ -130,4 +131,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 18 -->
+<!-- Increment to skip CHANGELOG.md test: 19 -->

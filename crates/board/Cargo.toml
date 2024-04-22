@@ -35,8 +35,8 @@ signature = { version = "2.2.0", default-features = false, optional = true }
 typenum = { version = "1.17.0", default-features = false }
 usb-device = { version = "0.3.1", default-features = false }
 usbd-serial = { version = "0.2.0", default-features = false }
-wasefire-applet-api = { version = "0.6.0", path = "../api", features = ["host"] }
-wasefire-error = { version = "0.1.0", path = "../error" }
+wasefire-applet-api = { version = "0.6.1-git", path = "../api", features = ["host"] }
+wasefire-error = { version = "0.1.1-git", path = "../error" }
 wasefire-logger = { version = "0.1.4", path = "../logger" }
 wasefire-store = { version = "0.2.4-git", path = "../store", optional = true }
 

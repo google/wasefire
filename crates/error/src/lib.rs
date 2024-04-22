@@ -170,6 +170,9 @@ pub enum Code {
     /// This is a generic error. More precise errors would be `InvalidLength`, `InvalidAlign`,
     /// `InvalidState`, or `NotFound` for example.
     InvalidArgument = 8,
+
+    /// An input is out of bounds.
+    OutOfBounds = 9,
 }
 
 impl core::fmt::Debug for Error {
