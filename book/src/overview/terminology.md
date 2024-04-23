@@ -1,6 +1,7 @@
 # Terminology
 
 The project is split in the following components:
+
 - A _Device_ is a final product.
 - A _User_ is a person, team, or organization owning the Device.
 - A _Board_ is the hardware of the Device.
@@ -16,6 +17,7 @@ The project is split in the following components:
 ## Device
 
 A Device encompasses the following (non-exhaustive list):
+
 - A hardware on which to run (chip, form factor, external devices, etc).
 - How this hardware is configured and initially provisioned.
 - A set of applets defining the firmware, and their configuration.
@@ -27,6 +29,7 @@ A Device encompasses the following (non-exhaustive list):
 ## User
 
 Users may delegate part of the Device design to other teams:
+
 - Developing hardware or selecting an existing hardware.
 - Developing one or more applets and/or selecting one or more applets.
 - Design of the functionality.
@@ -36,6 +39,7 @@ Users may delegate part of the Device design to other teams:
 Users are responsible for all those steps. The project will however support them
 in those tasks for both development and security aspects. For example
 (non-exhaustive list):
+
 - The platform provides unique ids per device.
 - The platform supports secure updates.
 - The platform provides applet management (with versioning).
@@ -48,6 +52,7 @@ The project provides support for some boards through Runners. Additional boards
 may be supported depending on User needs.
 
 Boards may be subject to some restrictions:
+
 - Only ARM Cortex-M and RISC-V architectures are considered for now.
 - Minimum flash and RAM requirements (to be defined).
 
@@ -62,6 +67,7 @@ supports.
 ## Board API
 
 The Board API may be partially implemented for 2 reasons:
+
 - The Board doesn't support some features in hardware and a software
   implementation is not feasible or desired.
 - The User knows that those features are not going to be used by any applets
@@ -110,6 +116,7 @@ they can configure it when configuring a Platform.
 
 This is the firmware that runs on the Device. It doesn't provide any business
 logic, but provides some core functionalities like (non-exhaustive list):
+
 - Secure updates.
 - Applet management.
 - Debugging facilities.

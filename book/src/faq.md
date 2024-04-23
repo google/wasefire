@@ -20,6 +20,7 @@ representation in flash or RAM which may be computed ahead-of-time or on-demand.
 ### Why is performance not an issue?
 
 The main bets are:
+
 - Computing intensive code (like cryptography) is done in hardware or native
   code (in the platform).
 - Applets are supposed to only do business logic which is assumed to not be
@@ -37,11 +38,13 @@ not yet implemented, which may increase the binary size.
 ### Why implement a new interpreter?
 
 The following runtimes have been quickly rejected:
+
 - `wasmtime` and `wasmer` don't support no-std
 - `wasmi` consumes too much RAM for embedded
 
 `wasm3` has been used during the initial phase of the project but got eventually
 replaced with a custom interpreter for the following reasons:
+
 - It doesn't perform validation
   [yet](https://github.com/wasm3/wasm3/issues/344). We probably need proper
   validation.
@@ -75,13 +78,15 @@ manage their own linear memory (from the module instance in the applet store).
 ### What third-party dependencies are used?
 
 The minimum set of third-party dependencies is currently:
+
 - `num_enum` for the interpreter
 - `usb-device` and `usbd-serial` for the board API
 
 Additional dependencies are used by:
+
 - the actual board implementation:
-    - (e.g. `cortex-m-rt`, `nrf52840-hal`, `panic-abort` for nordic)
-    - (e.g. `tokio`, `usbip-device`, `aes`, `rand` for linux)
+   - (e.g. `cortex-m-rt`, `nrf52840-hal`, `panic-abort` for nordic)
+   - (e.g. `tokio`, `usbip-device`, `aes`, `rand` for linux)
 - compilation (e.g. `proc-macro2`, `quote`)
 - debugging (e.g. `defmt`, `defmt-rtt`, `log`, `env_logger`)
 - tooling (e.g. `anyhow`, `clap`)

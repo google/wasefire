@@ -10,6 +10,7 @@ This book is a walk through the _Wasefire_ project.
 
 The ecosystem aspires to be accessible to projects and developers regardless of their familiarity
 with developing secure firmware:
+
 - No embedded expertise required: Regular software engineers can develop firmware.
 - No security expertise required: The ecosystem provides secure-by-default options.
 - No enforced programming language: Developers may use the language of their choice, as long as it
@@ -20,6 +21,7 @@ with developing secure firmware:
 
 Security is the responsibility of the ecosystem, not the developer. The following security
 mechanisms are (or are planned to be) in place:
+
 - Sandboxing of the firmware functions (called applets) from each other and from the firmware
   runtime (called platform).
 - Secure implementation within the platform boundaries (e.g. side-channel resistance, fault
@@ -37,6 +39,7 @@ action.
 
 Being both simple-to-use and secure-by-default actually goes hand in hand. It cannot be expected for
 humans to never do mistake, even if they have embedded and security expertise.
+
 - By being simple to use, developers will prefer using the ecosystem solution rather than
   implementing their own, thus using a secure-by-default solution rather than a possibly insecure
   implementation.
