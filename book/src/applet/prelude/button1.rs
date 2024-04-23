@@ -38,7 +38,7 @@ fn main() {
 
         //{ ANCHOR: listener
         // We start listening for state changes with the handler.
-        let listener = button::Listener::new(index, handler);
+        let listener = button::Listener::new(index, handler).unwrap();
         //} ANCHOR_END: listener
 
         //{ ANCHOR: leak

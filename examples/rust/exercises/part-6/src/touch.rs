@@ -37,7 +37,8 @@ impl Touch {
                     pressed.set(true);
                 }
             }
-        });
+        })
+        .unwrap();
         // TODO: Create a timed_out variable similar to pressed.
         // TODO: Use timer::Timer to allocate a new timer.
         // TODO: Unconditionally set the timed_out variable in its callback (similar to pressed).

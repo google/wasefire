@@ -65,7 +65,7 @@ fn main() {
 
         //{ ANCHOR: listener
         // We indefinitely listen by creating and leaking a listener.
-        button::Listener::new(button_index, handler).leak();
+        button::Listener::new(button_index, handler).unwrap().leak();
         //} ANCHOR_END: listener
     }
 }

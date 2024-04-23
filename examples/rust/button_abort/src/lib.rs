@@ -62,7 +62,8 @@ fn main() {
                 button::Released if pressed.get() => released.set(true),
                 button::Released => (),
             }
-        });
+        })
+        .unwrap();
 
         // Wait for the button to be pressed.
         scheduling::wait_until(|| pressed.get());

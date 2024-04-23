@@ -34,7 +34,7 @@ struct Blink;
 impl Touch {
     pub fn new() -> Self {
         let touch = Touch::default();
-        let _button = button::Listener::new(0, touch.clone());
+        let _button = button::Listener::new(0, touch.clone()).unwrap();
         let blink = timer::Timer::new(Blink);
         let timeout = timer::Timer::new(touch.clone());
         let touch_impl = TouchImpl { touched: false, _button, blink, timeout };

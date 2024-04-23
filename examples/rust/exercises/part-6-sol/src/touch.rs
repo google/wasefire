@@ -37,7 +37,8 @@ impl Touch {
                     pressed.set(true);
                 }
             }
-        });
+        })
+        .unwrap();
         let timed_out = Rc::new(Cell::new(false));
         let timer = timer::Timer::new({
             let timed_out = timed_out.clone();

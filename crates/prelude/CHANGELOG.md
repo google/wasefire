@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0-git
+
+### Major
+
+- Change `button::Listener::new()` to never panic and return an error instead.
+
 ## 0.5.1-git
 
 ### Minor

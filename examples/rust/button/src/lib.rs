@@ -34,7 +34,7 @@ fn main() {
         let handler = move |state| debug!("Button {index} has been {state:?}.");
 
         // We start listening for state changes with the handler.
-        let listener = button::Listener::new(index, handler);
+        let listener = button::Listener::new(index, handler).unwrap();
 
         // We leak the listener to continue listening for events.
         listener.leak();
