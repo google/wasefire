@@ -35,6 +35,16 @@ runs:
     - if: ${{ contains(fromJSON(inputs.checks), 'publish') }}
       run: ./scripts/publish.sh --dry-run
       shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'markdown') }}
+      # TODO: Remove once ubuntu-latest is 24.04.
+      run: |
+        set -x
+        curl -Os http://ftp.de.debian.org/debian/pool/main/r/ruby-mdl/markdownlint_0.13.0-4_all.deb
+        sudo apt install ruby-kramdown-parser-gfm ruby-mixlib-{cli,config,shellout}
+        sudo dpkg -i markdownlint_0.13.0-4_all.deb
+        rm markdownlint_0.13.0-4_all.deb
+        ./scripts/wrapper.sh mdl -g -s markdownlint.rb .
+      shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'taplo') }}
       run: ./scripts/ci-taplo.sh
       shell: bash

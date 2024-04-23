@@ -33,6 +33,7 @@ install() {
         case "$2" in
           cc) set build-essential ;;
           curl) set curl ;;
+          mdl) set markdownlint ;;
           npm) _system_nodejs_setup ; set nodejs ;;
           pkg-config) set pkgconf ;;
           socat) set socat ;;

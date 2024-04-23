@@ -1,6 +1,7 @@
 # Buttons
 
 In this section, we will walk through 2 Rust examples:
+
 - The `button` example illustrates stateless usage but lets us introduce how to
   handle events with callbacks.
 - The `led` example illustrates stateful usage and thus how to access state in
@@ -84,6 +85,7 @@ toggled. And when a button is released, it maps to the next LED (or the first
 one if it was mapping to the last one).
 
 In particular:
+
 - A single button can toggle all LEDs.
 - Multiple buttons can toggle the same LED.
 - A button may stay pressed while another button is pressed.

@@ -13,6 +13,7 @@ player than has 7 seconds to type it back. On success they go to the next level,
 otherwise to the previous level.
 
 The applet has only 2 states across loop iterations:
+
 - The level of the game (and thus the length of the string to remember) starting
   at 3.
 - The next prompt to show to the player while they get ready for the next
@@ -89,6 +90,7 @@ escape codes to highlight the result.
 
 Now that we're done with the main loop, let's look at the `process` helper. It
 takes 4 arguments:
+
 - `max_secs: usize`: the maximum display time in seconds.
 - `prompt: &str`: the message shown at the beginning of the line.
 - `data: &mut String`: the data shown after the prompt, which may be updated
@@ -147,7 +149,6 @@ canceled.
 ```rust,no_run,noplayground
 {{#include usb.rs:process_read}}
 ```
-
 
 The final code looks like this:
 
