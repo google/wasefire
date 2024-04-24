@@ -836,7 +836,7 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.6.0"
+version = "0.6.1-git"
 dependencies = [
  "bytemuck",
  "sealed",
@@ -897,7 +897,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "defmt",
  "num_enum 0.7.2",

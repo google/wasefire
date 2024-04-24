@@ -287,7 +287,7 @@ impl<T: Support<usize>> Id<T> {
     pub fn new(value: usize) -> Result<Self, Error> {
         match value < T::SUPPORT {
             true => Ok(Self { value, count: PhantomData }),
-            false => Err(Error::user(Code::InvalidArgument)),
+            false => Err(Error::user(Code::OutOfBounds)),
         }
     }
 }
