@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # TODO(https://github.com/microsoft/linux-package-repositories/issues/130): Remove when fixed.
+      - run: sudo rm /etc/apt/sources.list.d/microsoft-prod.list
       - run: sudo apt-get update
       - run: ./scripts/setup.sh
       - run: ./scripts/pages.sh
