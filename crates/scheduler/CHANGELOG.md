@@ -10,6 +10,7 @@
 
 ### Patch
 
+- Use explicit conversion from `Error` to `Trap`
 - Simplify `#[cfg(all)]` attributes between board and applet features
 - Update dependencies
 - Fix HKDF-SHA-384 for outputs longer than 32 bytes

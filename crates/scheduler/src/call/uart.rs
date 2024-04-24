@@ -140,7 +140,7 @@ fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
 
 #[cfg(feature = "board-api-uart")]
 fn convert_event<B: Board>(uart: Id<board::Uart<B>>, event: u32) -> Result<Event<B>, Trap> {
-    let direction = match api::Event::try_from(event)? {
+    let direction = match api::Event::try_from(event).map_err(|_| Trap)? {
         api::Event::Read => Direction::Read,
         api::Event::Write => Direction::Write,
     };
