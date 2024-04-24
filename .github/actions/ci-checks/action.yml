@@ -16,9 +16,6 @@ runs:
     - if: inputs.use-cache == 'true'
       name: Restore the cache
       uses: ./.github/actions/ci-cache
-    # TODO(https://github.com/microsoft/linux-package-repositories/issues/130): Remove when fixed.
-    - run: sudo rm /etc/apt/sources.list.d/microsoft-prod.list
-      shell: bash
     - run: sudo apt-get update
       shell: bash
     - run: ./scripts/setup.sh
