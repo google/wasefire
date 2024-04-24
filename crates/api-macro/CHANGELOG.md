@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1-git
+
+### Patch
+
+- Return a user error instead of an internal error for enums `TryFrom`
+
 ## 0.6.0
 
 ### Major
