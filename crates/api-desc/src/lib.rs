@@ -268,7 +268,7 @@ impl Enum {
                         // SAFETY: See `tests::enum_values_are_valid()`.
                         Ok(unsafe { core::mem::transmute(x) })
                     } else {
-                        Err(wasefire_error::Error::internal(0))
+                        Err(wasefire_error::Error::user(wasefire_error::Code::OutOfBounds))
                     }
                 }
             }

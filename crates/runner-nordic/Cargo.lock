@@ -1133,7 +1133,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.6.0"
+version = "0.6.1-git"
 dependencies = [
  "bytemuck",
  "sealed",
@@ -1143,7 +1143,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.1.6"
+version = "0.1.7-git"
 dependencies = [
  "anyhow",
  "clap",
@@ -1156,7 +1156,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.6.0"
+version = "0.6.1-git"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
@@ -1190,7 +1190,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "defmt",
  "num_enum 0.7.2",

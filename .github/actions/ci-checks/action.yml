@@ -16,6 +16,9 @@ runs:
     - if: inputs.use-cache == 'true'
       name: Restore the cache
       uses: ./.github/actions/ci-cache
+    # TODO(https://github.com/microsoft/linux-package-repositories/issues/130): Remove when fixed.
+    - run: sudo rm /etc/apt/sources.list.d/microsoft-prod.list
+      shell: bash
     - run: sudo apt-get update
       shell: bash
     - run: ./scripts/setup.sh
@@ -36,7 +39,7 @@ runs:
       run: ./scripts/publish.sh --dry-run
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'markdown') }}
-      # TODO: Remove once ubuntu-latest is 24.04.
+      # TODO: Keep only the last command once ubuntu-latest is 24.04.
       run: |
         set -x
         curl -Os http://ftp.de.debian.org/debian/pool/main/r/ruby-mdl/markdownlint_0.13.0-4_all.deb
