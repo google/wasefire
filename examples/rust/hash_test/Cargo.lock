@@ -599,7 +599,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.1.6"
+version = "0.1.7-git"
 dependencies = [
  "anyhow",
  "clap",
@@ -612,7 +612,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.6.0"
+version = "0.6.1-git"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
