@@ -23,7 +23,9 @@ cargo xtask update-apis
 book_example() {
   local src=book/src/applet/prelude/$1.rs
   local dst=examples/rust/$2/src/lib.rs
-  if [ -z "$CI" -a $dst -nt $src ]; then
+  # We only check that the destination is newer by more than one second, because when cloning the
+  # repository or switching branches, it may happen that the destination is slightly newer.
+  if [ $(stat -c%Y $dst) -gt $(($(stat -c%Y $src) + 1)) ]; then
     t "Update $src instead of $dst"
     e "$dst seems to have been manually modified"
   fi
