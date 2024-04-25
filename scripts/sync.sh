@@ -23,7 +23,7 @@ cargo xtask update-apis
 book_example() {
   local src=book/src/applet/prelude/$1.rs
   local dst=examples/rust/$2/src/lib.rs
-  if [ $dst -nt $src ]; then
+  if [ -z "$CI" -a $dst -nt $src ]; then
     t "Update $src instead of $dst"
     e "$dst seems to have been manually modified"
   fi
