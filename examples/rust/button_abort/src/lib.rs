@@ -20,6 +20,10 @@
 //! If the button is released before the timer runs out, then the LED will blink until next button
 //! press.
 
+// DO NOT EDIT MANUALLY:
+// - Edit book/src/applet/prelude/timer.rs instead.
+// - Then use ./scripts/sync.sh to generate this file.
+
 #![no_std]
 wasefire::applet!();
 

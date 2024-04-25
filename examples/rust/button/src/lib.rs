@@ -16,6 +16,10 @@
 //!
 //! The applet prints the button state to the debug output on any button event.
 
+// DO NOT EDIT MANUALLY:
+// - Edit book/src/applet/prelude/button1.rs instead.
+// - Then use ./scripts/sync.sh to generate this file.
+
 #![no_std]
 wasefire::applet!();
 

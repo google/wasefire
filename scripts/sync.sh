@@ -21,7 +21,25 @@ set -e
 cargo xtask update-apis
 
 book_example() {
-  sed '/ANCHOR/d' book/src/applet/prelude/$1.rs > examples/rust/$2/src/lib.rs
+  local src=book/src/applet/prelude/$1.rs
+  local dst=examples/rust/$2/src/lib.rs
+  # We only check that the destination is newer by more than one second, because when cloning the
+  # repository or switching branches, it may happen that the destination is slightly newer.
+  if [ $(stat -c%Y $dst) -gt $(($(stat -c%Y $src) + 1)) ]; then
+    t "Update $src instead of $dst"
+    e "$dst seems to have been manually modified"
+  fi
+  # Besides removing all anchors, we insert a warning before the #![no_std] line, which all examples
+  # should have near the beginning of the file.
+  sed '/ANCHOR/d;/^#!\[no_std\]$/{i \'"
+// DO NOT EDIT MANUALLY:\\
+// - Edit $src instead.\\
+// - Then use ./scripts/sync.sh to generate this file.\\
+
+}" $src > $dst
+  # Now that the destination has been updated, it is newer than the source. So we touch the source
+  # to preserve the invariant that the destination is never newer than the source.
+  touch $src
 }
 
 book_example led blink
