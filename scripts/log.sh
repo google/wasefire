@@ -14,6 +14,8 @@
 
 x() { ( set -x; "$@"; ); }
 i() { _log '1;36' Info "$*"; }
+w() { _log '1;33' Warn "$*"; }
+t() { _log '1;33' Todo "$*"; }
 d() { _log '1;32' Done "$*"; exit 0; }
 e() { _log '1;31' Error "$*"; exit 1; }
 

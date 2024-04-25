@@ -18,6 +18,10 @@
 //! serial. It essentially shows a random base32 string (the length representing the level in the
 //! game) for 3 seconds and gives 7 seconds to type it back.
 
+// DO NOT EDIT MANUALLY:
+// - Edit book/src/applet/prelude/usb.rs instead.
+// - Then use ./scripts/sync.sh to generate this file.
+
 #![no_std]
 wasefire::applet!();
 

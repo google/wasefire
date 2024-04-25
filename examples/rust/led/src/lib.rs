@@ -20,6 +20,10 @@
 //! is toggled. After a button is released, it becomes associated with the next LED (wrapping back
 //! to the first LED after the last LED).
 
+// DO NOT EDIT MANUALLY:
+// - Edit book/src/applet/prelude/button2.rs instead.
+// - Then use ./scripts/sync.sh to generate this file.
+
 #![no_std]
 wasefire::applet!();
 

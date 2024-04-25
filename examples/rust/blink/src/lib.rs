@@ -17,6 +17,10 @@
 //! The board must possess at least one LED and one timer. The applet indefinitely cycles through
 //! all LEDs in order with a period of 1 second and blinks them for 500 milli-seconds.
 
+// DO NOT EDIT MANUALLY:
+// - Edit book/src/applet/prelude/led.rs instead.
+// - Then use ./scripts/sync.sh to generate this file.
+
 #![no_std]
 wasefire::applet!();
 
