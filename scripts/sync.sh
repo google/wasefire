@@ -29,8 +29,8 @@ book_example() {
   fi
   # Besides removing all anchors, we insert a warning before the #![no_std] line, which all examples
   # should have near the beginning of the file.
-  sed '/ANCHOR/d;/^#!\[no_std\]$/{i \
-// DO NOT EDIT MANUALLY:\'"
+  sed '/ANCHOR/d;/^#!\[no_std\]$/{i \'"
+// DO NOT EDIT MANUALLY:\\
 // - Edit $src instead.\\
 // - Then use ./scripts/sync.sh to generate this file.\\
 
