@@ -21,6 +21,7 @@
 use alloc::boxed::Box;
 
 use wasefire_applet_api::button as api;
+use wasefire_error::Error;
 
 pub use self::api::State;
 pub use self::api::State::*;
@@ -64,15 +65,15 @@ impl<H: Handler> Listener<H> {
     /// # Examples
     ///
     /// ```ignore
-    /// Listener::new(index, |state| debug!("Button has been {state:?}"))
+    /// Listener::new(index, |state| debug!("Button has been {state:?}"))?
     /// ```
-    pub fn new(button: usize, handler: H) -> Self {
+    pub fn new(button: usize, handler: H) -> Result<Self, Error> {
         let handler_func = Self::call;
         let handler = Box::into_raw(Box::new(handler));
         let handler_data = handler as *const u8;
         let params = api::register::Params { button, handler_func, handler_data };
-        convert_unit(unsafe { api::register(params) }).unwrap();
-        Listener { button, handler }
+        convert_unit(unsafe { api::register(params) })?;
+        Ok(Listener { button, handler })
     }
 
     /// Stops listening.

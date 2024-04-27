@@ -38,7 +38,8 @@ fn press() {
     let button = button::Listener::new(0, |event| match event {
         button::Pressed => PRESSED.store(true, Relaxed),
         button::Released => (),
-    });
+    })
+    .unwrap();
     scheduling::wait_until(|| PRESSED.load(Relaxed));
     drop(button);
 }

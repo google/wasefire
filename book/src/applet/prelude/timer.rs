@@ -66,7 +66,8 @@ fn main() {
                 button::Released if pressed.get() => released.set(true),
                 button::Released => (),
             }
-        });
+        })
+        .unwrap();
         //} ANCHOR_END: button
 
         //{ ANCHOR: pressed

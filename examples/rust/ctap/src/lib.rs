@@ -269,7 +269,8 @@ impl Touch {
                 blink: blink.clone(),
                 timeout: timeout.clone(),
             },
-        );
+        )
+        .unwrap();
         Some(Self { console, light, touched, blink, timeout, _button })
     }
 

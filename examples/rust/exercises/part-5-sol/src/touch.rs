@@ -36,7 +36,8 @@ impl Touch {
                     pressed.set(true);
                 }
             }
-        });
+        })
+        .unwrap();
         scheduling::wait_until(|| pressed.get());
         led::set(0, led::Off);
         Ok(())
