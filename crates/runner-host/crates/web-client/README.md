@@ -22,8 +22,3 @@ This builds the app in release mode similar to `cargo build --release`.
 You can also pass the `--release` flag to `trunk serve` if you need to get every last drop of performance.
 
 Unless overwritten, the output will be located in the `dist` directory.
-
-### Remove example code
-
-The code in [src/main.rs](src/main.rs) specific to the example is limited to only the `view` method.
-There is, however, a fair bit of Sass in [index.scss](index.scss) you can remove.

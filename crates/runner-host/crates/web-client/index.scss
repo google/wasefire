@@ -1,3 +1,17 @@
+// Copyright 2023 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 /* Scrollbar */
 * {
   scrollbar-width: thin;
@@ -18,50 +32,15 @@
   border: 3px solid rgb(12, 74, 19);
 }
 
+svg {
+  pointer-events: none;
+}
 
 .button {
-  display: block;
-  width: 100px;
-  height: 82px;
-
-  //background-size: 100px 82px;
-}
-
-
-/* Loading animation */
-.loading-title {
-  animation: loading-title 1s cubic-bezier(0.2, 0.6, 0.4, 1.000) both;
-}
-
-@keyframes loading-title {
-  0% {
-    letter-spacing: -0.4em;
-    opacity: 0;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-.loading-message {
-  animation: loading-message 1.0s linear both;
-}
-
-@keyframes loading-message {
-  0% {
-    opacity: 0;
-  }
-
-  20% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
+  user-drag: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
 }

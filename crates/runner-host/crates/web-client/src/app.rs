@@ -1,3 +1,19 @@
+// Copyright 2023 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use log::{info, warn};
+use web_common::{Command, Event};
 use yew::prelude::*;
 
 use crate::board::Board;
@@ -7,15 +23,48 @@ use crate::hooks::use_runner_connection::use_runner_connection;
 #[function_component(App)]
 pub fn app() -> Html {
     let runner_connection = use_runner_connection(String::from("ws://127.0.0.1:5000/board"));
-    let runner_con_msg = runner_connection.clone();
-    let on_new_console_msg: Callback<String> = Callback::from(move |msg: String| {
-         runner_con_msg.send_console_event(msg);
-    });
+
+    let on_new_console_msg = {
+        let runner_connection = runner_connection.clone();
+        Callback::from(move |msg: String| {
+            runner_connection.send_console_event(msg);
+        })
+    };
+    let on_board_ready = {
+        let runner_connection = runner_connection.clone();
+        Callback::from(move |()| {
+            runner_connection.send_board_ready();
+        })
+    };
+
+    let send_event_callback = {
+        let runner_connection = runner_connection.clone();
+        Callback::from(move |event: Event| {
+            runner_connection.send_event(event);
+        })
+    };
+
+    {
+        let runner_connection = runner_connection.clone();
+        let command_state = runner_connection.command_state.clone();
+        use_effect_with(command_state, move |command_state| {
+            if let Some(command) = &**command_state {
+                info!("Command: {:?} ", command);
+                if let Command::Connected = command {
+                    info!("Connected to runner");
+                }
+                if let Command::Disconnected = command {
+                    warn!("Disconnected from runner");
+                }
+            }
+            || ()
+        });
+    }
 
     html! {
         <main>
-            //<Board />
-            <Console id ={0} command_state={runner_connection.command_state} on_new_console_msg={on_new_console_msg}/>
+            <Console id ={0} command_state={runner_connection.command_state.clone()} on_new_console_msg={on_new_console_msg}/>
+            <Board command_state={runner_connection.command_state} on_board_ready={on_board_ready} on_event={send_event_callback}/>
         </main>
     }
 }
