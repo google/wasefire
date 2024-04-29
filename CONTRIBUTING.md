@@ -43,5 +43,5 @@ or feature request you would like, possible design or implementation ideas you h
 You can find more information on how to [open an
 issue](https://help.github.com/articles/about-issues) or [create a pull
 request](https://help.github.com/articles/about-pull-requests) in the [GitHub
-Help](https://help.github.com). You can also find information specific to Wasefire in the
-[`docs/contributing`](https://github.com/google/wasefire/tree/main/docs/contributing) folder.
+Help](https://help.github.com). You can also find information specific to this repository in [this
+folder](docs/contributing).
