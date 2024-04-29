@@ -23,7 +23,7 @@
 #![no_std]
 wasefire::applet!();
 
-fn main() {
+fn main() -> Result<(), Error> {
     // Make sure there is at least one button.
     let count = button::count();
     assert!(count > 0, "Board has no buttons.");
@@ -34,7 +34,7 @@ fn main() {
         let handler = move |state| debug!("Button {index} has been {state:?}.");
 
         // We start listening for state changes with the handler.
-        let listener = button::Listener::new(index, handler).unwrap();
+        let listener = button::Listener::new(index, handler)?;
 
         // We leak the listener to continue listening for events.
         listener.leak();
