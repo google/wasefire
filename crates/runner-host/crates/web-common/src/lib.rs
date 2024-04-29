@@ -51,6 +51,10 @@ pub enum Command {
 
     /// Prints a debug message.
     Log { message: String },
+
+    // Input from user to console.
+    #[serde(rename_all = "camelCase")]
+    Input { message: String },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
