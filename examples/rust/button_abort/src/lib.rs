@@ -31,7 +31,7 @@ use alloc::rc::Rc;
 use core::cell::Cell;
 use core::time::Duration;
 
-fn main() {
+fn main() -> Result<(), Error> {
     assert!(button::count() > 0, "Board has no buttons.");
     assert!(led::count() > 0, "Board has no LEDs.");
 
@@ -62,8 +62,7 @@ fn main() {
                 button::Released if pressed.get() => released.set(true),
                 button::Released => (),
             }
-        })
-        .unwrap();
+        })?;
 
         // Wait for the button to be pressed.
         scheduling::wait_until(|| pressed.get());

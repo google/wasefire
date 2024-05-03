@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Allow main to return an error
 - Change `led::{get,set}()` to never trap and return an error instead
 - Document all public API
 - Remove deprecated `println!` macro
