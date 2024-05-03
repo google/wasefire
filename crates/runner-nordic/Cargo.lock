@@ -852,7 +852,7 @@ dependencies = [
 [[package]]
 name = "rubble"
 version = "0.0.5"
-source = "git+https://github.com/jmichelp/rubble.git?rev=d545f4f#d545f4f598d081c0177f38500792e353a7d932a3"
+source = "git+https://github.com/jmichelp/rubble.git?rev=d545f4f598d081c0177f38500792e353a7d932a3#d545f4f598d081c0177f38500792e353a7d932a3"
 dependencies = [
  "bitflags 2.4.2",
  "defmt",
@@ -867,7 +867,7 @@ dependencies = [
 [[package]]
 name = "rubble-nrf5x"
 version = "0.0.5"
-source = "git+https://github.com/jmichelp/rubble.git?rev=d545f4f#d545f4f598d081c0177f38500792e353a7d932a3"
+source = "git+https://github.com/jmichelp/rubble.git?rev=d545f4f598d081c0177f38500792e353a7d932a3#d545f4f598d081c0177f38500792e353a7d932a3"
 dependencies = [
  "nrf52840-pac",
  "rubble",
