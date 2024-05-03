@@ -654,7 +654,7 @@ dependencies = [
 [[package]]
 name = "nrf-usbd"
 version = "0.2.0"
-source = "git+https://github.com/ia0/nrf-usbd.git?branch=bump#b1db2c14f5c1a2c9c38415ff996e02046777d33b"
+source = "git+https://github.com/nrf-rs/nrf-usbd.git?rev=c736b03214e740d06251266b56d36c648a6c7f1b#c736b03214e740d06251266b56d36c648a6c7f1b"
 dependencies = [
  "cortex-m",
  "critical-section",
