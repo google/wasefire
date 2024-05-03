@@ -16,6 +16,9 @@
 
 #![no_std]
 
+#[cfg(feature = "std")]
+extern crate std;
+
 use num_enum::{IntoPrimitive, TryFromPrimitive, TryFromPrimitiveError};
 
 /// API errors.
@@ -212,6 +215,9 @@ impl defmt::Format for Error {
         }
     }
 }
+
+#[cfg(feature = "std")]
+impl std::error::Error for Error {}
 
 #[cfg(test)]
 mod tests {

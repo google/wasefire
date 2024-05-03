@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `std` feature to implement `std::error::Error`
 - Add an `OutOfBounds` error
 
 ## 0.1.0
