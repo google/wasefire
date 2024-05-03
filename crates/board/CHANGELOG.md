@@ -9,13 +9,10 @@
 
 ### Minor
 
+- Add `platform::Api::Protocol` for the platform protocol and its `api-platform-protocol` feature
 - Add `crypto::{HashApi,HmacApi}` helpers for `crypto::{Hash,Hmac}`
 - Add `crypto::NoError` helper for `crypto::WithError`
 - Add `crypto::WithError` to add error support to RustCrypto (fix #176)
-
-### Minor
-
-- Add `platform::Api::Protocol` for the platform protocol and its `api-platform-protocol` feature
 
 ### Patch
 

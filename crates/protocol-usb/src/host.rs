@@ -111,7 +111,9 @@ fn is_wasefire<T: UsbContext>(device: Device<T>) -> anyhow::Result<Option<Candid
     Ok(None)
 }
 
-/// Holds a connection to a device.
+/// Devices that look like Wasefire.
+///
+/// Those are good candidates to connect to.
 pub struct Candidate<T: UsbContext> {
     device: Device<T>,
     configuration: u8,

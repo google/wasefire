@@ -58,7 +58,7 @@ usb = [
 ]
 web = ["dep:web-server"]
 # Exactly one is enabled by xtask.
-debug = ["wasefire-logger/log", "wasefire-scheduler/log"]
+debug = ["wasefire-logger/log", "wasefire-protocol-usb?/log", "wasefire-scheduler/log"]
 release = []
 # Exactly one is enabled by xtask.
 native = ["wasefire-scheduler/native"]

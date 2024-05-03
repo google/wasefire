@@ -14,8 +14,9 @@
 
 //! Wasefire platform protocol.
 //!
-//! This crate defines a simple protocol between a host and a device. The host initiates requests
-//! and the device responds. Requests and responses are byte sequences of arbitrary length.
+//! This crate defines a high-level protocol between a host and a device. The host initiates
+//! requests and the device responds. Requests and responses use the same [`Api`] but with a
+//! different type parameter: `Api<Request>` and `Api<Response>` respectively.
 //!
 //! This high-level protocol is eventually wrapped in a lower-level protocol for a given transport,
 //! for example USB. The host should provide enough time for the device to respond, but should
