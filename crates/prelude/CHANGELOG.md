@@ -4,6 +4,7 @@
 
 ### Major
 
+- Change `Gpio` to never panic and return an error instead
 - Change `button::Listener::new()` to never panic and return an error instead
 
 ### Minor
