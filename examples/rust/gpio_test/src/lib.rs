@@ -25,7 +25,7 @@ use wasefire::gpio::InputConfig::*;
 use wasefire::gpio::OutputConfig::*;
 use wasefire::gpio::{Config, Gpio, InputConfig, OutputConfig};
 
-fn main() {
+fn main() -> Result<(), Error> {
     if gpio::count() < 3 {
         debug!("This test needs at least 3 GPIOs (connected together).");
         debug::exit(true);
@@ -54,15 +54,15 @@ fn main() {
                 None => continue,
             };
             debug!("{} + {} = {expected:?}", Pretty(src), Pretty(dst));
-            let _src = Gpio::new(0, src);
-            let dst = Gpio::new(1, dst);
+            let _src = Gpio::new(0, src)?;
+            let dst = Gpio::new(1, dst)?;
             match expected {
-                Some(expected) => debug::assert_eq(&dst.read(), &expected),
+                Some(expected) => debug::assert_eq(&dst.read()?, &expected),
                 None => {
-                    let bus = Gpio::new(2, &Config::output(PushPull, false));
-                    debug::assert_eq(&dst.read(), &false);
-                    bus.write(true);
-                    debug::assert_eq(&dst.read(), &true);
+                    let bus = Gpio::new(2, &Config::output(PushPull, false))?;
+                    debug::assert_eq(&dst.read()?, &false);
+                    bus.write(true)?;
+                    debug::assert_eq(&dst.read()?, &true);
                 }
             }
         }
