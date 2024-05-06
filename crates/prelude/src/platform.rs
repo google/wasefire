@@ -20,6 +20,8 @@ use wasefire_applet_api::platform as api;
 #[cfg(feature = "api-platform")]
 use crate::{convert, convert_never};
 
+#[cfg(feature = "api-platform-protocol")]
+pub mod protocol;
 #[cfg(feature = "api-platform-update")]
 pub mod update;
 

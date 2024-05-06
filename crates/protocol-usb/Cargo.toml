@@ -1,0 +1,35 @@
+[package]
+name = "wasefire-protocol-usb"
+version = "0.1.0-git"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = true
+edition = "2021"
+description = "Wasefire USB protocol between platform and host"
+repository = "https://github.com/google/wasefire"
+include = ["/src"]
+keywords = ["embedded", "framework", "no-std"]
+categories = ["embedded", "no-std"]
+
+[dependencies]
+anyhow = { version = "1.0.79", default-features = false, features = ["std"], optional = true }
+defmt = { version = "0.3.5", default-features = false, optional = true }
+rusb = { version = "0.9.3", default-features = false, optional = true }
+usb-device = { version = "0.3.1", default-features = false, optional = true }
+wasefire-error = { version = "0.1.1-git", path = "../error" }
+wasefire-logger = { version = "0.1.4", path = "../logger" }
+wasefire-protocol = { version = "0.1.0-git", path = "../protocol" }
+
+[dependencies.wasefire-board-api]
+version = "0.7.0-git"
+path = "../board"
+features = ["api-platform-protocol"]
+optional = true
+
+[features]
+defmt = ["dep:defmt", "wasefire-board-api?/defmt", "wasefire-error/defmt", "wasefire-logger/defmt"]
+log = ["wasefire-board-api?/log", "wasefire-logger/log"]
+std = ["wasefire-board-api?/std", "wasefire-error/std", "wasefire-protocol/std"]
+# Exactly one of host or device must be selected.
+device = ["dep:usb-device", "dep:wasefire-board-api"]
+host = ["dep:anyhow", "dep:rusb", "std"]

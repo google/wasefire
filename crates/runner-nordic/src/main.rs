@@ -50,7 +50,7 @@ use rubble::link::MIN_PDU_BUF;
 use rubble_nrf5x::radio::{BleRadio, PacketBuffer};
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidPid};
-use usbd_serial::{SerialPort, USB_CLASS_CDC};
+use usbd_serial::SerialPort;
 use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Id, Support};
 use wasefire_logger as log;
@@ -77,6 +77,7 @@ struct State {
     events: Events,
     buttons: [Button; <button::Impl as Support<usize>>::SUPPORT],
     gpiote: Gpiote,
+    protocol: wasefire_protocol_usb::Rpc<'static, Usb>,
     serial: Serial<'static, Usb>,
     timers: Timers,
     ble: Ble,
@@ -143,11 +144,11 @@ fn main() -> ! {
     let clocks = CLOCKS.write(clocks::Clocks::new(p.CLOCK).enable_ext_hfosc());
     let usb_bus = UsbBusAllocator::new(Usbd::new(UsbPeripheral::new(p.USBD, clocks)));
     let usb_bus = USB_BUS.write(usb_bus);
+    let protocol = wasefire_protocol_usb::Rpc::new(usb_bus);
     let serial = Serial::new(SerialPort::new(usb_bus));
     let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x16c0, 0x27dd))
-        .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Serial port")])
+        .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Wasefire")])
         .unwrap()
-        .device_class(USB_CLASS_CDC)
         .build();
     let radio = BleRadio::new(
         p.RADIO,
@@ -169,6 +170,7 @@ fn main() -> ! {
         events,
         buttons,
         gpiote,
+        protocol,
         serial,
         timers,
         ble,
@@ -258,7 +260,8 @@ fn uarte(uarte: usize) {
 
 fn usbd() {
     with_state(|state| {
-        let polled = state.usb_dev.poll(&mut [state.serial.port()]);
+        let polled = state.usb_dev.poll(&mut [&mut state.protocol, state.serial.port()]);
+        state.protocol.tick(|event| state.events.push(event.into()));
         state.serial.tick(polled, |event| state.events.push(event.into()));
     });
 }

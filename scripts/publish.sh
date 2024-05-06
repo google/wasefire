@@ -25,6 +25,7 @@ TOPOLOGICAL_ORDER=(
   logger
   error
   sync
+  protocol
   cli-tools
   cli
   interpreter
@@ -36,6 +37,7 @@ TOPOLOGICAL_ORDER=(
   prelude
   board
   scheduler
+  protocol-usb
 )
 
 listed_crates() {
@@ -67,7 +69,7 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
   done
 done
 
-[ "$1" = --no-dry-run ] || d "Run with --no-dry-run to actually publish"
+[ "$1" = --no-dry-run ] || d "Run with --no-dry-run from the merged PR to actually publish"
 
 i "Remove all -git suffixes"
 sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})

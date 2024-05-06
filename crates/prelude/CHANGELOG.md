@@ -9,6 +9,7 @@
 
 ### Minor
 
+- Add the `platform::protocol` module and the `api-platform-protocol` feature for applet RPC
 - Allow main to return an error
 - Change `led::{get,set}()` to never trap and return an error instead
 - Document all public API

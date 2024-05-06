@@ -900,6 +900,7 @@ dependencies = [
  "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
+ "wasefire-protocol-usb",
  "wasefire-scheduler",
  "wasefire-store",
  "wasefire-sync",
@@ -1213,6 +1214,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasefire-protocol"
+version = "0.1.0-git"
+dependencies = [
+ "sealed",
+ "wasefire-error",
+]
+
+[[package]]
+name = "wasefire-protocol-usb"
+version = "0.1.0-git"
+dependencies = [
+ "defmt",
+ "usb-device",
+ "wasefire-board-api",
+ "wasefire-error",
+ "wasefire-logger",
+ "wasefire-protocol",
+]
+
+[[package]]
 name = "wasefire-scheduler"
 version = "0.3.1-git"
 dependencies = [
@@ -1229,6 +1250,7 @@ dependencies = [
  "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
+ "wasefire-protocol",
  "wasefire-store",
  "wasefire-sync",
 ]

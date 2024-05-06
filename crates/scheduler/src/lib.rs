@@ -52,6 +52,8 @@ mod event;
 mod native;
 #[cfg(feature = "internal-debug")]
 mod perf;
+#[cfg(feature = "board-api-platform-protocol")]
+mod protocol;
 
 #[cfg(all(feature = "native", not(target_pointer_width = "32")))]
 compile_error!("Only 32-bits architectures support native applets.");
@@ -95,6 +97,8 @@ pub struct Scheduler<B: Board> {
     timers: Vec<Option<Timer>>,
     #[cfg(feature = "internal-debug")]
     perf: perf::Perf<B>,
+    #[cfg(feature = "board-api-platform-protocol")]
+    protocol: protocol::State,
 }
 
 #[derive(Clone)]
@@ -293,6 +297,8 @@ impl<B: Board> Scheduler<B> {
             store.link_func_default("env").unwrap();
             applet
         };
+        #[cfg(feature = "board-api-platform-protocol")]
+        protocol::enable::<B>();
         #[cfg(feature = "native")]
         let applet = Applet::default();
         Self {
@@ -304,6 +310,8 @@ impl<B: Board> Scheduler<B> {
             timers: alloc::vec![None; board::Timer::<B>::SUPPORT],
             #[cfg(feature = "internal-debug")]
             perf: perf::Perf::default(),
+            #[cfg(feature = "board-api-platform-protocol")]
+            protocol: protocol::State::default(),
         }
     }
 
@@ -339,8 +347,17 @@ impl<B: Board> Scheduler<B> {
 
     fn flush_events(&mut self) {
         while let Some(event) = B::try_event() {
-            self.applet.push(event);
+            self.triage_event(event);
         }
+    }
+
+    fn triage_event(&mut self, event: board::Event<B>) {
+        #[cfg(feature = "board-api-platform-protocol")]
+        if protocol::should_process_event(&event) {
+            protocol::process_event(self, event);
+            return;
+        }
+        self.applet.push(event);
     }
 
     /// Returns whether execution should resume.
@@ -354,7 +371,7 @@ impl<B: Board> Scheduler<B> {
                     let event = B::wait_event();
                     #[cfg(feature = "internal-debug")]
                     self.perf.record(perf::Slot::Waiting);
-                    self.applet.push(event);
+                    self.triage_event(event);
                 }
                 #[cfg(feature = "wasm")]
                 EventAction::Reply => return true,

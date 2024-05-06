@@ -32,6 +32,7 @@ api-crypto-hmac = ["internal-api-crypto-hash"]
 api-gpio = []
 api-led = []
 api-platform = ["internal-api-platform"]
+api-platform-protocol = ["internal-api-platform"]
 api-platform-update = ["internal-api-platform"]
 api-radio-ble = ["internal-api-radio"]
 api-rng = []
@@ -52,6 +53,7 @@ full-api = [
   "api-gpio",
   "api-led",
   "api-platform",
+  "api-platform-protocol",
   "api-platform-update",
   "api-radio-ble",
   "api-rng",

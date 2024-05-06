@@ -1,0 +1,19 @@
+[package]
+name = "wasefire-protocol"
+version = "0.1.0-git"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = true
+edition = "2021"
+description = "Wasefire protocol between platform and host"
+repository = "https://github.com/google/wasefire"
+include = ["/src"]
+keywords = ["embedded", "framework", "no-std"]
+categories = ["embedded", "no-std"]
+
+[dependencies]
+sealed = { version = "0.5.0", default-features = false }
+wasefire-error = { version = "0.1.1-git", path = "../error" }
+
+[features]
+std = ["wasefire-error/std"]

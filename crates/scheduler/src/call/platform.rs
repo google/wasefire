@@ -27,11 +27,15 @@ use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-platform")]
 use crate::SchedulerCall;
 
+#[cfg(feature = "applet-api-platform-protocol")]
+mod protocol;
 #[cfg(feature = "applet-api-platform-update")]
 mod update;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
+        #[cfg(feature = "applet-api-platform-protocol")]
+        Api::Protocol(call) => protocol::process(call),
         #[cfg(feature = "applet-api-platform-update")]
         Api::Update(call) => update::process(call),
         #[cfg(feature = "applet-api-platform")]

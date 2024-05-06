@@ -2,6 +2,10 @@
 
 ## 0.1.7-git
 
+### Minor
+
+- Add `platform::protocol` module and `api-platform-protocol` feature for applet RPC
+
 ### Patch
 
 - Return a user error instead of an internal error for enums `TryFrom`
