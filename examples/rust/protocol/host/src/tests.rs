@@ -24,7 +24,7 @@ pub fn main(connection: &Connection<GlobalContext>) -> Result<()> {
     println!("Enter tunnel.");
     let tunnel = applet::Tunnel { applet_id: applet::AppletId, delimiter: b"EOF" };
     crate::send(connection, &Api::<Request>::AppletTunnel(tunnel))?;
-    read_tunnel(connection)?;
+    crate::read_tunnel(connection)?;
 
     println!("Round-trip:");
     for len in [0, 1, 62, 63, 64, 125, 126, 127, 188, 189] {
@@ -53,7 +53,7 @@ pub fn main(connection: &Connection<GlobalContext>) -> Result<()> {
 
     println!("Close tunnel.");
     connection.send(b"EOF", TIMEOUT)?;
-    read_tunnel(connection)?;
+    crate::read_tunnel(connection)?;
     Ok(())
 }
 
@@ -69,13 +69,6 @@ fn read_timeout(connection: &Connection<GlobalContext>) {
 fn ping_pong(connection: &Connection<GlobalContext>) {
     connection.send(b"ping", TIMEOUT).unwrap();
     assert_eq!(connection.receive(TIMEOUT).unwrap(), b"PONG");
-}
-
-fn read_tunnel(connection: &Connection<GlobalContext>) -> Result<()> {
-    crate::receive(connection, |response| match response {
-        Api::AppletTunnel(()) => Ok(true),
-        _ => Ok(false),
-    })
 }
 
 const TIMEOUT: Duration = Duration::from_millis(200);

@@ -26,11 +26,13 @@ mod tests;
 
 #[derive(Parser)]
 enum Flags {
-    /// Sends a request to an applet.
-    AppletRequest,
+    /// Starts a request/response call with an applet.
+    Call,
 
-    /// Reads a response from an applet.
-    AppletResponse,
+    /// Starts a tunnel with a given delimiter.
+    ///
+    /// The delimiter is automatically sent when standard input is closed. The tunnel is line-based.
+    Tunnel { delimiter: String },
 
     /// Runs tests for this applet (this is not a protocol command).
     Test,
@@ -42,14 +44,12 @@ fn main() -> Result<()> {
     let candidate = rpc::choose_device().context("choosing device")?;
     let connection = candidate.connect().context("connecting to the device")?;
     match flags {
-        Flags::AppletRequest => {
+        Flags::Call => {
             let mut request = Vec::new();
             std::io::stdin().read_to_end(&mut request)?;
             let request = applet::Request { applet_id: AppletId, request: &request };
             send(&connection, &Api::<Request>::AppletRequest(request))?;
-            receive(&connection, |response| Ok(matches!(response, Api::AppletRequest(()))))
-        }
-        Flags::AppletResponse => {
+            receive(&connection, |response| Ok(matches!(response, Api::AppletRequest(()))))?;
             send(&connection, &Api::<Request>::AppletResponse(AppletId))?;
             receive(&connection, |response| match response {
                 Api::AppletResponse(applet::Response { response }) => {
@@ -59,6 +59,23 @@ fn main() -> Result<()> {
                 }
                 _ => Ok(false),
             })
+        }
+        Flags::Tunnel { delimiter } => {
+            let delimiter = delimiter.as_bytes();
+            let tunnel = applet::Tunnel { applet_id: applet::AppletId, delimiter };
+            send(&connection, &Api::<Request>::AppletTunnel(tunnel))?;
+            read_tunnel(&connection)?;
+            for line in std::io::stdin().lines() {
+                let request = line.context("reading line")?.into_bytes();
+                if request == delimiter {
+                    break;
+                }
+                connection.send(&request, TIMEOUT).context("sending request")?;
+                let response = connection.receive(TIMEOUT).context("receiving response")?;
+                println!("{}", String::from_utf8(response).unwrap());
+            }
+            connection.send(delimiter, TIMEOUT)?;
+            read_tunnel(&connection)
         }
         Flags::Test => tests::main(&connection),
     }
@@ -84,4 +101,8 @@ fn receive(
         }
     }
     Ok(())
+}
+
+fn read_tunnel(connection: &Connection<GlobalContext>) -> Result<()> {
+    receive(connection, |x| Ok(matches!(x, Api::AppletTunnel(()))))
 }
