@@ -20,6 +20,7 @@ anyhow = { version = "1.0.86", default-features = false }
 clap = { version = "4.5.4", default-features = false, features = ["default", "derive"] }
 clap_complete = { version = "4.5.2", default-features = false }
 data-encoding = { version = "2.6.0", default-features = false, features = ["std"] }
+rusb = { version = "0.9.4", default-features = false }
 wasefire-cli-tools = { version = "0.1.0-git", path = "../cli-tools" }
 wasefire-protocol = { version = "0.1.0-git", path = "../protocol", features = ["host"] }
 wasefire-protocol-usb = { version = "0.1.0-git", path = "../protocol-usb", features = ["host"] }

@@ -19,7 +19,6 @@ use std::io::Write;
 use std::time::Duration;
 
 use anyhow::{anyhow, ensure, Context};
-pub use rusb::GlobalContext;
 use rusb::{Device, DeviceHandle, Error, TransferType, UsbContext};
 use wasefire_logger as log;
 use wasefire_protocol::{Api, ApiResult, Request, Service};
@@ -31,7 +30,7 @@ use crate::common::{Decoder, Encoder};
 ///
 /// If there are multiple supported device, asks the user to select one.
 ///
-/// The context may be `GlobalContext::default()`.
+/// The context may be `rusb::GlobalContext::default()`.
 pub fn choose_device<T: UsbContext>(context: &T) -> anyhow::Result<Candidate<T>> {
     let mut candidates = list(context)?;
     let candidate = candidates.pop().ok_or_else(|| anyhow!("no device found"))?;
@@ -57,7 +56,7 @@ pub fn choose_device<T: UsbContext>(context: &T) -> anyhow::Result<Candidate<T>>
 
 /// Returns the list of supported devices.
 ///
-/// The context may be `GlobalContext::default()`.
+/// The context may be `rusb::GlobalContext::default()`.
 pub fn list<T: UsbContext>(context: &T) -> anyhow::Result<Vec<Candidate<T>>> {
     let mut candidates = Vec::new();
     for device in context.devices()?.iter() {

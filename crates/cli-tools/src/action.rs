@@ -15,12 +15,66 @@
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::Duration;
 
-use anyhow::{ensure, Result};
+use anyhow::{bail, ensure, Result};
 use cargo_metadata::{Metadata, MetadataCommand};
 use clap::{ValueEnum, ValueHint};
+use rusb::UsbContext;
+use wasefire_protocol::{applet, AppletRequest, AppletResponse};
+use wasefire_protocol_usb::Connection;
 
 use crate::{cmd, fs};
+
+/// Calls an RPC to an applet on a platform.
+#[derive(clap::Args)]
+pub struct AppletRpc {
+    /// Applet identifier in the platform.
+    applet: Option<String>,
+
+    /// Reads the request from this file instead of standard input.
+    #[arg(long, value_hint = ValueHint::FilePath)]
+    input: Option<PathBuf>,
+
+    /// Writes the response to this file instead of standard output.
+    #[arg(long, value_hint = ValueHint::AnyPath)]
+    output: Option<PathBuf>,
+
+    /// Timeout to send the request and try receiving the response.
+    #[arg(long, value_parser = humantime::parse_duration, default_value = "1s")]
+    timeout: Duration,
+
+    /// Number of retries to receive a response.
+    #[arg(long, default_value = "3")]
+    retries: usize,
+}
+
+impl AppletRpc {
+    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+        let AppletRpc { applet, input, output, timeout, retries } = self;
+        let applet_id = match applet {
+            Some(_) => bail!("applet identifiers are not supported yet"),
+            None => applet::AppletId,
+        };
+        let input = match input {
+            Some(path) => fs::read(path)?,
+            None => fs::read_stdin()?,
+        };
+        let request = applet::Request { applet_id, request: &input };
+        connection.call::<AppletRequest>(request, timeout)?.get();
+        for _ in 0 .. retries {
+            let response = connection.call::<AppletResponse>(applet_id, timeout)?;
+            if let Some(response) = response.get().response {
+                match output {
+                    Some(path) => fs::write(path, response)?,
+                    None => fs::write_stdout(response)?,
+                }
+                return Ok(());
+            }
+        }
+        bail!("did not receive a response after {retries} retries");
+    }
+}
 
 /// Creates a new Rust applet project.
 #[derive(clap::Args)]

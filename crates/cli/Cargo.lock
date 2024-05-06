@@ -186,6 +186,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
+name = "humantime"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
+
+[[package]]
 name = "indexmap"
 version = "2.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -224,6 +230,12 @@ dependencies = [
  "pkg-config",
  "vcpkg",
 ]
+
+[[package]]
+name = "log"
+version = "0.4.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
 
 [[package]]
 name = "memchr"
@@ -458,6 +470,7 @@ dependencies = [
  "clap",
  "clap_complete",
  "data-encoding",
+ "rusb",
  "wasefire-cli-tools",
  "wasefire-protocol",
  "wasefire-protocol-usb",
@@ -470,8 +483,12 @@ dependencies = [
  "anyhow",
  "cargo_metadata",
  "clap",
+ "humantime",
+ "rusb",
  "serde",
  "toml",
+ "wasefire-protocol",
+ "wasefire-protocol-usb",
 ]
 
 [[package]]
@@ -484,6 +501,9 @@ dependencies = [
 [[package]]
 name = "wasefire-logger"
 version = "0.1.5-git"
+dependencies = [
+ "log",
+]
 
 [[package]]
 name = "wasefire-protocol"
