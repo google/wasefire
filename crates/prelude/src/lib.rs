@@ -42,7 +42,7 @@ pub use wasefire_error::Error;
 
 // This internal module is made public because it's used by exported macros called from user code.
 #[doc(hidden)]
-pub mod _internal;
+pub mod internal;
 
 mod allocator;
 #[cfg(feature = "api-button")]
@@ -111,8 +111,8 @@ macro_rules! applet {
         #[allow(unreachable_code)]
         #[allow(clippy::diverging_sub_expression)]
         extern "C" fn _main() {
-            use $crate::_internal::MaybeUnwrap as _;
-            main().maybe_unwrap();
+            use $crate::internal::Termination as _;
+            main().report();
         }
     };
 }
@@ -129,8 +129,8 @@ macro_rules! applet {
         #[allow(unreachable_code)]
         #[allow(clippy::diverging_sub_expression)]
         extern "C" fn applet_main() {
-            use $crate::_internal::MaybeUnwrap as _;
-            main().maybe_unwrap();
+            use $crate::internal::Termination as _;
+            main().report();
         }
     };
 }
