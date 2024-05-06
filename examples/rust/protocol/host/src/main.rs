@@ -17,33 +17,15 @@ use std::time::Duration;
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
-use rpc::Connection;
 use rusb::GlobalContext;
 use wasefire_protocol::service::applet::{self, AppletId};
 use wasefire_protocol::{Api, Request, Response};
-use wasefire_protocol_usb as rpc;
+use wasefire_protocol_usb::{self as rpc, Connection};
 
 mod tests;
 
 #[derive(Parser)]
-struct Flags {
-    #[clap(flatten)]
-    options: MainOptions,
-
-    #[clap(subcommand)]
-    command: MainCommand,
-}
-
-#[derive(clap::Args)]
-struct MainOptions {
-    /// Logging level.
-    #[clap(long, default_value = "info")]
-    log: String,
-    // TODO: Add option to select device.
-}
-
-#[derive(clap::Subcommand)]
-enum MainCommand {
+enum Flags {
     /// Sends a request to an applet.
     AppletRequest,
 
@@ -55,19 +37,19 @@ enum MainCommand {
 }
 
 fn main() -> Result<()> {
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let flags = Flags::parse();
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or(&flags.options.log));
     let candidate = rpc::choose_device().context("choosing device")?;
     let connection = candidate.connect().context("connecting to the device")?;
-    match flags.command {
-        MainCommand::AppletRequest => {
+    match flags {
+        Flags::AppletRequest => {
             let mut request = Vec::new();
             std::io::stdin().read_to_end(&mut request)?;
             let request = applet::Request { applet_id: AppletId, request: &request };
             send(&connection, &Api::<Request>::AppletRequest(request))?;
             receive(&connection, |response| Ok(matches!(response, Api::AppletRequest(()))))
         }
-        MainCommand::AppletResponse => {
+        Flags::AppletResponse => {
             send(&connection, &Api::<Request>::AppletResponse(AppletId))?;
             receive(&connection, |response| match response {
                 Api::AppletResponse(applet::Response { response }) => {
@@ -78,7 +60,7 @@ fn main() -> Result<()> {
                 _ => Ok(false),
             })
         }
-        MainCommand::Test => tests::main(&connection),
+        Flags::Test => tests::main(&connection),
     }
 }
 

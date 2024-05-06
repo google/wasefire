@@ -83,6 +83,7 @@ pub trait Service<'a> {
 
 /// Protocol API parametric over the message direction.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Api<'a, T: Direction<'a>> {
     /// Errors reported by the device.
     ///

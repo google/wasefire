@@ -207,10 +207,9 @@ impl<B: Board> Applet<B> {
     #[cfg(feature = "board-api-platform-protocol")]
     pub fn get_request(&mut self) -> Result<Option<Box<[u8]>>, Error> {
         let (update, result) = match core::mem::take(&mut self.protocol) {
-            x @ Protocol::Empty => (x, Ok(None)),
+            x @ (Protocol::Empty | Protocol::Response(_)) => (x, Ok(None)),
             Protocol::Request(x) => (Protocol::Processing, Ok(Some(x))),
             x @ Protocol::Processing => (x, Err(Error::user(Code::InvalidState))),
-            x @ Protocol::Response(_) => (x, Ok(None)),
         };
         self.protocol = update;
         result
@@ -230,9 +229,9 @@ impl<B: Board> Applet<B> {
     #[cfg(feature = "board-api-platform-protocol")]
     pub fn get_response(&mut self) -> Result<Option<Box<[u8]>>, Error> {
         let (update, result) = match core::mem::take(&mut self.protocol) {
-            Protocol::Processing => (Protocol::Processing, Ok(None)),
+            x @ (Protocol::Processing | Protocol::Request(_)) => (x, Ok(None)),
             Protocol::Response(x) => (Protocol::Empty, Ok(Some(x))),
-            x => (x, Err(Error::world(Code::InvalidState))),
+            x @ Protocol::Empty => (x, Err(Error::user(Code::InvalidState))),
         };
         self.protocol = update;
         result

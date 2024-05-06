@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use alloc::boxed::Box;
-use alloc::vec::Vec;
 
 use wasefire_board_api::platform::protocol::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
@@ -29,7 +28,7 @@ pub enum State {
     Normal,
     Tunnel {
         applet_id: service::applet::AppletId,
-        delimiter: Vec<u8>,
+        delimiter: Box<[u8]>,
     },
 }
 
@@ -58,7 +57,7 @@ pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event
     match &scheduler.protocol {
         State::Normal => (),
         State::Tunnel { applet_id, delimiter } => {
-            if *request == *delimiter {
+            if request == *delimiter {
                 scheduler.protocol = State::Normal;
                 reply::<B>(&Api::AppletTunnel(()));
                 return;
@@ -119,14 +118,13 @@ pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event
         Api::AppletTunnel(service::applet::Tunnel { applet_id, delimiter }) => {
             match scheduler.protocol {
                 State::Normal => {
-                    let delimiter = delimiter.to_vec();
+                    let delimiter = delimiter.to_vec().into_boxed_slice();
                     scheduler.protocol = State::Tunnel { applet_id, delimiter };
                     Api::AppletTunnel(())
                 }
-                State::Tunnel { .. } => Api::DeviceError(Error::user(Code::InvalidState)),
+                State::Tunnel { .. } => unreachable!(),
             }
         }
-        #[allow(unreachable_patterns)]
         _ => Api::DeviceError(Error::internal(Code::NotImplemented)),
     };
     reply::<B>(&response);
@@ -151,7 +149,7 @@ pub fn put_response<B: Board>(
             match scheduler.applet.get_response()? {
                 Some(response) => board::platform::Protocol::<B>::write(&response),
                 None => {
-                    log::warn!("Failed to read response back.");
+                    log::error!("Failed to read response back.");
                     Err(Error::internal(Code::InvalidState))
                 }
             }
