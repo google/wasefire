@@ -12,20 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub trait MaybeUnwrap {
-    fn maybe_unwrap(self);
+/// Wasefire version of `std::process::Termination`.
+pub trait Termination {
+    /// Reports the termination at the applet level.
+    ///
+    /// There is nothing to report to the platform, which is why the function doesn't return
+    /// anything, compared to the `std` version.
+    fn report(self);
 }
 
-impl MaybeUnwrap for () {
-    fn maybe_unwrap(self) {}
+impl Termination for () {
+    fn report(self) {}
 }
 
-impl MaybeUnwrap for ! {
-    fn maybe_unwrap(self) {}
+impl Termination for ! {
+    fn report(self) {}
 }
 
-impl MaybeUnwrap for Result<(), crate::Error> {
-    fn maybe_unwrap(self) {
+impl Termination for Result<(), crate::Error> {
+    fn report(self) {
         self.unwrap();
     }
 }
