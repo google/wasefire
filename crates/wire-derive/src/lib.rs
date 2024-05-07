@@ -1,0 +1,449 @@
+// Copyright 2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use std::collections::HashSet;
+
+use proc_macro2::{Span, TokenStream};
+use quote::quote;
+use syn::parse_quote;
+use syn::spanned::Spanned;
+
+#[cfg(test)]
+mod tests;
+
+// TODO: Use {parse_}quote_spanned.
+
+#[proc_macro_derive(Wire, attributes(wire))]
+pub fn derive_wire(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let item = syn::parse_macro_input!(item as syn::DeriveInput);
+    print_item(derive_item(&item)).into()
+}
+
+#[proc_macro_attribute]
+pub fn internal_wire(
+    attr: proc_macro::TokenStream, item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    let item = syn::parse_macro_input!(item as syn::DeriveInput);
+    if !attr.is_empty() {
+        return syn::Error::new(item.span(), "unexpected attribute").into_compile_error().into();
+    }
+    print_item(derive_item(&item)).into()
+}
+
+fn print_item(item: syn::Result<syn::ItemImpl>) -> TokenStream {
+    match item {
+        #[cfg(feature = "_dev")]
+        Ok(_) => TokenStream::new(),
+        #[cfg(not(feature = "_dev"))]
+        Ok(x) => quote!(#x),
+        Err(e) => e.into_compile_error(),
+    }
+}
+
+fn derive_item(item: &syn::DeriveInput) -> syn::Result<syn::ItemImpl> {
+    let mut attrs = Attrs::parse(&item.attrs, AttrsKind::Item)?;
+    let wire = match attrs.crate_.take() {
+        Attr::Absent => syn::Ident::new("wasefire_wire", Span::call_site()).into(),
+        Attr::Present(_, x) => x,
+    };
+    let param = match attrs.param.take() {
+        Attr::Absent => {
+            let first = item.generics.lifetimes().next();
+            first.map_or_else(
+                || syn::Lifetime::new("'wire", Span::call_site()),
+                |x| x.lifetime.clone(),
+            )
+        }
+        Attr::Present(_, x) => x,
+    };
+    let (_, parameters, _) = item.generics.split_for_impl();
+    let mut generics = item.generics.clone();
+    if generics.lifetimes().all(|x| x.lifetime != param) {
+        generics.params.insert(0, parse_quote!(#param));
+    }
+    if let Attr::Present(_, where_) = attrs.where_.take() {
+        generics.make_where_clause().predicates.extend(where_);
+    }
+    let (generics, _, where_clause) = generics.split_for_impl();
+    let (schema, encode, decode) = match &item.data {
+        syn::Data::Struct(x) => derive_struct(&wire, &item.ident, x)?,
+        syn::Data::Enum(x) => derive_enum(&mut attrs, &wire, &item.ident, x)?,
+        syn::Data::Union(_) => {
+            return Err(syn::Error::new(item.span(), "unions are not supported"));
+        }
+    };
+    if let Attr::Present(span, _) = attrs.range.take() {
+        return Err(syn::Error::new(span, "range is only supported for enums"));
+    }
+    let ident = &item.ident;
+    #[cfg(not(feature = "schema"))]
+    let _ = schema;
+    #[cfg(not(feature = "schema"))]
+    let (static_, schema) = (None::<syn::ImplItem>, None::<syn::ImplItem>);
+    #[cfg(feature = "schema")]
+    let (static_, schema) = {
+        let statics: Vec<syn::Type> = match attrs.static_.take() {
+            Attr::Absent => Vec::new(),
+            Attr::Present(_, xs) => xs.into_iter().map(|x| parse_quote!(#x)).collect(),
+        };
+        let mut visitor = MakeStatic { param: &param, statics: &statics };
+        let mut static_: syn::Type = parse_quote!(#ident #parameters);
+        syn::visit_mut::visit_type_mut(&mut visitor, &mut static_);
+        let static_ = quote!(type Static = #static_;);
+        let schema = quote! {
+            fn schema(rules: &mut #wire::internal::Rules) {
+                #(#schema)*
+            }
+        };
+        (static_, schema)
+    };
+    let impl_wire: syn::ItemImpl = parse_quote! {
+        #[automatically_derived]
+        impl #generics #wire::internal::Wire<#param> for #ident #parameters #where_clause {
+            #static_
+            #schema
+            fn encode(&self, writer: &mut #wire::internal::Writer<#param>) -> #wire::internal::Result<()> {
+                #(#encode)*
+            }
+            fn decode(reader: &mut #wire::internal::Reader<#param>) -> #wire::internal::Result<Self> {
+                #(#decode)*
+            }
+        }
+    };
+    Ok(impl_wire)
+}
+
+fn derive_struct(
+    wire: &syn::Path, name: &syn::Ident, item: &syn::DataStruct,
+) -> syn::Result<(Vec<syn::Stmt>, Vec<syn::Stmt>, Vec<syn::Stmt>)> {
+    let mut types = Types::default();
+    let (mut schema, mut encode, decode) =
+        derive_fields(wire, &parse_quote!(#name), &item.fields, &mut types)?;
+    types.stmts(&mut schema, wire, "struct_", "fields");
+    if !encode.is_empty() {
+        let path = parse_quote!(#name);
+        let encode_pat = fields_pat(&path, &item.fields, false);
+        encode.insert(0, parse_quote!(let #encode_pat = self;));
+    }
+    Ok((schema, encode, decode))
+}
+
+fn derive_enum(
+    attrs: &mut Attrs, wire: &syn::Path, name: &syn::Ident, item: &syn::DataEnum,
+) -> syn::Result<(Vec<syn::Stmt>, Vec<syn::Stmt>, Vec<syn::Stmt>)> {
+    #[cfg(not(feature = "schema"))]
+    let schema = Vec::new();
+    #[cfg(feature = "schema")]
+    let mut schema = Vec::new();
+    let mut types = Types::default();
+    let mut encode = Vec::<syn::Arm>::new();
+    let mut decode = Vec::<syn::Arm>::new();
+    let mut tags = Vec::new();
+    #[cfg(feature = "schema")]
+    match item.variants.len() {
+        0 => schema.push(parse_quote!(let variants = #wire::internal::Vec::new();)),
+        n => schema.push(parse_quote!(let mut variants = #wire::internal::Vec::with_capacity(#n);)),
+    }
+    for variant in &item.variants {
+        let mut attrs = Attrs::parse(&variant.attrs, AttrsKind::Variant)?;
+        let tag = match attrs.tag.take() {
+            Attr::Present(_, x) => x,
+            Attr::Absent => return Err(syn::Error::new(variant.span(), "missing tag attribute")),
+        };
+        tags.push(tag);
+        let ident = &variant.ident;
+        let path = parse_quote!(#name::#ident);
+        let (variant_schema, variant_encode, variant_decode) =
+            derive_fields(wire, &path, &variant.fields, &mut types)?;
+        let pat_encode = fields_pat(&path, &variant.fields, true);
+        #[cfg(not(feature = "schema"))]
+        let _ = variant_schema;
+        #[cfg(feature = "schema")]
+        let ident_schema = format!("{ident}");
+        #[cfg(feature = "schema")]
+        schema.push(parse_quote!({
+            #(#variant_schema)*
+            variants.push((#ident_schema, #tag, fields));
+        }));
+        encode.push(parse_quote!(#pat_encode => {
+            #wire::internal::encode_tag(#tag, writer)?;
+            #(#variant_encode)*
+        }));
+        decode.push(parse_quote!(#tag => { #(#variant_decode)* }));
+    }
+    let mut unique_tags = HashSet::new();
+    for tag in tags {
+        if !unique_tags.insert(tag) {
+            return Err(syn::Error::new(tag.span(), "duplicate tag"));
+        }
+    }
+    if let Attr::Present(span, range) = attrs.range.take() {
+        if unique_tags.len() as u32 != range || unique_tags.iter().any(|x| range <= *x) {
+            return Err(syn::Error::new(span, "tags don't form a range"));
+        }
+    }
+    #[cfg(feature = "schema")]
+    types.stmts(&mut schema, wire, "enum_", "variants");
+    let encode = parse_quote!(match *self { #(#encode)* });
+    let decode = parse_quote! {
+        let tag = #wire::internal::decode_tag(reader)?;
+        match tag {
+            #(#decode)*
+            _ => Err(#wire::internal::INVALID_TAG),
+        }
+    };
+    Ok((schema, encode, decode))
+}
+
+fn derive_fields<'a>(
+    wire: &syn::Path, name: &syn::Path, fields: &'a syn::Fields, types: &mut Types<'a>,
+) -> syn::Result<(Vec<syn::Stmt>, Vec<syn::Stmt>, Vec<syn::Stmt>)> {
+    #[cfg(not(feature = "schema"))]
+    let _ = types;
+    #[cfg(not(feature = "schema"))]
+    let schema = Vec::new();
+    #[cfg(feature = "schema")]
+    let mut schema = Vec::new();
+    let mut encode = Vec::new();
+    let mut decode = Vec::new();
+    #[cfg(feature = "schema")]
+    match fields.len() {
+        0 => schema.push(parse_quote!(let fields = #wire::internal::Vec::new();)),
+        n => schema.push(parse_quote!(let mut fields = #wire::internal::Vec::with_capacity(#n);)),
+    }
+    for (i, field) in fields.iter().enumerate() {
+        let _ = Attrs::parse(&field.attrs, AttrsKind::Invalid)?;
+        #[cfg(feature = "schema")]
+        let name_str: syn::Expr = match &field.ident {
+            Some(x) => {
+                let x = format!("{x}");
+                parse_quote!(Some(#x))
+            }
+            None => parse_quote!(None),
+        };
+        let name = field_name(i, field);
+        let ty = &field.ty;
+        #[cfg(feature = "schema")]
+        schema.push(parse_quote!(fields.push((#name_str, #wire::internal::type_id::<#ty>()));));
+        #[cfg(feature = "schema")]
+        types.insert(ty);
+        encode.push(parse_quote!(<#ty as #wire::internal::Wire>::encode(#name, writer)?;));
+        decode.push(parse_quote!(let #name = <#ty as #wire::internal::Wire>::decode(reader)?;));
+    }
+    encode.push(syn::Stmt::Expr(parse_quote!(Ok(())), None));
+    let fields_pat = fields_pat(name, fields, false);
+    decode.push(syn::Stmt::Expr(parse_quote!(Ok(#fields_pat)), None));
+    Ok((schema, encode, decode))
+}
+
+fn fields_pat(name: &syn::Path, fields: &syn::Fields, ref_: bool) -> syn::Pat {
+    let ref_: Option<syn::Token![ref]> = ref_.then_some(parse_quote!(ref));
+    let names = fields.iter().enumerate().map(|(i, field)| field_name(i, field));
+    match fields {
+        syn::Fields::Named(_) => parse_quote!(#name { #(#ref_ #names),* }),
+        syn::Fields::Unnamed(_) => parse_quote!(#name(#(#ref_ #names),*)),
+        syn::Fields::Unit => parse_quote!(#name),
+    }
+}
+
+fn field_name(i: usize, field: &syn::Field) -> syn::Ident {
+    match &field.ident {
+        Some(x) => x.clone(),
+        None => syn::Ident::new(&format!("x{i}"), field.span()),
+    }
+}
+
+#[cfg(feature = "schema")]
+struct MakeStatic<'a> {
+    param: &'a syn::Lifetime,
+    statics: &'a [syn::Type],
+}
+
+#[cfg(feature = "schema")]
+impl<'a> syn::visit_mut::VisitMut for MakeStatic<'a> {
+    fn visit_generic_argument_mut(&mut self, x: &mut syn::GenericArgument) {
+        match x {
+            syn::GenericArgument::Lifetime(a) if a == self.param => *x = parse_quote!('static),
+            syn::GenericArgument::Type(t) if !self.statics.contains(t) => {
+                *x = parse_quote!(#t::Static)
+            }
+            _ => (),
+        }
+    }
+}
+
+#[derive(Default)]
+struct Types<'a>(Vec<&'a syn::Type>);
+
+impl<'a> Types<'a> {
+    #[cfg(feature = "schema")]
+    fn insert(&mut self, x: &'a syn::Type) {
+        if !self.0.contains(&x) {
+            self.0.push(x);
+        }
+    }
+
+    fn stmts(&self, schema: &mut Vec<syn::Stmt>, wire: &syn::Path, fun: &str, var: &str) {
+        let types: Vec<syn::Stmt> =
+            self.0.iter().map(|ty| parse_quote!(#wire::internal::schema::<#ty>(rules);)).collect();
+        let fun = syn::Ident::new(fun, Span::call_site());
+        let var = syn::Ident::new(var, Span::call_site());
+        schema.push(parse_quote! {
+            if rules.#fun::<Self::Static>(#var) {
+                #(#types)*
+            }
+        });
+    }
+}
+
+enum AttrsKind {
+    Item,
+    Variant,
+    Invalid,
+}
+
+#[derive(PartialEq, Eq)]
+enum AttrKind {
+    Crate,
+    Param,
+    Where,
+    Tag,
+    Static,
+    Range,
+}
+
+#[derive(Default)]
+enum Attr<T> {
+    #[default]
+    Absent,
+    Present(Span, T),
+}
+
+impl<T> Attr<T> {
+    fn span(&self) -> Option<Span> {
+        match self {
+            Attr::Absent => None,
+            Attr::Present(x, _) => Some(*x),
+        }
+    }
+
+    fn set(&mut self, span: Span, value: T) -> syn::Result<()> {
+        match self {
+            Attr::Absent => Ok(*self = Attr::Present(span, value)),
+            Attr::Present(other, _) => {
+                let mut error = syn::Error::new(span, "attribute already defined");
+                error.combine(syn::Error::new(*other, "first attribute definition"));
+                Err(error)
+            }
+        }
+    }
+
+    fn take(&mut self) -> Self {
+        std::mem::take(self)
+    }
+}
+
+impl<T> Attr<Vec<T>> {
+    fn push(&mut self, span: Span, value: T) {
+        match self {
+            Attr::Absent => *self = Attr::Present(span, vec![value]),
+            Attr::Present(_, values) => values.push(value),
+        }
+    }
+}
+
+#[derive(Default)]
+struct Attrs {
+    crate_: Attr<syn::Path>,
+    param: Attr<syn::Lifetime>,
+    where_: Attr<Vec<syn::WherePredicate>>,
+    tag: Attr<u32>,
+    static_: Attr<Vec<syn::Ident>>,
+    range: Attr<u32>,
+}
+
+impl Attrs {
+    fn parse(attrs: &[syn::Attribute], kind: AttrsKind) -> syn::Result<Self> {
+        let mut result = Attrs::default();
+        for attr in attrs {
+            result.parse_attr(attr)?;
+        }
+        result.check_kind(kind)?;
+        Ok(result)
+    }
+
+    fn parse_attr(&mut self, attr: &syn::Attribute) -> syn::Result<()> {
+        if !attr.path().is_ident("wire") {
+            return Ok(());
+        }
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("crate") {
+                // #[wire(crate = <path>)]
+                self.crate_.set(attr.span(), meta.value()?.parse()?)?;
+            }
+            if meta.path.is_ident("param") {
+                // #[wire(param = <lifetime>)]
+                self.param.set(attr.span(), meta.value()?.parse()?)?;
+            }
+            if meta.path.is_ident("where") {
+                // #[wire(where = <where_predicate>)]
+                self.where_.push(attr.span(), meta.value()?.parse()?);
+            }
+            if meta.path.is_ident("tag") {
+                // #[wire(tag = <u32>)]
+                let tag: syn::LitInt = meta.value()?.parse()?;
+                self.tag.set(attr.span(), tag.base10_parse()?)?;
+            }
+            if meta.path.is_ident("static") {
+                // #[wire(static = <ident>)]
+                self.static_.push(attr.span(), meta.value()?.parse()?);
+            }
+            if meta.path.is_ident("range") {
+                // #[wire(range = <u32>)]
+                let range: syn::LitInt = meta.value()?.parse()?;
+                self.range.set(attr.span(), range.base10_parse()?)?;
+            }
+            Ok(())
+        })
+    }
+
+    fn check_kind(&self, kind: AttrsKind) -> syn::Result<()> {
+        let expected: &[AttrKind] = match kind {
+            AttrsKind::Item => &[
+                AttrKind::Crate,
+                AttrKind::Param,
+                AttrKind::Where,
+                AttrKind::Static,
+                AttrKind::Range,
+            ],
+            AttrsKind::Variant => &[AttrKind::Tag],
+            AttrsKind::Invalid => &[],
+        };
+        let check = |name, actual, expected: &[AttrKind]| {
+            if let Some(actual) = actual {
+                if !expected.contains(&name) {
+                    return Err(syn::Error::new(actual, "unexpected attribute"));
+                }
+            }
+            Ok(())
+        };
+        check(AttrKind::Crate, self.crate_.span(), expected)?;
+        check(AttrKind::Param, self.param.span(), expected)?;
+        check(AttrKind::Where, self.where_.span(), expected)?;
+        check(AttrKind::Tag, self.tag.span(), expected)?;
+        check(AttrKind::Static, self.static_.span(), expected)?;
+        check(AttrKind::Range, self.range.span(), expected)?;
+        Ok(())
+    }
+}

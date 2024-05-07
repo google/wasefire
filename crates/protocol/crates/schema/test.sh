@@ -19,5 +19,5 @@ set -e
 
 test_helper
 
-cargo check --bin=request
-cargo check --bin=response
+cargo test --bin=schema --features=full
+cargo test --bin=schema

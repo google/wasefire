@@ -1,11 +1,11 @@
 [package]
-name = "wasefire-protocol"
+name = "wasefire-wire"
 version = "0.1.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
 edition = "2021"
-description = "Wasefire protocol between platform and host"
+description = "Wasefire binary format serialization"
 repository = "https://github.com/google/wasefire"
 include = ["/src"]
 keywords = ["embedded", "framework", "no-std"]
@@ -16,11 +16,11 @@ all-features = true
 
 [dependencies]
 wasefire-error = { version = "0.1.1-git", path = "../error" }
-wasefire-wire = { version = "0.1.0-git", path = "../wire" }
+wasefire-wire-derive = { version = "0.1.0-git", path = "../wire-derive" }
 
 [features]
-full = []
-std = ["wasefire-error/std", "wasefire-wire/std"]
+schema = ["std", "wasefire-wire-derive/schema"]
+std = ["wasefire-error/std"]
 
 [lints]
 clippy.unit-arg = "allow"

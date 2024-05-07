@@ -12,14 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![no_main]
+use wasefire_wire::Wire;
 
-use libfuzzer_sys::fuzz_target;
-use wasefire_protocol::{Api, Response};
+#[derive(Debug, Wire)]
+pub struct Request<'a> {
+    pub applet_id: AppletId,
+    pub request: &'a [u8],
+}
 
-fuzz_target!(|expected: &[u8]| {
-    if let Ok(response) = Api::<Response>::deserialize(expected) {
-        let actual = response.serialize();
-        assert_eq!(*actual, *expected);
-    }
-});
+#[derive(Debug, Wire)]
+pub struct Response<'a> {
+    pub response: Option<&'a [u8]>,
+}
+
+#[derive(Debug, Wire)]
+pub struct AppletId;
+
+#[derive(Debug, Wire)]
+pub struct Tunnel<'a> {
+    pub applet_id: AppletId,
+    pub delimiter: &'a [u8],
+}

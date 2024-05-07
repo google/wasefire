@@ -17,30 +17,18 @@ use wasefire_error::{Code, Error};
 pub struct Reader<'a>(&'a [u8]);
 
 impl<'a> Reader<'a> {
-    pub fn new(data: &'a [u8]) -> Self {
+    pub(crate) fn new(data: &'a [u8]) -> Self {
         Reader(data)
     }
 
-    pub fn finalize(self) -> Result<(), Error> {
-        Error::user(Code::InvalidLength).check(self.0.is_empty())
-    }
-
-    fn split_at(&mut self, offset: usize) -> Result<&'a [u8], Error> {
+    pub(crate) fn get(&mut self, offset: usize) -> Result<&'a [u8], Error> {
         Error::user(Code::InvalidLength).check(offset <= self.0.len())?;
-        let (head, tail) = self.0.split_at(offset);
-        self.0 = tail;
+        let head;
+        (head, self.0) = self.0.split_at(offset);
         Ok(head)
     }
 
-    pub fn get_all(&mut self) -> &'a [u8] {
-        self.split_at(self.0.len()).unwrap()
-    }
-
-    pub fn get_u8(&mut self) -> Result<u8, Error> {
-        Ok(self.split_at(1)?[0])
-    }
-
-    pub fn get_u16(&mut self) -> Result<u16, Error> {
-        Ok(u16::from_be_bytes(self.split_at(2)?.try_into().unwrap()))
+    pub(crate) fn finalize(self) -> &'a [u8] {
+        self.0
     }
 }
