@@ -770,17 +770,32 @@
     ): i32
   // END OF MODULE platform_update
 
+  // Returns the serial of the platform.
+  //
+  // Returns the length of the serial in bytes. The serial is not allocated if the
+  // length is zero (and the pointer is not written).
+  @external("env", "ps")
+  export declare function platform_serial(
+    // Where to write the serial.
+    //
+    // If the returned length is positive, the (inner) pointer will be allocated by the
+    // callee and must be freed by the caller. It is thus owned by the caller when the
+    // function returns.
+    ptr: usize,
+  ): i32
+
   // Returns the version of the platform.
   //
-  // Returns the length of the version in bytes. This may be larger than the capacity, in
-  // which case only a prefix was written.
+  // Returns the length of the version in bytes. The version is not allocated if the
+  // length is zero (and the pointer is not written).
   @external("env", "pv")
   export declare function platform_version(
     // Where to write the version.
+    //
+    // If the returned length is positive, the (inner) pointer will be allocated by the
+    // callee and must be freed by the caller. It is thus owned by the caller when the
+    // function returns.
     ptr: usize,
-
-    // Capacity of the buffer.
-    len: usize,
   ): i32
 
   // Reboots the device (thus platform and applets).

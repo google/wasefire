@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Prints the version of the platform.
+//! Prints the serial and version of the platform.
 
 #![no_std]
 wasefire::applet!();
 
 fn main() {
-    debug!("{:02x?}", platform::version());
+    debug!("serial: {:02x?}", platform::serial());
+    debug!("version: {:02x?}", platform::version());
 }

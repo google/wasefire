@@ -110,6 +110,14 @@ pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event
                 State::Tunnel { .. } => unreachable!(),
             }
         }
+        #[cfg(feature = "board-api-platform")]
+        Api::PlatformInfo(()) => {
+            use wasefire_board_api::platform::Api as _;
+            reply::<B, service::PlatformInfo>(service::platform::Info {
+                serial: &board::Platform::<B>::serial(),
+                version: &board::Platform::<B>::version(),
+            });
+        }
         #[cfg(not(feature = "_test"))]
         _ => reply_error::<B>(Error::internal(Code::NotImplemented)),
     }

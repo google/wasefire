@@ -4,6 +4,8 @@
 
 ### Minor
 
+- Support `platform::serial()` function
+- Migrate `platform::version()` to the new board and applet APIs
 - Support `store::{keys,clear}()` functions
 - Support `platform::protocol` with the `{applet,board}-api-platform-protocol` features
 - Change `gpio` module to never trap and return an error instead

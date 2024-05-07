@@ -2,6 +2,10 @@
 
 ## 0.1.1-git
 
+### Minor
+
+- Add `Lazy` as a re-export of `spin::Lazy`
+
 ### Patch
 
 - Depend on `alloc` to silence `unused-crate-dependencies` false positive
