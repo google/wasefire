@@ -140,7 +140,7 @@ impl RustAppletBuild {
         cmd::execute(&mut cargo)?;
         let out_dir = match &self.output {
             Some(x) => x.clone(),
-            None => target_dir.join("wasefire"),
+            None => "target/wasefire".into(),
         };
         let (src, dst) = match &self.native {
             None => (format!("wasm32-unknown-unknown/release/{name}.wasm"), "applet.wasm"),

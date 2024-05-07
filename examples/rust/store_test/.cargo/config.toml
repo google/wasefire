@@ -1,0 +1,4 @@
+# We use a different target directory for testing purposes, to make sure xtask works when the applet
+# target directory is different than the platform one.
+[build]
+target-dir = "target"
