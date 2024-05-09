@@ -10,6 +10,7 @@ opensk-lib = { path = "../../../third_party/google/OpenSK/libraries/opensk", pac
 persistent_store = { path = "../../../third_party/google/OpenSK/libraries/persistent_store" }
 rand_core = "0.6.4"
 wasefire = { path = "../../../crates/prelude" }
+wasefire-store = { path = "../../../crates/store", features = ["std"] }
 wasefire-stub = { path = "../../../crates/stub", optional = true }
 
 [build-dependencies]
