@@ -23,6 +23,7 @@ lazy_static = "1.4.0"
 wast = "70.0.0"
 
 [features]
+threads = []
 # Enable debugging features (only works for targets with std).
 debug = []
 # Use safe operations when time-of-use and time-of-check differ.

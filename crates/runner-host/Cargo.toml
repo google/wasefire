@@ -63,3 +63,5 @@ release = []
 # Exactly one is enabled by xtask.
 native = ["wasefire-scheduler/native"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
+
+threads = ["wasefire-interpreter/threads"]

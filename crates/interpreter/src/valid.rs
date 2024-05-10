@@ -645,6 +645,81 @@ impl<'a, 'm> Expr<'a, 'm> {
                 let t = self.context.table(x)?.item;
                 self.pops([ValType::I32, t.into(), ValType::I32][..].into())?;
             }
+            #[cfg(feature = "threads")]
+            IAtomicLoad(n, m) => {
+                self.check_aligned(m, n.into())?;
+                self.load(NumType::i(n), n.into(), m)?
+            }
+            #[cfg(feature = "threads")]
+            IAtomicLoad_(b, _, m) => {
+                self.check_aligned(m, b.into())?;
+                self.load(NumType::i(b.into()), b.into(), m)?;
+            }
+            #[cfg(feature = "threads")]
+            IAtomicStore(n, m) => {
+                self.check_aligned(m, n.into())?;
+                self.store(NumType::i(n), n.into(), m)?;
+            }
+            #[cfg(feature = "threads")]
+            IAtomicStore_(b, m) => {
+                self.check_aligned(m, b.into())?;
+                self.store(NumType::i(b.into()), b.into(), m)?;
+            }
+            #[cfg(feature = "threads")]
+            IAtomicBinOp(_, n, m) => {
+                self.check_aligned(m, n.into())?;
+                let num = NumType::i(n);
+                self.pops([ValType::I32, num.into()][..].into())?;
+                self.push(num.into());
+            }
+            #[cfg(feature = "threads")]
+            IAtomicBinOp_(_, b, _, m) => {
+                self.check_aligned(m, b.into())?;
+                let num = NumType::i(b.into());
+                self.pops([ValType::I32, num.into()][..].into())?;
+                self.push(NumType::i(b.into()).into())
+            }
+            #[cfg(feature = "threads")]
+            AtomicFence() => (),
+            #[cfg(feature = "threads")]
+            AtomicExchange_(b, _, m) => {
+                self.check_aligned(m, b.into())?;
+                let num = NumType::i(b.into());
+                self.pops([ValType::I32, num.into()][..].into())?;
+                self.push(num.into())
+            }
+            #[cfg(feature = "threads")]
+            AtomicExchange(n, m) => {
+                self.check_aligned(m, n.into())?;
+                self.pops([ValType::I32, NumType::i(n).into()][..].into())?;
+                self.push(NumType::i(n).into())
+            }
+            #[cfg(feature = "threads")]
+            AtomicCompareExchange(n, m) => {
+                self.check_aligned(m, n.into())?;
+                let num = NumType::i(n);
+                self.pops([ValType::I32, num.into(), num.into()][..].into())?;
+                self.push(num.into());
+            }
+            #[cfg(feature = "threads")]
+            AtomicCompareExchange_(b, _, m) => {
+                self.check_aligned(m, b.into())?;
+                let num = NumType::i(b.into());
+                self.pops([ValType::I32, num.into(), num.into()][..].into())?;
+                self.push(num.into())
+            }
+            #[cfg(feature = "threads")]
+            AtomicNotify(m) => {
+                check(m.align == 2)?;
+                self.pops([ValType::I32, ValType::I32][..].into())?;
+                self.push(OpdType::I32);
+            }
+            #[cfg(feature = "threads")]
+            AtomicWait(n, m) => {
+                self.check_aligned(m, n.into())?;
+                self.pops([ValType::I32, NumType::i(n).into(), ValType::I64][..].into())?;
+                self.push(OpdType::I32);
+            }
         }
         Ok(())
     }
@@ -816,6 +891,12 @@ impl<'a, 'm> Expr<'a, 'm> {
     fn cvtop(&mut self, dst: NumType, src: NumType) -> CheckResult {
         self.pop_check(src.into())?;
         self.push(dst.into());
+        Ok(())
+    }
+    #[cfg(feature = "threads")]
+    fn check_aligned(&mut self, m: MemArg, n: usize) -> CheckResult {
+        let n_len: u32 = u32::try_from(n).unwrap();
+        check(u32::pow(2, m.align) == (n_len / 8))?;
         Ok(())
     }
 }

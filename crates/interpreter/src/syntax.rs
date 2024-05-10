@@ -60,8 +60,17 @@ pub struct FuncType<'m> {
     pub results: ResultType<'m>,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive, UnsafeFromPrimitive)]
+#[repr(u8)]
+pub enum LimitType {
+    Unshared = 0x00,
+    UnsharedWithMax = 0x01,
+    SharedWithMax = 0x03,
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Limits {
+    pub shared: bool,
     pub min: u32,
     pub max: u32,
 }
@@ -279,6 +288,32 @@ pub enum Instr<'m> {
     TableGrow(TableIdx),
     TableSize(TableIdx),
     TableFill(TableIdx),
+    #[cfg(feature = "threads")]
+    IAtomicBinOp(IBinOp, Nx, MemArg),
+    #[cfg(feature = "threads")]
+    IAtomicBinOp_(IBinOp, Bx, Sx, MemArg),
+    #[cfg(feature = "threads")]
+    IAtomicLoad(Nx, MemArg),
+    #[cfg(feature = "threads")]
+    IAtomicLoad_(Bx, Sx, MemArg),
+    #[cfg(feature = "threads")]
+    IAtomicStore(Nx, MemArg),
+    #[cfg(feature = "threads")]
+    IAtomicStore_(Bx, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicFence(),
+    #[cfg(feature = "threads")]
+    AtomicExchange(Nx, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicExchange_(Bx, Sx, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicCompareExchange(Nx, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicCompareExchange_(Bx, Sx, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicNotify(MemArg),
+    #[cfg(feature = "threads")]
+    AtomicWait(Nx, MemArg),
 }
 
 pub type TypeIdx = u32;
@@ -831,6 +866,7 @@ macro_rules! impl_from_byte {
     };
 }
 impl_from_byte!(RefType);
+impl_from_byte!(LimitType);
 impl_from_byte!(ValType);
 impl_from_byte!(Mut);
 impl_from_byte!(SectionId);

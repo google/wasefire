@@ -353,7 +353,7 @@ impl AppletOptions {
         asc.arg(format!("{}/main.ts", self.name));
         asc.current_dir(dir);
         cmd::execute(&mut asc)?;
-        action::optimize_wasm("target/wasefire/applet.wasm", self.opt_level)?;
+        action::optimize_wasm("target/wasefire/applet.wasm", self.opt_level, false)?;
         Ok(())
     }
 }

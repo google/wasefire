@@ -106,6 +106,10 @@ impl RustAppletBuild {
         cargo.args(["rustc", "--lib"]);
         match &self.native {
             None => {
+                if package.features.contains_key("threads") {
+                    rustflags.push("-C target-feature=+atomics,+bulk-memory".to_owned());
+                    rustflags.push("-C link-args=--shared-memory".to_owned());
+                }
                 rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
                 cargo.args(["--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
             }
@@ -148,7 +152,7 @@ impl RustAppletBuild {
         };
         let applet = out_dir.join(dst);
         if fs::copy_if_changed(target_dir.join(src), &applet)? && dst.ends_with(".wasm") {
-            optimize_wasm(&applet, self.opt_level)?;
+            optimize_wasm(&applet, self.opt_level, package.features.contains_key("threads"))?;
         }
         Ok(())
     }
@@ -197,12 +201,17 @@ impl Display for OptLevel {
 }
 
 /// Strips and optimizes a WASM applet.
-pub fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> Result<()> {
+pub fn optimize_wasm(
+    applet: impl AsRef<Path>, opt_level: Option<OptLevel>, enable_atomics: bool,
+) -> Result<()> {
     let mut strip = Command::new("wasm-strip");
     strip.arg(applet.as_ref());
     cmd::execute(&mut strip)?;
     let mut opt = Command::new("wasm-opt");
     opt.args(["--enable-bulk-memory", "--enable-sign-ext"]);
+    if enable_atomics {
+        opt.arg("--enable-atomics");
+    }
     match opt_level {
         Some(level) => drop(opt.arg(format!("-O{level}"))),
         None => drop(opt.arg("-O")),

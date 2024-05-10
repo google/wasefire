@@ -43,7 +43,7 @@ pub enum Unsupported {
 
 #[cfg(feature = "debug")]
 pub fn print_backtrace() {
-    let backtrace = std::backtrace::Backtrace::capture();
+    let backtrace = std::backtrace::Backtrace::force_capture();
     if matches!(backtrace.status(), std::backtrace::BacktraceStatus::Captured) {
         println!("{}", backtrace);
     }
