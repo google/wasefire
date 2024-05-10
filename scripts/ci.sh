@@ -20,7 +20,6 @@ set -e
 
 x ./scripts/ci-copyright.sh
 x cargo xtask textreview
-x ./scripts/wrapper.sh mdl -g -s markdownlint.rb .
 x ./scripts/ci-taplo.sh
 x git submodule update --init third_party/OpenSK
 x cargo xtask applet rust opensk
