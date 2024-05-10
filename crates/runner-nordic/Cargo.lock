@@ -654,7 +654,7 @@ dependencies = [
 [[package]]
 name = "nrf-usbd"
 version = "0.2.0"
-source = "git+https://github.com/ia0/nrf-usbd.git?branch=bump#b1db2c14f5c1a2c9c38415ff996e02046777d33b"
+source = "git+https://github.com/nrf-rs/nrf-usbd.git?rev=c736b03214e740d06251266b56d36c648a6c7f1b#c736b03214e740d06251266b56d36c648a6c7f1b"
 dependencies = [
  "cortex-m",
  "critical-section",
@@ -852,7 +852,7 @@ dependencies = [
 [[package]]
 name = "rubble"
 version = "0.0.5"
-source = "git+https://github.com/jmichelp/rubble.git?rev=d545f4f#d545f4f598d081c0177f38500792e353a7d932a3"
+source = "git+https://github.com/jmichelp/rubble.git?rev=d545f4f598d081c0177f38500792e353a7d932a3#d545f4f598d081c0177f38500792e353a7d932a3"
 dependencies = [
  "bitflags 2.4.2",
  "defmt",
@@ -867,7 +867,7 @@ dependencies = [
 [[package]]
 name = "rubble-nrf5x"
 version = "0.0.5"
-source = "git+https://github.com/jmichelp/rubble.git?rev=d545f4f#d545f4f598d081c0177f38500792e353a7d932a3"
+source = "git+https://github.com/jmichelp/rubble.git?rev=d545f4f598d081c0177f38500792e353a7d932a3#d545f4f598d081c0177f38500792e353a7d932a3"
 dependencies = [
  "nrf52840-pac",
  "rubble",
@@ -900,6 +900,7 @@ dependencies = [
  "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
+ "wasefire-protocol-usb",
  "wasefire-scheduler",
  "wasefire-store",
  "wasefire-sync",
@@ -1133,7 +1134,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.6.0"
+version = "0.6.1-git"
 dependencies = [
  "bytemuck",
  "sealed",
@@ -1143,7 +1144,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.1.6"
+version = "0.1.7-git"
 dependencies = [
  "anyhow",
  "clap",
@@ -1156,7 +1157,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.6.0"
+version = "0.6.1-git"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
@@ -1164,7 +1165,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.6.0"
+version = "0.7.0-git"
 dependencies = [
  "aead",
  "aes-gcm",
@@ -1190,7 +1191,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "defmt",
  "num_enum 0.7.2",
@@ -1213,6 +1214,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasefire-protocol"
+version = "0.1.0-git"
+dependencies = [
+ "sealed",
+ "wasefire-error",
+]
+
+[[package]]
+name = "wasefire-protocol-usb"
+version = "0.1.0-git"
+dependencies = [
+ "defmt",
+ "usb-device",
+ "wasefire-board-api",
+ "wasefire-error",
+ "wasefire-logger",
+ "wasefire-protocol",
+]
+
+[[package]]
 name = "wasefire-scheduler"
 version = "0.3.1-git"
 dependencies = [
@@ -1229,13 +1250,14 @@ dependencies = [
  "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
+ "wasefire-protocol",
  "wasefire-store",
  "wasefire-sync",
 ]
 
 [[package]]
 name = "wasefire-store"
-version = "0.2.3"
+version = "0.2.4-git"
 
 [[package]]
 name = "wasefire-sync"

@@ -677,6 +677,47 @@
 
 // START OF MODULE platform
 // Platform operations.
+  // START OF MODULE platform_protocol
+  // Platform protocol.
+    // Reads the last request, if any.
+    //
+    // Returns whether a request was allocated.
+    @external("env", "ppr")
+    export declare function platform_protocol_read(
+      // Where to write the request, if any.
+      //
+      // The (inner) pointer will be allocated by the callee and must be freed by the
+      // caller. It is thus owned by the caller when the function returns.
+      ptr: usize,
+
+      // Where to write the length of the request, if any.
+      len: usize,
+    ): i32
+
+    // Writes a response to the last request.
+    @external("env", "ppw")
+    export declare function platform_protocol_write(
+      // Address of the response.
+      ptr: usize,
+
+      // Length of the response in bytes.
+      len: usize,
+    ): i32
+
+    // Registers a callback when a request is received.
+    @external("env", "ppe")
+    export declare function platform_protocol_register(
+      handler_func: usize,
+
+      handler_data: usize,
+    ): i32
+
+    // Unregisters the callback.
+    @external("env", "ppd")
+    export declare function platform_protocol_unregister(
+    ): i32
+  // END OF MODULE platform_protocol
+
   // START OF MODULE platform_update
   // Operations to update the platform.
   //
@@ -888,6 +929,24 @@
 
     // Where to write the length of the value, if found.
     len: usize,
+  ): i32
+
+  // Returns the unordered keys of the entries in the store.
+  //
+  // Returns the number of keys, and thus the length of the array. The array is not
+  // allocated if the length is zero (and the pointer is not written).
+  @external("env", "sk")
+  export declare function store_keys(
+    // Where to write the keys as an array of u16, if at least one.
+    //
+    // The (inner) pointer will be allocated by the callee and must be freed by the
+    // caller. It is thus owned by the caller when the function returns.
+    ptr: usize,
+  ): i32
+
+  // Clears the store, removing all entries.
+  @external("env", "sc")
+  export declare function store_clear(
   ): i32
 
   // START OF MODULE store_fragment

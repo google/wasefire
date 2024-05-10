@@ -16,6 +16,9 @@
 
 #![no_std]
 
+#[cfg(feature = "std")]
+extern crate std;
+
 use num_enum::{IntoPrimitive, TryFromPrimitive, TryFromPrimitiveError};
 
 /// API errors.
@@ -170,6 +173,9 @@ pub enum Code {
     /// This is a generic error. More precise errors would be `InvalidLength`, `InvalidAlign`,
     /// `InvalidState`, or `NotFound` for example.
     InvalidArgument = 8,
+
+    /// An input is out of bounds.
+    OutOfBounds = 9,
 }
 
 impl core::fmt::Debug for Error {
@@ -209,6 +215,9 @@ impl defmt::Format for Error {
         }
     }
 }
+
+#[cfg(feature = "std")]
+impl std::error::Error for Error {}
 
 #[cfg(test)]
 mod tests {

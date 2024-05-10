@@ -19,8 +19,6 @@ use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-led")]
 use wasefire_board_api::{self as board, Id, Support};
 
-#[cfg(feature = "board-api-led")]
-use crate::Trap;
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
@@ -44,19 +42,19 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
 fn get<B: Board>(call: SchedulerCall<B, api::get::Sig>) {
     let api::get::Params { led } = call.read();
     let result = try {
-        let id = Id::new(*led as usize).ok_or(Trap)?;
-        board::Led::<B>::get(id)
+        let id = Id::new(*led as usize)?;
+        board::Led::<B>::get(id)?
     };
-    call.reply(result);
+    call.reply(Ok(result));
 }
 
 #[cfg(feature = "board-api-led")]
 fn set<B: Board>(call: SchedulerCall<B, api::set::Sig>) {
     let api::set::Params { led, status } = call.read();
     let result = try {
-        let id = Id::new(*led as usize).ok_or(Trap)?;
+        let id = Id::new(*led as usize)?;
         let on = matches!(api::Status::try_from(*status)?, api::Status::On);
-        board::Led::<B>::set(id, on)
+        board::Led::<B>::set(id, on)?
     };
-    call.reply(result);
+    call.reply(Ok(result));
 }

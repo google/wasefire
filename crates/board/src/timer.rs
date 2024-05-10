@@ -45,6 +45,7 @@ pub trait Api: Support<usize> + Send {
     fn disarm(timer: Id<Self>) -> Result<(), Error>;
 }
 
+/// Timer configuration.
 #[derive(Debug, Clone)]
 pub struct Command {
     /// Whether the timer should periodically trigger.

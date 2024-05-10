@@ -18,6 +18,7 @@
 
 use wasefire_applet_api::gpio as api;
 pub use wasefire_applet_api::gpio::{InputConfig, OutputConfig};
+use wasefire_error::Error;
 
 use crate::{convert, convert_bool, convert_unit};
 
@@ -74,27 +75,27 @@ impl Config {
 }
 
 /// Configures a GPIO.
-pub fn configure(gpio: usize, config: &Config) {
+pub fn configure(gpio: usize, config: &Config) -> Result<(), Error> {
     let params = api::configure::Params { gpio, mode: config.mode() };
-    convert_unit(unsafe { api::configure(params) }).unwrap();
+    convert_unit(unsafe { api::configure(params) })
 }
 
 /// Reads from a GPIO (must be configured as input).
-pub fn read(gpio: usize) -> bool {
+pub fn read(gpio: usize) -> Result<bool, Error> {
     let params = api::read::Params { gpio };
-    convert_bool(unsafe { api::read(params) }).unwrap()
+    convert_bool(unsafe { api::read(params) })
 }
 
 /// Writes to a GPIO (must be configured as output).
-pub fn write(gpio: usize, value: bool) {
+pub fn write(gpio: usize, value: bool) -> Result<(), Error> {
     let params = api::write::Params { gpio, val: value as usize };
-    convert_unit(unsafe { api::write(params) }).unwrap();
+    convert_unit(unsafe { api::write(params) })
 }
 
 /// Returns the last logical value written to a GPIO (must be configured as output).
-pub fn last_write(gpio: usize) -> bool {
+pub fn last_write(gpio: usize) -> Result<bool, Error> {
     let params = api::last_write::Params { gpio };
-    convert_bool(unsafe { api::last_write(params) }).unwrap()
+    convert_bool(unsafe { api::last_write(params) })
 }
 
 /// GPIO that disconnects on drop.
@@ -102,34 +103,34 @@ pub struct Gpio(usize);
 
 impl Drop for Gpio {
     fn drop(&mut self) {
-        configure(self.0, &Config::disconnected());
+        configure(self.0, &Config::disconnected()).unwrap();
     }
 }
 
 impl Gpio {
     /// Configures the GPIO and returns a handle.
-    pub fn new(gpio: usize, config: &Config) -> Self {
-        configure(gpio, config);
-        Gpio(gpio)
+    pub fn new(gpio: usize, config: &Config) -> Result<Self, Error> {
+        configure(gpio, config)?;
+        Ok(Gpio(gpio))
     }
 
     /// Reads from the GPIO (must be configured as input).
-    pub fn read(&self) -> bool {
+    pub fn read(&self) -> Result<bool, Error> {
         read(self.0)
     }
 
     /// Writes to the GPIO (must be configured as output).
-    pub fn write(&self, value: bool) {
+    pub fn write(&self, value: bool) -> Result<(), Error> {
         write(self.0, value)
     }
 
     /// Returns the last logical value written to a GPIO (must be configured as output).
-    pub fn last_write(&self) -> bool {
+    pub fn last_write(&self) -> Result<bool, Error> {
         last_write(self.0)
     }
 
     /// Toggles the logical value of a GPIO (must be configured as output).
-    pub fn toggle(&self) {
-        self.write(!self.last_write());
+    pub fn toggle(&self) -> Result<(), Error> {
+        self.write(!self.last_write()?)
     }
 }

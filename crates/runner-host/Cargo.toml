@@ -21,6 +21,7 @@ wasefire-board-api = { path = "../board", features = ["std"] }
 wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
+wasefire-protocol-usb = { path = "../protocol-usb", features = ["device", "std"], optional = true }
 wasefire-store = { path = "../store", features = ["std"] }
 web-server = { path = "crates/web-server", optional = true }
 
@@ -51,11 +52,13 @@ usb = [
   "dep:usb-device",
   "dep:usbd-serial",
   "dep:usbip-device",
+  "dep:wasefire-protocol-usb",
+  "wasefire-scheduler/board-api-platform-protocol",
   "wasefire-scheduler/board-api-usb-serial",
 ]
 web = ["dep:web-server"]
 # Exactly one is enabled by xtask.
-debug = ["wasefire-logger/log", "wasefire-scheduler/log"]
+debug = ["wasefire-logger/log", "wasefire-protocol-usb?/log", "wasefire-scheduler/log"]
 release = []
 # Exactly one is enabled by xtask.
 native = ["wasefire-scheduler/native"]

@@ -4,6 +4,7 @@ In this section, we will walk through the `button_abort` example in Rust. It
 uses the first button and the first LED of the board. On a short press, the LED
 will start blinking. On a long press, the LED will stop blinking. While the
 button is pressed, the LED indicates whether the press is short or long:
+
 - The LED is on while the press is short.
 - The LED turns off once the press is long.
 
@@ -97,6 +98,7 @@ timeout), we start blinking. This demonstrates the use of periodic timers.
 ```
 
 There are a few things to note:
+
 - The code is implicit in Rust, but the button handler and the timer handler
   within the loop iteration are dropped before the next iteration. This means
   that their callbacks are unregistered. This could be done explicitly by
@@ -111,6 +113,7 @@ The final code looks like this:
 ```rust,no_run
 {{#include timer.rs:all}}
 ```
+
 ## Testing
 
 As for the LEDs and buttons examples, to test the applet on the `host` runner,

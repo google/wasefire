@@ -20,13 +20,17 @@
 //! is toggled. After a button is released, it becomes associated with the next LED (wrapping back
 //! to the first LED after the last LED).
 
+// DO NOT EDIT MANUALLY:
+// - Edit book/src/applet/prelude/button2.rs instead.
+// - Then use ./scripts/sync.sh to generate this file.
+
 #![no_std]
 wasefire::applet!();
 
 use alloc::boxed::Box;
 use core::cell::Cell;
 
-fn main() {
+fn main() -> Result<(), Error> {
     // Make sure there is at least one button.
     let num_buttons = button::count();
     assert!(num_buttons > 0, "Board has no buttons.");
@@ -53,6 +57,8 @@ fn main() {
         };
 
         // We indefinitely listen by creating and leaking a listener.
-        button::Listener::new(button_index, handler).leak();
+        button::Listener::new(button_index, handler)?.leak();
     }
+
+    Ok(())
 }

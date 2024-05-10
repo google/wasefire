@@ -17,11 +17,32 @@
 #[cfg(feature = "api-platform")]
 use crate::Error;
 
+#[cfg(feature = "api-platform-protocol")]
+pub mod protocol;
 #[cfg(feature = "api-platform-update")]
 pub mod update;
 
+/// Platform event.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Event {
+    /// Protocol event.
+    #[cfg(feature = "api-platform-protocol")]
+    Protocol(protocol::Event),
+}
+
+impl<B: crate::Api> From<Event> for crate::Event<B> {
+    fn from(event: Event) -> Self {
+        crate::Event::Platform(event)
+    }
+}
+
 /// Platform interface.
 pub trait Api: Send {
+    /// Platform protocol interface.
+    #[cfg(feature = "api-platform-protocol")]
+    type Protocol: protocol::Api;
+
+    /// Platform update interface.
     #[cfg(feature = "api-platform-update")]
     type Update: update::Api;
 
@@ -40,6 +61,11 @@ pub trait Api: Send {
     fn reboot() -> Result<!, Error>;
 }
 
+/// Platform protocol interface.
+#[cfg(feature = "api-platform-protocol")]
+pub type Protocol<B> = <super::Platform<B> as Api>::Protocol;
+
+/// Platform update interface.
 #[cfg(feature = "api-platform-update")]
 pub type Update<B> = <super::Platform<B> as Api>::Update;
 

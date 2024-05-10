@@ -23,6 +23,7 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   ( cd $dir
     publish="$(package_publish)"
     [ -n "$publish" ] || e "Cargo.toml for $dir is missing the publish field"
+    [ -e test.sh ] || e "test.sh for $dir is missing"
     $publish || exit 0
     [ -e CHANGELOG.md ] || e "CHANGELOG.md for $dir is missing"
     [ "$(package_include)" = '["/src"]' ] \

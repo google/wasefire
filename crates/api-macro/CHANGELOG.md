@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.1-git
+
+### Minor
+
+- Support the `api-platform-protocol` feature
+
+### Patch
+
+- Return a user error instead of an internal error for enums `TryFrom`
+
 ## 0.6.0
 
 ### Major

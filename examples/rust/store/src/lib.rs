@@ -17,6 +17,10 @@
 //! The applet additionally relies on USB serial. It describes its own usage when connecting on the
 //! USB serial.
 
+// DO NOT EDIT MANUALLY:
+// - Edit book/src/applet/prelude/store.rs instead.
+// - Then use ./scripts/sync.sh to generate this file.
+
 #![no_std]
 wasefire::applet!();
 

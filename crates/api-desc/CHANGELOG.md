@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.7-git
+
+### Minor
+
+- Add `store::{keys,clear}()` functions
+- Add `platform::protocol` module and `api-platform-protocol` feature for applet RPC
+
+### Patch
+
+- Return a user error instead of an internal error for enums `TryFrom`
+
 ## 0.1.6
 
 ### Minor

@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-board-api"
-version = "0.6.0"
+version = "0.7.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -35,10 +35,10 @@ signature = { version = "2.2.0", default-features = false, optional = true }
 typenum = { version = "1.17.0", default-features = false }
 usb-device = { version = "0.3.1", default-features = false }
 usbd-serial = { version = "0.2.0", default-features = false }
-wasefire-applet-api = { version = "0.6.0", path = "../api", features = ["host"] }
-wasefire-error = { version = "0.1.0", path = "../error" }
+wasefire-applet-api = { version = "0.6.1-git", path = "../api", features = ["host"] }
+wasefire-error = { version = "0.1.1-git", path = "../error" }
 wasefire-logger = { version = "0.1.4", path = "../logger" }
-wasefire-store = { version = "0.2.3", path = "../store", optional = true }
+wasefire-store = { version = "0.2.4-git", path = "../store", optional = true }
 
 [features]
 std = ["wasefire-store?/std"]
@@ -59,6 +59,7 @@ api-crypto-sha384 = ["internal-api-crypto-hash"]
 api-gpio = []
 api-led = []
 api-platform = ["internal-api-platform"]
+api-platform-protocol = ["internal-api-platform"]
 api-platform-update = ["internal-api-platform"]
 api-radio-ble = ["internal-api-radio", "wasefire-applet-api/api-radio-ble"]
 api-rng = []
@@ -80,6 +81,7 @@ full-api = [
   "api-gpio",
   "api-led",
   "api-platform",
+  "api-platform-protocol",
   "api-platform-update",
   "api-radio-ble",
   "api-rng",
@@ -151,3 +153,6 @@ internal-software-crypto-ecc = [
   "elliptic-curve?/sec1",
 ]
 internal-software-crypto-hmac = ["dep:hmac"]
+
+[lints.rust]
+missing-docs = "warn"

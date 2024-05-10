@@ -21,6 +21,8 @@ pub mod update;
 pub enum Impl {}
 
 impl Api for Impl {
+    type Protocol = crate::board::usb::ProtocolImpl;
+
     type Update = update::Impl;
 
     fn version(output: &mut [u8]) -> usize {

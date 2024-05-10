@@ -32,6 +32,7 @@ pub fn count() -> usize {
 /// Returns the status of a LED.
 ///
 /// The `led` argument is the index of the LED. It must be less than [count()].
+#[track_caller]
 pub fn get(led: usize) -> api::Status {
     let status = convert_bool(unsafe { api::get(api::get::Params { led }) }).unwrap();
     match status {
@@ -44,6 +45,7 @@ pub fn get(led: usize) -> api::Status {
 ///
 /// The `led` argument is the index of the LED. It must be less than [count()]. The `status`
 /// argument is the new status.
+#[track_caller]
 pub fn set(led: usize, status: api::Status) {
     let params = api::set::Params { led, status: status as usize };
     convert_unit(unsafe { api::set(params) }).unwrap();

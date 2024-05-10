@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.1-git
+
+### Minor
+
+- Support the `api-platform-protocol` feature
+
+### Patch
+
+- Update dependencies
+
 ## 0.6.0
 
 ### Major
@@ -57,8 +67,8 @@
 
 ### Patch
 
-- Update Cargo.lock file (it is packaged due to
-  https://github.com/rust-lang/cargo/issues/11557 although examples are not)
+- Update Cargo.lock file (it is packaged due to <https://github.com/rust-lang/cargo/issues/11557>
+  although examples are not)
 
 ## 0.1.2
 
@@ -75,4 +85,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 8 -->
+<!-- Increment to skip CHANGELOG.md test: 9 -->

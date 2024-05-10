@@ -23,11 +23,12 @@ digest = { version = "0.10.7", default-features = false, features = ["mac"] }
 generic-array = { version = "0.14.7", default-features = false }
 portable-atomic = { version = "1.6.0", default-features = false }
 typenum = { version = "1.17.0", default-features = false }
-wasefire-applet-api = { version = "0.6.0", path = "../api", features = ["host"] }
-wasefire-board-api = { version = "0.6.0", path = "../board" }
-wasefire-error = { version = "0.1.0", path = "../error" }
+wasefire-applet-api = { version = "0.6.1-git", path = "../api", features = ["host"] }
+wasefire-board-api = { version = "0.7.0-git", path = "../board" }
+wasefire-error = { version = "0.1.1-git", path = "../error" }
 wasefire-logger = { version = "0.1.4", path = "../logger" }
-wasefire-store = { version = "0.2.3", path = "../store", optional = true }
+wasefire-protocol = { version = "0.1.0-git", path = "../protocol", optional = true }
+wasefire-store = { version = "0.2.4-git", path = "../store", optional = true }
 wasefire-sync = { version = "0.1.0", path = "../sync" }
 
 [dependencies.wasefire-interpreter]
@@ -66,6 +67,10 @@ applet-api-crypto-hmac = [
 applet-api-gpio = ["wasefire-applet-api/api-gpio"]
 applet-api-led = ["wasefire-applet-api/api-led"]
 applet-api-platform = ["internal-applet-api-platform", "wasefire-applet-api/api-platform"]
+applet-api-platform-protocol = [
+  "internal-applet-api-platform",
+  "wasefire-applet-api/api-platform-protocol",
+]
 applet-api-platform-update = [
   "internal-applet-api-platform",
   "wasefire-applet-api/api-platform-update",
@@ -106,8 +111,22 @@ board-api-crypto-sha256 = ["applet-api-crypto-hash", "wasefire-board-api/api-cry
 board-api-crypto-sha384 = ["applet-api-crypto-hash", "wasefire-board-api/api-crypto-sha384"]
 board-api-gpio = ["applet-api-gpio", "wasefire-board-api/api-gpio"]
 board-api-led = ["applet-api-led", "wasefire-board-api/api-led"]
-board-api-platform = ["applet-api-platform", "wasefire-board-api/api-platform"]
-board-api-platform-update = ["applet-api-platform-update", "wasefire-board-api/api-platform-update"]
+board-api-platform = [
+  "applet-api-platform",
+  "internal-board-api-platform",
+  "wasefire-board-api/api-platform",
+]
+board-api-platform-protocol = [
+  "applet-api-platform-protocol",
+  "dep:wasefire-protocol",
+  "internal-board-api-platform",
+  "wasefire-board-api/api-platform-protocol",
+]
+board-api-platform-update = [
+  "applet-api-platform-update",
+  "internal-board-api-platform",
+  "wasefire-board-api/api-platform-update",
+]
 board-api-radio-ble = [
   "applet-api-radio-ble",
   "internal-board-api-radio",
@@ -141,6 +160,7 @@ full-applet-api = [
   "applet-api-gpio",
   "applet-api-led",
   "applet-api-platform",
+  "applet-api-platform-protocol",
   "applet-api-platform-update",
   "applet-api-radio-ble",
   "applet-api-rng",
@@ -164,6 +184,7 @@ full-board-api = [
   "board-api-gpio",
   "board-api-led",
   "board-api-platform",
+  "board-api-platform-protocol",
   "board-api-platform-update",
   "board-api-radio-ble",
   "board-api-rng",
@@ -208,6 +229,7 @@ internal-applet-api-radio = []
 internal-applet-api-store = []
 internal-applet-api-usb = []
 internal-board-api-crypto-ecc = []
+internal-board-api-platform = []
 internal-board-api-radio = []
 internal-board-api-usb = []
 internal-debug = []

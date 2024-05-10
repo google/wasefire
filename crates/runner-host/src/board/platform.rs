@@ -20,6 +20,9 @@ use wasefire_error::Code;
 pub enum Impl {}
 
 impl Api for Impl {
+    #[cfg(feature = "usb")]
+    type Protocol = crate::board::usb::ProtocolImpl;
+
     fn version(output: &mut [u8]) -> usize {
         const VERSION: Option<&str> = option_env!("WASEFIRE_HOST_VERSION");
         let version = VERSION.unwrap_or_default().as_bytes();

@@ -23,15 +23,17 @@ use wasefire_logger as log;
 
 use crate::Scheduler;
 
-#[cfg(all(feature = "board-api-button", feature = "applet-api-button"))]
+#[cfg(feature = "board-api-button")]
 pub mod button;
-#[cfg(all(feature = "internal-board-api-radio", feature = "internal-applet-api-radio"))]
+#[cfg(feature = "internal-board-api-platform")]
+pub mod platform;
+#[cfg(feature = "internal-board-api-radio")]
 pub mod radio;
-#[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
+#[cfg(feature = "board-api-timer")]
 pub mod timer;
-#[cfg(all(feature = "board-api-uart", feature = "applet-api-uart"))]
+#[cfg(feature = "board-api-uart")]
 pub mod uart;
-#[cfg(all(feature = "internal-board-api-usb", feature = "internal-applet-api-usb"))]
+#[cfg(feature = "internal-board-api-usb")]
 pub mod usb;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -44,15 +46,17 @@ pub struct InstId;
 #[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
 #[derivative(Ord = "feature_allow_slow_enum")]
 pub enum Key<B: Board> {
-    #[cfg(all(feature = "board-api-button", feature = "applet-api-button"))]
+    #[cfg(feature = "board-api-button")]
     Button(button::Key<B>),
-    #[cfg(all(feature = "internal-board-api-radio", feature = "internal-applet-api-radio"))]
+    #[cfg(feature = "internal-board-api-platform")]
+    Platform(platform::Key),
+    #[cfg(feature = "internal-board-api-radio")]
     Radio(radio::Key),
-    #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
+    #[cfg(feature = "board-api-timer")]
     Timer(timer::Key<B>),
-    #[cfg(all(feature = "board-api-uart", feature = "applet-api-uart"))]
+    #[cfg(feature = "board-api-uart")]
     Uart(uart::Key<B>),
-    #[cfg(all(feature = "internal-board-api-usb", feature = "internal-applet-api-usb"))]
+    #[cfg(feature = "internal-board-api-usb")]
     Usb(usb::Key),
     _Impossible(Impossible<B>),
 }
@@ -88,6 +92,14 @@ impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
             #[cfg(feature = "board-api-button")]
             Event::Button(event) => {
                 or_unreachable!("applet-api-button", [event], Key::Button(event.into()))
+            }
+            #[cfg(feature = "internal-board-api-platform")]
+            Event::Platform(event) => {
+                or_unreachable!(
+                    "internal-applet-api-platform",
+                    [event],
+                    Key::Platform(event.into())
+                )
             }
             #[cfg(feature = "internal-board-api-radio")]
             Event::Radio(event) => {
@@ -150,6 +162,10 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
         #[cfg(feature = "board-api-button")]
         Event::Button(event) => {
             or_unreachable!("applet-api-button", [event], button::process(event, &mut params))
+        }
+        #[cfg(feature = "internal-board-api-platform")]
+        Event::Platform(event) => {
+            or_unreachable!("internal-applet-api-platform", [event], platform::process(event))
         }
         #[cfg(feature = "internal-board-api-radio")]
         Event::Radio(event) => {

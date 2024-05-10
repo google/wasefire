@@ -15,12 +15,6 @@ concurrency:
 permissions: {}
 
 jobs:
-  copyright:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: ./scripts/ci-copyright.sh
   ubuntu:
     runs-on: ubuntu-latest
     steps:

@@ -34,8 +34,11 @@ pub struct Support {
     pub in_place_no_copy: bool,
 }
 
+/// Authenticated encrypted message.
 pub struct Cipher {
+    /// Encrypted message.
     pub text: Vec<u8>,
+    /// Authentication tag.
     pub tag: Vec<u8>,
 }
 

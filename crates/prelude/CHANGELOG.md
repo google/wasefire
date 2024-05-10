@@ -1,10 +1,25 @@
 # Changelog
 
-## 0.5.1-git
+## 0.6.0-git
+
+### Major
+
+- Change `gpio` module to never panic and return an error instead
+- Change `button::Listener::new()` to never panic and return an error instead
 
 ### Minor
 
+- Add the `store::{keys,clear}()` functions
+- Add the `platform::protocol` module and the `api-platform-protocol` feature for applet RPC
+- Allow main to return an error
+- Change `led::{get,set}()` to never trap and return an error instead
+- Document all public API
+- Remove deprecated `println!` macro
 - Add `Sha384` and `HmacSha384` to the `rust-crypto` feature
+
+### Patch
+
+- Update dependencies
 
 ## 0.5.0
 
@@ -135,4 +150,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 25 -->
+<!-- Increment to skip CHANGELOG.md test: 26 -->

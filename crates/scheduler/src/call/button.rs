@@ -16,11 +16,11 @@ use wasefire_applet_api::button::{self as api, Api};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-button")]
 use wasefire_board_api::{self as board, button::Api as _, Id, Support};
+#[cfg(feature = "board-api-button")]
+use wasefire_error::{Code, Error};
 
 #[cfg(feature = "board-api-button")]
 use crate::event::{button::Key, Handler};
-#[cfg(feature = "board-api-button")]
-use crate::Trap;
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
@@ -45,27 +45,30 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { button, handler_func, handler_data } = call.read();
     let inst = call.inst();
     let result = try {
-        let button = Id::new(*button as usize).ok_or(Trap)?;
-        call.scheduler().applet.enable(Handler {
-            key: Key { button }.into(),
-            inst,
-            func: *handler_func,
-            data: *handler_data,
-        })?;
-        board::Button::<B>::enable(button).map_err(|_| Trap)?;
-        Ok(())
+        let button = Id::new(*button as usize)?;
+        call.scheduler()
+            .applet
+            .enable(Handler {
+                key: Key { button }.into(),
+                inst,
+                func: *handler_func,
+                data: *handler_data,
+            })
+            .map_err(|_| Error::user(Code::InvalidState))?;
+        board::Button::<B>::enable(button)?;
     };
-    call.reply(result);
+    call.reply(Ok(result));
 }
 
 #[cfg(feature = "board-api-button")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { button } = call.read();
     let result = try {
-        let button = Id::new(*button as usize).ok_or(Trap)?;
-        board::Button::<B>::disable(button).map_err(|_| Trap)?;
-        call.scheduler().disable_event(Key { button }.into())?;
-        Ok(())
+        let button = Id::new(*button as usize)?;
+        board::Button::<B>::disable(button)?;
+        call.scheduler()
+            .disable_event(Key { button }.into())
+            .map_err(|_| Error::user(Code::InvalidState))?;
     };
-    call.reply(result);
+    call.reply(Ok(result));
 }

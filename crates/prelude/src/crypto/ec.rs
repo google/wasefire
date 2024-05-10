@@ -282,8 +282,11 @@ pub struct P384;
 /// Internal helper trait to implement the `Curve` trait.
 #[sealed::sealed]
 pub trait InternalHelper {
+    /// Scalar size for the curve.
     type N: ArrayLength<u8>;
+    /// Curve enum value.
     const C: api::Curve;
+    /// Hash algorithm of the curve.
     #[cfg(feature = "api-crypto-hash")]
     const H: Algorithm;
 }

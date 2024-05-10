@@ -2,8 +2,20 @@
 
 ## 0.3.1-git
 
+### Minor
+
+- Support `store::{keys,clear}()` functions
+- Support `platform::protocol` with the `{applet,board}-api-platform-protocol` features
+- Change `gpio` module to never trap and return an error instead
+- Change `button::{register, unregister}()` to never trap and return an error instead
+- Migrate to `Id::new` returning `Result` instead of `Option`
+- Migrate to `crypto::{Hash,Hmac}` depending on `crypto::WithError`
+- Change `led::{get,set}()` to never trap and return an error instead
+
 ### Patch
 
+- Use explicit conversion from `Error` to `Trap`
+- Simplify `#[cfg(all)]` attributes between board and applet features
 - Update dependencies
 - Fix HKDF-SHA-384 for outputs longer than 32 bytes
 
@@ -119,4 +131,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 30 -->
+<!-- Increment to skip CHANGELOG.md test: 35 -->

@@ -18,9 +18,9 @@ use wasefire_board_api::gpio::Api as _;
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-gpio")]
 use wasefire_board_api::{self as board, Id, Support};
-
 #[cfg(feature = "board-api-gpio")]
-use crate::Trap;
+use wasefire_error::{Code, Error};
+
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
@@ -46,44 +46,45 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
 fn configure<B: Board>(call: SchedulerCall<B, api::configure::Sig>) {
     let api::configure::Params { gpio, mode } = call.read();
     let result = try {
-        let gpio = Id::new(*gpio as usize).ok_or(Trap)?;
-        let config = *bytemuck::checked::try_from_bytes(&mode.to_le_bytes()).map_err(|_| Trap)?;
-        board::Gpio::<B>::configure(gpio, config)
+        let gpio = Id::new(*gpio as usize)?;
+        let config = *bytemuck::checked::try_from_bytes(&mode.to_le_bytes())
+            .map_err(|_| Error::user(Code::InvalidArgument))?;
+        board::Gpio::<B>::configure(gpio, config)?
     };
-    call.reply(result);
+    call.reply(Ok(result));
 }
 
 #[cfg(feature = "board-api-gpio")]
 fn read<B: Board>(call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { gpio } = call.read();
     let result = try {
-        let gpio = Id::new(*gpio as usize).ok_or(Trap)?;
-        board::Gpio::<B>::read(gpio)
+        let gpio = Id::new(*gpio as usize)?;
+        board::Gpio::<B>::read(gpio)?
     };
-    call.reply(result);
+    call.reply(Ok(result));
 }
 
 #[cfg(feature = "board-api-gpio")]
 fn write<B: Board>(call: SchedulerCall<B, api::write::Sig>) {
     let api::write::Params { gpio, val } = call.read();
     let result = try {
-        let gpio = Id::new(*gpio as usize).ok_or(Trap)?;
+        let gpio = Id::new(*gpio as usize)?;
         let value = match *val {
             0 => false,
             1 => true,
-            _ => Err(Trap)?,
+            _ => Err(Error::user(Code::InvalidArgument))?,
         };
-        board::Gpio::<B>::write(gpio, value)
+        board::Gpio::<B>::write(gpio, value)?
     };
-    call.reply(result);
+    call.reply(Ok(result));
 }
 
 #[cfg(feature = "board-api-gpio")]
 fn last_write<B: Board>(call: SchedulerCall<B, api::last_write::Sig>) {
     let api::last_write::Params { gpio } = call.read();
     let result = try {
-        let gpio = Id::new(*gpio as usize).ok_or(Trap)?;
-        board::Gpio::<B>::last_write(gpio)
+        let gpio = Id::new(*gpio as usize)?;
+        board::Gpio::<B>::last_write(gpio)?
     };
-    call.reply(result);
+    call.reply(Ok(result));
 }

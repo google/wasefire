@@ -21,12 +21,12 @@ set -e
 
 for file in $(git ls-files); do
   case "$file" in
-    *.gitignore|.gitmodules) continue ;;
+    *.gitignore|.git*) continue ;;
     third_party/*) continue ;;
     *LICENSE) continue ;;
     *.css|*.html|*.pdf|*.png|*.svg) continue ;;
     *.cff|*.json|*.lock|*.md|*.toml|*.x|*.wasm|*.yml) continue ;;
     */data/*.rs) continue ;;
   esac
-  sed -n 'N;/Copyright/q;q1' $file || e "No copyright notice in $file"
+  sed -n 'N;/Copyright/q;q1' "$file" || e "No copyright notice in $file"
 done

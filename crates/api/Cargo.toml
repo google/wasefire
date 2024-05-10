@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-applet-api"
-version = "0.6.0"
+version = "0.6.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -18,8 +18,8 @@ features = ["full-api", "wasm"]
 [dependencies]
 bytemuck = { version = "1.14.0", default-features = false, features = ["derive"] }
 sealed = { version = "0.5.0", default-features = false, optional = true }
-wasefire-applet-api-macro = { version = "0.6.0", path = "../api-macro" }
-wasefire-error = { version = "0.1.0", path = "../error" }
+wasefire-applet-api-macro = { version = "0.6.1-git", path = "../api-macro" }
+wasefire-error = { version = "0.1.1-git", path = "../error" }
 wasefire-logger = { version = "0.1.4", path = "../logger", optional = true }
 
 [features]
@@ -37,6 +37,7 @@ api-crypto-hmac = ["internal-api-crypto-hash", "wasefire-applet-api-macro/api-cr
 api-gpio = ["wasefire-applet-api-macro/api-gpio"]
 api-led = ["wasefire-applet-api-macro/api-led"]
 api-platform = ["wasefire-applet-api-macro/api-platform"]
+api-platform-protocol = ["wasefire-applet-api-macro/api-platform-protocol"]
 api-platform-update = ["wasefire-applet-api-macro/api-platform-update"]
 api-radio-ble = ["wasefire-applet-api-macro/api-radio-ble"]
 api-rng = ["wasefire-applet-api-macro/api-rng"]
@@ -57,6 +58,7 @@ full-api = [
   "api-gpio",
   "api-led",
   "api-platform",
+  "api-platform-protocol",
   "api-platform-update",
   "api-radio-ble",
   "api-rng",

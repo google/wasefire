@@ -20,6 +20,10 @@
 //! If the button is released before the timer runs out, then the LED will blink until next button
 //! press.
 
+// DO NOT EDIT MANUALLY:
+// - Edit book/src/applet/prelude/timer.rs instead.
+// - Then use ./scripts/sync.sh to generate this file.
+
 #![no_std]
 wasefire::applet!();
 
@@ -27,7 +31,7 @@ use alloc::rc::Rc;
 use core::cell::Cell;
 use core::time::Duration;
 
-fn main() {
+fn main() -> Result<(), Error> {
     assert!(button::count() > 0, "Board has no buttons.");
     assert!(led::count() > 0, "Board has no LEDs.");
 
@@ -58,7 +62,7 @@ fn main() {
                 button::Released if pressed.get() => released.set(true),
                 button::Released => (),
             }
-        });
+        })?;
 
         // Wait for the button to be pressed.
         scheduling::wait_until(|| pressed.get());

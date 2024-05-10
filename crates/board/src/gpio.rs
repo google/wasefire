@@ -14,32 +14,58 @@
 
 //! Low-level GPIO interface.
 
+// TODO(bytemuck > 1.15.0): Remove once released.
+#![allow(missing_docs)]
+
 use crate::{Error, Id, Support};
 
+/// Input GPIO configuration.
 #[derive(Debug, Copy, Clone, bytemuck::CheckedBitPattern)]
 #[repr(u8)]
 pub enum InputConfig {
+    /// Input is disabled.
     Disabled = 0,
+
+    /// Input is floating.
     Floating = 1,
+
+    /// Input has a pull-down resistor.
     PullDown = 2,
+
+    /// Input has a pull-up resistor.
     PullUp = 3,
 }
 
+/// Output GPIO configuration.
 #[derive(Debug, Copy, Clone, bytemuck::CheckedBitPattern)]
 #[repr(u8)]
 pub enum OutputConfig {
+    /// Output is disabled.
     Disabled = 0,
+
+    /// Output can only drive low.
     OpenDrain = 1,
+
+    /// Output can only drive high.
     OpenSource = 2,
+
+    /// Output can drive both low and high.
     PushPull = 3,
 }
 
+/// GPIO configuration.
 #[derive(Debug, Copy, Clone, bytemuck::CheckedBitPattern)]
 #[repr(C)]
 pub struct Config {
+    /// Input configuration.
     pub input: InputConfig,
+
+    /// Output configuration.
     pub output: OutputConfig,
+
+    /// Initial output value.
     pub initial: bool,
+
     reserved: u8,
 }
 

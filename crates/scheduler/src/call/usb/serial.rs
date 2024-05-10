@@ -103,7 +103,7 @@ fn flush<B: Board>(call: SchedulerCall<B, api::flush::Sig>) {
 
 #[cfg(feature = "board-api-usb-serial")]
 fn convert_event(event: u32) -> Result<Event, Trap> {
-    Ok(match api::Event::try_from(event)? {
+    Ok(match api::Event::try_from(event).map_err(|_| Trap)? {
         api::Event::Read => Event::Read,
         api::Event::Write => Event::Write,
     })

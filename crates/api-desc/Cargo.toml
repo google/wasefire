@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-applet-api-desc"
-version = "0.1.6"
+version = "0.1.7-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -32,6 +32,7 @@ api-crypto-hmac = ["internal-api-crypto-hash"]
 api-gpio = []
 api-led = []
 api-platform = ["internal-api-platform"]
+api-platform-protocol = ["internal-api-platform"]
 api-platform-update = ["internal-api-platform"]
 api-radio-ble = ["internal-api-radio"]
 api-rng = []
@@ -52,6 +53,7 @@ full-api = [
   "api-gpio",
   "api-led",
   "api-platform",
+  "api-platform-protocol",
   "api-platform-update",
   "api-radio-ble",
   "api-rng",

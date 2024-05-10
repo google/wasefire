@@ -66,7 +66,7 @@ applets don't need to be written in the same language to inter-operate.
 ## Platform side-channel attack testing and resistance
 
 - [ ] Crypto hardware accelerators are leveraged when available.
-    - [x] AES CCM (Bluetooth spec) on nRF52840
+   - [x] AES CCM (Bluetooth spec) on nRF52840
 - [ ] Otherwise fallback software crypto primitives are provided for main
       algorithms.
 - [ ] Both of those implementations are side-channel attack resilient.

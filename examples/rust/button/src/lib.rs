@@ -16,10 +16,14 @@
 //!
 //! The applet prints the button state to the debug output on any button event.
 
+// DO NOT EDIT MANUALLY:
+// - Edit book/src/applet/prelude/button1.rs instead.
+// - Then use ./scripts/sync.sh to generate this file.
+
 #![no_std]
 wasefire::applet!();
 
-fn main() {
+fn main() -> Result<(), Error> {
     // Make sure there is at least one button.
     let count = button::count();
     assert!(count > 0, "Board has no buttons.");
@@ -30,7 +34,7 @@ fn main() {
         let handler = move |state| debug!("Button {index} has been {state:?}.");
 
         // We start listening for state changes with the handler.
-        let listener = button::Listener::new(index, handler);
+        let listener = button::Listener::new(index, handler)?;
 
         // We leak the listener to continue listening for events.
         listener.leak();

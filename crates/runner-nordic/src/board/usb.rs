@@ -15,6 +15,7 @@
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
 use wasefire_board_api::usb::Api;
+use wasefire_protocol_usb::{HasRpc, Rpc};
 
 use crate::with_state;
 
@@ -22,8 +23,16 @@ pub type Usb = Usbd<UsbPeripheral<'static>>;
 
 pub enum Impl {}
 
+pub type ProtocolImpl = wasefire_protocol_usb::Impl<'static, Usb, crate::board::usb::Impl>;
+
 impl Api for Impl {
     type Serial = WithSerial<Impl>;
+}
+
+impl HasRpc<'static, Usb> for Impl {
+    fn with_rpc<R>(f: impl FnOnce(&mut Rpc<'static, Usb>) -> R) -> R {
+        with_state(|state| f(&mut state.protocol))
+    }
 }
 
 impl HasSerial for Impl {

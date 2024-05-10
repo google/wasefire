@@ -18,8 +18,11 @@ set -e
 
 # This script runs the continuous integration tests.
 
+x ./scripts/ci-copyright.sh
+x cargo xtask textreview
+x ./scripts/wrapper.sh mdl -g -s markdownlint.rb .
+x ./scripts/ci-taplo.sh
 x git submodule update --init third_party/OpenSK
-
 x cargo xtask applet rust opensk
 x cargo xtask --release applet rust opensk
 ( cd examples/rust/opensk
@@ -29,12 +32,6 @@ x cargo xtask --release applet rust opensk
   # x cargo clippy --lib --target=wasm32-unknown-unknown -- --deny=warnings
   # x cargo clippy --features=test -- --deny=warnings
 )
-
-git diff --exit-code \
-  || e "Tracked files were modified and/or untracked files were created"
-
-x ./scripts/schemastore.sh
-x ./scripts/wrapper.sh taplo lint \
---schema-catalog=file://"$PWD"/target/schemastore/catalog.json
-x ./scripts/wrapper.sh taplo format
-git diff --exit-code || e "TOML files are not well formatted"
+git diff --exit-code || e 'Modified files'
+[ -z "$(git status -s | tee /dev/stderr)" ] || e 'Untracked files'
+d "CI passed"

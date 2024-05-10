@@ -20,10 +20,6 @@ header = { path = "crates/header" }
 nrf52840-hal = "0.16.0"
 panic-abort = { version = "0.3.2", optional = true }
 panic-probe = { version = "0.3.1", features = ["print-defmt"], optional = true }
-rubble = { git = "https://github.com/jmichelp/rubble.git", rev = "d545f4f" }
-rubble-nrf5x = { git = "https://github.com/jmichelp/rubble.git", rev = "d545f4f", features = [
-  "52840",
-] }
 typenum = { version = "1.17.0", default-features = false }
 usb-device = "0.3.1"
 usbd-serial = "0.2.0"
@@ -32,8 +28,18 @@ wasefire-board-api = { path = "../board" }
 wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
+wasefire-protocol-usb = { path = "../protocol-usb", features = ["device"] }
 wasefire-store = { path = "../store" }
 wasefire-sync = { path = "../sync" }
+
+[dependencies.rubble]
+git = "https://github.com/jmichelp/rubble.git"
+rev = "d545f4f598d081c0177f38500792e353a7d932a3"
+
+[dependencies.rubble-nrf5x]
+git = "https://github.com/jmichelp/rubble.git"
+rev = "d545f4f598d081c0177f38500792e353a7d932a3"
+features = ["52840"]
 
 [dependencies.wasefire-scheduler]
 path = "../scheduler"
@@ -43,6 +49,7 @@ features = [
   "board-api-gpio",
   "board-api-led",
   "board-api-platform",
+  "board-api-platform-protocol",
   "board-api-platform-update",
   "board-api-radio-ble",
   "board-api-rng",
@@ -66,6 +73,7 @@ debug = [
   "wasefire-board-api/defmt",
   "wasefire-error/defmt",
   "wasefire-logger/defmt",
+  "wasefire-protocol-usb/defmt",
   "wasefire-scheduler/defmt",
 ]
 release = ["dep:panic-abort"]
@@ -73,5 +81,7 @@ release = ["dep:panic-abort"]
 native = ["wasefire-scheduler/native"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
 
-[patch.crates-io]
-nrf-usbd = { git = "https://github.com/ia0/nrf-usbd.git", branch = "bump" }
+# TODO(nrf-usbd > 0.2): Remove once the update makes it to nrf-hal-common and nrf52840-hal.
+[patch.crates-io.nrf-usbd]
+git = "https://github.com/nrf-rs/nrf-usbd.git"
+rev = "c736b03214e740d06251266b56d36c648a6c7f1b"

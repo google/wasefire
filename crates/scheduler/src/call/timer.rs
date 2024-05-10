@@ -67,7 +67,7 @@ fn start<B: Board>(mut call: SchedulerCall<B, api::start::Sig>) {
     let timer = *id as usize;
     let result = try {
         let id = get_timer(call.scheduler(), timer)?;
-        let periodic = matches!(api::Mode::try_from(*mode)?, api::Mode::Periodic);
+        let periodic = matches!(api::Mode::try_from(*mode).map_err(|_| Trap)?, api::Mode::Periodic);
         let duration_ms = *duration_ms as usize;
         let command = Command { periodic, duration_ms };
         board::Timer::<B>::arm(id, &command)
@@ -104,7 +104,7 @@ fn free<B: Board>(mut call: SchedulerCall<B, api::free::Sig>) {
 fn get_timer<B: Board>(
     scheduler: &Scheduler<B>, timer: usize,
 ) -> Result<Id<board::Timer<B>>, Trap> {
-    let id = Id::new(timer).ok_or(Trap)?;
+    let id = Id::new(timer).map_err(|_| Trap)?;
     if scheduler.timers[timer].is_none() {
         return Err(Trap);
     }

@@ -1,9 +1,11 @@
-name: Deploy Github Pages
+name: Github Pages
 
 on:
   push:
     branches:
       - main
+
+permissions: {}
 
 jobs:
   pages:

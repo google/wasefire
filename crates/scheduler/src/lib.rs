@@ -29,16 +29,16 @@ use core::marker::PhantomData;
 use derivative::Derivative;
 use event::Key;
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature, U32};
-#[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
+#[cfg(feature = "board-api-storage")]
 use wasefire_board_api::Singleton;
-#[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
+#[cfg(feature = "board-api-timer")]
 use wasefire_board_api::Support;
 use wasefire_board_api::{self as board, Api as Board};
 use wasefire_error::Error;
 #[cfg(feature = "wasm")]
 use wasefire_interpreter::{self as interpreter, Call, Module, RunAnswer, Val};
 use wasefire_logger as log;
-#[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
+#[cfg(feature = "board-api-storage")]
 use wasefire_store as store;
 
 use crate::applet::store::{Memory, Store, StoreApi};
@@ -52,6 +52,8 @@ mod event;
 mod native;
 #[cfg(feature = "internal-debug")]
 mod perf;
+#[cfg(feature = "board-api-platform-protocol")]
+mod protocol;
 
 #[cfg(all(feature = "native", not(target_pointer_width = "32")))]
 compile_error!("Only 32-bits architectures support native applets.");
@@ -87,14 +89,16 @@ impl<B: Board> Events<B> {
 }
 
 pub struct Scheduler<B: Board> {
-    #[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
+    #[cfg(feature = "board-api-storage")]
     store: store::Store<B::Storage>,
     host_funcs: Vec<Api<Id>>,
     applet: Applet<B>,
-    #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
+    #[cfg(feature = "board-api-timer")]
     timers: Vec<Option<Timer>>,
     #[cfg(feature = "internal-debug")]
     perf: perf::Perf<B>,
+    #[cfg(feature = "board-api-platform-protocol")]
+    protocol: protocol::State,
 }
 
 #[derive(Clone)]
@@ -293,17 +297,21 @@ impl<B: Board> Scheduler<B> {
             store.link_func_default("env").unwrap();
             applet
         };
+        #[cfg(feature = "board-api-platform-protocol")]
+        protocol::enable::<B>();
         #[cfg(feature = "native")]
         let applet = Applet::default();
         Self {
-            #[cfg(all(feature = "board-api-storage", feature = "internal-applet-api-store"))]
+            #[cfg(feature = "board-api-storage")]
             store: store::Store::new(board::Storage::<B>::take().unwrap()).ok().unwrap(),
             host_funcs,
             applet,
-            #[cfg(all(feature = "board-api-timer", feature = "applet-api-timer"))]
+            #[cfg(feature = "board-api-timer")]
             timers: alloc::vec![None; board::Timer::<B>::SUPPORT],
             #[cfg(feature = "internal-debug")]
             perf: perf::Perf::default(),
+            #[cfg(feature = "board-api-platform-protocol")]
+            protocol: protocol::State::default(),
         }
     }
 
@@ -339,8 +347,17 @@ impl<B: Board> Scheduler<B> {
 
     fn flush_events(&mut self) {
         while let Some(event) = B::try_event() {
-            self.applet.push(event);
+            self.triage_event(event);
         }
+    }
+
+    fn triage_event(&mut self, event: board::Event<B>) {
+        #[cfg(feature = "board-api-platform-protocol")]
+        if protocol::should_process_event(&event) {
+            protocol::process_event(self, event);
+            return;
+        }
+        self.applet.push(event);
     }
 
     /// Returns whether execution should resume.
@@ -354,7 +371,7 @@ impl<B: Board> Scheduler<B> {
                     let event = B::wait_event();
                     #[cfg(feature = "internal-debug")]
                     self.perf.record(perf::Slot::Waiting);
-                    self.applet.push(event);
+                    self.triage_event(event);
                 }
                 #[cfg(feature = "wasm")]
                 EventAction::Reply => return true,
@@ -436,12 +453,6 @@ fn applet_trapped<B: Board>(reason: Option<&'static str>) -> ! {
 }
 
 struct Trap;
-
-impl From<wasefire_error::Error> for Trap {
-    fn from(_: wasefire_error::Error) -> Self {
-        Trap
-    }
-}
 
 #[cfg(feature = "wasm")]
 const fn memory_size() -> usize {

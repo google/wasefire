@@ -20,7 +20,7 @@
 #![no_std]
 wasefire::applet!();
 
-fn main() {
+fn main() -> Result<(), Error> {
     //{ ANCHOR: count
     // Make sure there is at least one button.
     let count = button::count();
@@ -38,7 +38,7 @@ fn main() {
 
         //{ ANCHOR: listener
         // We start listening for state changes with the handler.
-        let listener = button::Listener::new(index, handler);
+        let listener = button::Listener::new(index, handler)?;
         //} ANCHOR_END: listener
 
         //{ ANCHOR: leak

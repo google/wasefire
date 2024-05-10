@@ -1,0 +1,14 @@
+[package]
+name = "host"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.79"
+clap = { version = "4.4.18", features = ["derive"] }
+env_logger = "0.11.0"
+rusb = "0.9.3"
+wasefire-protocol = { path = "../../../../crates/protocol", features = ["std"] }
+wasefire-protocol-usb = { path = "../../../../crates/protocol-usb", features = ["host", "log"] }

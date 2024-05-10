@@ -624,9 +624,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.24"
+version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb2c4422095b67ee78da96fbb51a4cc413b3b25883c7717ff7ca1ab31022c9c9"
+checksum = "81fe527a889e1532da5c525686d96d4c2e74cdd345badf8dfef9f6b39dd5f5e8"
 dependencies = [
  "bytes",
  "fnv",
@@ -1256,6 +1256,7 @@ dependencies = [
  "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
+ "wasefire-protocol-usb",
  "wasefire-scheduler",
  "wasefire-store",
  "web-server",
@@ -1824,7 +1825,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.6.0"
+version = "0.6.1-git"
 dependencies = [
  "bytemuck",
  "sealed",
@@ -1834,7 +1835,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.1.6"
+version = "0.1.7-git"
 dependencies = [
  "anyhow",
  "clap",
@@ -1847,7 +1848,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.6.0"
+version = "0.6.1-git"
 dependencies = [
  "proc-macro2",
  "wasefire-applet-api-desc",
@@ -1855,7 +1856,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.6.0"
+version = "0.7.0-git"
 dependencies = [
  "aead",
  "aes",
@@ -1884,7 +1885,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "num_enum 0.7.2",
 ]
@@ -1906,6 +1907,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasefire-protocol"
+version = "0.1.0-git"
+dependencies = [
+ "sealed",
+ "wasefire-error",
+]
+
+[[package]]
+name = "wasefire-protocol-usb"
+version = "0.1.0-git"
+dependencies = [
+ "usb-device",
+ "wasefire-board-api",
+ "wasefire-error",
+ "wasefire-logger",
+ "wasefire-protocol",
+]
+
+[[package]]
 name = "wasefire-scheduler"
 version = "0.3.1-git"
 dependencies = [
@@ -1921,13 +1941,14 @@ dependencies = [
  "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
+ "wasefire-protocol",
  "wasefire-store",
  "wasefire-sync",
 ]
 
 [[package]]
 name = "wasefire-store"
-version = "0.2.3"
+version = "0.2.4-git"
 
 [[package]]
 name = "wasefire-sync"

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.7.0-git
+
+### Major
+
+- Change `Id::new` to return `Result` instead of `Option`
+- Change `crypto::{Hash,Hmac}` to depend on `crypto::WithError`
+
+### Minor
+
+- Add `platform::Api::Protocol` for the platform protocol and its `api-platform-protocol` feature
+- Add `crypto::{HashApi,HmacApi}` helpers for `crypto::{Hash,Hmac}`
+- Add `crypto::NoError` helper for `crypto::WithError`
+- Add `crypto::WithError` to add error support to RustCrypto (fix #176)
+
+### Patch
+
+- Change `Id::new()` to return `OutOfBounds` error instead of `InvalidArgument`
+- Update dependencies
+- Document all public API
+
 ## 0.6.0
 
 ### Major
@@ -112,4 +132,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 17 -->
+<!-- Increment to skip CHANGELOG.md test: 19 -->

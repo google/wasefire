@@ -27,6 +27,7 @@ use core::marker::PhantomData;
 use core::ops::Deref;
 
 use derivative::Derivative;
+use wasefire_error::Code;
 pub use wasefire_error::Error;
 
 #[cfg(feature = "api-button")]
@@ -77,27 +78,50 @@ pub trait Api: Send + 'static {
         None
     }
 
+    /// Button interface.
     #[cfg(feature = "api-button")]
     type Button: button::Api;
+
+    /// Cryptography interface.
     #[cfg(feature = "internal-api-crypto")]
     type Crypto: crypto::Api;
+
+    /// Debugging and testing interface.
     type Debug: debug::Api;
+
+    /// Low-level GPIO interface.
     #[cfg(feature = "api-gpio")]
     type Gpio: gpio::Api;
+
+    /// LED interface.
     #[cfg(feature = "api-led")]
     type Led: led::Api;
+
+    /// Platform interface.
     #[cfg(feature = "internal-api-platform")]
     type Platform: platform::Api;
+
+    /// Radio interface.
     #[cfg(feature = "internal-api-radio")]
     type Radio: radio::Api;
+
+    /// Random number generator interface.
     #[cfg(feature = "api-rng")]
     type Rng: rng::Api;
+
+    /// Persistent storage interface.
     #[cfg(feature = "api-storage")]
     type Storage: Singleton + wasefire_store::Storage + Send;
+
+    /// Timer interface.
     #[cfg(feature = "api-timer")]
     type Timer: timer::Api;
+
+    /// UART interface.
     #[cfg(feature = "api-uart")]
     type Uart: uart::Api;
+
+    /// USB interface.
     #[cfg(feature = "internal-api-usb")]
     type Usb: usb::Api;
 }
@@ -107,6 +131,7 @@ pub trait Api: Send + 'static {
 /// The `Value` type parameter is usually `bool`. It may also be `usize` for APIs that have multiple
 /// similar things like buttons, leds, and timers.
 pub trait Support<Value> {
+    /// Whether and how the API is supported.
     const SUPPORT: Value;
 }
 
@@ -131,6 +156,10 @@ pub enum Event<B: Api + ?Sized> {
     /// Button event.
     #[cfg(feature = "api-button")]
     Button(button::Event<B>),
+
+    /// Platform event.
+    #[cfg(feature = "internal-api-platform")]
+    Platform(platform::Event),
 
     /// Radio event.
     #[cfg(feature = "internal-api-radio")]
@@ -177,6 +206,7 @@ impl<B: Api + ?Sized> PartialOrd for Impossible<B> {
 }
 
 impl<B: Api + ?Sized> Impossible<B> {
+    /// Provides a static proof of dead code.
     pub fn unreachable(&self) -> ! {
         match self.0 {}
     }
@@ -185,27 +215,50 @@ impl<B: Api + ?Sized> Impossible<B> {
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 enum Void {}
 
+/// Button interface.
 #[cfg(feature = "api-button")]
 pub type Button<B> = <B as Api>::Button;
+
+/// Cryptography interface.
 #[cfg(feature = "internal-api-crypto")]
 pub type Crypto<B> = <B as Api>::Crypto;
+
+/// Debugging and testing interface.
 pub type Debug<B> = <B as Api>::Debug;
+
+/// Low-level GPIO interface.
 #[cfg(feature = "api-gpio")]
 pub type Gpio<B> = <B as Api>::Gpio;
+
+/// LED interface.
 #[cfg(feature = "api-led")]
 pub type Led<B> = <B as Api>::Led;
+
+/// Platform interface.
 #[cfg(feature = "internal-api-platform")]
 pub type Platform<B> = <B as Api>::Platform;
+
+/// Radio interface.
 #[cfg(feature = "internal-api-radio")]
 pub type Radio<B> = <B as Api>::Radio;
+
+/// Random number generator interface.
 #[cfg(feature = "api-rng")]
 pub type Rng<B> = <B as Api>::Rng;
+
+/// Persistent storage interface.
 #[cfg(feature = "api-storage")]
 pub type Storage<B> = <B as Api>::Storage;
+
+/// Timer interface.
 #[cfg(feature = "api-timer")]
 pub type Timer<B> = <B as Api>::Timer;
+
+/// UART interface.
 #[cfg(feature = "api-uart")]
 pub type Uart<B> = <B as Api>::Uart;
+
+/// USB interface.
 #[cfg(feature = "internal-api-usb")]
 pub type Usb<B> = <B as Api>::Usb;
 
@@ -234,8 +287,12 @@ impl<T: Support<usize> + ?Sized> PartialOrd for Id<T> {
 }
 
 impl<T: Support<usize>> Id<T> {
-    pub fn new(value: usize) -> Option<Self> {
-        (value < T::SUPPORT).then_some(Self { value, count: PhantomData })
+    /// Creates a safe identifier for an API with countable support.
+    pub fn new(value: usize) -> Result<Self, Error> {
+        match value < T::SUPPORT {
+            true => Ok(Self { value, count: PhantomData }),
+            false => Err(Error::user(Code::OutOfBounds)),
+        }
     }
 }
 

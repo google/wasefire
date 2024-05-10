@@ -40,6 +40,10 @@ extern crate alloc;
 use wasefire_applet_api as api;
 pub use wasefire_error::Error;
 
+// This internal module is made public because it's used by exported macros called from user code.
+#[doc(hidden)]
+pub mod internal;
+
 mod allocator;
 #[cfg(feature = "api-button")]
 pub mod button;
@@ -104,11 +108,15 @@ macro_rules! applet {
         use wasefire::*;
 
         #[export_name = "main"]
+        #[allow(unreachable_code)]
+        #[allow(clippy::diverging_sub_expression)]
         extern "C" fn _main() {
-            main();
+            use $crate::internal::Termination as _;
+            main().report();
         }
     };
 }
+#[allow(missing_docs)] // see above
 #[cfg(feature = "native")]
 #[macro_export]
 macro_rules! applet {
@@ -118,11 +126,15 @@ macro_rules! applet {
         use wasefire::*;
 
         #[no_mangle]
+        #[allow(unreachable_code)]
+        #[allow(clippy::diverging_sub_expression)]
         extern "C" fn applet_main() {
-            main();
+            use $crate::internal::Termination as _;
+            main().report();
         }
     };
 }
+#[allow(missing_docs)] // see above
 #[cfg(feature = "test")]
 #[macro_export]
 macro_rules! applet {

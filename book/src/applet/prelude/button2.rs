@@ -27,7 +27,7 @@ wasefire::applet!();
 use alloc::boxed::Box;
 use core::cell::Cell;
 
-fn main() {
+fn main() -> Result<(), Error> {
     //{ ANCHOR: setup
     // Make sure there is at least one button.
     let num_buttons = button::count();
@@ -65,8 +65,10 @@ fn main() {
 
         //{ ANCHOR: listener
         // We indefinitely listen by creating and leaking a listener.
-        button::Listener::new(button_index, handler).leak();
+        button::Listener::new(button_index, handler)?.leak();
         //} ANCHOR_END: listener
     }
+
+    Ok(())
 }
 //} ANCHOR_END: all
