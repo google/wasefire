@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `store::{keys,clear}()` functions
 - Add `platform::protocol` module and `api-platform-protocol` feature for applet RPC
 
 ### Patch

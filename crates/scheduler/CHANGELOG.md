@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support `store::{keys,clear}()` functions
 - Support `platform::protocol` with the `{applet,board}-api-platform-protocol` features
 - Change `gpio` module to never trap and return an error instead
 - Change `button::{register, unregister}()` to never trap and return an error instead

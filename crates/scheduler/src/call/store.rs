@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(feature = "board-api-storage")]
+use alloc::vec::Vec;
+
 use wasefire_applet_api::store::Api;
 #[cfg(feature = "board-api-storage")]
 use wasefire_applet_api::store::{self as api};
@@ -38,6 +41,10 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Remove(call) => or_fail!("board-api-storage", remove(call)),
         #[cfg(feature = "applet-api-store")]
         Api::Find(call) => or_fail!("board-api-storage", find(call)),
+        #[cfg(feature = "applet-api-store")]
+        Api::Keys(call) => or_fail!("board-api-storage", keys(call)),
+        #[cfg(feature = "applet-api-store")]
+        Api::Clear(call) => or_fail!("board-api-storage", clear(call)),
         #[cfg(feature = "applet-api-store-fragment")]
         Api::Fragment(call) => fragment::process(call),
     }
@@ -82,6 +89,42 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
         }
     };
     call.reply(result);
+}
+
+#[cfg(feature = "board-api-storage")]
+fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
+    let api::keys::Params { ptr: ptr_ptr } = call.read();
+    let scheduler = call.scheduler();
+    let mut memory = scheduler.applet.memory();
+    let result = try {
+        let keys = try {
+            let mut keys = Vec::new();
+            for handle in scheduler.store.iter()? {
+                keys.push(handle?.get_key() as u16);
+            }
+            keys
+        };
+        match keys {
+            Ok(keys) if keys.is_empty() => Ok(0),
+            Ok(keys) => {
+                let len = keys.len() as u32;
+                let ptr = memory.alloc(2 * len, 2)?;
+                memory.get_mut(ptr, 2 * len)?.copy_from_slice(bytemuck::cast_slice(&keys));
+                memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
+                Ok(len)
+            }
+            Err(e) => Err(convert(e)),
+        }
+    };
+    call.reply(result);
+}
+
+#[cfg(feature = "board-api-storage")]
+fn clear<B: Board>(mut call: SchedulerCall<B, api::clear::Sig>) {
+    let api::clear::Params {} = call.read();
+    let scheduler = call.scheduler();
+    let result = scheduler.store.clear(0).map_err(convert);
+    call.reply(Ok(result));
 }
 
 #[cfg(feature = "board-api-storage")]

@@ -16,12 +16,14 @@
 
 #[cfg(feature = "api-store")]
 use alloc::boxed::Box;
+#[cfg(feature = "api-store")]
+use alloc::vec::Vec;
 
 #[cfg(feature = "api-store")]
 use wasefire_applet_api::store as api;
 
 #[cfg(feature = "api-store")]
-use crate::{convert_bool, convert_unit, Error};
+use crate::{convert, convert_bool, convert_unit, Error};
 
 #[cfg(feature = "api-store-fragment")]
 pub mod fragment;
@@ -59,4 +61,23 @@ pub fn find(key: usize) -> Result<Option<Box<[u8]>>, Error> {
     } else {
         Ok(None)
     }
+}
+
+/// Returns the keys of the entries in the store.
+#[cfg(feature = "api-store")]
+pub fn keys() -> Result<Vec<u16>, Error> {
+    let mut ptr = core::ptr::null_mut();
+    let params = api::keys::Params { ptr: &mut ptr };
+    let len = convert(unsafe { api::keys(params) })?;
+    if len == 0 {
+        Ok(Vec::new())
+    } else {
+        Ok(unsafe { Vec::from_raw_parts(ptr as *mut u16, len, len) })
+    }
+}
+
+/// Clears the store, removing all entries.
+#[cfg(feature = "api-store")]
+pub fn clear() -> Result<(), Error> {
+    convert_unit(unsafe { api::clear() })
 }

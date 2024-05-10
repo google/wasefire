@@ -70,6 +70,25 @@ pub(crate) fn new() -> Item {
                 len: *mut usize,
             } -> bool
         },
+        #[cfg(feature = "api-store")]
+        item! {
+            /// Returns the unordered keys of the entries in the store.
+            ///
+            /// Returns the number of keys, and thus the length of the array. The array is not
+            /// allocated if the length is zero (and the pointer is not written).
+            fn keys "sk" {
+                /// Where to write the keys as an array of u16, if at least one.
+                ///
+                /// The (inner) pointer will be allocated by the callee and must be freed by the
+                /// caller. It is thus owned by the caller when the function returns.
+                ptr: *mut *mut u8,
+            } -> usize
+        },
+        #[cfg(feature = "api-store")]
+        item! {
+            /// Clears the store, removing all entries.
+            fn clear "sc" {} -> ()
+        },
         #[cfg(feature = "api-store-fragment")]
         fragment::new(),
     ];

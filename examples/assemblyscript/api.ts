@@ -931,6 +931,24 @@
     len: usize,
   ): i32
 
+  // Returns the unordered keys of the entries in the store.
+  //
+  // Returns the number of keys, and thus the length of the array. The array is not
+  // allocated if the length is zero (and the pointer is not written).
+  @external("env", "sk")
+  export declare function store_keys(
+    // Where to write the keys as an array of u16, if at least one.
+    //
+    // The (inner) pointer will be allocated by the callee and must be freed by the
+    // caller. It is thus owned by the caller when the function returns.
+    ptr: usize,
+  ): i32
+
+  // Clears the store, removing all entries.
+  @external("env", "sc")
+  export declare function store_clear(
+  ): i32
+
   // START OF MODULE store_fragment
   // Support for fragmented entries.
     // Inserts an entry in the store.
