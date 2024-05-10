@@ -18,12 +18,18 @@ use digest::{FixedOutput, InvalidLength, KeyInit, Output, Update};
 use generic_array::GenericArray;
 use wasefire_applet_api::crypto::hash::{self as api, Algorithm, Api};
 use wasefire_board_api::{self as board, Api as Board, Support};
-use wasefire_error::Error;
+use wasefire_error::{Code, Error};
 
 use crate::applet::store::{MemoryApi, StoreApi};
 #[cfg(feature = "internal-hash-context")]
 use crate::applet::HashContext;
-use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
+use crate::{DispatchSchedulerCall, Failure, SchedulerCall, Trap};
+
+impl From<InvalidLength> for Failure {
+    fn from(InvalidLength: InvalidLength) -> Self {
+        Self::Error(Error::user(Code::InvalidLength))
+    }
+}
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
@@ -53,7 +59,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 #[cfg(feature = "applet-api-crypto-hash")]
 fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
     let api::is_supported::Params { algorithm } = call.read();
-    call.reply(convert_hash_algorithm::<B>(*algorithm).map(|x| Ok(x.is_ok())))
+    call.reply(try { convert_hash_algorithm::<B>(*algorithm)?.is_ok() })
 }
 
 #[cfg(feature = "applet-api-crypto-hash")]
@@ -63,16 +69,13 @@ fn initialize<B: Board>(mut call: SchedulerCall<B, api::initialize::Sig>) {
     let result = try {
         let context = match convert_hash_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-sha256")]
-            Algorithm::Sha256 => board::crypto::HashApi::new().map(HashContext::Sha256),
+            Algorithm::Sha256 => board::crypto::HashApi::new().map(HashContext::Sha256)?,
             #[cfg(feature = "board-api-crypto-sha384")]
-            Algorithm::Sha384 => board::crypto::HashApi::new().map(HashContext::Sha384),
+            Algorithm::Sha384 => board::crypto::HashApi::new().map(HashContext::Sha384)?,
             #[allow(unreachable_patterns)]
             _ => Err(Trap)?,
         };
-        match context {
-            Ok(context) => Ok(scheduler.applet.hashes.insert(context)? as u32),
-            Err(error) => Err(error),
-        }
+        scheduler.applet.hashes.insert(context)? as u32
     };
     call.reply(result);
 }
@@ -82,13 +85,13 @@ fn update<B: Board>(mut call: SchedulerCall<B, api::update::Sig>) {
     let api::update::Params { id, data, length } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.store.memory();
-    let result: Result<Result<(), _>, _> = try {
+    let result = try {
         let data = memory.get(*data, *length)?;
         match scheduler.applet.hashes.get_mut(*id as usize)? {
             #[cfg(feature = "board-api-crypto-sha256")]
-            HashContext::Sha256(context) => context.update(data),
+            HashContext::Sha256(context) => context.update(data)?,
             #[cfg(feature = "board-api-crypto-sha384")]
-            HashContext::Sha384(context) => context.update(data),
+            HashContext::Sha384(context) => context.update(data)?,
             _ => trap_use!(data),
         }
     };
@@ -103,16 +106,16 @@ fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
     let result = try {
         let context = scheduler.applet.hashes.take(*id as usize)?;
         match context {
-            _ if *digest == 0 => Ok(()),
+            _ if *digest == 0 => (),
             #[cfg(feature = "board-api-crypto-sha256")]
             HashContext::Sha256(context) => {
                 let digest = memory.get_array_mut::<32>(*digest)?;
-                context.finalize_into(GenericArray::from_mut_slice(digest))
+                context.finalize_into(GenericArray::from_mut_slice(digest))?
             }
             #[cfg(feature = "board-api-crypto-sha384")]
             HashContext::Sha384(context) => {
                 let digest = memory.get_array_mut::<48>(*digest)?;
-                context.finalize_into(GenericArray::from_mut_slice(digest))
+                context.finalize_into(GenericArray::from_mut_slice(digest))?
             }
             _ => trap_use!(memory),
         }
@@ -123,7 +126,7 @@ fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
 #[cfg(feature = "applet-api-crypto-hmac")]
 fn is_hmac_supported<B: Board>(call: SchedulerCall<B, api::is_hmac_supported::Sig>) {
     let api::is_hmac_supported::Params { algorithm } = call.read();
-    call.reply(convert_hmac_algorithm::<B>(*algorithm).map(|x| Ok(x.is_ok())))
+    call.reply(try { convert_hmac_algorithm::<B>(*algorithm)?.is_ok() })
 }
 
 #[cfg(feature = "applet-api-crypto-hmac")]
@@ -135,16 +138,13 @@ fn hmac_initialize<B: Board>(mut call: SchedulerCall<B, api::hmac_initialize::Si
         let key = memory.get(*key, *key_len)?;
         let context = match convert_hmac_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
-            Algorithm::Sha256 => board::crypto::HmacApi::new(key).map(HashContext::HmacSha256),
+            Algorithm::Sha256 => board::crypto::HmacApi::new(key).map(HashContext::HmacSha256)?,
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
-            Algorithm::Sha384 => board::crypto::HmacApi::new(key).map(HashContext::HmacSha384),
+            Algorithm::Sha384 => board::crypto::HmacApi::new(key).map(HashContext::HmacSha384)?,
             #[allow(unreachable_patterns)]
             _ => trap_use!(key),
         };
-        match context {
-            Ok(context) => Ok(scheduler.applet.hashes.insert(context)? as u32),
-            Err(error) => Err(error),
-        }
+        scheduler.applet.hashes.insert(context)? as u32
     };
     call.reply(result);
 }
@@ -154,13 +154,13 @@ fn hmac_update<B: Board>(mut call: SchedulerCall<B, api::hmac_update::Sig>) {
     let api::hmac_update::Params { id, data, length } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.store.memory();
-    let result: Result<Result<(), _>, _> = try {
+    let result = try {
         let data = memory.get(*data, *length)?;
         match scheduler.applet.hashes.get_mut(*id as usize)? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
-            HashContext::HmacSha256(context) => context.update(data),
+            HashContext::HmacSha256(context) => context.update(data)?,
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
-            HashContext::HmacSha384(context) => context.update(data),
+            HashContext::HmacSha384(context) => context.update(data)?,
             _ => trap_use!(data),
         }
     };
@@ -175,16 +175,16 @@ fn hmac_finalize<B: Board>(mut call: SchedulerCall<B, api::hmac_finalize::Sig>) 
     let result = try {
         let context = scheduler.applet.hashes.take(*id as usize)?;
         match context {
-            _ if *hmac == 0 => Ok(()),
+            _ if *hmac == 0 => (),
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
             HashContext::HmacSha256(context) => {
                 let hmac = memory.get_array_mut::<32>(*hmac)?;
-                context.finalize_into(GenericArray::from_mut_slice(hmac))
+                context.finalize_into(GenericArray::from_mut_slice(hmac))?
             }
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
             HashContext::HmacSha384(context) => {
                 let hmac = memory.get_array_mut::<48>(*hmac)?;
-                context.finalize_into(GenericArray::from_mut_slice(hmac))
+                context.finalize_into(GenericArray::from_mut_slice(hmac))?
             }
             _ => trap_use!(memory),
         }
@@ -195,7 +195,7 @@ fn hmac_finalize<B: Board>(mut call: SchedulerCall<B, api::hmac_finalize::Sig>) 
 #[cfg(feature = "applet-api-crypto-hkdf")]
 fn is_hkdf_supported<B: Board>(call: SchedulerCall<B, api::is_hkdf_supported::Sig>) {
     let api::is_hkdf_supported::Params { algorithm } = call.read();
-    call.reply(convert_hmac_algorithm::<B>(*algorithm).map(|x| Ok(x.is_ok())))
+    call.reply(try { convert_hmac_algorithm::<B>(*algorithm)?.is_ok() })
 }
 
 #[cfg(feature = "applet-api-crypto-hkdf")]
@@ -208,15 +208,14 @@ fn hkdf_expand<B: Board>(mut call: SchedulerCall<B, api::hkdf_expand::Sig>) {
         let prk = memory.get(*prk, *prk_len)?;
         let info = memory.get(*info, *info_len)?;
         let okm = memory.get_mut(*okm, *okm_len)?;
-        let res: Result<(), _> = match convert_hmac_algorithm::<B>(*algorithm)?? {
+        match convert_hmac_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
-            Algorithm::Sha256 => hkdf::<board::crypto::HmacSha256<B>>(prk, info, okm),
+            Algorithm::Sha256 => hkdf::<board::crypto::HmacSha256<B>>(prk, info, okm)?,
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
-            Algorithm::Sha384 => hkdf::<board::crypto::HmacSha384<B>>(prk, info, okm),
+            Algorithm::Sha384 => hkdf::<board::crypto::HmacSha384<B>>(prk, info, okm)?,
             #[allow(unreachable_patterns)]
             _ => trap_use!(prk, info, okm),
-        };
-        res.map_err(|InvalidLength| Error::user(0))
+        }
     };
     call.reply(result);
 }

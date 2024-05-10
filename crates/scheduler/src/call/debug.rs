@@ -34,7 +34,6 @@ fn println<B: Board>(mut call: SchedulerCall<B, api::println::Sig>) {
     let result = try {
         let line = core::str::from_utf8(memory.get(*ptr, *len)?).map_err(|_| Trap)?;
         board::Debug::<B>::println(line);
-        Ok(())
     };
     call.reply(result)
 }
@@ -47,7 +46,7 @@ fn time<B: Board>(mut call: SchedulerCall<B, api::time::Sig>) {
         if *ptr != 0 {
             memory.get_mut(*ptr, 8)?.copy_from_slice(&time.to_le_bytes());
         }
-        Ok(time as u32 & 0x7fffffff)
+        time as u32 & 0x7fffffff
     };
     call.reply(result)
 }
@@ -61,7 +60,6 @@ fn perf<B: Board>(mut call: SchedulerCall<B, api::perf::Sig>) {
     let memory = call.memory();
     let result = try {
         *memory.from_bytes_mut::<Perf>(*ptr)? = perf;
-        Ok(())
     };
     call.reply(result)
 }

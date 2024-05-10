@@ -45,13 +45,13 @@ fn support<B: Board>(call: SchedulerCall<B, api::support::Sig>) {
     };
     #[cfg(not(feature = "board-api-crypto-aes256-gcm"))]
     let support = 0;
-    call.reply(Ok(Ok(support)))
+    call.reply(Ok(support))
 }
 
 #[cfg(feature = "board-api-crypto-aes256-gcm")]
 fn tag_length<B: Board>(call: SchedulerCall<B, api::tag_length::Sig>) {
     let api::tag_length::Params {} = call.read();
-    call.reply(Ok(Ok(tag_len::<B>() as u32)))
+    call.reply(Ok(tag_len::<B>() as u32))
 }
 
 #[cfg(feature = "board-api-crypto-aes256-gcm")]
@@ -68,7 +68,7 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
         let cipher = memory.get_mut(*cipher, *length)?;
         let tag_len = tag_len::<B>() as u32;
         let tag = memory.get_mut(*tag, tag_len)?.into();
-        board::crypto::Aes256Gcm::<B>::encrypt(key, iv, aad, clear, cipher, tag)
+        board::crypto::Aes256Gcm::<B>::encrypt(key, iv, aad, clear, cipher, tag)?
     };
     call.reply(result);
 }
@@ -87,7 +87,7 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         let tag = memory.get(*tag, tag_len)?.into();
         let cipher = memory.get_opt(*cipher, *length)?;
         let clear = memory.get_mut(*clear, *length)?;
-        board::crypto::Aes256Gcm::<B>::decrypt(key, iv, aad, cipher, tag, clear)
+        board::crypto::Aes256Gcm::<B>::decrypt(key, iv, aad, cipher, tag, clear)?
     };
     call.reply(result);
 }

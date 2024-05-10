@@ -35,7 +35,7 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     let count = board::Led::<B>::SUPPORT as u32;
     #[cfg(not(feature = "board-api-led"))]
     let count = 0;
-    call.reply(Ok(Ok(count)));
+    call.reply(Ok(count));
 }
 
 #[cfg(feature = "board-api-led")]
@@ -45,7 +45,7 @@ fn get<B: Board>(call: SchedulerCall<B, api::get::Sig>) {
         let id = Id::new(*led as usize)?;
         board::Led::<B>::get(id)?
     };
-    call.reply(Ok(result));
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-led")]
@@ -56,5 +56,5 @@ fn set<B: Board>(call: SchedulerCall<B, api::set::Sig>) {
         let on = matches!(api::Status::try_from(*status)?, api::Status::On);
         board::Led::<B>::set(id, on)?
     };
-    call.reply(Ok(result));
+    call.reply(result);
 }
