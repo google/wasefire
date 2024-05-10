@@ -20,9 +20,12 @@ wasefire::applet!();
 use alloc::vec::Vec;
 
 fn main() {
+    store::clear().unwrap();
+    debug::assert(store::keys().unwrap().is_empty());
     test_insert();
     test_remove();
     test_find();
+    test_keys();
     test_fragment();
     debug::exit(true);
 }
@@ -66,6 +69,24 @@ fn test_find() {
         find(key, removed);
         find(reverse(key), removed);
     }
+}
+
+fn test_keys() {
+    debug!("test_keys(): Checks that keys match entries.");
+    let mut expected = Vec::new();
+    for &key in INSERTED {
+        if REMOVED.contains(&key) {
+            continue;
+        }
+        expected.push(key as u16);
+        expected.push(reverse(key) as u16);
+    }
+    expected.sort();
+    debug!("- {expected:?}");
+    let mut actual = store::keys().unwrap();
+    actual.sort();
+    debug!("- {actual:?}");
+    debug::assert_eq(&actual, &expected);
 }
 
 fn test_fragment() {
