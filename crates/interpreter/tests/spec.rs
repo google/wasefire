@@ -23,8 +23,8 @@ use wast::lexer::Lexer;
 use wast::token::Id;
 use wast::{parser, QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, WastRet, Wat};
 
-fn test(name: &str) {
-    let path = format!("../../third_party/WebAssembly/spec/test/core/{}.wast", name);
+fn test(repo: &str, name: &str) {
+    let path = format!("../../third_party/WebAssembly/{repo}/test/core/{name}.wast");
     let content = std::fs::read_to_string(path).unwrap();
     let mut lexer = Lexer::new(&content);
     lexer.allow_confusing_unicode(true);
@@ -372,10 +372,17 @@ fn wast_arg_core(core: WastArgCore) -> Val {
 }
 
 macro_rules! test {
-    ($(#[$m:meta])* $name: ident) => { test!([1] $(#[$m])* $name [$name]); };
-    ($(#[$m:meta])* $name: ident, $file: literal) => { test!([1] $(#[$m])* $name [$file]); };
-    ([1] $(#[$m:meta])* $name: ident [$($file: tt)*]) => {
-        #[test] $(#[$m])* fn $name() { test(test!([2] $($file)*)); }
+    ($(#[$m:meta])* $name: ident$(, $file: literal)?) => {
+        test!($(#[$m])* "spec", $name$(, $file)?);
+    };
+    ($(#[$m:meta])* $repo: literal, $name: ident) => {
+        test!([1] $(#[$m])* $name [$repo $name]);
+    };
+    ($(#[$m:meta])* $repo: literal, $name: ident, $file: literal) => {
+        test!([1] $(#[$m])* $name [$repo $file]);
+    };
+    ([1] $(#[$m:meta])* $name: ident [$repo: literal $($file: tt)*]) => {
+        #[test] $(#[$m])* fn $name() { test($repo, test!([2] $($file)*)); }
     };
     ([2] $file: ident) => { stringify!($file) };
     ([2] $file: literal) => { $file };
