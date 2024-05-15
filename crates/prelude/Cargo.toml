@@ -43,7 +43,11 @@ api-crypto-hmac = ["internal-api-crypto-hash", "wasefire-applet-api/api-crypto-h
 api-gpio = ["wasefire-applet-api/api-gpio"]
 api-led = ["wasefire-applet-api/api-led"]
 api-platform = ["internal-api-platform", "wasefire-applet-api/api-platform"]
-api-platform-protocol = ["internal-api-platform", "wasefire-applet-api/api-platform-protocol"]
+api-platform-protocol = [
+  "internal-api-platform",
+  "internal-rpc",
+  "wasefire-applet-api/api-platform-protocol",
+]
 api-platform-update = ["internal-api-platform", "wasefire-applet-api/api-platform-update"]
 api-radio-ble = ["internal-api-radio", "wasefire-applet-api/api-radio-ble"]
 api-rng = ["wasefire-applet-api/api-rng"]
@@ -89,6 +93,7 @@ internal-api-platform = []
 internal-api-radio = []
 internal-api-store = []
 internal-api-usb = []
+internal-rpc = []
 internal-serial = []
 
 [lints.rust]
