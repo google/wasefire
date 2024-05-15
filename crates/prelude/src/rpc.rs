@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides a generic API for serial communication.
+//! Provides a generic API for RPCs.
 
 use alloc::boxed::Box;
 use alloc::vec::Vec;
@@ -88,9 +88,7 @@ impl<'a, T: Rpc, S: Service> Listener<'a, T, S> {
     /// ```
     pub fn new(rpc: &'a T, service: S) -> Self {
         let state = Box::leak(Box::new(State { rpc, handler: RefCell::new(service) }));
-        let func = Self::call;
-        let data = state as *mut _ as *const u8;
-        unsafe { rpc.register(func, data) }.unwrap();
+        unsafe { rpc.register(Self::call, state as *mut _ as *const u8) }.unwrap();
         Listener { state }
     }
 
@@ -125,7 +123,8 @@ impl<'a, T: Rpc, S: Service> Listener<'a, T, S> {
 
 impl<'a, T: Rpc, S: Service> Drop for Listener<'a, T, S> {
     fn drop(&mut self) {
-        let state = unsafe { Box::from_raw(self.state as *mut State<'a, T, S>) };
+        let state = unsafe { &*self.state };
         state.rpc.unregister().unwrap();
+        drop(unsafe { Box::from_raw(self.state as *mut State<'a, T, S>) });
     }
 }
