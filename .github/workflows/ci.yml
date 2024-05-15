@@ -18,7 +18,7 @@ permissions: {}
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Compute the checks for ${{ github.event_name }}
@@ -54,7 +54,7 @@ jobs:
     outputs:
       checks: ${{ steps.checks.outputs.checks }}
   cache:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: checks
     steps:
       - uses: actions/checkout@v4
@@ -74,7 +74,7 @@ jobs:
       - if: steps.cache.outputs.cache-hit != 'true'
         run: rm -rf target && cargo xtask help
   matrix:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [checks, cache] # The cache is used by the checks.
     strategy:
       fail-fast: false
@@ -89,7 +89,7 @@ jobs:
           checks: "[\"${{ matrix.check }}\"]"
           token: ${{ secrets.GITHUB_TOKEN }}
   ubuntu:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: matrix
     steps:
       - run: true
