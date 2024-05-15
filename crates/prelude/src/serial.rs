@@ -146,7 +146,7 @@ impl<'a, T: Serial> Listener<'a, T> {
     pub fn new(serial: &'a T, event: Event) -> Self {
         let notified = Box::leak(Box::new(Cell::new(true)));
         let func = Self::call;
-        let data = notified.as_ptr() as *const u8;
+        let data = notified as *mut _ as *const u8;
         unsafe { serial.register(event, func, data) }.unwrap();
         Listener { serial, event, notified }
     }

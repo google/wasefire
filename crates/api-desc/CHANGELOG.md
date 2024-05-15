@@ -9,6 +9,7 @@
 
 ### Patch
 
+- Use `*const void` instead of `*const u8` for opaque data in `platform::protocol`
 - Return a user error instead of an internal error for enums `TryFrom`
 
 ## 0.1.6

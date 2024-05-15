@@ -48,8 +48,8 @@ pub(crate) fn new() -> Item {
         item! {
             /// Registers a callback when a request is received.
             fn register "ppe" {
-                handler_func: fn { data: *const u8 },
-                handler_data: *const u8,
+                handler_func: fn { data: *const void },
+                handler_data: *const void,
             } -> ()
         },
         item! {

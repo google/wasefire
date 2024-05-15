@@ -21,7 +21,7 @@ set -e
 x ./scripts/ci-copyright.sh
 x cargo xtask textreview
 x ./scripts/ci-taplo.sh
-x git submodule update --init third_party/OpenSK
+x git submodule update --init third_party/google/OpenSK
 x cargo xtask applet rust opensk
 x cargo xtask --release applet rust opensk
 ( cd examples/rust/opensk

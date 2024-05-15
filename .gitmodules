@@ -1,13 +1,13 @@
-[submodule "third_party/WebAssembly/spec"]
-	path = third_party/WebAssembly/spec
-	url = https://github.com/WebAssembly/spec.git
-[submodule "third_party/rust-lang/rustup"]
-	path = third_party/rust-lang/rustup
-	url = https://github.com/rust-lang/rustup.git
 [submodule "third_party/SchemaStore/schemastore"]
 	path = third_party/SchemaStore/schemastore
 	url = https://github.com/SchemaStore/schemastore.git
-[submodule "third_party/OpenSK"]
-	path = third_party/OpenSK
-	url = http://github.com/google/OpenSK.git
+[submodule "third_party/WebAssembly/spec"]
+	path = third_party/WebAssembly/spec
+	url = https://github.com/WebAssembly/spec.git
+[submodule "third_party/google/OpenSK"]
+	path = third_party/google/OpenSK
+	url = https://github.com/google/OpenSK.git
 	branch = develop
+[submodule "third_party/rust-lang/rustup"]
+	path = third_party/rust-lang/rustup
+	url = https://github.com/rust-lang/rustup.git

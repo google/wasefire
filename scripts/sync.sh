@@ -49,6 +49,23 @@ book_example timer button_abort
 book_example usb memory_game
 book_example store store
 
+GIT_MODULES='
+SchemaStore/schemastore
+WebAssembly/spec
+google/OpenSK
+rust-lang/rustup
+'
+[ "$(echo "$GIT_MODULES" | sort | tail -n+2)" = "$(echo "$GIT_MODULES")" ] \
+  || e "GIT_MODULES is not sorted"
+for m in $GIT_MODULES; do
+  echo "[submodule \"third_party/$m\"]"
+  printf "\tpath = third_party/$m\n"
+  printf "\turl = https://github.com/$m.git\n"
+  case $m in
+    google/OpenSK) printf "\tbranch = develop\n" ;;
+  esac
+done > .gitmodules
+
 # This is done here instead of upgrade.sh for 2 reasons:
 # 1. This runs more often so users would install with the latest script.
 # 2. The upgrade.sh would need a way to know the latest version.

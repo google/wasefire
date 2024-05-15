@@ -61,6 +61,8 @@ pub mod platform;
 pub mod radio;
 #[cfg(feature = "api-rng")]
 pub mod rng;
+#[cfg(feature = "internal-rpc")]
+pub mod rpc;
 pub mod scheduling;
 #[cfg(feature = "internal-serial")]
 pub mod serial;
