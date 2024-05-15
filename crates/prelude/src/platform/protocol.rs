@@ -14,90 +14,42 @@
 
 //! Provides the applet API of the platform protocol.
 
-use alloc::boxed::Box;
 use alloc::vec::Vec;
-use core::cell::RefCell;
 
+use sealed::sealed;
 use wasefire_applet_api::platform::protocol as api;
+use wasefire_error::Error;
 
 use crate::{convert_bool, convert_unit};
 
-/// RPC service processing function.
-pub trait Service: 'static {
-    /// Processes a request and returns its response.
-    fn process(&mut self, request: Vec<u8>) -> Vec<u8>;
-}
+/// Implements the [`Rpc`](crate::rpc::Rpc) interface for the platform protocol.
+pub struct RpcProtocol;
 
-impl<F: FnMut(Vec<u8>) -> Vec<u8> + 'static> Service for F {
-    fn process(&mut self, request: Vec<u8>) -> Vec<u8> {
-        self(request)
-    }
-}
-
-/// Listens on RPC requests processing them according to a service.
-#[must_use]
-pub struct Listener<S: Service> {
-    handler: *const RefCell<S>,
-}
-
-impl<S: Service> Listener<S> {
-    /// Starts listening for RPC requests.
-    ///
-    /// The `service` argument processes requests. Note that it may be an `Fn(request: Vec<u8>) ->
-    /// Vec<u8>` closure, see [Service::process()] for callback documentation.
-    ///
-    /// The listener stops listening when dropped.
-    ///
-    /// # Examples
-    ///
-    /// ```ignore
-    /// Listener::new(|request| Response::from(request))
-    /// ```
-    pub fn new(service: S) -> Self {
-        let handler_func = Self::call;
-        let handler = Box::into_raw(Box::new(RefCell::new(service)));
-        let handler_data = handler as *const u8;
-        let params = api::register::Params { handler_func, handler_data };
-        convert_unit(unsafe { api::register(params) }).unwrap();
-        Listener { handler }
-    }
-
-    /// Stops listening.
-    ///
-    /// This is equivalent to calling `core::mem::drop()`.
-    pub fn stop(self) {
-        core::mem::drop(self);
-    }
-
-    /// Drops the listener but continues listening.
-    ///
-    /// This is equivalent to calling `core::mem::forget()`. This can be useful if the listener is
-    /// created deeply in the stack but the callback must continue processing events until the
-    /// applet exits or traps.
-    pub fn leak(self) {
-        core::mem::forget(self);
-    }
-
-    extern "C" fn call(data: *const u8) {
-        let handler = unsafe { &*(data as *const RefCell<S>) };
+#[sealed]
+impl crate::rpc::Rpc for RpcProtocol {
+    fn read(&self) -> Result<Option<Vec<u8>>, Error> {
         let mut ptr = core::ptr::null_mut();
         let mut len = 0;
         let params = api::read::Params { ptr: &mut ptr, len: &mut len };
-        if !convert_bool(unsafe { api::read(params) }).unwrap() {
-            return; // spurious call
+        if !convert_bool(unsafe { api::read(params) })? {
+            return Ok(None);
         }
-        let request = unsafe { Vec::from_raw_parts(ptr, len, len) };
-        // The borrow_mut panics if we receive another request before responding to this one. This
-        // only happens if the platform has a bug.
-        let response = handler.borrow_mut().process(request);
-        let params = api::write::Params { ptr: response.as_ptr(), len: response.len() };
-        convert_unit(unsafe { api::write(params) }).unwrap();
+        Ok(Some(unsafe { Vec::from_raw_parts(ptr, len, len) }))
     }
-}
 
-impl<S: Service> Drop for Listener<S> {
-    fn drop(&mut self) {
-        convert_unit(unsafe { api::unregister() }).unwrap();
-        drop(unsafe { Box::from_raw(self.handler as *mut RefCell<S>) });
+    fn write(&self, response: &[u8]) -> Result<(), Error> {
+        let params = api::write::Params { ptr: response.as_ptr(), len: response.len() };
+        convert_unit(unsafe { api::write(params) })
+    }
+
+    unsafe fn register(
+        &self, func: extern "C" fn(*const u8), data: *const u8,
+    ) -> Result<(), Error> {
+        let params = api::register::Params { handler_func: func, handler_data: data };
+        convert_unit(unsafe { api::register(params) })
+    }
+
+    fn unregister(&self) -> Result<(), Error> {
+        convert_unit(unsafe { api::unregister() })
     }
 }

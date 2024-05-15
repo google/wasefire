@@ -9,6 +9,7 @@
 
 ### Minor
 
+- Add `rpc::Rpc` trait for `platform::protocol::RpcProtocol`
 - Add the `store::{keys,clear}()` functions
 - Add the `platform::protocol` module and the `api-platform-protocol` feature for applet RPC
 - Allow main to return an error
