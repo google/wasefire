@@ -18,6 +18,8 @@ set -e
 
 # This script synchronizes generated content.
 
+[ "$1" = --force ] && FORCE=y
+
 cargo xtask update-apis
 
 book_example() {
@@ -25,8 +27,9 @@ book_example() {
   local dst=examples/rust/$2/src/lib.rs
   # We only check that the destination is newer by more than one second, because when cloning the
   # repository or switching branches, it may happen that the destination is slightly newer.
-  if [ $(stat -c%Y $dst) -gt $(($(stat -c%Y $src) + 1)) ]; then
+  if [ -z "$FORCE" -a $(stat -c%Y $dst) -gt $(($(stat -c%Y $src) + 1)) ]; then
     t "Update $src instead of $dst"
+    i "If you switched branch and did not modify those files, rerun with --force"
     e "$dst seems to have been manually modified"
   fi
   # Besides removing all anchors, we insert a warning before the #![no_std] line, which all examples
