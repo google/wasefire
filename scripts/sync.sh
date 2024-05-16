@@ -29,6 +29,7 @@ book_example() {
   # repository or switching branches, it may happen that the destination is slightly newer.
   if [ -z "$FORCE" -a $(stat -c%Y $dst) -gt $(($(stat -c%Y $src) + 1)) ]; then
     t "Update $src instead of $dst"
+    i "If you switched branch and did not modify those files, rerun with --force"
     e "$dst seems to have been manually modified"
   fi
   # Besides removing all anchors, we insert a warning before the #![no_std] line, which all examples
