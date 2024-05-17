@@ -14,6 +14,7 @@
 
 ### Patch
 
+- Update `store` errors mapping
 - Use explicit conversion from `Error` to `Trap`
 - Simplify `#[cfg(all)]` attributes between board and applet features
 - Update dependencies

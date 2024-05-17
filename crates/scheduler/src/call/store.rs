@@ -130,9 +130,9 @@ fn clear<B: Board>(mut call: SchedulerCall<B, api::clear::Sig>) {
 #[cfg(feature = "board-api-storage")]
 fn convert(err: StoreError) -> Error {
     match err {
-        StoreError::InvalidArgument => Error::user(0),
-        StoreError::NoCapacity | StoreError::NoLifetime => Error::user(Code::NotEnough),
-        StoreError::StorageError => Error::world(0),
+        StoreError::InvalidArgument => Error::user(Code::InvalidArgument),
+        StoreError::NoCapacity | StoreError::NoLifetime => Error::world(Code::NotEnough),
+        StoreError::StorageError => Error::world(Code::Generic),
         StoreError::InvalidStorage => Error::world(Code::InvalidState),
     }
 }
