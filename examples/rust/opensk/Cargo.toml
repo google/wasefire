@@ -7,14 +7,12 @@ edition = "2021"
 
 [dependencies]
 opensk-lib = { path = "../../../third_party/google/OpenSK/libraries/opensk", package = "opensk" }
-persistent_store = { path = "../../../third_party/google/OpenSK/libraries/persistent_store" }
 rand_core = "0.6.4"
 wasefire = { path = "../../../crates/prelude" }
-wasefire-store = { path = "../../../crates/store", features = ["std"] }
-wasefire-stub = { path = "../../../crates/stub", optional = true }
+wasefire-error = { path = "../../../crates/error" }
 
 [build-dependencies]
 uuid = "1.8.0"
 
 [features]
-test = ["dep:wasefire-stub", "opensk-lib/std", "persistent_store/std", "wasefire/test"]
+test = ["opensk-lib/std", "wasefire/test"]

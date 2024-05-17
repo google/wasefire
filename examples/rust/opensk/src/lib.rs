@@ -24,10 +24,13 @@ use opensk_lib::api::connection::{HidConnection, SendOrRecvResult};
 use opensk_lib::api::crypto::software_crypto::SoftwareCrypto;
 use opensk_lib::api::customization::{CustomizationImpl, AAGUID_LENGTH, DEFAULT_CUSTOMIZATION};
 use opensk_lib::api::persist::{Attestation, Persist, PersistIter};
-use opensk_lib::ctap::status_code::Ctap2StatusCode::CTAP1_ERR_INVALID_COMMAND;
+use opensk_lib::ctap::status_code::Ctap2StatusCode::{
+    self, CTAP1_ERR_OTHER, CTAP2_ERR_KEY_STORE_FULL, CTAP2_ERR_VENDOR_HARDWARE_FAILURE,
+    CTAP2_ERR_VENDOR_INTERNAL_ERROR,
+};
 use opensk_lib::ctap::status_code::CtapResult;
 use opensk_lib::env::Env;
-use persistent_store::Store;
+use wasefire_error::{Code, Space};
 // use wasefire::clock::{Handler, Timer};
 
 mod clock;
@@ -67,42 +70,34 @@ struct WasefireEnv {
     // c: PhantomData<C>,
 }
 
+fn convert(error: wasefire::Error) -> Ctap2StatusCode {
+    match (Space::try_from(error.space()), Code::try_from(error.code())) {
+        (_, Ok(Code::NotEnough)) => CTAP2_ERR_KEY_STORE_FULL,
+        (Ok(Space::User) | Ok(Space::Internal), _) => CTAP2_ERR_VENDOR_INTERNAL_ERROR,
+        (Ok(Space::World), _) => CTAP2_ERR_VENDOR_HARDWARE_FAILURE,
+        _ => CTAP1_ERR_OTHER,
+    }
+}
+
 impl Persist for WasefireEnv {
     fn find(&self, key: usize) -> CtapResult<Option<Vec<u8>>> {
-        let Ok(res) = store::find(key) else {
-            // TODO: What is the correct error code to use here? There doesn't
-            // seem to be an error for value not found or something like that.
-            return Err(CTAP1_ERR_INVALID_COMMAND);
-        };
-        match res {
-            Some(g) => Ok(Some(g.into_vec())),
-            None => Ok(None),
+        match store::find(key) {
+            Err(e) => Err(convert(e)),
+            Ok(None) => Ok(None),
+            Ok(Some(data)) => Ok(Some(data.into_vec())),
         }
     }
 
     fn insert(&mut self, key: usize, value: &[u8]) -> CtapResult<()> {
-        // TODO: Impl `From<wasefire::Error>` for `Ctap2StatusCode`
-        if let Err(e) = store::insert(key, value) {
-            // TODO: What is the correct error code to use here? There doesn't
-            // seem to be an error for value not found or something like that.
-            // We probably need to convert `wasefire_error::Code` to `Ctap2StatusCode`.
-            Err(CTAP1_ERR_INVALID_COMMAND)
-        } else {
-            Ok(())
-        }
+        store::insert(key, value).map_err(convert)
     }
 
     fn remove(&mut self, key: usize) -> CtapResult<()> {
-        if let Err(e) = store::remove(key) {
-            // TODO: What is the correct error code to use here?
-            Err(CTAP1_ERR_INVALID_COMMAND)
-        } else {
-            Ok(())
-        }
+        store::remove(key).map_err(convert)
     }
 
     fn iter(&self) -> CtapResult<PersistIter<'_>> {
-        let Ok(keys) = store::keys() else { return Err(CTAP1_ERR_INVALID_COMMAND) };
+        let keys = store::keys().map_err(convert)?;
         let res = keys.into_iter().map(|x| Ok(x as usize));
         Ok(Box::new(res))
     }
