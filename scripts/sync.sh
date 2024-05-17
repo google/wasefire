@@ -55,6 +55,7 @@ book_example store store
 GIT_MODULES='
 SchemaStore/schemastore
 WebAssembly/spec
+WebAssembly/threads
 rust-lang/rustup
 '
 [ "$(echo "$GIT_MODULES" | sort | tail -n+2)" = "$(echo "$GIT_MODULES")" ] \
