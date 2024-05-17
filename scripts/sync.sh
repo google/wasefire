@@ -53,9 +53,10 @@ book_example usb memory_game
 book_example store store
 
 GIT_MODULES='
+rust-lang/rustup
 SchemaStore/schemastore
 WebAssembly/spec
-rust-lang/rustup
+WebAssembly/threads
 '
 [ "$(echo "$GIT_MODULES" | sort | tail -n+2)" = "$(echo "$GIT_MODULES")" ] \
   || e "GIT_MODULES is not sorted"
