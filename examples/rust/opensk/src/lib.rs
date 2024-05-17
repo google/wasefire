@@ -17,21 +17,29 @@
 #![no_std]
 wasefire::applet!();
 
-use opensk_lib::api::attestation_store::{Attestation, AttestationStore, Error, Id};
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+
 use opensk_lib::api::connection::{HidConnection, SendOrRecvResult};
 use opensk_lib::api::crypto::software_crypto::SoftwareCrypto;
 use opensk_lib::api::customization::{CustomizationImpl, AAGUID_LENGTH, DEFAULT_CUSTOMIZATION};
+use opensk_lib::api::persist::{Persist, PersistIter};
+use opensk_lib::ctap::status_code::Ctap2StatusCode::{
+    self, CTAP1_ERR_OTHER, CTAP2_ERR_KEY_STORE_FULL, CTAP2_ERR_VENDOR_HARDWARE_FAILURE,
+    CTAP2_ERR_VENDOR_INTERNAL_ERROR,
+};
+use opensk_lib::ctap::status_code::CtapResult;
 use opensk_lib::env::Env;
-use persistent_store::Store;
+use wasefire_error::{Code, Space};
 // use wasefire::clock::{Handler, Timer};
 
 mod clock;
 mod keystore;
 mod rng;
-mod storage;
 mod user_presence;
 mod write;
 
+#[allow(dead_code)]
 fn main() {
     debug!("hello world");
 }
@@ -46,16 +54,16 @@ const WASEFIRE_CUSTOMIZATION: CustomizationImpl =
 pub struct WasefireHidConnection;
 
 impl HidConnection for WasefireHidConnection {
-    fn send_and_maybe_recv(&mut self, buf: &mut [u8; 64], timeout_ms: usize) -> SendOrRecvResult {
+    fn send_and_maybe_recv(&mut self, _buf: &mut [u8; 64], _timeout_ms: usize) -> SendOrRecvResult {
         todo!()
     }
 }
 
+#[allow(dead_code)]
 #[derive(Default)]
 struct WasefireEnv {
     write: write::WasefireWrite,
     // store: Store<Storage<S, C>>,
-    storage: storage::WasefireStorage,
     // upgrade_storage: Option<UpgradeStorage<S, C>>,
     main_connection: WasefireHidConnection,
     vendor_connection: WasefireHidConnection,
@@ -64,13 +72,35 @@ struct WasefireEnv {
     // c: PhantomData<C>,
 }
 
-impl AttestationStore for WasefireEnv {
-    fn get(&mut self, id: &Id) -> Result<Option<Attestation>, Error> {
-        todo!()
+fn convert(error: wasefire::Error) -> Ctap2StatusCode {
+    match (Space::try_from(error.space()), Code::try_from(error.code())) {
+        (_, Ok(Code::NotEnough)) => CTAP2_ERR_KEY_STORE_FULL,
+        (Ok(Space::User | Space::Internal), _) => CTAP2_ERR_VENDOR_INTERNAL_ERROR,
+        (Ok(Space::World), _) => CTAP2_ERR_VENDOR_HARDWARE_FAILURE,
+        _ => CTAP1_ERR_OTHER,
+    }
+}
+
+impl Persist for WasefireEnv {
+    fn find(&self, key: usize) -> CtapResult<Option<Vec<u8>>> {
+        match store::find(key) {
+            Err(e) => Err(convert(e)),
+            Ok(None) => Ok(None),
+            Ok(Some(data)) => Ok(Some(data.into_vec())),
+        }
     }
 
-    fn set(&mut self, id: &Id, attestation: Option<&Attestation>) -> Result<(), Error> {
-        todo!()
+    fn insert(&mut self, key: usize, value: &[u8]) -> CtapResult<()> {
+        store::insert(key, value).map_err(convert)
+    }
+
+    fn remove(&mut self, key: usize) -> CtapResult<()> {
+        store::remove(key).map_err(convert)
+    }
+
+    fn iter(&self) -> CtapResult<PersistIter<'_>> {
+        let keys = store::keys().map_err(convert)?;
+        Ok(Box::new(keys.into_iter().map(|x| Ok(x as usize))))
     }
 }
 
@@ -78,11 +108,10 @@ impl Env for WasefireEnv {
     type Rng = Self;
     type Customization = CustomizationImpl;
     type UserPresence = Self;
-    type Storage = storage::WasefireStorage;
     type KeyStore = Self;
+    type Persist = Self;
     type Write = write::WasefireWrite;
     type HidConnection = WasefireHidConnection;
-    type AttestationStore = Self;
     type Clock = clock::WasefireClock;
     // TODO: We should use wasefire crypto here instead.
     type Crypto = SoftwareCrypto;
@@ -99,15 +128,7 @@ impl Env for WasefireEnv {
         self
     }
 
-    fn store(&mut self) -> &mut Store<Self::Storage> {
-        todo!()
-    }
-
     fn key_store(&mut self) -> &mut Self::KeyStore {
-        self
-    }
-
-    fn attestation_store(&mut self) -> &mut Self::AttestationStore {
         self
     }
 
@@ -121,6 +142,14 @@ impl Env for WasefireEnv {
 
     fn main_hid_connection(&mut self) -> &mut Self::HidConnection {
         todo!()
+    }
+
+    fn persist(&mut self) -> &mut Self::Persist {
+        self
+    }
+
+    fn boots_after_soft_reset(&self) -> bool {
+        false
     }
 }
 

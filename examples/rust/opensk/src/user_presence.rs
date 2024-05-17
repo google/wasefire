@@ -35,7 +35,7 @@ impl UserPresence for WasefireEnv {
 
         // Start listening for button presses.
         let button_pressed = Rc::new(Cell::new(false));
-        let listener = Listener::new(0, {
+        let _listener = Listener::new(0, {
             let button_pressed = button_pressed.clone();
             move |state| match state {
                 button::Pressed => button_pressed.set(true),
