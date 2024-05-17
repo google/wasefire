@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches:
-      - opensk
+      - dev/opensk
   pull_request:
     branches:
-      - opensk
+      - dev/opensk
 
 concurrency:
   group: ci-${{ github.ref }}
