@@ -1,6 +1,6 @@
 # Wasefire Web Client
 
-This is a fairly minimal web app for interacting with the runner that's built with Yew and [Trunk].
+This is a fairly minimal web app for interacting with the runner that's built with [Yew](https://yew.rs) and [Trunk](https://trunkrs.dev/).
 
 ### Running
 
