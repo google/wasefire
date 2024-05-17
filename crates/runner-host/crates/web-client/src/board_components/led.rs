@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,18 +29,12 @@ pub fn LED(Props { id, command_state }: &Props) -> Html {
     let command_state = command_state.clone();
     use_effect_with(command_state, {
         let lit = lit.clone();
-        let id = id.clone();
+        let id = *id;
         move |command_state| {
-            if let Some(command) = &**command_state {
-                if let Command::Set { component_id, state } = command {
-                    if *component_id == id {
-                        info!("Set command: component_id: {component_id} state: {state}");
-                        if *state {
-                            lit.set(true);
-                        } else {
-                            lit.set(false);
-                        }
-                    }
+            if let Some(Command::Set { component_id, state }) = &**command_state {
+                if *component_id == id {
+                    info!("Set command: component_id: {component_id} state: {state}");
+                    lit.set(*state);
                 }
             }
         }
@@ -48,12 +42,19 @@ pub fn LED(Props { id, command_state }: &Props) -> Html {
 
     return html! {
     <div class="monochrome_led" id={id.to_string()}>
-
-    <object class="led" type="image/svg+xml"
-        data="components/monochrome_led_on.svg" style={if *lit { "" } else { "display: none;" }}></object>
-    <object class="led" type="image/svg+xml" style={if !*lit { "" } else { "display: none;" }}
-                data="components/monochrome_led_off.svg"></object>
-
+        <object
+            class="led" type="image/svg+xml"
+            data="components/monochrome_led_on.svg"
+            style={if *lit { "" } else { "display: none;" }}
+        >
+        </object>
+        <object
+            class="led"
+            type="image/svg+xml"
+            data="components/monochrome_led_off.svg"
+            style={if !*lit { "" } else { "display: none;" }}
+        >
+        </object>
     </div>
     };
 }

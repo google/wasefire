@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,23 +40,22 @@ impl UseRunnerConnectionHandle {
 #[hook]
 pub fn use_runner_connection(backend_address: String) -> UseRunnerConnectionHandle {
     let ws = use_websocket(backend_address.clone());
-    let command_state = use_state_eq(|| None);
+    let command_state = use_state(|| None);
 
     {
-        let command_state = command_state.clone();
-        let ws = ws.clone();
         // Receive message by depending on `ws.message`.
-        use_effect_with(ws.message, move |message| {
-            if let Some(message) = &**message {
-                info!("Message: {message}");
-                match serde_json::from_str::<Command>(message) {
-                    Ok(command) => {
-                        command_state.set(Some(command));
+        use_effect_with(ws.message.clone(), {
+            let command_state = command_state.clone();
+            move |message| {
+                if let Some(message) = &**message {
+                    info!("Message: {message}");
+                    match serde_json::from_str::<Command>(message) {
+                        Ok(command) => command_state.set(Some(command)),
+                        Err(err) => warn!("Error parsing message: {err}"),
                     }
-                    Err(err) => warn!("Error parsing message: {err}"),
                 }
+                || ()
             }
-            || ()
         });
     }
     return UseRunnerConnectionHandle { ws, command_state };

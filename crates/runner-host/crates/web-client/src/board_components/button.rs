@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 use log::info;
 use web_common::{ButtonState, Event};
 use yew::prelude::*;
+
 #[derive(Properties, PartialEq)]
 pub struct Props {
     #[prop_or_default]
@@ -25,35 +26,51 @@ pub struct Props {
 #[function_component]
 pub fn Button(Props { id, on_event }: &Props) -> Html {
     let pressed = use_state(|| false);
-    let onmousedown = {
-        let pressed = pressed.clone();
-        let on_event = on_event.clone();
-        let id = id.clone();
-        Callback::from(move |_| {
-            info!("Pressed");
-            pressed.set(true);
-            on_event.emit(Event::Button { component_id: id, state: ButtonState::Pressed });
-        })
-    };
-
-    let unpress = {
-        let pressed = pressed.clone();
-        let on_event = on_event.clone();
-        let id = id.clone();
-        Callback::from(move |_| {
-            info!("Unpressed");
-            if *pressed {
-                pressed.set(false);
-                on_event.emit(Event::Button { component_id: id, state: ButtonState::Released });
+    let press = {
+        Callback::from({
+            let pressed = pressed.clone();
+            let on_event = on_event.clone();
+            let id = *id;
+            move |_| {
+                info!("Pressed button id: {id}");
+                pressed.set(true);
+                on_event.emit(Event::Button { component_id: id, state: ButtonState::Pressed });
             }
         })
     };
 
+    let unpress = Callback::from({
+        let pressed = pressed.clone();
+        let on_event = on_event.clone();
+        let id = *id;
+        move |_| {
+            info!("Unpressed button id: {id}");
+            if *pressed {
+                pressed.set(false);
+                on_event.emit(Event::Button { component_id: id, state: ButtonState::Released });
+            }
+        }
+    });
+
     return html! {
-        <div id={id.to_string()} onmousedown={onmousedown} onmouseup={unpress.clone()} onmouseleave={unpress.clone()} class= {"button"}  >
-            <img   draggable={"false"}  type="image/svg+xml" src="components/button_pressed.svg" style={if *pressed { "" } else { "display: none;" }}
+        <div
+            id={id.to_string()}
+            onmousedown={press}
+            onmouseup={unpress.clone()}
+            onmouseleave={unpress.clone()}
+            class= {"button"}
+        >
+            <img
+                draggable={"false"}
+                type="image/svg+xml"
+                src="components/button_pressed.svg"
+                style={if *pressed { "" } else { "display: none;" }}
             />
-            <img  draggable={"false"}   type="image/svg+xml" src="components/button_unpressed.svg" style={if !*pressed { "" } else { "display: none;" }}
+            <img
+                draggable={"false"}
+                type="image/svg+xml"
+                src="components/button_unpressed.svg"
+                style={if !*pressed { "" } else { "display: none;" }}
             />
         </div>
 

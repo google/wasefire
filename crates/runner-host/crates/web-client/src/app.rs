@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,47 +24,50 @@ use crate::hooks::use_runner_connection::use_runner_connection;
 pub fn app() -> Html {
     let runner_connection = use_runner_connection(String::from("ws://127.0.0.1:5000/board"));
 
-    let on_new_console_msg = {
+    let on_new_console_msg = Callback::from({
         let runner_connection = runner_connection.clone();
-        Callback::from(move |msg: String| {
-            runner_connection.send_console_event(msg);
-        })
-    };
-    let on_board_ready = {
+        move |msg: String| runner_connection.send_console_event(msg)
+    });
+
+    let on_board_ready = Callback::from({
         let runner_connection = runner_connection.clone();
-        Callback::from(move |()| {
+        move |()| {
             runner_connection.send_board_ready();
-        })
-    };
+        }
+    });
 
-    let send_event_callback = {
+    let send_event_callback = Callback::from({
         let runner_connection = runner_connection.clone();
-        Callback::from(move |event: Event| {
+        move |event: Event| {
             runner_connection.send_event(event);
-        })
-    };
+        }
+    });
 
-    {
-        let runner_connection = runner_connection.clone();
-        let command_state = runner_connection.command_state.clone();
-        use_effect_with(command_state, move |command_state| {
-            if let Some(command) = &**command_state {
-                info!("Command: {:?} ", command);
-                if let Command::Connected = command {
-                    info!("Connected to runner");
-                }
-                if let Command::Disconnected = command {
-                    warn!("Disconnected from runner");
-                }
+    use_effect_with(runner_connection.command_state.clone(), move |command_state| {
+        if let Some(command) = &**command_state {
+            info!("Command: {command:?}");
+
+            match command {
+                Command::Connected => info!("Connected to runner"),
+                Command::Disconnected => warn!("Disconnected from runner"),
+                _ => {} // Command for other component so ignoring.
             }
-            || ()
-        });
-    }
+        }
+        || ()
+    });
 
     html! {
         <main>
-            <Console id ={0} command_state={runner_connection.command_state.clone()} on_new_console_msg={on_new_console_msg}/>
-            <Board command_state={runner_connection.command_state} on_board_ready={on_board_ready} on_event={send_event_callback}/>
+            <Console
+                id={0}
+                command_state={runner_connection.command_state.clone()}
+                on_new_console_msg={on_new_console_msg}
+            />
+            <Board
+                command_state={runner_connection.command_state}
+                on_board_ready={on_board_ready}
+                on_event={send_event_callback}
+            />
         </main>
     }
 }
