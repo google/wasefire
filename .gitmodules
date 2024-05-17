@@ -4,6 +4,9 @@
 [submodule "third_party/WebAssembly/spec"]
 	path = third_party/WebAssembly/spec
 	url = https://github.com/WebAssembly/spec.git
+[submodule "third_party/WebAssembly/threads"]
+	path = third_party/WebAssembly/threads
+	url = https://github.com/WebAssembly/threads.git
 [submodule "third_party/rust-lang/rustup"]
 	path = third_party/rust-lang/rustup
 	url = https://github.com/rust-lang/rustup.git
