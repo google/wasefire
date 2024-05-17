@@ -1,0 +1,32 @@
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(12, 74, 19) rgb(10, 10, 10);
+}
+
+*::-webkit-scrollbar {
+  width: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(10, 10, 10, 0.9);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: blue;
+  border-radius: 20px;
+  border: 3px solid rgb(12, 74, 19);
+}
+
+svg {
+  pointer-events: none;
+}
+
+.button {
+  user-drag: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}

@@ -33,27 +33,17 @@ pub struct Props {
 #[function_component]
 pub fn Board(Props { command_state, on_board_ready, on_event }: &Props) -> Html {
     let board_config = use_state_eq(|| None);
-    let enabled_leds = use_set(HashSet::new());
 
     {
         let command_state = command_state.clone();
         let board_config = board_config.clone();
         let on_board_ready = on_board_ready.clone();
-        let enabled_leds = enabled_leds.clone();
         use_effect_with(command_state, move |command_state| {
             if let Some(command) = &**command_state {
                 if let Command::BoardConfig { components } = command {
                     info!("Board config: {:?}", components);
                     board_config.set(Some(components.clone()));
                     on_board_ready.emit(());
-                }
-                if let Command::Set { component_id, state } = command {
-                    info!("Set command: component_id: {component_id} state: {state}");
-                    if *state {
-                        enabled_leds.insert(*component_id);
-                    } else {
-                        enabled_leds.remove(component_id);
-                    }
                 }
             }
 
@@ -76,7 +66,7 @@ pub fn Board(Props { command_state, on_board_ready, on_event }: &Props) -> Html 
                     }
                     Component::MonochromeLed{id} => {
                         html! {
-                            <LED id={id} lit={enabled_leds.current().contains(id)}/>
+                            <LED id={id} command_state={command_state.clone()}/>
                         }
                     }
                 }

@@ -1,0 +1,15 @@
+{
+  "short_name": "Wasefire",
+  "name": "Wasefire web UI",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "theme_color": "#337E36",
+  "background_color": "#fff",
+  "display": "standalone"
+}
