@@ -3,12 +3,10 @@ name: CI
 on:
   push:
     branches:
-      - main
+      - dev/wasm-threads
   pull_request:
     branches:
-      - main
-  schedule:
-    - cron: 45 3 * * 2 # every Tuesday at 3:45 UTC
+      - dev/wasm-threads
 
 concurrency:
   group: ci-${{ github.ref }}
