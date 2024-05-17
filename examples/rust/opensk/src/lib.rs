@@ -73,7 +73,7 @@ struct WasefireEnv {
 fn convert(error: wasefire::Error) -> Ctap2StatusCode {
     match (Space::try_from(error.space()), Code::try_from(error.code())) {
         (_, Ok(Code::NotEnough)) => CTAP2_ERR_KEY_STORE_FULL,
-        (Ok(Space::User) | Ok(Space::Internal), _) => CTAP2_ERR_VENDOR_INTERNAL_ERROR,
+        (Ok(Space::User | Space::Internal), _) => CTAP2_ERR_VENDOR_INTERNAL_ERROR,
         (Ok(Space::World), _) => CTAP2_ERR_VENDOR_HARDWARE_FAILURE,
         _ => CTAP1_ERR_OTHER,
     }
@@ -98,8 +98,7 @@ impl Persist for WasefireEnv {
 
     fn iter(&self) -> CtapResult<PersistIter<'_>> {
         let keys = store::keys().map_err(convert)?;
-        let res = keys.into_iter().map(|x| Ok(x as usize));
-        Ok(Box::new(res))
+        Ok(Box::new(keys.into_iter().map(|x| Ok(x as usize))))
     }
 }
 
