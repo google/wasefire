@@ -23,7 +23,7 @@ use alloc::vec::Vec;
 use opensk_lib::api::connection::{HidConnection, SendOrRecvResult};
 use opensk_lib::api::crypto::software_crypto::SoftwareCrypto;
 use opensk_lib::api::customization::{CustomizationImpl, AAGUID_LENGTH, DEFAULT_CUSTOMIZATION};
-use opensk_lib::api::persist::{Attestation, Persist, PersistIter};
+use opensk_lib::api::persist::{Persist, PersistIter};
 use opensk_lib::ctap::status_code::Ctap2StatusCode::{
     self, CTAP1_ERR_OTHER, CTAP2_ERR_KEY_STORE_FULL, CTAP2_ERR_VENDOR_HARDWARE_FAILURE,
     CTAP2_ERR_VENDOR_INTERNAL_ERROR,
@@ -39,6 +39,7 @@ mod rng;
 mod user_presence;
 mod write;
 
+#[allow(dead_code)]
 fn main() {
     debug!("hello world");
 }
@@ -53,11 +54,12 @@ const WASEFIRE_CUSTOMIZATION: CustomizationImpl =
 pub struct WasefireHidConnection;
 
 impl HidConnection for WasefireHidConnection {
-    fn send_and_maybe_recv(&mut self, buf: &mut [u8; 64], timeout_ms: usize) -> SendOrRecvResult {
+    fn send_and_maybe_recv(&mut self, _buf: &mut [u8; 64], _timeout_ms: usize) -> SendOrRecvResult {
         todo!()
     }
 }
 
+#[allow(dead_code)]
 #[derive(Default)]
 struct WasefireEnv {
     write: write::WasefireWrite,

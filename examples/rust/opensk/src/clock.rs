@@ -30,6 +30,7 @@ impl Handler for ClockHandler {
     }
 }
 
+#[allow(dead_code)]
 pub struct WasefireTimer {
     timer: Timer<ClockHandler>,
     elapsed: Rc<Cell<bool>>,
