@@ -277,17 +277,17 @@ impl<'m, M: Mode> Parser<'m, M> {
     pub fn parse_instr_fe(&mut self) -> MResult<Instr<'m>, M> {
         Ok(match self.parse_byte()? {
             0x00 => Instr::AtomicNotify(self.parse_memarg()?), // memory.atomic.notify
-            x @ 0x01 ..= 0x02 => Instr::AtomicWait(x.into(), self.parse_memarg()?), /* memory.atomic.waitXX */
+            x @ 0x01 ..= 0x02 => Instr::AtomicWait((x- 0x01).into(), self.parse_memarg()?), /* memory.atomic.waitXX */
             0x03 => {
                 check_eq::<M, _>(self.parse_byte()?, 0)?;
                 Instr::AtomicFence
             } // atomic.fence
-            x @ 0x10 ..= 0x11 => Instr::IAtomicLoad(x.into(), self.parse_memarg()?), /* iXX.atomic.load */
+            x @ 0x10 ..= 0x11 => Instr::IAtomicLoad((x-0x10).into(), self.parse_memarg()?), /* iXX.atomic.load */
             x @ 0x12 ..= 0x16 => {
                 Instr::IAtomicLoad_((x - 0x12).into(), Sx::U, self.parse_memarg()?)
             } /* iXX.atomic.loadXX_u */
 
-            x @ 0x17 ..= 0x18 => Instr::IAtomicStore(x.into(), self.parse_memarg()?), /* i32.atomic.store */
+            x @ 0x17 ..= 0x18 => Instr::IAtomicStore((x - 0x17).into(), self.parse_memarg()?), /* i32.atomic.store */
             x @ 0x19 ..= 0x1d => Instr::IAtomicStore_((x - 0x19).into(), self.parse_memarg()?), /* iXX.atomic.storeXX */
 
             x @ 0x1e ..= 0x40 => {
@@ -298,11 +298,11 @@ impl<'m, M: Mode> Parser<'m, M> {
                 }
             }
 
-            x @ 0x41 ..= 0x42 => Instr::AtomicExchange(x.into(), self.parse_memarg()?), /* i32.atomic.rmw.xchg */
+            x @ 0x41 ..= 0x42 => Instr::AtomicExchange((x-0x41).into(), self.parse_memarg()?), /* i32.atomic.rmw.xchg */
             x @ 0x43 ..= 0x47 => {
                 Instr::AtomicExchange_((x - 0x43).into(), Sx::U, self.parse_memarg()?)
             } /* iXX.atomic.rmwXX.xchg_u */
-            x @ 0x48 ..= 0x49 => Instr::AtomicCompareExchange(x.into(), self.parse_memarg()?), /* i32.atomic.cmpxchg */
+            x @ 0x48 ..= 0x49 => Instr::AtomicCompareExchange((x-0x48).into(), self.parse_memarg()?), /* i32.atomic.cmpxchg */
             x @ 0x4a ..= 0x4e => {
                 Instr::AtomicCompareExchange_((x - 0x4a).into(), Sx::U, self.parse_memarg()?)
             } /* iXX.atomic.xorXX_u */

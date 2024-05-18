@@ -205,15 +205,15 @@ impl Display for OptLevel {
 
 /// Strips and optimizes a WASM applet.
 pub fn optimize_wasm(
-    applet: impl AsRef<Path>, opt_level: Option<OptLevel>, enable_atomics: bool,
+    applet: impl AsRef<Path>, opt_level: Option<OptLevel>, enable_threads: bool,
 ) -> Result<()> {
     let mut strip = Command::new("wasm-strip");
     strip.arg(applet.as_ref());
     cmd::execute(&mut strip)?;
     let mut opt = Command::new("wasm-opt");
     opt.args(["--enable-bulk-memory", "--enable-sign-ext"]);
-    if enable_atomics {
-        opt.arg("--enable-atomics");
+    if enable_threads {
+        opt.arg("--enable-threads");
     }
     match opt_level {
         Some(level) => drop(opt.arg(format!("-O{level}"))),
