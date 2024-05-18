@@ -213,7 +213,7 @@ pub fn optimize_wasm(
     let mut opt = Command::new("wasm-opt");
     opt.args(["--enable-bulk-memory", "--enable-sign-ext"]);
     if enable_threads {
-        opt.arg("--enable-threads");
+        opt.args(["--enable-threads", "--enable-mutable-globals"]);
     }
     match opt_level {
         Some(level) => drop(opt.arg(format!("-O{level}"))),
