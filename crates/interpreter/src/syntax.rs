@@ -231,6 +231,18 @@ pub enum CvtOp {
     FReinterpret(Nx),
 }
 
+#[cfg(feature = "threads")]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AtomicOp {
+    Add,
+    Sub,
+    And,
+    Or,
+    Xor,
+    Xchg,
+    Cmpxchg,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instr<'m> {
     Unreachable,
@@ -311,17 +323,9 @@ pub enum Instr<'m> {
     #[cfg(feature = "threads")]
     IAtomicStore_(Bx, MemArg),
     #[cfg(feature = "threads")]
-    AtomicOp(Nx, IBinOp, MemArg),
+    AtomicOp(Nx, AtomicOp, MemArg),
     #[cfg(feature = "threads")]
-    AtomicOp_(Bx, IBinOp, Sx, MemArg),
-    #[cfg(feature = "threads")]
-    AtomicExchange(Nx, MemArg),
-    #[cfg(feature = "threads")]
-    AtomicExchange_(Bx, Sx, MemArg),
-    #[cfg(feature = "threads")]
-    AtomicCompareExchange(Nx, MemArg),
-    #[cfg(feature = "threads")]
-    AtomicCompareExchange_(Bx, Sx, MemArg),
+    AtomicOp_(Bx, AtomicOp, Sx, MemArg),
 }
 
 pub type TypeIdx = u32;
@@ -817,6 +821,22 @@ impl From<u8> for FBinOp {
             4 => FBinOp::Min,
             5 => FBinOp::Max,
             6 => FBinOp::CopySign,
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[cfg(feature = "threads")]
+impl From<u8> for AtomicOp {
+    fn from(x: u8) -> Self {
+        match x {
+            0 => AtomicOp::Add,
+            1 => AtomicOp::Sub,
+            2 => AtomicOp::And,
+            3 => AtomicOp::Or,
+            4 => AtomicOp::Xor,
+            5 => AtomicOp::Xchg,
+            6 => AtomicOp::Cmpxchg,
             _ => unreachable!(),
         }
     }

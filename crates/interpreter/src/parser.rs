@@ -291,24 +291,13 @@ impl<'m, M: Mode> Parser<'m, M> {
             x @ 0x17 ..= 0x18 => Instr::IAtomicStore((x - 0x17).into(), self.parse_memarg()?), /* i32.atomic.store */
             x @ 0x19 ..= 0x1d => Instr::IAtomicStore_((x - 0x19).into(), self.parse_memarg()?), /* iXX.atomic.storeXX */
 
-            x @ 0x1e ..= 0x40 => {
-                let op = ((x - 0x1e) / 7).into();
+            x @ 0x1e ..= 0x4e => {
+                let op: AtomicOp = ((x - 0x1e) / 7).into();
                 match (x - 0x1e) % 7 {
                     x @ 0 ..= 1 => Instr::AtomicOp(x.into(), op, self.parse_memarg()?),
                     x => Instr::AtomicOp_((x - 2).into(), op, Sx::U, self.parse_memarg()?),
                 }
             }
-
-            x @ 0x41 ..= 0x42 => Instr::AtomicExchange((x - 0x41).into(), self.parse_memarg()?), /* i32.atomic.rmw.xchg */
-            x @ 0x43 ..= 0x47 => {
-                Instr::AtomicExchange_((x - 0x43).into(), Sx::U, self.parse_memarg()?)
-            } /* iXX.atomic.rmwXX.xchg_u */
-            x @ 0x48 ..= 0x49 => {
-                Instr::AtomicCompareExchange((x - 0x48).into(), self.parse_memarg()?)
-            } /* i32.atomic.cmpxchg */
-            x @ 0x4a ..= 0x4e => {
-                Instr::AtomicCompareExchange_((x - 0x4a).into(), Sx::U, self.parse_memarg()?)
-            } /* iXX.atomic.xorXX_u */
             _x => M::unsupported(if_debug!(Unsupported::Opcode(_x)))?,
         })
     }

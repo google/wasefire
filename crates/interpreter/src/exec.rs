@@ -1018,30 +1018,6 @@ impl<'m> Thread<'m> {
                 println!("Atomic binopP {:?} ", _op);
                 return Err(trap());
             }
-            #[cfg(feature = "threads")]
-            AtomicExchange(_, _) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic exchange");
-                return Err(trap());
-            }
-            #[cfg(feature = "threads")]
-            AtomicExchange_(_, _, _) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic  exchange");
-                return Err(trap());
-            }
-            #[cfg(feature = "threads")]
-            AtomicCompareExchange(_, _) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic cmp exchange");
-                return Err(trap());
-            }
-            #[cfg(feature = "threads")]
-            AtomicCompareExchange_(_, _, _) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic cmp exchange");
-                return Err(trap());
-            }
         }
         Ok(ThreadResult::Continue(self))
     }
