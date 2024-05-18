@@ -17,9 +17,9 @@ wasefire::applet!();
 
 use core::sync::atomic::*;
 
-static atomic_u32: AtomicU32 = AtomicU32::new(0);
-static atomic_i32: AtomicI32 = AtomicI32::new(0);
-static atomic_bool: AtomicBool = AtomicBool::new(false);
+static ATOMIC_U32: AtomicU32 = AtomicU32::new(0);
+static ATOMIC_I32: AtomicI32 = AtomicI32::new(0);
+static ATOMIC_BOOL: AtomicBool = AtomicBool::new(false);
 
 fn main() {
     debug!("hello world");
@@ -28,19 +28,20 @@ fn main() {
 
 #[no_mangle]
 pub fn set() {
-    atomic_i32.store(8888888, Ordering::SeqCst);
-    atomic_u32.store(8888888, Ordering::SeqCst);
-    atomic_i32.fetch_sub(1, Ordering::SeqCst);
+    ATOMIC_I32.store(8888888, Ordering::SeqCst);
+    ATOMIC_U32.store(8888888, Ordering::SeqCst);
+    ATOMIC_I32.fetch_sub(1, Ordering::SeqCst);
 
-    atomic_bool.load(Ordering::SeqCst);
-    atomic_bool.store(false, Ordering::SeqCst);
-    let r = atomic_bool.fetch_or(true, Ordering::SeqCst);
-    let r2 = atomic_bool.fetch_and(r, Ordering::SeqCst);
-    let r3 = atomic_bool.fetch_xor(r2, Ordering::SeqCst);
+    ATOMIC_BOOL.load(Ordering::SeqCst);
+    ATOMIC_BOOL.store(false, Ordering::SeqCst);
+    let r = ATOMIC_BOOL.fetch_or(true, Ordering::SeqCst);
+    let r2 = ATOMIC_BOOL.fetch_and(r, Ordering::SeqCst);
+    ATOMIC_BOOL.fetch_xor(r2, Ordering::SeqCst);
+
 }
 
 #[no_mangle]
 pub fn get() -> i32 {
-    atomic_i32.fetch_add(10, Ordering::SeqCst);
-    atomic_i32.load(Ordering::SeqCst)
+    ATOMIC_I32.fetch_add(10, Ordering::SeqCst);
+    ATOMIC_I32.load(Ordering::SeqCst)
 }
