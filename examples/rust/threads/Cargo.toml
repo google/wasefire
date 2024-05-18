@@ -9,5 +9,4 @@ edition = "2021"
 wasefire = { path = "../../../crates/prelude" }
 
 [features]
-default = ["threads"]
 threads = []

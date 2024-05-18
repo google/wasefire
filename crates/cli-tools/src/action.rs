@@ -103,12 +103,15 @@ impl RustAppletBuild {
             "-C embed-bitcode=yes".to_string(),
             "-C lto=fat".to_string(),
         ];
+        // TODO(threads): Implement similar to native. Check wasefire dependency,
+        // see if threads / atomics feature is enabled.
+        let threads = package.features.contains_key("threads");
         cargo.args(["rustc", "--lib"]);
         match &self.native {
             None => {
-                if package.features.contains_key("threads") {
-                    rustflags.push("-C target-feature=+atomics,+bulk-memory".to_owned());
-                    rustflags.push("-C link-args=--shared-memory".to_owned());
+                if threads {
+                    rustflags.push("-C target-feature=+atomics,+bulk-memory".to_string());
+                    rustflags.push("-C link-args=--shared-memory".to_string());
                 }
                 rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
                 cargo.args(["--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
@@ -152,7 +155,7 @@ impl RustAppletBuild {
         };
         let applet = out_dir.join(dst);
         if fs::copy_if_changed(target_dir.join(src), &applet)? && dst.ends_with(".wasm") {
-            optimize_wasm(&applet, self.opt_level, package.features.contains_key("threads"))?;
+            optimize_wasm(&applet, self.opt_level, threads)?;
         }
         Ok(())
     }

@@ -19,6 +19,7 @@ set -e
 
 ensure_submodule third_party/WebAssembly/spec
 ensure_submodule third_party/WebAssembly/threads
+
 test_helper
 
 cargo check

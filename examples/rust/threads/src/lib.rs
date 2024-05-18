@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,12 +15,11 @@
 #![no_std]
 wasefire::applet!();
 
-
 use core::sync::atomic::*;
 
-static atomic_u32:AtomicU32 = AtomicU32::new(0);
-static atomic_i32:AtomicI32 = AtomicI32::new(0);
-static atomic_bool:AtomicBool = AtomicBool::new(false);
+static atomic_u32: AtomicU32 = AtomicU32::new(0);
+static atomic_i32: AtomicI32 = AtomicI32::new(0);
+static atomic_bool: AtomicBool = AtomicBool::new(false);
 
 fn main() {
     debug!("hello world");
@@ -32,7 +31,7 @@ pub fn set() {
     atomic_i32.store(8888888, Ordering::SeqCst);
     atomic_u32.store(8888888, Ordering::SeqCst);
     atomic_i32.fetch_sub(1, Ordering::SeqCst);
-    
+
     atomic_bool.load(Ordering::SeqCst);
     atomic_bool.store(false, Ordering::SeqCst);
     let r = atomic_bool.fetch_or(true, Ordering::SeqCst);

@@ -23,7 +23,8 @@ lazy_static = "1.4.0"
 wast = "70.0.0"
 
 [features]
-threads = []
+# just for IDE, do not commit
+default=["threads"]
 # Enable debugging features (only works for targets with std).
 debug = []
 # Use safe operations when time-of-use and time-of-check differ.
@@ -31,5 +32,7 @@ toctou = []
 # Enable support for specific types.
 float-types = ["dep:libm"]
 vector-types = []
+# Enable threads proposal.
+threads = []
 # Enable caching for execution.
 cache = ["dep:lru"]

@@ -965,6 +965,24 @@ impl<'m> Thread<'m> {
                 table.elems[i ..][.. n].fill(val);
             }
             #[cfg(feature = "threads")]
+            AtomicNotify(_) => {
+                #[cfg(feature = "debug")]
+                println!("Atomic notify");
+                return Err(trap());
+            }
+            #[cfg(feature = "threads")]
+            AtomicWait(_, _) => {
+                #[cfg(feature = "debug")]
+                println!("Atomic wait");
+                return Err(trap());
+            }
+            #[cfg(feature = "threads")]
+            AtomicFence => {
+                #[cfg(feature = "debug")]
+                println!("Atomic fence");
+                return Err(trap());
+            }
+            #[cfg(feature = "threads")]
             IAtomicLoad(_, _) => {
                 #[cfg(feature = "debug")]
                 println!("Atomic load");
@@ -989,21 +1007,15 @@ impl<'m> Thread<'m> {
                 return Err(trap());
             }
             #[cfg(feature = "threads")]
-            IAtomicBinOp(_op, _, _) => {
+            AtomicOp(_op, _, _) => {
                 #[cfg(feature = "debug")]
                 println!("Atomic binop {:?} ", _op);
                 return Err(trap());
             }
             #[cfg(feature = "threads")]
-            IAtomicBinOp_(_op, _, _, _) => {
+            AtomicOp_(_op, _, _, _) => {
                 #[cfg(feature = "debug")]
                 println!("Atomic binopP {:?} ", _op);
-                return Err(trap());
-            }
-            #[cfg(feature = "threads")]
-            AtomicFence() => {
-                #[cfg(feature = "debug")]
-                println!("Atomic fence");
                 return Err(trap());
             }
             #[cfg(feature = "threads")]
@@ -1028,18 +1040,6 @@ impl<'m> Thread<'m> {
             AtomicCompareExchange_(_, _, _) => {
                 #[cfg(feature = "debug")]
                 println!("Atomic cmp exchange");
-                return Err(trap());
-            }
-            #[cfg(feature = "threads")]
-            AtomicNotify(_) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic notify");
-                return Err(trap());
-            }
-            #[cfg(feature = "threads")]
-            AtomicWait(_, _) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic wait");
                 return Err(trap());
             }
         }

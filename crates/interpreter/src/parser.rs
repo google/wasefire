@@ -201,22 +201,15 @@ impl<'m, M: Mode> Parser<'m, M> {
         byte_enum::<M, _>(self.parse_byte()?)
     }
 
-    pub fn parse_limittype(&mut self) -> MResult<LimitType, M> {
-        byte_enum::<M, LimitType>(self.parse_byte()?)
-    }
-
     pub fn parse_limits(&mut self, mut max: u32) -> MResult<Limits, M> {
-        let limit_type: LimitType = self.parse_limittype()?;
-
-        let has_max = limit_type != LimitType::Unshared;
-        let shared: bool = limit_type == LimitType::SharedWithMax;
-
+        let flags = self.parse_byte()?;
+        M::check(|| matches!(flags, 0 | 1 | 3))?;
         let min = self.parse_u32()?;
-        if has_max {
+        if flags & 1 != 0 {
             max = self.parse_u32()?;
         }
-
-        Ok(Limits { shared, min, max })
+        let share = ((flags & 2 != 0) as u8).into();
+        Ok(Limits { min, max, share })
     }
 
     pub fn parse_tabletype(&mut self) -> MResult<TableType, M> {
@@ -279,6 +272,42 @@ impl<'m, M: Mode> Parser<'m, M> {
         let labels =
             (0 .. self.parse_u32()?).map(|_| self.parse_labelidx()).collect::<Result<_, _>>()?;
         Ok(Instr::BrTable(labels, self.parse_labelidx()?))
+    }
+
+    pub fn parse_instr_fe(&mut self) -> MResult<Instr<'m>, M> {
+        Ok(match self.parse_byte()? {
+            0x00 => Instr::AtomicNotify(self.parse_memarg()?), // memory.atomic.notify
+            x @ 0x01 ..= 0x02 => Instr::AtomicWait(x.into(), self.parse_memarg()?), /* memory.atomic.waitXX */
+            0x03 => {
+                check_eq::<M, _>(self.parse_byte()?, 0)?;
+                Instr::AtomicFence
+            } // atomic.fence
+            x @ 0x10 ..= 0x11 => Instr::IAtomicLoad(x.into(), self.parse_memarg()?), /* iXX.atomic.load */
+            x @ 0x12 ..= 0x16 => {
+                Instr::IAtomicLoad_((x - 0x12).into(), Sx::U, self.parse_memarg()?)
+            } /* iXX.atomic.loadXX_u */
+
+            x @ 0x17 ..= 0x18 => Instr::IAtomicStore(x.into(), self.parse_memarg()?), /* i32.atomic.store */
+            x @ 0x19 ..= 0x1d => Instr::IAtomicStore_((x - 0x19).into(), self.parse_memarg()?), /* iXX.atomic.storeXX */
+
+            x @ 0x1e ..= 0x40 => {
+                let op = ((x - 0x1e) / 7).into();
+                match (x - 0x1e) % 7 {
+                    x @ 0 ..= 1 => Instr::AtomicOp(x.into(), op, self.parse_memarg()?),
+                    x => Instr::AtomicOp_((x - 2).into(), op, Sx::U, self.parse_memarg()?),
+                }
+            }
+
+            x @ 0x41 ..= 0x42 => Instr::AtomicExchange(x.into(), self.parse_memarg()?), /* i32.atomic.rmw.xchg */
+            x @ 0x43 ..= 0x47 => {
+                Instr::AtomicExchange_((x - 0x43).into(), Sx::U, self.parse_memarg()?)
+            } /* iXX.atomic.rmwXX.xchg_u */
+            x @ 0x48 ..= 0x49 => Instr::AtomicCompareExchange(x.into(), self.parse_memarg()?), /* i32.atomic.cmpxchg */
+            x @ 0x4a ..= 0x4e => {
+                Instr::AtomicCompareExchange_((x - 0x4a).into(), Sx::U, self.parse_memarg()?)
+            } /* iXX.atomic.xorXX_u */
+            _x => M::unsupported(if_debug!(Unsupported::Opcode(_x)))?,
+        })
     }
 
     pub fn parse_instr(&mut self) -> MResult<Instr<'m>, M> {
@@ -470,66 +499,11 @@ impl<'m, M: Mode> Parser<'m, M> {
                 M::unsupported(if_debug!(Unsupported::Opcode(0xfd)))?
             ),
             0xfe => support_if!(
-                "threads"[],
-                match self.parse_byte()? {
-                    0x00 => Instr::AtomicNotify(self.parse_memarg()?), // memory.atomic.notify
-                    0x01 => Instr::AtomicWait(Nx::N32, self.parse_memarg()?), // memory.atomic.wait32
-                    0x02 => Instr::AtomicWait(Nx::N64, self.parse_memarg()?), // memory.atomic.wait64
-                    0x03 => {check_eq::<M, _>(self.parse_byte()?, 0)?; Instr::AtomicFence()}, // atomic.fence
-                    0x10 => Instr::IAtomicLoad(Nx::N32, self.parse_memarg()?), // i32.atomic.load
-                    0x11 => Instr::IAtomicLoad(Nx::N64, self.parse_memarg()?), // i64.atomic.load
-                    x@0x12 ..= 0x16 => {
-                        let b = Bx::from(x-0x12 );
-                        Instr::IAtomicLoad_(b, Sx::U, self.parse_memarg()?)}, // iXX.atomic.loadXX_u
-                    0x17 => Instr::IAtomicStore(Nx::N32, self.parse_memarg()?), // i32.atomic.store
-                    0x18 => Instr::IAtomicStore(Nx::N64, self.parse_memarg()?), // i64.atomic.store
-                    x@0x19 ..= 0x1D => {
-                        let b = Bx::from(x- 0x19 );
-                        Instr::IAtomicStore_(b, self.parse_memarg()?)}, // iXX.atomic.storeXX
-                    0x1E => Instr::IAtomicBinOp(IBinOp::Add, Nx::N32, self.parse_memarg()?),  // i32.atomic.add
-                    0x1F => Instr::IAtomicBinOp(IBinOp::Add, Nx::N64, self.parse_memarg()?),  // i64.atomic.add
-                    x@0x20 ..= 0x24 => {
-                        let b = Bx::from(x-0x20 );
-                        Instr::IAtomicBinOp_(IBinOp::Sub, b, Sx::U, self.parse_memarg()?)}, // iXX.atomic.addXX_u
-                    0x25 => Instr::IAtomicBinOp(IBinOp::Sub, Nx::N32, self.parse_memarg()?),  // i32.atomic.sub
-                    0x26 => Instr::IAtomicBinOp(IBinOp::Sub, Nx::N64, self.parse_memarg()?),  // i64.atomic.sub
-                    x@0x27 ..= 0x2B => {
-                        let b = Bx::from(x-0x27 );
-                        Instr::IAtomicBinOp_(IBinOp::Sub, b, Sx::U, self.parse_memarg()?)}, // iXX.atomic.subXX_u
-                    0x2c => Instr::IAtomicBinOp(IBinOp::And, Nx::N32, self.parse_memarg()?),  // i32.atomic.and
-                    0x2d => Instr::IAtomicBinOp(IBinOp::And, Nx::N64, self.parse_memarg()?),  // i64.atomic.and
-                    x@0x2e ..= 0x32 => {
-                        let b = Bx::from(x-0x2e );
-                        Instr::IAtomicBinOp_(IBinOp::And, b, Sx::U, self.parse_memarg()?)}, // iXX.atomic.andXX_u
-                    0x33 => Instr::IAtomicBinOp(IBinOp::Or, Nx::N32, self.parse_memarg()?),  // i32.atomic.or
-                    0x34 => Instr::IAtomicBinOp(IBinOp::Or, Nx::N64, self.parse_memarg()?),  // i64.atomic.or
-                    x@0x35 ..= 0x39 => {
-                        let b = Bx::from(x-0x35 );
-                        Instr::IAtomicBinOp_(IBinOp::Or, b, Sx::U, self.parse_memarg()?)}, // iXX.atomic.orXX_u
-                    0x3A => Instr::IAtomicBinOp(IBinOp::Xor, Nx::N32, self.parse_memarg()?),  // i32.atomic.xor
-                    0x3B => Instr::IAtomicBinOp(IBinOp::Xor, Nx::N64, self.parse_memarg()?),  // i64.atomic.xor
-                    x@0x3C ..= 0x40 => {
-                        let b = Bx::from(x - 0x3C );
-                        Instr::IAtomicBinOp_(IBinOp::Xor, b, Sx::U, self.parse_memarg()?)
-                    }, // iXX.atomic.xorXX_u
-                    0x41 => Instr::AtomicExchange(Nx::N32, self.parse_memarg()?),  // i32.atomic.rmw.xchg
-                    0x42 => Instr::AtomicExchange(Nx::N64, self.parse_memarg()?),  // i64.atomic.rmw.xchg
-                    x@0x43 ..= 0x47 => {
-                        let b = Bx::from(x - 0x43 );
-                        Instr::AtomicExchange_( b, Sx::U, self.parse_memarg()?)
-                    },  // iXX.atomic.rmwXX.xchg_u
-                    0x48 => Instr::AtomicCompareExchange(Nx::N32, self.parse_memarg()?), // i32.atomic.cmpxchg
-                    0x49 => Instr::AtomicCompareExchange(Nx::N64, self.parse_memarg()?), // i64.atomic.cmpxchg
-                    x@0x4A ..= 0x4E => {
-                        let b = Bx::from(x - 0x4A);
-                        Instr::AtomicCompareExchange_(b, Sx::U, self.parse_memarg()?)
-                    }, // iXX.atomic.xorXX_u
-                    _x => {
-                        M::unsupported(if_debug!(Unsupported::Opcode(_x)))?
-                    }
-                },
+                    "threads"[],
+                    self.parse_instr_fe()?,
                 M::unsupported(if_debug!(Unsupported::Opcode(0xfe)))?
             ),
+            // TODO(threads): Revert back to main state.
             _i => {
                 #[cfg(feature = "debug")]
                 println!("Invalid instruction {:#06x}", _i);
