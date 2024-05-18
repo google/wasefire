@@ -37,7 +37,6 @@ pub fn set() {
     let r = ATOMIC_BOOL.fetch_or(true, Ordering::SeqCst);
     let r2 = ATOMIC_BOOL.fetch_and(r, Ordering::SeqCst);
     ATOMIC_BOOL.fetch_xor(r2, Ordering::SeqCst);
-
 }
 
 #[no_mangle]
