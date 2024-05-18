@@ -274,6 +274,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         Ok(Instr::BrTable(labels, self.parse_labelidx()?))
     }
 
+    #[cfg(feature = "threads")]
     pub fn parse_instr_fe(&mut self) -> MResult<Instr<'m>, M> {
         Ok(match self.parse_byte()? {
             0x00 => Instr::AtomicNotify(self.parse_memarg()?), // memory.atomic.notify
