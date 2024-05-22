@@ -599,7 +599,6 @@ dependencies = [
 name = "wasefire-applet-api-macro"
 version = "0.6.1-git"
 dependencies = [
- "proc-macro2",
  "wasefire-applet-api-desc",
 ]
 
@@ -612,7 +611,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.4"
+version = "0.1.5-git"
 
 [[package]]
 name = "wasefire-stub"
@@ -637,7 +636,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-sync"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "portable-atomic",
  "spin",

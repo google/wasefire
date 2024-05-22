@@ -17,7 +17,7 @@ set -e
 
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
-check_applet_api api- --features= --all-targets
+check_applet_api api- --features=
 
 test_helper
 

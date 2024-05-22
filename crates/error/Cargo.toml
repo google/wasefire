@@ -18,3 +18,9 @@ num_enum = { version = "0.7.2", default-features = false }
 [features]
 defmt = ["dep:defmt"]
 std = []
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

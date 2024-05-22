@@ -21,7 +21,7 @@ check_applet_api api- --features=rust-crypto, --target=wasm32-unknown-unknown \
   --no-default-features
 
 for api in api-rng api-crypto-hash api-crypto-hkdf; do
-  cargo clippy --target=wasm32-unknown-unknown --no-default-features \
+  x cargo clippy --target=wasm32-unknown-unknown --no-default-features \
     --features=api-crypto-ec,$api -- --deny=warnings
 done
 

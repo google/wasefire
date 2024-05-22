@@ -24,6 +24,8 @@ use clap::Parser;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::{channel, Receiver};
 use wasefire_board_api::Event;
+#[cfg(feature = "wasm")]
+use wasefire_interpreter as _;
 use wasefire_scheduler::Scheduler;
 use wasefire_store::{FileOptions, FileStorage};
 

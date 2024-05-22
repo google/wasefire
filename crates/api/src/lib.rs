@@ -18,12 +18,12 @@
 #![cfg_attr(all(feature = "wasm", feature = "native"), feature(linkage))]
 #![cfg_attr(feature = "host", feature(never_type))]
 #![feature(doc_auto_cfg)]
-#![warn(unsafe_op_in_unsafe_fn)]
 
 extern crate alloc;
 
 #[cfg(feature = "host")]
 pub use host::*;
+use wasefire_error as _;
 
 #[cfg(feature = "host")]
 mod host;
