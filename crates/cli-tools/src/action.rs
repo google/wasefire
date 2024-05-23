@@ -114,6 +114,7 @@ impl RustAppletBuild {
                     rustflags.push("-C link-args=--shared-memory".to_string());
                 }
                 rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
+                rustflags.push("-C target-feature=+bulk-memory".to_string());
                 cargo.args(["--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
             }
             Some(target) => {
