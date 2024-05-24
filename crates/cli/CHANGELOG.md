@@ -9,6 +9,7 @@
 
 ### Patch
 
+- Depend on features of dependencies explicitly
 - Use common Wasefire lints
 
 ## 0.1.0

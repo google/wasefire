@@ -36,18 +36,12 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
     [ "$(package_version)" = "$ver" ] \
       || e "CHANGELOG.md and Cargo.toml for $dir have different versions"
     crate=${dir#crates/}
-    case $crate in
-      # Those crates are allowed to enable features by default.
-      prelude) ;;
-      *) package_features | grep -q '^default$' && e "Cargo.toml for $dir has default features" ;;
-    esac
-    case $crate in
-      # Those crates are allowed to have dependencies with default features.
-      api-desc|api-macro|cli|cli-tools) ;;
-      *) sed -n '/^\[dependencies]$/,/^$/{/^wasefire-/d;/^[a-z]/!d;'\
+    if [ $dir != crates/prelude ]; then
+      package_features | grep -q '^default$' && e "Cargo.toml for $dir has default features"
+    fi
+    sed -n '/^\[dependencies]$/,/^$/{/^wasefire-/d;/^[a-z]/!d;'\
 '/default-features = false/d;p;q1};/^\[dependencies\.wasefire-/d;'\
 '/^\[dependencies\./{h;:a;n;/default-features = false/d;/^$/{g;p;q1};ba}' \
-Cargo.toml || e "Cargo.toml for $dir doesn't disable default-features" ;;
-    esac
+Cargo.toml || e "Cargo.toml for $dir doesn't disable default-features"
   )
 done
