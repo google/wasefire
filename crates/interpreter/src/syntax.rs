@@ -60,12 +60,14 @@ pub struct FuncType<'m> {
     pub results: ResultType<'m>,
 }
 
+#[cfg(feature = "threads")]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Share {
     Unshared,
     Shared,
 }
 
+#[cfg(feature = "threads")]
 impl From<u8> for Share {
     fn from(x: u8) -> Self {
         match x {

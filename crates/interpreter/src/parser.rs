@@ -304,7 +304,7 @@ impl<'m, M: Mode> Parser<'m, M> {
                     x => Instr::AtomicOp_((x - 2).into(), op, self.parse_memarg()?),
                 }
             }
-            _x => M::unsupported(if_debug!(Unsupported::Opcode(_x)))?,
+            _ => M::invalid()?,
         })
     }
 
