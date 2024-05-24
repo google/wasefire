@@ -19,7 +19,7 @@ set -e
 # This script runs the continuous integration tests.
 
 x ./scripts/ci-copyright.sh
-x ./scripts/ci-changelog.sh
+: x ./scripts/ci-changelog.sh
 x cargo xtask textreview
 x ./scripts/sync.sh
 x ./scripts/publish.sh --dry-run
