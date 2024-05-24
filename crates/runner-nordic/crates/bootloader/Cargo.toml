@@ -18,3 +18,8 @@ panic-abort = "0.3.2"
 codegen-units = 1
 lto = true
 panic = "abort"
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

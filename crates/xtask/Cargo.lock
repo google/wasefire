@@ -1811,7 +1811,6 @@ dependencies = [
  "serde",
  "stack-sizes",
  "strum 0.25.0",
- "toml",
  "wasefire-cli-tools",
 ]
 

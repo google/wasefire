@@ -23,3 +23,7 @@ members = ["."]
 [[bin]]
 name = "store"
 path = "fuzz_targets/store.rs"
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unsafe-op-in-unsafe-fn = "warn"

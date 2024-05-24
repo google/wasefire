@@ -357,7 +357,6 @@
 //! is checked not to crash.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![warn(unreachable_pub)]
 
 #[macro_use]
 extern crate alloc;

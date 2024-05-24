@@ -21,13 +21,13 @@ bytemuck = { version = "1.14.0", default-features = false }
 const-default = { version = "1.0.0", default-features = false }
 crypto-common = { version = "0.1.6", default-features = false, optional = true }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
-generic-array = { version = "0.14.7", default-features = false }
+generic-array = { version = "0.14.7", default-features = false, optional = true }
 rlsf = { version = "0.2.1", default-features = false }
-sealed = { version = "0.5.0", default-features = false }
-typenum = { version = "1.17.0", default-features = false }
+sealed = { version = "0.5.0", default-features = false, optional = true }
+typenum = { version = "1.17.0", default-features = false, optional = true }
 wasefire-applet-api = { version = "0.6.1-git", path = "../api", features = ["wasm"] }
 wasefire-error = { version = "0.1.1-git", path = "../error" }
-wasefire-sync = { version = "0.1.0", path = "../sync" }
+wasefire-sync = { version = "0.1.1-git", path = "../sync" }
 zeroize = { version = "1.7.0", default-features = false, features = ["derive"], optional = true }
 
 [features]
@@ -35,7 +35,13 @@ default = ["full-api"]
 # API features.
 api-button = ["wasefire-applet-api/api-button"]
 api-crypto-ccm = ["internal-api-crypto", "wasefire-applet-api/api-crypto-ccm"]
-api-crypto-ec = ["internal-api-crypto", "wasefire-applet-api/api-crypto-ec"]
+api-crypto-ec = [
+  "dep:generic-array",
+  "dep:sealed",
+  "dep:typenum",
+  "internal-api-crypto",
+  "wasefire-applet-api/api-crypto-ec",
+]
 api-crypto-gcm = ["internal-api-crypto", "wasefire-applet-api/api-crypto-gcm"]
 api-crypto-hash = ["internal-api-crypto-hash", "wasefire-applet-api/api-crypto-hash"]
 api-crypto-hkdf = ["api-crypto-hmac", "wasefire-applet-api/api-crypto-hkdf"]
@@ -79,7 +85,7 @@ full-api = [
   "api-usb-serial",
 ]
 # Implements RustCrypto traits.
-rust-crypto = ["dep:aead", "dep:crypto-common", "dep:digest", "dep:zeroize"]
+rust-crypto = ["dep:aead", "dep:crypto-common", "dep:digest", "dep:typenum", "dep:zeroize"]
 # Builds for native library usage instead of Wasm binary (incompatible with test).
 native = ["wasefire-applet-api/native"]
 # Builds for unit-testing applets (incompatible with native).
@@ -93,8 +99,12 @@ internal-api-platform = []
 internal-api-radio = []
 internal-api-store = []
 internal-api-usb = []
-internal-rpc = []
-internal-serial = []
+internal-rpc = ["dep:sealed"]
+internal-serial = ["dep:sealed"]
 
-[lints.rust]
-missing-docs = "warn"
+[lints]
+clippy.unit-arg = "allow"
+rust.missing-docs = "warn"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

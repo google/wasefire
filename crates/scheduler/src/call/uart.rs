@@ -46,7 +46,7 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     let count = board::Uart::<B>::SUPPORT as u32;
     #[cfg(not(feature = "board-api-uart"))]
     let count = 0;
-    call.reply(Ok(Ok(count)));
+    call.reply(Ok(count));
 }
 
 #[cfg(feature = "board-api-uart")]
@@ -54,7 +54,7 @@ fn set_baudrate<B: Board>(call: SchedulerCall<B, api::set_baudrate::Sig>) {
     let api::set_baudrate::Params { uart, baudrate } = call.read();
     let result = try {
         let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
-        board::Uart::<B>::set_baudrate(uart, *baudrate as usize)
+        board::Uart::<B>::set_baudrate(uart, *baudrate as usize)?
     };
     call.reply(result);
 }
@@ -64,7 +64,7 @@ fn start<B: Board>(call: SchedulerCall<B, api::start::Sig>) {
     let api::start::Params { uart } = call.read();
     let result = try {
         let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
-        board::Uart::<B>::start(uart)
+        board::Uart::<B>::start(uart)?
     };
     call.reply(result);
 }
@@ -74,7 +74,7 @@ fn stop<B: Board>(call: SchedulerCall<B, api::stop::Sig>) {
     let api::stop::Params { uart } = call.read();
     let result = try {
         let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
-        board::Uart::<B>::stop(uart)
+        board::Uart::<B>::stop(uart)?
     };
     call.reply(result);
 }
@@ -87,7 +87,7 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let result = try {
         let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         let output = memory.get_mut(*ptr, *len)?;
-        board::Uart::<B>::read(uart, output).map(|x| x as u32)
+        board::Uart::<B>::read(uart, output)? as u32
     };
     call.reply(result);
 }
@@ -100,7 +100,7 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let result = try {
         let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         let input = memory.get(*ptr, *len)?;
-        board::Uart::<B>::write(uart, input).map(|x| x as u32)
+        board::Uart::<B>::write(uart, input)? as u32
     };
     call.reply(result);
 }
@@ -119,7 +119,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
             func: *handler_func,
             data: *handler_data,
         })?;
-        board::Uart::<B>::enable(uart, event.direction)
+        board::Uart::<B>::enable(uart, event.direction)?
     };
     call.reply(result);
 }
@@ -133,7 +133,6 @@ fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
         let event = convert_event(uart, *event)?;
         board::Uart::<B>::disable(uart, event.direction).map_err(|_| Trap)?;
         scheduler.disable_event(Key::from(&event).into())?;
-        Ok(())
     };
     call.reply(result);
 }

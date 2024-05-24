@@ -1037,7 +1037,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.4"
+version = "0.1.5-git"
 
 [[package]]
 name = "wasi"
@@ -1061,7 +1061,6 @@ dependencies = [
  "opener",
  "serde_json",
  "tokio",
- "tokio-stream",
  "warp",
  "wasefire-logger",
  "web-common",

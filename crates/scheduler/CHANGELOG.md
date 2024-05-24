@@ -14,6 +14,8 @@
 
 ### Patch
 
+- Use common Wasefire lints and make most dependencies optional
+- Add `Failure` type to simplify try-blocks for `Scheduler::reply()` arguments
 - Update `store` errors mapping
 - Use explicit conversion from `Error` to `Trap`
 - Simplify `#[cfg(all)]` attributes between board and applet features

@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Use common Wasefire lints
 - Update dependencies
 
 ## 0.1.3

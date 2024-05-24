@@ -143,6 +143,5 @@ name = "wasefire-protocol-fuzz"
 version = "0.0.0"
 dependencies = [
  "libfuzzer-sys",
- "wasefire-error",
  "wasefire-protocol",
 ]

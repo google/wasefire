@@ -147,6 +147,5 @@ dependencies = [
 name = "wasefire-applet-api-macro"
 version = "0.6.1-git"
 dependencies = [
- "proc-macro2",
  "wasefire-applet-api-desc",
 ]

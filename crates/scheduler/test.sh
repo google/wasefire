@@ -20,8 +20,8 @@ set -e
 ensure_applet
 
 check_software_crypto
-check_applet_api applet-api- --features=wasm,std, --all-targets
-check_board_api board-api- --features=wasm,std, --all-targets
+check_applet_api applet-api- --features=wasm,std,
+check_board_api board-api- --features=wasm,std,
 
 test_helper
 
