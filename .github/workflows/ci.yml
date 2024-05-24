@@ -34,7 +34,7 @@ jobs:
             true
           }
           x   copyright  pull_request
-          x   changelog  pull_request
+          x   changelog
           x  textreview  pull_request
           x        sync  pull_request  push  schedule
           x     publish  pull_request  push  schedule
