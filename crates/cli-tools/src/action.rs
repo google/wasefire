@@ -203,7 +203,7 @@ pub fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> R
     strip.arg(applet.as_ref());
     cmd::execute(&mut strip)?;
     let mut opt = Command::new("wasm-opt");
-    opt.args(["--enable-bulk-memory", "--enable-sign-ext"]);
+    opt.args(["--enable-bulk-memory", "--enable-sign-ext", "--enable-mutable-globals"]);
     match opt_level {
         Some(level) => drop(opt.arg(format!("-O{level}"))),
         None => drop(opt.arg("-O")),
