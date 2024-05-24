@@ -9,6 +9,7 @@
 
 ### Patch
 
+- Update dependencies
 - Use common Wasefire lints
 
 ## 0.1.0

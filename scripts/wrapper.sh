@@ -47,13 +47,13 @@ IS_CARGO=y
 case "$1" in
   cargo)
     case "$2" in
-      bloat) ensure_cargo cargo-bloat 0.11.1 ;;
+      bloat) ensure_cargo cargo-bloat 0.12.1 ;;
       upgrade) ensure_cargo cargo-edit 0.12.2 ;;
       *) e "Wrapper does not support 'cargo $2'" ;;
     esac
     ;;
-  mdbook) ensure_cargo mdbook 0.4.36 ;;
-  probe-rs) ensure_cargo probe-rs 0.22.0 --features=cli ;;
+  mdbook) ensure_cargo mdbook 0.4.40 ;;
+  probe-rs) ensure_cargo probe-rs 0.24.0 --features=cli ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
   taplo) ensure_cargo taplo-cli 0.9.0 ;;
   twiggy) ensure_cargo twiggy 0.7.0 ;;

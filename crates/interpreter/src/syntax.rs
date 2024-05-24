@@ -299,12 +299,6 @@ pub enum ExportDesc {
     Global(GlobalIdx),
 }
 
-#[derive(Debug, Clone)]
-pub struct Export<'m> {
-    pub name: &'m str,
-    pub desc: ExportDesc,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ImportDesc {
     Func(TypeIdx),
