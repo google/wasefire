@@ -22,7 +22,7 @@ jobs:
         run: |
           x() {
             local check=$1
-            [[ $GITHUB_BASE_REF == dev/* -a $check == changelog ]] && return
+            [[ $GITHUB_BASE_REF == dev/* && $check == changelog ]] && return
             while [[ $# -gt 1 ]]; do
               shift
               [[ $1 == $GITHUB_EVENT_NAME ]] || continue
