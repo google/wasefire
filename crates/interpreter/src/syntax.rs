@@ -60,10 +60,30 @@ pub struct FuncType<'m> {
     pub results: ResultType<'m>,
 }
 
+#[cfg(feature = "threads")]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Share {
+    Unshared,
+    Shared,
+}
+
+#[cfg(feature = "threads")]
+impl From<u8> for Share {
+    fn from(x: u8) -> Self {
+        match x {
+            0 => Share::Unshared,
+            1 => Share::Shared,
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Limits {
     pub min: u32,
     pub max: u32,
+    #[cfg(feature = "threads")]
+    pub share: Share,
 }
 
 pub const TABLE_MAX: u32 = u32::MAX;
@@ -214,6 +234,18 @@ pub enum CvtOp {
     FReinterpret(Nx),
 }
 
+#[cfg(feature = "threads")]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AtomicOp {
+    Add,
+    Sub,
+    And,
+    Or,
+    Xor,
+    Xchg,
+    Cmpxchg,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instr<'m> {
     Unreachable,
@@ -279,6 +311,24 @@ pub enum Instr<'m> {
     TableGrow(TableIdx),
     TableSize(TableIdx),
     TableFill(TableIdx),
+    #[cfg(feature = "threads")]
+    AtomicNotify(MemArg),
+    #[cfg(feature = "threads")]
+    AtomicWait(Nx, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicFence,
+    #[cfg(feature = "threads")]
+    AtomicLoad(Nx, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicLoad_(Bx, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicStore(Nx, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicStore_(Bx, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicOp(Nx, AtomicOp, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicOp_(Bx, AtomicOp, MemArg),
 }
 
 pub type TypeIdx = u32;
@@ -774,6 +824,22 @@ impl From<u8> for FBinOp {
             4 => FBinOp::Min,
             5 => FBinOp::Max,
             6 => FBinOp::CopySign,
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[cfg(feature = "threads")]
+impl From<u8> for AtomicOp {
+    fn from(x: u8) -> Self {
+        match x {
+            0 => AtomicOp::Add,
+            1 => AtomicOp::Sub,
+            2 => AtomicOp::And,
+            3 => AtomicOp::Or,
+            4 => AtomicOp::Xor,
+            5 => AtomicOp::Xchg,
+            6 => AtomicOp::Cmpxchg,
             _ => unreachable!(),
         }
     }

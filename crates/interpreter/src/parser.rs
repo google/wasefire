@@ -202,12 +202,24 @@ impl<'m, M: Mode> Parser<'m, M> {
     }
 
     pub fn parse_limits(&mut self, mut max: u32) -> MResult<Limits, M> {
-        let has_max = byte_enum::<M, bool>(self.parse_byte()?)?;
+        let flags = self.parse_byte()?;
+        match flags {
+            0 | 1 => (),
+            3 => support_if!("threads"[], (), M::unsupported(if_debug!(Unsupported::Limits))?),
+            _ => M::invalid()?,
+        }
         let min = self.parse_u32()?;
-        if has_max {
+        if flags & 1 != 0 {
             max = self.parse_u32()?;
         }
-        Ok(Limits { min, max })
+        #[cfg(feature = "threads")]
+        let share = ((flags & 2 != 0) as u8).into();
+        Ok(Limits {
+            min,
+            max,
+            #[cfg(feature = "threads")]
+            share,
+        })
     }
 
     pub fn parse_tabletype(&mut self) -> MResult<TableType, M> {
@@ -270,6 +282,30 @@ impl<'m, M: Mode> Parser<'m, M> {
         let labels =
             (0 .. self.parse_u32()?).map(|_| self.parse_labelidx()).collect::<Result<_, _>>()?;
         Ok(Instr::BrTable(labels, self.parse_labelidx()?))
+    }
+
+    #[cfg(feature = "threads")]
+    pub fn parse_instr_fe(&mut self) -> MResult<Instr<'m>, M> {
+        Ok(match self.parse_byte()? {
+            0 => Instr::AtomicNotify(self.parse_memarg()?),
+            x @ 1 ..= 2 => Instr::AtomicWait((x - 1).into(), self.parse_memarg()?),
+            3 => {
+                check_eq::<M, _>(self.parse_byte()?, 0)?;
+                Instr::AtomicFence
+            }
+            x @ 16 ..= 17 => Instr::AtomicLoad((x - 16).into(), self.parse_memarg()?),
+            x @ 18 ..= 22 => Instr::AtomicLoad_((x - 18).into(), self.parse_memarg()?),
+            x @ 23 ..= 24 => Instr::AtomicStore((x - 23).into(), self.parse_memarg()?),
+            x @ 25 ..= 29 => Instr::AtomicStore_((x - 25).into(), self.parse_memarg()?),
+            x @ 30 ..= 78 => {
+                let op: AtomicOp = ((x - 30) / 7).into();
+                match (x - 30) % 7 {
+                    x @ 0 ..= 1 => Instr::AtomicOp(x.into(), op, self.parse_memarg()?),
+                    x => Instr::AtomicOp_((x - 2).into(), op, self.parse_memarg()?),
+                }
+            }
+            _ => M::invalid()?,
+        })
     }
 
     pub fn parse_instr(&mut self) -> MResult<Instr<'m>, M> {
@@ -460,7 +496,17 @@ impl<'m, M: Mode> Parser<'m, M> {
                 unimplemented!(),
                 M::unsupported(if_debug!(Unsupported::Opcode(0xfd)))?
             ),
-            _ => M::invalid()?,
+            0xfe => support_if!(
+                    "threads"[],
+                    self.parse_instr_fe()?,
+                M::unsupported(if_debug!(Unsupported::Opcode(0xfe)))?
+            ),
+            // TODO(threads): Revert back to main state.
+            _i => {
+                #[cfg(feature = "debug")]
+                println!("Invalid instruction {:#06x}", _i);
+                M::invalid()?
+            }
         })
     }
 

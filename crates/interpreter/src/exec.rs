@@ -964,6 +964,60 @@ impl<'m> Thread<'m> {
                 }
                 table.elems[i ..][.. n].fill(val);
             }
+            #[cfg(feature = "threads")]
+            AtomicNotify(_) => {
+                #[cfg(feature = "debug")]
+                println!("Atomic notify");
+                return Err(trap());
+            }
+            #[cfg(feature = "threads")]
+            AtomicWait(_, _) => {
+                #[cfg(feature = "debug")]
+                println!("Atomic wait");
+                return Err(trap());
+            }
+            #[cfg(feature = "threads")]
+            AtomicFence => {
+                #[cfg(feature = "debug")]
+                println!("Atomic fence");
+                return Err(trap());
+            }
+            #[cfg(feature = "threads")]
+            AtomicLoad(_, _) => {
+                #[cfg(feature = "debug")]
+                println!("Atomic load");
+                return Err(trap());
+            }
+            #[cfg(feature = "threads")]
+            AtomicLoad_(_, _) => {
+                #[cfg(feature = "debug")]
+                println!("Atomic load");
+                return Err(trap());
+            }
+            #[cfg(feature = "threads")]
+            AtomicStore(_, _) => {
+                #[cfg(feature = "debug")]
+                println!("Atomic store");
+                return Err(trap());
+            }
+            #[cfg(feature = "threads")]
+            AtomicStore_(_, _) => {
+                #[cfg(feature = "debug")]
+                println!("Atomic store");
+                return Err(trap());
+            }
+            #[cfg(feature = "threads")]
+            AtomicOp(_op, _, _) => {
+                #[cfg(feature = "debug")]
+                println!("Atomic binop {:?} ", _op);
+                return Err(trap());
+            }
+            #[cfg(feature = "threads")]
+            AtomicOp_(_op, _, _) => {
+                #[cfg(feature = "debug")]
+                println!("Atomic binopP {:?} ", _op);
+                return Err(trap());
+            }
         }
         Ok(ThreadResult::Continue(self))
     }

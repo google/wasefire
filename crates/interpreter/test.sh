@@ -18,6 +18,7 @@ set -e
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
 ensure_submodule third_party/WebAssembly/spec
+ensure_submodule third_party/WebAssembly/threads
 
 test_helper
 
@@ -27,4 +28,4 @@ cargo check --target=riscv32imc-unknown-none-elf \
   --features=portable-atomic/critical-section
 RUSTFLAGS=--cfg=portable_atomic_unsafe_assume_single_core \
   cargo check --target=riscv32imc-unknown-none-elf
-cargo test --features=debug,toctou,float-types,vector-types
+cargo test --features=debug,toctou,float-types,vector-types,threads

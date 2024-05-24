@@ -30,5 +30,7 @@ toctou = []
 # Enable support for specific types.
 float-types = ["dep:libm"]
 vector-types = []
+# Enable threads proposal.
+threads = []
 # Enable caching for execution.
 cache = ["dep:lru"]
