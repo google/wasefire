@@ -23,6 +23,7 @@ use alloc::vec::Vec;
 use opensk_lib::api::connection::{HidConnection, SendOrRecvResult};
 use opensk_lib::api::crypto::software_crypto::SoftwareCrypto;
 use opensk_lib::api::customization::{CustomizationImpl, AAGUID_LENGTH, DEFAULT_CUSTOMIZATION};
+use opensk_lib::api::key_store;
 use opensk_lib::api::persist::{Persist, PersistIter};
 use opensk_lib::ctap::status_code::Ctap2StatusCode::{
     self, CTAP1_ERR_OTHER, CTAP2_ERR_KEY_STORE_FULL, CTAP2_ERR_VENDOR_HARDWARE_FAILURE,
@@ -34,7 +35,6 @@ use wasefire_error::{Code, Space};
 // use wasefire::clock::{Handler, Timer};
 
 mod clock;
-mod keystore;
 mod rng;
 mod user_presence;
 mod write;
@@ -103,6 +103,8 @@ impl Persist for WasefireEnv {
         Ok(Box::new(keys.into_iter().map(|x| Ok(x as usize))))
     }
 }
+
+impl key_store::Helper for WasefireEnv {}
 
 impl Env for WasefireEnv {
     type Rng = Self;
