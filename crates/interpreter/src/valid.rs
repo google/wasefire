@@ -648,47 +648,51 @@ impl<'a, 'm> Expr<'a, 'm> {
             #[cfg(feature = "threads")]
             AtomicNotify(m) => {
                 check(m.align == 2)?;
+                check(!self.context.mems.is_empty())?;
                 self.pops([ValType::I32, ValType::I32][..].into())?;
                 self.push(OpdType::I32);
             }
             #[cfg(feature = "threads")]
             AtomicWait(n, m) => {
                 self.check_aligned(m, n.into())?;
+                check(!self.context.mems.is_empty())?;
                 self.pops([ValType::I32, NumType::i(n).into(), ValType::I64][..].into())?;
                 self.push(OpdType::I32);
             }
             #[cfg(feature = "threads")]
             AtomicFence => (),
             #[cfg(feature = "threads")]
-            IAtomicLoad(n, m) => {
+            AtomicLoad(n, m) => {
                 self.check_aligned(m, n.into())?;
                 self.load(NumType::i(n), n.into(), m)?
             }
             #[cfg(feature = "threads")]
-            IAtomicLoad_(b, _, m) => {
+            AtomicLoad_(b, m) => {
                 self.check_aligned(m, b.into())?;
                 self.load(NumType::i(b.into()), b.into(), m)?;
             }
             #[cfg(feature = "threads")]
-            IAtomicStore(n, m) => {
+            AtomicStore(n, m) => {
                 self.check_aligned(m, n.into())?;
                 self.store(NumType::i(n), n.into(), m)?;
             }
             #[cfg(feature = "threads")]
-            IAtomicStore_(b, m) => {
+            AtomicStore_(b, m) => {
                 self.check_aligned(m, b.into())?;
                 self.store(NumType::i(b.into()), b.into(), m)?;
             }
             #[cfg(feature = "threads")]
             AtomicOp(n, syntax::AtomicOp::Cmpxchg, m) => {
                 self.check_aligned(m, n.into())?;
+                check(!self.context.mems.is_empty())?;
                 let num = NumType::i(n);
                 self.pops([ValType::I32, num.into(), num.into()][..].into())?;
                 self.push(num.into());
             }
             #[cfg(feature = "threads")]
-            AtomicOp_(b, syntax::AtomicOp::Cmpxchg, _, m) => {
+            AtomicOp_(b, syntax::AtomicOp::Cmpxchg, m) => {
                 self.check_aligned(m, b.into())?;
+                check(!self.context.mems.is_empty())?;
                 let num = NumType::i(b.into());
                 self.pops([ValType::I32, num.into(), num.into()][..].into())?;
                 self.push(num.into())
@@ -696,16 +700,18 @@ impl<'a, 'm> Expr<'a, 'm> {
             #[cfg(feature = "threads")]
             AtomicOp(n, _, m) => {
                 self.check_aligned(m, n.into())?;
+                check(!self.context.mems.is_empty())?;
                 let num = NumType::i(n);
                 self.pops([ValType::I32, num.into()][..].into())?;
                 self.push(num.into());
             }
             #[cfg(feature = "threads")]
-            AtomicOp_(b, _, _, m) => {
+            AtomicOp_(b, _, m) => {
                 self.check_aligned(m, b.into())?;
+                check(!self.context.mems.is_empty())?;
                 let num = NumType::i(b.into());
                 self.pops([ValType::I32, num.into()][..].into())?;
-                self.push(NumType::i(b.into()).into())
+                self.push(num.into())
             }
         }
         Ok(())

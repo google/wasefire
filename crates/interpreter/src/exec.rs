@@ -983,25 +983,25 @@ impl<'m> Thread<'m> {
                 return Err(trap());
             }
             #[cfg(feature = "threads")]
-            IAtomicLoad(_, _) => {
+            AtomicLoad(_, _) => {
                 #[cfg(feature = "debug")]
                 println!("Atomic load");
                 return Err(trap());
             }
             #[cfg(feature = "threads")]
-            IAtomicLoad_(_, _, _) => {
+            AtomicLoad_(_, _) => {
                 #[cfg(feature = "debug")]
                 println!("Atomic load");
                 return Err(trap());
             }
             #[cfg(feature = "threads")]
-            IAtomicStore(_, _) => {
+            AtomicStore(_, _) => {
                 #[cfg(feature = "debug")]
                 println!("Atomic store");
                 return Err(trap());
             }
             #[cfg(feature = "threads")]
-            IAtomicStore_(_, _) => {
+            AtomicStore_(_, _) => {
                 #[cfg(feature = "debug")]
                 println!("Atomic store");
                 return Err(trap());
@@ -1013,7 +1013,7 @@ impl<'m> Thread<'m> {
                 return Err(trap());
             }
             #[cfg(feature = "threads")]
-            AtomicOp_(_op, _, _, _) => {
+            AtomicOp_(_op, _, _) => {
                 #[cfg(feature = "debug")]
                 println!("Atomic binopP {:?} ", _op);
                 return Err(trap());

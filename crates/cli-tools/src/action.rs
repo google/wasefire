@@ -110,7 +110,7 @@ impl RustAppletBuild {
         match &self.native {
             None => {
                 if threads {
-                    rustflags.push("-C target-feature=+atomics,+bulk-memory".to_string());
+                    rustflags.push("-C target-feature=+atomics".to_string());
                     rustflags.push("-C link-args=--shared-memory".to_string());
                 }
                 rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));

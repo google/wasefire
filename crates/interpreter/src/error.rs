@@ -39,6 +39,7 @@ pub enum Unsupported {
     Opcode(u8),
     OpcodeFc(u32),
     MaxLocals,
+    Limits,
 }
 
 #[cfg(feature = "debug")]

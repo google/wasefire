@@ -203,13 +203,23 @@ impl<'m, M: Mode> Parser<'m, M> {
 
     pub fn parse_limits(&mut self, mut max: u32) -> MResult<Limits, M> {
         let flags = self.parse_byte()?;
-        M::check(|| matches!(flags, 0 | 1 | 3))?;
+        match flags {
+            0 | 1 => (),
+            3 => support_if!("threads"[], (), M::unsupported(if_debug!(Unsupported::Limits))?),
+            _ => M::invalid()?,
+        }
         let min = self.parse_u32()?;
         if flags & 1 != 0 {
             max = self.parse_u32()?;
         }
+        #[cfg(feature = "threads")]
         let share = ((flags & 2 != 0) as u8).into();
-        Ok(Limits { min, max, share })
+        Ok(Limits {
+            min,
+            max,
+            #[cfg(feature = "threads")]
+            share,
+        })
     }
 
     pub fn parse_tabletype(&mut self) -> MResult<TableType, M> {
@@ -277,25 +287,21 @@ impl<'m, M: Mode> Parser<'m, M> {
     #[cfg(feature = "threads")]
     pub fn parse_instr_fe(&mut self) -> MResult<Instr<'m>, M> {
         Ok(match self.parse_byte()? {
-            0x00 => Instr::AtomicNotify(self.parse_memarg()?), // memory.atomic.notify
-            x @ 0x01 ..= 0x02 => Instr::AtomicWait((x - 0x01).into(), self.parse_memarg()?), /* memory.atomic.waitXX */
-            0x03 => {
+            0 => Instr::AtomicNotify(self.parse_memarg()?),
+            x @ 1 ..= 2 => Instr::AtomicWait((x - 1).into(), self.parse_memarg()?),
+            3 => {
                 check_eq::<M, _>(self.parse_byte()?, 0)?;
                 Instr::AtomicFence
-            } /* atomic.fence */
-            x @ 0x10 ..= 0x11 => Instr::IAtomicLoad((x - 0x10).into(), self.parse_memarg()?), /* iXX.atomic.load */
-            x @ 0x12 ..= 0x16 => {
-                Instr::IAtomicLoad_((x - 0x12).into(), Sx::U, self.parse_memarg()?)
-            } /* iXX.atomic.loadXX_u */
-
-            x @ 0x17 ..= 0x18 => Instr::IAtomicStore((x - 0x17).into(), self.parse_memarg()?), /* i32.atomic.store */
-            x @ 0x19 ..= 0x1d => Instr::IAtomicStore_((x - 0x19).into(), self.parse_memarg()?), /* iXX.atomic.storeXX */
-
-            x @ 0x1e ..= 0x4e => {
-                let op: AtomicOp = ((x - 0x1e) / 7).into();
-                match (x - 0x1e) % 7 {
+            }
+            x @ 16 ..= 17 => Instr::AtomicLoad((x - 16).into(), self.parse_memarg()?),
+            x @ 18 ..= 22 => Instr::AtomicLoad_((x - 18).into(), self.parse_memarg()?),
+            x @ 23 ..= 24 => Instr::AtomicStore((x - 23).into(), self.parse_memarg()?),
+            x @ 25 ..= 29 => Instr::AtomicStore_((x - 25).into(), self.parse_memarg()?),
+            x @ 30 ..= 78 => {
+                let op: AtomicOp = ((x - 30) / 7).into();
+                match (x - 30) % 7 {
                     x @ 0 ..= 1 => Instr::AtomicOp(x.into(), op, self.parse_memarg()?),
-                    x => Instr::AtomicOp_((x - 2).into(), op, Sx::U, self.parse_memarg()?),
+                    x => Instr::AtomicOp_((x - 2).into(), op, self.parse_memarg()?),
                 }
             }
             _x => M::unsupported(if_debug!(Unsupported::Opcode(_x)))?,

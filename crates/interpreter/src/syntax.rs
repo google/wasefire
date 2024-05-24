@@ -80,6 +80,7 @@ impl From<u8> for Share {
 pub struct Limits {
     pub min: u32,
     pub max: u32,
+    #[cfg(feature = "threads")]
     pub share: Share,
 }
 
@@ -315,17 +316,17 @@ pub enum Instr<'m> {
     #[cfg(feature = "threads")]
     AtomicFence,
     #[cfg(feature = "threads")]
-    IAtomicLoad(Nx, MemArg),
+    AtomicLoad(Nx, MemArg),
     #[cfg(feature = "threads")]
-    IAtomicLoad_(Bx, Sx, MemArg),
+    AtomicLoad_(Bx, MemArg),
     #[cfg(feature = "threads")]
-    IAtomicStore(Nx, MemArg),
+    AtomicStore(Nx, MemArg),
     #[cfg(feature = "threads")]
-    IAtomicStore_(Bx, MemArg),
+    AtomicStore_(Bx, MemArg),
     #[cfg(feature = "threads")]
     AtomicOp(Nx, AtomicOp, MemArg),
     #[cfg(feature = "threads")]
-    AtomicOp_(Bx, AtomicOp, Sx, MemArg),
+    AtomicOp_(Bx, AtomicOp, MemArg),
 }
 
 pub type TypeIdx = u32;
