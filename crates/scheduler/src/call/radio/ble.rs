@@ -50,7 +50,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
             func: *handler_func,
             data: *handler_data,
         })?;
-        board::radio::Ble::<B>::enable(&event)
+        board::radio::Ble::<B>::enable(&event)?
     };
     call.reply(result);
 }
@@ -63,7 +63,6 @@ fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
         let event = convert_event(event)?;
         board::radio::Ble::<B>::disable(&event).map_err(|_| Trap)?;
         scheduler.disable_event(Key::from(&event).into())?;
-        Ok(())
     };
     call.reply(result);
 }
@@ -75,7 +74,7 @@ fn read_advertisement<B: Board>(mut call: SchedulerCall<B, api::read_advertiseme
     let memory = scheduler.applet.memory();
     let result = try {
         let packet = memory.from_bytes_mut::<Advertisement>(*ptr)?;
-        board::radio::Ble::<B>::read_advertisement(packet)
+        board::radio::Ble::<B>::read_advertisement(packet)?
     };
     call.reply(result);
 }

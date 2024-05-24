@@ -7,6 +7,10 @@
 - Add `Store::link_func_custom()` to link functions with custom types
 - Expose `ResultType` and `FuncType` for custom types
 
+### Patch
+
+- Move lints to `Cargo.toml` and use common Wasefire lints
+
 ## 0.2.0
 
 ### Major

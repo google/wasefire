@@ -40,7 +40,7 @@ fn fill_bytes<B: Board>(mut call: SchedulerCall<B, api::fill_bytes::Sig>) {
     let memory = scheduler.applet.memory();
     let result = try {
         let output = memory.get_mut(*ptr, *len)?;
-        board::Rng::<B>::fill_bytes(output)
+        board::Rng::<B>::fill_bytes(output)?
     };
     call.reply(result);
 }

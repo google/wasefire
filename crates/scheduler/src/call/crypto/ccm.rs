@@ -39,7 +39,7 @@ fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
     let supported = bool::from(board::crypto::Aes128Ccm::<B>::SUPPORT) as u32;
     #[cfg(not(feature = "board-api-crypto-aes128-ccm"))]
     let supported = 0;
-    call.reply(Ok(Ok(supported)))
+    call.reply(Ok(supported))
 }
 
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
@@ -55,7 +55,7 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
         let clear = Some(memory.get(*clear, *len)?);
         let (cipher, tag) = memory.get_mut(*cipher, *len + 4)?.split_at_mut(*len as usize);
         let tag = tag.into();
-        board::crypto::Aes128Ccm::<B>::encrypt(key, &iv, aad, clear, cipher, tag)
+        board::crypto::Aes128Ccm::<B>::encrypt(key, &iv, aad, clear, cipher, tag)?
     };
     call.reply(result);
 }
@@ -74,7 +74,7 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         let cipher = Some(cipher);
         let tag = tag.into();
         let clear = memory.get_mut(*clear, *len)?;
-        board::crypto::Aes128Ccm::<B>::decrypt(key, &iv, aad, cipher, tag, clear)
+        board::crypto::Aes128Ccm::<B>::decrypt(key, &iv, aad, cipher, tag, clear)?
     };
     call.reply(result);
 }

@@ -20,7 +20,7 @@ bytemuck = { version = "1.14.0", default-features = false, features = ["derive"]
 sealed = { version = "0.5.0", default-features = false, optional = true }
 wasefire-applet-api-macro = { version = "0.6.1-git", path = "../api-macro" }
 wasefire-error = { version = "0.1.1-git", path = "../error" }
-wasefire-logger = { version = "0.1.4", path = "../logger", optional = true }
+wasefire-logger = { version = "0.1.5-git", path = "../logger", optional = true }
 
 [features]
 # Compiles for host or wasm (choose exactly one).
@@ -78,3 +78,9 @@ full-api = [
 native = ["dep:wasefire-logger"]
 # Internal features.
 internal-api-crypto-hash = []
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

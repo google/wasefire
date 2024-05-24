@@ -52,7 +52,7 @@ fn version<B: Board>(mut call: SchedulerCall<B, api::version::Sig>) {
     let memory = scheduler.applet.memory();
     let result = try {
         let output = memory.get_mut(*ptr, *len)?;
-        Ok(board::Platform::<B>::version(output) as u32)
+        board::Platform::<B>::version(output) as u32
     };
     call.reply(result);
 }
@@ -60,5 +60,5 @@ fn version<B: Board>(mut call: SchedulerCall<B, api::version::Sig>) {
 #[cfg(feature = "board-api-platform")]
 fn reboot<B: Board>(call: SchedulerCall<B, api::reboot::Sig>) {
     let api::reboot::Params {} = call.read();
-    call.reply(Ok(board::Platform::<B>::reboot()));
+    call.reply(board::Platform::<B>::reboot().map_err(|x| x.into()));
 }

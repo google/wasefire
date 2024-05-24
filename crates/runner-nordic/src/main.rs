@@ -53,6 +53,8 @@ use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidP
 use usbd_serial::SerialPort;
 use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Id, Support};
+#[cfg(feature = "wasm")]
+use wasefire_interpreter as _;
 use wasefire_logger as log;
 use wasefire_scheduler::Scheduler;
 
@@ -98,6 +100,8 @@ fn with_state<R>(f: impl FnOnce(&mut State) -> R) -> R {
     critical_section::with(|cs| f(STATE.borrow_ref_mut(cs).as_mut().unwrap()))
 }
 
+// TODO(https://github.com/rust-embedded/cortex-m/issues/537): Remove when fixed.
+#[allow(unsafe_op_in_unsafe_fn)]
 #[entry]
 fn main() -> ! {
     static mut CLOCKS: MaybeUninit<Clocks> = MaybeUninit::uninit();

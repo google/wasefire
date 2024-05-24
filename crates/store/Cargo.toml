@@ -19,3 +19,9 @@ tempfile = "3.9.0"
 
 [features]
 std = []
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

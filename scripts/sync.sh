@@ -22,6 +22,34 @@ set -e
 
 cargo xtask update-apis
 
+add_lint() { echo "$3 = \"$2\"" >> $1; }
+for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
+  file=$dir/Cargo.toml
+  crate=${dir#crates/}
+  grep -q '^\[lints\.' $file && e "unexpected [lints.*] section in $file"
+  sed -i '/^\[lints\]$/q' $file
+  [ "$(tail -n1 $file)" = '[lints]' ] || printf '\n[lints]\n' >> $file
+  add_lint $file allow clippy.unit-arg
+  # add_lint $file warn rust.elided-lifetimes-in-paths
+  # add_lint $file warn rust.missing-debug-implementations
+  # TODO: Use the same [ -e src/lib.rs -a "$(package_publish)" = true ] test is test-helper.
+  case $crate in
+    board|prelude) add_lint $file warn rust.missing-docs ;;
+  esac
+  # TODO: Enable for all crates.
+  case $crate in
+    interpreter|runner-*|scheduler|xtask|*/fuzz) ;;
+    *) add_lint $file warn rust.unreachable-pub ;;
+  esac
+  add_lint $file warn rust.unsafe-op-in-unsafe-fn
+  case $crate in
+    # TODO: Remove api-desc once the main.rs logic is moved to xtask.
+    api-desc|*/fuzz) ;;
+    *) add_lint $file warn rust.unused-crate-dependencies ;;
+  esac
+  # add_lint $file warn rust.unused-results
+done
+
 book_example() {
   local src=book/src/applet/prelude/$1.rs
   local dst=examples/rust/$2/src/lib.rs

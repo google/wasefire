@@ -17,5 +17,9 @@ rustc-demangle = "0.1.23"
 serde = { version = "1.0.195", features = ["derive"] }
 stack-sizes = "0.5.0"
 strum = { version = "0.25.0", features = ["derive"] }
-toml = "0.8.8"
 wasefire-cli-tools = { version = "0.1.0-git", path = "../cli-tools" }
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

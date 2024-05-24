@@ -70,3 +70,8 @@ internal-api-platform = []
 internal-api-radio = []
 internal-api-store = []
 internal-api-usb = []
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"

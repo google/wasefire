@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #![feature(int_roundings)]
+#![allow(unused_crate_dependencies)]
 
 use std::collections::HashMap;
 

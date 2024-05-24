@@ -33,12 +33,13 @@
 #![feature(negative_impls)]
 #![feature(never_type)]
 #![feature(vec_into_raw_parts)]
-#![warn(unsafe_op_in_unsafe_fn)]
 
 extern crate alloc;
 
 use wasefire_applet_api as api;
 pub use wasefire_error::Error;
+#[cfg(feature = "rust-crypto")]
+use {aead as _, crypto_common as _, digest as _, typenum as _, zeroize as _};
 
 // This internal module is made public because it's used by exported macros called from user code.
 #[doc(hidden)]

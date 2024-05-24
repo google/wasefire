@@ -861,7 +861,6 @@ dependencies = [
 name = "wasefire-applet-api-macro"
 version = "0.6.1-git"
 dependencies = [
- "proc-macro2",
  "wasefire-applet-api-desc",
 ]
 
@@ -914,7 +913,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.4"
+version = "0.1.5-git"
 dependencies = [
  "defmt",
  "log",
@@ -933,12 +932,10 @@ name = "wasefire-scheduler"
 version = "0.3.1-git"
 dependencies = [
  "bytemuck",
- "critical-section",
  "defmt",
  "derivative",
  "digest",
  "generic-array",
- "portable-atomic",
  "typenum",
  "wasefire-applet-api",
  "wasefire-board-api",
@@ -956,7 +953,7 @@ version = "0.2.4-git"
 
 [[package]]
 name = "wasefire-sync"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "portable-atomic",
  "spin",

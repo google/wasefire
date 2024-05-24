@@ -43,7 +43,7 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let result = try {
         let keys = decode_keys(keys)?;
         let value = memory.get(*ptr, *len)?;
-        fragment::write(&mut scheduler.store, &keys, value).map_err(convert)
+        fragment::write(&mut scheduler.store, &keys, value).map_err(convert)?
     };
     call.reply(result);
 }
@@ -51,8 +51,9 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
 #[cfg(feature = "board-api-storage")]
 fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
     let api::remove::Params { keys } = call.read();
-    let result =
-        try { fragment::delete(&mut call.scheduler().store, &decode_keys(keys)?).map_err(convert) };
+    let result = try {
+        fragment::delete(&mut call.scheduler().store, &decode_keys(keys)?).map_err(convert)?
+    };
     call.reply(result);
 }
 
@@ -62,17 +63,16 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let scheduler = call.scheduler();
     let mut memory = scheduler.applet.memory();
     let result = try {
-        match fragment::read(&scheduler.store, &decode_keys(keys)?) {
-            Ok(None) => Ok(false),
-            Ok(Some(value)) => {
+        match fragment::read(&scheduler.store, &decode_keys(keys)?).map_err(convert)? {
+            None => false,
+            Some(value) => {
                 let len = value.len() as u32;
                 let ptr = memory.alloc(len, 1)?;
                 memory.get_mut(ptr, len)?.copy_from_slice(&value);
                 memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
                 memory.get_mut(*len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
-                Ok(true)
+                true
             }
-            Err(e) => Err(convert(e)),
         }
     };
     call.reply(result);

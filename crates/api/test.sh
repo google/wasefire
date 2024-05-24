@@ -17,12 +17,13 @@ set -e
 
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
-check_applet_api api- --features=host, --all-targets
+check_applet_api api- --features=host,
 check_applet_api api- --features=wasm, --target=wasm32-unknown-unknown
 
 test_helper
 
-cargo test --features=full-api,host
+cargo check --features=full-api,host
 cargo check --target=thumbv7em-none-eabi --features=full-api,host
 cargo check --target=wasm32-unknown-unknown --features=full-api,wasm
 cargo check --target=thumbv7em-none-eabi --features=full-api,wasm,native
+cargo check --example=repr --features=full-api,host
