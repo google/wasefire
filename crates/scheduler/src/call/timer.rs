@@ -39,7 +39,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 #[cfg(not(feature = "board-api-timer"))]
 fn allocate<B: Board>(call: SchedulerCall<B, api::allocate::Sig>) {
     use wasefire_error::{Code, Error};
-    call.reply_(Ok(Err(Error::world(Code::NotEnough))))
+    call.reply_(Err(Error::world(Code::NotEnough).into()))
 }
 
 #[cfg(feature = "board-api-timer")]
@@ -56,7 +56,7 @@ fn allocate<B: Board>(mut call: SchedulerCall<B, api::allocate::Sig>) {
             func: *handler_func,
             data: *handler_data,
         })?;
-        Ok(timer as u32)
+        timer as u32
     };
     call.reply(result);
 }
@@ -70,7 +70,7 @@ fn start<B: Board>(mut call: SchedulerCall<B, api::start::Sig>) {
         let periodic = matches!(api::Mode::try_from(*mode).map_err(|_| Trap)?, api::Mode::Periodic);
         let duration_ms = *duration_ms as usize;
         let command = Command { periodic, duration_ms };
-        board::Timer::<B>::arm(id, &command)
+        board::Timer::<B>::arm(id, &command)?
     };
     call.reply(result);
 }
@@ -81,7 +81,7 @@ fn stop<B: Board>(mut call: SchedulerCall<B, api::stop::Sig>) {
     let timer = *id as usize;
     let result = try {
         let id = get_timer(call.scheduler(), timer)?;
-        board::Timer::<B>::disarm(id)
+        board::Timer::<B>::disarm(id)?
     };
     call.reply(result);
 }
@@ -94,7 +94,6 @@ fn free<B: Board>(mut call: SchedulerCall<B, api::free::Sig>) {
         let timer = get_timer(call.scheduler(), timer)?;
         call.scheduler().disable_event(Key { timer }.into())?;
         call.scheduler().timers[*timer] = None;
-        Ok(())
     };
     call.reply(result);
 }

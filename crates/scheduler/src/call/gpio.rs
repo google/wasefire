@@ -39,7 +39,7 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     let count = board::Gpio::<B>::SUPPORT as u32;
     #[cfg(not(feature = "board-api-gpio"))]
     let count = 0;
-    call.reply(Ok(Ok(count)));
+    call.reply(Ok(count));
 }
 
 #[cfg(feature = "board-api-gpio")]
@@ -51,7 +51,7 @@ fn configure<B: Board>(call: SchedulerCall<B, api::configure::Sig>) {
             .map_err(|_| Error::user(Code::InvalidArgument))?;
         board::Gpio::<B>::configure(gpio, config)?
     };
-    call.reply(Ok(result));
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-gpio")]
@@ -61,7 +61,7 @@ fn read<B: Board>(call: SchedulerCall<B, api::read::Sig>) {
         let gpio = Id::new(*gpio as usize)?;
         board::Gpio::<B>::read(gpio)?
     };
-    call.reply(Ok(result));
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-gpio")]
@@ -76,7 +76,7 @@ fn write<B: Board>(call: SchedulerCall<B, api::write::Sig>) {
         };
         board::Gpio::<B>::write(gpio, value)?
     };
-    call.reply(Ok(result));
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-gpio")]
@@ -86,5 +86,5 @@ fn last_write<B: Board>(call: SchedulerCall<B, api::last_write::Sig>) {
         let gpio = Id::new(*gpio as usize)?;
         board::Gpio::<B>::last_write(gpio)?
     };
-    call.reply(Ok(result));
+    call.reply(result);
 }

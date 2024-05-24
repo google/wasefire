@@ -39,7 +39,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 
 fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
     let api::is_supported::Params { curve } = call.read();
-    call.reply(convert_curve::<B>(*curve).map(|x| Ok(x.is_ok())))
+    call.reply(try { convert_curve::<B>(*curve)?.is_ok() })
 }
 
 #[cfg(feature = "internal-board-api-crypto-ecc")]
@@ -48,7 +48,7 @@ fn is_valid_scalar<B: Board>(mut call: SchedulerCall<B, api::is_valid_scalar::Si
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let result = try {
-        Ok(match convert_curve::<B>(*curve)?? {
+        match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
             Curve::P256 => {
                 let n = memory.get_array::<32>(*n)?.into();
@@ -61,7 +61,7 @@ fn is_valid_scalar<B: Board>(mut call: SchedulerCall<B, api::is_valid_scalar::Si
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(),
-        })
+        }
     };
     call.reply(result)
 }
@@ -72,7 +72,7 @@ fn is_valid_point<B: Board>(mut call: SchedulerCall<B, api::is_valid_point::Sig>
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
     let result = try {
-        Ok(match convert_curve::<B>(*curve)?? {
+        match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
             Curve::P256 => {
                 let x = memory.get_array::<32>(*x)?.into();
@@ -87,7 +87,7 @@ fn is_valid_point<B: Board>(mut call: SchedulerCall<B, api::is_valid_point::Sig>
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(),
-        })
+        }
     };
     call.reply(result)
 }
@@ -104,14 +104,14 @@ fn base_point_mul<B: Board>(mut call: SchedulerCall<B, api::base_point_mul::Sig>
                 let n = memory.get_array::<32>(*n)?.into();
                 let x = memory.get_array_mut::<32>(*x)?.into();
                 let y = memory.get_array_mut::<32>(*y)?.into();
-                board::crypto::P256::<B>::base_point_mul(n, x, y)
+                board::crypto::P256::<B>::base_point_mul(n, x, y)?
             }
             #[cfg(feature = "board-api-crypto-p384")]
             Curve::P384 => {
                 let n = memory.get_array::<48>(*n)?.into();
                 let x = memory.get_array_mut::<48>(*x)?.into();
                 let y = memory.get_array_mut::<48>(*y)?.into();
-                board::crypto::P384::<B>::base_point_mul(n, x, y)
+                board::crypto::P384::<B>::base_point_mul(n, x, y)?
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(),
@@ -134,7 +134,7 @@ fn point_mul<B: Board>(mut call: SchedulerCall<B, api::point_mul::Sig>) {
                 let in_y = memory.get_array::<32>(*in_y)?.into();
                 let out_x = memory.get_array_mut::<32>(*out_x)?.into();
                 let out_y = memory.get_array_mut::<32>(*out_y)?.into();
-                board::crypto::P256::<B>::point_mul(n, in_x, in_y, out_x, out_y)
+                board::crypto::P256::<B>::point_mul(n, in_x, in_y, out_x, out_y)?
             }
             #[cfg(feature = "board-api-crypto-p384")]
             Curve::P384 => {
@@ -143,7 +143,7 @@ fn point_mul<B: Board>(mut call: SchedulerCall<B, api::point_mul::Sig>) {
                 let in_y = memory.get_array::<48>(*in_y)?.into();
                 let out_x = memory.get_array_mut::<48>(*out_x)?.into();
                 let out_y = memory.get_array_mut::<48>(*out_y)?.into();
-                board::crypto::P384::<B>::point_mul(n, in_x, in_y, out_x, out_y)
+                board::crypto::P384::<B>::point_mul(n, in_x, in_y, out_x, out_y)?
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(),
@@ -165,7 +165,7 @@ fn ecdsa_sign<B: Board>(mut call: SchedulerCall<B, api::ecdsa_sign::Sig>) {
                 let message = memory.get_array::<32>(*message)?.into();
                 let r = memory.get_array_mut::<32>(*r)?.into();
                 let s = memory.get_array_mut::<32>(*s)?.into();
-                board::crypto::P256::<B>::ecdsa_sign(key, message, r, s)
+                board::crypto::P256::<B>::ecdsa_sign(key, message, r, s)?
             }
             #[cfg(feature = "board-api-crypto-p384")]
             Curve::P384 => {
@@ -173,7 +173,7 @@ fn ecdsa_sign<B: Board>(mut call: SchedulerCall<B, api::ecdsa_sign::Sig>) {
                 let message = memory.get_array::<48>(*message)?.into();
                 let r = memory.get_array_mut::<48>(*r)?.into();
                 let s = memory.get_array_mut::<48>(*s)?.into();
-                board::crypto::P384::<B>::ecdsa_sign(key, message, r, s)
+                board::crypto::P384::<B>::ecdsa_sign(key, message, r, s)?
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(),
@@ -196,7 +196,7 @@ fn ecdsa_verify<B: Board>(mut call: SchedulerCall<B, api::ecdsa_verify::Sig>) {
                 let y = memory.get_array::<32>(*y)?.into();
                 let r = memory.get_array::<32>(*r)?.into();
                 let s = memory.get_array::<32>(*s)?.into();
-                board::crypto::P256::<B>::ecdsa_verify(message, x, y, r, s)
+                board::crypto::P256::<B>::ecdsa_verify(message, x, y, r, s)?
             }
             #[cfg(feature = "board-api-crypto-p384")]
             Curve::P384 => {
@@ -205,7 +205,7 @@ fn ecdsa_verify<B: Board>(mut call: SchedulerCall<B, api::ecdsa_verify::Sig>) {
                 let y = memory.get_array::<48>(*y)?.into();
                 let r = memory.get_array::<48>(*r)?.into();
                 let s = memory.get_array::<48>(*s)?.into();
-                board::crypto::P384::<B>::ecdsa_verify(message, x, y, r, s)
+                board::crypto::P384::<B>::ecdsa_verify(message, x, y, r, s)?
             }
             #[allow(unreachable_patterns)]
             _ => trap_use!(),
