@@ -9,8 +9,8 @@
 
 ### Patch
 
-- Move lints to `Cargo.toml` and use common Wasefire lints
 - Refactor parsing of instructions starting with `0xfc`
+- Move lints to `Cargo.toml` and use common Wasefire lints
 
 ## 0.2.0
 
