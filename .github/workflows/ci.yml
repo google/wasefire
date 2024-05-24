@@ -1,8 +1,8 @@
 name: CI
 
 on:
-  push
-  pull_request
+  push:
+  pull_request:
   schedule:
     - cron: 45 3 * * 2 # every Tuesday at 3:45 UTC
 
