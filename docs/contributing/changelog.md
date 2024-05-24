@@ -19,7 +19,7 @@ changelog](../../crates/prelude/CHANGELOG.md) for an example):
 - Each version contains at least one `Major`, `Minor`, and/or `Patch` level-3 header, in that order.
 - Each level-3 header lists the changes for that version (compared to the previous one, i.e. the one
   below) for that category (according to the [Cargo Book] where 0.x.y track major changes with x and
-  minor/patch changes with y).
+  minor/patch changes with y) in reverse-chronological order (most recent first).
 - Each item in those lists is a short description of the change.
 - The last version is 0.1.0 and contains no changes.
 - The last line is a comment with a counter to skip the CI test for that changelog.
