@@ -41,7 +41,7 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
       prelude) ;;
       *) package_features | grep -q '^default$' && e "Cargo.toml for $dir has default features" ;;
     esac
-    case $dir in
+    case $crate in
       # Those crates are allowed to have dependencies with default features.
       api-desc|api-macro|cli|cli-tools) ;;
       *) sed -n '/^\[dependencies]$/,/^$/{/^wasefire-/d;/^[a-z]/!d;'\
