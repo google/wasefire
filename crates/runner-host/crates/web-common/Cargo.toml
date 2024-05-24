@@ -11,3 +11,8 @@ serde = { version = "1.0.195", features = ["derive"] }
 
 [dev-dependencies]
 serde_json = "1.0.111"
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

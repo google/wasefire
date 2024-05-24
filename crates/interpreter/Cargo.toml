@@ -32,3 +32,8 @@ float-types = ["dep:libm"]
 vector-types = []
 # Enable caching for execution.
 cache = ["dep:lru"]
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

@@ -18,27 +18,32 @@ features = ["full-api", "std"]
 aead = { version = "0.5.2", default-features = false, optional = true }
 aes = { version = "0.8.3", default-features = false, optional = true }
 aes-gcm = { version = "0.10.3", default-features = false, optional = true }
-bytemuck = { version = "1.14.0", default-features = false }
+bytemuck = { version = "1.14.0", default-features = false, optional = true }
 ccm = { version = "0.5.0", default-features = false, optional = true }
-crypto-common = { version = "0.1.6", default-features = false }
+crypto-common = { version = "0.1.6", default-features = false, optional = true }
 defmt = { version = "0.3.5", default-features = false, optional = true }
 derivative = { version = "2.2.0", default-features = false, features = ["use_core"] }
-digest = { version = "0.10.7", default-features = false, features = ["mac"] }
+digest = { version = "0.10.7", default-features = false, optional = true }
 ecdsa = { version = "0.16.9", default-features = false, optional = true }
 elliptic-curve = { version = "0.13.8", default-features = false, optional = true }
-generic-array = { version = "0.14.7", default-features = false }
+generic-array = { version = "0.14.7", default-features = false, optional = true }
 hmac = { version = "0.12.1", default-features = false, optional = true }
 p256 = { version = "0.13.2", default-features = false, optional = true }
 p384 = { version = "0.13.0", default-features = false, optional = true }
 sha2 = { version = "0.10.8", default-features = false, optional = true }
 signature = { version = "2.2.0", default-features = false, optional = true }
-typenum = { version = "1.17.0", default-features = false }
-usb-device = { version = "0.3.1", default-features = false }
-usbd-serial = { version = "0.2.0", default-features = false }
-wasefire-applet-api = { version = "0.6.1-git", path = "../api", features = ["host"] }
+typenum = { version = "1.17.0", default-features = false, optional = true }
+usb-device = { version = "0.3.1", default-features = false, optional = true }
+usbd-serial = { version = "0.2.0", default-features = false, optional = true }
 wasefire-error = { version = "0.1.1-git", path = "../error" }
-wasefire-logger = { version = "0.1.4", path = "../logger" }
+wasefire-logger = { version = "0.1.5-git", path = "../logger" }
 wasefire-store = { version = "0.2.4-git", path = "../store", optional = true }
+
+[dependencies.wasefire-applet-api]
+version = "0.6.1-git"
+path = "../api"
+features = ["host"]
+optional = true
 
 [features]
 std = ["wasefire-store?/std"]
@@ -56,7 +61,7 @@ api-crypto-p256 = ["internal-api-crypto-ecc"]
 api-crypto-p384 = ["internal-api-crypto-ecc"]
 api-crypto-sha256 = ["internal-api-crypto-hash"]
 api-crypto-sha384 = ["internal-api-crypto-hash"]
-api-gpio = []
+api-gpio = ["bytemuck/derive"]
 api-led = []
 api-platform = ["internal-api-platform"]
 api-platform-protocol = ["internal-api-platform"]
@@ -66,7 +71,7 @@ api-rng = []
 api-storage = ["dep:wasefire-store"]
 api-timer = []
 api-uart = []
-api-usb-serial = ["internal-api-usb"]
+api-usb-serial = ["dep:usb-device", "dep:usbd-serial", "internal-api-usb"]
 # Enables all API features (unstable).
 full-api = [
   "api-button",
@@ -124,10 +129,10 @@ software-crypto-sha256 = ["api-crypto-sha256", "dep:sha2"]
 software-crypto-sha384 = ["api-crypto-sha384", "dep:sha2"]
 # Internal features.
 internal-api-crypto = []
-internal-api-crypto-aead = ["internal-api-crypto"]
-internal-api-crypto-ecc = ["internal-api-crypto"]
-internal-api-crypto-hash = ["internal-api-crypto"]
-internal-api-crypto-hmac = ["internal-api-crypto"]
+internal-api-crypto-aead = ["dep:generic-array", "dep:typenum", "internal-api-crypto"]
+internal-api-crypto-ecc = ["dep:generic-array", "dep:typenum", "internal-api-crypto"]
+internal-api-crypto-hash = ["dep:crypto-common", "dep:digest", "dep:typenum", "internal-api-crypto"]
+internal-api-crypto-hmac = ["dep:crypto-common", "dep:typenum", "digest/mac", "internal-api-crypto"]
 internal-api-platform = []
 internal-api-radio = []
 internal-api-usb = []
@@ -154,5 +159,9 @@ internal-software-crypto-ecc = [
 ]
 internal-software-crypto-hmac = ["dep:hmac"]
 
-[lints.rust]
-missing-docs = "warn"
+[lints]
+clippy.unit-arg = "allow"
+rust.missing-docs = "warn"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

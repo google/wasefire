@@ -39,7 +39,7 @@ ensure_submodule() {
 # check_*_api <prefix> <features> <clippy-args>..
 # <prefix> = "api-", "applet-api-", or "board-api-"
 # <features> = "--features=" or "--features=wasm,std,"
-# <clippy-args> = "--all-targets" or "--target=wasm32-unknown-unknown"
+# <clippy-args> = "--target=wasm32-unknown-unknown"
 check_applet_api() { _test_check_api "$_TEST_APPLET_API" "$@"; }
 check_board_api() { _test_check_api "$_TEST_BOARD_API" "$@"; }
 check_software_crypto() {
@@ -53,8 +53,12 @@ check_software_crypto() {
 }
 
 test_helper() {
-  _test_desc | grep -v -e '^$' -e '^#' -e 'cargo \(check\|test\)' \
+  _test_desc | grep -v 'cargo \(check\|test\)' \
     && e 'Invalid description (invalid commands are listed above).'
+  # TODO: Check tests/* and examples/* to make sure they have a specific line. Or actually, create
+  # one clippy per test/example based on the first cargo check unless that test/example already has
+  # custom line
+  # TODO: Also check that there's a cargo test if there's a #[test].
   _test_desc | _test_check | grep 'cargo check' | sh -ex
   _test_desc | grep 'cargo test' | sh -ex
   x cargo fmt -- --check
@@ -65,16 +69,17 @@ test_helper() {
     target="$(package_doc_default_target)"
     [ -z "$(package_doc_targets)" ] || e 'docs.rs targets unsupported'
     [ -n "$target" ] && target="--target=$target"
+    [ -n "$target" ] || x cargo test --doc $features
     x env RUSTDOCFLAGS=--deny=warnings cargo doc --no-deps $target $features
   fi
   exit
 }
 
 _test_desc() {
-  sed '0,/^test_helper$/d;:a;/\\$/{N;s/\\\n//;ta};s/ \+/ /g' "$SELF"
+  sed '0,/^test_helper$/d;:a;/\\$/{N;s/\\\n//;ta};s/ \+/ /g' "$SELF" | grep -v '^\($\|#\)'
 }
 
-_test_check() { sed 's/cargo test/cargo check --all-targets/'; }
+_test_check() { sed 's/cargo test/cargo check --profile=test/'; }
 _test_clippy() { sed 's/cargo check/cargo clippy/;s/$/ -- --deny=warnings/'; }
 
 _test_check_api() {

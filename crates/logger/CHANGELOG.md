@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5-git
+
+### Patch
+
+- Use common Wasefire lints
+
 ## 0.1.4
 
 ### Patch

@@ -20,6 +20,7 @@
 
 ### Patch
 
+- Move lints to `Cargo.toml`, use common Wasefire lints, and make most dependencies optional
 - Update dependencies
 
 ## 0.5.0

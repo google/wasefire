@@ -9,7 +9,6 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-wasefire-error.path = "../../error"
 wasefire-protocol.path = ".."
 
 [[bin]]
@@ -25,3 +24,7 @@ doc = false
 name = "response"
 path = "fuzz_targets/response.rs"
 test = false
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unsafe-op-in-unsafe-fn = "warn"

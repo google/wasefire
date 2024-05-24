@@ -17,3 +17,9 @@ wasefire-error = { version = "0.1.1-git", path = "../error" }
 
 [features]
 std = ["wasefire-error/std"]
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

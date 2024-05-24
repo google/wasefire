@@ -85,3 +85,8 @@ wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
 [patch.crates-io.nrf-usbd]
 git = "https://github.com/nrf-rs/nrf-usbd.git"
 rev = "c736b03214e740d06251266b56d36c648a6c7f1b"
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"
