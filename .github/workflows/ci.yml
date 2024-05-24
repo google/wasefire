@@ -2,11 +2,9 @@ name: CI
 
 on:
   push:
-    branches:
-      - dev/wasm-threads
   pull_request:
-    branches:
-      - dev/wasm-threads
+  schedule:
+    - cron: 45 3 * * 2 # every Tuesday at 3:45 UTC
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -24,17 +22,17 @@ jobs:
         run: |
           x() {
             local check=$1
+            [[ $GITHUB_BASE_REF == dev/* && $check == changelog ]] && return
             while [[ $# -gt 1 ]]; do
               shift
-              if [[ $1 == ${{ github.event_name }} ]]; then
-                [[ -z "$CHECKS" ]] || CHECKS+=', '
-                CHECKS+="\"$check\""
-              fi
+              [[ $1 == $GITHUB_EVENT_NAME ]] || continue
+              [[ -z "$CHECKS" ]] || CHECKS+=', '
+              CHECKS+="\"$check\""
             done
             true
           }
           x   copyright  pull_request
-          x   changelog
+          x   changelog  pull_request
           x  textreview  pull_request
           x        sync  pull_request  push  schedule
           x     publish  pull_request  push  schedule
