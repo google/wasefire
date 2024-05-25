@@ -4,6 +4,8 @@
 
 ### Patch
 
+- Fix lints
+- Update dependencies
 - Move lints to `Cargo.toml` and use common Wasefire lints
 - Use pure ASCII instead of UTF-8 in documentation
 

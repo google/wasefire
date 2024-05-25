@@ -14,6 +14,7 @@
 
 ### Patch
 
+- Fix lints
 - Use common Wasefire lints and make most dependencies optional
 - Add `Failure` type to simplify try-blocks for `Scheduler::reply()` arguments
 - Update `store` errors mapping

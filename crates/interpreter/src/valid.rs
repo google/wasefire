@@ -566,14 +566,14 @@ impl<'a, 'm> Expr<'a, 'm> {
             TableSet(x) => {
                 self.pops([ValType::I32, self.context.table(x)?.item.into()][..].into())?;
             }
-            ILoad(n, m) => self.load(NumType::i(n), n.into(), m)?,
+            ILoad(n, m) => self.load(false, NumType::i(n), n.into(), m)?,
             #[cfg(feature = "float-types")]
-            FLoad(n, m) => self.load(NumType::f(n), n.into(), m)?,
-            ILoad_(b, _, m) => self.load(NumType::i(b.into()), b.into(), m)?,
-            IStore(n, m) => self.store(NumType::i(n), n.into(), m)?,
+            FLoad(n, m) => self.load(false, NumType::f(n), n.into(), m)?,
+            ILoad_(b, _, m) => self.load(false, NumType::i(b.into()), b.into(), m)?,
+            IStore(n, m) => self.store(false, NumType::i(n), n.into(), m)?,
             #[cfg(feature = "float-types")]
-            FStore(n, m) => self.store(NumType::f(n), n.into(), m)?,
-            IStore_(b, m) => self.store(NumType::i(b.into()), b.into(), m)?,
+            FStore(n, m) => self.store(false, NumType::f(n), n.into(), m)?,
+            IStore_(b, m) => self.store(false, NumType::i(b.into()), b.into(), m)?,
             MemorySize => {
                 check(!self.context.mems.is_empty())?;
                 self.push(OpdType::I32);
@@ -647,68 +647,51 @@ impl<'a, 'm> Expr<'a, 'm> {
             }
             #[cfg(feature = "threads")]
             AtomicNotify(m) => {
-                check(m.align == 2)?;
                 check(!self.context.mems.is_empty())?;
+                check(m.align == 2)?;
                 self.pops([ValType::I32, ValType::I32][..].into())?;
                 self.push(OpdType::I32);
             }
             #[cfg(feature = "threads")]
             AtomicWait(n, m) => {
-                self.check_aligned(m, n.into())?;
-                check(!self.context.mems.is_empty())?;
+                self.check_mem(true, n.into(), m)?;
                 self.pops([ValType::I32, NumType::i(n).into(), ValType::I64][..].into())?;
                 self.push(OpdType::I32);
             }
             #[cfg(feature = "threads")]
             AtomicFence => (),
             #[cfg(feature = "threads")]
-            AtomicLoad(n, m) => {
-                self.check_aligned(m, n.into())?;
-                self.load(NumType::i(n), n.into(), m)?
-            }
+            AtomicLoad(n, m) => self.load(true, NumType::i(n), n.into(), m)?,
             #[cfg(feature = "threads")]
-            AtomicLoad_(b, m) => {
-                self.check_aligned(m, b.into())?;
-                self.load(NumType::i(b.into()), b.into(), m)?;
-            }
+            AtomicLoad_(b, m) => self.load(true, NumType::i(b.into()), b.into(), m)?,
             #[cfg(feature = "threads")]
-            AtomicStore(n, m) => {
-                self.check_aligned(m, n.into())?;
-                self.store(NumType::i(n), n.into(), m)?;
-            }
+            AtomicStore(n, m) => self.store(true, NumType::i(n), n.into(), m)?,
             #[cfg(feature = "threads")]
-            AtomicStore_(b, m) => {
-                self.check_aligned(m, b.into())?;
-                self.store(NumType::i(b.into()), b.into(), m)?;
-            }
+            AtomicStore_(b, m) => self.store(true, NumType::i(b.into()), b.into(), m)?,
             #[cfg(feature = "threads")]
             AtomicOp(n, syntax::AtomicOp::Cmpxchg, m) => {
-                self.check_aligned(m, n.into())?;
-                check(!self.context.mems.is_empty())?;
+                self.check_mem(true, n.into(), m)?;
                 let num = NumType::i(n);
                 self.pops([ValType::I32, num.into(), num.into()][..].into())?;
                 self.push(num.into());
             }
             #[cfg(feature = "threads")]
             AtomicOp_(b, syntax::AtomicOp::Cmpxchg, m) => {
-                self.check_aligned(m, b.into())?;
-                check(!self.context.mems.is_empty())?;
+                self.check_mem(true, b.into(), m)?;
                 let num = NumType::i(b.into());
                 self.pops([ValType::I32, num.into(), num.into()][..].into())?;
                 self.push(num.into())
             }
             #[cfg(feature = "threads")]
             AtomicOp(n, _, m) => {
-                self.check_aligned(m, n.into())?;
-                check(!self.context.mems.is_empty())?;
+                self.check_mem(true, n.into(), m)?;
                 let num = NumType::i(n);
                 self.pops([ValType::I32, num.into()][..].into())?;
                 self.push(num.into());
             }
             #[cfg(feature = "threads")]
             AtomicOp_(b, _, m) => {
-                self.check_aligned(m, b.into())?;
-                check(!self.context.mems.is_empty())?;
+                self.check_mem(true, b.into(), m)?;
                 let num = NumType::i(b.into());
                 self.pops([ValType::I32, num.into()][..].into())?;
                 self.push(num.into())
@@ -844,17 +827,15 @@ impl<'a, 'm> Expr<'a, 'm> {
         label.polymorphic = true;
     }
 
-    fn load(&mut self, t: NumType, n: usize, m: MemArg) -> CheckResult {
-        check(!self.context.mems.is_empty())?;
-        check(1 << m.align <= n / 8)?;
+    fn load(&mut self, aligned: bool, t: NumType, n: usize, m: MemArg) -> CheckResult {
+        self.check_mem(aligned, n, m)?;
         self.pop_check(ValType::I32)?;
         self.push(t.into());
         Ok(())
     }
 
-    fn store(&mut self, t: NumType, n: usize, m: MemArg) -> CheckResult {
-        check(!self.context.mems.is_empty())?;
-        check(1 << m.align <= n / 8)?;
+    fn store(&mut self, aligned: bool, t: NumType, n: usize, m: MemArg) -> CheckResult {
+        self.check_mem(aligned, n, m)?;
         self.pop_check(t.into())?;
         self.pop_check(ValType::I32)?;
         Ok(())
@@ -886,9 +867,13 @@ impl<'a, 'm> Expr<'a, 'm> {
         self.push(dst.into());
         Ok(())
     }
-    #[cfg(feature = "threads")]
-    fn check_aligned(&mut self, m: MemArg, n: usize) -> CheckResult {
-        check(1 << m.align == n / 8)?;
-        Ok(())
+
+    fn check_mem(&self, aligned: bool, n: usize, m: MemArg) -> CheckResult {
+        check(!self.context.mems.is_empty())?;
+        match (aligned, 1usize.checked_shl(m.align), n / 8) {
+            (false, Some(m), n) if m <= n => Ok(()),
+            (true, Some(m), n) if m == n => Ok(()),
+            _ => Err(invalid()),
+        }
     }
 }

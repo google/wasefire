@@ -56,8 +56,9 @@ pub struct FileOptions {
 
 impl FileStorage {
     pub fn new(path: &Path, options: FileOptions) -> StorageResult<FileStorage> {
-        let mut file_ref =
-            RefCell::new(OpenOptions::new().read(true).write(true).create(true).open(path)?);
+        let mut file_ref = RefCell::new(
+            OpenOptions::new().read(true).write(true).create(true).truncate(false).open(path)?,
+        );
         let file = file_ref.get_mut();
         let file_len = file.metadata()?.len();
         let store_len: u64 = (options.page_size * options.num_pages) as u64;

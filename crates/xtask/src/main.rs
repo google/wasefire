@@ -638,7 +638,7 @@ fn wrap_command() -> Result<Command> {
 }
 
 fn ensure_assemblyscript() -> Result<()> {
-    const ASC_VERSION: &str = "0.27.23"; // scripts/upgrade.sh relies on this name
+    const ASC_VERSION: &str = "0.27.27"; // scripts/upgrade.sh relies on this name
     const BIN: &str = "examples/assemblyscript/node_modules/.bin/asc";
     const JSON: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
     if fs::exists(BIN) && fs::exists(JSON) {

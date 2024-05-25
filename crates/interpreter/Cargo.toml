@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-interpreter"
-version = "0.2.1-git"
+version = "0.3.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -13,14 +13,14 @@ categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
 libm = { version = "0.2.8", default-features = false, optional = true }
-lru = { version = "0.12.1", default-features = false, optional = true }
+lru = { version = "0.12.3", default-features = false, optional = true }
 num_enum = { version = "0.7.2", default-features = false }
-paste = { version = "1.0.14", default-features = false }
+paste = { version = "1.0.15", default-features = false }
 portable-atomic = { version = "1.6.0", default-features = false }
 
 [dev-dependencies]
 lazy_static = "1.4.0"
-wast = "70.0.0"
+wast = "208.0.1"
 
 [features]
 # Enable debugging features (only works for targets with std).

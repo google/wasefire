@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use nrf52840_hal::prelude::{OutputPin, StatefulOutputPin};
+use embedded_hal::digital::{OutputPin, StatefulOutputPin};
 use wasefire_board_api::led::Api;
 use wasefire_board_api::{Error, Id, Support};
 

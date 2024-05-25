@@ -33,13 +33,13 @@ use cortex_m_rt::entry;
 use critical_section::Mutex;
 #[cfg(feature = "debug")]
 use defmt_rtt as _;
+use embedded_hal::digital::InputPin;
 use nrf52840_hal::ccm::{Ccm, DataRate};
 use nrf52840_hal::clocks::{self, ExternalOscillator, Internal, LfOscStopped};
 use nrf52840_hal::gpio;
 use nrf52840_hal::gpio::{Level, Output, Pin, PushPull};
 use nrf52840_hal::gpiote::Gpiote;
 use nrf52840_hal::pac::{interrupt, Interrupt};
-use nrf52840_hal::prelude::InputPin;
 use nrf52840_hal::rng::Rng;
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 #[cfg(feature = "release")]
