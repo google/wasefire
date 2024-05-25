@@ -11,7 +11,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #![cfg_attr(not(any(test, feature = "log")), no_std)]
+
+// TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
+extern crate alloc;
 
 #[cfg(not(feature = "defmt"))]
 mod no_defmt {

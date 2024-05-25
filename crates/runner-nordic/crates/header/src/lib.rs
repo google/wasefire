@@ -14,6 +14,9 @@
 
 #![no_std]
 
+// TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
+extern crate alloc;
+
 use core::ptr::addr_of;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
