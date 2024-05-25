@@ -35,11 +35,12 @@ run() {
 
 ensure_cargo() {
   local flags="$1@$2"
-  { cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2:\$"
-  } && return
+  local locked=--locked
+  { cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2:\$"; } && return
   [ "$1" = cargo-edit ] && ensure lib openssl
+  [ "$1" = taplo-cli ] && locked=
   shift 2
-  x cargo install --locked --root="$CARGO_ROOT" "$flags" "$@"
+  x cargo install $locked --root="$CARGO_ROOT" "$flags" "$@"
 }
 
 IS_CARGO=y
