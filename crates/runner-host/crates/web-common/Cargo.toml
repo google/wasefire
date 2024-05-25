@@ -7,10 +7,10 @@ publish = false
 edition = "2021"
 
 [dependencies]
-serde = { version = "1.0.195", features = ["derive"] }
+serde = { version = "1.0.202", features = ["derive"] }
 
 [dev-dependencies]
-serde_json = "1.0.111"
+serde_json = "1.0.117"
 
 [lints]
 clippy.unit-arg = "allow"

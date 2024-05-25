@@ -18,6 +18,12 @@ set -e
 
 # This script runs the continuous integration tests.
 
+# Tests whether the current branch is a dev/ branch.
+is_dev() {
+  local name=$(git rev-parse --abbrev-ref HEAD)
+  [ "${name#dev/}" != "$name" ]
+}
+
 x ./scripts/ci-copyright.sh
 x cargo xtask textreview
 x ./scripts/ci-taplo.sh

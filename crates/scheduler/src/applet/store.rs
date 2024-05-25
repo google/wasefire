@@ -30,6 +30,7 @@ pub trait StoreApi {
     fn memory(&mut self) -> Self::Memory<'_>;
 }
 
+#[allow(dead_code)]
 pub trait MemoryApi {
     fn get(&self, ptr: u32, len: u32) -> Result<&[u8], Trap>;
     fn get_mut(&self, ptr: u32, len: u32) -> Result<&mut [u8], Trap>;

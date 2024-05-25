@@ -566,14 +566,14 @@ impl<'a, 'm> Expr<'a, 'm> {
             TableSet(x) => {
                 self.pops([ValType::I32, self.context.table(x)?.item.into()][..].into())?;
             }
-            ILoad(n, m) => self.load(NumType::i(n), n.into(), m)?,
+            ILoad(n, m) => self.load(false, NumType::i(n), n.into(), m)?,
             #[cfg(feature = "float-types")]
-            FLoad(n, m) => self.load(NumType::f(n), n.into(), m)?,
-            ILoad_(b, _, m) => self.load(NumType::i(b.into()), b.into(), m)?,
-            IStore(n, m) => self.store(NumType::i(n), n.into(), m)?,
+            FLoad(n, m) => self.load(false, NumType::f(n), n.into(), m)?,
+            ILoad_(b, _, m) => self.load(false, NumType::i(b.into()), b.into(), m)?,
+            IStore(n, m) => self.store(false, NumType::i(n), n.into(), m)?,
             #[cfg(feature = "float-types")]
-            FStore(n, m) => self.store(NumType::f(n), n.into(), m)?,
-            IStore_(b, m) => self.store(NumType::i(b.into()), b.into(), m)?,
+            FStore(n, m) => self.store(false, NumType::f(n), n.into(), m)?,
+            IStore_(b, m) => self.store(false, NumType::i(b.into()), b.into(), m)?,
             MemorySize => {
                 check(!self.context.mems.is_empty())?;
                 self.push(OpdType::I32);
@@ -776,17 +776,15 @@ impl<'a, 'm> Expr<'a, 'm> {
         label.polymorphic = true;
     }
 
-    fn load(&mut self, t: NumType, n: usize, m: MemArg) -> CheckResult {
-        check(!self.context.mems.is_empty())?;
-        check(1 << m.align <= n / 8)?;
+    fn load(&mut self, aligned: bool, t: NumType, n: usize, m: MemArg) -> CheckResult {
+        self.check_mem(aligned, n, m)?;
         self.pop_check(ValType::I32)?;
         self.push(t.into());
         Ok(())
     }
 
-    fn store(&mut self, t: NumType, n: usize, m: MemArg) -> CheckResult {
-        check(!self.context.mems.is_empty())?;
-        check(1 << m.align <= n / 8)?;
+    fn store(&mut self, aligned: bool, t: NumType, n: usize, m: MemArg) -> CheckResult {
+        self.check_mem(aligned, n, m)?;
         self.pop_check(t.into())?;
         self.pop_check(ValType::I32)?;
         Ok(())
@@ -817,5 +815,14 @@ impl<'a, 'm> Expr<'a, 'm> {
         self.pop_check(src.into())?;
         self.push(dst.into());
         Ok(())
+    }
+
+    fn check_mem(&self, aligned: bool, n: usize, m: MemArg) -> CheckResult {
+        check(!self.context.mems.is_empty())?;
+        match (aligned, 1usize.checked_shl(m.align), n / 8) {
+            (false, Some(m), n) if m <= n => Ok(()),
+            (true, Some(m), n) if m == n => Ok(()),
+            _ => Err(invalid()),
+        }
     }
 }
