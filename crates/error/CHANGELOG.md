@@ -9,6 +9,7 @@
 
 ### Patch
 
+- Depend on `alloc` to silence `unused-crate-dependencies` false positive
 - Update dependencies
 - Use common Wasefire lints
 
