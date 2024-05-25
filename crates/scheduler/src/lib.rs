@@ -101,6 +101,7 @@ pub struct Scheduler<B: Board> {
     protocol: protocol::State,
 }
 
+#[cfg(feature = "board-api-timer")]
 #[derive(Clone)]
 struct Timer {
     // TODO: Add AppletId.

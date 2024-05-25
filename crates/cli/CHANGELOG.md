@@ -9,6 +9,7 @@
 
 ### Patch
 
+- Update dependencies
 - Depend on features of dependencies explicitly
 - Use common Wasefire lints
 

@@ -12,13 +12,13 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-anyhow = { version = "1.0.79", default-features = false, features = ["std"] }
-clap = { version = "4.4.18", default-features = false, features = ["derive", "std"] }
-data-encoding = { version = "2.5.0", default-features = false }
-data-encoding-macro = { version = "0.1.14", default-features = false }
-proc-macro2 = { version = "1.0.76", default-features = false }
-quote = { version = "1.0.35", default-features = false }
-syn = { version = "2.0.48", default-features = false, features = ["printing"] }
+anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
+clap = { version = "4.5.4", default-features = false, features = ["derive", "std"] }
+data-encoding = { version = "2.6.0", default-features = false }
+data-encoding-macro = { version = "0.1.15", default-features = false }
+proc-macro2 = { version = "1.0.83", default-features = false }
+quote = { version = "1.0.36", default-features = false }
+syn = { version = "2.0.66", default-features = false, features = ["printing"] }
 
 [features]
 # API features.
