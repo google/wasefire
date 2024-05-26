@@ -92,6 +92,6 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
       exit
     fi
     i "Publish $crate from $latest to $current"
-    eval "$(sed -n 's/^cargo \(check\|test\) --\(lib|bin=[^ ]*\)/cargo publish/p;T;q' test.sh)"
+    eval "$(sed -En 's/^cargo (check|test) --(lib|bin=[^ ]*)/cargo publish/p;T;q' test.sh)"
   )
 done
