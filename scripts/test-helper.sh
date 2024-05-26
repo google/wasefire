@@ -53,12 +53,12 @@ check_software_crypto() {
 }
 
 test_helper() {
-  _test_desc | grep -v 'cargo \(check\|test\)' \
+  _test_desc | grep -Ev 'cargo (check|test) --(lib|(bin|test|example)=[^ ]*)( |$)' \
     && e 'Invalid description (invalid commands are listed above).'
-  # TODO: Check tests/* and examples/* to make sure they have a specific line. Or actually, create
-  # one clippy per test/example based on the first cargo check unless that test/example already has
-  # custom line
-  # TODO: Also check that there's a cargo test if there's a #[test].
+  _test_ensure_lib
+  _test_ensure_bins
+  _test_ensure_dir tests test test
+  _test_ensure_dir examples check example
   _test_desc | _test_check | grep 'cargo check' | sh -ex
   _test_desc | grep 'cargo test' | sh -ex
   x cargo fmt -- --check
@@ -76,11 +76,37 @@ test_helper() {
 }
 
 _test_desc() {
-  sed '0,/^test_helper$/d;:a;/\\$/{N;s/\\\n//;ta};s/ \+/ /g' "$SELF" | grep -v '^\($\|#\)'
+  sed '0,/^test_helper$/d;:a;/\\$/{N;s/\\\n//;ta};s/ \+/ /g' "$SELF" | grep -Ev '^($|#)'
 }
 
 _test_check() { sed 's/cargo test/cargo check --profile=test/'; }
 _test_clippy() { sed 's/cargo check/cargo clippy/;s/$/ -- --deny=warnings/'; }
+
+_test_ensure_lib() {
+  if [ -e src/lib.rs ]; then
+    if git grep -q '#\[test\]' src
+    then _test_ensure_desc 'cargo test --lib'
+    else _test_ensure_desc 'cargo (check|test) --lib'
+    fi
+  fi
+}
+_test_ensure_bins() {
+  local i
+  for i in $(package_bin_name); do
+    _test_ensure_desc "cargo (check|test) --bin=$i"
+  done
+  if [ -e src/main.rs ] && ! package_bin_path | grep -q src/main.rs; then
+    _test_ensure_desc "cargo (check|test) --bin=$(package_name)"
+  fi
+}
+_test_ensure_dir() {
+  local i
+  [ -d $1 ] || return 0
+  for i in $(find $1 -name '*.rs' -printf '%P\n'); do
+    _test_ensure_desc "cargo $2 --$3=${i%.rs}"
+  done
+}
+_test_ensure_desc() { _test_desc | grep -Eq "$1" || e "No \`$1\` found."; }
 
 _test_check_api() {
   local api="$1"
@@ -95,7 +121,7 @@ _test_check_api() {
       $(_test_full_deps $full $prefix)
   fi
   for api in $api; do
-    x cargo clippy "$@" "$features$prefix$api" -- --deny=warnings
+    x cargo clippy --lib "$@" "$features$prefix$api" -- --deny=warnings
   done
 }
 

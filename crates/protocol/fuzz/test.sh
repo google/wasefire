@@ -19,4 +19,5 @@ set -e
 
 test_helper
 
-cargo check
+cargo check --bin=request
+cargo check --bin=response

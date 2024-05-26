@@ -21,4 +21,4 @@ check_applet_api api- --features=
 
 test_helper
 
-cargo test
+cargo test --lib
