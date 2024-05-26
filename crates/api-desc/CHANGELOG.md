@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.1.7-git
+## 0.2.0-git
+
+### Major
+
+- Remove the binary target making this crate a pure library
+- Remove implementation of `clap::ValueEnum` for `Lang`
 
 ### Minor
 

@@ -242,9 +242,9 @@ impl Flags {
             MainCommand::UpdateApis { features } => {
                 let (lang, ext) = ("assemblyscript", "ts");
                 let mut cargo = Command::new("cargo");
-                cargo.args(["run", "--manifest-path=crates/api-desc/Cargo.toml"]);
+                cargo.args(["run", "--manifest-path=crates/xtask/crates/update-api/Cargo.toml"]);
                 for features in features {
-                    cargo.arg(format!("--features={features}"));
+                    cargo.arg(format!("--features=wasefire-applet-api-desc/{features}"));
                 }
                 cargo.arg("--");
                 cargo.arg(format!("--lang={lang}"));
