@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-applet-api-desc"
-version = "0.1.7-git"
+version = "0.2.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -12,8 +12,6 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
-clap = { version = "4.5.4", default-features = false, features = ["derive", "std"] }
 data-encoding = { version = "2.6.0", default-features = false }
 data-encoding-macro = { version = "0.1.15", default-features = false }
 proc-macro2 = { version = "1.0.83", default-features = false }
@@ -75,3 +73,4 @@ internal-api-usb = []
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
 rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"
