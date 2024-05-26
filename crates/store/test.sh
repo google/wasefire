@@ -21,4 +21,4 @@ test_helper
 
 cargo test --lib --features=std
 cargo test --test=store --features=std
-cargo check --target=thumbv7em-none-eabi
+cargo check --lib --target=thumbv7em-none-eabi

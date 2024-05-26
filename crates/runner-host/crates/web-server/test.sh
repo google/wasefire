@@ -19,5 +19,5 @@ set -e
 
 test_helper
 
-cargo test
-cargo check --features=wasefire-logger/log
+cargo test --lib
+cargo check --lib --features=wasefire-logger/log
