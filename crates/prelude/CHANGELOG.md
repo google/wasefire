@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add non-default `wasm` feature which was the default behavior
 - Change `gpio` module to never panic and return an error instead
 - Change `button::Listener::new()` to never panic and return an error instead
 
