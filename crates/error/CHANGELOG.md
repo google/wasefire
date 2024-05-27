@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `Error::new_const()` and make `Error::{space,code}()` const
 - Add `std` feature to implement `std::error::Error`
 - Add an `OutOfBounds` error
 
