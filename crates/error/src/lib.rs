@@ -37,16 +37,21 @@ pub struct Error(u32);
 impl Error {
     /// Creates a new error.
     pub fn new(space: impl SpaceParam, code: impl CodeParam) -> Self {
-        Error((space.into() as u32) << 16 | code.into() as u32)
+        Error::new_const(space.into(), code.into())
+    }
+
+    /// Creates a new error at compile-time.
+    pub const fn new_const(space: u8, code: u16) -> Self {
+        Error((space as u32) << 16 | code as u32)
     }
 
     /// Returns the error space.
-    pub fn space(self) -> u8 {
+    pub const fn space(self) -> u8 {
         (self.0 >> 16) as u8
     }
 
     /// Returns the error code.
-    pub fn code(self) -> u16 {
+    pub const fn code(self) -> u16 {
         self.0 as u16
     }
 
