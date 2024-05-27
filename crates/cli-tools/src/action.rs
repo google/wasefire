@@ -109,18 +109,11 @@ impl RustAppletBuild {
                 rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
                 rustflags.push("-C target-feature=+bulk-memory".to_string());
                 cargo.args(["--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
+                wasefire_feature(package, "wasm", &mut cargo)?;
             }
             Some(target) => {
                 cargo.args(["--crate-type=staticlib", &format!("--target={target}")]);
-                if package.features.contains_key("native") {
-                    cargo.arg("--features=native");
-                } else {
-                    ensure!(
-                        package.dependencies.iter().any(|x| x.name == "wasefire"),
-                        "wasefire must be a direct dependency for native builds"
-                    );
-                    cargo.arg("--features=wasefire/native");
-                }
+                wasefire_feature(package, "native", &mut cargo)?;
             }
         }
         match &self.profile {
@@ -219,4 +212,19 @@ fn metadata(dir: impl Into<PathBuf>) -> Result<Metadata> {
     let metadata = MetadataCommand::new().current_dir(dir).no_deps().exec()?;
     ensure!(metadata.packages.len() == 1, "not exactly one package");
     Ok(metadata)
+}
+
+fn wasefire_feature(
+    package: &cargo_metadata::Package, feature: &str, cargo: &mut Command,
+) -> Result<()> {
+    if package.features.contains_key(feature) {
+        cargo.arg(format!("--features={feature}"));
+    } else {
+        ensure!(
+            package.dependencies.iter().any(|x| x.name == "wasefire"),
+            "wasefire must be a direct dependency"
+        );
+        cargo.arg(format!("--features=wasefire/{feature}"));
+    }
+    Ok(())
 }
