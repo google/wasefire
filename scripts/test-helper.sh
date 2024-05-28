@@ -66,6 +66,7 @@ test_helper() {
   if [ -e src/lib.rs -a "$(package_publish)" = true ]; then
     features=$(package_doc_features | tr -d '[]" ')
     [ -n "$features" ] && features="--features=$features"
+    [ "$(package_doc_all_features)" = true ] && features=--all-features
     target="$(package_doc_default_target)"
     [ -z "$(package_doc_targets)" ] || e 'docs.rs targets unsupported'
     [ -n "$target" ] && target="--target=$target"
