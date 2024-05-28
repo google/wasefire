@@ -31,22 +31,17 @@ pub fn app() -> Html {
 
     let on_board_ready = Callback::from({
         let runner_connection = runner_connection.clone();
-        move |()| {
-            runner_connection.send_board_ready();
-        }
+        move |()| runner_connection.send_board_ready()
     });
 
     let send_event_callback = Callback::from({
         let runner_connection = runner_connection.clone();
-        move |event: Event| {
-            runner_connection.send_event(event);
-        }
+        move |event: Event| runner_connection.send_event(event)
     });
 
     use_effect_with(runner_connection.command_state.clone(), move |command_state| {
         if let Some(command) = &**command_state {
             info!("Command: {command:?}");
-
             match command {
                 Command::Connected => info!("Connected to runner"),
                 Command::Disconnected => warn!("Disconnected from runner"),

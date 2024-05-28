@@ -20,6 +20,7 @@ use yew::prelude::*;
 use yew_hooks::prelude::*;
 
 #[derive(Properties, PartialEq)]
+
 pub struct Props {
     #[prop_or_default]
     pub id: usize,
@@ -47,21 +48,18 @@ pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html 
         }
     });
 
-    {
-        let command_state = command_state.clone();
-        use_effect_with(command_state, {
-            let history = history.clone();
-            move |command_state| {
-                if let Some(command) = &**command_state {
-                    info!("Command: {command:?}");
-                    if let Command::Log { message } = command {
-                        history.push(format!("[recv]: {message}"));
-                    }
+    use_effect_with(command_state.clone(), {
+        let history = history.clone();
+        move |command_state| {
+            if let Some(command) = &**command_state {
+                info!("Command: {command:?}");
+                if let Command::Log { message } = command {
+                    history.push(format!("[recv]: {message}"));
                 }
-                || ()
             }
-        });
-    }
+            || ()
+        }
+    });
 
     html! {
         <div id={id.to_string()} class={"console"}>

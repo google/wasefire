@@ -26,18 +26,16 @@ pub struct Props {
 #[function_component]
 pub fn Button(Props { id, on_event }: &Props) -> Html {
     let pressed = use_state(|| false);
-    let press = {
-        Callback::from({
-            let pressed = pressed.clone();
-            let on_event = on_event.clone();
-            let id = *id;
-            move |_| {
-                info!("Pressed button id: {id}");
-                pressed.set(true);
-                on_event.emit(Event::Button { component_id: id, state: ButtonState::Pressed });
-            }
-        })
-    };
+    let press = Callback::from({
+        let pressed = pressed.clone();
+        let on_event = on_event.clone();
+        let id = *id;
+        move |_| {
+            info!("Pressed button id: {id}");
+            pressed.set(true);
+            on_event.emit(Event::Button { component_id: id, state: ButtonState::Pressed });
+        }
+    });
 
     let unpress = Callback::from({
         let pressed = pressed.clone();
@@ -45,6 +43,8 @@ pub fn Button(Props { id, on_event }: &Props) -> Html {
         let id = *id;
         move |_| {
             info!("Unpressed button id: {id}");
+            // Necessary because it may also be triggered when the mouse
+            // stops hovering over the button.
             if *pressed {
                 pressed.set(false);
                 on_event.emit(Event::Button { component_id: id, state: ButtonState::Released });
@@ -57,6 +57,7 @@ pub fn Button(Props { id, on_event }: &Props) -> Html {
             id={id.to_string()}
             onmousedown={press}
             onmouseup={unpress.clone()}
+            // Fixes a bug when holding and dragging the mouse over the button.
             onmouseleave={unpress.clone()}
             class={"button"}
         >

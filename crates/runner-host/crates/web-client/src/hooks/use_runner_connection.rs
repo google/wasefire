@@ -41,22 +41,19 @@ impl UseRunnerConnectionHandle {
 pub fn use_runner_connection(backend_address: String) -> UseRunnerConnectionHandle {
     let ws = use_websocket(backend_address.clone());
     let command_state = use_state(|| None);
-
-    {
-        // Receive message by depending on `ws.message`.
-        use_effect_with(ws.message.clone(), {
-            let command_state = command_state.clone();
-            move |message| {
-                if let Some(message) = &**message {
-                    info!("Message: {message}");
-                    match serde_json::from_str::<Command>(message) {
-                        Ok(command) => command_state.set(Some(command)),
-                        Err(err) => warn!("Error parsing message: {err}"),
-                    }
+    // Receive message by depending on `ws.message`.
+    use_effect_with(ws.message.clone(), {
+        let command_state = command_state.clone();
+        move |message| {
+            if let Some(message) = &**message {
+                info!("Message: {message}");
+                match serde_json::from_str::<Command>(message) {
+                    Ok(command) => command_state.set(Some(command)),
+                    Err(err) => warn!("Error parsing message: {err}"),
                 }
-                || ()
             }
-        });
-    }
-    UseRunnerConnectionHandle { ws, command_state }
+            || ()
+        }
+    });
+    return UseRunnerConnectionHandle { ws, command_state };
 }

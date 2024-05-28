@@ -41,20 +41,19 @@ pub fn LED(Props { id, command_state }: &Props) -> Html {
     });
 
     return html! {
-    <div class="monochrome_led" id={id.to_string()}>
-        <object
-            class="led" type="image/svg+xml"
-            data="components/monochrome_led_on.svg"
-            style={if *lit { "" } else { "display: none;" }}
-        >
-        </object>
-        <object
-            class="led"
-            type="image/svg+xml"
-            data="components/monochrome_led_off.svg"
-            style={if !*lit { "" } else { "display: none;" }}
-        >
-        </object>
-    </div>
+        <div class="monochrome_led" id={id.to_string()}>
+            <object
+                class="led" type="image/svg+xml"
+                data="components/monochrome_led_on.svg"
+                style={if *lit { "" } else { "display: none;" }}
+            />
+
+            <object
+                class="led"
+                type="image/svg+xml"
+                data="components/monochrome_led_off.svg"
+                style={if !*lit { "" } else { "display: none;" }}
+            />
+        </div>
     };
 }
