@@ -36,44 +36,26 @@ pub fn Board(Props { command_state, on_board_ready, on_event }: &Props) -> Html 
         let on_board_ready = on_board_ready.clone();
         move |command_state| {
             if let Some(Command::BoardConfig { components }) = &**command_state {
-                info!("Board config: {:?}", components);
+                info!("Board config: {components:?}");
                 board_config.set(Some(components.clone()));
                 on_board_ready.emit(());
             }
-
             || ()
         }
     });
 
     return html! {
-
-
-        <div class="board">
-        {
+        <div class="board">{
             if let Some(board_config) = &*board_config {
-                board_config.iter().map(|component| html! {
-                    match component {
-                        Component::Button{id} => {
-                            html! {
-                                <Button id={id} on_event={on_event} />
-                            }
-                        }
-                        Component::MonochromeLed{id} => {
-                            html! {
-                                <LED id={id} command_state={command_state.clone()}/>
-                            }
-                        }
+                board_config.iter().map(|component| match component {
+                    Component::Button{id} => html!(<Button id={id} on_event={on_event} />),
+                    Component::MonochromeLed{id} => html! {
+                        <LED id={id} command_state={command_state.clone()}/>
                     }
-
                 }).collect::<Html>()
             } else {
-                html! {
-                    <div>{"Waiting for backend connection..."}</div>
-                }
+                html!(<div>{"Waiting for backend connection..."}</div>)
             }
-
-
-        }
-        </div>
+        }</div>
     };
 }

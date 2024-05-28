@@ -41,7 +41,7 @@ pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html 
                 console_ref.get().unwrap().value_of().dyn_into().unwrap();
             let value = input_form.value();
             info!("sending console message: {value}");
-            history.push(format!("[send]: {}", value));
+            history.push(format!("[send]: {value}"));
             on_new_console_msg.emit(value);
             input_form.set_value("");
         }
@@ -53,9 +53,9 @@ pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html 
             let history = history.clone();
             move |command_state| {
                 if let Some(command) = &**command_state {
-                    info!("Command: {:?}", command);
+                    info!("Command: {command:?}");
                     if let Command::Log { message } = command {
-                        history.push(format!("[recv]: {}", message));
+                        history.push(format!("[recv]: {message}"));
                     }
                 }
                 || ()
@@ -65,9 +65,7 @@ pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html 
 
     html! {
         <div id={id.to_string()} class={"console"}>
-            <p>
-                <b>{ "Log history: " }</b>
-            </p>
+            <p><b>{ "Log history: " }</b></p>
             { for history.current().iter().map(|message| html!(<p>{ message }</p>)) }
             <form onsubmit={onsubmit}>
                 <input ref={console_ref} type="text" id="consolein" />

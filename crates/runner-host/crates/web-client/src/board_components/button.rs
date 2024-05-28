@@ -58,7 +58,7 @@ pub fn Button(Props { id, on_event }: &Props) -> Html {
             onmousedown={press}
             onmouseup={unpress.clone()}
             onmouseleave={unpress.clone()}
-            class= {"button"}
+            class={"button"}
         >
             <img
                 draggable={"false"}
@@ -73,6 +73,5 @@ pub fn Button(Props { id, on_event }: &Props) -> Html {
                 style={if !*pressed { "" } else { "display: none;" }}
             />
         </div>
-
     };
 }

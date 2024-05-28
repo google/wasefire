@@ -58,5 +58,5 @@ pub fn use_runner_connection(backend_address: String) -> UseRunnerConnectionHand
             }
         });
     }
-    return UseRunnerConnectionHandle { ws, command_state };
+    UseRunnerConnectionHandle { ws, command_state }
 }

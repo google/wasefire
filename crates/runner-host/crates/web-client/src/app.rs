@@ -50,7 +50,7 @@ pub fn app() -> Html {
             match command {
                 Command::Connected => info!("Connected to runner"),
                 Command::Disconnected => warn!("Disconnected from runner"),
-                _ => {} // Command for other component so ignoring.
+                _ => (), // Command for other component so ignoring.
             }
         }
         || ()
