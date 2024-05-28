@@ -25,8 +25,8 @@ pub struct UseRunnerConnectionHandle {
 
 impl UseRunnerConnectionHandle {
     pub fn send_console_event(&self, console_msg: String) {
-        let command = Command::Input { message: console_msg };
-        self.ws.send(serde_json::to_string(&command).unwrap());
+        warn!("Backend processing of console input not yet implemented.");
+        warn!("Ignoring message: {console_msg}");
     }
     pub fn send_board_ready(&self) {
         let command = Event::BoardReady;
