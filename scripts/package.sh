@@ -18,6 +18,7 @@ package_publish() { _package_raw publish; }
 package_include() { _package_raw include; }
 package_exclude() { _package_raw exclude; }
 package_features() { sed -n '/^\[features]$/,/^$/{s/ = .*$//p}' Cargo.toml; }
+package_doc_all_features() { _package_doc_raw all-features; }
 package_doc_features() { _package_doc_raw features; }
 package_doc_targets() { _package_doc_raw targets; }
 package_doc_default_target() { _package_doc_raw default-target | tr -d '"'; }
