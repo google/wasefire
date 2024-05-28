@@ -37,7 +37,6 @@ use wasefire_wire::Wire;
 
 pub mod applet;
 mod logic;
-pub mod platform;
 
 /// Message direction between host and device.
 pub trait Direction: logic::Direction {}

@@ -17,10 +17,10 @@
 //! This is only meant to be used during testing, to ensure a wire format is monotonic.
 
 use alloc::boxed::Box;
+use alloc::vec;
 use alloc::vec::Vec;
 use core::any::TypeId;
 use core::fmt::Display;
-use std::collections::HashMap;
 use std::sync::Mutex;
 
 use wasefire_error::{Code, Error};
@@ -32,19 +32,12 @@ use crate::{helper, internal};
 #[derive(Debug, Clone, PartialEq, Eq, wasefire_wire_derive::Wire)]
 #[wire(crate = crate)]
 pub enum View<'a> {
-    #[wire(tag = 0)]
     Builtin(Builtin),
-    #[wire(tag = 1)]
     Array(Box<View<'a>>, usize),
-    #[wire(tag = 2)]
     Slice(Box<View<'a>>),
-    #[wire(tag = 3)]
     Struct(ViewStruct<'a>),
-    #[wire(tag = 4)]
     Enum(ViewEnum<'a>),
-    #[wire(tag = 5)]
     RecUse(usize),
-    #[wire(tag = 6)]
     RecNew(usize, Box<View<'a>>),
 }
 
@@ -89,14 +82,9 @@ impl<'a> Traverse<'a> {
         let result: Option<_> = try {
             match self.rules.get(id) {
                 Rule::Builtin(x) => View::Builtin(*x),
-                Rule::Array(_, 0) => View::Struct(Vec::new()),
-                Rule::Array(x, 1) => self.extract(*x)?,
                 Rule::Array(x, n) => View::Array(Box::new(self.extract(*x)?), *n),
                 Rule::Slice(x) => View::Slice(Box::new(self.extract_or_empty(*x))),
-                Rule::Struct(xs) => match xs[..] {
-                    [(None, x)] => self.extract(x)?,
-                    _ => View::Struct(self.extract_struct(xs)?),
-                },
+                Rule::Struct(xs) => View::Struct(self.extract_struct(xs)?),
                 Rule::Enum(xs) => View::Enum(self.extract_enum(xs)),
             }
         };
@@ -110,7 +98,10 @@ impl<'a> Traverse<'a> {
     }
 
     fn extract_struct(&mut self, xs: &RuleStruct) -> Option<ViewStruct<'static>> {
-        xs.iter().map(|(n, x)| Some((*n, self.extract(*x)?))).collect()
+        xs.iter()
+            .map(|(n, x)| Some((*n, self.extract(*x)?)))
+            .filter(|x| !matches!(x, Some((None, View::Struct(xs))) if xs.is_empty()))
+            .collect()
     }
 
     fn extract_enum(&mut self, xs: &RuleEnum) -> ViewEnum<'static> {
@@ -185,7 +176,10 @@ impl<'a> List for (&'a str, u32, ViewStruct<'a>) {
     const BEG: char = '{';
     const END: char = '}';
     fn fmt_name(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "{}={}:", self.0, self.1)
+        match self.0 {
+            "" => write!(f, "{}:", self.1),
+            _ => write!(f, "{}={}:", self.0, self.1),
+        }
     }
     fn fmt_item(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write_fields(f, &self.2)
@@ -215,60 +209,99 @@ fn write_list<T: List>(f: &mut core::fmt::Formatter, xs: &[T]) -> core::fmt::Res
 }
 
 impl<'a> View<'a> {
-    /// Returns whether two views are compatible.
+    /// Simplifies a view preserving wire compatibility.
     ///
-    /// This function is sound but not necessarily complete. If it returns true, then the views are
-    /// compatible. But it may also return false for compatible views.
-    pub fn compatible(&self, other: &View<'a>) -> bool {
-        match (self, other) {
-            (View::Builtin(x), View::Builtin(y)) => x == y,
-            (View::Array(x, n), View::Array(y, m)) => x == y && n == m,
-            (View::Slice(x), View::Slice(y)) => x == y,
-            (View::Struct(xs), View::Struct(ys)) => ViewFields(xs).compatible(ViewFields(ys)),
-            (View::Enum(xs), View::Enum(ys)) => {
-                if xs.len() != ys.len() {
-                    return false;
+    /// Performs the following simplifications:
+    /// - Remove field names and use empty names for variants
+    /// - `[x; 0]` becomes `()`
+    /// - `[x; 1]` becomes `x`
+    /// - `[[x; n]; m]` becomes `[x; n * m]`
+    /// - `[{}; 2+]` becomes `{}`
+    /// - `(xs.. (ys..) zs..)` becomes `(xs.. ys.. zs..)`
+    /// - `(xs.. {} zs..)` becomes `{}`
+    /// - `(xs.. ys.. zs..)` becomes `(xs.. [y; n] zs..)` if `ys..` is `n` times `y`
+    /// - `(x)` becomes `x`
+    /// - `{xs.. =t:{} zs..}` becomes `{xs.. zs..}`
+    /// - `{xs..}` becomes `{ys..}` where `ys..` is `xs..` sorted by tags
+    /// - `<n>:x` (resp `<n>`) becomes `<k>:x` (resp. `<k>`) with `k` the number of recursion
+    ///   binders from the root
+    pub fn simplify(&self) -> View<'static> {
+        self.simplify_(RecStack::Root)
+    }
+
+    pub fn simplify_struct(xs: &ViewStruct) -> View<'static> {
+        View::simplify_struct_(xs, RecStack::Root)
+    }
+
+    fn simplify_(&self, rec: RecStack) -> View<'static> {
+        match self {
+            View::Builtin(x) => View::Builtin(*x),
+            View::Array(_, 0) => View::Struct(Vec::new()),
+            View::Array(x, 1) => x.simplify_(rec),
+            View::Array(x, n) => match x.simplify_(rec) {
+                View::Array(x, m) => View::Array(x, n * m),
+                View::Enum(xs) if xs.is_empty() => View::Enum(xs),
+                x => View::Array(Box::new(x), *n),
+            },
+            View::Slice(x) => View::Slice(Box::new(x.simplify_(rec))),
+            View::Struct(xs) => View::simplify_struct_(xs, rec),
+            View::Enum(xs) => {
+                let mut ys = Vec::new();
+                for (_, t, xs) in xs {
+                    let xs = match View::simplify_struct_(xs, rec) {
+                        View::Struct(xs) => xs,
+                        View::Enum(xs) if xs.is_empty() => continue,
+                        x => vec![(None, x)],
+                    };
+                    ys.push(("", *t, xs));
                 }
-                let xs: HashMap<u32, &ViewStruct> = xs.iter().map(|(_, t, x)| (*t, x)).collect();
-                for (_, t, ys) in ys.iter() {
-                    match xs.get(t) {
-                        Some(xs) if ViewFields(xs).compatible(ViewFields(ys)) => (),
-                        _ => return false,
-                    }
-                }
-                true
+                ys.sort_by_key(|(_, t, _)| *t);
+                View::Enum(ys)
             }
-            (View::RecUse(n), View::RecUse(m)) => n == m,
-            (View::RecNew(n, x), View::RecNew(m, y)) => n == m && x == y,
-            _ => false,
+            View::RecUse(n) => View::RecUse(rec.use_(*n)),
+            View::RecNew(n, x) => View::RecNew(rec.len(), Box::new(x.simplify_(rec.new(*n)))),
         }
     }
-}
 
-impl<'a> ViewFields<'a> {
-    pub fn compatible(self, other: ViewFields<'a>) -> bool {
-        if self.0.len() != other.0.len() {
-            return false;
-        }
-        for ((_, x), (_, y)) in self.0.iter().zip(other.0.iter()) {
-            if !x.compatible(y) {
-                return false;
+    fn simplify_struct_(xs: &ViewStruct, rec: RecStack) -> View<'static> {
+        let mut ys = Vec::new();
+        for (_, x) in xs {
+            match x.simplify_(rec) {
+                View::Struct(mut xs) => ys.append(&mut xs),
+                View::Enum(xs) if xs.is_empty() => return View::Enum(xs),
+                y => ys.push((None, y)),
             }
         }
-        true
+        let mut zs = Vec::new();
+        for (_, y) in ys {
+            let z = match zs.last_mut() {
+                Some((_, z)) => z,
+                None => {
+                    zs.push((None, y));
+                    continue;
+                }
+            };
+            match (z, y) {
+                (View::Array(x, n), View::Array(y, m)) if *x == y => *n += m,
+                (View::Array(x, n), y) if **x == y => *n += 1,
+                (x, View::Array(y, m)) if *x == *y => *x = View::Array(y, m + 1),
+                (x, y) if *x == y => *x = View::Array(Box::new(y), 2),
+                (_, y) => zs.push((None, y)),
+            }
+        }
+        match zs.len() {
+            1 => zs.pop().unwrap().1,
+            _ => View::Struct(zs),
+        }
     }
-}
 
-impl<'a> View<'a> {
     /// Validates that serialized data matches the view.
     ///
     /// This function requires a global lock.
-    ///
-    /// # Panics
-    ///
-    /// Panics if used concurrently.
     pub fn validate(&self, data: &[u8]) -> Result<(), Error> {
-        let _lock = ViewFrame::new(self);
+        static GLOBAL_LOCK: Mutex<()> = Mutex::new(());
+        let _global_lock = GLOBAL_LOCK.lock().unwrap();
+        let _lock = ViewFrameLock::new(None, self);
         let _ = crate::decode::<ViewDecoder>(data)?;
         Ok(())
     }
@@ -288,11 +321,11 @@ impl<'a> View<'a> {
             View::Builtin(Builtin::Isize) => drop(isize::decode(reader)?),
             View::Builtin(Builtin::Str) => drop(<&str>::decode(reader)?),
             View::Array(x, n) => {
-                let _lock = ViewFrame::new(x);
+                let _lock = ViewFrameLock::new(None, x);
                 let _ = helper::decode_array_dyn(*n, reader, decode_view)?;
             }
             View::Slice(x) => {
-                let _lock = ViewFrame::new(x);
+                let _lock = ViewFrameLock::new(None, x);
                 let _ = helper::decode_slice(reader, decode_view)?;
             }
             View::Struct(xs) => {
@@ -315,31 +348,56 @@ impl<'a> View<'a> {
                     return Err(Error::user(Code::InvalidArgument));
                 }
             }
-            View::RecUse(_) => todo!(),
-            View::RecNew(_, _) => todo!(),
+            View::RecUse(rec) => {
+                let view = VIEW_STACK
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|x| x.rec == Some(*rec))
+                    .ok_or(Error::user(Code::InvalidArgument))?
+                    .view;
+                view.decode(reader)?;
+            }
+            View::RecNew(rec, x) => {
+                let _lock = ViewFrameLock::new(Some(*rec), x);
+                x.decode(reader)?;
+            }
         }
         Ok(())
     }
 }
 
-static VIEW_STACK: Mutex<Vec<&'static View<'static>>> = Mutex::new(Vec::new());
+static VIEW_STACK: Mutex<Vec<ViewFrame>> = Mutex::new(Vec::new());
 
-struct ViewFrame(&'static View<'static>);
+#[derive(Copy, Clone)]
+struct ViewFrame {
+    rec: Option<usize>,
+    view: &'static View<'static>,
+}
+
+struct ViewFrameLock(ViewFrame);
 
 impl ViewFrame {
-    fn new(view: &View) -> Self {
+    fn key(self) -> (Option<usize>, *const View<'static>) {
+        (self.rec, self.view as *const _)
+    }
+}
+
+impl ViewFrameLock {
+    fn new(rec: Option<usize>, view: &View) -> Self {
         // TODO(https://github.com/rust-lang/rust-clippy/issues/12860): Remove when fixed.
         #[allow(clippy::unnecessary_cast)]
         // SAFETY: This function is only called when drop is called before the lifetime ends.
         let view = unsafe { &*(view as *const _ as *const View<'static>) };
-        VIEW_STACK.lock().unwrap().push(view);
-        ViewFrame(view)
+        let frame = ViewFrame { rec, view };
+        VIEW_STACK.lock().unwrap().push(frame);
+        ViewFrameLock(frame)
     }
 }
 
-impl Drop for ViewFrame {
+impl Drop for ViewFrameLock {
     fn drop(&mut self) {
-        assert_eq!(VIEW_STACK.lock().unwrap().pop().unwrap() as *const _, self.0 as *const _);
+        assert_eq!(VIEW_STACK.lock().unwrap().pop().unwrap().key(), self.0.key());
     }
 }
 
@@ -360,6 +418,34 @@ impl<'a> internal::Wire<'a> for ViewDecoder {
 }
 
 fn decode_view(reader: &mut Reader) -> Result<(), Error> {
-    let view = *VIEW_STACK.lock().unwrap().last().unwrap();
+    let view = VIEW_STACK.lock().unwrap().last().unwrap().view;
     view.decode(reader)
+}
+
+#[derive(Copy, Clone)]
+enum RecStack<'a> {
+    Root,
+    Binder(usize, &'a RecStack<'a>),
+}
+
+impl<'a> RecStack<'a> {
+    fn use_(&self, x: usize) -> usize {
+        match self {
+            RecStack::Root => unreachable!(),
+            RecStack::Binder(y, r) if x == *y => r.len(),
+            RecStack::Binder(_, r) => r.use_(x),
+        }
+    }
+
+    fn len(&self) -> usize {
+        match self {
+            RecStack::Root => 0,
+            RecStack::Binder(_, r) => 1 + r.len(),
+        }
+    }
+
+    #[allow(clippy::wrong_self_convention)]
+    fn new(&'a self, x: usize) -> RecStack<'a> {
+        RecStack::Binder(x, self)
+    }
 }

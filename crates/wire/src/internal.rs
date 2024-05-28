@@ -64,29 +64,17 @@ mod schema {
     #[derive(Debug, Copy, Clone, PartialEq, Eq, wasefire_wire_derive::Wire)]
     #[wire(crate = crate, range = 12)]
     pub enum Builtin {
-        #[wire(tag = 0)]
         Bool,
-        #[wire(tag = 1)]
         U8,
-        #[wire(tag = 2)]
         I8,
-        #[wire(tag = 3)]
         U16,
-        #[wire(tag = 4)]
         I16,
-        #[wire(tag = 5)]
         U32,
-        #[wire(tag = 6)]
         I32,
-        #[wire(tag = 7)]
         U64,
-        #[wire(tag = 8)]
         I64,
-        #[wire(tag = 9)]
         Usize,
-        #[wire(tag = 10)]
         Isize,
-        #[wire(tag = 11)]
         Str,
     }
 

@@ -20,14 +20,15 @@
 //! changed but instead duplicated to a new variant. The host supports all variants because it is
 //! not constrained. The device only supports the latest versions to minimize binary footprint. The
 //! host and the device are written in Rust, so wire types are defined in Rust. The data model is
-//! pretty simple. It contains builtin types, arrays, slices, structs, and enums.
+//! simple and contains builtin types, arrays, slices, structs, enums, and supports recursion.
 //!
 //! Alternatives like serde (with postcard) or protocol buffers solve a more general problem than
 //! this use-case. The main differences are:
 //!
-//! - No need for a complex data model like serde: no names, no special cases.
-//! - No need for tagged and optional fields like protobuf: full messages are versioned.
-//! - Variant tags are explicit: variants can be feature-gated to reduce device code size.
+//! - Not self-describing: the model is simpler and more robust (smaller code footprint on device).
+//! - No special cases for options and maps: those are encoded from basic types.
+//! - No need for tagged and optional fields: full messages are versioned.
+//! - Variant tags can be explicit, and thus feature-gated to reduce device code size.
 //! - Wire types are only used to represent wire data, they are not used as regular data types.
 //! - Wire types only borrow from the wire, and do so in a covariant way.
 //! - Wire types can be inspected programmatically for unit testing.
@@ -259,7 +260,9 @@ impl<'a, T: Wire<'a>> internal::Wire<'a> for Box<T> {
     type Static = Box<T::Static>;
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.array::<Self::Static, T::Static>(1) {
+        let mut fields = Vec::with_capacity(1);
+        fields.push((None, internal::type_id::<T>()));
+        if rules.struct_::<Self::Static>(fields) {
             internal::schema::<T>(rules);
         }
     }
@@ -302,18 +305,14 @@ enum Infallible {}
 #[internal_wire]
 #[wire(crate = crate, where = T: Wire<'wire>)]
 enum Option<T> {
-    #[wire(tag = 0)]
     None,
-    #[wire(tag = 1)]
     Some(T),
 }
 
 #[internal_wire]
 #[wire(crate = crate, where = T: Wire<'wire>, where = E: Wire<'wire>)]
 enum Result<T, E> {
-    #[wire(tag = 0)]
     Ok(T),
-    #[wire(tag = 1)]
     Err(E),
 }
 
@@ -407,9 +406,7 @@ mod tests {
         #[derive(Wire)]
         #[wire(crate = crate)]
         enum Foo1 {
-            #[wire(tag = 0)]
             Bar,
-            #[wire(tag = 1)]
             Baz(u32),
         }
         assert_schema::<Foo1>("{Bar=0:() Baz=1:u32}");
@@ -420,8 +417,25 @@ mod tests {
             #[wire(tag = 1)]
             Bar(&'a str),
             #[wire(tag = 0)]
-            Baz(Option<&'a [u8]>),
+            Baz((), Option<&'a [u8]>),
         }
         assert_schema::<Foo2>("{Bar=1:str Baz=0:{None=0:() Some=1:[u8]}}");
+    }
+
+    #[cfg(feature = "schema")]
+    #[test]
+    fn recursive_view() {
+        #[derive(Debug, Wire, PartialEq, Eq)]
+        #[wire(crate = crate)]
+        enum List {
+            Nil,
+            Cons(u8, Box<List>),
+        }
+        assert_schema::<List>("<1>:{Nil=0:() Cons=1:(u8 <1>)}");
+        let value = List::Cons(13, Box::new(List::Cons(42, Box::new(List::Nil))));
+        let data = encode(&value).unwrap();
+        let view = View::new::<List>();
+        assert!(view.validate(&data).is_ok());
+        assert_eq!(decode::<List>(&data).unwrap(), value);
     }
 }

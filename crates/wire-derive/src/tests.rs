@@ -126,9 +126,7 @@ test_ok! {
     fn option() {}
     #[wire(crate = wire, where = T: Wire<'wire>)]
     enum Option<T> {
-        #[wire(tag = 0)]
         None,
-        #[wire(tag = 1)]
         Some(T),
     }
     impl<'wire, T> wire::internal::Wire<'wire> for Option<T> where T: Wire<'wire> {
@@ -181,9 +179,7 @@ test_ok! {
     fn result() {}
     #[wire(crate = wire, where = T: Wire<'wire>, where = E: Wire<'wire>, static = E)]
     enum Result<T, E> {
-        #[wire(tag = 0)]
         Ok(T),
-        #[wire(tag = 1)]
         Err(E),
     }
     impl<'wire, T, E> wire::internal::Wire<'wire> for Result<T, E>

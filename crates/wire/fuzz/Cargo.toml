@@ -1,5 +1,5 @@
 [package]
-name = "wasefire-wire-fuzz"
+name = "fuzz"
 version = "0.0.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"

@@ -17,5 +17,5 @@
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    let _ = wasefire_wire_fuzz::correct(data, &mut None);
+    let _ = fuzz::correct(data, &mut None);
 });

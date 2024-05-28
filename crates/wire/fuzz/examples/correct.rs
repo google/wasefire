@@ -14,7 +14,7 @@
 
 use std::collections::BTreeMap;
 
-use wasefire_wire_fuzz::correct;
+use fuzz::correct;
 
 fn main() {
     let mut stats = BTreeMap::<u8, Len>::new();

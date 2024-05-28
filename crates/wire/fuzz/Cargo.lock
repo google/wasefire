@@ -19,6 +19,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuzz"
+version = "0.0.0"
+dependencies = [
+ "libfuzzer-sys",
+ "wasefire-error",
+ "wasefire-wire",
+]
+
+[[package]]
 name = "jobserver"
 version = "0.1.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -127,13 +136,4 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "wasefire-wire-fuzz"
-version = "0.0.0"
-dependencies = [
- "libfuzzer-sys",
- "wasefire-error",
- "wasefire-wire",
 ]

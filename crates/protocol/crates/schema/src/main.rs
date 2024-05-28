@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #![feature(box_patterns)]
-#![allow(unused_crate_dependencies)]
 
 use std::collections::HashMap;
 use std::fmt::Write;
@@ -37,16 +36,18 @@ fn main() -> Result<()> {
 }
 
 fn check(old: &View, new: &View) -> Result<()> {
+    let old = old.simplify();
+    let new = new.simplify();
     let mut old_map = HashMap::new();
-    for (_, tag, api) in get_enum(old).context("in old")? {
+    for (_, tag, api) in get_enum(&old).context("in old")? {
         ensure!(old_map.insert(tag, api).is_none(), "duplicate tag {tag}");
     }
-    for (name, tag, new_api) in get_enum(new).context("in new")? {
+    for (name, tag, new_api) in get_enum(&new).context("in new")? {
         if let Some(old_api) = old_map.remove(tag) {
             let old_api = ViewFields(old_api);
             let new_api = ViewFields(new_api);
             ensure!(
-                old_api.compatible(new_api),
+                old_api == new_api,
                 "incompatible API for {name}={tag}: {old_api} vs {new_api}"
             );
         }
@@ -118,14 +119,11 @@ mod tests {
     fn adding_variant() {
         #[derive(Wire)]
         enum Old {
-            #[wire(tag = 1)]
             Foo,
         }
         #[derive(Wire)]
         enum New {
-            #[wire(tag = 1)]
             Foo,
-            #[wire(tag = 2)]
             Bar,
         }
         // Adding a variant is always accepted.
@@ -136,14 +134,11 @@ mod tests {
     fn removing_variant() {
         #[derive(Wire)]
         enum Old {
-            #[wire(tag = 1)]
             Foo,
-            #[wire(tag = 2)]
             Bar,
         }
         #[derive(Wire)]
         enum New {
-            #[wire(tag = 1)]
             Foo,
         }
         // Removing a variant is accepted on the device.
@@ -158,16 +153,12 @@ mod tests {
     fn updating_variant_incompatible() {
         #[derive(Wire)]
         enum Old {
-            #[wire(tag = 1)]
             Foo,
-            #[wire(tag = 2)]
             Bar(u8),
         }
         #[derive(Wire)]
         enum New {
-            #[wire(tag = 1)]
             Foo,
-            #[wire(tag = 2)]
             Bar(i8),
         }
         // Updating a variant in an incompatible way is always rejected. Which updates are
@@ -179,16 +170,12 @@ mod tests {
     fn updating_variant_compatible() {
         #[derive(Wire)]
         enum Old {
-            #[wire(tag = 1)]
             Foo,
-            #[wire(tag = 2)]
             Bar(u8),
         }
         #[derive(Wire)]
         enum New {
-            #[wire(tag = 1)]
             Foo,
-            #[wire(tag = 2)]
             Bar { bar: u8 },
         }
         // Updating a variant in a compatible way is always accepted.
@@ -199,16 +186,12 @@ mod tests {
     fn renaming_variant() {
         #[derive(Wire)]
         enum Old {
-            #[wire(tag = 1)]
             Foo,
-            #[wire(tag = 2)]
             Bar,
         }
         #[derive(Wire)]
         enum New {
-            #[wire(tag = 1)]
             Foo,
-            #[wire(tag = 2)]
             Baz,
         }
         // Renaming a variant is always accepted.

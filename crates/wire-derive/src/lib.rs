@@ -130,6 +130,9 @@ fn derive_struct(
     let mut types = Types::default();
     let (mut schema, mut encode, decode) =
         derive_fields(wire, &parse_quote!(#name), &item.fields, &mut types)?;
+    #[cfg(not(feature = "schema"))]
+    let _ = &mut schema;
+    #[cfg(feature = "schema")]
     types.stmts(&mut schema, wire, "struct_", "fields");
     if !encode.is_empty() {
         let path = parse_quote!(#name);
@@ -149,7 +152,7 @@ fn derive_enum(
     let mut types = Types::default();
     let mut encode = Vec::<syn::Arm>::new();
     let mut decode = Vec::<syn::Arm>::new();
-    let mut tags = Vec::new();
+    let mut tags = Tags::default();
     #[cfg(feature = "schema")]
     match item.variants.len() {
         0 => schema.push(parse_quote!(let variants = #wire::internal::Vec::new();)),
@@ -158,10 +161,9 @@ fn derive_enum(
     for variant in &item.variants {
         let mut attrs = Attrs::parse(&variant.attrs, AttrsKind::Variant)?;
         let tag = match attrs.tag.take() {
-            Attr::Present(_, x) => x,
-            Attr::Absent => return Err(syn::Error::new(variant.span(), "missing tag attribute")),
+            Attr::Present(span, tag) => tags.use_(span, tag)?,
+            Attr::Absent => tags.next(),
         };
-        tags.push(tag);
         let ident = &variant.ident;
         let path = parse_quote!(#name::#ident);
         let (variant_schema, variant_encode, variant_decode) =
@@ -182,14 +184,8 @@ fn derive_enum(
         }));
         decode.push(parse_quote!(#tag => { #(#variant_decode)* }));
     }
-    let mut unique_tags = HashSet::new();
-    for tag in tags {
-        if !unique_tags.insert(tag) {
-            return Err(syn::Error::new(tag.span(), "duplicate tag"));
-        }
-    }
     if let Attr::Present(span, range) = attrs.range.take() {
-        if unique_tags.len() as u32 != range || unique_tags.iter().any(|x| range <= *x) {
+        if tags.used.len() as u32 != range || tags.used.iter().any(|x| range <= *x) {
             return Err(syn::Error::new(span, "tags don't form a range"));
         }
     }
@@ -284,7 +280,34 @@ impl<'a> syn::visit_mut::VisitMut for MakeStatic<'a> {
 }
 
 #[derive(Default)]
-struct Types<'a>(Vec<&'a syn::Type>);
+struct Tags {
+    used: HashSet<u32>,
+    next: u32,
+}
+
+impl Tags {
+    fn use_(&mut self, span: Span, tag: u32) -> syn::Result<u32> {
+        if !self.used.insert(tag) {
+            return Err(syn::Error::new(span, "duplicate tag"));
+        }
+        Ok(self.update_next(tag))
+    }
+
+    fn next(&mut self) -> u32 {
+        while !self.used.insert(self.next) {
+            self.next = self.next.wrapping_add(1);
+        }
+        self.update_next(self.next)
+    }
+
+    fn update_next(&mut self, tag: u32) -> u32 {
+        self.next = tag.wrapping_add(1);
+        tag
+    }
+}
+
+#[derive(Default)]
+struct Types<'a>(#[cfg_attr(not(feature = "schema"), allow(dead_code))] Vec<&'a syn::Type>);
 
 impl<'a> Types<'a> {
     #[cfg(feature = "schema")]
@@ -294,6 +317,7 @@ impl<'a> Types<'a> {
         }
     }
 
+    #[cfg(feature = "schema")]
     fn stmts(&self, schema: &mut Vec<syn::Stmt>, wire: &syn::Path, fun: &str, var: &str) {
         let types: Vec<syn::Stmt> =
             self.0.iter().map(|ty| parse_quote!(#wire::internal::schema::<#ty>(rules);)).collect();

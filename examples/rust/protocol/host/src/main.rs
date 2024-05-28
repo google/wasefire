@@ -93,7 +93,7 @@ fn receive(
     connection: &Connection<GlobalContext>, process: impl FnOnce(&Api<Response>) -> Result<bool>,
 ) -> Result<()> {
     let response = connection.receive(TIMEOUT).context("receiving response")?;
-    let response = Api::<Response>::decode(&response).context("deserializing response")?;
+    let response = Api::<Response>::decode(&response).context("decoding response")?;
     if !process(&response)? {
         match response {
             Api::DeviceError(error) => bail!("error response: {error}"),
