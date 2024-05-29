@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add `platform::protocol::Api::vendor()` for vendor platform RPCs
 - Change `platform::version()` to return `Cow` and add `platform::serial()`
 - Change `Id::new` to return `Result` instead of `Option`
 - Change `crypto::{Hash,Hmac}` to depend on `crypto::WithError`

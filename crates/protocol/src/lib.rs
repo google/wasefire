@@ -204,8 +204,8 @@ api! {
     //!
     //! Variants gated by the `full` feature are deprecated. They won't be used by new devices.
     //! However, to support older devices, the host must be able to use them.
-    version = 1;
-    next = 6;
+    version = 2;
+    next = 7;
 
     /// Returns the device API version.
     0 [0 -] ApiVersion: () => u32,
@@ -224,4 +224,7 @@ api! {
 
     /// Returns platform information (e.g. serial and version).
     5 [1 -] PlatformInfo: () => platform::Info<'a>,
+
+    /// Calls a vendor-specific platform command.
+    6 [2 -] PlatformVendor: &'a [u8] => &'a [u8],
 }

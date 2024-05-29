@@ -25,12 +25,9 @@ use wasefire_protocol_usb::Connection;
 
 use crate::{cmd, fs};
 
-/// Calls an RPC to an applet on a platform.
+/// Parameters for an applet or platform RPC.
 #[derive(clap::Args)]
-pub struct AppletRpc {
-    /// Applet identifier in the platform.
-    applet: Option<String>,
-
+pub struct Rpc {
     /// Reads the request from this file instead of standard input.
     #[arg(long, value_hint = ValueHint::FilePath)]
     input: Option<PathBuf>,
@@ -38,6 +35,32 @@ pub struct AppletRpc {
     /// Writes the response to this file instead of standard output.
     #[arg(long, value_hint = ValueHint::AnyPath)]
     output: Option<PathBuf>,
+}
+
+impl Rpc {
+    fn read(&self) -> Result<Vec<u8>> {
+        match &self.input {
+            Some(path) => fs::read(path),
+            None => fs::read_stdin(),
+        }
+    }
+
+    fn write(&self, response: &[u8]) -> Result<()> {
+        match &self.output {
+            Some(path) => fs::write(path, response),
+            None => fs::write_stdout(response),
+        }
+    }
+}
+
+/// Calls an RPC to an applet on a platform.
+#[derive(clap::Args)]
+pub struct AppletRpc {
+    /// Applet identifier in the platform.
+    applet: Option<String>,
+
+    #[clap(flatten)]
+    rpc: Rpc,
 
     /// Number of retries to receive a response.
     #[arg(long, default_value = "3")]
@@ -46,32 +69,24 @@ pub struct AppletRpc {
 
 impl AppletRpc {
     pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
-        let AppletRpc { applet, input, output, retries } = self;
+        let AppletRpc { applet, rpc, retries } = self;
         let applet_id = match applet {
             Some(_) => bail!("applet identifiers are not supported yet"),
             None => applet::AppletId,
         };
-        let input = match input {
-            Some(path) => fs::read(path)?,
-            None => fs::read_stdin()?,
-        };
-        let request = applet::Request { applet_id, request: &input };
+        let request = applet::Request { applet_id, request: &rpc.read()? };
         connection.call::<service::AppletRequest>(request)?.get();
         for _ in 0 .. retries {
             let response = connection.call::<service::AppletResponse>(applet_id)?;
             if let Some(response) = response.get().response {
-                match output {
-                    Some(path) => fs::write(path, response)?,
-                    None => fs::write_stdout(response)?,
-                }
-                return Ok(());
+                return rpc.write(response);
             }
         }
         bail!("did not receive a response after {retries} retries");
     }
 }
 
-/// Reboots a connected platform.
+/// Reboots a platform.
 #[derive(clap::Args)]
 pub struct PlatformReboot {}
 
@@ -86,6 +101,20 @@ impl PlatformReboot {
                 _ => Err(e),
             },
         }
+    }
+}
+
+/// Calls a vendor RPC on a platform.
+#[derive(clap::Args)]
+pub struct PlatformRpc {
+    #[clap(flatten)]
+    rpc: Rpc,
+}
+
+impl PlatformRpc {
+    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+        let PlatformRpc { rpc } = self;
+        rpc.write(connection.call::<service::PlatformVendor>(&rpc.read()?)?.get())
     }
 }
 
