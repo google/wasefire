@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![no_main]
+use wasefire_wire::Wire;
 
-use libfuzzer_sys::fuzz_target;
-use wasefire_protocol::{Api, Request};
+pub trait Direction: 'static {
+    /// Returns the appropriate message type given a service.
+    type Type<'a, T: Service>: Wire<'a>;
+}
 
-fuzz_target!(|expected: &[u8]| {
-    if let Ok(request) = Api::<Request>::deserialize(expected) {
-        let actual = request.serialize();
-        assert_eq!(*actual, *expected);
-    }
-});
+/// Service description.
+pub trait Service {
+    type Request<'a>: Wire<'a>;
+    type Response<'a>: Wire<'a>;
+}

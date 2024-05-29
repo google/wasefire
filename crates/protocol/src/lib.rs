@@ -25,153 +25,98 @@
 //! and cancel the request it was processing if any.
 
 #![no_std]
+#![feature(doc_auto_cfg)]
 
 extern crate alloc;
 
 use alloc::boxed::Box;
 use core::convert::Infallible;
 
-use sealed::sealed;
-use wasefire_error::{Code, Error};
+use wasefire_error::Error;
+use wasefire_wire::Wire;
 
-pub use crate::reader::Reader;
-pub use crate::writer::Writer;
-
-mod reader;
-pub mod service;
-mod writer;
-
-/// Zero-copy serialization.
-#[sealed]
-pub trait Serializable<'a>: Sized {
-    /// Serializes without copy.
-    fn serialize(&self, writer: &mut Writer<'a>);
-
-    /// Deserializes without copy.
-    fn deserialize(reader: &mut Reader<'a>) -> Result<Self, Error>;
-}
+pub mod applet;
+mod logic;
 
 /// Message direction between host and device.
-#[sealed]
-pub trait Direction<'a> {
-    /// Returns the appropriate message type given a service.
-    type Type<T: Service<'a>>: Serializable<'a>;
-}
+pub trait Direction: logic::Direction {}
 
 /// Requests from host to device.
+#[derive(Debug)]
 pub enum Request {}
-#[sealed]
-impl<'a> Direction<'a> for Request {
-    type Type<T: Service<'a>> = T::Request;
+impl Direction for Request {}
+impl logic::Direction for Request {
+    type Type<'a, T: logic::Service> = T::Request<'a>;
 }
 
 /// Responses from device to host.
 #[derive(Debug)]
 pub enum Response {}
-#[sealed]
-impl<'a> Direction<'a> for Response {
-    type Type<T: Service<'a>> = T::Response;
+impl Direction for Response {}
+impl logic::Direction for Response {
+    type Type<'a, T: logic::Service> = T::Response<'a>;
 }
 
-/// Service description.
-#[sealed]
-pub trait Service<'a> {
-    const IDENTIFIER: u8;
-    type Request: Serializable<'a>;
-    type Response: Serializable<'a>;
+impl<'a, T: Direction> Api<'a, T> {
+    pub fn encode(&self) -> Result<Box<[u8]>, Error> {
+        wasefire_wire::encode(self)
+    }
+
+    pub fn decode(data: &'a [u8]) -> Result<Self, Error> {
+        wasefire_wire::decode(data)
+    }
 }
 
-/// Protocol API parametric over the message direction.
-#[derive(Debug)]
-#[non_exhaustive]
-pub enum Api<'a, T: Direction<'a>> {
+macro_rules! api {
+    ($(#![$api:meta])* next = $next:literal; $(
+        $(#[doc = $doc:literal])* $(#[cfg($cfg:meta)])*
+        $tag:literal $Name:ident: $request:ty => $response:ty
+    ),*$(,)?) => {
+        $(#[$api])*
+        #[derive(Debug, Wire)]
+        #[wire(static = T)]
+        #[cfg_attr(feature = "full", wire(range = $next))]
+        #[non_exhaustive]
+        pub enum Api<'a, T: Direction> {
+            $(
+                $(#[doc = $doc])* $(#[cfg($cfg)])* #[wire(tag = $tag)]
+                $Name(T::Type<'a, $Name>),
+            )*
+        }
+        $(
+            $(#[cfg($cfg)])* #[derive(Debug)]
+            pub enum $Name {}
+            $(#[cfg($cfg)])*
+            impl logic::Service for $Name {
+                type Request<'a> = $request;
+                type Response<'a> = $response;
+            }
+        )*
+    };
+}
+
+api! {
+    //! Protocol API parametric over the message direction.
+    //!
+    //! Variants gated by the `full` feature are deprecated. They won't be used by new devices.
+    //! However, to support older devices, the host must be able to use them.
+    next = 5;
+
     /// Errors reported by the device.
     ///
     /// This may be returned regardless of the request type.
-    DeviceError(T::Type<service::DeviceError>),
+    0 DeviceError: Infallible => Error,
 
     /// Sends a request to an applet.
-    AppletRequest(T::Type<service::AppletRequest>),
+    1 AppletRequest: applet::Request<'a> => (),
 
     /// Reads a response from an applet.
-    AppletResponse(T::Type<service::AppletResponse>),
+    2 AppletResponse: applet::AppletId => applet::Response<'a>,
 
     /// Reboots the platform.
-    PlatformReboot(T::Type<service::PlatformReboot>),
+    // TODO: Should return unit. Device should always respond.
+    3 PlatformReboot: () => Infallible,
 
     /// Starts a direct tunnel with an applet.
-    AppletTunnel(T::Type<service::AppletTunnel>),
-}
-
-#[sealed]
-impl<'a> Serializable<'a> for Infallible {
-    fn serialize(&self, _: &mut Writer<'a>) {
-        match *self {}
-    }
-
-    fn deserialize(_: &mut Reader<'a>) -> Result<Self, Error> {
-        Err(Error::user(Code::InvalidArgument))
-    }
-}
-
-#[sealed]
-impl<'a> Serializable<'a> for () {
-    fn serialize(&self, _: &mut Writer<'a>) {}
-
-    fn deserialize(_: &mut Reader<'a>) -> Result<Self, Error> {
-        Ok(())
-    }
-}
-
-#[sealed]
-impl<'a> Serializable<'a> for Error {
-    fn serialize(&self, writer: &mut Writer) {
-        writer.put_u8(self.space());
-        writer.put_u16(self.code());
-    }
-
-    fn deserialize(reader: &mut Reader<'a>) -> Result<Self, Error> {
-        let space = reader.get_u8()?;
-        let code = reader.get_u16()?;
-        Ok(Error::new(space, code))
-    }
-}
-
-impl<'a, T: Direction<'a>> Api<'a, T> {
-    pub fn serialize(&self) -> Box<[u8]> {
-        let mut writer = Writer::new();
-        macro_rules! serialize {
-            ($N:ident, $x:ident) => {{
-                writer.put_u8(<service::$N as Service>::IDENTIFIER);
-                $x.serialize(&mut writer)
-            }};
-        }
-        match self {
-            Api::DeviceError(x) => serialize!(DeviceError, x),
-            Api::AppletRequest(x) => serialize!(AppletRequest, x),
-            Api::AppletResponse(x) => serialize!(AppletResponse, x),
-            Api::PlatformReboot(x) => serialize!(PlatformReboot, x),
-            Api::AppletTunnel(x) => serialize!(AppletTunnel, x),
-        }
-        writer.finalize()
-    }
-
-    pub fn deserialize(data: &'a [u8]) -> Result<Self, Error> {
-        let mut reader = Reader::new(data);
-        macro_rules! deserialize {
-            ($N:ident) => {
-                Api::$N(T::Type::<service::$N>::deserialize(&mut reader)?)
-            };
-        }
-        let result = match reader.get_u8()? {
-            service::DeviceError::IDENTIFIER => deserialize!(DeviceError),
-            service::AppletRequest::IDENTIFIER => deserialize!(AppletRequest),
-            service::AppletResponse::IDENTIFIER => deserialize!(AppletResponse),
-            service::PlatformReboot::IDENTIFIER => deserialize!(PlatformReboot),
-            service::AppletTunnel::IDENTIFIER => deserialize!(AppletTunnel),
-            _ => return Err(Error::user(Code::InvalidArgument)),
-        };
-        reader.finalize()?;
-        Ok(result)
-    }
+    4 AppletTunnel: applet::Tunnel<'a> => (),
 }

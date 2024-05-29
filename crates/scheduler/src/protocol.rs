@@ -18,7 +18,7 @@ use wasefire_board_api::platform::protocol::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
 use wasefire_error::{Code, Error};
 use wasefire_logger as log;
-use wasefire_protocol::{service, Api, Request, Response};
+use wasefire_protocol::{self as service, Api, Request, Response};
 
 use crate::Scheduler;
 
@@ -45,40 +45,32 @@ pub fn should_process_event<B: Board>(event: &board::Event<B>) -> bool {
 pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event<B>) {
     let request = match board::platform::Protocol::<B>::read() {
         Ok(Some(x)) => x,
-        Ok(None) => {
-            log::warn!("Expected platform protocol request, but found none.");
-            return;
-        }
-        Err(error) => {
-            log::warn!("Failed to read platform protocol request: {}", error);
-            return;
-        }
+        Ok(None) => return log::warn!("Expected platform protocol request, but found none."),
+        Err(error) => return log::warn!("Failed to read platform protocol request: {}", error),
     };
     match &scheduler.protocol {
         State::Normal => (),
         State::Tunnel { applet_id, delimiter } => {
             if request == *delimiter {
                 scheduler.protocol = State::Normal;
-                reply::<B>(&Api::AppletTunnel(()));
-                return;
+                return reply::<B>(&Api::AppletTunnel(()));
             }
             let service::applet::AppletId = applet_id;
             match scheduler.applet.put_request(event, &request) {
                 Ok(()) => (),
                 Err(error) => {
                     log::warn!("Failed to put platform protocol request: {}", error);
-                    reply::<B>(&Api::DeviceError(error));
+                    reply_error::<B>(error);
                 }
             }
             return;
         }
     }
-    let request = match Api::<Request>::deserialize(&request) {
+    let request = match Api::<Request>::decode(&request) {
         Ok(x) => x,
         Err(error) => {
             log::warn!("Failed to deserialize platform protocol request: {}", error);
-            reply::<B>(&Api::DeviceError(error));
-            return;
+            return reply_error::<B>(error);
         }
     };
     let owned_response;
@@ -158,8 +150,18 @@ pub fn put_response<B: Board>(
 }
 
 fn reply<B: Board>(response: &Api<Response>) {
-    let response = Api::<Response>::serialize(response);
-    if let Err(error) = board::platform::Protocol::<B>::write(&response) {
+    match response.encode() {
+        Ok(response) => write::<B>(&response),
+        Err(error) => reply_error::<B>(Error::internal(error.code())),
+    }
+}
+
+fn reply_error<B: Board>(error: Error) {
+    write::<B>(&Api::<Response>::DeviceError(error).encode().unwrap());
+}
+
+fn write<B: Board>(data: &[u8]) {
+    if let Err(error) = board::platform::Protocol::<B>::write(data) {
         log::warn!("Failed to send platform protocol response: {}", error);
     }
 }

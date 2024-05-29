@@ -18,7 +18,7 @@ use std::time::Duration;
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use rusb::GlobalContext;
-use wasefire_protocol::service::applet::{self, AppletId};
+use wasefire_protocol::applet::{self, AppletId};
 use wasefire_protocol::{Api, Request, Response};
 use wasefire_protocol_usb::{self as rpc, Connection};
 
@@ -84,7 +84,7 @@ fn main() -> Result<()> {
 const TIMEOUT: Duration = Duration::from_secs(1);
 
 fn send(connection: &Connection<GlobalContext>, request: &Api<Request>) -> Result<()> {
-    let request = request.serialize();
+    let request = request.encode().context("encoding request")?;
     connection.send(&request, TIMEOUT).context("sending request")?;
     Ok(())
 }
@@ -93,7 +93,7 @@ fn receive(
     connection: &Connection<GlobalContext>, process: impl FnOnce(&Api<Response>) -> Result<bool>,
 ) -> Result<()> {
     let response = connection.receive(TIMEOUT).context("receiving response")?;
-    let response = Api::<Response>::deserialize(&response).context("deserializing response")?;
+    let response = Api::<Response>::decode(&response).context("decoding response")?;
     if !process(&response)? {
         match response {
             Api::DeviceError(error) => bail!("error response: {error}"),

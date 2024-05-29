@@ -15,11 +15,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use wasefire_protocol::{Api, Response};
 
-fuzz_target!(|expected: &[u8]| {
-    if let Ok(response) = Api::<Response>::deserialize(expected) {
-        let actual = response.serialize();
-        assert_eq!(*actual, *expected);
-    }
+fuzz_target!(|data: &[u8]| {
+    let _ = fuzz::correct(data, &mut None);
 });

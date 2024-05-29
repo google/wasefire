@@ -10,15 +10,13 @@ edition = "2021"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = "0.4.7"
-rand_core = "0.6.4"
-rand_pcg = "0.3.1"
-strum = { version = "0.26.2", features = ["derive"] }
-wasefire-store = { path = "..", features = ["std"] }
+libfuzzer-sys = "0.4"
+wasefire-error.path = "../../error"
+wasefire-wire = { path = "..", features = ["schema"] }
 
 [[bin]]
-name = "store"
-path = "fuzz_targets/store.rs"
+name = "correct"
+path = "fuzz_targets/correct.rs"
 
 [lints]
 clippy.unit-arg = "allow"

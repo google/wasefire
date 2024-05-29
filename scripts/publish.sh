@@ -23,7 +23,9 @@ set -e
 
 TOPOLOGICAL_ORDER=(
   logger
+  wire-derive
   error
+  wire
   sync
   protocol
   cli-tools

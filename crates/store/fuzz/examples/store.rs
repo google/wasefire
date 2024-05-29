@@ -15,7 +15,7 @@
 use std::io::{stdout, Read, Write};
 use std::path::Path;
 
-use fuzz_store::{fuzz, StatKey, Stats};
+use fuzz::{fuzz, StatKey, Stats};
 
 fn usage(program: &str) {
     println!(
