@@ -413,8 +413,6 @@ impl RunnerOptions {
             if main.release {
                 cargo.arg("-Zbuild-std=core,alloc");
                 cargo.arg("-Zbuild-std-features=panic_immediate_abort");
-            }
-            if main.release {
                 rustflags.push("-C lto=fat".to_string());
                 rustflags.push("-C codegen-units=1".to_string());
                 rustflags.push("-C embed-bitcode=yes".to_string());
