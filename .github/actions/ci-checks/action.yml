@@ -9,7 +9,9 @@ inputs:
 runs:
   using: composite
   steps:
-    - if: ${{ contains(fromJSON(inputs.checks), 'changelog') }}
+    - if: >-
+        ${{ contains(fromJSON(inputs.checks), 'changelog')
+         || contains(fromJSON(inputs.checks), 'sync') }}
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
