@@ -42,14 +42,11 @@ fn check(old: &View, new: &View) -> Result<()> {
     for (_, tag, api) in get_enum(&old).context("in old")? {
         ensure!(old_map.insert(tag, api).is_none(), "duplicate tag {tag}");
     }
-    for (name, tag, new_api) in get_enum(&new).context("in new")? {
+    for (_, tag, new_api) in get_enum(&new).context("in new")? {
         if let Some(old_api) = old_map.remove(tag) {
             let old_api = ViewFields(old_api);
             let new_api = ViewFields(new_api);
-            ensure!(
-                old_api == new_api,
-                "incompatible API for {name}={tag}: {old_api} vs {new_api}"
-            );
+            ensure!(old_api == new_api, "incompatible API for {tag}: {old_api} != {new_api}");
         }
     }
     #[cfg(feature = "full")]

@@ -26,11 +26,11 @@
 
 #![no_std]
 #![feature(doc_auto_cfg)]
+#![feature(never_type)]
 
 extern crate alloc;
 
 use alloc::boxed::Box;
-use core::convert::Infallible;
 
 use wasefire_error::Error;
 use wasefire_wire::Wire;
@@ -105,7 +105,7 @@ api! {
     /// Errors reported by the device.
     ///
     /// This may be returned regardless of the request type.
-    0 DeviceError: Infallible => Error,
+    0 DeviceError: ! => Error,
 
     /// Sends a request to an applet.
     1 AppletRequest: applet::Request<'a> => (),
@@ -114,8 +114,7 @@ api! {
     2 AppletResponse: applet::AppletId => applet::Response<'a>,
 
     /// Reboots the platform.
-    // TODO: Should return unit. Device should always respond.
-    3 PlatformReboot: () => Infallible,
+    3 PlatformReboot: () => !,
 
     /// Starts a direct tunnel with an applet.
     4 AppletTunnel: applet::Tunnel<'a> => (),

@@ -37,6 +37,7 @@
 #![no_std]
 #![feature(array_try_from_fn)]
 #![feature(doc_auto_cfg)]
+#![feature(never_type)]
 #![feature(try_blocks)]
 
 extern crate alloc;
@@ -295,6 +296,21 @@ impl<'a> internal::Wire<'a> for Error {
         let space = u8::decode(reader)?;
         let code = u16::decode(reader)?;
         Ok(Error::new(space, code))
+    }
+}
+
+impl<'a> internal::Wire<'a> for ! {
+    #[cfg(feature = "schema")]
+    type Static = !;
+    #[cfg(feature = "schema")]
+    fn schema(rules: &mut Rules) {
+        if rules.enum_::<Self::Static>(Vec::new()) {}
+    }
+    fn encode(&self, _: &mut Writer<'a>) -> Result<(), Error> {
+        match *self {}
+    }
+    fn decode(_: &mut Reader<'a>) -> Result<Self, Error> {
+        Err(Error::user(Code::InvalidArgument))
     }
 }
 

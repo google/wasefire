@@ -49,6 +49,11 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   # add_lint $file warn rust.unused-results
 done
 
+( cd crates/protocol/crates/schema
+  cargo run --features=full
+  cargo run
+)
+
 book_example() {
   local src=book/src/applet/prelude/$1.rs
   local dst=examples/rust/$2/src/lib.rs
