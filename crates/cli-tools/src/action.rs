@@ -99,11 +99,11 @@ impl RustAppletBuild {
         let mut cargo = Command::new("cargo");
         let mut rustflags = Vec::new();
         cargo.args(["rustc", "--lib"]);
-        let profile = self.profile.as_deref().unwrap_or("release");
-        cargo.arg(format!("--profile={profile}"));
-        cargo.arg(format!("--config=profile.{profile}.codegen-units=1"));
-        cargo.arg(format!("--config=profile.{profile}.lto=true"));
-        cargo.arg(format!("--config=profile.{profile}.panic=\"abort\""));
+        // We deliberately don't use the provided profile for those configs because they don't
+        // depend on user-provided options (as opposed to opt-level).
+        cargo.arg(format!("--config=profile.release.codegen-units=1"));
+        cargo.arg(format!("--config=profile.release.lto=true"));
+        cargo.arg(format!("--config=profile.release.panic=\"abort\""));
         match &self.native {
             None => {
                 rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
@@ -116,6 +116,8 @@ impl RustAppletBuild {
                 wasefire_feature(package, "native", &mut cargo)?;
             }
         }
+        let profile = self.profile.as_deref().unwrap_or("release");
+        cargo.arg(format!("--profile={profile}"));
         if let Some(level) = self.opt_level {
             cargo.arg(format!("--config=profile.{profile}.opt-level={level}"));
         }
