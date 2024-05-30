@@ -20,7 +20,7 @@ wasefire-wire-derive = { version = "0.1.0-git", path = "../wire-derive" }
 
 [features]
 schema = ["std", "wasefire-wire-derive/schema"]
-std = ["wasefire-error/std"]
+std = []
 
 [lints]
 clippy.unit-arg = "allow"

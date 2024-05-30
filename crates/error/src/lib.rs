@@ -15,11 +15,10 @@
 //! Applet and board API errors.
 
 #![no_std]
+#![feature(error_in_core)]
 
 // TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
 extern crate alloc;
-#[cfg(feature = "std")]
-extern crate std;
 
 use num_enum::{IntoPrimitive, TryFromPrimitive, TryFromPrimitiveError};
 
@@ -223,8 +222,7 @@ impl defmt::Format for Error {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for Error {}
+impl core::error::Error for Error {}
 
 #[cfg(test)]
 mod tests {
