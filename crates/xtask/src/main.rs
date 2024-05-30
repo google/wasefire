@@ -419,6 +419,7 @@ impl RunnerOptions {
             } else {
                 rustflags.push("-C link-arg=-Tdefmt.x".to_string());
                 rustflags.push("-C debuginfo=2".to_string());
+                rustflags.push("-C strip=none".to_string());
             }
         }
         if let Some(level) = self.opt_level {
