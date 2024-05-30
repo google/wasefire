@@ -24,7 +24,6 @@ use lazy_static::lazy_static;
 use probe_rs::config::TargetSelector;
 use probe_rs::{flashing, Permissions, Session};
 use rustc_demangle::demangle;
-use strum::{Display, EnumString};
 use wasefire_cli_tools::{action, cmd, fs};
 
 mod footprint;
@@ -167,7 +166,7 @@ struct RunnerOptions {
 
     /// Optimization level (0, 1, 2, 3, s, z).
     #[clap(long, short = 'O')]
-    opt_level: Option<OptLevel>,
+    opt_level: Option<action::OptLevel>,
 
     /// Produces target/wasefire/platform_{side}.bin files instead of flashing.
     #[clap(long)]
@@ -216,22 +215,6 @@ struct RunnerOptions {
     /// missing is 1 page.
     #[clap(long)]
     memory_page_count: Option<usize>,
-}
-
-#[derive(Copy, Clone, EnumString, Display)]
-enum OptLevel {
-    #[strum(serialize = "0")]
-    O0,
-    #[strum(serialize = "1")]
-    O1,
-    #[strum(serialize = "2")]
-    O2,
-    #[strum(serialize = "3")]
-    O3,
-    #[strum(serialize = "s")]
-    Os,
-    #[strum(serialize = "z")]
-    Oz,
 }
 
 impl Flags {
@@ -413,17 +396,15 @@ impl RunnerOptions {
             if main.release {
                 cargo.arg("-Zbuild-std=core,alloc");
                 cargo.arg("-Zbuild-std-features=panic_immediate_abort");
-                rustflags.push("-C lto=fat".to_string());
-                rustflags.push("-C codegen-units=1".to_string());
-                rustflags.push("-C embed-bitcode=yes".to_string());
+                cargo.arg("--config=profile.release.codegen-units=1");
+                cargo.arg("--config=profile.release.lto=true");
             } else {
+                cargo.arg("--config=profile.release.debug=2");
                 rustflags.push("-C link-arg=-Tdefmt.x".to_string());
-                rustflags.push("-C debuginfo=2".to_string());
-                rustflags.push("-C strip=none".to_string());
             }
         }
         if let Some(level) = self.opt_level {
-            rustflags.push(format!("-C opt-level={level}"));
+            cargo.arg(format!("--config=profile.release.opt-level={level}"));
         }
         if main.release {
             features.push("release".to_string());

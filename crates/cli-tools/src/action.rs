@@ -97,13 +97,13 @@ impl RustAppletBuild {
         let target_dir = fs::try_relative(std::env::current_dir()?, &metadata.target_directory)?;
         let name = package.name.replace('-', "_");
         let mut cargo = Command::new("cargo");
-        let mut rustflags = vec![
-            "-C panic=abort".to_string(),
-            "-C codegen-units=1".to_string(),
-            "-C embed-bitcode=yes".to_string(),
-            "-C lto=fat".to_string(),
-        ];
+        let mut rustflags = Vec::new();
         cargo.args(["rustc", "--lib"]);
+        let profile = self.profile.as_deref().unwrap_or("release");
+        cargo.arg(format!("--profile={profile}"));
+        cargo.arg(format!("--config=profile.{profile}.codegen-units=1"));
+        cargo.arg(format!("--config=profile.{profile}.lto=true"));
+        cargo.arg(format!("--config=profile.{profile}.panic=\"abort\""));
         match &self.native {
             None => {
                 rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
@@ -116,12 +116,8 @@ impl RustAppletBuild {
                 wasefire_feature(package, "native", &mut cargo)?;
             }
         }
-        match &self.profile {
-            Some(profile) => drop(cargo.arg(format!("--profile={profile}"))),
-            None => drop(cargo.arg("--release")),
-        }
         if let Some(level) = self.opt_level {
-            rustflags.push(format!("-C opt-level={level}"));
+            cargo.arg(format!("--config=profile.{profile}.opt-level={level}"));
         }
         cargo.args(&self.cargo);
         if self.prod {
@@ -137,8 +133,8 @@ impl RustAppletBuild {
             None => "target/wasefire".into(),
         };
         let (src, dst) = match &self.native {
-            None => (format!("wasm32-unknown-unknown/release/{name}.wasm"), "applet.wasm"),
-            Some(target) => (format!("{target}/release/lib{name}.a"), "libapplet.a"),
+            None => (format!("wasm32-unknown-unknown/{profile}/{name}.wasm"), "applet.wasm"),
+            Some(target) => (format!("{target}/{profile}/lib{name}.a"), "libapplet.a"),
         };
         let applet = out_dir.join(dst);
         if fs::copy_if_changed(target_dir.join(src), &applet)? && dst.ends_with(".wasm") {
@@ -186,7 +182,13 @@ pub enum OptLevel {
 
 impl Display for OptLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_possible_value().unwrap().get_name())
+        let value = self.to_possible_value().unwrap();
+        let name = value.get_name();
+        if f.alternate() || !matches!(self, OptLevel::Os | OptLevel::Oz) {
+            write!(f, "{name}")
+        } else {
+            write!(f, "{name:?}")
+        }
     }
 }
 
@@ -198,7 +200,7 @@ pub fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> R
     let mut opt = Command::new("wasm-opt");
     opt.args(["--enable-bulk-memory", "--enable-sign-ext", "--enable-mutable-globals"]);
     match opt_level {
-        Some(level) => drop(opt.arg(format!("-O{level}"))),
+        Some(level) => drop(opt.arg(format!("-O{level:#}"))),
         None => drop(opt.arg("-O")),
     }
     opt.arg(applet.as_ref());
