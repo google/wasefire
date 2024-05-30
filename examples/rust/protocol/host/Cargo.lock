@@ -380,7 +380,6 @@ dependencies = [
  "anyhow",
  "rusb",
  "wasefire-board-api",
- "wasefire-error",
  "wasefire-logger",
 ]
 
