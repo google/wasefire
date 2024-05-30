@@ -20,7 +20,7 @@ wasefire-wire = { version = "0.1.0-git", path = "../wire" }
 
 [features]
 full = []
-std = ["wasefire-error/std", "wasefire-wire/std"]
+std = ["wasefire-wire/std"]
 
 [lints]
 clippy.unit-arg = "allow"
