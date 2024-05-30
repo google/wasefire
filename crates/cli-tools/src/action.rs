@@ -101,9 +101,9 @@ impl RustAppletBuild {
         cargo.args(["rustc", "--lib"]);
         // We deliberately don't use the provided profile for those configs because they don't
         // depend on user-provided options (as opposed to opt-level).
-        cargo.arg(format!("--config=profile.release.codegen-units=1"));
-        cargo.arg(format!("--config=profile.release.lto=true"));
-        cargo.arg(format!("--config=profile.release.panic=\"abort\""));
+        cargo.arg("--config=profile.release.codegen-units=1");
+        cargo.arg("--config=profile.release.lto=true");
+        cargo.arg("--config=profile.release.panic=\"abort\"");
         match &self.native {
             None => {
                 rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
