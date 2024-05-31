@@ -25,7 +25,7 @@ check_board_api board-api- --features=wasm,std,
 
 test_helper
 
-cargo test --lib --features=full-api,wasm,std
+cargo test --lib --features=_test,full-api,wasm,std
 cargo check --lib --features=full-api,wasm,std,log
 cargo check --lib --target=i686-unknown-linux-gnu --features=full-api,native,std
 cargo check --lib --target=i686-unknown-linux-gnu --features=full-api,native,std,log

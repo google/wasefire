@@ -229,6 +229,7 @@ wasm = ["dep:wasefire-interpreter"]
 # safety invariant.
 unsafe-skip-validation = []
 # Internal features.
+_test = ["wasefire-protocol?/_exhaustive"]
 internal-applet-api-crypto = []
 internal-applet-api-crypto-hash = ["dep:digest", "dep:generic-array", "internal-applet-api-crypto"]
 internal-applet-api-platform = []
