@@ -19,6 +19,7 @@ wasefire-error = { version = "0.1.1-git", path = "../error" }
 wasefire-wire = { version = "0.1.0-git", path = "../wire" }
 
 [features]
+_exhaustive = []
 full = []
 std = ["wasefire-wire/std"]
 

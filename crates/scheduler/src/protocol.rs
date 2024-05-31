@@ -117,6 +117,7 @@ pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event
                 State::Tunnel { .. } => unreachable!(),
             }
         }
+        #[cfg(not(feature = "_test"))]
         _ => Api::DeviceError(Error::internal(Code::NotImplemented)),
     };
     reply::<B>(&response);

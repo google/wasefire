@@ -76,7 +76,7 @@ macro_rules! api {
         #[derive(Debug, Wire)]
         #[wire(static = T)]
         #[cfg_attr(feature = "full", wire(range = $next))]
-        #[non_exhaustive]
+        #[cfg_attr(not(feature = "_exhaustive"), non_exhaustive)]
         pub enum Api<'a, T: Direction> {
             $(
                 $(#[doc = $doc])* $(#[cfg($cfg)])* #[wire(tag = $tag)]
