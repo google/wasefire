@@ -18,7 +18,7 @@ use yew::prelude::*;
 
 use crate::board::Board;
 use crate::console::Console;
-use crate::hooks::use_runner_connection::use_runner_connection;
+use crate::hooks::use_runner_connection;
 
 #[function_component(App)]
 pub fn app() -> Html {
