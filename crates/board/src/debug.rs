@@ -23,6 +23,7 @@ pub trait Api: Send {
 
     /// Prints a line with timestamp.
     fn println(line: &str) {
+        // TODO(probe-rs-tools > 0.24.0): Call println! without timestamp.
         let time = Self::time();
         log::println!("{}.{:06}: {}", time / 1000000, time % 1000000, line);
     }
