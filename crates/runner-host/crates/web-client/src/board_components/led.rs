@@ -25,11 +25,11 @@ pub struct Props {
 
 #[function_component]
 pub fn LED(Props { id, command_state }: &Props) -> Html {
+    let id = *id;
     let lit = use_state(|| false);
     let command_state = command_state.clone();
     use_effect_with(command_state, {
         let lit = lit.clone();
-        let id = *id;
         move |command_state| {
             if let Some(Command::Set { component_id, state }) = &**command_state {
                 if *component_id == id {
@@ -47,7 +47,6 @@ pub fn LED(Props { id, command_state }: &Props) -> Html {
                 data="components/monochrome_led_on.svg"
                 style={if *lit { "" } else { "display: none;" }}
             />
-
             <object
                 class="led"
                 type="image/svg+xml"
