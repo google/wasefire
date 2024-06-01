@@ -31,7 +31,8 @@ enum Flags {
 
     /// Starts a tunnel with a given delimiter.
     ///
-    /// The delimiter is automatically sent when standard input is closed. The tunnel is line-based.
+    /// The delimiter is automatically sent when standard input is closed. The tunnel is
+    /// line-based.
     Tunnel { delimiter: String },
 
     /// Runs tests for this applet (this is not a protocol command).
