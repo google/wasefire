@@ -585,7 +585,7 @@ impl StoreDriverOn {
 impl<'a> StoreInterruption<'a> {
     /// Builds an interruption that never triggers.
     pub fn none() -> StoreInterruption<'a> {
-        StoreInterruption { delay: usize::max_value(), corrupt: Box::new(|_, _| {}) }
+        StoreInterruption { delay: usize::MAX, corrupt: Box::new(|_, _| {}) }
     }
 
     /// Builds an interruption without corruption.

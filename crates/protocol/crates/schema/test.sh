@@ -19,4 +19,5 @@ set -e
 
 test_helper
 
-cargo check
+cargo test --bin=schema --features=full
+cargo test --bin=schema

@@ -15,8 +15,8 @@ categories = ["embedded", "no-std", "wasm"]
 features = ["std", "wasm"]
 
 [dependencies]
-bytemuck = { version = "1.14.0", default-features = false }
-defmt = { version = "0.3.5", default-features = false, optional = true }
+bytemuck = { version = "1.16.0", default-features = false }
+defmt = { version = "0.3.8", default-features = false, optional = true }
 derivative = { version = "2.2.0", default-features = false, features = ["use_core"] }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
 generic-array = { version = "0.14.7", default-features = false, optional = true }
@@ -30,7 +30,7 @@ wasefire-store = { version = "0.2.4-git", path = "../store", optional = true }
 wasefire-sync = { version = "0.1.1-git", path = "../sync", optional = true }
 
 [dependencies.wasefire-interpreter]
-version = "0.2.1-git"
+version = "0.3.0-git"
 path = "../interpreter"
 features = ["toctou"]
 optional = true
@@ -229,6 +229,7 @@ wasm = ["dep:wasefire-interpreter"]
 # safety invariant.
 unsafe-skip-validation = []
 # Internal features.
+_test = ["wasefire-protocol?/_exhaustive"]
 internal-applet-api-crypto = []
 internal-applet-api-crypto-hash = ["dep:digest", "dep:generic-array", "internal-applet-api-crypto"]
 internal-applet-api-platform = []

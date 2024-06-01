@@ -21,8 +21,8 @@ ensure_applet
 
 test_helper
 
-cargo test --features=wasm,debug
-cargo check --features=wasm,debug,web
-cargo check --features=wasm,release
-cargo check --target=i686-unknown-linux-gnu --features=native,release
-cargo check --no-default-features --features=wasm,debug
+cargo test --bin=runner-host --features=wasm,debug
+cargo check --bin=runner-host --features=wasm,debug,web
+cargo check --bin=runner-host --features=wasm,release
+cargo check --bin=runner-host --target=i686-unknown-linux-gnu --features=native,release
+cargo check --bin=runner-host --no-default-features --features=wasm,debug

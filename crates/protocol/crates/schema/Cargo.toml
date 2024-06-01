@@ -1,0 +1,23 @@
+[package]
+name = "schema"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+wasefire-cli-tools = { path = "../../../cli-tools" }
+wasefire-protocol = { path = "../..", features = ["std"] }
+wasefire-wire = { path = "../../../wire", features = ["schema", "std"] }
+yoke = { version = "0.7.3", features = ["derive"] }
+
+[features]
+full = ["wasefire-protocol/full"]
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

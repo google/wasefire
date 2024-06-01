@@ -15,7 +15,7 @@ categories = ["embedded", "no-std", "wasm"]
 proc-macro = true
 
 [dependencies]
-wasefire-applet-api-desc = { version = "=0.1.7-git", path = "../api-desc" }
+wasefire-applet-api-desc = { version = "=0.2.0-git", path = "../api-desc" }
 
 [features]
 api-button = ["wasefire-applet-api-desc/api-button"]

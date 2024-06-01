@@ -27,7 +27,7 @@ done
 
 test_helper
 
-cargo check --target=wasm32-unknown-unknown --features=full-api
-cargo check --target=wasm32-unknown-unknown --features=full-api,rust-crypto
-cargo check --features=full-api,native
-cargo test --features=full-api,test
+cargo check --lib --target=wasm32-unknown-unknown --features=full-api,wasm
+cargo check --lib --target=wasm32-unknown-unknown --features=full-api,wasm,rust-crypto
+cargo check --lib --features=full-api,native
+cargo test --lib --features=full-api,test

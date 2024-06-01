@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.2.1-git
+## 0.3.0-git
+
+### Major
+
+- Remove unused `Export` type
 
 ### Minor
 
@@ -9,6 +13,9 @@
 
 ### Patch
 
+- Fix lints
+- Support aligned load and store in validation
+- Update dependencies
 - Refactor parsing of instructions starting with `0xfc`
 - Move lints to `Cargo.toml` and use common Wasefire lints
 
@@ -60,4 +67,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 4 -->
+<!-- Increment to skip CHANGELOG.md test: 5 -->

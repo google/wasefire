@@ -24,7 +24,7 @@ for file in $(git ls-files); do
     *.gitignore|.git*) continue ;;
     third_party/*) continue ;;
     *LICENSE) continue ;;
-    *.css|*.scss|*.html|*.pdf|*.png|*.svg) continue ;;
+    *.css|*.scss|*.html|*.pdf|*.png|*.svg|*.txt) continue ;;
     *.cff|*.json|*.lock|*.md|*.toml|*.x|*.wasm|*.yml) continue ;;
     */data/*.rs) continue ;;
   esac

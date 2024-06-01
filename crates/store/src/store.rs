@@ -36,7 +36,8 @@ use crate::{BufferStorage, StoreOperation};
 pub enum StoreError {
     /// Invalid argument.
     ///
-    /// The store is left unchanged. The operation will repeatedly fail until the argument is fixed.
+    /// The store is left unchanged. The operation will repeatedly fail until the argument is
+    /// fixed.
     InvalidArgument,
 
     /// Not enough capacity.
@@ -721,10 +722,7 @@ impl<S: Storage> Store<S> {
                 _ => return Err(StoreError::InvalidStorage),
             };
             let length = head - pos;
-            // We have to copy the slice for 2 reasons:
-            // 1. We would need to work around the lifetime. This is possible using unsafe.
-            // 2. We can't pass a flash slice to the kernel. This should get fixed with
-            //    https://github.com/tock/tock/issues/1274.
+            // We have to copy the slice to work around the lifetime without using unsafe.
             let entry = self.read_slice(pos, length * self.format.word_size());
             self.remove_entry(pos)?;
             self.write_slice(tail, &entry)?;

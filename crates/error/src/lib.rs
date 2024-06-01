@@ -15,9 +15,10 @@
 //! Applet and board API errors.
 
 #![no_std]
+#![feature(error_in_core)]
 
-#[cfg(feature = "std")]
-extern crate std;
+// TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
+extern crate alloc;
 
 use num_enum::{IntoPrimitive, TryFromPrimitive, TryFromPrimitiveError};
 
@@ -35,16 +36,21 @@ pub struct Error(u32);
 impl Error {
     /// Creates a new error.
     pub fn new(space: impl SpaceParam, code: impl CodeParam) -> Self {
-        Error((space.into() as u32) << 16 | code.into() as u32)
+        Error::new_const(space.into(), code.into())
+    }
+
+    /// Creates a new error at compile-time.
+    pub const fn new_const(space: u8, code: u16) -> Self {
+        Error((space as u32) << 16 | code as u32)
     }
 
     /// Returns the error space.
-    pub fn space(self) -> u8 {
+    pub const fn space(self) -> u8 {
         (self.0 >> 16) as u8
     }
 
     /// Returns the error code.
-    pub fn code(self) -> u16 {
+    pub const fn code(self) -> u16 {
         self.0 as u16
     }
 
@@ -216,8 +222,7 @@ impl defmt::Format for Error {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for Error {}
+impl core::error::Error for Error {}
 
 #[cfg(test)]
 mod tests {

@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Depend on `alloc` to silence `unused-crate-dependencies` false positive
 - Use common Wasefire lints
 
 ## 0.1.0

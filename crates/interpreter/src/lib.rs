@@ -17,18 +17,18 @@
 //! The main concepts of this crate are:
 //!
 //! - A [`Store`] contains instantiated modules and permits execution. Note that execution within
-//! the same store must follow a stack behavior. A function "bar" may be called while a function
-//! "foo" is running: "bar" will temporarily interrupt "foo" until "bar" returns at which point
-//! "foo" would resume. This is to avoid corrupting the stack within the same instance. Once the
-//! WebAssembly threads proposal lands, this restriction may be removed.
+//!   the same store must follow a stack behavior. A function "bar" may be called while a function
+//!   "foo" is running: "bar" will temporarily interrupt "foo" until "bar" returns at which point
+//!   "foo" would resume. This is to avoid corrupting the stack within the same instance. Once the
+//!   WebAssembly threads proposal lands, this restriction may be removed.
 //!
 //! - A [`Module`] represents a valid module. Only valid modules may be instantiated. A module is
-//! just a byte slice holding a WebAssembly module in binary format.
+//!   just a byte slice holding a WebAssembly module in binary format.
 //!
 //! - A [`RunResult`] represents the result of a (possibly partial) execution. When invoking an
-//! exported function from an instance in a store, or when resuming the execution after a call to
-//! the host, a `RunResult` is returned providing either the next call to the host or whether
-//! execution of the most recently invoked function terminated along with its results.
+//!   exported function from an instance in a store, or when resuming the execution after a call to
+//!   the host, a `RunResult` is returned providing either the next call to the host or whether
+//!   execution of the most recently invoked function terminated along with its results.
 //!
 //! # Examples
 //!
@@ -97,7 +97,7 @@
 //! following:
 //!
 //! - Enable the `portable-atomic/critical-section` feature (possibly adding a direct dependency on
-//! `portable-atomic`).
+//!   `portable-atomic`).
 //!
 //! - Set the `--cfg=portable_atomic_unsafe_assume_single_core` rustc flag.
 //!
@@ -105,12 +105,11 @@
 //! [documentation](https://docs.rs/portable-atomic/latest/portable_atomic).
 
 #![cfg_attr(not(feature = "debug"), no_std)]
-#![cfg_attr(not(feature = "toctou"), feature(slice_split_at_unchecked))]
 #![cfg_attr(test, allow(unused_crate_dependencies))]
 #![feature(concat_idents)]
 #![feature(float_minimum_maximum)]
 #![feature(never_type)]
-#![feature(pointer_is_aligned)]
+#![feature(pointer_is_aligned_to)]
 #![feature(try_blocks)]
 #![feature(unwrap_infallible)]
 

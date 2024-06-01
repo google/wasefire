@@ -19,5 +19,5 @@ set -e
 
 test_helper
 
-cargo test
-cargo check --target=thumbv7em-none-eabi
+cargo test --lib --features=full
+cargo check --lib --target=thumbv7em-none-eabi

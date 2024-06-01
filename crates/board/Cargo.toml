@@ -16,12 +16,12 @@ features = ["full-api", "std"]
 
 [dependencies]
 aead = { version = "0.5.2", default-features = false, optional = true }
-aes = { version = "0.8.3", default-features = false, optional = true }
+aes = { version = "0.8.4", default-features = false, optional = true }
 aes-gcm = { version = "0.10.3", default-features = false, optional = true }
-bytemuck = { version = "1.14.0", default-features = false, optional = true }
+bytemuck = { version = "1.16.0", default-features = false, optional = true }
 ccm = { version = "0.5.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.6", default-features = false, optional = true }
-defmt = { version = "0.3.5", default-features = false, optional = true }
+defmt = { version = "0.3.8", default-features = false, optional = true }
 derivative = { version = "2.2.0", default-features = false, features = ["use_core"] }
 digest = { version = "0.10.7", default-features = false, optional = true }
 ecdsa = { version = "0.16.9", default-features = false, optional = true }
@@ -33,8 +33,8 @@ p384 = { version = "0.13.0", default-features = false, optional = true }
 sha2 = { version = "0.10.8", default-features = false, optional = true }
 signature = { version = "2.2.0", default-features = false, optional = true }
 typenum = { version = "1.17.0", default-features = false, optional = true }
-usb-device = { version = "0.3.1", default-features = false, optional = true }
-usbd-serial = { version = "0.2.0", default-features = false, optional = true }
+usb-device = { version = "0.3.2", default-features = false, optional = true }
+usbd-serial = { version = "0.2.2", default-features = false, optional = true }
 wasefire-error = { version = "0.1.1-git", path = "../error" }
 wasefire-logger = { version = "0.1.5-git", path = "../logger" }
 wasefire-store = { version = "0.2.4-git", path = "../store", optional = true }

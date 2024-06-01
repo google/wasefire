@@ -24,7 +24,6 @@ use lazy_static::lazy_static;
 use probe_rs::config::TargetSelector;
 use probe_rs::{flashing, Permissions, Session};
 use rustc_demangle::demangle;
-use strum::{Display, EnumString};
 use wasefire_cli_tools::{action, cmd, fs};
 
 mod footprint;
@@ -167,7 +166,7 @@ struct RunnerOptions {
 
     /// Optimization level (0, 1, 2, 3, s, z).
     #[clap(long, short = 'O')]
-    opt_level: Option<OptLevel>,
+    opt_level: Option<action::OptLevel>,
 
     /// Produces target/wasefire/platform_{side}.bin files instead of flashing.
     #[clap(long)]
@@ -218,22 +217,6 @@ struct RunnerOptions {
     memory_page_count: Option<usize>,
 }
 
-#[derive(Copy, Clone, EnumString, Display)]
-enum OptLevel {
-    #[strum(serialize = "0")]
-    O0,
-    #[strum(serialize = "1")]
-    O1,
-    #[strum(serialize = "2")]
-    O2,
-    #[strum(serialize = "3")]
-    O3,
-    #[strum(serialize = "s")]
-    Os,
-    #[strum(serialize = "z")]
-    Oz,
-}
-
 impl Flags {
     fn execute(self) -> Result<()> {
         match self.command {
@@ -242,9 +225,9 @@ impl Flags {
             MainCommand::UpdateApis { features } => {
                 let (lang, ext) = ("assemblyscript", "ts");
                 let mut cargo = Command::new("cargo");
-                cargo.args(["run", "--manifest-path=crates/api-desc/Cargo.toml"]);
+                cargo.args(["run", "--manifest-path=crates/xtask/crates/update-api/Cargo.toml"]);
                 for features in features {
-                    cargo.arg(format!("--features={features}"));
+                    cargo.arg(format!("--features=wasefire-applet-api-desc/{features}"));
                 }
                 cargo.arg("--");
                 cargo.arg(format!("--lang={lang}"));
@@ -413,18 +396,15 @@ impl RunnerOptions {
             if main.release {
                 cargo.arg("-Zbuild-std=core,alloc");
                 cargo.arg("-Zbuild-std-features=panic_immediate_abort");
-            }
-            if main.release {
-                rustflags.push("-C lto=fat".to_string());
-                rustflags.push("-C codegen-units=1".to_string());
-                rustflags.push("-C embed-bitcode=yes".to_string());
+                cargo.arg("--config=profile.release.codegen-units=1");
+                cargo.arg("--config=profile.release.lto=true");
             } else {
+                cargo.arg("--config=profile.release.debug=2");
                 rustflags.push("-C link-arg=-Tdefmt.x".to_string());
-                rustflags.push("-C debuginfo=2".to_string());
             }
         }
         if let Some(level) = self.opt_level {
-            rustflags.push(format!("-C opt-level={level}"));
+            cargo.arg(format!("--config=profile.release.opt-level={level}"));
         }
         if main.release {
             features.push("release".to_string());
@@ -638,7 +618,7 @@ fn wrap_command() -> Result<Command> {
 }
 
 fn ensure_assemblyscript() -> Result<()> {
-    const ASC_VERSION: &str = "0.27.23"; // scripts/upgrade.sh relies on this name
+    const ASC_VERSION: &str = "0.27.27"; // scripts/upgrade.sh relies on this name
     const BIN: &str = "examples/assemblyscript/node_modules/.bin/asc";
     const JSON: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
     if fs::exists(BIN) && fs::exists(JSON) {

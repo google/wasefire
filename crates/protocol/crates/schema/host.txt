@@ -1,0 +1,5 @@
+DeviceError=0: {} -> (space:u8 code:u16)
+AppletRequest=1: (applet_id:() request:[u8]) -> ()
+AppletResponse=2: () -> (response:{None=0:() Some=1:[u8]})
+PlatformReboot=3: () -> {}
+AppletTunnel=4: (applet_id:() delimiter:[u8]) -> ()

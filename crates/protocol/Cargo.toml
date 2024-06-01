@@ -11,12 +11,17 @@ include = ["/src"]
 keywords = ["embedded", "framework", "no-std"]
 categories = ["embedded", "no-std"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
-sealed = { version = "0.5.0", default-features = false }
 wasefire-error = { version = "0.1.1-git", path = "../error" }
+wasefire-wire = { version = "0.1.0-git", path = "../wire" }
 
 [features]
-std = ["wasefire-error/std"]
+_exhaustive = []
+full = []
+std = ["wasefire-wire/std"]
 
 [lints]
 clippy.unit-arg = "allow"

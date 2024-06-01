@@ -131,7 +131,7 @@ impl<T: UsbContext> Candidate<T> {
     /// Creates a connection to the candidate device.
     pub fn connect(self) -> rusb::Result<Connection<T>> {
         let Candidate { device, configuration, interface } = self;
-        let mut handle = device.open()?;
+        let handle = device.open()?;
         let current_configuration = handle.active_configuration()?;
         if current_configuration != configuration {
             log::info!("Configuring the device from {current_configuration} to {configuration}.");

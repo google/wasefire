@@ -15,7 +15,7 @@
 use alloc::boxed::Box;
 
 use cortex_m::prelude::_embedded_hal_timer_CountDown;
-use embedded_hal::timer::Cancel;
+use embedded_hal_02::timer::Cancel;
 use nrf52840_hal::pac::{TIMER1, TIMER2, TIMER3, TIMER4};
 use nrf52840_hal::timer::{Instance, OneShot, Periodic};
 use nrf52840_hal::Timer;

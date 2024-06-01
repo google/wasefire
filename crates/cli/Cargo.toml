@@ -16,9 +16,9 @@ name = "wasefire"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = { version = "1.0.79", default-features = false }
-clap = { version = "4.4.18", default-features = false, features = ["derive"] }
-clap_complete = { version = "4.5.1", default-features = false }
+anyhow = { version = "1.0.86", default-features = false }
+clap = { version = "4.5.4", default-features = false, features = ["derive"] }
+clap_complete = { version = "4.5.2", default-features = false }
 wasefire-cli-tools = { version = "0.1.0-git", path = "../cli-tools" }
 
 [lints]
