@@ -4,6 +4,7 @@
 
 ### Major
 
+- Change `platform::version()` to return `Cow` and add `platform::serial()`
 - Change `Id::new` to return `Result` instead of `Option`
 - Change `crypto::{Hash,Hmac}` to depend on `crypto::WithError`
 
@@ -133,4 +134,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 21 -->
+<!-- Increment to skip CHANGELOG.md test: 22 -->

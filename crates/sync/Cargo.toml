@@ -13,7 +13,11 @@ categories = ["concurrency", "no-std"]
 
 [dependencies]
 portable-atomic = { version = "1.6.0", default-features = false }
-spin = { version = "0.9.8", default-features = false, features = ["portable_atomic", "spin_mutex"] }
+
+[dependencies.spin]
+version = "0.9.8"
+default-features = false
+features = ["lazy", "portable_atomic", "spin_mutex"]
 
 [features]
 unsafe-assume-single-core = ["portable-atomic/unsafe-assume-single-core"]

@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! This crate provides different synchronization primitives.
+use wasefire_wire::Wire;
 
-#![no_std]
-#![deny(unsafe_op_in_unsafe_fn)]
-
-// TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
-extern crate alloc;
-
-pub use mutex::{Mutex, MutexGuard};
-pub use portable_atomic::*;
-pub use spin::Lazy;
-pub use take::TakeCell;
-
-mod mutex;
-mod once;
-mod take;
+#[derive(Debug, Wire)]
+pub struct Info<'a> {
+    pub serial: &'a [u8],
+    pub version: &'a [u8],
+}

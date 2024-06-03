@@ -41,6 +41,7 @@ use wasefire_wire::Wire;
 use wasefire_wire::Yoke;
 
 pub mod applet;
+pub mod platform;
 
 /// Service description.
 pub trait Service: 'static {
@@ -203,8 +204,8 @@ api! {
     //!
     //! Variants gated by the `full` feature are deprecated. They won't be used by new devices.
     //! However, to support older devices, the host must be able to use them.
-    version = 0;
-    next = 5;
+    version = 1;
+    next = 6;
 
     /// Returns the device API version.
     0 [0 -] ApiVersion: () => u32,
@@ -220,4 +221,7 @@ api! {
 
     /// Starts a direct tunnel with an applet.
     4 [0 -] AppletTunnel: applet::Tunnel<'a> => (),
+
+    /// Returns platform information (e.g. serial and version).
+    5 [1 -] PlatformInfo: () => platform::Info<'a>,
 }

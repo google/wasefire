@@ -66,11 +66,7 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
         match fragment::read(&scheduler.store, &decode_keys(keys)?).map_err(convert)? {
             None => false,
             Some(value) => {
-                let len = value.len() as u32;
-                let ptr = memory.alloc(len, 1)?;
-                memory.get_mut(ptr, len)?.copy_from_slice(&value);
-                memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
-                memory.get_mut(*len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
+                memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &value)?;
                 true
             }
         }
