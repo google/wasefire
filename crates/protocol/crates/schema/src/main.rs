@@ -26,17 +26,10 @@ use wasefire_wire::schema::{View, ViewEnum, ViewFields};
 use wasefire_wire::{Wire, Yoke};
 
 fn main() -> Result<()> {
-    let base = std::env::var("BASE_REF").unwrap_or_else(|_| {
-        format!("origin/{}", std::env::var("GITHUB_BASE_REF").as_deref().unwrap_or("main"))
-    });
     let new = Schema::new();
     new.write().context("writing bin")?;
     new.print().context("printing txt")?;
-    let hash = cmd::output_line(Command::new("git").args(["rev-parse", &base]))?;
-    if hash == "13a0d6eb5ed261c2c0e89744bb339b99e24d2e2a" {
-        return Ok(());
-    }
-    let old = Schema::old(&base)?;
+    let old = Schema::old()?;
     check(&old.get().result, &new.result).context("checking result")?;
     check(&old.get().request, &new.request).context("checking request")?;
     check(&old.get().response, &new.response).context("checking response")?;
@@ -121,11 +114,28 @@ impl Schema<'static> {
         }
     }
 
-    fn old(base: &str) -> Result<Yoke<Schema<'static>>> {
+    fn old() -> Result<Yoke<Schema<'static>>> {
+        let base = Self::base()?;
         let mut git = Command::new("git");
         git.args(["show", &format!("{base}:./{SIDE}.bin")]);
         let data = cmd::output(&mut git)?.stdout.into_boxed_slice();
         Ok(wasefire_wire::decode_yoke(data)?)
+    }
+
+    fn base() -> Result<String> {
+        use std::env::var;
+        use std::env::VarError::*;
+        Ok(match var("GITHUB_EVENT_NAME").as_deref() {
+            Ok("pull_request") => format!("origin/{}", var("GITHUB_BASE_REF")?),
+            Ok("push") => format!("origin/{}", var("GITHUB_REF_NAME")?),
+            Ok(x) => bail!("unexpected GITHUB_EVENT_NAME {x:?}"),
+            Err(NotPresent) => match var("BASE_REF") {
+                Ok(x) => x,
+                Err(NotPresent) => "origin/main".to_string(),
+                Err(NotUnicode(x)) => bail!("invalid BASE_REF {x:?}"),
+            },
+            Err(NotUnicode(x)) => bail!("invalid GITHUB_EVENT_NAME {x:?}"),
+        })
     }
 
     fn write(&self) -> Result<()> {
