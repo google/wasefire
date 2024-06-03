@@ -24,9 +24,9 @@ for file in $(git ls-files); do
     *.gitignore|.git*) continue ;;
     third_party/*) continue ;;
     *LICENSE) continue ;;
-    *.css|*.html|*.pdf|*.png|*.svg|*.txt) continue ;;
+    *.css|*.html|*.pdf|*.png|*.svg|*.bin|*.txt) continue ;;
     *.cff|*.json|*.lock|*.md|*.toml|*.x|*.wasm|*.yml) continue ;;
-    */data/*.rs) continue ;;
+    crates/cli-tools/src/data/lib.rs) continue ;;
   esac
   sed -n 'N;/Copyright/q;q1' "$file" || e "No copyright notice in $file"
 done

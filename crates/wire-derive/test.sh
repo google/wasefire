@@ -19,7 +19,5 @@ set -e
 
 test_helper
 
-cargo test --lib --features=_test
-cargo test --lib --features=_test,schema
-cargo check --lib
-cargo check --lib --features=schema
+cargo test --lib
+cargo test --lib --features=schema

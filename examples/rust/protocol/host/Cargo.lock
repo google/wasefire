@@ -168,6 +168,7 @@ dependencies = [
  "rusb",
  "wasefire-protocol",
  "wasefire-protocol-usb",
+ "wasefire-wire",
 ]
 
 [[package]]
