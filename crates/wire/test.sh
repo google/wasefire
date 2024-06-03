@@ -17,9 +17,8 @@ set -e
 
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
-x cargo miri test --lib --features=schema yoke
-
 test_helper
 
 cargo test --lib --features=schema
+cargo miri test --lib --features=schema yoke
 cargo check --lib --target=thumbv7em-none-eabi
