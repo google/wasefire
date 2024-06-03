@@ -68,9 +68,7 @@ fn check_versions(old: &Schema, new: &Schema) -> Result<()> {
     for Descriptor { tag, versions } in &old.descriptors {
         ensure!(old_map.insert(tag, *versions).is_none(), "duplicate tag {tag}");
     }
-    #[cfg(feature = "device")]
     let mut changed = false;
-    #[cfg(feature = "host")]
     let old_version = old.version;
     let new_version = new.version;
     for Descriptor { tag, versions: new } in &new.descriptors {
@@ -88,18 +86,18 @@ fn check_versions(old: &Schema, new: &Schema) -> Result<()> {
                 }
             }
             None => {
-                #[cfg(feature = "device")]
-                let _ = changed = true;
+                changed = true;
                 ensure!(new.min == new_version, "min version for {tag} must be {new_version}");
             }
         }
     }
-    #[cfg(feature = "device")]
-    let _ = changed |= !old_map.is_empty();
+    changed |= !old_map.is_empty();
     #[cfg(feature = "host")]
     ensure!(old_map.is_empty(), "deleted tag {}", old_map.keys().next().unwrap());
+    #[cfg(feature = "host")]
+    let _ = changed;
     #[cfg(feature = "device")]
-    ensure!(new.version == old.version + changed as u32, "invalid version (must bump: {changed})");
+    ensure!(new_version == old_version + changed as u32, "invalid version (must bump: {changed})");
     Ok(())
 }
 

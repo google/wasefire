@@ -17,8 +17,8 @@
 //! This crate defines a high-level protocol between a host and a device. The host initiates
 //! requests and the device responds. Requests and responses use the same [`Api`] but with a
 //! different type parameter: `Api<Request>` and `Api<Response>` respectively. However, while the
-//! host sends an `Api<Request>`, the device responds with a `Result<T::Response, Error>` where `T`
-//! is the service of the request.
+//! host sends an `Api<Request>`, the device responds with an `ApiResult<T>` where `T` is the
+//! service of the request.
 //!
 //! This high-level protocol is eventually wrapped in a lower-level protocol for a given transport,
 //! for example USB. The host should provide enough time for the device to respond, but should
@@ -121,11 +121,17 @@ pub struct Versions {
 #[cfg(feature = "host")]
 impl Versions {
     pub fn contains(&self, version: u32) -> Result<bool, Error> {
-        if VERSION < version {
-            // The device is newer than the host, so we can't tell.
-            return Err(Error::world(wasefire_error::Code::OutOfBounds));
+        match (self.min, self.max) {
+            // Deprecated service. The device needs to be within the range.
+            (min, Some(max)) => Ok((min ..= max).contains(&version)),
+            // The device is too old.
+            (min, None) if version < min => Ok(false),
+            // The device is newer than the host, so we don't know if the service has been
+            // deprecated for that device.
+            (_, None) if VERSION < version => Err(Error::world(wasefire_error::Code::OutOfBounds)),
+            // The device is older than the host but recent enough for the service.
+            _ => Ok(true),
         }
-        Ok(self.min <= version && self.max.map_or(true, |max| version <= max))
     }
 }
 
