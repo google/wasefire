@@ -15,11 +15,11 @@
 use std::io::Read;
 use std::time::Duration;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use clap::Parser;
 use rusb::GlobalContext;
 use wasefire_protocol::applet::{self, AppletId};
-use wasefire_protocol::{self as service, Api, ApiResult, Request, Service};
+use wasefire_protocol::{self as service, Api, Request, Service};
 use wasefire_protocol_usb::{self as rpc, Connection};
 use wasefire_wire::Yoke;
 
@@ -43,15 +43,16 @@ enum Flags {
 fn main() -> Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let flags = Flags::parse();
-    let candidate = rpc::choose_device().context("choosing device")?;
+    let context = GlobalContext::default();
+    let candidate = rpc::choose_device(&context).context("choosing device")?;
     let connection = candidate.connect().context("connecting to the device")?;
     match flags {
         Flags::Call => {
             let mut request = Vec::new();
             std::io::stdin().read_to_end(&mut request)?;
             let request = applet::Request { applet_id: AppletId, request: &request };
-            call::<service::AppletRequest>(&connection, request)?.get();
-            let response = call::<service::AppletResponse>(&connection, AppletId)?;
+            connection.call::<service::AppletRequest>(request, TIMEOUT)?.get();
+            let response = connection.call::<service::AppletResponse>(AppletId, TIMEOUT)?;
             let response = response.get().response.context("no applet response")?;
             print!("{}", std::str::from_utf8(response).unwrap());
             Ok(())
@@ -66,11 +67,11 @@ fn main() -> Result<()> {
                 if request == delimiter {
                     break;
                 }
-                connection.send(&request, TIMEOUT).context("sending request")?;
-                let response = connection.receive(TIMEOUT).context("receiving response")?;
+                connection.send_raw(&request, TIMEOUT).context("sending request")?;
+                let response = connection.receive_raw(TIMEOUT).context("receiving response")?;
                 println!("{}", String::from_utf8(response).unwrap());
             }
-            connection.send(delimiter, TIMEOUT)?;
+            connection.send_raw(delimiter, TIMEOUT)?;
             read_tunnel(&connection)
         }
         Flags::Test => tests::main(&connection),
@@ -80,26 +81,13 @@ fn main() -> Result<()> {
 const TIMEOUT: Duration = Duration::from_secs(1);
 
 fn send(connection: &Connection<GlobalContext>, request: &Api<Request>) -> Result<()> {
-    let request = request.encode().context("encoding request")?;
-    connection.send(&request, TIMEOUT).context("sending request")?;
-    Ok(())
+    connection.send(request, TIMEOUT).context("sending request")
 }
 
 fn receive<T: Service>(
     connection: &Connection<GlobalContext>,
 ) -> Result<Yoke<T::Response<'static>>> {
-    let response = connection.receive(TIMEOUT).context("receiving response")?.into_boxed_slice();
-    ApiResult::<T>::decode_yoke(response).context("decoding response")?.try_map(|x| match x {
-        ApiResult::Ok(x) => Ok(x),
-        ApiResult::Err(error) => bail!("error response: {error}"),
-    })
-}
-
-fn call<T: Service>(
-    connection: &Connection<GlobalContext>, request: T::Request<'_>,
-) -> Result<Yoke<T::Response<'static>>> {
-    send(connection, &T::request(request))?;
-    receive::<T>(connection)
+    connection.receive::<T>(TIMEOUT).context("receiving response")
 }
 
 fn read_tunnel(connection: &Connection<GlobalContext>) -> Result<()> {

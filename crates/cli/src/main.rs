@@ -15,11 +15,14 @@
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use anyhow::{bail, Result};
 use clap::{CommandFactory, Parser, ValueHint};
 use clap_complete::Shell;
+use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use wasefire_cli_tools::{action, fs};
+use wasefire_protocol::{self as service, platform};
 
 #[derive(Parser)]
 #[command(version, about)]
@@ -102,15 +105,32 @@ fn main() -> Result<()> {
     flags.options.run()?;
     let dir = std::env::current_dir()?;
     match flags.action {
-        Action::AppletList
-        | Action::AppletInstall
-        | Action::AppletUpdate
-        | Action::AppletUninstall
-        | Action::PlatformList
-        | Action::PlatformUpdate => bail!("not implemented yet"),
+        Action::AppletList => bail!("not implemented yet"),
+        Action::AppletInstall => bail!("not implemented yet"),
+        Action::AppletUpdate => bail!("not implemented yet"),
+        Action::AppletUninstall => bail!("not implemented yet"),
+        Action::PlatformList => platform_list(),
+        Action::PlatformUpdate => bail!("not implemented yet"),
         Action::RustAppletNew(x) => x.run(),
         Action::RustAppletBuild(x) => x.run(dir),
         Action::RustAppletTest(x) => x.run(dir),
         Action::Completion(x) => x.run(),
     }
 }
+
+fn platform_list() -> Result<()> {
+    let context = wasefire_protocol_usb::GlobalContext::default();
+    let candidates = wasefire_protocol_usb::list(&context)?;
+    println!("There are {} connected platforms:", candidates.len());
+    for candidate in candidates {
+        let connection = candidate.clone().connect()?;
+        let info = connection.call::<service::PlatformInfo>((), TIMEOUT)?;
+        let platform::Info { serial, version } = info.get();
+        let serial = HEX.encode(serial);
+        let version = HEX.encode(version);
+        println!("- serial:{serial} version:{version}");
+    }
+    Ok(())
+}
+
+const TIMEOUT: Duration = Duration::from_secs(1);

@@ -382,6 +382,8 @@ dependencies = [
  "rusb",
  "wasefire-board-api",
  "wasefire-logger",
+ "wasefire-protocol",
+ "wasefire-wire",
 ]
 
 [[package]]
