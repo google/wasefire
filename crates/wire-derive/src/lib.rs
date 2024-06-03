@@ -67,6 +67,7 @@ fn derive_item(item: &syn::DeriveInput) -> syn::Result<syn::ItemImpl> {
         }
         Attr::Present(_, x) => x,
     };
+    let type_param = syn::Lifetime::new(&format!("'_{}", param.ident), param.span());
     let (_, parameters, _) = item.generics.split_for_impl();
     let mut generics = item.generics.clone();
     if generics.lifetimes().all(|x| x.lifetime != param) {
@@ -87,31 +88,25 @@ fn derive_item(item: &syn::DeriveInput) -> syn::Result<syn::ItemImpl> {
         return Err(syn::Error::new(span, "range is only supported for enums"));
     }
     let ident = &item.ident;
-    #[cfg(not(feature = "schema"))]
-    let _ = schema;
-    #[cfg(not(feature = "schema"))]
-    let (static_, schema) = (None::<syn::ImplItem>, None::<syn::ImplItem>);
-    #[cfg(feature = "schema")]
-    let (static_, schema) = {
-        let statics: Vec<syn::Type> = match attrs.static_.take() {
-            Attr::Absent => Vec::new(),
-            Attr::Present(_, xs) => xs.into_iter().map(|x| parse_quote!(#x)).collect(),
-        };
-        let mut visitor = MakeStatic { param: &param, statics: &statics };
-        let mut static_: syn::Type = parse_quote!(#ident #parameters);
-        syn::visit_mut::visit_type_mut(&mut visitor, &mut static_);
-        let static_ = quote!(type Static = #static_;);
-        let schema = quote! {
+    let statics: Vec<syn::Type> = match attrs.static_.take() {
+        Attr::Absent => Vec::new(),
+        Attr::Present(_, xs) => xs.into_iter().map(|x| parse_quote!(#x)).collect(),
+    };
+    let mut visitor = MakeType { src: &param, dst: &type_param, statics: &statics };
+    let mut type_: syn::Type = parse_quote!(#ident #parameters);
+    syn::visit_mut::visit_type_mut(&mut visitor, &mut type_);
+    let schema = match cfg!(feature = "schema") {
+        false => None,
+        true => Some(quote! {
             fn schema(rules: &mut #wire::internal::Rules) {
                 #(#schema)*
             }
-        };
-        (static_, schema)
+        }),
     };
     let impl_wire: syn::ItemImpl = parse_quote! {
         #[automatically_derived]
         impl #generics #wire::internal::Wire<#param> for #ident #parameters #where_clause {
-            #static_
+            type Type<#type_param> = #type_;
             #schema
             fn encode(&self, writer: &mut #wire::internal::Writer<#param>) -> #wire::internal::Result<()> {
                 #(#encode)*
@@ -130,10 +125,9 @@ fn derive_struct(
     let mut types = Types::default();
     let (mut schema, mut encode, decode) =
         derive_fields(wire, &parse_quote!(#name), &item.fields, &mut types)?;
-    #[cfg(not(feature = "schema"))]
-    let _ = &mut schema;
-    #[cfg(feature = "schema")]
-    types.stmts(&mut schema, wire, "struct_", "fields");
+    if cfg!(feature = "schema") {
+        types.stmts(&mut schema, wire, "struct_", "fields");
+    }
     if !encode.is_empty() {
         let path = parse_quote!(#name);
         let encode_pat = fields_pat(&path, &item.fields, false);
@@ -145,16 +139,13 @@ fn derive_struct(
 fn derive_enum(
     attrs: &mut Attrs, wire: &syn::Path, name: &syn::Ident, item: &syn::DataEnum,
 ) -> syn::Result<(Vec<syn::Stmt>, Vec<syn::Stmt>, Vec<syn::Stmt>)> {
-    #[cfg(not(feature = "schema"))]
-    let schema = Vec::new();
-    #[cfg(feature = "schema")]
     let mut schema = Vec::new();
     let mut types = Types::default();
     let mut encode = Vec::<syn::Arm>::new();
     let mut decode = Vec::<syn::Arm>::new();
     let mut tags = Tags::default();
-    #[cfg(feature = "schema")]
     match item.variants.len() {
+        _ if !cfg!(feature = "schema") => (),
         0 => schema.push(parse_quote!(let variants = #wire::internal::Vec::new();)),
         n => schema.push(parse_quote!(let mut variants = #wire::internal::Vec::with_capacity(#n);)),
     }
@@ -169,15 +160,13 @@ fn derive_enum(
         let (variant_schema, variant_encode, variant_decode) =
             derive_fields(wire, &path, &variant.fields, &mut types)?;
         let pat_encode = fields_pat(&path, &variant.fields, true);
-        #[cfg(not(feature = "schema"))]
-        let _ = variant_schema;
-        #[cfg(feature = "schema")]
         let ident_schema = format!("{ident}");
-        #[cfg(feature = "schema")]
-        schema.push(parse_quote!({
-            #(#variant_schema)*
-            variants.push((#ident_schema, #tag, fields));
-        }));
+        if cfg!(feature = "schema") {
+            schema.push(parse_quote!({
+                #(#variant_schema)*
+                variants.push((#ident_schema, #tag, fields));
+            }));
+        }
         encode.push(parse_quote!(#pat_encode => {
             #wire::internal::encode_tag(#tag, writer)?;
             #(#variant_encode)*
@@ -189,8 +178,9 @@ fn derive_enum(
             return Err(syn::Error::new(span, "tags don't form a range"));
         }
     }
-    #[cfg(feature = "schema")]
-    types.stmts(&mut schema, wire, "enum_", "variants");
+    if cfg!(feature = "schema") {
+        types.stmts(&mut schema, wire, "enum_", "variants");
+    }
     let encode = parse_quote!(match *self { #(#encode)* });
     let decode = parse_quote! {
         let tag = #wire::internal::decode_tag(reader)?;
@@ -205,35 +195,29 @@ fn derive_enum(
 fn derive_fields<'a>(
     wire: &syn::Path, name: &syn::Path, fields: &'a syn::Fields, types: &mut Types<'a>,
 ) -> syn::Result<(Vec<syn::Stmt>, Vec<syn::Stmt>, Vec<syn::Stmt>)> {
-    #[cfg(not(feature = "schema"))]
-    let _ = types;
-    #[cfg(not(feature = "schema"))]
-    let schema = Vec::new();
-    #[cfg(feature = "schema")]
     let mut schema = Vec::new();
     let mut encode = Vec::new();
     let mut decode = Vec::new();
-    #[cfg(feature = "schema")]
     match fields.len() {
+        _ if !cfg!(feature = "schema") => (),
         0 => schema.push(parse_quote!(let fields = #wire::internal::Vec::new();)),
         n => schema.push(parse_quote!(let mut fields = #wire::internal::Vec::with_capacity(#n);)),
     }
     for (i, field) in fields.iter().enumerate() {
         let _ = Attrs::parse(&field.attrs, AttrsKind::Invalid)?;
-        #[cfg(feature = "schema")]
-        let name_str: syn::Expr = match &field.ident {
-            Some(x) => {
-                let x = format!("{x}");
-                parse_quote!(Some(#x))
-            }
-            None => parse_quote!(None),
-        };
         let name = field_name(i, field);
         let ty = &field.ty;
-        #[cfg(feature = "schema")]
-        schema.push(parse_quote!(fields.push((#name_str, #wire::internal::type_id::<#ty>()));));
-        #[cfg(feature = "schema")]
-        types.insert(ty);
+        if cfg!(feature = "schema") {
+            let name_str: syn::Expr = match &field.ident {
+                Some(x) => {
+                    let x = format!("{x}");
+                    parse_quote!(Some(#x))
+                }
+                None => parse_quote!(None),
+            };
+            schema.push(parse_quote!(fields.push((#name_str, #wire::internal::type_id::<#ty>()));));
+            types.insert(ty);
+        }
         encode.push(parse_quote!(<#ty as #wire::internal::Wire>::encode(#name, writer)?;));
         decode.push(parse_quote!(let #name = <#ty as #wire::internal::Wire>::decode(reader)?;));
     }
@@ -260,19 +244,19 @@ fn field_name(i: usize, field: &syn::Field) -> syn::Ident {
     }
 }
 
-#[cfg(feature = "schema")]
-struct MakeStatic<'a> {
-    param: &'a syn::Lifetime,
+struct MakeType<'a> {
+    src: &'a syn::Lifetime,
+    dst: &'a syn::Lifetime,
     statics: &'a [syn::Type],
 }
 
-#[cfg(feature = "schema")]
-impl<'a> syn::visit_mut::VisitMut for MakeStatic<'a> {
+impl<'a> syn::visit_mut::VisitMut for MakeType<'a> {
     fn visit_generic_argument_mut(&mut self, x: &mut syn::GenericArgument) {
         match x {
-            syn::GenericArgument::Lifetime(a) if a == self.param => *x = parse_quote!('static),
+            syn::GenericArgument::Lifetime(a) if a == self.src => *a = self.dst.clone(),
             syn::GenericArgument::Type(t) if !self.statics.contains(t) => {
-                *x = parse_quote!(#t::Static)
+                let a = &self.dst;
+                *x = parse_quote!(#t::Type<#a>)
             }
             _ => (),
         }
@@ -307,24 +291,22 @@ impl Tags {
 }
 
 #[derive(Default)]
-struct Types<'a>(#[cfg_attr(not(feature = "schema"), allow(dead_code))] Vec<&'a syn::Type>);
+struct Types<'a>(Vec<&'a syn::Type>);
 
 impl<'a> Types<'a> {
-    #[cfg(feature = "schema")]
     fn insert(&mut self, x: &'a syn::Type) {
         if !self.0.contains(&x) {
             self.0.push(x);
         }
     }
 
-    #[cfg(feature = "schema")]
     fn stmts(&self, schema: &mut Vec<syn::Stmt>, wire: &syn::Path, fun: &str, var: &str) {
         let types: Vec<syn::Stmt> =
             self.0.iter().map(|ty| parse_quote!(#wire::internal::schema::<#ty>(rules);)).collect();
         let fun = syn::Ident::new(fun, Span::call_site());
         let var = syn::Ident::new(var, Span::call_site());
         schema.push(parse_quote! {
-            if rules.#fun::<Self::Static>(#var) {
+            if rules.#fun::<Self::Type<'static>>(#var) {
                 #(#types)*
             }
         });

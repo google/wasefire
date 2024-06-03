@@ -19,8 +19,9 @@ use anyhow::{bail, Context, Result};
 use clap::Parser;
 use rusb::GlobalContext;
 use wasefire_protocol::applet::{self, AppletId};
-use wasefire_protocol::{Api, Request, Response};
+use wasefire_protocol::{self as service, Api, ApiResult, Request, Service};
 use wasefire_protocol_usb::{self as rpc, Connection};
+use wasefire_wire::Yoke;
 
 mod tests;
 
@@ -49,17 +50,11 @@ fn main() -> Result<()> {
             let mut request = Vec::new();
             std::io::stdin().read_to_end(&mut request)?;
             let request = applet::Request { applet_id: AppletId, request: &request };
-            send(&connection, &Api::<Request>::AppletRequest(request))?;
-            receive(&connection, |response| Ok(matches!(response, Api::AppletRequest(()))))?;
-            send(&connection, &Api::<Request>::AppletResponse(AppletId))?;
-            receive(&connection, |response| match response {
-                Api::AppletResponse(applet::Response { response }) => {
-                    let response = response.context("no applet response")?;
-                    print!("{}", std::str::from_utf8(response).unwrap());
-                    Ok(true)
-                }
-                _ => Ok(false),
-            })
+            call::<service::AppletRequest>(&connection, request)?.get();
+            let response = call::<service::AppletResponse>(&connection, AppletId)?;
+            let response = response.get().response.context("no applet response")?;
+            print!("{}", std::str::from_utf8(response).unwrap());
+            Ok(())
         }
         Flags::Tunnel { delimiter } => {
             let delimiter = delimiter.as_bytes();
@@ -90,20 +85,24 @@ fn send(connection: &Connection<GlobalContext>, request: &Api<Request>) -> Resul
     Ok(())
 }
 
-fn receive(
-    connection: &Connection<GlobalContext>, process: impl FnOnce(&Api<Response>) -> Result<bool>,
-) -> Result<()> {
-    let response = connection.receive(TIMEOUT).context("receiving response")?;
-    let response = Api::<Response>::decode(&response).context("decoding response")?;
-    if !process(&response)? {
-        match response {
-            Api::DeviceError(error) => bail!("error response: {error}"),
-            _ => bail!("invalid response: {response:?}"),
-        }
-    }
-    Ok(())
+fn receive<T: Service>(
+    connection: &Connection<GlobalContext>,
+) -> Result<Yoke<T::Response<'static>>> {
+    let response = connection.receive(TIMEOUT).context("receiving response")?.into_boxed_slice();
+    ApiResult::<T>::decode_yoke(response).context("decoding response")?.try_map(|x| match x {
+        ApiResult::Ok(x) => Ok(x),
+        ApiResult::Err(error) => bail!("error response: {error}"),
+    })
+}
+
+fn call<T: Service>(
+    connection: &Connection<GlobalContext>, request: T::Request<'_>,
+) -> Result<Yoke<T::Response<'static>>> {
+    send(connection, &T::request(request))?;
+    receive::<T>(connection)
 }
 
 fn read_tunnel(connection: &Connection<GlobalContext>) -> Result<()> {
-    receive(connection, |x| Ok(matches!(x, Api::AppletTunnel(()))))
+    let () = receive::<service::AppletTunnel>(connection)?.get();
+    Ok(())
 }

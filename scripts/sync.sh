@@ -50,8 +50,8 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
 done
 
 ( cd crates/protocol/crates/schema
-  cargo run --features=full
-  cargo run
+  cargo run --features=host
+  cargo run --features=device
 )
 
 book_example() {

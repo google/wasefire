@@ -19,4 +19,4 @@ set -e
 
 test_helper
 
-cargo check --bin=host
+cargo test --bin=host

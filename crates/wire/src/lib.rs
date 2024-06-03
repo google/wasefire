@@ -47,6 +47,7 @@ extern crate std;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::convert::Infallible;
+use core::mem::{ManuallyDrop, MaybeUninit};
 
 use wasefire_error::{Code, Error};
 use wasefire_wire_derive::internal_wire;
@@ -92,14 +93,59 @@ pub fn decode<'a, T: Wire<'a>>(mut data: &'a [u8]) -> Result<T, Error> {
     Ok(value)
 }
 
+pub struct Yoke<T: Wire<'static>> {
+    // TODO(https://github.com/rust-lang/rust/issues/118166): Use MaybeDangling.
+    value: MaybeUninit<T>,
+    data: *mut [u8],
+}
+
+impl<T: Wire<'static>> Drop for Yoke<T> {
+    fn drop(&mut self) {
+        // SAFETY: data comes from into_raw and has been used linearly since then.
+        drop(unsafe { Box::from_raw(self.data) });
+    }
+}
+
+impl<T: Wire<'static>> Yoke<T> {
+    fn take(self) -> (T, *mut [u8]) {
+        let this = ManuallyDrop::new(self);
+        (unsafe { this.value.assume_init_read() }, this.data)
+    }
+}
+
+impl<T: Wire<'static>> Yoke<T> {
+    pub fn get(&self) -> &<T as internal::Wire<'static>>::Type<'_> {
+        // SAFETY: We only read from value which borrows from data.
+        unsafe { core::mem::transmute(&self.value) }
+    }
+
+    pub fn map<S: Wire<'static>, F: for<'a> FnOnce(T) -> S>(self, f: F) -> Yoke<S> {
+        let (value, data) = self.take();
+        Yoke { value: MaybeUninit::new(f(value)), data }
+    }
+
+    pub fn try_map<S: Wire<'static>, E, F: for<'a> FnOnce(T) -> Result<S, E>>(
+        self, f: F,
+    ) -> Result<Yoke<S>, E> {
+        let (value, data) = self.take();
+        Ok(Yoke { value: MaybeUninit::new(f(value)?), data })
+    }
+}
+
+pub fn decode_yoke<T: Wire<'static>>(data: Box<[u8]>) -> Result<Yoke<T>, Error> {
+    let data = Box::into_raw(data);
+    // SAFETY: decode does not leak its input in other ways than in its result.
+    let value = MaybeUninit::new(decode::<T>(unsafe { &*data })?);
+    Ok(Yoke { value, data })
+}
+
 macro_rules! impl_builtin {
     ($t:tt $T:tt $encode:tt $decode:tt) => {
         impl<'a> internal::Wire<'a> for $t {
-            #[cfg(feature = "schema")]
-            type Static = $t;
+            type Type<'b> = $t;
             #[cfg(feature = "schema")]
             fn schema(rules: &mut Rules) {
-                if rules.builtin::<Self::Static>(Builtin::$T) {}
+                if rules.builtin::<Self::Type<'static>>(Builtin::$T) {}
             }
             fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
                 Ok(helper::$encode(*self, writer))
@@ -123,11 +169,10 @@ impl_builtin!(usize Usize encode_varint decode_varint);
 impl_builtin!(isize Isize encode_zigzag decode_zigzag);
 
 impl<'a> internal::Wire<'a> for &'a str {
-    #[cfg(feature = "schema")]
-    type Static = &'static str;
+    type Type<'b> = &'b str;
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.builtin::<Self::Static>(Builtin::Str) {}
+        if rules.builtin::<Self::Type<'static>>(Builtin::Str) {}
     }
     fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
         helper::encode_length(self.len(), writer)?;
@@ -141,11 +186,10 @@ impl<'a> internal::Wire<'a> for &'a str {
 }
 
 impl<'a> internal::Wire<'a> for () {
-    #[cfg(feature = "schema")]
-    type Static = ();
+    type Type<'b> = ();
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.struct_::<Self::Static>(Vec::new()) {}
+        if rules.struct_::<Self::Type<'static>>(Vec::new()) {}
     }
     fn encode(&self, _writer: &mut Writer<'a>) -> Result<(), Error> {
         Ok(())
@@ -158,13 +202,12 @@ impl<'a> internal::Wire<'a> for () {
 macro_rules! impl_tuple {
     (($($i:tt $t:tt),*), $n:tt) => {
         impl<'a, $($t: Wire<'a>),*> internal::Wire<'a> for ($($t),*) {
-            #[cfg(feature = "schema")]
-            type Static = ($($t::Static),*);
+            type Type<'b> = ($($t::Type<'b>),*);
             #[cfg(feature = "schema")]
             fn schema(rules: &mut Rules) {
                 let mut fields = Vec::with_capacity($n);
                 $(fields.push((None, internal::type_id::<$t>()));)*
-                if rules.struct_::<Self::Static>(fields) {
+                if rules.struct_::<Self::Type<'static>>(fields) {
                     $(<$t>::schema(rules);)*
                 }
             }
@@ -184,11 +227,10 @@ impl_tuple!((0 T, 1 S, 2 R, 3 Q), 4);
 impl_tuple!((0 T, 1 S, 2 R, 3 Q, 4 P), 5);
 
 impl<'a, const N: usize> internal::Wire<'a> for &'a [u8; N] {
-    #[cfg(feature = "schema")]
-    type Static = &'static [u8; N];
+    type Type<'b> = &'b [u8; N];
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.array::<Self::Static, u8>(N) {
+        if rules.array::<Self::Type<'static>, u8>(N) {
             internal::schema::<u8>(rules);
         }
     }
@@ -203,11 +245,10 @@ impl<'a, const N: usize> internal::Wire<'a> for &'a [u8; N] {
 }
 
 impl<'a> internal::Wire<'a> for &'a [u8] {
-    #[cfg(feature = "schema")]
-    type Static = &'static [u8];
+    type Type<'b> = &'b [u8];
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.slice::<Self::Static, u8>() {
+        if rules.slice::<Self::Type<'static>, u8>() {
             internal::schema::<u8>(rules);
         }
     }
@@ -223,11 +264,10 @@ impl<'a> internal::Wire<'a> for &'a [u8] {
 }
 
 impl<'a, T: Wire<'a>, const N: usize> internal::Wire<'a> for [T; N] {
-    #[cfg(feature = "schema")]
-    type Static = [T::Static; N];
+    type Type<'b> = [T::Type<'b>; N];
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.array::<Self::Static, T::Static>(N) {
+        if rules.array::<Self::Type<'static>, T::Type<'static>>(N) {
             internal::schema::<T>(rules);
         }
     }
@@ -240,11 +280,10 @@ impl<'a, T: Wire<'a>, const N: usize> internal::Wire<'a> for [T; N] {
 }
 
 impl<'a, T: Wire<'a>> internal::Wire<'a> for Vec<T> {
-    #[cfg(feature = "schema")]
-    type Static = Vec<T::Static>;
+    type Type<'b> = Vec<T::Type<'b>>;
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.slice::<Self::Static, T::Static>() {
+        if rules.slice::<Self::Type<'static>, T::Type<'static>>() {
             internal::schema::<T>(rules);
         }
     }
@@ -257,13 +296,12 @@ impl<'a, T: Wire<'a>> internal::Wire<'a> for Vec<T> {
 }
 
 impl<'a, T: Wire<'a>> internal::Wire<'a> for Box<T> {
-    #[cfg(feature = "schema")]
-    type Static = Box<T::Static>;
+    type Type<'b> = Box<T::Type<'b>>;
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
         let mut fields = Vec::with_capacity(1);
         fields.push((None, internal::type_id::<T>()));
-        if rules.struct_::<Self::Static>(fields) {
+        if rules.struct_::<Self::Type<'static>>(fields) {
             internal::schema::<T>(rules);
         }
     }
@@ -276,14 +314,13 @@ impl<'a, T: Wire<'a>> internal::Wire<'a> for Box<T> {
 }
 
 impl<'a> internal::Wire<'a> for Error {
-    #[cfg(feature = "schema")]
-    type Static = Error;
+    type Type<'b> = Error;
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
         let mut fields = Vec::with_capacity(2);
         fields.push((Some("space"), internal::type_id::<u8>()));
         fields.push((Some("code"), internal::type_id::<u16>()));
-        if rules.struct_::<Self::Static>(fields) {
+        if rules.struct_::<Self::Type<'static>>(fields) {
             internal::schema::<u8>(rules);
             internal::schema::<u16>(rules);
         }
@@ -300,11 +337,10 @@ impl<'a> internal::Wire<'a> for Error {
 }
 
 impl<'a> internal::Wire<'a> for ! {
-    #[cfg(feature = "schema")]
-    type Static = !;
+    type Type<'b> = !;
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.enum_::<Self::Static>(Vec::new()) {}
+        if rules.enum_::<Self::Type<'static>>(Vec::new()) {}
     }
     fn encode(&self, _: &mut Writer<'a>) -> Result<(), Error> {
         match *self {}
@@ -438,7 +474,6 @@ mod tests {
         assert_schema::<Foo2>("{Bar=1:str Baz=0:{None=0:() Some=1:[u8]}}");
     }
 
-    #[cfg(feature = "schema")]
     #[test]
     fn recursive_view() {
         #[derive(Debug, Wire, PartialEq, Eq)]
@@ -453,5 +488,15 @@ mod tests {
         let view = View::new::<List>();
         assert!(view.validate(&data).is_ok());
         assert_eq!(decode::<List>(&data).unwrap(), value);
+    }
+
+    #[test]
+    fn yoke() {
+        type T = Result<&'static [u8], ()>;
+        let value: T = Ok(b"hello");
+        let data = encode(&value).unwrap();
+        let yoke = decode_yoke::<T>(data).unwrap();
+        let bytes = yoke.try_map(|x| x).unwrap();
+        assert_eq!(bytes.get(), b"hello");
     }
 }
