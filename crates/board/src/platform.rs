@@ -46,7 +46,7 @@ pub trait Api: Send {
     #[cfg(feature = "api-platform-update")]
     type Update: update::Api;
 
-    /// Returns the platform serial number.
+    /// Returns the platform serial.
     #[cfg(feature = "api-platform")]
     fn serial() -> alloc::borrow::Cow<'static, [u8]>;
 

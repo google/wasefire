@@ -75,9 +75,6 @@ fn alloc_bytes<B: Board>(
         return Ok(0);
     }
     let mut memory = scheduler.applet.memory();
-    let len = data.len() as u32;
-    let ptr = memory.alloc(len, 1)?;
-    memory.get_mut(ptr, len)?.copy_from_slice(data);
-    memory.get_mut(ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
-    Ok(len)
+    memory.alloc_copy(ptr_ptr, None, data)?;
+    Ok(data.len() as u32)
 }
