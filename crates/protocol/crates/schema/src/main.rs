@@ -33,7 +33,7 @@ fn main() -> Result<()> {
     check(&old.get().result, &new.result).context("checking result")?;
     check(&old.get().request, &new.request).context("checking request")?;
     check(&old.get().response, &new.response).context("checking response")?;
-    check_versions(old.get(), &new).context("checking versions")?;
+    check_versions(&old.get().versions, &new.versions).context("checking versions")?;
     Ok(())
 }
 
@@ -56,7 +56,7 @@ fn check(old: &View, new: &View) -> Result<()> {
     Ok(())
 }
 
-fn check_versions(old: &Schema, new: &Schema) -> Result<()> {
+fn check_versions(old: &Versions, new: &Versions) -> Result<()> {
     let mut old_map = HashMap::new();
     for Descriptor { tag, versions } in &old.descriptors {
         ensure!(old_map.insert(tag, *versions).is_none(), "duplicate tag {tag}");
@@ -70,9 +70,8 @@ fn check_versions(old: &Schema, new: &Schema) -> Result<()> {
         match old_map.remove(&tag) {
             Some(old) => {
                 ensure!(new.min == old.min, "min version changed for {tag}");
-                #[cfg(feature = "host")]
                 match (old.max, new.max) {
-                    (None, Some(new)) if new == old_version => (),
+                    (None, Some(new)) if new == old_version => changed = true,
                     (None, Some(_)) => bail!("max version for {tag} must be {old_version}"),
                     (old, new) if old == new => (),
                     _ => bail!("max version changed for {tag}"),
@@ -81,16 +80,20 @@ fn check_versions(old: &Schema, new: &Schema) -> Result<()> {
             None => {
                 changed = true;
                 ensure!(new.min == new_version, "min version for {tag} must be {new_version}");
+                ensure!(new.max.is_none(), "max version is defined for {tag}");
             }
         }
     }
     changed |= !old_map.is_empty();
     #[cfg(feature = "host")]
     ensure!(old_map.is_empty(), "deleted tag {}", old_map.keys().next().unwrap());
-    #[cfg(feature = "host")]
-    let _ = changed;
-    #[cfg(feature = "device")]
-    ensure!(new_version == old_version + changed as u32, "invalid version (must bump: {changed})");
+    match (new_version.checked_sub(old_version), changed) {
+        (Some(0), false) | (Some(1), true) => (),
+        (Some(0), true) => bail!("version must increase by 1"),
+        (Some(1), false) => bail!("version must stay the same"),
+        (None, _) => bail!("version cannot decrease"),
+        (Some(_), _) => bail!("version can only increase by 1"),
+    }
     Ok(())
 }
 
@@ -99,6 +102,11 @@ struct Schema<'a> {
     result: View<'a>,   // Result<(), Error>
     request: View<'a>,  // Api<Request>
     response: View<'a>, // Api<Response>
+    versions: Versions,
+}
+
+#[derive(Debug, Wire)]
+struct Versions {
     version: u32,
     descriptors: Vec<Descriptor>,
 }
@@ -109,8 +117,7 @@ impl Schema<'static> {
             result: View::new::<Result<(), Error>>(),
             request: View::new::<Api<Request>>(),
             response: View::new::<Api<Response>>(),
-            version: VERSION,
-            descriptors: DESCRIPTORS.to_vec(),
+            versions: Versions { version: VERSION, descriptors: DESCRIPTORS.to_vec() },
         }
     }
 
@@ -145,10 +152,10 @@ impl Schema<'static> {
     fn print(&self) -> Result<()> {
         let mut output = String::new();
         writeln!(&mut output, "result: {}", self.result)?;
-        writeln!(&mut output, "version: {}", self.version)?;
+        writeln!(&mut output, "version: {}", self.versions.version)?;
         let request = get_enum(&self.request).context("in request")?.iter();
         let mut response = get_enum(&self.response).context("in response")?.iter();
-        let mut descriptor = self.descriptors.iter();
+        let mut descriptor = self.versions.descriptors.iter();
         for request in request {
             let name = request.0;
             let tag = request.1;
@@ -264,5 +271,141 @@ mod tests {
         }
         // Renaming a variant is always accepted.
         assert!(check(&View::new::<Old>(), &View::new::<New>()).is_ok());
+    }
+
+    macro_rules! build_versions {
+        ($ver:literal $($tag:literal [$min:literal - $($max:literal)?])*) => {
+            Versions {
+                version: $ver,
+                descriptors: vec![$(build_versions!([1] $tag [$min - $($max)?])),*],
+            }
+        };
+        ([1] $tag:literal [$min:literal - $($max:literal)?]) => {
+            Descriptor {
+                tag: $tag,
+                versions: wasefire_protocol::Versions {
+                    min: $min,
+                    max: build_versions!([2] $($max)?),
+                },
+            }
+        };
+        ([2]) => (None);
+        ([2] $max:literal) => (Some($max));
+    }
+
+    #[track_caller]
+    fn assert_is_err<T: std::fmt::Debug>(x: Result<T>, m: &'static str) {
+        let e = x.unwrap_err();
+        match e.downcast_ref::<String>() {
+            Some(a) => assert_eq!(a, m),
+            None => assert_eq!(e.downcast::<&'static str>().unwrap(), m),
+        }
+    }
+
+    #[test]
+    fn adding_service() {
+        let old = build_versions!(41 0 [13 -]);
+        // Correct usage.
+        let new = build_versions!(42 0 [13 -] 1 [42 -]);
+        assert!(check_versions(&old, &new).is_ok());
+        // The added service is already deprecated.
+        let new = build_versions!(42 0 [13 -] 1 [42 - 42]);
+        assert_is_err(check_versions(&old, &new), "max version is defined for 1");
+        // The added service uses the wrong version.
+        let new = build_versions!(42 0 [13 -] 1 [41 -]);
+        assert_is_err(check_versions(&old, &new), "min version for 1 must be 42");
+        // The version is not bumped.
+        let new = build_versions!(41 0 [13 -] 1 [41 -]);
+        assert_is_err(check_versions(&old, &new), "version must increase by 1");
+        // The version is decreased.
+        let new = build_versions!(40 0 [13 -] 1 [40 -]);
+        assert_is_err(check_versions(&old, &new), "version cannot decrease");
+        // The version is increased too much.
+        let new = build_versions!(43 0 [13 -] 1 [43 -]);
+        assert_is_err(check_versions(&old, &new), "version can only increase by 1");
+    }
+
+    #[test]
+    #[cfg(feature = "device")]
+    fn removing_service() {
+        let old = build_versions!(41 0 [13 -]);
+        // Correct usage.
+        let new = build_versions!(42);
+        assert!(check_versions(&old, &new).is_ok());
+        // The version is not bumped.
+        let new = build_versions!(41);
+        assert_is_err(check_versions(&old, &new), "version must increase by 1");
+        // The version is decreased.
+        let new = build_versions!(40);
+        assert_is_err(check_versions(&old, &new), "version cannot decrease");
+        // The version is increased too much.
+        let new = build_versions!(43);
+        assert_is_err(check_versions(&old, &new), "version can only increase by 1");
+    }
+
+    #[test]
+    #[cfg(feature = "host")]
+    fn removing_service() {
+        let old = build_versions!(41 0 [13 -]);
+        // Correct usage.
+        let new = build_versions!(42 0 [13 - 41]);
+        assert!(check_versions(&old, &new).is_ok());
+        // The removed service uses the wrong version.
+        let new = build_versions!(42 0 [13 - 42]);
+        assert_is_err(check_versions(&old, &new), "max version for 0 must be 41");
+        // The version is not bumped.
+        let new = build_versions!(41 0 [13 - 41]);
+        assert_is_err(check_versions(&old, &new), "version must increase by 1");
+        // The version is decreased.
+        let new = build_versions!(40 0 [13 - 41]);
+        assert_is_err(check_versions(&old, &new), "version cannot decrease");
+        // The version is increased too much.
+        let new = build_versions!(43 0 [13 - 41]);
+        assert_is_err(check_versions(&old, &new), "version can only increase by 1");
+    }
+
+    #[test]
+    #[cfg(feature = "device")]
+    fn unchanging_service() {
+        let old = build_versions!(41 0 [13 -]);
+        // Correct usage.
+        let new = build_versions!(41 0 [13 -]);
+        assert!(check_versions(&old, &new).is_ok());
+        // The service cannot change min version.
+        let new = build_versions!(41 0 [14 -]);
+        assert_is_err(check_versions(&old, &new), "min version changed for 0");
+        // The service cannot have a max version.
+        let new = build_versions!(41 0 [13 - 27]);
+        assert_is_err(check_versions(&old, &new), "max version is defined for 0");
+        // The version cannot decrease.
+        let new = build_versions!(40 0 [13 -]);
+        assert_is_err(check_versions(&old, &new), "version cannot decrease");
+        // The version cannot increase.
+        let new = build_versions!(42 0 [13 -]);
+        assert_is_err(check_versions(&old, &new), "version must stay the same");
+    }
+
+    #[test]
+    #[cfg(feature = "host")]
+    fn unchanging_service() {
+        let old = build_versions!(41 0 [13 - 27]);
+        // Correct usage.
+        let new = build_versions!(41 0 [13 - 27]);
+        assert!(check_versions(&old, &new).is_ok());
+        // The service cannot change min version.
+        let new = build_versions!(41 0 [14 - 27]);
+        assert_is_err(check_versions(&old, &new), "min version changed for 0");
+        // The service cannot change max version.
+        let new = build_versions!(41 0 [13 - 26]);
+        assert_is_err(check_versions(&old, &new), "max version changed for 0");
+        // The service cannot remove max version.
+        let new = build_versions!(41 0 [13 -]);
+        assert_is_err(check_versions(&old, &new), "max version changed for 0");
+        // The version cannot decrease.
+        let new = build_versions!(40 0 [13 - 27]);
+        assert_is_err(check_versions(&old, &new), "version cannot decrease");
+        // The version cannot increase.
+        let new = build_versions!(42 0 [13 - 27]);
+        assert_is_err(check_versions(&old, &new), "version must stay the same");
     }
 }
