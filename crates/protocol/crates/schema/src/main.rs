@@ -134,7 +134,7 @@ impl Schema<'static> {
         use std::env::VarError::*;
         Ok(match var("GITHUB_EVENT_NAME").as_deref() {
             Ok("pull_request") => format!("origin/{}", var("GITHUB_BASE_REF")?),
-            Ok("push") => format!("origin/{}", var("GITHUB_REF_NAME")?),
+            Ok("push" | "schedule") => format!("origin/{}", var("GITHUB_REF_NAME")?),
             Ok(x) => bail!("unexpected GITHUB_EVENT_NAME {x:?}"),
             Err(NotPresent) => match var("BASE_REF") {
                 Ok(x) => x,
