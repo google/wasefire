@@ -16,6 +16,8 @@ use alloc::vec::Vec;
 use core::ops::Deref;
 
 use num_enum::{TryFromPrimitive, UnsafeFromPrimitive};
+#[cfg(feature = "threads")]
+use portable_atomic::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive, UnsafeFromPrimitive)]
 #[repr(u8)]
@@ -545,6 +547,45 @@ impl CvtOp {
         }
     }
 }
+
+macro_rules! impl_atomic_op {
+    ($n:ident, $u:ident) => {
+        paste::paste! {
+            impl AtomicOp {
+                pub fn [< $n _ $u >](&self, mem:*mut $u, c:$u, c2:$u) -> $n {
+                    match self {
+                        AtomicOp::Add => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_add(c, Ordering::SeqCst).into() }
+                        AtomicOp::Sub => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_sub(c, Ordering::SeqCst).into() }
+                        AtomicOp::And => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_and(c, Ordering::SeqCst).into() }
+                        AtomicOp::Or => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_or(c, Ordering::SeqCst).into() }
+                        AtomicOp::Xor => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_xor(c, Ordering::SeqCst).into() }
+                        AtomicOp::Xchg => unsafe { [< Atomic $u:upper >]::from_ptr(mem).swap(c, Ordering::SeqCst).into() }
+                        AtomicOp::Cmpxchg => unsafe {
+                            match ([< Atomic $u:upper >]::from_ptr(mem).compare_exchange(c2, c, Ordering::SeqCst, Ordering::SeqCst)) {
+                            Err(v) => v,
+                            Ok(v) => v
+                        }.into() }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(feature = "threads")]
+impl_atomic_op!(i32, i32);
+#[cfg(feature = "threads")]
+impl_atomic_op!(u32, u16);
+#[cfg(feature = "threads")]
+impl_atomic_op!(u32, u8);
+#[cfg(feature = "threads")]
+impl_atomic_op!(i64, i64);
+#[cfg(feature = "threads")]
+impl_atomic_op!(u64, u32);
+#[cfg(feature = "threads")]
+impl_atomic_op!(u64, u16);
+#[cfg(feature = "threads")]
+impl_atomic_op!(u64, u8);
 
 macro_rules! impl_op {
     ($n:ident, $u:ident, $i:ident, $f:ident) => {
