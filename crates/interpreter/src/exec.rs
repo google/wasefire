@@ -1421,7 +1421,7 @@ impl<'m> Thread<'m> {
             return Err(trap());
         }
         self.push_value(count);
-        return Ok(());
+        Ok(())
     }
 
     #[cfg(feature = "threads")]
@@ -1438,7 +1438,7 @@ impl<'m> Thread<'m> {
         if read != expected {
             self.push_value(Val::I32(1));
         }
-        return Ok(());
+        Ok(())
     }
 
     #[cfg(feature = "threads")]
@@ -1532,21 +1532,17 @@ impl<'m> Thread<'m> {
                 c.unwrap_i64() as i64,
                 c2.unwrap_i64() as i64,
             ) as u64),
-            (NumType::I32, 8) => Val::I32(op.u32_u8(
-                mem.as_mut_ptr() as *mut u8,
-                c.unwrap_i32() as u8,
-                c2.unwrap_i32() as u8,
-            )),
+            (NumType::I32, 8) => {
+                Val::I32(op.u32_u8(mem.as_mut_ptr(), c.unwrap_i32() as u8, c2.unwrap_i32() as u8))
+            }
             (NumType::I32, 16) => Val::I32(op.u32_u16(
                 mem.as_mut_ptr() as *mut u16,
                 c.unwrap_i32() as u16,
                 c2.unwrap_i32() as u16,
             )),
-            (NumType::I64, 8) => Val::I64(op.u64_u8(
-                mem.as_mut_ptr() as *mut u8,
-                c.unwrap_i64() as u8,
-                c2.unwrap_i64() as u8,
-            )),
+            (NumType::I64, 8) => {
+                Val::I64(op.u64_u8(mem.as_mut_ptr(), c.unwrap_i64() as u8, c2.unwrap_i64() as u8))
+            }
             (NumType::I64, 16) => Val::I64(op.u64_u16(
                 mem.as_mut_ptr() as *mut u16,
                 c.unwrap_i64() as u16,

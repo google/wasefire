@@ -548,6 +548,7 @@ impl CvtOp {
     }
 }
 
+#[cfg(feature = "threads")]
 macro_rules! impl_atomic_op {
     ($n:ident, $u:ident) => {
         paste::paste! {
