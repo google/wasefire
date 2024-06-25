@@ -18,7 +18,7 @@ use wasefire_board_api::platform::protocol::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
 use wasefire_error::{Code, Error};
 use wasefire_logger as log;
-use wasefire_protocol::{service, Api, Request, Response};
+use wasefire_protocol::{self as service, Api, ApiResult, Request, Service, VERSION};
 
 use crate::Scheduler;
 
@@ -45,66 +45,51 @@ pub fn should_process_event<B: Board>(event: &board::Event<B>) -> bool {
 pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event<B>) {
     let request = match board::platform::Protocol::<B>::read() {
         Ok(Some(x)) => x,
-        Ok(None) => {
-            log::warn!("Expected platform protocol request, but found none.");
-            return;
-        }
-        Err(error) => {
-            log::warn!("Failed to read platform protocol request: {}", error);
-            return;
-        }
+        Ok(None) => return log::warn!("Expected platform protocol request, but found none."),
+        Err(error) => return log::warn!("Failed to read platform protocol request: {}", error),
     };
     match &scheduler.protocol {
         State::Normal => (),
         State::Tunnel { applet_id, delimiter } => {
             if request == *delimiter {
                 scheduler.protocol = State::Normal;
-                reply::<B>(&Api::AppletTunnel(()));
-                return;
+                return reply::<B, service::AppletTunnel>(());
             }
             let service::applet::AppletId = applet_id;
             match scheduler.applet.put_request(event, &request) {
                 Ok(()) => (),
                 Err(error) => {
                     log::warn!("Failed to put platform protocol request: {}", error);
-                    reply::<B>(&Api::DeviceError(error));
+                    reply_error::<B>(error);
                 }
             }
             return;
         }
     }
-    let request = match Api::<Request>::deserialize(&request) {
+    let request = match Api::<Request>::decode(&request) {
         Ok(x) => x,
         Err(error) => {
             log::warn!("Failed to deserialize platform protocol request: {}", error);
-            reply::<B>(&Api::DeviceError(error));
-            return;
+            return reply_error::<B>(error);
         }
     };
-    let owned_response;
-    let response = match request {
-        Api::DeviceError(x) => match x {},
+    match request {
+        Api::ApiVersion(()) => reply::<B, service::ApiVersion>(VERSION),
         Api::AppletRequest(service::applet::Request { applet_id, request }) => {
             let service::applet::AppletId = applet_id;
             match scheduler.applet.put_request(event, request) {
-                Ok(()) => Api::AppletRequest(()),
-                Err(e) => Api::DeviceError(e),
+                Ok(()) => reply::<B, service::AppletRequest>(()),
+                Err(e) => reply_error::<B>(e),
             }
         }
         Api::AppletResponse(applet_id) => {
             let service::applet::AppletId = applet_id;
             match scheduler.applet.get_response() {
                 Ok(response) => {
-                    let response = match response {
-                        None => None,
-                        Some(response) => {
-                            owned_response = response;
-                            Some(&owned_response[..])
-                        }
-                    };
-                    Api::AppletResponse(service::applet::Response { response })
+                    let response = response.as_deref();
+                    reply::<B, service::AppletResponse>(service::applet::Response { response })
                 }
-                Err(e) => Api::DeviceError(e),
+                Err(e) => reply_error::<B>(e),
             }
         }
         #[cfg(feature = "board-api-platform")]
@@ -112,7 +97,7 @@ pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event
             use wasefire_board_api::platform::Api as _;
             match board::Platform::<B>::reboot() {
                 Ok(x) => x,
-                Err(e) => Api::DeviceError(e),
+                Err(e) => reply_error::<B>(e),
             }
         }
         Api::AppletTunnel(service::applet::Tunnel { applet_id, delimiter }) => {
@@ -120,14 +105,22 @@ pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event
                 State::Normal => {
                     let delimiter = delimiter.to_vec().into_boxed_slice();
                     scheduler.protocol = State::Tunnel { applet_id, delimiter };
-                    Api::AppletTunnel(())
+                    reply::<B, service::AppletTunnel>(())
                 }
                 State::Tunnel { .. } => unreachable!(),
             }
         }
-        _ => Api::DeviceError(Error::internal(Code::NotImplemented)),
-    };
-    reply::<B>(&response);
+        #[cfg(feature = "board-api-platform")]
+        Api::PlatformInfo(()) => {
+            use wasefire_board_api::platform::Api as _;
+            reply::<B, service::PlatformInfo>(service::platform::Info {
+                serial: &board::Platform::<B>::serial(),
+                version: &board::Platform::<B>::version(),
+            });
+        }
+        #[cfg(not(feature = "_test"))]
+        _ => reply_error::<B>(Error::internal(Code::NotImplemented)),
+    }
 }
 
 pub fn put_response<B: Board>(
@@ -157,9 +150,16 @@ pub fn put_response<B: Board>(
     }
 }
 
-fn reply<B: Board>(response: &Api<Response>) {
-    let response = Api::<Response>::serialize(response);
-    if let Err(error) = board::platform::Protocol::<B>::write(&response) {
+fn reply<B: Board, T: Service>(response: T::Response<'_>) {
+    write::<B, T>(ApiResult::Ok(response))
+}
+
+fn reply_error<B: Board>(error: Error) {
+    write::<B, service::ApiVersion>(ApiResult::Err(error))
+}
+
+fn write<B: Board, T: Service>(response: ApiResult<T>) {
+    if let Err(error) = board::platform::Protocol::<B>::write(&response.encode().unwrap()) {
         log::warn!("Failed to send platform protocol response: {}", error);
     }
 }

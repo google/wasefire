@@ -97,37 +97,29 @@ impl RustAppletBuild {
         let target_dir = fs::try_relative(std::env::current_dir()?, &metadata.target_directory)?;
         let name = package.name.replace('-', "_");
         let mut cargo = Command::new("cargo");
-        let mut rustflags = vec![
-            "-C panic=abort".to_string(),
-            "-C codegen-units=1".to_string(),
-            "-C embed-bitcode=yes".to_string(),
-            "-C lto=fat".to_string(),
-        ];
+        let mut rustflags = Vec::new();
         cargo.args(["rustc", "--lib"]);
+        // We deliberately don't use the provided profile for those configs because they don't
+        // depend on user-provided options (as opposed to opt-level).
+        cargo.arg("--config=profile.release.codegen-units=1");
+        cargo.arg("--config=profile.release.lto=true");
+        cargo.arg("--config=profile.release.panic=\"abort\"");
         match &self.native {
             None => {
                 rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
+                rustflags.push("-C target-feature=+bulk-memory".to_string());
                 cargo.args(["--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
+                wasefire_feature(package, "wasm", &mut cargo)?;
             }
             Some(target) => {
                 cargo.args(["--crate-type=staticlib", &format!("--target={target}")]);
-                if package.features.contains_key("native") {
-                    cargo.arg("--features=native");
-                } else {
-                    ensure!(
-                        package.dependencies.iter().any(|x| x.name == "wasefire"),
-                        "wasefire must be a direct dependency for native builds"
-                    );
-                    cargo.arg("--features=wasefire/native");
-                }
+                wasefire_feature(package, "native", &mut cargo)?;
             }
         }
-        match &self.profile {
-            Some(profile) => drop(cargo.arg(format!("--profile={profile}"))),
-            None => drop(cargo.arg("--release")),
-        }
+        let profile = self.profile.as_deref().unwrap_or("release");
+        cargo.arg(format!("--profile={profile}"));
         if let Some(level) = self.opt_level {
-            rustflags.push(format!("-C opt-level={level}"));
+            cargo.arg(format!("--config=profile.{profile}.opt-level={level}"));
         }
         cargo.args(&self.cargo);
         if self.prod {
@@ -143,8 +135,8 @@ impl RustAppletBuild {
             None => "target/wasefire".into(),
         };
         let (src, dst) = match &self.native {
-            None => (format!("wasm32-unknown-unknown/release/{name}.wasm"), "applet.wasm"),
-            Some(target) => (format!("{target}/release/lib{name}.a"), "libapplet.a"),
+            None => (format!("wasm32-unknown-unknown/{profile}/{name}.wasm"), "applet.wasm"),
+            Some(target) => (format!("{target}/{profile}/lib{name}.a"), "libapplet.a"),
         };
         let applet = out_dir.join(dst);
         if fs::copy_if_changed(target_dir.join(src), &applet)? && dst.ends_with(".wasm") {
@@ -192,7 +184,13 @@ pub enum OptLevel {
 
 impl Display for OptLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_possible_value().unwrap().get_name())
+        let value = self.to_possible_value().unwrap();
+        let name = value.get_name();
+        if f.alternate() || !matches!(self, OptLevel::Os | OptLevel::Oz) {
+            write!(f, "{name}")
+        } else {
+            write!(f, "{name:?}")
+        }
     }
 }
 
@@ -202,9 +200,9 @@ pub fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> R
     strip.arg(applet.as_ref());
     cmd::execute(&mut strip)?;
     let mut opt = Command::new("wasm-opt");
-    opt.args(["--enable-bulk-memory", "--enable-sign-ext"]);
+    opt.args(["--enable-bulk-memory", "--enable-sign-ext", "--enable-mutable-globals"]);
     match opt_level {
-        Some(level) => drop(opt.arg(format!("-O{level}"))),
+        Some(level) => drop(opt.arg(format!("-O{level:#}"))),
         None => drop(opt.arg("-O")),
     }
     opt.arg(applet.as_ref());
@@ -218,4 +216,19 @@ fn metadata(dir: impl Into<PathBuf>) -> Result<Metadata> {
     let metadata = MetadataCommand::new().current_dir(dir).no_deps().exec()?;
     ensure!(metadata.packages.len() == 1, "not exactly one package");
     Ok(metadata)
+}
+
+fn wasefire_feature(
+    package: &cargo_metadata::Package, feature: &str, cargo: &mut Command,
+) -> Result<()> {
+    if package.features.contains_key(feature) {
+        cargo.arg(format!("--features={feature}"));
+    } else {
+        ensure!(
+            package.dependencies.iter().any(|x| x.name == "wasefire"),
+            "wasefire must be a direct dependency"
+        );
+        cargo.arg(format!("--features=wasefire/{feature}"));
+    }
+    Ok(())
 }

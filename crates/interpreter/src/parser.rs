@@ -341,6 +341,46 @@ impl<'m, M: Mode> Parser<'m, M> {
         Ok(Instr::BrTable(labels, self.parse_labelidx()?))
     }
 
+    pub fn parse_instr_fc(&mut self) -> MResult<Instr<'m>, M> {
+        Ok(match self.parse_u32()? {
+            x @ 0 ..= 7 => support_if!(
+                "float-types"[x],
+                Instr::CvtOp(CvtOp::TruncSat(
+                    ((x & 4 != 0) as u8).into(),
+                    ((x & 2 != 0) as u8).into(),
+                    ((x & 1) as u8).into(),
+                )),
+                M::unsupported(if_debug!(Unsupported::OpcodeFc(x)))?
+            ),
+            8 => {
+                let x = self.parse_dataidx()?;
+                check_eq::<M, _>(self.parse_byte()?, 0)?;
+                Instr::MemoryInit(x)
+            }
+            9 => Instr::DataDrop(self.parse_dataidx()?),
+            10 => {
+                check_eq::<M, _>(self.parse_bytes(2)?, &[0; 2])?;
+                Instr::MemoryCopy
+            }
+            11 => {
+                check_eq::<M, _>(self.parse_byte()?, 0)?;
+                Instr::MemoryFill
+            }
+            12 => {
+                // For some reason, parsing order differs from field order here.
+                let y = self.parse_elemidx()?;
+                let x = self.parse_tableidx()?;
+                Instr::TableInit(x, y)
+            }
+            13 => Instr::ElemDrop(self.parse_elemidx()?),
+            14 => Instr::TableCopy(self.parse_tableidx()?, self.parse_tableidx()?),
+            15 => Instr::TableGrow(self.parse_tableidx()?),
+            16 => Instr::TableSize(self.parse_tableidx()?),
+            17 => Instr::TableFill(self.parse_tableidx()?),
+            _ => M::invalid()?,
+        })
+    }
+
     pub fn parse_instr(&mut self) -> MResult<Instr<'m>, M> {
         Ok(match self.parse_byte()? {
             0x00 => Instr::Unreachable,
@@ -487,43 +527,7 @@ impl<'m, M: Mode> Parser<'m, M> {
             0xd0 => Instr::RefNull(self.parse_reftype()?),
             0xd1 => Instr::RefIsNull,
             0xd2 => Instr::RefFunc(self.parse_funcidx()?),
-            0xfc => match self.parse_u32()? {
-                x @ 0 ..= 7 => support_if!(
-                    "float-types"[x],
-                    Instr::CvtOp(CvtOp::TruncSat(
-                        ((x & 4 != 0) as u8).into(),
-                        ((x & 2 != 0) as u8).into(),
-                        ((x & 1) as u8).into(),
-                    )),
-                    M::unsupported(if_debug!(Unsupported::OpcodeFc(x)))?
-                ),
-                8 => {
-                    let x = self.parse_dataidx()?;
-                    check_eq::<M, _>(self.parse_byte()?, 0)?;
-                    Instr::MemoryInit(x)
-                }
-                9 => Instr::DataDrop(self.parse_dataidx()?),
-                10 => {
-                    check_eq::<M, _>(self.parse_bytes(2)?, &[0; 2])?;
-                    Instr::MemoryCopy
-                }
-                11 => {
-                    check_eq::<M, _>(self.parse_byte()?, 0)?;
-                    Instr::MemoryFill
-                }
-                12 => {
-                    // For some reason, parsing order differs from field order here.
-                    let y = self.parse_elemidx()?;
-                    let x = self.parse_tableidx()?;
-                    Instr::TableInit(x, y)
-                }
-                13 => Instr::ElemDrop(self.parse_elemidx()?),
-                14 => Instr::TableCopy(self.parse_tableidx()?, self.parse_tableidx()?),
-                15 => Instr::TableGrow(self.parse_tableidx()?),
-                16 => Instr::TableSize(self.parse_tableidx()?),
-                17 => Instr::TableFill(self.parse_tableidx()?),
-                _ => M::invalid()?,
-            },
+            0xfc => self.parse_instr_fc()?,
             0xfd => support_if!(
                 "vector-types"[],
                 unimplemented!(),

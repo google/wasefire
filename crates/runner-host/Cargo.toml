@@ -7,16 +7,15 @@ publish = false
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.79"
-clap = { version = "4.4.18", features = ["derive"] }
-data-encoding = "2.5.0"
-env_logger = "0.10.2"
+anyhow = "1.0.86"
+clap = { version = "4.5.4", features = ["derive"] }
+data-encoding = "2.6.0"
+env_logger = "0.11.3"
 rand = "0.8.5"
-tokio = { version = "1.35.1", features = ["full"] }
-usb-device = { version = "0.3.1", optional = true }
-usbd-serial = { version = "0.2.0", optional = true }
+tokio = { version = "1.37.0", features = ["full"] }
+usb-device = { version = "0.3.2", optional = true }
+usbd-serial = { version = "0.2.2", optional = true }
 usbip-device = { version = "0.2.0", optional = true }
-wasefire-applet-api = { path = "../api", features = ["host"] }
 wasefire-board-api = { path = "../board", features = ["std"] }
 wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
@@ -63,3 +62,8 @@ release = []
 # Exactly one is enabled by xtask.
 native = ["wasefire-scheduler/native"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

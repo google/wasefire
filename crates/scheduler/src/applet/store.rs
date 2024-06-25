@@ -30,6 +30,7 @@ pub trait StoreApi {
     fn memory(&mut self) -> Self::Memory<'_>;
 }
 
+#[allow(dead_code)]
 pub trait MemoryApi {
     fn get(&self, ptr: u32, len: u32) -> Result<&[u8], Trap>;
     fn get_mut(&self, ptr: u32, len: u32) -> Result<&mut [u8], Trap>;
@@ -58,5 +59,16 @@ pub trait MemoryApi {
     #[allow(clippy::wrong_self_convention)]
     fn from_bytes_mut<T: NoUninit + AnyBitPattern>(&self, ptr: u32) -> Result<&mut T, Trap> {
         Ok(bytemuck::from_bytes_mut(self.get_mut(ptr, core::mem::size_of::<T>() as u32)?))
+    }
+
+    fn alloc_copy(&mut self, ptr_ptr: u32, len_ptr: Option<u32>, data: &[u8]) -> Result<(), Trap> {
+        let len = data.len() as u32;
+        let ptr = self.alloc(len, 1)?;
+        self.get_mut(ptr, len)?.copy_from_slice(data);
+        self.get_mut(ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
+        if let Some(len_ptr) = len_ptr {
+            self.get_mut(len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
+        }
+        Ok(())
     }
 }

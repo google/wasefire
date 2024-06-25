@@ -39,7 +39,7 @@ ensure_submodule() {
 # check_*_api <prefix> <features> <clippy-args>..
 # <prefix> = "api-", "applet-api-", or "board-api-"
 # <features> = "--features=" or "--features=wasm,std,"
-# <clippy-args> = "--all-targets" or "--target=wasm32-unknown-unknown"
+# <clippy-args> = "--target=wasm32-unknown-unknown"
 check_applet_api() { _test_check_api "$_TEST_APPLET_API" "$@"; }
 check_board_api() { _test_check_api "$_TEST_BOARD_API" "$@"; }
 check_software_crypto() {
@@ -53,29 +53,62 @@ check_software_crypto() {
 }
 
 test_helper() {
-  _test_desc | grep -v -e '^$' -e '^#' -e 'cargo \(check\|test\)' \
+  _test_desc | grep -Ev 'cargo (check|(miri )?test) --(lib|(bin|test|example)=[^ ]*)( |$)' \
     && e 'Invalid description (invalid commands are listed above).'
+  _test_ensure_lib
+  _test_ensure_bins
+  _test_ensure_dir tests test test
+  _test_ensure_dir examples check example
   _test_desc | _test_check | grep 'cargo check' | sh -ex
   _test_desc | grep 'cargo test' | sh -ex
+  _test_desc | grep 'cargo miri test' | sh -ex
   x cargo fmt -- --check
   _test_desc | _test_check | _test_clippy | grep 'cargo clippy' | sh -ex
   if [ -e src/lib.rs -a "$(package_publish)" = true ]; then
     features=$(package_doc_features | tr -d '[]" ')
     [ -n "$features" ] && features="--features=$features"
+    [ "$(package_doc_all_features)" = true ] && features=--all-features
     target="$(package_doc_default_target)"
     [ -z "$(package_doc_targets)" ] || e 'docs.rs targets unsupported'
     [ -n "$target" ] && target="--target=$target"
+    [ -n "$target" ] || x cargo test --doc $features
     x env RUSTDOCFLAGS=--deny=warnings cargo doc --no-deps $target $features
   fi
   exit
 }
 
 _test_desc() {
-  sed '0,/^test_helper$/d;:a;/\\$/{N;s/\\\n//;ta};s/ \+/ /g' "$SELF"
+  sed '0,/^test_helper$/d;:a;/\\$/{N;s/\\\n//;ta};s/ \+/ /g' "$SELF" | grep -Ev '^($|#)'
 }
 
-_test_check() { sed 's/cargo test/cargo check --all-targets/'; }
+_test_check() { sed 's/cargo test/cargo check --profile=test/'; }
 _test_clippy() { sed 's/cargo check/cargo clippy/;s/$/ -- --deny=warnings/'; }
+
+_test_ensure_lib() {
+  if [ -e src/lib.rs ]; then
+    if git grep -q '#\[test\]' src
+    then _test_ensure_desc 'cargo test --lib'
+    else _test_ensure_desc 'cargo (check|test) --lib'
+    fi
+  fi
+}
+_test_ensure_bins() {
+  local i
+  for i in $(package_bin_name); do
+    _test_ensure_desc "cargo (check|test) --bin=$i"
+  done
+  if [ -e src/main.rs ] && ! package_bin_path | grep -q src/main.rs; then
+    _test_ensure_desc "cargo (check|test) --bin=$(package_name)"
+  fi
+}
+_test_ensure_dir() {
+  local i
+  [ -d $1 ] || return 0
+  for i in $(find $1 -name '*.rs' -printf '%P\n'); do
+    _test_ensure_desc "cargo $2 --$3=${i%.rs}"
+  done
+}
+_test_ensure_desc() { _test_desc | grep -Eq "$1" || e "No \`$1\` found."; }
 
 _test_check_api() {
   local api="$1"
@@ -90,7 +123,7 @@ _test_check_api() {
       $(_test_full_deps $full $prefix)
   fi
   for api in $api; do
-    x cargo clippy "$@" "$features$prefix$api" -- --deny=warnings
+    x cargo clippy --lib "$@" "$features$prefix$api" -- --deny=warnings
   done
 }
 

@@ -1,0 +1,23 @@
+[package]
+name = "fuzz"
+version = "0.0.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+wasefire-error.path = "../../error"
+wasefire-wire = { path = "..", features = ["schema"] }
+
+[[bin]]
+name = "correct"
+path = "fuzz_targets/correct.rs"
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unsafe-op-in-unsafe-fn = "warn"

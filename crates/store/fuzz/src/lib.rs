@@ -129,9 +129,9 @@ impl Entropy<'_> {
     /// # Preconditions
     ///
     /// - The bounds should be correctly ordered: `min <= max`.
-    /// - The upper-bound should not be too large: `max < usize::max_value()`.
+    /// - The upper-bound should not be too large: `max < usize::MAX`.
     fn read_range(&mut self, min: usize, max: usize) -> usize {
-        assert!(min <= max && max < usize::max_value());
+        assert!(min <= max && max < usize::MAX);
         let count = max - min + 1;
         let delta = self.read_bits(num_bits(count - 1)) % count;
         min + delta
@@ -154,7 +154,7 @@ fn num_bits_ok() {
     assert_eq!(num_bits(8), 4);
     assert_eq!(num_bits(15), 4);
     assert_eq!(num_bits(16), 5);
-    assert_eq!(num_bits(usize::max_value()), 8 * std::mem::size_of::<usize>());
+    assert_eq!(num_bits(usize::MAX), 8 * std::mem::size_of::<usize>());
 }
 
 #[test]
@@ -190,5 +190,5 @@ fn read_range_ok() {
     assert_eq!(entropy.read_range(0, 8), 0b1011 % 9);
     assert_eq!(entropy.read_range(3, 15), 3 + 0b0010);
     let mut entropy = Entropy::new(&[0x12, 0x34, 0x56, 0x78]);
-    assert_eq!(entropy.read_range(0, usize::max_value() - 1), 0x78563412);
+    assert_eq!(entropy.read_range(0, usize::MAX - 1), 0x78563412);
 }

@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Move lints to `Cargo.toml` and use common Wasefire lints
 - Update dependencies
 
 ## 0.6.0
@@ -85,4 +86,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 9 -->
+<!-- Increment to skip CHANGELOG.md test: 10 -->

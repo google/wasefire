@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Use common Wasefire lints
 - Return a user error instead of an internal error for enums `TryFrom`
 
 ## 0.6.0
@@ -63,4 +64,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 4 -->
+<!-- Increment to skip CHANGELOG.md test: 5 -->

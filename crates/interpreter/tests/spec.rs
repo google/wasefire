@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #![feature(int_roundings)]
+#![allow(unused_crate_dependencies)]
 
 use std::collections::HashMap;
 
@@ -331,7 +332,7 @@ fn wast_execute(env: &mut Env, exec: WastExecute) -> Result<Vec<Val>, Error> {
         WastExecute::Wat(mut wat) => {
             env.maybe_instantiate("", &wat.encode().unwrap()).map(|_| Vec::new())
         }
-        WastExecute::Get { module, global } => {
+        WastExecute::Get { module, global, .. } => {
             let inst_id = env.inst_id(module)?;
             env.store.get_global(inst_id, global).map(|x| vec![x])
         }

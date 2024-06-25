@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-applet-api-desc"
-version = "0.1.7-git"
+version = "0.2.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -12,13 +12,11 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-anyhow = { version = "1.0.79", default-features = false, features = ["std"] }
-clap = { version = "4.4.18", default-features = false, features = ["derive", "std"] }
-data-encoding = { version = "2.5.0", default-features = false }
-data-encoding-macro = { version = "0.1.14", default-features = false }
-proc-macro2 = { version = "1.0.76", default-features = false }
-quote = { version = "1.0.35", default-features = false }
-syn = { version = "2.0.48", default-features = false, features = ["printing"] }
+data-encoding = { version = "2.6.0", default-features = false }
+data-encoding-macro = { version = "0.1.15", default-features = false }
+proc-macro2 = { version = "1.0.83", default-features = false }
+quote = { version = "1.0.36", default-features = false }
+syn = { version = "2.0.66", default-features = false, features = ["printing"] }
 
 [features]
 # API features.
@@ -70,3 +68,9 @@ internal-api-platform = []
 internal-api-radio = []
 internal-api-store = []
 internal-api-usb = []
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

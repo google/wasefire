@@ -19,7 +19,7 @@ set -e
 
 test_helper
 
-cargo test
-cargo check --target=thumbv7em-none-eabi
-cargo check --target=thumbv7em-none-eabi --features=defmt
-cargo check --features=log
+cargo test --lib
+cargo check --lib --target=thumbv7em-none-eabi
+cargo check --lib --target=thumbv7em-none-eabi --features=defmt
+cargo check --lib --features=log

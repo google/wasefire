@@ -4,11 +4,15 @@
 
 ### Major
 
+- Add non-default `wasm` feature which was the default behavior
 - Change `gpio` module to never panic and return an error instead
 - Change `button::Listener::new()` to never panic and return an error instead
 
 ### Minor
 
+- Add `platform::serial()` to get the platform serial
+- Migrate `platform::version()` to new applet API
+- Add `rpc::Rpc` trait for `platform::protocol::RpcProtocol`
 - Add the `store::{keys,clear}()` functions
 - Add the `platform::protocol` module and the `api-platform-protocol` feature for applet RPC
 - Allow main to return an error
@@ -19,6 +23,7 @@
 
 ### Patch
 
+- Move lints to `Cargo.toml`, use common Wasefire lints, and make most dependencies optional
 - Update dependencies
 
 ## 0.5.0
@@ -150,4 +155,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 26 -->
+<!-- Increment to skip CHANGELOG.md test: 28 -->

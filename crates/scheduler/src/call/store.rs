@@ -57,7 +57,7 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let memory = scheduler.applet.memory();
     let result = try {
         let value = memory.get(*ptr, *len)?;
-        scheduler.store.insert(*key as usize, value).map_err(convert)
+        scheduler.store.insert(*key as usize, value).map_err(convert)?
     };
     call.reply(result);
 }
@@ -65,8 +65,8 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
 #[cfg(feature = "board-api-storage")]
 fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
     let api::remove::Params { key } = call.read();
-    let res = call.scheduler().store.remove(*key as usize).map_err(convert);
-    call.reply(Ok(res));
+    let res = try { call.scheduler().store.remove(*key as usize).map_err(convert)? };
+    call.reply(res);
 }
 
 #[cfg(feature = "board-api-storage")]
@@ -75,17 +75,12 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let scheduler = call.scheduler();
     let mut memory = scheduler.applet.memory();
     let result = try {
-        match scheduler.store.find(*key as usize) {
-            Ok(None) => Ok(false),
-            Ok(Some(value)) => {
-                let len = value.len() as u32;
-                let ptr = memory.alloc(len, 1)?;
-                memory.get_mut(ptr, len)?.copy_from_slice(&value);
-                memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
-                memory.get_mut(*len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
-                Ok(true)
+        match scheduler.store.find(*key as usize).map_err(convert)? {
+            None => false,
+            Some(value) => {
+                memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &value)?;
+                true
             }
-            Err(e) => Err(convert(e)),
         }
     };
     call.reply(result);
@@ -97,23 +92,19 @@ fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
     let scheduler = call.scheduler();
     let mut memory = scheduler.applet.memory();
     let result = try {
-        let keys = try {
-            let mut keys = Vec::new();
-            for handle in scheduler.store.iter()? {
-                keys.push(handle?.get_key() as u16);
-            }
-            keys
-        };
+        let mut keys = Vec::new();
+        for handle in scheduler.store.iter().map_err(convert)? {
+            keys.push(handle.map_err(convert)?.get_key() as u16);
+        }
         match keys {
-            Ok(keys) if keys.is_empty() => Ok(0),
-            Ok(keys) => {
+            keys if keys.is_empty() => 0,
+            keys => {
                 let len = keys.len() as u32;
                 let ptr = memory.alloc(2 * len, 2)?;
                 memory.get_mut(ptr, 2 * len)?.copy_from_slice(bytemuck::cast_slice(&keys));
                 memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
-                Ok(len)
+                len
             }
-            Err(e) => Err(convert(e)),
         }
     };
     call.reply(result);
@@ -123,16 +114,16 @@ fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
 fn clear<B: Board>(mut call: SchedulerCall<B, api::clear::Sig>) {
     let api::clear::Params {} = call.read();
     let scheduler = call.scheduler();
-    let result = scheduler.store.clear(0).map_err(convert);
-    call.reply(Ok(result));
+    let result = try { scheduler.store.clear(0).map_err(convert)? };
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-storage")]
 fn convert(err: StoreError) -> Error {
     match err {
-        StoreError::InvalidArgument => Error::user(0),
-        StoreError::NoCapacity | StoreError::NoLifetime => Error::user(Code::NotEnough),
-        StoreError::StorageError => Error::world(0),
+        StoreError::InvalidArgument => Error::user(Code::InvalidArgument),
+        StoreError::NoCapacity | StoreError::NoLifetime => Error::world(Code::NotEnough),
+        StoreError::StorageError => Error::world(Code::Generic),
         StoreError::InvalidStorage => Error::world(Code::InvalidState),
     }
 }

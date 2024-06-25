@@ -24,7 +24,7 @@ use alloc::vec::Vec;
 
 fn main() {
     let mut counter = 0;
-    platform::protocol::Listener::new(move |mut data: Vec<u8>| {
+    rpc::Listener::new(&platform::protocol::RpcProtocol, move |mut data: Vec<u8>| {
         data.iter_mut().for_each(switch_case);
         counter += 1;
         debug!("Converted {counter} lines.");

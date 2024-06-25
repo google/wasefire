@@ -39,18 +39,13 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { ptr: ptr_ptr, len: len_ptr } = call.read();
     let scheduler = call.scheduler();
     let result = try {
-        match scheduler.applet.get_request() {
-            Ok(None) => Ok(false),
-            Ok(Some(value)) => {
+        match scheduler.applet.get_request()? {
+            None => false,
+            Some(value) => {
                 let mut memory = scheduler.applet.memory();
-                let len = value.len() as u32;
-                let ptr = memory.alloc(len, 1)?;
-                memory.get_mut(ptr, len)?.copy_from_slice(&value);
-                memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
-                memory.get_mut(*len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
-                Ok(true)
+                memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &value)?;
+                true
             }
-            Err(e) => Err(e),
         }
     };
     call.reply(result);
@@ -63,7 +58,7 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let result = try {
         let memory = scheduler.applet.memory();
         let input = memory.get(*ptr, *len)?.into();
-        crate::protocol::put_response(scheduler, input)
+        crate::protocol::put_response(scheduler, input)?
     };
     call.reply(result);
 }
@@ -80,8 +75,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
             inst,
             func: *handler_func,
             data: *handler_data,
-        })?;
-        Ok(())
+        })?
     };
     call.reply(result);
 }
@@ -92,8 +86,7 @@ fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let scheduler = call.scheduler();
     let result = try {
         // We only disable the applet handler because we still need to process non-applet requests.
-        scheduler.disable_event(Key::Request.into())?;
-        Ok(())
+        scheduler.disable_event(Key::Request.into())?
     };
     call.reply(result);
 }

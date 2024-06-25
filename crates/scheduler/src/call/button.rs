@@ -37,7 +37,7 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
     let count = board::Button::<B>::SUPPORT as u32;
     #[cfg(not(feature = "board-api-button"))]
     let count = 0;
-    call.reply(Ok(Ok(count)));
+    call.reply(Ok(count));
 }
 
 #[cfg(feature = "board-api-button")]
@@ -57,7 +57,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
             .map_err(|_| Error::user(Code::InvalidState))?;
         board::Button::<B>::enable(button)?;
     };
-    call.reply(Ok(result));
+    call.reply(result);
 }
 
 #[cfg(feature = "board-api-button")]
@@ -70,5 +70,5 @@ fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
             .disable_event(Key { button }.into())
             .map_err(|_| Error::user(Code::InvalidState))?;
     };
-    call.reply(Ok(result));
+    call.reply(result);
 }

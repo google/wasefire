@@ -4,6 +4,7 @@
 
 ### Major
 
+- Change `platform::version()` to return `Cow` and add `platform::serial()`
 - Change `Id::new` to return `Result` instead of `Option`
 - Change `crypto::{Hash,Hmac}` to depend on `crypto::WithError`
 
@@ -16,6 +17,7 @@
 
 ### Patch
 
+- Use common Wasefire lints and make most dependencies optional
 - Change `Id::new()` to return `OutOfBounds` error instead of `InvalidArgument`
 - Update dependencies
 - Document all public API
@@ -132,4 +134,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 19 -->
+<!-- Increment to skip CHANGELOG.md test: 22 -->

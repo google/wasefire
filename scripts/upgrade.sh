@@ -18,8 +18,6 @@ set -e
 
 # This script upgrades all dependencies.
 
-x sed -i 's/^\(channel = "nightly-\)[^"]*"$/\1'$(date +%F)'"/' \
-  rust-toolchain.toml
 for submodule in $(git submodule status | cut -d' ' -f3); do
   # The rustup script is checked in the sync.sh script.
   [ $submodule = third_party/rust-lang/rustup ] && continue
@@ -29,27 +27,24 @@ for submodule in $(git submodule status | cut -d' ' -f3); do
     git checkout refs/remotes/origin/HEAD
   )
 done
+
+x sed -i 's/^\(channel = "nightly-\)[^"]*"$/\1'$(date +%F)'"/' \
+  rust-toolchain.toml
+
+get_crates() { sed -n 's/^.*ensure_cargo \([^ ]\+\) .*$/\1/p' scripts/wrapper.sh; }
+get_latest() { cargo search "$1" | sed -n '1s/^'"$1"' = "\([0-9.]*\)".*$/\1/p'; }
+update_crate() { x sed -i 's/\(ensure_cargo '"$1"'\) [0-9.]*/\1 '"$2"'/' scripts/wrapper.sh; }
+for crate in $(get_crates); do
+  update_crate "$crate" "$(get_latest "$crate")"
+done
+
 for path in $(git ls-files '*/Cargo.toml'); do
-  ./scripts/wrapper.sh cargo upgrade --manifest-path=$path --incompatible
+  # TODO(https://github.com/RustCrypto/traits/issues/1481): Remove generic-array exclusion.
+  ./scripts/wrapper.sh cargo upgrade --manifest-path=$path --incompatible=allow \
+    --exclude=generic-array
 done
 for path in $(git ls-files '*/Cargo.toml'); do
   cargo update --manifest-path=$path
-done
-
-get_crates() {
-  sed -n 's/^.*ensure_cargo \([^ ]\+\) .*$/\1/p' scripts/wrapper.sh
-}
-
-get_latest() {
-  cargo search "$1" | sed -n '1s/^'"$1"' = "\([0-9.]*\)".*$/\1/p'
-}
-
-update_crate() {
-  x sed -i 's/\(ensure_cargo '"$1"'\) [0-9.]*/\1 '"$2"'/' scripts/wrapper.sh
-}
-
-for crate in $(get_crates); do
-  update_crate "$crate" "$(get_latest "$crate")"
 done
 
 ( set -x

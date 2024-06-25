@@ -16,8 +16,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use rusb::{Error, GlobalContext};
-use wasefire_protocol::service::applet;
-use wasefire_protocol::{Api, Request};
+use wasefire_protocol::{applet, Api, Request};
 use wasefire_protocol_usb::Connection;
 
 pub fn main(connection: &Connection<GlobalContext>) -> Result<()> {

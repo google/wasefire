@@ -19,10 +19,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "heck"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
+name = "fuzz"
+version = "0.0.0"
+dependencies = [
+ "libfuzzer-sys",
+ "wasefire-error",
+ "wasefire-wire",
+]
 
 [[package]]
 name = "jobserver"
@@ -95,18 +98,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sealed"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4a8caec23b7800fb97971a1c6ae365b6239aaeddfb934d6265f8505e795699d"
-dependencies = [
- "heck",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "syn"
 version = "2.0.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -131,18 +122,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasefire-protocol"
+name = "wasefire-wire"
 version = "0.1.0-git"
 dependencies = [
- "sealed",
  "wasefire-error",
+ "wasefire-wire-derive",
 ]
 
 [[package]]
-name = "wasefire-protocol-fuzz"
-version = "0.0.0"
+name = "wasefire-wire-derive"
+version = "0.1.0-git"
 dependencies = [
- "libfuzzer-sys",
- "wasefire-error",
- "wasefire-protocol",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]

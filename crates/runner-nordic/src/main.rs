@@ -33,13 +33,13 @@ use cortex_m_rt::entry;
 use critical_section::Mutex;
 #[cfg(feature = "debug")]
 use defmt_rtt as _;
+use embedded_hal::digital::InputPin;
 use nrf52840_hal::ccm::{Ccm, DataRate};
 use nrf52840_hal::clocks::{self, ExternalOscillator, Internal, LfOscStopped};
 use nrf52840_hal::gpio;
 use nrf52840_hal::gpio::{Level, Output, Pin, PushPull};
 use nrf52840_hal::gpiote::Gpiote;
-use nrf52840_hal::pac::{interrupt, Interrupt};
-use nrf52840_hal::prelude::InputPin;
+use nrf52840_hal::pac::{interrupt, Interrupt, FICR};
 use nrf52840_hal::rng::Rng;
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 #[cfg(feature = "release")]
@@ -53,6 +53,8 @@ use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidP
 use usbd_serial::SerialPort;
 use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Id, Support};
+#[cfg(feature = "wasm")]
+use wasefire_interpreter as _;
 use wasefire_logger as log;
 use wasefire_scheduler::Scheduler;
 
@@ -75,6 +77,7 @@ type Clocks = clocks::Clocks<ExternalOscillator, Internal, LfOscStopped>;
 
 struct State {
     events: Events,
+    ficr: FICR,
     buttons: [Button; <button::Impl as Support<usize>>::SUPPORT],
     gpiote: Gpiote,
     protocol: wasefire_protocol_usb::Rpc<'static, Usb>,
@@ -98,6 +101,8 @@ fn with_state<R>(f: impl FnOnce(&mut State) -> R) -> R {
     critical_section::with(|cs| f(STATE.borrow_ref_mut(cs).as_mut().unwrap()))
 }
 
+// TODO(https://github.com/rust-embedded/cortex-m/issues/537): Remove when fixed.
+#[allow(unsafe_op_in_unsafe_fn)]
 #[entry]
 fn main() -> ! {
     static mut CLOCKS: MaybeUninit<Clocks> = MaybeUninit::uninit();
@@ -113,6 +118,7 @@ fn main() -> ! {
     allocator::init();
     log::debug!("Runner starts.");
     let p = nrf52840_hal::pac::Peripherals::take().unwrap();
+    let ficr = p.FICR;
     let port0 = gpio::p0::Parts::new(p.P0);
     let port1 = gpio::p1::Parts::new(p.P1);
     let buttons = [
@@ -152,7 +158,7 @@ fn main() -> ! {
         .build();
     let radio = BleRadio::new(
         p.RADIO,
-        &p.FICR,
+        &ficr,
         BLE_TX.write([0; MIN_PDU_BUF]),
         BLE_RX.write([0; MIN_PDU_BUF]),
     );
@@ -168,6 +174,7 @@ fn main() -> ! {
     let events = Events::default();
     let state = State {
         events,
+        ficr,
         buttons,
         gpiote,
         protocol,

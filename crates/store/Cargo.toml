@@ -15,7 +15,13 @@ categories = ["embedded", "no-std"]
 features = ["std"]
 
 [dev-dependencies]
-tempfile = "3.9.0"
+tempfile = "3.10.1"
 
 [features]
 std = []
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

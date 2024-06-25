@@ -17,8 +17,12 @@
 #![no_std]
 #![deny(unsafe_op_in_unsafe_fn)]
 
+// TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
+extern crate alloc;
+
 pub use mutex::{Mutex, MutexGuard};
 pub use portable_atomic::*;
+pub use spin::Lazy;
 pub use take::TakeCell;
 
 mod mutex;

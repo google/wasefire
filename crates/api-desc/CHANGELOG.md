@@ -1,14 +1,24 @@
 # Changelog
 
-## 0.1.7-git
+## 0.2.0-git
+
+### Major
+
+- Remove the binary target making this crate a pure library
+- Remove implementation of `clap::ValueEnum` for `Lang`
 
 ### Minor
 
+- Add `platform::serial()` function
+- Change `platform::version()` to allocate the result instead
 - Add `store::{keys,clear}()` functions
 - Add `platform::protocol` module and `api-platform-protocol` feature for applet RPC
 
 ### Patch
 
+- Update dependencies
+- Use common Wasefire lints
+- Use `*const void` instead of `*const u8` for opaque data in `platform::protocol`
 - Return a user error instead of an internal error for enums `TryFrom`
 
 ## 0.1.6

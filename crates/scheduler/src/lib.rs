@@ -101,6 +101,7 @@ pub struct Scheduler<B: Board> {
     protocol: protocol::State,
 }
 
+#[cfg(feature = "board-api-timer")]
 #[derive(Clone)]
 struct Timer {
     // TODO: Add AppletId.
@@ -182,16 +183,16 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
         self.erased.scheduler
     }
 
-    fn reply(self, result: Result<Result<impl Into<U32<T::Result>>, Error>, Trap>) {
-        self.reply_(result.map(|x| x.map(|x| x.into())))
+    fn reply(self, result: Result<impl Into<U32<T::Result>>, Failure>) {
+        self.reply_(result.map(|x| x.into()))
     }
 
-    fn reply_(self, result: Result<Result<U32<T::Result>, Error>, Trap>) {
-        let result = match result {
-            Ok(x) => x,
-            Err(Trap) => applet_trapped::<B>(Some(T::NAME)),
-        };
-        let result = Error::encode(result.map(|x| *x));
+    fn reply_(self, result: Result<U32<T::Result>, Failure>) {
+        let result = Error::encode(match result {
+            Ok(x) => Ok(*x),
+            Err(Failure::Error(e)) => Err(e),
+            Err(Failure::Trap(Trap)) => applet_trapped::<B>(Some(T::NAME)),
+        });
         #[cfg(feature = "wasm")]
         {
             let mut this = self;
@@ -453,6 +454,23 @@ fn applet_trapped<B: Board>(reason: Option<&'static str>) -> ! {
 }
 
 struct Trap;
+
+enum Failure {
+    Trap(Trap),
+    Error(Error),
+}
+
+impl From<Trap> for Failure {
+    fn from(value: Trap) -> Self {
+        Self::Trap(value)
+    }
+}
+
+impl From<Error> for Failure {
+    fn from(value: Error) -> Self {
+        Self::Error(value)
+    }
+}
 
 #[cfg(feature = "wasm")]
 const fn memory_size() -> usize {

@@ -18,15 +18,50 @@ set -e
 
 # This script synchronizes generated content.
 
+[ "$1" = --force ] && FORCE=y
+
 cargo xtask update-apis
+
+add_lint() { echo "$3 = \"$2\"" >> $1; }
+for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
+  file=$dir/Cargo.toml
+  crate=${dir#crates/}
+  grep -q '^\[lints\.' $file && e "unexpected [lints.*] section in $file"
+  sed -i '/^\[lints\]$/q' $file
+  [ "$(tail -n1 $file)" = '[lints]' ] || printf '\n[lints]\n' >> $file
+  add_lint $file allow clippy.unit-arg
+  # add_lint $file warn rust.elided-lifetimes-in-paths
+  # add_lint $file warn rust.missing-debug-implementations
+  # TODO: Use the same [ -e src/lib.rs -a "$(package_publish)" = true ] test is test-helper.
+  case $crate in
+    board|prelude) add_lint $file warn rust.missing-docs ;;
+  esac
+  # TODO: Enable for all crates.
+  case $crate in
+    interpreter|runner-*|scheduler|xtask|*/fuzz) ;;
+    *) add_lint $file warn rust.unreachable-pub ;;
+  esac
+  add_lint $file warn rust.unsafe-op-in-unsafe-fn
+  case $crate in
+    */fuzz) ;;
+    *) add_lint $file warn rust.unused-crate-dependencies ;;
+  esac
+  # add_lint $file warn rust.unused-results
+done
+
+( cd crates/protocol/crates/schema
+  cargo run --features=host
+  cargo run --features=device
+)
 
 book_example() {
   local src=book/src/applet/prelude/$1.rs
   local dst=examples/rust/$2/src/lib.rs
   # We only check that the destination is newer by more than one second, because when cloning the
   # repository or switching branches, it may happen that the destination is slightly newer.
-  if [ $(stat -c%Y $dst) -gt $(($(stat -c%Y $src) + 1)) ]; then
+  if [ -z "$FORCE" -a $(stat -c%Y $dst) -gt $(($(stat -c%Y $src) + 1)) ]; then
     t "Update $src instead of $dst"
+    i "If you switched branch and did not modify those files, rerun with --force"
     e "$dst seems to have been manually modified"
   fi
   # Besides removing all anchors, we insert a warning before the #![no_std] line, which all examples
@@ -48,6 +83,19 @@ book_example button2 led
 book_example timer button_abort
 book_example usb memory_game
 book_example store store
+
+GIT_MODULES='
+SchemaStore/schemastore
+WebAssembly/spec
+rust-lang/rustup
+'
+[ "$(echo "$GIT_MODULES" | sort | tail -n+2)" = "$(echo "$GIT_MODULES")" ] \
+  || e "GIT_MODULES is not sorted"
+for m in $GIT_MODULES; do
+  echo "[submodule \"third_party/$m\"]"
+  printf "\tpath = third_party/$m\n"
+  printf "\turl = https://github.com/$m.git\n"
+done > .gitmodules
 
 # This is done here instead of upgrade.sh for 2 reasons:
 # 1. This runs more often so users would install with the latest script.

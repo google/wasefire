@@ -14,5 +14,5 @@
 
 #[cfg(feature = "native")]
 mod native;
-#[cfg(not(any(feature = "native", feature = "test")))]
+#[cfg(feature = "wasm")]
 mod wasm;

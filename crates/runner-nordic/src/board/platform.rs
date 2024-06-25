@@ -12,9 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::borrow::Cow;
+use alloc::vec::Vec;
+
 use header::{Header, Side};
-use wasefire_board_api::platform::{version_helper, Api};
+use wasefire_board_api::platform::Api;
 use wasefire_board_api::Error;
+
+use crate::with_state;
 
 pub mod update;
 
@@ -25,10 +30,21 @@ impl Api for Impl {
 
     type Update = update::Impl;
 
-    fn version(output: &mut [u8]) -> usize {
+    fn serial() -> Cow<'static, [u8]> {
+        with_state(|state| {
+            let low = state.ficr.deviceid[0].read().deviceid().bits();
+            let high = state.ficr.deviceid[1].read().deviceid().bits();
+            let mut serial = Vec::with_capacity(8);
+            serial.extend_from_slice(&high.to_be_bytes());
+            serial.extend_from_slice(&low.to_be_bytes());
+            serial.into()
+        })
+    }
+
+    fn version() -> Cow<'static, [u8]> {
         let side = Side::current().unwrap();
         let header = Header::new(side);
-        version_helper(&header.timestamp().to_be_bytes(), output)
+        header.timestamp().to_be_bytes().to_vec().into()
     }
 
     fn reboot() -> Result<!, Error> {

@@ -1,0 +1,29 @@
+[package]
+name = "wasefire-wire"
+version = "0.1.0-git"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = true
+edition = "2021"
+description = "Wasefire wire format"
+repository = "https://github.com/google/wasefire"
+include = ["/src"]
+keywords = ["embedded", "framework", "no-std"]
+categories = ["embedded", "no-std"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[dependencies]
+wasefire-error = { version = "0.1.1-git", path = "../error" }
+wasefire-wire-derive = { version = "0.1.0-git", path = "../wire-derive" }
+
+[features]
+schema = ["std", "wasefire-wire-derive/schema"]
+std = []
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"

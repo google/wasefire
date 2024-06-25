@@ -41,7 +41,7 @@ fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
     let supported = board::platform::Update::<B>::SUPPORT as u32;
     #[cfg(not(feature = "board-api-platform-update"))]
     let supported = 0;
-    call.reply(Ok(Ok(supported)))
+    call.reply(Ok(supported))
 }
 
 #[cfg(feature = "board-api-platform-update")]
@@ -50,17 +50,8 @@ fn metadata<B: Board>(mut call: SchedulerCall<B, api::metadata::Sig>) {
     let scheduler = call.scheduler();
     let mut memory = scheduler.applet.memory();
     let result = try {
-        match board::platform::Update::<B>::metadata() {
-            Ok(metadata) => {
-                let len = metadata.len() as u32;
-                let ptr = memory.alloc(len, 1)?;
-                memory.get_mut(ptr, len)?.copy_from_slice(&metadata);
-                memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
-                memory.get_mut(*len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
-                Ok(())
-            }
-            Err(error) => Err(error),
-        }
+        let metadata = board::platform::Update::<B>::metadata()?;
+        memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &metadata)?;
     };
     call.reply(result);
 }
@@ -74,7 +65,7 @@ fn initialize<B: Board>(call: SchedulerCall<B, api::initialize::Sig>) {
             1 => true,
             _ => Err(Trap)?,
         };
-        board::platform::Update::<B>::initialize(dry_run)
+        board::platform::Update::<B>::initialize(dry_run)?
     };
     call.reply(result);
 }
@@ -86,7 +77,7 @@ fn process_<B: Board>(mut call: SchedulerCall<B, api::process::Sig>) {
     let memory = scheduler.applet.memory();
     let result = try {
         let chunk = memory.get(*ptr, *len)?;
-        board::platform::Update::<B>::process(chunk)
+        board::platform::Update::<B>::process(chunk)?
     };
     call.reply(result);
 }
@@ -94,6 +85,5 @@ fn process_<B: Board>(mut call: SchedulerCall<B, api::process::Sig>) {
 #[cfg(feature = "board-api-platform-update")]
 fn finalize<B: Board>(call: SchedulerCall<B, api::finalize::Sig>) {
     let api::finalize::Params {} = call.read();
-    let result = try { board::platform::Update::<B>::finalize() };
-    call.reply(result);
+    call.reply(try { board::platform::Update::<B>::finalize()? });
 }

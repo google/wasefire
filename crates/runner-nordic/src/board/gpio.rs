@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use embedded_hal::digital::v2::{InputPin, OutputPin, PinState, StatefulOutputPin as _};
+use embedded_hal::digital::{InputPin, OutputPin, PinState, StatefulOutputPin as _};
 use nrf52840_hal::gpio::{
     Disconnected, Floating, Input, Level, OpenDrain, OpenDrainConfig, OpenDrainIO, Output, Pin,
     PullDown, PullUp, PushPull,
@@ -53,7 +53,7 @@ impl Api for Impl {
 
     fn read(gpio: Id<Self>) -> Result<bool, Error> {
         with_state(|state| {
-            match &state.gpios[*gpio].state {
+            match &mut state.gpios[*gpio].state {
                 State::Invalid => unreachable!(),
                 State::Disconnected(_) | State::OutputPushPull(_) | State::OutputOpenDrain(_) => {
                     return Err(Error::user(Code::InvalidState));

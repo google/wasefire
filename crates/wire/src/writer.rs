@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 #[derive(Default)]
@@ -22,39 +21,26 @@ pub struct Writer<'a> {
 }
 
 impl<'a> Writer<'a> {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Writer::default()
     }
 
-    pub fn finalize(self) -> Box<[u8]> {
-        let mut data = Vec::with_capacity(self.len());
-        for chunk in self.chunks {
-            data.extend_from_slice(chunk.slice(&self.owned));
-        }
-        data.into_boxed_slice()
-    }
-
-    fn len(&self) -> usize {
-        self.chunks.iter().map(|x| x.len()).sum()
-    }
-
-    pub fn put_share(&mut self, data: &'a [u8]) {
+    pub(crate) fn put_share(&mut self, data: &'a [u8]) {
         self.chunks.push(Chunk::Borrowed(data));
     }
 
-    pub fn put_u8(&mut self, data: u8) {
-        self.put_copy(&[data]);
-    }
-
-    pub fn put_u16(&mut self, data: u16) {
-        self.put_copy(&data.to_be_bytes());
-    }
-
-    fn put_copy(&mut self, data: &[u8]) {
+    pub(crate) fn put_copy(&mut self, data: &[u8]) {
         let offset = self.owned.len();
         self.owned.extend_from_slice(data);
         let length = data.len();
         self.chunks.push(Chunk::Owned { offset, length });
+    }
+
+    pub(crate) fn finalize(self, data: &mut Vec<u8>) {
+        data.reserve_exact(self.chunks.iter().map(|x| x.len()).sum());
+        for chunk in self.chunks {
+            data.extend_from_slice(chunk.slice(&self.owned));
+        }
     }
 }
 
