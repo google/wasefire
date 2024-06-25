@@ -287,7 +287,6 @@ fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
 }
 
 fn assert_trap(env: &mut Env, exec: WastExecute) {
-    println!("hello trap");
     assert_eq!(wast_execute(env, exec), Err(Error::Trap));
 }
 
@@ -390,101 +389,100 @@ macro_rules! test {
 }
 
 test!(address);
-// test!(align);
-// test!(binary);
-// test!(binary_leb128, "binary-leb128");
-// test!(block);
-// test!(br);
-// test!(br_if);
-// test!(br_table);
-// test!(bulk);
-// test!(call);
-// test!(call_indirect);
-// test!(
-//     // This test seems specific to text format.
-//     #[ignore]
-//     comments
-// );
-// test!(const_, "const");
-// test!(conversions);
-// test!(custom);
-// test!(data);
-// test!(elem);
-// // /Users/zhoufang/github/wasefire/third_party/WebAssembly/spec/test/core/endianness.wast
-// test!(endianness);
-// test!(exports);
-// test!(f32);
-// test!(f32_bitwise);
-// test!(f32_cmp);
-// test!(f64);
-// test!(f64_bitwise);
-// test!(f64_cmp);
-// test!(fac);
-// test!(float_exprs);
-// test!(float_literals);
-// test!(float_memory);
-// test!(float_misc);
-// test!(forward);
-// test!(func);
-// test!(func_ptrs);
-// test!(global);
-// test!(i32);
-// test!(i64);
-// test!(if_, "if");
-// test!(imports);
-// test!(inline_module, "inline-module");
-// test!(int_exprs);
-// test!(int_literals);
-// test!(labels);
-// test!(left_to_right, "left-to-right");
-// test!(linking);
-// test!(load);
-// test!(local_get);
-// test!(local_set);
-// test!(local_tee);
-// test!(loop_, "loop");
-// test!(memory);
-// test!(memory_copy);
-// test!(memory_fill);
-// test!(memory_grow);
-// test!(memory_init);
-// test!(memory_redundancy);
-// test!(memory_size);
-// test!(memory_trap);
-// test!(names);
-// test!(nop);
-// test!(ref_func);
-// test!(ref_is_null);
-// test!(ref_null);
-// test!(return_, "return");
-// test!(select);
-// test!(skip_stack_guard_page, "skip-stack-guard-page");
-// test!(stack);
-// test!(start);
-// test!(store);
-// test!(switch);
-// test!(table);
-// test!(table_sub, "table-sub");
-// test!(table_copy);
-// test!(table_fill);
-// test!(table_get);
-// test!(table_grow);
-// test!(table_init);
-// test!(table_set);
-// test!(table_size);
-// test!(token);
-// test!(
-//     // This test seems specific to text format.
-//     #[ignore]
-//     tokens
-// );
-// test!(traps);
-// test!(type_, "type");
-// test!(unreachable);
-// test!(unreached_invalid, "unreached-invalid");
-// test!(unreached_valid, "unreached-valid");
-// test!(unwind);
-// test!(utf8_custom_section_id, "utf8-custom-section-id");
-// test!(utf8_import_field, "utf8-import-field");
-// test!(utf8_import_module, "utf8-import-module");
-// test!(utf8_invalid_encoding, "utf8-invalid-encoding");
+test!(align);
+test!(binary);
+test!(binary_leb128, "binary-leb128");
+test!(block);
+test!(br);
+test!(br_if);
+test!(br_table);
+test!(bulk);
+test!(call);
+test!(call_indirect);
+test!(
+    // This test seems specific to text format.
+    #[ignore]
+    comments
+);
+test!(const_, "const");
+test!(conversions);
+test!(custom);
+test!(data);
+test!(elem);
+test!(endianness);
+test!(exports);
+test!(f32);
+test!(f32_bitwise);
+test!(f32_cmp);
+test!(f64);
+test!(f64_bitwise);
+test!(f64_cmp);
+test!(fac);
+test!(float_exprs);
+test!(float_literals);
+test!(float_memory);
+test!(float_misc);
+test!(forward);
+test!(func);
+test!(func_ptrs);
+test!(global);
+test!(i32);
+test!(i64);
+test!(if_, "if");
+test!(imports);
+test!(inline_module, "inline-module");
+test!(int_exprs);
+test!(int_literals);
+test!(labels);
+test!(left_to_right, "left-to-right");
+test!(linking);
+test!(load);
+test!(local_get);
+test!(local_set);
+test!(local_tee);
+test!(loop_, "loop");
+test!(memory);
+test!(memory_copy);
+test!(memory_fill);
+test!(memory_grow);
+test!(memory_init);
+test!(memory_redundancy);
+test!(memory_size);
+test!(memory_trap);
+test!(names);
+test!(nop);
+test!(ref_func);
+test!(ref_is_null);
+test!(ref_null);
+test!(return_, "return");
+test!(select);
+test!(skip_stack_guard_page, "skip-stack-guard-page");
+test!(stack);
+test!(start);
+test!(store);
+test!(switch);
+test!(table);
+test!(table_sub, "table-sub");
+test!(table_copy);
+test!(table_fill);
+test!(table_get);
+test!(table_grow);
+test!(table_init);
+test!(table_set);
+test!(table_size);
+test!(token);
+test!(
+    // This test seems specific to text format.
+    #[ignore]
+    tokens
+);
+test!(traps);
+test!(type_, "type");
+test!(unreachable);
+test!(unreached_invalid, "unreached-invalid");
+test!(unreached_valid, "unreached-valid");
+test!(unwind);
+test!(utf8_custom_section_id, "utf8-custom-section-id");
+test!(utf8_import_field, "utf8-import-field");
+test!(utf8_import_module, "utf8-import-module");
+test!(utf8_invalid_encoding, "utf8-invalid-encoding");
