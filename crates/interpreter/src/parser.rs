@@ -48,6 +48,8 @@ impl<'m> Parser<'m, Use> {
 
             if remaining.len() == 0 {
                 return false;
+            } else if remaining.len() == 1 {
+                return remaining[0] == 0x0B && block_depth == 0 && call_depth == 1;
             }
 
             let opcode = temp_parser.parse_byte().unwrap();
