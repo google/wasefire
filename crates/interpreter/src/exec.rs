@@ -795,7 +795,13 @@ impl<'m> Thread<'m> {
                 return Ok(self.pop_label(inst, ls.get(i).cloned().unwrap_or(ln)));
             }
             Return => return Ok(self.exit_frame()),
-            Call(x) => return self.invoke(store, store.func_ptr(inst_id, x)),
+            Call(x) => {
+                return if self.parser.is_tail_call() {
+                    self.invoke_tail_call(store, store.func_ptr(inst_id, x))
+                } else {
+                    self.invoke(store, store.func_ptr(inst_id, x))
+                }
+            }
             CallIndirect(x, y) => {
                 let i = self.pop_value().unwrap_i32();
                 let x = match store.table(inst_id, x).elems.get(i as usize) {
@@ -805,7 +811,11 @@ impl<'m> Thread<'m> {
                 if store.func_type(x) != store.insts[inst_id].module.types()[y as usize] {
                     return Err(trap());
                 }
-                return self.invoke(store, x);
+                return if self.parser.is_tail_call() {
+                    self.invoke_tail_call(store, x)
+                } else {
+                    self.invoke(store, x)
+                };
             }
             Drop => drop(self.pop_value()),
             Select(_) => {
@@ -1368,6 +1378,32 @@ impl<'m> Thread<'m> {
         self.parser = parser;
         self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals));
         Ok(ThreadResult::Continue(self))
+    }
+
+    fn invoke_tail_call(
+        mut self, store: &mut Store<'m>, ptr: Ptr,
+    ) -> Result<ThreadResult<'m>, Error> {
+        let t = store.func_type(ptr);
+        match ptr.instance() {
+            Side::Host => {
+                let index = ptr.index() as usize;
+                let t = store.funcs[index].1;
+                let arity = t.results.len();
+                let args = self.pop_values(t.params.len());
+                store.threads.push(Continuation { thread: self, arity, index, args });
+                Ok(ThreadResult::Host)
+            }
+            Side::Wasm(inst_id) => {
+                let mut parser = store.insts[inst_id].module.func(ptr.index());
+
+                // Reuse the existing frame (no push)
+                self.frame().locals = self.pop_values(t.params.len());
+                append_locals(&mut parser, &mut self.frame().locals);
+
+                self.parser = parser;
+                Ok(ThreadResult::Continue(self))
+            }
+        }
     }
 }
 

@@ -37,6 +37,75 @@ impl<'m> Parser<'m, Use> {
     pub unsafe fn new(data: &'m [u8]) -> Self {
         Self::internal_new(data)
     }
+
+    pub fn is_tail_call(&self) -> bool {
+        let mut remaining = self.data;
+        let mut block_depth = 0;
+        let mut call_depth = 0;
+
+        while !remaining.is_empty() {
+            let mut temp_parser: Parser<'_, Check> = Parser { data: remaining, mode: PhantomData };
+            let opcode = temp_parser.parse_byte().unwrap();
+            remaining = temp_parser.data;
+
+            if opcode == 0x02 || opcode == 0x03 || opcode == 0x04 {
+                block_depth += 1;
+            } else if opcode == 0x0B {
+                block_depth -= 1;
+                if call_depth > 0 && block_depth == 0 {
+                    call_depth -= 1;
+                }
+            } else if opcode == 0x10 || opcode == 0x11 {
+                call_depth += 1;
+                if block_depth == 0 && call_depth == 1 {
+                    return !remaining.is_empty() && remaining[0] == 0x0B;
+                }
+            }
+
+            match opcode {
+                0x0E => {
+                    // br_table
+                    let _num_labels = temp_parser.parse_u32().unwrap();
+                    for _ in 0 .. _num_labels + 1 {
+                        temp_parser.parse_labelidx().unwrap();
+                    }
+                    remaining = temp_parser.data;
+                }
+                0x28 ..= 0x3E => {
+                    // Memory instructions
+                    temp_parser.parse_memarg().unwrap();
+                    remaining = temp_parser.data;
+                }
+                0xFC => {
+                    let fc_opcode = temp_parser.parse_u32().unwrap();
+                    match fc_opcode {
+                        0 ..= 3 => {
+                            // Using range pattern
+                            temp_parser.parse_leb128(true, 33).unwrap();
+                            remaining = temp_parser.data;
+                        }
+                        4 => {
+                            temp_parser.parse_dataidx().unwrap();
+                            temp_parser.parse_byte().unwrap();
+                            remaining = temp_parser.data;
+                        }
+                        5 | 6 => {
+                            temp_parser.parse_elemidx().unwrap();
+                            remaining = temp_parser.data;
+                        }
+                        7 => {
+                            temp_parser.parse_tableidx().unwrap();
+                            temp_parser.parse_elemidx().unwrap();
+                            remaining = temp_parser.data;
+                        }
+                        _ => (), // Unsupported or no arguments
+                    }
+                }
+                _ => (), // Other instructions with no immediate arguments
+            }
+        }
+        false // Not a tail call if reached end without finding one
+    }
 }
 
 impl<'m, M: Mode> Parser<'m, M> {
