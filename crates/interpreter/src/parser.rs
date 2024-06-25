@@ -45,6 +45,11 @@ impl<'m> Parser<'m, Use> {
 
         while !remaining.is_empty() {
             let mut temp_parser: Parser<'_, Check> = Parser { data: remaining, mode: PhantomData };
+
+            if remaining.len() == 0 {
+                return false;
+            }
+
             let opcode = temp_parser.parse_byte().unwrap();
             remaining = temp_parser.data;
 
