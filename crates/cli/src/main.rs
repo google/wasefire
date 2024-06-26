@@ -42,7 +42,7 @@ struct Flags {
 #[derive(clap::Args)]
 struct Options {
     /// Serial of the platform to connect to.
-    #[arg(long)]
+    #[arg(long, env = "WASEFIRE_SERIAL")]
     serial: Option<String>,
 }
 
@@ -173,9 +173,9 @@ fn connect(serial: Option<&str>) -> Result<Connection<GlobalContext>> {
         (None, 0) => bail!("no connected platforms"),
         (None, 1) => candidates.pop().unwrap(),
         (None, n) => {
-            eprintln!("There are {n} connected platforms. Add one from this list:");
+            eprintln!("Choose one of the {n} connected platforms using its --serial option:");
             for candidate in candidates {
-                eprintln!("--serial={}", get_serial(&candidate)?);
+                eprintln!("    --serial={}", get_serial(&candidate)?);
             }
             bail!("more than one connected platform");
         }
