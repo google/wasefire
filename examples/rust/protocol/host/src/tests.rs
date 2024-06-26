@@ -29,13 +29,13 @@ pub fn main(connection: &Connection<GlobalContext>) -> Result<()> {
     for len in [0, 1, 62, 63, 64, 125, 126, 127, 188, 189] {
         print!("- {len}:");
         let packet: Vec<u8> = (b'1' ..= b'9').cycle().take(len).collect();
-        connection.send(&packet, TIMEOUT).unwrap();
-        assert_eq!(connection.receive(TIMEOUT).unwrap(), packet);
+        connection.send_raw(&packet, TIMEOUT).unwrap();
+        assert_eq!(connection.receive_raw(TIMEOUT).unwrap(), packet);
         println!(" ok");
     }
 
     println!("Not reading a response should not jam (a warning is expected).");
-    connection.send(b"hello", TIMEOUT).unwrap();
+    connection.send_raw(b"hello", TIMEOUT).unwrap();
     ping_pong(connection);
 
     println!("Short and invalid packets:");
@@ -51,7 +51,7 @@ pub fn main(connection: &Connection<GlobalContext>) -> Result<()> {
     }
 
     println!("Close tunnel.");
-    connection.send(b"EOF", TIMEOUT)?;
+    connection.send_raw(b"EOF", TIMEOUT)?;
     crate::read_tunnel(connection)?;
     Ok(())
 }
@@ -66,8 +66,8 @@ fn read_timeout(connection: &Connection<GlobalContext>) {
 }
 
 fn ping_pong(connection: &Connection<GlobalContext>) {
-    connection.send(b"ping", TIMEOUT).unwrap();
-    assert_eq!(connection.receive(TIMEOUT).unwrap(), b"PONG");
+    connection.send_raw(b"ping", TIMEOUT).unwrap();
+    assert_eq!(connection.receive_raw(TIMEOUT).unwrap(), b"PONG");
 }
 
 const TIMEOUT: Duration = Duration::from_millis(200);
