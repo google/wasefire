@@ -28,8 +28,6 @@ TOPOLOGICAL_ORDER=(
   wire
   sync
   protocol
-  cli-tools
-  cli
   interpreter
   store
   api-desc
@@ -40,6 +38,8 @@ TOPOLOGICAL_ORDER=(
   board
   scheduler
   protocol-usb
+  cli-tools
+  cli
 )
 
 listed_crates() {
