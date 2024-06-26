@@ -45,14 +45,15 @@ fn main() -> Result<()> {
     let flags = Flags::parse();
     let context = GlobalContext::default();
     let candidate = rpc::choose_device(&context).context("choosing device")?;
-    let connection = candidate.connect().context("connecting to the device")?;
+    let connection =
+        candidate.connect(Duration::from_secs(1)).context("connecting to the device")?;
     match flags {
         Flags::Call => {
             let mut request = Vec::new();
             std::io::stdin().read_to_end(&mut request)?;
             let request = applet::Request { applet_id: AppletId, request: &request };
-            connection.call::<service::AppletRequest>(request, TIMEOUT)?.get();
-            let response = connection.call::<service::AppletResponse>(AppletId, TIMEOUT)?;
+            connection.call::<service::AppletRequest>(request)?.get();
+            let response = connection.call::<service::AppletResponse>(AppletId)?;
             let response = response.get().response.context("no applet response")?;
             print!("{}", std::str::from_utf8(response).unwrap());
             Ok(())
@@ -67,27 +68,25 @@ fn main() -> Result<()> {
                 if request == delimiter {
                     break;
                 }
-                connection.send_raw(&request, TIMEOUT).context("sending request")?;
-                let response = connection.receive_raw(TIMEOUT).context("receiving response")?;
+                connection.send_raw(&request).context("sending request")?;
+                let response = connection.receive_raw().context("receiving response")?;
                 println!("{}", String::from_utf8(response).unwrap());
             }
-            connection.send_raw(delimiter, TIMEOUT)?;
+            connection.send_raw(delimiter)?;
             read_tunnel(&connection)
         }
-        Flags::Test => tests::main(&connection),
+        Flags::Test => tests::main(connection),
     }
 }
 
-const TIMEOUT: Duration = Duration::from_secs(1);
-
 fn send(connection: &Connection<GlobalContext>, request: &Api<Request>) -> Result<()> {
-    connection.send(request, TIMEOUT).context("sending request")
+    connection.send(request).context("sending request")
 }
 
 fn receive<T: Service>(
     connection: &Connection<GlobalContext>,
 ) -> Result<Yoke<T::Response<'static>>> {
-    connection.receive::<T>(TIMEOUT).context("receiving response")
+    connection.receive::<T>().context("receiving response")
 }
 
 fn read_tunnel(connection: &Connection<GlobalContext>) -> Result<()> {

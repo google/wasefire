@@ -157,6 +157,13 @@ pub struct Connection<T: UsbContext> {
 }
 
 impl<T: UsbContext> Connection<T> {
+    /// Sets the timeout for subsequent send and receive operations.
+    ///
+    /// The default timeout is 1 second.
+    pub fn set_timeout(&mut self, timeout: Duration) {
+        self.timeout = timeout;
+    }
+
     /// Calls a service on the device.
     pub fn call<S: Service>(
         &self, request: S::Request<'_>,
