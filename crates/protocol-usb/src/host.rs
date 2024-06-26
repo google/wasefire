@@ -134,7 +134,9 @@ impl<T: UsbContext> Display for Candidate<T> {
 
 impl<T: UsbContext> Candidate<T> {
     /// Creates a connection to the candidate device.
-    pub fn connect(self) -> rusb::Result<Connection<T>> {
+    ///
+    /// The timeout is used for all send and receive operations using this connection.
+    pub fn connect(self, timeout: Duration) -> rusb::Result<Connection<T>> {
         let Candidate { device, configuration, interface } = self;
         let handle = device.open()?;
         let current_configuration = handle.active_configuration()?;
@@ -143,7 +145,7 @@ impl<T: UsbContext> Candidate<T> {
             handle.set_active_configuration(configuration)?;
         }
         handle.claim_interface(interface)?;
-        Ok(Connection { _device: device, handle })
+        Ok(Connection { _device: device, handle, timeout })
     }
 }
 
@@ -151,28 +153,27 @@ impl<T: UsbContext> Candidate<T> {
 pub struct Connection<T: UsbContext> {
     _device: Device<T>,
     handle: DeviceHandle<T>,
+    timeout: Duration,
 }
 
 impl<T: UsbContext> Connection<T> {
     /// Calls a service on the device.
     pub fn call<S: Service>(
-        &self, request: S::Request<'_>, timeout: Duration,
+        &self, request: S::Request<'_>,
     ) -> anyhow::Result<Yoke<S::Response<'static>>> {
-        self.send(&S::request(request), timeout).context("sending request")?;
-        self.receive::<S>(timeout).context("receiving response")
+        self.send(&S::request(request)).context("sending request")?;
+        self.receive::<S>().context("receiving response")
     }
 
     /// Sends a request to the device.
-    pub fn send(&self, request: &Api<Request>, timeout: Duration) -> anyhow::Result<()> {
+    pub fn send(&self, request: &Api<Request>) -> anyhow::Result<()> {
         let request = request.encode().context("encoding request")?;
-        Ok(self.send_raw(&request, timeout)?)
+        Ok(self.send_raw(&request)?)
     }
 
     /// Receives a response from the device.
-    pub fn receive<S: Service>(
-        &self, timeout: Duration,
-    ) -> anyhow::Result<Yoke<S::Response<'static>>> {
-        let response = self.receive_raw(timeout)?.into_boxed_slice();
+    pub fn receive<S: Service>(&self) -> anyhow::Result<Yoke<S::Response<'static>>> {
+        let response = self.receive_raw()?.into_boxed_slice();
         ApiResult::<S>::decode_yoke(response).context("decoding response")?.try_map(|x| match x {
             ApiResult::Ok(x) => Ok(x),
             ApiResult::Err(error) => anyhow::bail!("error response: {error}"),
@@ -180,9 +181,9 @@ impl<T: UsbContext> Connection<T> {
     }
 
     /// Sends a raw request (possibly tunneled) to the device.
-    pub fn send_raw(&self, request: &[u8], timeout: Duration) -> rusb::Result<()> {
+    pub fn send_raw(&self, request: &[u8]) -> rusb::Result<()> {
         for packet in Encoder::new(request) {
-            let written = self.handle.write_bulk(EP_OUT, &packet, timeout)?;
+            let written = self.handle.write_bulk(EP_OUT, &packet, self.timeout)?;
             if written != MAX_PACKET_SIZE {
                 log::error!("Sent only {written} bytes instead of {MAX_PACKET_SIZE}.");
                 return Err(Error::Io);
@@ -192,11 +193,11 @@ impl<T: UsbContext> Connection<T> {
     }
 
     /// Receives a raw response (possibly tunneled) from the device.
-    pub fn receive_raw(&self, timeout: Duration) -> rusb::Result<Vec<u8>> {
+    pub fn receive_raw(&self) -> rusb::Result<Vec<u8>> {
         let mut decoder = Decoder::default();
         loop {
             let mut packet = [0; MAX_PACKET_SIZE];
-            let read = self.handle.read_bulk(EP_IN, &mut packet, timeout)?;
+            let read = self.handle.read_bulk(EP_IN, &mut packet, self.timeout)?;
             if read != MAX_PACKET_SIZE {
                 log::error!("Received only {read} bytes instead of {MAX_PACKET_SIZE}.");
                 return Err(Error::Io);
@@ -213,13 +214,13 @@ impl<T: UsbContext> Connection<T> {
     }
 
     /// FOR TESTING ONLY: Writes a packet directly to the endpoint.
-    pub fn testonly_write(&self, packet: &[u8], timeout: Duration) -> rusb::Result<usize> {
-        self.handle.write_bulk(EP_OUT, packet, timeout)
+    pub fn testonly_write(&self, packet: &[u8]) -> rusb::Result<usize> {
+        self.handle.write_bulk(EP_OUT, packet, self.timeout)
     }
 
     /// FOR TESTING ONLY: Reads a packet directly from the endpoint.
-    pub fn testonly_read(&self, packet: &mut [u8], timeout: Duration) -> rusb::Result<usize> {
-        self.handle.read_bulk(EP_IN, packet, timeout)
+    pub fn testonly_read(&self, packet: &mut [u8]) -> rusb::Result<usize> {
+        self.handle.read_bulk(EP_IN, packet, self.timeout)
     }
 }
 

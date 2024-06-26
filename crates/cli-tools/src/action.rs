@@ -15,13 +15,12 @@
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::Duration;
 
 use anyhow::{bail, ensure, Result};
 use cargo_metadata::{Metadata, MetadataCommand};
 use clap::{ValueEnum, ValueHint};
 use rusb::UsbContext;
-use wasefire_protocol::{applet, AppletRequest, AppletResponse};
+use wasefire_protocol::{self as service, applet, Api};
 use wasefire_protocol_usb::Connection;
 
 use crate::{cmd, fs};
@@ -40,10 +39,6 @@ pub struct AppletRpc {
     #[arg(long, value_hint = ValueHint::AnyPath)]
     output: Option<PathBuf>,
 
-    /// Timeout to send the request and try receiving the response.
-    #[arg(long, value_parser = humantime::parse_duration, default_value = "1s")]
-    timeout: Duration,
-
     /// Number of retries to receive a response.
     #[arg(long, default_value = "3")]
     retries: usize,
@@ -51,7 +46,7 @@ pub struct AppletRpc {
 
 impl AppletRpc {
     pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
-        let AppletRpc { applet, input, output, timeout, retries } = self;
+        let AppletRpc { applet, input, output, retries } = self;
         let applet_id = match applet {
             Some(_) => bail!("applet identifiers are not supported yet"),
             None => applet::AppletId,
@@ -61,9 +56,9 @@ impl AppletRpc {
             None => fs::read_stdin()?,
         };
         let request = applet::Request { applet_id, request: &input };
-        connection.call::<AppletRequest>(request, timeout)?.get();
+        connection.call::<service::AppletRequest>(request)?.get();
         for _ in 0 .. retries {
-            let response = connection.call::<AppletResponse>(applet_id, timeout)?;
+            let response = connection.call::<service::AppletResponse>(applet_id)?;
             if let Some(response) = response.get().response {
                 match output {
                     Some(path) => fs::write(path, response)?,
@@ -73,6 +68,24 @@ impl AppletRpc {
             }
         }
         bail!("did not receive a response after {retries} retries");
+    }
+}
+
+/// Reboots a platform.
+#[derive(clap::Args)]
+pub struct PlatformReboot {}
+
+impl PlatformReboot {
+    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+        let PlatformReboot {} = self;
+        connection.send(&Api::PlatformReboot(()))?;
+        match connection.receive::<service::PlatformReboot>() {
+            Ok(x) => *x.get(),
+            Err(e) => match e.downcast_ref::<rusb::Error>() {
+                Some(rusb::Error::Timeout | rusb::Error::NoDevice) => Ok(()),
+                _ => Err(e),
+            },
+        }
     }
 }
 

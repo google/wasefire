@@ -4,6 +4,8 @@
 
 ### Minor
 
+- Implement `platform-reboot` command
+- Add `--timeout` for platform protocol timeout
 - Implement `applet-rpc` command
 - Add `--serial` and `WASEFIRE_SERIAL` to select the platform
 - Implement `platform-list` command
