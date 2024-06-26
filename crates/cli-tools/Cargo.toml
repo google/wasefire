@@ -15,7 +15,6 @@ categories = ["command-line-utilities", "embedded", "wasm"]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
 cargo_metadata = { version = "0.18.1", default-features = false }
 clap = { version = "4.5.4", default-features = false, features = ["derive", "std"] }
-humantime = { version = "2.1.0", default-features = false }
 rusb = { version = "0.9.4", default-features = false }
 serde = { version = "1.0.202", default-features = false, features = ["derive"] }
 toml = { version = "0.8.13", default-features = false, features = ["display", "parse"] }
