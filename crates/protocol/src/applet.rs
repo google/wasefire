@@ -25,7 +25,7 @@ pub struct Response<'a> {
     pub response: Option<&'a [u8]>,
 }
 
-#[derive(Debug, Wire)]
+#[derive(Debug, Copy, Clone, Wire)]
 pub struct AppletId;
 
 #[derive(Debug, Wire)]

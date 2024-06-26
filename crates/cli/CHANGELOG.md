@@ -4,6 +4,8 @@
 
 ### Minor
 
+- Implement `applet-rpc` command
+- Add `--serial` and `WASEFIRE_SERIAL` to select the platform
 - Implement `platform-list` command
 - Support creating, building, and testing a Rust applet
 - Support generating a shell completion file
