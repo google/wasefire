@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `platform-rpc` for vendor-specific platform RPCs
 - Implement `platform-reboot` command
 - Add `--timeout` for platform protocol timeout
 - Implement `applet-rpc` command

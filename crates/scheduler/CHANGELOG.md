@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support `PlatformVendor` protocol
 - Support `platform::serial()` function
 - Migrate `platform::version()` to the new board and applet APIs
 - Support `store::{keys,clear}()` functions

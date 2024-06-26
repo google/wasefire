@@ -118,6 +118,13 @@ pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event
                 version: &board::Platform::<B>::version(),
             });
         }
+        Api::PlatformVendor(request) => {
+            use wasefire_board_api::platform::protocol::Api as _;
+            match board::platform::Protocol::<B>::vendor(request) {
+                Ok(response) => reply::<B, service::PlatformVendor>(&response),
+                Err(error) => reply_error::<B>(error),
+            }
+        }
         #[cfg(not(feature = "_test"))]
         _ => reply_error::<B>(Error::internal(Code::NotImplemented)),
     }

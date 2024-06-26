@@ -73,6 +73,7 @@ enum Action {
     PlatformUpdate,
 
     PlatformReboot(action::PlatformReboot),
+    PlatformRpc(action::PlatformRpc),
     RustAppletNew(action::RustAppletNew),
     RustAppletBuild(action::RustAppletBuild),
     RustAppletTest(action::RustAppletTest),
@@ -123,6 +124,7 @@ fn main() -> Result<()> {
         Action::PlatformList => platform_list(flags.options.timeout),
         Action::PlatformUpdate => bail!("not implemented yet"),
         Action::PlatformReboot(x) => x.run(CONNECTION.lock().unwrap().get()?),
+        Action::PlatformRpc(x) => x.run(CONNECTION.lock().unwrap().get()?),
         Action::RustAppletNew(x) => x.run(),
         Action::RustAppletBuild(x) => x.run(dir),
         Action::RustAppletTest(x) => x.run(dir),

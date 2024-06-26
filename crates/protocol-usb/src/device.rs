@@ -38,6 +38,7 @@ pub struct Impl<'a, B: UsbBus, T: HasRpc<'a, B>> {
 
 pub trait HasRpc<'a, B: UsbBus> {
     fn with_rpc<R>(f: impl FnOnce(&mut Rpc<'a, B>) -> R) -> R;
+    fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error>;
 }
 
 impl<'a, B: UsbBus, T: HasRpc<'a, B>> Api for Impl<'a, B, T> {
@@ -67,6 +68,10 @@ impl<'a, B: UsbBus, T: HasRpc<'a, B>> Api for Impl<'a, B, T> {
                 Ok(())
             }
         })
+    }
+
+    fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error> {
+        T::vendor(request)
     }
 }
 
