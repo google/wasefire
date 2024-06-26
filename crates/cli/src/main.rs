@@ -72,9 +72,7 @@ enum Action {
     /// Updates a connected platform.
     PlatformUpdate,
 
-    /// Reboots a connected platform.
     PlatformReboot(action::PlatformReboot),
-
     RustAppletNew(action::RustAppletNew),
     RustAppletBuild(action::RustAppletBuild),
     RustAppletTest(action::RustAppletTest),

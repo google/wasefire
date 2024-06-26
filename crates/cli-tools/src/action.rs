@@ -71,7 +71,7 @@ impl AppletRpc {
     }
 }
 
-/// Reboots a platform.
+/// Reboots a connected platform.
 #[derive(clap::Args)]
 pub struct PlatformReboot {}
 
