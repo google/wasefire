@@ -123,7 +123,12 @@ impl RustAppletBuild {
         }
         cargo.args(&self.cargo);
         if self.prod {
-            cargo.args(["-Zbuild-std=core,alloc", "-Zbuild-std-features=panic_immediate_abort"]);
+            cargo.arg("-Zbuild-std=core,alloc");
+            let mut features = "-Zbuild-std-features=panic_immediate_abort".to_string();
+            if self.opt_level.map_or(false, OptLevel::optimize_for_size) {
+                features.push_str(",optimize_for_size");
+            }
+            cargo.arg(features);
         } else {
             cargo.env("WASEFIRE_DEBUG", "");
         }
@@ -180,6 +185,13 @@ pub enum OptLevel {
     Os,
     #[value(name = "z")]
     Oz,
+}
+
+impl OptLevel {
+    /// Returns whether the opt-level optimizes for size.
+    pub fn optimize_for_size(self) -> bool {
+        matches!(self, OptLevel::Os | OptLevel::Oz)
+    }
 }
 
 impl Display for OptLevel {
