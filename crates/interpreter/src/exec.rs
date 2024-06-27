@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::boxed::Box;
 // TODO: Some toctou could be used instead of panic.
 use alloc::vec;
 use alloc::vec::Vec;
@@ -724,6 +725,7 @@ enum ThreadResult<'m> {
     Continue(Thread<'m>),
     Done(Vec<Val>),
     Host,
+    TailCall(Box<dyn FnOnce(&mut Store<'m>) -> Result<ThreadResult<'m>, Error>>),
 }
 
 impl<'m> Thread<'m> {
@@ -751,17 +753,22 @@ impl<'m> Thread<'m> {
     }
 
     fn run<'a>(mut self, store: &'a mut Store<'m>) -> Result<RunResult<'a, 'm>, Error> {
+        let mut f: Option<Box<dyn FnOnce(&mut Store<'m>) -> Result<ThreadResult<'m>, Error>>> = None;
         loop {
-            // TODO: When trapping, we could return some CoreDump<'m> that contains the Thread<'m>.
-            // This permits to dump the frames.
-            match self.step(store)? {
+            let result = if let Some(func) = f.take() {
+                func(store)?
+            } else {
+                self.step(store)?
+            };
+
+            match result {
                 ThreadResult::Continue(x) => self = x,
                 ThreadResult::Done(x) => return Ok(RunResult::Done(x)),
                 ThreadResult::Host => return Ok(RunResult::Host(Call { store })),
+                ThreadResult::TailCall(next_f) => f = Some(next_f),
             }
         }
     }
-
     fn step(mut self, store: &mut Store<'m>) -> Result<ThreadResult<'m>, Error> {
         use Instr::*;
         let saved = self.parser.save();
@@ -795,7 +802,17 @@ impl<'m> Thread<'m> {
                 return Ok(self.pop_label(inst, ls.get(i).cloned().unwrap_or(ln)));
             }
             Return => return Ok(self.exit_frame()),
-            Call(x) => return self.invoke(store, store.func_ptr(inst_id, x)),
+            Call(x) => {
+                return if self.parser.is_tail_call() {
+                    // Wrap the invoke call in a closure (trampoline)
+                    Ok(ThreadResult::TailCall(Box::new(move |store| {
+                        self.invoke(store, store.func_ptr(inst_id, x))
+                    })))
+                } else {
+                    self.invoke(store, store.func_ptr(inst_id, x))
+                }
+            }
+            // similar changes for CallIndirect
             CallIndirect(x, y) => {
                 let i = self.pop_value().unwrap_i32();
                 let x = match store.table(inst_id, x).elems.get(i as usize) {
