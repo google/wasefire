@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use gloo_utils::window;
 use log::{info, warn};
+use wasm_bindgen::UnwrapThrowExt;
 use web_common::{Command, Event};
 use yew::prelude::*;
 
@@ -22,7 +24,12 @@ use crate::hooks::use_runner_connection;
 
 #[function_component(App)]
 pub fn app() -> Html {
-    let runner_connection = use_runner_connection(String::from("ws://127.0.0.1:5000/board"));
+    let runner_connection = {
+        let host = window().location().host().unwrap_throw();
+        let web_socket_url = format!("ws://{host}/board");
+        info!("Connecting to runner at {web_socket_url}");
+        use_runner_connection(String::from(web_socket_url))
+    };
 
     let on_new_console_msg = Callback::from({
         let runner_connection = runner_connection.clone();
