@@ -7,7 +7,7 @@ publish = true
 edition = "2021"
 description = "Key-value store for SLC flash storage"
 repository = "https://github.com/google/wasefire"
-include = ["/src"]
+include = ["/LICENSE", "/src/"]
 keywords = ["embedded", "no-std"]
 categories = ["embedded", "no-std"]
 

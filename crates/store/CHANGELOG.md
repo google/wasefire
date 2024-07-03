@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Publish LICENSE file
 - Fix lints
 - Update dependencies
 - Move lints to `Cargo.toml` and use common Wasefire lints
