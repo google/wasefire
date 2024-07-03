@@ -20,6 +20,7 @@ wasefire-board-api = { path = "../board", features = ["std"] }
 wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
+wasefire-cli-tools = {path = "../cli-tools"}
 wasefire-protocol-usb = { path = "../protocol-usb", features = ["device", "std"], optional = true }
 wasefire-store = { path = "../store", features = ["std"] }
 web-server = { path = "crates/web-server", optional = true }
