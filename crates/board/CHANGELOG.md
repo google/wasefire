@@ -18,6 +18,7 @@
 
 ### Patch
 
+- Publish LICENSE file
 - Use common Wasefire lints and make most dependencies optional
 - Change `Id::new()` to return `OutOfBounds` error instead of `InvalidArgument`
 - Update dependencies

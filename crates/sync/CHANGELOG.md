@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Publish LICENSE file
 - Depend on `alloc` to silence `unused-crate-dependencies` false positive
 - Use common Wasefire lints
 

@@ -7,7 +7,7 @@ publish = true
 edition = "2021"
 description = "Wasefire CLI to manage applets and platforms"
 repository = "https://github.com/google/wasefire"
-include = ["/src"]
+include = ["/LICENSE", "/src/"]
 keywords = ["cli", "embedded", "framework", "wasm"]
 categories = ["command-line-utilities", "embedded", "wasm"]
 

@@ -16,6 +16,7 @@
 
 ### Patch
 
+- Publish LICENSE file
 - Update dependencies
 - Use common Wasefire lints
 - Use `*const void` instead of `*const u8` for opaque data in `platform::protocol`

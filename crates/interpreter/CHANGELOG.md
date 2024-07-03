@@ -13,6 +13,7 @@
 
 ### Patch
 
+- Publish LICENSE file
 - Fix lints
 - Support aligned load and store in validation
 - Update dependencies

@@ -23,6 +23,7 @@
 
 ### Patch
 
+- Publish LICENSE file
 - Move lints to `Cargo.toml`, use common Wasefire lints, and make most dependencies optional
 - Update dependencies
 
