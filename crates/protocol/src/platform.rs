@@ -14,13 +14,8 @@
 
 use wasefire_wire::Wire;
 
-pub trait Direction: 'static {
-    /// Returns the appropriate message type given a service.
-    type Type<'a, T: Service>: Wire<'a>;
-}
-
-/// Service description.
-pub trait Service {
-    type Request<'a>: Wire<'a>;
-    type Response<'a>: Wire<'a>;
+#[derive(Debug, Wire)]
+pub struct Info<'a> {
+    pub serial: &'a [u8],
+    pub version: &'a [u8],
 }

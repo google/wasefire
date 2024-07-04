@@ -395,7 +395,11 @@ impl RunnerOptions {
             rustflags.push("-C link-arg=-Tlink.x".to_string());
             if main.release {
                 cargo.arg("-Zbuild-std=core,alloc");
-                cargo.arg("-Zbuild-std-features=panic_immediate_abort");
+                let mut features = "-Zbuild-std-features=panic_immediate_abort".to_string();
+                if self.opt_level.map_or(false, action::OptLevel::optimize_for_size) {
+                    features.push_str(",optimize_for_size");
+                }
+                cargo.arg(features);
                 cargo.arg("--config=profile.release.codegen-units=1");
                 cargo.arg("--config=profile.release.lto=true");
             } else {

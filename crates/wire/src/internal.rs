@@ -25,9 +25,8 @@ pub use crate::writer::Writer;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-pub trait Wire<'a>: Sized {
-    #[cfg(feature = "schema")]
-    type Static: 'static;
+pub trait Wire<'a>: 'a + Sized {
+    type Type<'b>: 'b + Sized + Wire<'b>; // Type<'a> == Self
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules);
     fn encode(&self, writer: &mut Writer<'a>) -> Result<()>;
@@ -58,7 +57,7 @@ mod schema {
     }
 
     pub fn type_id<'a, T: Wire<'a>>() -> TypeId {
-        TypeId::of::<T::Static>()
+        TypeId::of::<T::Type<'static>>()
     }
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq, wasefire_wire_derive::Wire)]

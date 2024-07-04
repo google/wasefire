@@ -7,21 +7,22 @@ publish = true
 edition = "2021"
 description = "Wasefire protocol between platform and host"
 repository = "https://github.com/google/wasefire"
-include = ["/src"]
+include = ["/LICENSE", "/src/"]
 keywords = ["embedded", "framework", "no-std"]
 categories = ["embedded", "no-std"]
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["device", "host"]
 
 [dependencies]
 wasefire-error = { version = "0.1.1-git", path = "../error" }
 wasefire-wire = { version = "0.1.0-git", path = "../wire" }
 
 [features]
+_descriptor = []
 _exhaustive = []
-full = []
-std = ["wasefire-wire/std"]
+device = []
+host = []
 
 [lints]
 clippy.unit-arg = "allow"

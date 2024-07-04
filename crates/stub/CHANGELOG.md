@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Publish LICENSE file
 - Use common Wasefire lints
 - Update dependencies
 

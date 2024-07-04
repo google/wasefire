@@ -12,14 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![feature(try_find)]
+
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use std::time::Duration;
 
 use anyhow::{bail, Result};
 use clap::{CommandFactory, Parser, ValueHint};
 use clap_complete::Shell;
+use data_encoding::HEXLOWER_PERMISSIVE as HEX;
+use rusb::GlobalContext;
 use wasefire_cli_tools::{action, fs};
+use wasefire_protocol::{self as service, platform};
+use wasefire_protocol_usb::{Candidate, Connection};
 
 #[derive(Parser)]
 #[command(version, about)]
@@ -32,7 +40,15 @@ struct Flags {
 }
 
 #[derive(clap::Args)]
-struct Options {}
+struct Options {
+    /// Serial of the platform to connect to.
+    #[arg(long, env = "WASEFIRE_SERIAL")]
+    serial: Option<String>,
+
+    /// Timeout to send or receive on the platform protocol.
+    #[arg(long, value_parser = humantime::parse_duration, default_value = "1s")]
+    timeout: Duration,
+}
 
 #[derive(clap::Subcommand)]
 enum Action {
@@ -48,12 +64,16 @@ enum Action {
     /// Uninstalls an applet from a platform.
     AppletUninstall,
 
+    AppletRpc(action::AppletRpc),
+
     /// Lists the connected platforms.
     PlatformList,
 
     /// Updates a connected platform.
     PlatformUpdate,
 
+    PlatformReboot(action::PlatformReboot),
+    PlatformRpc(action::PlatformRpc),
     RustAppletNew(action::RustAppletNew),
     RustAppletBuild(action::RustAppletBuild),
     RustAppletTest(action::RustAppletTest),
@@ -70,12 +90,6 @@ struct Completion {
     /// Where to generate the completion file.
     #[arg(long, default_value = "-", value_hint = ValueHint::FilePath)]
     output: PathBuf,
-}
-
-impl Options {
-    fn run(&self) -> Result<()> {
-        Ok(())
-    }
 }
 
 impl Completion {
@@ -99,18 +113,96 @@ impl Completion {
 
 fn main() -> Result<()> {
     let flags = Flags::parse();
-    flags.options.run()?;
+    CONNECTION.lock().unwrap().set(flags.options.timeout, flags.options.serial);
     let dir = std::env::current_dir()?;
     match flags.action {
-        Action::AppletList
-        | Action::AppletInstall
-        | Action::AppletUpdate
-        | Action::AppletUninstall
-        | Action::PlatformList
-        | Action::PlatformUpdate => bail!("not implemented yet"),
+        Action::AppletList => bail!("not implemented yet"),
+        Action::AppletInstall => bail!("not implemented yet"),
+        Action::AppletUpdate => bail!("not implemented yet"),
+        Action::AppletUninstall => bail!("not implemented yet"),
+        Action::AppletRpc(x) => x.run(CONNECTION.lock().unwrap().get()?),
+        Action::PlatformList => platform_list(flags.options.timeout),
+        Action::PlatformUpdate => bail!("not implemented yet"),
+        Action::PlatformReboot(x) => x.run(CONNECTION.lock().unwrap().get()?),
+        Action::PlatformRpc(x) => x.run(CONNECTION.lock().unwrap().get()?),
         Action::RustAppletNew(x) => x.run(),
         Action::RustAppletBuild(x) => x.run(dir),
         Action::RustAppletTest(x) => x.run(dir),
         Action::Completion(x) => x.run(),
     }
+}
+
+enum GlobalConnection {
+    Invalid,
+    Ready { timeout: Duration, serial: Option<String> },
+    Connected { connection: Connection<GlobalContext> },
+}
+
+impl GlobalConnection {
+    fn set(&mut self, timeout: Duration, serial: Option<String>) {
+        match self {
+            GlobalConnection::Invalid => *self = GlobalConnection::Ready { timeout, serial },
+            _ => unreachable!(),
+        }
+    }
+
+    fn get(&mut self) -> Result<&Connection<GlobalContext>> {
+        if let GlobalConnection::Ready { timeout, serial } = self {
+            *self =
+                GlobalConnection::Connected { connection: connect(*timeout, serial.as_deref())? };
+        }
+        match self {
+            GlobalConnection::Connected { connection } => Ok(connection),
+            _ => unreachable!(),
+        }
+    }
+}
+
+static CONNECTION: Mutex<GlobalConnection> = Mutex::new(GlobalConnection::Invalid);
+
+fn platform_list(timeout: Duration) -> Result<()> {
+    let context = GlobalContext::default();
+    let candidates = wasefire_protocol_usb::list(&context)?;
+    println!("There are {} connected platforms:", candidates.len());
+    for candidate in candidates {
+        let connection = candidate.clone().connect(timeout)?;
+        let info = connection.call::<service::PlatformInfo>(())?;
+        let platform::Info { serial, version } = info.get();
+        let serial = HEX.encode(serial);
+        let version = HEX.encode(version);
+        println!("- serial={serial} version={version}");
+    }
+    Ok(())
+}
+
+fn connect(timeout: Duration, serial: Option<&str>) -> Result<Connection<GlobalContext>> {
+    let context = GlobalContext::default();
+    let mut candidates = wasefire_protocol_usb::list(&context)?;
+    let candidate = match (serial, candidates.len()) {
+        (None, 0) => bail!("no connected platforms"),
+        (None, 1) => candidates.pop().unwrap(),
+        (None, n) => {
+            eprintln!("Choose one of the {n} connected platforms using its --serial option:");
+            for candidate in candidates {
+                eprintln!("    --serial={}", get_serial(&candidate, timeout)?);
+            }
+            bail!("more than one connected platform");
+        }
+        (Some(serial), _) => {
+            match candidates
+                .into_iter()
+                .try_find(|x| anyhow::Ok(get_serial(x, timeout)? == serial))?
+            {
+                Some(x) => x,
+                None => bail!("no connected platform with serial={serial}"),
+            }
+        }
+    };
+    Ok(candidate.connect(timeout)?)
+}
+
+fn get_serial(candidate: &Candidate<GlobalContext>, timeout: Duration) -> Result<String> {
+    let connection = candidate.clone().connect(timeout)?;
+    let info = connection.call::<service::PlatformInfo>(())?;
+    Ok(HEX.encode(info.get().serial))
 }

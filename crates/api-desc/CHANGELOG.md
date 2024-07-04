@@ -9,11 +9,14 @@
 
 ### Minor
 
+- Add `platform::serial()` function
+- Change `platform::version()` to allocate the result instead
 - Add `store::{keys,clear}()` functions
 - Add `platform::protocol` module and `api-platform-protocol` feature for applet RPC
 
 ### Patch
 
+- Publish LICENSE file
 - Update dependencies
 - Use common Wasefire lints
 - Use `*const void` instead of `*const u8` for opaque data in `platform::protocol`

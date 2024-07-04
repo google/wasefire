@@ -9,12 +9,13 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 wasefire-cli-tools = { path = "../../../cli-tools" }
-wasefire-protocol = { path = "../..", features = ["std"] }
-wasefire-wire = { path = "../../../wire", features = ["schema", "std"] }
-yoke = { version = "0.7.3", features = ["derive"] }
+wasefire-error = { path = "../../../error" }
+wasefire-protocol = { path = "../..", features = ["_descriptor"] }
+wasefire-wire = { path = "../../../wire", features = ["schema"] }
 
 [features]
-full = ["wasefire-protocol/full"]
+device = ["wasefire-protocol/device"]
+host = ["wasefire-protocol/host"]
 
 [lints]
 clippy.unit-arg = "allow"

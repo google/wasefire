@@ -22,6 +22,7 @@ extern crate alloc;
 
 pub use mutex::{Mutex, MutexGuard};
 pub use portable_atomic::*;
+pub use spin::Lazy;
 pub use take::TakeCell;
 
 mod mutex;

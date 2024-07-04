@@ -22,7 +22,7 @@ fn test_ok(item: syn::DeriveInput, mut expected: syn::ItemImpl) {
     let actual = derive_item(&item).unwrap();
     expected.attrs.push(parse_quote!(#[automatically_derived]));
     #[cfg(not(feature = "schema"))]
-    let _ = expected.items.drain(0 .. 2);
+    let _ = expected.items.remove(1);
     if actual == expected {
         return;
     }
@@ -53,10 +53,10 @@ test_ok! {
     fn unit_struct() {}
     struct Foo;
     impl<'wire> wasefire_wire::internal::Wire<'wire> for Foo {
-        type Static = Foo;
+        type Type<'_wire> = Foo;
         fn schema(rules: &mut wasefire_wire::internal::Rules) {
             let fields = wasefire_wire::internal::Vec::new();
-            if rules.struct_::<Self::Static>(fields) {}
+            if rules.struct_::<Self::Type<'static>>(fields) {}
         }
         fn encode(&self, writer: &mut wasefire_wire::internal::Writer<'wire>) -> wasefire_wire::internal::Result<()> {
             let Foo = self;
@@ -73,10 +73,10 @@ test_ok! {
     #[wire(crate = wire)]
     enum Foo {}
     impl<'wire> wire::internal::Wire<'wire> for Foo {
-        type Static = Foo;
+        type Type<'_wire> = Foo;
         fn schema(rules: &mut wire::internal::Rules) {
             let variants = wire::internal::Vec::new();
-            if rules.enum_::<Self::Static>(variants) {}
+            if rules.enum_::<Self::Type<'static>>(variants) {}
         }
         fn encode(&self, writer: &mut wire::internal::Writer<'wire>) -> wire::internal::Result<()> {
             match *self {}
@@ -98,12 +98,12 @@ test_ok! {
         baz: u32,
     }
     impl<'wire> wire::internal::Wire<'wire> for Foo {
-        type Static = Foo;
+        type Type<'_wire> = Foo;
         fn schema(rules: &mut wire::internal::Rules) {
             let mut fields = wire::internal::Vec::with_capacity(2usize);
             fields.push((Some("bar"), wire::internal::type_id::<u8>()));
             fields.push((Some("baz"), wire::internal::type_id::<u32>()));
-            if rules.struct_::<Self::Static>(fields) {
+            if rules.struct_::<Self::Type<'static>>(fields) {
                 wire::internal::schema::<u8>(rules);
                 wire::internal::schema::<u32>(rules);
             }
@@ -130,7 +130,7 @@ test_ok! {
         Some(T),
     }
     impl<'wire, T> wire::internal::Wire<'wire> for Option<T> where T: Wire<'wire> {
-        type Static = Option<T::Static>;
+        type Type<'_wire> = Option<T::Type<'_wire>>;
         fn schema(rules: &mut wire::internal::Rules) {
             let mut variants = wire::internal::Vec::with_capacity(2usize);
             {
@@ -142,7 +142,7 @@ test_ok! {
                 fields.push((None, wire::internal::type_id::<T>()));
                 variants.push(("Some", 1u32, fields));
             }
-            if rules.enum_::<Self::Static>(variants) {
+            if rules.enum_::<Self::Type<'static>>(variants) {
                 wire::internal::schema::<T>(rules);
             }
         }
@@ -185,7 +185,7 @@ test_ok! {
     impl<'wire, T, E> wire::internal::Wire<'wire> for Result<T, E>
     where T: Wire<'wire>, E: Wire<'wire>
     {
-        type Static = Result<T::Static, E>;
+        type Type<'_wire> = Result<T::Type<'_wire>, E>;
         fn schema(rules: &mut wire::internal::Rules) {
             let mut variants = wire::internal::Vec::with_capacity(2usize);
             {
@@ -198,7 +198,7 @@ test_ok! {
                 fields.push((None, wire::internal::type_id::<E>()));
                 variants.push(("Err", 1u32, fields));
             }
-            if rules.enum_::<Self::Static>(variants) {
+            if rules.enum_::<Self::Type<'static>>(variants) {
                 wire::internal::schema::<T>(rules);
                 wire::internal::schema::<E>(rules);
             }
@@ -246,7 +246,7 @@ test_ok! {
         First,
     }
     impl<'wire> wire::internal::Wire<'wire> for Foo {
-        type Static = Foo;
+        type Type<'_wire> = Foo;
         fn schema(rules: &mut wire::internal::Rules) {
             let mut variants = wire::internal::Vec::with_capacity(3usize);
             {
@@ -264,7 +264,7 @@ test_ok! {
                 let fields = wire::internal::Vec::new();
                 variants.push(("First", 0u32, fields));
             }
-            if rules.enum_::<Self::Static>(variants) {
+            if rules.enum_::<Self::Type<'static>>(variants) {
                 wire::internal::schema::<u8>(rules);
             }
         }
