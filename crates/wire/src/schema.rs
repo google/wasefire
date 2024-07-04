@@ -48,7 +48,7 @@ impl View<'static> {
     pub fn new<'a, T: Wire<'a>>() -> View<'static> {
         let mut rules = Rules::default();
         T::schema(&mut rules);
-        Traverse::new(&rules).extract_or_empty(TypeId::of::<T::Static>())
+        Traverse::new(&rules).extract_or_empty(TypeId::of::<T::Type<'static>>())
     }
 }
 
@@ -404,7 +404,7 @@ impl Drop for ViewFrameLock {
 struct ViewDecoder;
 
 impl<'a> internal::Wire<'a> for ViewDecoder {
-    type Static = ViewDecoder;
+    type Type<'b> = ViewDecoder;
     fn schema(_rules: &mut Rules) {
         unreachable!()
     }

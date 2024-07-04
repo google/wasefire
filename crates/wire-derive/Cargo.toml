@@ -7,7 +7,7 @@ publish = true
 edition = "2021"
 description = "Wasefire wire format derive macros"
 repository = "https://github.com/google/wasefire"
-include = ["/src"]
+include = ["/LICENSE", "/src/"]
 keywords = ["embedded", "framework", "no-std"]
 categories = ["embedded", "no-std"]
 
@@ -21,7 +21,16 @@ quote = { version = "1.0.35", default-features = false }
 [dependencies.syn]
 version = "2.0.48"
 default-features = false
-features = ["clone-impls", "derive", "full", "parsing", "printing", "proc-macro"]
+features = [
+  "clone-impls",
+  "derive",
+  "extra-traits",
+  "full",
+  "parsing",
+  "printing",
+  "proc-macro",
+  "visit-mut",
+]
 
 [dev-dependencies]
 prettyplease = "0.2.20"
@@ -29,8 +38,7 @@ similar-asserts = "1.5.0"
 
 [features]
 _dev = []
-_test = ["syn/extra-traits"]
-schema = ["syn/extra-traits", "syn/visit-mut"]
+schema = []
 
 [lints]
 clippy.unit-arg = "allow"

@@ -16,11 +16,107 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use anyhow::{ensure, Result};
+use anyhow::{bail, ensure, Result};
 use cargo_metadata::{Metadata, MetadataCommand};
 use clap::{ValueEnum, ValueHint};
+use rusb::UsbContext;
+use wasefire_protocol::{self as service, applet, Api};
+use wasefire_protocol_usb::Connection;
 
 use crate::{cmd, fs};
+
+/// Parameters for an applet or platform RPC.
+#[derive(clap::Args)]
+pub struct Rpc {
+    /// Reads the request from this file instead of standard input.
+    #[arg(long, value_hint = ValueHint::FilePath)]
+    input: Option<PathBuf>,
+
+    /// Writes the response to this file instead of standard output.
+    #[arg(long, value_hint = ValueHint::AnyPath)]
+    output: Option<PathBuf>,
+}
+
+impl Rpc {
+    fn read(&self) -> Result<Vec<u8>> {
+        match &self.input {
+            Some(path) => fs::read(path),
+            None => fs::read_stdin(),
+        }
+    }
+
+    fn write(&self, response: &[u8]) -> Result<()> {
+        match &self.output {
+            Some(path) => fs::write(path, response),
+            None => fs::write_stdout(response),
+        }
+    }
+}
+
+/// Calls an RPC to an applet on a platform.
+#[derive(clap::Args)]
+pub struct AppletRpc {
+    /// Applet identifier in the platform.
+    applet: Option<String>,
+
+    #[clap(flatten)]
+    rpc: Rpc,
+
+    /// Number of retries to receive a response.
+    #[arg(long, default_value = "3")]
+    retries: usize,
+}
+
+impl AppletRpc {
+    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+        let AppletRpc { applet, rpc, retries } = self;
+        let applet_id = match applet {
+            Some(_) => bail!("applet identifiers are not supported yet"),
+            None => applet::AppletId,
+        };
+        let request = applet::Request { applet_id, request: &rpc.read()? };
+        connection.call::<service::AppletRequest>(request)?.get();
+        for _ in 0 .. retries {
+            let response = connection.call::<service::AppletResponse>(applet_id)?;
+            if let Some(response) = response.get().response {
+                return rpc.write(response);
+            }
+        }
+        bail!("did not receive a response after {retries} retries");
+    }
+}
+
+/// Reboots a platform.
+#[derive(clap::Args)]
+pub struct PlatformReboot {}
+
+impl PlatformReboot {
+    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+        let PlatformReboot {} = self;
+        connection.send(&Api::PlatformReboot(()))?;
+        match connection.receive::<service::PlatformReboot>() {
+            Ok(x) => *x.get(),
+            Err(e) => match e.downcast_ref::<rusb::Error>() {
+                Some(rusb::Error::Timeout | rusb::Error::NoDevice) => Ok(()),
+                _ => Err(e),
+            },
+        }
+    }
+}
+
+/// Calls a vendor RPC on a platform.
+#[derive(clap::Args)]
+pub struct PlatformRpc {
+    #[clap(flatten)]
+    rpc: Rpc,
+}
+
+impl PlatformRpc {
+    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+        let PlatformRpc { rpc } = self;
+        rpc.write(connection.call::<service::PlatformVendor>(&rpc.read()?)?.get())
+    }
+}
 
 /// Creates a new Rust applet project.
 #[derive(clap::Args)]
@@ -123,7 +219,12 @@ impl RustAppletBuild {
         }
         cargo.args(&self.cargo);
         if self.prod {
-            cargo.args(["-Zbuild-std=core,alloc", "-Zbuild-std-features=panic_immediate_abort"]);
+            cargo.arg("-Zbuild-std=core,alloc");
+            let mut features = "-Zbuild-std-features=panic_immediate_abort".to_string();
+            if self.opt_level.map_or(false, OptLevel::optimize_for_size) {
+                features.push_str(",optimize_for_size");
+            }
+            cargo.arg(features);
         } else {
             cargo.env("WASEFIRE_DEBUG", "");
         }
@@ -180,6 +281,13 @@ pub enum OptLevel {
     Os,
     #[value(name = "z")]
     Oz,
+}
+
+impl OptLevel {
+    /// Returns whether the opt-level optimizes for size.
+    pub fn optimize_for_size(self) -> bool {
+        matches!(self, OptLevel::Os | OptLevel::Oz)
+    }
 }
 
 impl Display for OptLevel {

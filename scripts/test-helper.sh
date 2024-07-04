@@ -53,7 +53,7 @@ check_software_crypto() {
 }
 
 test_helper() {
-  _test_desc | grep -Ev 'cargo (check|test) --(lib|(bin|test|example)=[^ ]*)( |$)' \
+  _test_desc | grep -Ev 'cargo (check|(miri )?test) --(lib|(bin|test|example)=[^ ]*)( |$)' \
     && e 'Invalid description (invalid commands are listed above).'
   _test_ensure_lib
   _test_ensure_bins
@@ -61,6 +61,7 @@ test_helper() {
   _test_ensure_dir examples check example
   _test_desc | _test_check | grep 'cargo check' | sh -ex
   _test_desc | grep 'cargo test' | sh -ex
+  _test_desc | grep 'cargo miri test' | sh -ex
   x cargo fmt -- --check
   _test_desc | _test_check | _test_clippy | grep 'cargo clippy' | sh -ex
   if [ -e src/lib.rs -a "$(package_publish)" = true ]; then

@@ -19,5 +19,5 @@ set -e
 
 test_helper
 
-cargo test --bin=schema --features=full
-cargo test --bin=schema
+cargo test --bin=schema --features=host
+cargo test --bin=schema --features=device

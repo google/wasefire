@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Publish LICENSE file
 - Use common Wasefire lints
 - Return a user error instead of an internal error for enums `TryFrom`
 

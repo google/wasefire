@@ -7,7 +7,7 @@ publish = true
 edition = "2021"
 description = "Wasefire USB protocol between platform and host"
 repository = "https://github.com/google/wasefire"
-include = ["/src"]
+include = ["/LICENSE", "/src/"]
 keywords = ["embedded", "framework", "no-std"]
 categories = ["embedded", "no-std"]
 
@@ -18,11 +18,18 @@ rusb = { version = "0.9.4", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false, optional = true }
 wasefire-error = { version = "0.1.1-git", path = "../error", optional = true }
 wasefire-logger = { version = "0.1.5-git", path = "../logger" }
+wasefire-wire = { version = "0.1.0-git", path = "../wire", optional = true }
 
 [dependencies.wasefire-board-api]
 version = "0.7.0-git"
 path = "../board"
 features = ["api-platform-protocol"]
+optional = true
+
+[dependencies.wasefire-protocol]
+version = "0.1.0-git"
+path = "../protocol"
+features = ["host"]
 optional = true
 
 [features]
@@ -31,7 +38,7 @@ log = ["wasefire-board-api?/log", "wasefire-logger/log"]
 std = ["wasefire-board-api?/std"]
 # Exactly one of host or device must be selected.
 device = ["dep:usb-device", "dep:wasefire-board-api", "dep:wasefire-error"]
-host = ["dep:anyhow", "dep:rusb", "std"]
+host = ["dep:anyhow", "dep:rusb", "dep:wasefire-protocol", "dep:wasefire-wire", "std"]
 
 [lints]
 clippy.unit-arg = "allow"

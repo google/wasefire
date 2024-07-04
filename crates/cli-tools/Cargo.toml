@@ -7,7 +7,7 @@ publish = true
 edition = "2021"
 description = "Command-line utilities for Wasefire"
 repository = "https://github.com/google/wasefire"
-include = ["/src"]
+include = ["/LICENSE", "/src/"]
 keywords = ["cli", "embedded", "framework", "wasm"]
 categories = ["command-line-utilities", "embedded", "wasm"]
 
@@ -15,8 +15,15 @@ categories = ["command-line-utilities", "embedded", "wasm"]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
 cargo_metadata = { version = "0.18.1", default-features = false }
 clap = { version = "4.5.4", default-features = false, features = ["derive", "std"] }
+rusb = { version = "0.9.4", default-features = false }
 serde = { version = "1.0.202", default-features = false, features = ["derive"] }
 toml = { version = "0.8.13", default-features = false, features = ["display", "parse"] }
+wasefire-protocol = { version = "0.1.0-git", path = "../protocol" }
+
+[dependencies.wasefire-protocol-usb]
+version = "0.1.0-git"
+path = "../protocol-usb"
+features = ["host", "log"]
 
 [lints]
 clippy.unit-arg = "allow"

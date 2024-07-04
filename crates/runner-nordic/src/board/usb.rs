@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::boxed::Box;
+
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
 use wasefire_board_api::usb::Api;
+use wasefire_error::{Code, Error};
 use wasefire_protocol_usb::{HasRpc, Rpc};
 
 use crate::with_state;
@@ -32,6 +35,23 @@ impl Api for Impl {
 impl HasRpc<'static, Usb> for Impl {
     fn with_rpc<R>(f: impl FnOnce(&mut Rpc<'static, Usb>) -> R) -> R {
         with_state(|state| f(&mut state.protocol))
+    }
+
+    fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error> {
+        if let Some(request) = request.strip_prefix(b"echo ") {
+            let mut response = request.to_vec().into_boxed_slice();
+            for x in &mut response {
+                if x.is_ascii_alphabetic() {
+                    *x ^= 0x20;
+                }
+                if matches!(*x, b'I' | b'O' | b'i' | b'o') {
+                    *x ^= 0x6;
+                }
+            }
+            Ok(response)
+        } else {
+            Err(Error::user(Code::InvalidArgument))
+        }
     }
 }
 

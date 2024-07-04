@@ -7,7 +7,7 @@ publish = true
 edition = "2021"
 description = "Stubs for the Wasefire applet API"
 repository = "https://github.com/google/wasefire"
-include = ["/src"]
+include = ["/LICENSE", "/src/"]
 keywords = ["framework"]
 categories = []
 
