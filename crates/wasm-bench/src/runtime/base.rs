@@ -16,7 +16,7 @@ use alloc::vec;
 
 use wasefire_interpreter::{FuncType, Module, RunResult, Store, Val, ValType};
 
-pub fn run(wasm: &[u8]) -> f32 {
+pub(crate) fn run(wasm: &[u8]) -> f32 {
     const MEMORY_SIZE: usize = 0x10000;
     #[repr(align(16))]
     struct Memory([u8; MEMORY_SIZE]);

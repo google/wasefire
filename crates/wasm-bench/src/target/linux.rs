@@ -15,7 +15,7 @@
 use std::sync::OnceLock;
 use std::time::Instant;
 
-pub fn clock_ms() -> u64 {
+pub(crate) fn clock_ms() -> u64 {
     static START: OnceLock<Instant> = OnceLock::new();
     let start = *START.get_or_init(Instant::now);
     Instant::now().duration_since(start).as_millis() as u64

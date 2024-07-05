@@ -28,7 +28,7 @@ macro_rules! addr_of_sym {
     }};
 }
 
-pub fn init() {
+pub(crate) fn init() {
     #[cfg(feature = "target-nordic")]
     let (sheap, eheap) = (addr_of_sym!(__sheap), addr_of_sym!(__eheap));
     #[cfg(feature = "target-riscv")]
@@ -39,6 +39,6 @@ pub fn init() {
 }
 
 #[cfg(feature = "target-nordic")]
-pub fn usage() -> usize {
+pub(crate) fn usage() -> usize {
     ALLOCATOR.used()
 }

@@ -14,7 +14,7 @@
 
 use wasm3::{Environment, Module};
 
-pub fn run(wasm: &[u8]) -> f32 {
+pub(crate) fn run(wasm: &[u8]) -> f32 {
     let env = Environment::new().unwrap();
     let rt = env.create_runtime(4096).unwrap();
     let module = Module::parse(&env, wasm).unwrap();

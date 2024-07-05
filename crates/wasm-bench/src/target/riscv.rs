@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub fn clock_ms() -> u64 {
+use portable_atomic::AtomicU32;
+
+pub(crate) fn clock_ms() -> u64 {
     // TODO
     0
 }
+
+static _COUNT: AtomicU32 = AtomicU32::new(0);
 
 #[macro_export]
 macro_rules! println {
@@ -25,7 +29,7 @@ macro_rules! println {
     };
 }
 
-pub fn init() {
+pub(crate) fn init() {
     crate::allocator::init();
 }
 

@@ -18,7 +18,7 @@ use cortex_m::peripheral::SYST;
 use cortex_m_rt::exception;
 use panic_rtt_target as _;
 
-pub fn clock_ms() -> u64 {
+pub(crate) fn clock_ms() -> u64 {
     // The frequency is 64MHz and we want milli-seconds.
     (ticks() >> 6) / 1000
 }
@@ -28,7 +28,7 @@ macro_rules! println {
     ($($x:tt)*) => { rtt_target::rprintln!($($x)*) };
 }
 
-pub fn init() {
+pub(crate) fn init() {
     rtt_target::rtt_init_print!();
     crate::allocator::init();
     let c = nrf52840_hal::pac::CorePeripherals::take().unwrap();
