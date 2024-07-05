@@ -29,17 +29,23 @@ default-features = false
 features = ["build-bindgen", "use-32bit-slots"]
 optional = true
 
+[dependencies.wasmi]
+git = "https://github.com/wasmi-labs/wasmi.git"
+default-features = false
+optional = true
+
 [features]
 runtime-base = ["dep:wasefire-interpreter"]
 runtime-wasm3 = ["dep:wasm3"]
+runtime-wasmi = ["dep:wasmi"]
 target-linux = []
 target-nordic = [
-  "dep:cortex-m",
-  "dep:cortex-m-rt",
-  "dep:embedded-alloc",
-  "dep:nrf52840-hal",
-  "dep:panic-rtt-target",
-  "dep:rtt-target",
+    "dep:cortex-m",
+    "dep:cortex-m-rt",
+    "dep:embedded-alloc",
+    "dep:nrf52840-hal",
+    "dep:panic-rtt-target",
+    "dep:rtt-target",
 ]
 target-riscv = ["dep:embedded-alloc", "dep:portable-atomic", "dep:riscv", "dep:riscv-rt"]
 

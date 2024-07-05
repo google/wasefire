@@ -23,6 +23,7 @@ extern crate std;
 mod allocator;
 #[cfg_attr(feature = "runtime-base", path = "runtime/base.rs")]
 #[cfg_attr(feature = "runtime-wasm3", path = "runtime/wasm3.rs")]
+#[cfg_attr(feature = "runtime-wasmi", path = "runtime/wasmi.rs")]
 mod runtime;
 #[cfg_attr(feature = "target-linux", path = "target/linux.rs")]
 #[cfg_attr(feature = "target-nordic", path = "target/nordic.rs")]
