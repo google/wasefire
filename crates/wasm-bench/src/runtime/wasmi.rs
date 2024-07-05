@@ -14,7 +14,7 @@
 
 use wasmi::*;
 
-pub fn run(wasm: &[u8]) -> f32 {
+pub(crate) fn run(wasm: &[u8]) -> f32 {
     let engine = Engine::default();
     let module = Module::new(&engine, wasm).unwrap();
 
