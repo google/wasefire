@@ -49,7 +49,7 @@ target-nordic = [
 ]
 target-riscv = ["dep:embedded-alloc", "dep:portable-atomic", "dep:riscv", "dep:riscv-rt"]
 
-[profile.production]
+[profile.wasmi_optimization]
 codegen-units = 1
 incremental = false
 inherits = "release"
