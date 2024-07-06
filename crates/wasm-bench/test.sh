@@ -22,10 +22,6 @@ test_helper
 
 cargo test --bin=wasm-bench --features=target-linux,runtime-base
 cargo test --bin=wasm-bench --features=target-linux,runtime-wasm3
-# The tests-0 in CI executes "cargo check --profile=test
-# --bin=wasm-bench --features=target-linux,runtime-wasmi --profile=wasmi_optimization"
-# with error: the argument '--profile <PROFILE-NAME>' cannot be used multiple times".
-# cargo test --bin=wasm-bench --features=target-linux,runtime-wasmi --profile=wasmi_optimization
 cargo test --bin=wasm-bench --features=target-linux,runtime-wasmi
 cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-base
 # wasm3/source/wasm3.h:16:10: fatal error: 'stdlib.h' file not found
