@@ -40,12 +40,12 @@ runtime-wasm3 = ["dep:wasm3"]
 runtime-wasmi = ["dep:wasmi"]
 target-linux = []
 target-nordic = [
-    "dep:cortex-m",
-    "dep:cortex-m-rt",
-    "dep:embedded-alloc",
-    "dep:nrf52840-hal",
-    "dep:panic-rtt-target",
-    "dep:rtt-target",
+  "dep:cortex-m",
+  "dep:cortex-m-rt",
+  "dep:embedded-alloc",
+  "dep:nrf52840-hal",
+  "dep:panic-rtt-target",
+  "dep:rtt-target",
 ]
 target-riscv = ["dep:embedded-alloc", "dep:portable-atomic", "dep:riscv", "dep:riscv-rt"]
 
