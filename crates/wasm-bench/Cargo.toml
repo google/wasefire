@@ -49,6 +49,12 @@ target-nordic = [
 ]
 target-riscv = ["dep:embedded-alloc", "dep:portable-atomic", "dep:riscv", "dep:riscv-rt"]
 
+[profile.production]
+codegen-units = 1
+incremental = false
+inherits = "release"
+lto = true
+
 [lints]
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
