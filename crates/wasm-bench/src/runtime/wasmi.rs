@@ -21,7 +21,8 @@ pub(crate) fn run(wasm: &[u8]) -> f32 {
     let mut store = Store::new(&engine, ());
     let mut linker = <Linker<()>>::new(&engine);
 
-    let clock_ms = Func::wrap(&mut store, move |_caller: Caller<'_, ()>| -> u64 { crate::target::clock_ms() });
+    let clock_ms =
+        Func::wrap(&mut store, move |_caller: Caller<'_, ()>| -> u64 { crate::target::clock_ms() });
     linker.define("env", "clock_ms", clock_ms).unwrap();
 
     let instance = linker.instantiate(&mut store, &module).unwrap().start(&mut store).unwrap();
