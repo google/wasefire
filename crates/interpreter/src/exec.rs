@@ -17,7 +17,23 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 #[cfg(feature = "threads")]
-use portable_atomic::*;
+use portable_atomic::AtomicI16;
+#[cfg(feature = "threads")]
+use portable_atomic::AtomicI32;
+#[cfg(feature = "threads")]
+use portable_atomic::AtomicI64;
+#[cfg(feature = "threads")]
+use portable_atomic::AtomicI8;
+#[cfg(feature = "threads")]
+use portable_atomic::AtomicU16;
+#[cfg(feature = "threads")]
+use portable_atomic::AtomicU32;
+#[cfg(feature = "threads")]
+use portable_atomic::AtomicU64;
+#[cfg(feature = "threads")]
+use portable_atomic::AtomicU8;
+#[cfg(feature = "threads")]
+use portable_atomic::Ordering;
 
 use crate::error::*;
 use crate::module::*;
@@ -859,6 +875,7 @@ impl<'m> Thread<'m> {
             }
             MemorySize => self.push_value(Val::I32(store.mem(inst_id, 0).size())),
             MemoryGrow => {
+                // TODO(threads): Add mutex for growing shared memory.
                 let n = self.pop_value().unwrap_i32();
                 self.push_value(Val::I32(grow(store.mem(inst_id, 0), n, ())));
             }
@@ -968,38 +985,42 @@ impl<'m> Thread<'m> {
                 table.elems[i ..][.. n].fill(val);
             }
             #[cfg(feature = "threads")]
-            AtomicNotify(m) => {
-                self.atomic_notify(store.mem(inst_id, 0), m)?;
-            }
+            AtomicNotify(m) => self.atomic_notify(store.mem(inst_id, 0), m)?,
             #[cfg(feature = "threads")]
             AtomicWait(n, m) => {
-                self.atomic_wait(store.mem(inst_id, 0), NumType::i(n), n.into(), m)?;
+                self.atomic_wait(store.mem(inst_id, 0), NumType::i(n), n.into(), m)?
             }
+
             #[cfg(feature = "threads")]
-            AtomicFence => {}
+            AtomicFence => (),
             #[cfg(feature = "threads")]
             AtomicLoad(n, m) => {
-                self.atomic_load(store.mem(inst_id, 0), NumType::i(n), n.into(), m)?;
+                self.atomic_load(store.mem(inst_id, 0), NumType::i(n), n.into(), m)?
             }
+
             #[cfg(feature = "threads")]
             AtomicLoad_(b, m) => {
-                self.atomic_load(store.mem(inst_id, 0), NumType::i(b.into()), b.into(), m)?;
+                self.atomic_load(store.mem(inst_id, 0), NumType::i(b.into()), b.into(), m)?
             }
+
             #[cfg(feature = "threads")]
             AtomicStore(n, m) => {
-                self.atomic_store(store.mem(inst_id, 0), NumType::i(n), n.into(), m)?;
+                self.atomic_store(store.mem(inst_id, 0), NumType::i(n), n.into(), m)?
             }
+
             #[cfg(feature = "threads")]
             AtomicStore_(b, m) => {
-                self.atomic_store(store.mem(inst_id, 0), NumType::i(b.into()), b.into(), m)?;
+                self.atomic_store(store.mem(inst_id, 0), NumType::i(b.into()), b.into(), m)?
             }
+
             #[cfg(feature = "threads")]
             AtomicOp(n, op, m) => {
-                self.atomic_binop(op, store.mem(inst_id, 0), NumType::i(n), n.into(), m)?;
+                self.atomic_binop(op, store.mem(inst_id, 0), NumType::i(n), n.into(), m)?
             }
+
             #[cfg(feature = "threads")]
             AtomicOp_(b, op, m) => {
-                self.atomic_binop(op, store.mem(inst_id, 0), NumType::i(b.into()), b.into(), m)?;
+                self.atomic_binop(op, store.mem(inst_id, 0), NumType::i(b.into()), b.into(), m)?
             }
         }
         Ok(ThreadResult::Continue(self))
@@ -1134,11 +1155,14 @@ impl<'m> Thread<'m> {
     }
 
     fn mem_slice<'a>(
-        &mut self, mem: &'a mut Memory<'m>, m: MemArg, i: u32, len: usize,
+        &mut self, mem: &'a mut Memory<'m>, m: MemArg, i: u32, len: usize, align: u32,
     ) -> Option<&'a mut [u8]> {
         let ea = i.checked_add(m.offset)?;
         if ea.checked_add(len as u32)? > mem.len() {
             memory_too_small(ea as usize, len, mem);
+            return None;
+        }
+        if ea % align != 0 {
             return None;
         }
         Some(&mut mem.data[ea as usize ..][.. len])
@@ -1148,7 +1172,7 @@ impl<'m> Thread<'m> {
         &mut self, mem: &mut Memory<'m>, t: NumType, n: usize, s: Sx, m: MemArg,
     ) -> Result<(), Error> {
         let i = self.pop_value().unwrap_i32();
-        let mem = match self.mem_slice(mem, m, i, n / 8) {
+        let mem = match self.mem_slice(mem, m, i, n / 8, 1) {
             None => return Err(trap()),
             Some(x) => x,
         };
@@ -1185,7 +1209,7 @@ impl<'m> Thread<'m> {
     ) -> Result<(), Error> {
         let c = self.pop_value();
         let i = self.pop_value().unwrap_i32();
-        let mem = match self.mem_slice(mem, m, i, n / 8) {
+        let mem = match self.mem_slice(mem, m, i, n / 8, 1) {
             None => return Err(trap()),
             Some(x) => x,
         };
@@ -1408,18 +1432,15 @@ impl<'m> Thread<'m> {
     }
 
     #[cfg(feature = "threads")]
-    fn atomic_notify(&mut self, _mem: &mut Memory<'m>, _m: MemArg) -> Result<(), Error> {
+    fn atomic_notify(&mut self, mem: &mut Memory<'m>, m: MemArg) -> Result<(), Error> {
         let count = self.pop_value();
         let i = self.pop_value().unwrap_i32();
 
         // Trap if memory access is OOB.
-        let _mem = match self.mem_slice(_mem, _m, i, 4) {
+        let _mem = match self.mem_slice(mem, m, i, 4, 4) {
             None => return Err(trap()),
             Some(x) => x,
         };
-        if i % 4 != 0 {
-            return Err(trap());
-        }
         self.push_value(count);
         Ok(())
     }
@@ -1446,20 +1467,22 @@ impl<'m> Thread<'m> {
         &mut self, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
     ) -> Result<(), Error> {
         let i = self.pop_value().unwrap_i32();
-        if i % (n as u32 / 8) != 0 {
-            return Err(trap());
-        }
-        let mem = match self.mem_slice(mem, m, i, n / 8) {
+        let mem = match self.mem_slice(mem, m, i, n / 8, n as u32 / 8) {
             None => return Err(trap()),
             Some(x) => x,
         };
         macro_rules! convert {
-            ($T:ident, $t:ident, $s:ident) => {
-               unsafe {
-                    paste::paste! { Val::$T([< Atomic $s:upper >]::from_ptr(mem.as_mut_ptr() as *mut $s).load(portable_atomic::Ordering::SeqCst) as $t)}
+            ($T:ident, $t:ident, $s:ident) => {{
+                let atomic_val;
+                unsafe {
+                    paste::paste! {
+                        atomic_val = [< Atomic $s:upper >]::from_ptr(mem.as_mut_ptr() as *mut $s);
+                    }
                 }
-            };
+                Val::$T(atomic_val.load(Ordering::SeqCst) as $t)
+            }};
         }
+
         let c = match (t, n) {
             (NumType::I32, 32) => convert!(I32, u32, u32),
             (NumType::I64, 64) => convert!(I64, u64, u64),
@@ -1480,20 +1503,25 @@ impl<'m> Thread<'m> {
     ) -> Result<(), Error> {
         let c = self.pop_value();
         let i = self.pop_value().unwrap_i32();
-        if i % (n as u32 / 8) != 0 {
-            return Err(trap());
-        }
-        let mem = match self.mem_slice(mem, m, i, n / 8) {
+        let mem = match self.mem_slice(mem, m, i, n / 8, n as u32 / 8) {
             None => return Err(trap()),
             Some(x) => x,
         };
+
         macro_rules! convert {
-            ($s:ident, $t:ident) => {
+            ($s:ident, $t:ident) => {{
+                let atomic_val;
                 unsafe {
-                    paste::paste! { [< Atomic $t:upper >]::from_ptr(mem.as_mut_ptr() as *mut $t).store((c.[<unwrap_ $s>]() as $t),portable_atomic::Ordering::SeqCst) }
+                    paste::paste! {
+                        atomic_val = [< Atomic $t:upper >]::from_ptr(mem.as_mut_ptr() as *mut $t);
+                    }
                 }
-            };
+                paste::paste! {
+                    atomic_val.store((c.[<unwrap_ $s>]() as $t).into(),Ordering::SeqCst)
+                }
+            }};
         }
+
         match (t, n) {
             (NumType::I32, 32) => convert!(i32, i32),
             (NumType::I64, 64) => convert!(i64, i64),
@@ -1514,45 +1542,68 @@ impl<'m> Thread<'m> {
         let c = self.pop_value();
         let c2 = if op == AtomicOp::Cmpxchg { self.pop_value() } else { c };
         let i = self.pop_value().unwrap_i32();
-        if i % (n as u32 / 8) != 0 {
-            return Err(trap());
-        }
-        let mem = match self.mem_slice(mem, m, i, n / 8) {
+        let mem = match self.mem_slice(mem, m, i, n / 8, n as u32 / 8) {
             None => return Err(trap()),
             Some(x) => x,
         };
-        let c = match (t, n) {
-            (NumType::I32, 32) => Val::I32(op.i32_i32(
+        let c = match (&op, t, n) {
+            (AtomicOp::Cmpxchg, NumType::I32, 32) => Val::I32(op.i32_binary(
                 mem.as_mut_ptr() as *mut i32,
                 c.unwrap_i32() as i32,
                 c2.unwrap_i32() as i32,
             ) as u32),
-            (NumType::I64, 64) => Val::I64(op.i64_i64(
+            (AtomicOp::Cmpxchg, NumType::I64, 64) => Val::I64(op.i64_binary(
                 mem.as_mut_ptr() as *mut i64,
                 c.unwrap_i64() as i64,
                 c2.unwrap_i64() as i64,
             ) as u64),
-            (NumType::I32, 8) => {
-                Val::I32(op.u32_u8(mem.as_mut_ptr(), c.unwrap_i32() as u8, c2.unwrap_i32() as u8))
+            (AtomicOp::Cmpxchg, NumType::I32, 8) => Val::I32(
+                op.u8_binary(mem.as_mut_ptr(), c.unwrap_i32() as u8, c2.unwrap_i32() as u8).into(),
+            ),
+            (AtomicOp::Cmpxchg, NumType::I32, 16) => Val::I32(
+                op.u16_binary(
+                    mem.as_mut_ptr() as *mut u16,
+                    c.unwrap_i32() as u16,
+                    c2.unwrap_i32() as u16,
+                )
+                .into(),
+            ),
+            (AtomicOp::Cmpxchg, NumType::I64, 8) => Val::I64(
+                op.u8_binary(mem.as_mut_ptr(), c.unwrap_i64() as u8, c2.unwrap_i64() as u8).into(),
+            ),
+            (AtomicOp::Cmpxchg, NumType::I64, 16) => Val::I64(
+                op.u16_binary(
+                    mem.as_mut_ptr() as *mut u16,
+                    c.unwrap_i64() as u16,
+                    c2.unwrap_i64() as u16,
+                )
+                .into(),
+            ),
+            (AtomicOp::Cmpxchg, NumType::I64, 32) => Val::I64(
+                op.u32_binary(
+                    mem.as_mut_ptr() as *mut u32,
+                    c.unwrap_i64() as u32,
+                    c2.unwrap_i64() as u32,
+                )
+                .into(),
+            ),
+            (_, NumType::I32, 32) => {
+                Val::I32(op.i32(mem.as_mut_ptr() as *mut i32, c.unwrap_i32() as i32) as u32)
             }
-            (NumType::I32, 16) => Val::I32(op.u32_u16(
-                mem.as_mut_ptr() as *mut u16,
-                c.unwrap_i32() as u16,
-                c2.unwrap_i32() as u16,
-            )),
-            (NumType::I64, 8) => {
-                Val::I64(op.u64_u8(mem.as_mut_ptr(), c.unwrap_i64() as u8, c2.unwrap_i64() as u8))
+            (_, NumType::I64, 64) => {
+                Val::I64(op.i64(mem.as_mut_ptr() as *mut i64, c.unwrap_i64() as i64) as u64)
             }
-            (NumType::I64, 16) => Val::I64(op.u64_u16(
-                mem.as_mut_ptr() as *mut u16,
-                c.unwrap_i64() as u16,
-                c2.unwrap_i64() as u16,
-            )),
-            (NumType::I64, 32) => Val::I64(op.u64_u32(
-                mem.as_mut_ptr() as *mut u32,
-                c.unwrap_i64() as u32,
-                c2.unwrap_i64() as u32,
-            )),
+            (_, NumType::I32, 8) => Val::I32(op.u8(mem.as_mut_ptr(), c.unwrap_i32() as u8).into()),
+            (_, NumType::I32, 16) => {
+                Val::I32(op.u16(mem.as_mut_ptr() as *mut u16, c.unwrap_i32() as u16).into())
+            }
+            (_, NumType::I64, 8) => Val::I64(op.u8(mem.as_mut_ptr(), c.unwrap_i64() as u8).into()),
+            (_, NumType::I64, 16) => {
+                Val::I64(op.u16(mem.as_mut_ptr() as *mut u16, c.unwrap_i64() as u16).into())
+            }
+            (_, NumType::I64, 32) => {
+                Val::I64(op.u32(mem.as_mut_ptr() as *mut u32, c.unwrap_i64() as u32).into())
+            }
             _ => unreachable!(),
         };
         self.push_value(c);
@@ -1631,8 +1682,13 @@ struct Memory<'m> {
     // May be shorter than the maximum length for the module, but not larger.
     data: &'m mut [u8],
     // The size currently available to the module. May be larger than the actual data.
+    #[cfg(feature = "threads")]
+    size: AtomicU32,
+    #[cfg(not(feature = "threads"))]
     size: u32,
     max: u32,
+    // TODO(threads): Extend here to store data about waiting threads etc.
+    // https://github.com/google/wasefire/pull/513#discussion_r1652977484
     #[cfg(feature = "threads")]
     share: bool,
 }
@@ -1650,7 +1706,10 @@ impl<'m> Memory<'m> {
         // TODO: Figure out if we need to do this or whether we can rely on the caller to provide a
         // zeroed-out slice.
         self.data.fill(0);
-        self.size = limits.min;
+        #[cfg(feature = "threads")]
+        self.size.store(limits.min, Ordering::SeqCst);
+        #[cfg(not(feature = "threads"))]
+        (self.size = limits.min);
         self.max = limits.max;
         #[cfg(feature = "threads")]
         (self.share = limits.share == Share::Shared);
@@ -1658,7 +1717,7 @@ impl<'m> Memory<'m> {
     }
 
     fn len(&self) -> u32 {
-        core::cmp::min(self.data.len() as u32, self.size * 0x10000)
+        core::cmp::min(self.data.len() as u32, self.size() * 0x10000)
     }
 }
 
@@ -1678,13 +1737,19 @@ trait Growable {
 impl<'m> Growable for Memory<'m> {
     type Item = ();
     fn size(&self) -> u32 {
+        #[cfg(feature = "threads")]
+        return self.size.load(Ordering::SeqCst);
+        #[cfg(not(feature = "threads"))]
         self.size
     }
     fn max(&self) -> u32 {
         self.max
     }
     fn grow(&mut self, n: u32, _: Self::Item) {
-        self.size = n;
+        #[cfg(feature = "threads")]
+        self.size.store(n, Ordering::SeqCst);
+        #[cfg(not(feature = "threads"))]
+        (self.size = n);
     }
 }
 

@@ -17,7 +17,17 @@ use core::ops::Deref;
 
 use num_enum::{TryFromPrimitive, UnsafeFromPrimitive};
 #[cfg(feature = "threads")]
-use portable_atomic::*;
+use portable_atomic::AtomicI32;
+#[cfg(feature = "threads")]
+use portable_atomic::AtomicI64;
+#[cfg(feature = "threads")]
+use portable_atomic::AtomicU16;
+#[cfg(feature = "threads")]
+use portable_atomic::AtomicU32;
+#[cfg(feature = "threads")]
+use portable_atomic::AtomicU8;
+#[cfg(feature = "threads")]
+use portable_atomic::Ordering;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive, UnsafeFromPrimitive)]
 #[repr(u8)]
@@ -550,22 +560,30 @@ impl CvtOp {
 
 #[cfg(feature = "threads")]
 macro_rules! impl_atomic_op {
-    ($n:ident, $u:ident) => {
+    ($u:ident) => {
         paste::paste! {
             impl AtomicOp {
-                pub fn [< $n _ $u >](&self, mem:*mut $u, c:$u, c2:$u) -> $n {
+                pub fn [< $u >](&self, mem: *mut $u, c: $u) -> $u {
                     match self {
-                        AtomicOp::Add => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_add(c, Ordering::SeqCst).into() }
-                        AtomicOp::Sub => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_sub(c, Ordering::SeqCst).into() }
-                        AtomicOp::And => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_and(c, Ordering::SeqCst).into() }
-                        AtomicOp::Or => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_or(c, Ordering::SeqCst).into() }
-                        AtomicOp::Xor => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_xor(c, Ordering::SeqCst).into() }
-                        AtomicOp::Xchg => unsafe { [< Atomic $u:upper >]::from_ptr(mem).swap(c, Ordering::SeqCst).into() }
+                        AtomicOp::Add => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_add(c, Ordering::SeqCst) }
+                        AtomicOp::Sub => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_sub(c, Ordering::SeqCst) }
+                        AtomicOp::And => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_and(c, Ordering::SeqCst) }
+                        AtomicOp::Or => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_or(c, Ordering::SeqCst) }
+                        AtomicOp::Xor => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_xor(c, Ordering::SeqCst) }
+                        AtomicOp::Xchg => unsafe { [< Atomic $u:upper >]::from_ptr(mem).swap(c, Ordering::SeqCst) }
+                       _ => unreachable!(),
+                    }
+                }
+
+                pub fn [< $u _binary >](&self, mem: *mut $u, c: $u, c2: $u) -> $u {
+                    match self {
                         AtomicOp::Cmpxchg => unsafe {
                             match ([< Atomic $u:upper >]::from_ptr(mem).compare_exchange(c2, c, Ordering::SeqCst, Ordering::SeqCst)) {
-                            Err(v) => v,
-                            Ok(v) => v
-                        }.into() }
+                                Err(v) => v,
+                                Ok(v) => v
+                            }
+                        },
+                        _ => unreachable!(),
                     }
                 }
             }
@@ -574,19 +592,15 @@ macro_rules! impl_atomic_op {
 }
 
 #[cfg(feature = "threads")]
-impl_atomic_op!(i32, i32);
+impl_atomic_op!(i64);
 #[cfg(feature = "threads")]
-impl_atomic_op!(u32, u16);
+impl_atomic_op!(i32);
 #[cfg(feature = "threads")]
-impl_atomic_op!(u32, u8);
+impl_atomic_op!(u32);
 #[cfg(feature = "threads")]
-impl_atomic_op!(i64, i64);
+impl_atomic_op!(u16);
 #[cfg(feature = "threads")]
-impl_atomic_op!(u64, u32);
-#[cfg(feature = "threads")]
-impl_atomic_op!(u64, u16);
-#[cfg(feature = "threads")]
-impl_atomic_op!(u64, u8);
+impl_atomic_op!(u8);
 
 macro_rules! impl_op {
     ($n:ident, $u:ident, $i:ident, $f:ident) => {
