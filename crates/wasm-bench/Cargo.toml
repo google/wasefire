@@ -49,12 +49,10 @@ target-nordic = [
 ]
 target-riscv = ["dep:embedded-alloc", "dep:portable-atomic", "dep:riscv", "dep:riscv-rt"]
 
-# https://github.com/wasmi-labs/wasmi/blob/main/docs/usage.md#optimizations
-[profile.wasmi_optimization]
+[profile.release]
 codegen-units = 1
-incremental = false
-inherits = "release"
 lto = true
+panic = "abort"
 
 [lints]
 clippy.unit-arg = "allow"

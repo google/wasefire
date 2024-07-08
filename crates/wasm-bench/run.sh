@@ -33,8 +33,4 @@ esac
 
 FEATURES=--features=target-$1,runtime-$2
 
-if [ "$2" = "wasmi" ]; then
-  x cargo run --profile=wasmi_optimization $TARGET $FEATURES
-else
-  x cargo run --release $TARGET $FEATURES
-fi
+x cargo run --release $TARGET $FEATURES
