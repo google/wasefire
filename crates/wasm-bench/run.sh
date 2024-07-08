@@ -23,7 +23,7 @@ case "$1" in
 esac
 
 case "$2" in
-  base|wasm3) ;;
+  base|wasm3|wasmi) ;;
   *) e "Unsupported runtime: $2" ;;
 esac
 
