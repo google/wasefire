@@ -28,7 +28,7 @@ pub fn app() -> Html {
         let host = window().location().host().unwrap_throw();
         let web_socket_url = format!("ws://{host}/board");
         info!("Connecting to runner at {web_socket_url}");
-        use_runner_connection(String::from(web_socket_url))
+        use_runner_connection(web_socket_url)
     };
 
     let on_new_console_msg = Callback::from({
