@@ -81,11 +81,11 @@ async fn main() -> Result<()> {
                 }
             }
         });
-        ensure_trunk()?;
-        let url = format!("{}:{}", flags.web_options.web_host, flags.web_options.web_port);
-        let mut build_command = Command::new("trunk");
-        let build_command = build_command.args(["build", "crates/web-client/index.html"]);
+        let mut wrapper_command = Command::new("../../scripts/wrapper.sh");
+        let build_command =
+            wrapper_command.args(["trunk", "build", "crates/web-client/index.html"]);
         cmd::execute(build_command)?;
+        let url = format!("{}:{}", flags.web_options.web_host, flags.web_options.web_port);
         web_server::Client::new(&url, sender).await?
     };
     *STATE.lock().unwrap() = Some(board::State {
@@ -129,18 +129,4 @@ async fn main() -> Result<()> {
     #[cfg(feature = "native")]
     Handle::current().spawn_blocking(|| Scheduler::<board::Board>::run()).await?;
     Ok(())
-}
-
-fn ensure_trunk() -> Result<()> {
-    let trunk_installed = Command::new("which").args(["trunk"]).spawn()?.wait()?.success();
-    if trunk_installed {
-        return Ok(());
-    }
-
-    let mut cargo_command = Command::new("cargo");
-    // Uses trunk version 0.19.3 due to the latest not compiling with the rustc version used by wasefire.
-    // When/ if the rustc version gets updated this should be updated as well.
-    let trunk_install_command =
-        cargo_command.args(["install", "--locked", "trunk", "--version", "0.19.3"]);
-    cmd::execute(trunk_install_command)
 }
