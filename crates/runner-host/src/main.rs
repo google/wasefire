@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
+
 #![feature(never_type)]
 #![feature(try_blocks)]
 
 use std::path::Path;
-use std::process::Command;
 use std::sync::Mutex;
 
 use anyhow::Result;
@@ -25,11 +26,17 @@ use clap::Parser;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::{channel, Receiver};
 use wasefire_board_api::Event;
-use wasefire_cli_tools::cmd;
+
 #[cfg(feature = "wasm")]
 use wasefire_interpreter as _;
 use wasefire_scheduler::Scheduler;
 use wasefire_store::{FileOptions, FileStorage};
+#[cfg(feature = "web")]
+use std::process::Command;
+#[cfg(feature = "web")]
+use wasefire_cli_tools::cmd;
+#[cfg(not(feature = "web"))]
+use wasefire_cli_tools as _;
 
 mod board;
 
