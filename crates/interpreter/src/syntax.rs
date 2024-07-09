@@ -17,17 +17,7 @@ use core::ops::Deref;
 
 use num_enum::{TryFromPrimitive, UnsafeFromPrimitive};
 #[cfg(feature = "threads")]
-use portable_atomic::AtomicI32;
-#[cfg(feature = "threads")]
-use portable_atomic::AtomicI64;
-#[cfg(feature = "threads")]
-use portable_atomic::AtomicU16;
-#[cfg(feature = "threads")]
-use portable_atomic::AtomicU32;
-#[cfg(feature = "threads")]
-use portable_atomic::AtomicU8;
-#[cfg(feature = "threads")]
-use portable_atomic::Ordering;
+use portable_atomic::{AtomicI32, AtomicI64, AtomicU16, AtomicU32, AtomicU8, Ordering};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive, UnsafeFromPrimitive)]
 #[repr(u8)]
@@ -248,13 +238,18 @@ pub enum CvtOp {
 
 #[cfg(feature = "threads")]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AtomicOp {
+pub enum AtomicUnOp {
     Add,
     Sub,
     And,
     Or,
     Xor,
     Xchg,
+}
+
+#[cfg(feature = "threads")]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AtomicBinOp {
     Cmpxchg,
 }
 
@@ -338,9 +333,13 @@ pub enum Instr<'m> {
     #[cfg(feature = "threads")]
     AtomicStore_(Bx, MemArg),
     #[cfg(feature = "threads")]
-    AtomicOp(Nx, AtomicOp, MemArg),
+    AtomicUnOp(Nx, AtomicUnOp, MemArg),
     #[cfg(feature = "threads")]
-    AtomicOp_(Bx, AtomicOp, MemArg),
+    AtomicUnOp_(Bx, AtomicUnOp, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicBinOp(Nx, AtomicBinOp, MemArg),
+    #[cfg(feature = "threads")]
+    AtomicBinOp_(Bx, AtomicBinOp, MemArg),
 }
 
 pub type TypeIdx = u32;
@@ -562,33 +561,30 @@ impl CvtOp {
 macro_rules! impl_atomic_op {
     ($u:ident) => {
         paste::paste! {
-            impl AtomicOp {
-                pub fn [< $u >](&self, mem: *mut $u, c: $u) -> $u {
+            impl AtomicUnOp {
+                pub fn $u(&self, mem: *mut $u, c: $u) -> $u {
+                    let atomic_val = unsafe { [< Atomic $u:upper >]::from_ptr(mem) };
                     match self {
-                        AtomicOp::Add => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_add(c, Ordering::SeqCst) }
-                        AtomicOp::Sub => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_sub(c, Ordering::SeqCst) }
-                        AtomicOp::And => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_and(c, Ordering::SeqCst) }
-                        AtomicOp::Or => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_or(c, Ordering::SeqCst) }
-                        AtomicOp::Xor => unsafe { [< Atomic $u:upper >]::from_ptr(mem).fetch_xor(c, Ordering::SeqCst) }
-                        AtomicOp::Xchg => unsafe { [< Atomic $u:upper >]::from_ptr(mem).swap(c, Ordering::SeqCst) }
-                       _ => unreachable!(),
+                        AtomicUnOp::Add => atomic_val.fetch_add(c, Ordering::SeqCst),
+                        AtomicUnOp::Sub => atomic_val.fetch_sub(c, Ordering::SeqCst),
+                        AtomicUnOp::And => atomic_val.fetch_and(c, Ordering::SeqCst),
+                        AtomicUnOp::Or => atomic_val.fetch_or(c, Ordering::SeqCst),
+                        AtomicUnOp::Xor => atomic_val.fetch_xor(c, Ordering::SeqCst),
+                        AtomicUnOp::Xchg => atomic_val.swap(c, Ordering::SeqCst),
                     }
                 }
-
-                pub fn [< $u _binary >](&self, mem: *mut $u, c: $u, c2: $u) -> $u {
-                    match self {
-                        AtomicOp::Cmpxchg => unsafe {
-                            match ([< Atomic $u:upper >]::from_ptr(mem).compare_exchange(c2, c, Ordering::SeqCst, Ordering::SeqCst)) {
+            }
+            impl AtomicBinOp {
+                pub fn $u(&self, mem: *mut $u, c: $u, c2: $u) -> $u {
+                    let atomic_val = unsafe { [< Atomic $u:upper >]::from_ptr(mem) };
+                    match atomic_val.compare_exchange(c2, c, Ordering::SeqCst, Ordering::SeqCst) {
                                 Err(v) => v,
                                 Ok(v) => v
-                            }
-                        },
-                        _ => unreachable!(),
                     }
                 }
             }
         }
-    }
+    };
 }
 
 #[cfg(feature = "threads")]
@@ -880,16 +876,15 @@ impl From<u8> for FBinOp {
 }
 
 #[cfg(feature = "threads")]
-impl From<u8> for AtomicOp {
+impl From<u8> for AtomicUnOp {
     fn from(x: u8) -> Self {
         match x {
-            0 => AtomicOp::Add,
-            1 => AtomicOp::Sub,
-            2 => AtomicOp::And,
-            3 => AtomicOp::Or,
-            4 => AtomicOp::Xor,
-            5 => AtomicOp::Xchg,
-            6 => AtomicOp::Cmpxchg,
+            0 => AtomicUnOp::Add,
+            1 => AtomicUnOp::Sub,
+            2 => AtomicUnOp::And,
+            3 => AtomicUnOp::Or,
+            4 => AtomicUnOp::Xor,
+            5 => AtomicUnOp::Xchg,
             _ => unreachable!(),
         }
     }

@@ -337,12 +337,18 @@ impl<'m, M: Mode> Parser<'m, M> {
             x @ 18 ..= 22 => Instr::AtomicLoad_((x - 18).into(), self.parse_memarg()?),
             x @ 23 ..= 24 => Instr::AtomicStore((x - 23).into(), self.parse_memarg()?),
             x @ 25 ..= 29 => Instr::AtomicStore_((x - 25).into(), self.parse_memarg()?),
-            x @ 30 ..= 78 => {
-                let op: AtomicOp = ((x - 30) / 7).into();
+            x @ 30 ..= 71 => {
+                let op: AtomicUnOp = ((x - 30) / 7).into();
                 match (x - 30) % 7 {
-                    x @ 0 ..= 1 => Instr::AtomicOp(x.into(), op, self.parse_memarg()?),
-                    x => Instr::AtomicOp_((x - 2).into(), op, self.parse_memarg()?),
+                    x @ 0 ..= 1 => Instr::AtomicUnOp(x.into(), op, self.parse_memarg()?),
+                    x => Instr::AtomicUnOp_((x - 2).into(), op, self.parse_memarg()?),
                 }
+            }
+            x @ 72 ..= 73 => {
+                Instr::AtomicBinOp((x - 72).into(), AtomicBinOp::Cmpxchg, self.parse_memarg()?)
+            }
+            x @ 74 ..= 78 => {
+                Instr::AtomicBinOp_((x - 74).into(), AtomicBinOp::Cmpxchg, self.parse_memarg()?)
             }
             _ => M::invalid()?,
         })

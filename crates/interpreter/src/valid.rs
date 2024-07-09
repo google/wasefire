@@ -669,28 +669,28 @@ impl<'a, 'm> Expr<'a, 'm> {
             #[cfg(feature = "threads")]
             AtomicStore_(b, m) => self.store(true, NumType::i(b.into()), b.into(), m)?,
             #[cfg(feature = "threads")]
-            AtomicOp(n, syntax::AtomicOp::Cmpxchg, m) => {
+            AtomicBinOp(n, _, m) => {
                 self.check_mem(true, n.into(), m)?;
                 let num = NumType::i(n);
                 self.pops([ValType::I32, num.into(), num.into()][..].into())?;
                 self.push(num.into());
             }
             #[cfg(feature = "threads")]
-            AtomicOp_(b, syntax::AtomicOp::Cmpxchg, m) => {
+            AtomicBinOp_(b, _, m) => {
                 self.check_mem(true, b.into(), m)?;
                 let num = NumType::i(b.into());
                 self.pops([ValType::I32, num.into(), num.into()][..].into())?;
                 self.push(num.into())
             }
             #[cfg(feature = "threads")]
-            AtomicOp(n, _, m) => {
+            AtomicUnOp(n, _, m) => {
                 self.check_mem(true, n.into(), m)?;
                 let num = NumType::i(n);
                 self.pops([ValType::I32, num.into()][..].into())?;
                 self.push(num.into());
             }
             #[cfg(feature = "threads")]
-            AtomicOp_(b, _, m) => {
+            AtomicUnOp_(b, _, m) => {
                 self.check_mem(true, b.into(), m)?;
                 let num = NumType::i(b.into());
                 self.pops([ValType::I32, num.into()][..].into())?;

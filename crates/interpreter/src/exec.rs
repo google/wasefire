@@ -17,23 +17,9 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 #[cfg(feature = "threads")]
-use portable_atomic::AtomicI16;
-#[cfg(feature = "threads")]
-use portable_atomic::AtomicI32;
-#[cfg(feature = "threads")]
-use portable_atomic::AtomicI64;
-#[cfg(feature = "threads")]
-use portable_atomic::AtomicI8;
-#[cfg(feature = "threads")]
-use portable_atomic::AtomicU16;
-#[cfg(feature = "threads")]
-use portable_atomic::AtomicU32;
-#[cfg(feature = "threads")]
-use portable_atomic::AtomicU64;
-#[cfg(feature = "threads")]
-use portable_atomic::AtomicU8;
-#[cfg(feature = "threads")]
-use portable_atomic::Ordering;
+use portable_atomic::{
+    AtomicI16, AtomicI32, AtomicI64, AtomicI8, AtomicU16, AtomicU32, AtomicU64, AtomicU8, Ordering,
+};
 
 use crate::error::*;
 use crate::module::*;
@@ -1014,12 +1000,22 @@ impl<'m> Thread<'m> {
             }
 
             #[cfg(feature = "threads")]
-            AtomicOp(n, op, m) => {
+            AtomicUnOp(n, op, m) => {
+                self.atomic_unop(op, store.mem(inst_id, 0), NumType::i(n), n.into(), m)?
+            }
+
+            #[cfg(feature = "threads")]
+            AtomicUnOp_(b, op, m) => {
+                self.atomic_unop(op, store.mem(inst_id, 0), NumType::i(b.into()), b.into(), m)?
+            }
+
+            #[cfg(feature = "threads")]
+            AtomicBinOp(n, op, m) => {
                 self.atomic_binop(op, store.mem(inst_id, 0), NumType::i(n), n.into(), m)?
             }
 
             #[cfg(feature = "threads")]
-            AtomicOp_(b, op, m) => {
+            AtomicBinOp_(b, op, m) => {
                 self.atomic_binop(op, store.mem(inst_id, 0), NumType::i(b.into()), b.into(), m)?
             }
         }
@@ -1155,14 +1151,14 @@ impl<'m> Thread<'m> {
     }
 
     fn mem_slice<'a>(
-        &mut self, mem: &'a mut Memory<'m>, m: MemArg, i: u32, len: usize, align: u32,
+        &mut self, mem: &'a mut Memory<'m>, m: MemArg, i: u32, len: usize, align: bool,
     ) -> Option<&'a mut [u8]> {
         let ea = i.checked_add(m.offset)?;
         if ea.checked_add(len as u32)? > mem.len() {
             memory_too_small(ea as usize, len, mem);
             return None;
         }
-        if ea % align != 0 {
+        if align && ea % len as u32 != 0 {
             return None;
         }
         Some(&mut mem.data[ea as usize ..][.. len])
@@ -1172,7 +1168,7 @@ impl<'m> Thread<'m> {
         &mut self, mem: &mut Memory<'m>, t: NumType, n: usize, s: Sx, m: MemArg,
     ) -> Result<(), Error> {
         let i = self.pop_value().unwrap_i32();
-        let mem = match self.mem_slice(mem, m, i, n / 8, 1) {
+        let mem = match self.mem_slice(mem, m, i, n / 8, false) {
             None => return Err(trap()),
             Some(x) => x,
         };
@@ -1209,7 +1205,7 @@ impl<'m> Thread<'m> {
     ) -> Result<(), Error> {
         let c = self.pop_value();
         let i = self.pop_value().unwrap_i32();
-        let mem = match self.mem_slice(mem, m, i, n / 8, 1) {
+        let mem = match self.mem_slice(mem, m, i, n / 8, false) {
             None => return Err(trap()),
             Some(x) => x,
         };
@@ -1437,7 +1433,7 @@ impl<'m> Thread<'m> {
         let i = self.pop_value().unwrap_i32();
 
         // Trap if memory access is OOB.
-        let _mem = match self.mem_slice(mem, m, i, 4, 4) {
+        let _mem = match self.mem_slice(mem, m, i, 4, true) {
             None => return Err(trap()),
             Some(x) => x,
         };
@@ -1467,19 +1463,17 @@ impl<'m> Thread<'m> {
         &mut self, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
     ) -> Result<(), Error> {
         let i = self.pop_value().unwrap_i32();
-        let mem = match self.mem_slice(mem, m, i, n / 8, n as u32 / 8) {
+        let mem = match self.mem_slice(mem, m, i, n / 8, true) {
             None => return Err(trap()),
             Some(x) => x,
         };
         macro_rules! convert {
             ($T:ident, $t:ident, $s:ident) => {{
-                let atomic_val;
-                unsafe {
-                    paste::paste! {
-                        atomic_val = [< Atomic $s:upper >]::from_ptr(mem.as_mut_ptr() as *mut $s);
-                    }
-                }
-                Val::$T(atomic_val.load(Ordering::SeqCst) as $t)
+                let ptr = mem.as_mut_ptr() as *mut $s;
+                let ptr = unsafe {
+                    paste::paste! { [< Atomic $s:upper >]::from_ptr(ptr) }
+                };
+                Val::$T(ptr.load(Ordering::SeqCst) as $t)
             }};
         }
 
@@ -1503,7 +1497,7 @@ impl<'m> Thread<'m> {
     ) -> Result<(), Error> {
         let c = self.pop_value();
         let i = self.pop_value().unwrap_i32();
-        let mem = match self.mem_slice(mem, m, i, n / 8, n as u32 / 8) {
+        let mem = match self.mem_slice(mem, m, i, n / 8, true) {
             None => return Err(trap()),
             Some(x) => x,
         };
@@ -1536,74 +1530,79 @@ impl<'m> Thread<'m> {
     }
 
     #[cfg(feature = "threads")]
-    fn atomic_binop(
-        &mut self, op: AtomicOp, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
+    fn atomic_unop(
+        &mut self, op: AtomicUnOp, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
     ) -> Result<(), Error> {
         let c = self.pop_value();
-        let c2 = if op == AtomicOp::Cmpxchg { self.pop_value() } else { c };
         let i = self.pop_value().unwrap_i32();
-        let mem = match self.mem_slice(mem, m, i, n / 8, n as u32 / 8) {
+        let mem = match self.mem_slice(mem, m, i, n / 8, true) {
             None => return Err(trap()),
             Some(x) => x,
         };
-        let c = match (&op, t, n) {
-            (AtomicOp::Cmpxchg, NumType::I32, 32) => Val::I32(op.i32_binary(
+        let c = match (t, n) {
+            (NumType::I32, 32) => {
+                Val::I32(op.i32(mem.as_mut_ptr() as *mut i32, c.unwrap_i32() as i32) as u32)
+            }
+            (NumType::I64, 64) => {
+                Val::I64(op.i64(mem.as_mut_ptr() as *mut i64, c.unwrap_i64() as i64) as u64)
+            }
+            (NumType::I32, 8) => Val::I32(op.u8(mem.as_mut_ptr(), c.unwrap_i32() as u8).into()),
+            (NumType::I32, 16) => {
+                Val::I32(op.u16(mem.as_mut_ptr() as *mut u16, c.unwrap_i32() as u16).into())
+            }
+            (NumType::I64, 8) => Val::I64(op.u8(mem.as_mut_ptr(), c.unwrap_i64() as u8).into()),
+            (NumType::I64, 16) => {
+                Val::I64(op.u16(mem.as_mut_ptr() as *mut u16, c.unwrap_i64() as u16).into())
+            }
+            (NumType::I64, 32) => {
+                Val::I64(op.u32(mem.as_mut_ptr() as *mut u32, c.unwrap_i64() as u32).into())
+            }
+            _ => unreachable!(),
+        };
+        self.push_value(c);
+        Ok(())
+    }
+
+    #[cfg(feature = "threads")]
+    fn atomic_binop(
+        &mut self, op: AtomicBinOp, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
+    ) -> Result<(), Error> {
+        let c = self.pop_value();
+        let c2 = self.pop_value();
+        let i = self.pop_value().unwrap_i32();
+        let mem = match self.mem_slice(mem, m, i, n / 8, true) {
+            None => return Err(trap()),
+            Some(x) => x,
+        };
+        let c = match (t, n) {
+            (NumType::I32, 32) => Val::I32(op.i32(
                 mem.as_mut_ptr() as *mut i32,
                 c.unwrap_i32() as i32,
                 c2.unwrap_i32() as i32,
             ) as u32),
-            (AtomicOp::Cmpxchg, NumType::I64, 64) => Val::I64(op.i64_binary(
+            (NumType::I64, 64) => Val::I64(op.i64(
                 mem.as_mut_ptr() as *mut i64,
                 c.unwrap_i64() as i64,
                 c2.unwrap_i64() as i64,
             ) as u64),
-            (AtomicOp::Cmpxchg, NumType::I32, 8) => Val::I32(
-                op.u8_binary(mem.as_mut_ptr(), c.unwrap_i32() as u8, c2.unwrap_i32() as u8).into(),
+            (NumType::I32, 8) => Val::I32(
+                op.u8(mem.as_mut_ptr(), c.unwrap_i32() as u8, c2.unwrap_i32() as u8).into(),
             ),
-            (AtomicOp::Cmpxchg, NumType::I32, 16) => Val::I32(
-                op.u16_binary(
-                    mem.as_mut_ptr() as *mut u16,
-                    c.unwrap_i32() as u16,
-                    c2.unwrap_i32() as u16,
-                )
-                .into(),
+            (NumType::I32, 16) => Val::I32(
+                op.u16(mem.as_mut_ptr() as *mut u16, c.unwrap_i32() as u16, c2.unwrap_i32() as u16)
+                    .into(),
             ),
-            (AtomicOp::Cmpxchg, NumType::I64, 8) => Val::I64(
-                op.u8_binary(mem.as_mut_ptr(), c.unwrap_i64() as u8, c2.unwrap_i64() as u8).into(),
+            (NumType::I64, 8) => Val::I64(
+                op.u8(mem.as_mut_ptr(), c.unwrap_i64() as u8, c2.unwrap_i64() as u8).into(),
             ),
-            (AtomicOp::Cmpxchg, NumType::I64, 16) => Val::I64(
-                op.u16_binary(
-                    mem.as_mut_ptr() as *mut u16,
-                    c.unwrap_i64() as u16,
-                    c2.unwrap_i64() as u16,
-                )
-                .into(),
+            (NumType::I64, 16) => Val::I64(
+                op.u16(mem.as_mut_ptr() as *mut u16, c.unwrap_i64() as u16, c2.unwrap_i64() as u16)
+                    .into(),
             ),
-            (AtomicOp::Cmpxchg, NumType::I64, 32) => Val::I64(
-                op.u32_binary(
-                    mem.as_mut_ptr() as *mut u32,
-                    c.unwrap_i64() as u32,
-                    c2.unwrap_i64() as u32,
-                )
-                .into(),
+            (NumType::I64, 32) => Val::I64(
+                op.u32(mem.as_mut_ptr() as *mut u32, c.unwrap_i64() as u32, c2.unwrap_i64() as u32)
+                    .into(),
             ),
-            (_, NumType::I32, 32) => {
-                Val::I32(op.i32(mem.as_mut_ptr() as *mut i32, c.unwrap_i32() as i32) as u32)
-            }
-            (_, NumType::I64, 64) => {
-                Val::I64(op.i64(mem.as_mut_ptr() as *mut i64, c.unwrap_i64() as i64) as u64)
-            }
-            (_, NumType::I32, 8) => Val::I32(op.u8(mem.as_mut_ptr(), c.unwrap_i32() as u8).into()),
-            (_, NumType::I32, 16) => {
-                Val::I32(op.u16(mem.as_mut_ptr() as *mut u16, c.unwrap_i32() as u16).into())
-            }
-            (_, NumType::I64, 8) => Val::I64(op.u8(mem.as_mut_ptr(), c.unwrap_i64() as u8).into()),
-            (_, NumType::I64, 16) => {
-                Val::I64(op.u16(mem.as_mut_ptr() as *mut u16, c.unwrap_i64() as u16).into())
-            }
-            (_, NumType::I64, 32) => {
-                Val::I64(op.u32(mem.as_mut_ptr() as *mut u32, c.unwrap_i64() as u32).into())
-            }
             _ => unreachable!(),
         };
         self.push_value(c);
@@ -1738,9 +1737,10 @@ impl<'m> Growable for Memory<'m> {
     type Item = ();
     fn size(&self) -> u32 {
         #[cfg(feature = "threads")]
-        return self.size.load(Ordering::SeqCst);
+        let size = self.size.load(Ordering::SeqCst);
         #[cfg(not(feature = "threads"))]
-        self.size
+        let size = self.size;
+        size
     }
     fn max(&self) -> u32 {
         self.max
