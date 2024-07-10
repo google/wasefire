@@ -23,12 +23,14 @@ case "$1" in
 esac
 
 case "$2" in
-  base|wasm3|wasmi) ;;
+  base|wasm3|wasmi|wasmtime) ;;
   *) e "Unsupported runtime: $2" ;;
 esac
 
+# See test.sh for supported (and tested) combinations.
 case $1-$2 in
-  nordic-wasm3|riscv-*) e "Unsupported combination: $1 $2" ;;
+  *-base|nordic-wasmi) ;;
+  *) e "Unsupported combination: $1 $2" ;;
 esac
 
 FEATURES=--features=target-$1,runtime-$2

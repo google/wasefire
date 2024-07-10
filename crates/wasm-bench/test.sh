@@ -23,11 +23,14 @@ test_helper
 cargo test --bin=wasm-bench --features=target-linux,runtime-base
 cargo test --bin=wasm-bench --features=target-linux,runtime-wasm3
 cargo test --bin=wasm-bench --features=target-linux,runtime-wasmi
+cargo test --bin=wasm-bench --features=target-linux,runtime-wasmtime
 
 cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-base
 # wasm3/source/wasm3.h:16:10: fatal error: 'stdlib.h' file not found
 # cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasm3
 cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasmi
+# error in crate arbitrary: can't find crate for `std`
+# cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasmtime
 
 cargo check --bin=wasm-bench --target=riscv32imc-unknown-none-elf \
   --features=target-riscv,runtime-base
@@ -37,3 +40,6 @@ cargo check --bin=wasm-bench --target=riscv32imc-unknown-none-elf \
 # error: no method named `compare_exchange` found for struct `AtomicUsize` in the current scope
 # cargo check --bin=wasm-bench --target=riscv32imc-unknown-none-elf \
 #   --features=target-riscv,runtime-wasmi
+# error in crate once_cell: can't find crate for `std`
+# cargo check --bin=wasm-bench --target=riscv32imc-unknown-none-elf \
+#   --features=target-riscv,runtime-wasmtime
