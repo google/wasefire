@@ -16,6 +16,7 @@ riscv = { version = "0.11.0", features = ["critical-section-single-hart"], optio
 riscv-rt = { version = "0.12.1", optional = true }
 rtt-target = { version = "0.5.0", optional = true }
 wasefire-interpreter = { path = "../interpreter", features = ["float-types"], optional = true }
+wasmi = { version = "0.34.0", default-features = false, optional = true }
 
 [dependencies.portable-atomic]
 version = "1.6.0"
@@ -29,13 +30,10 @@ default-features = false
 features = ["build-bindgen", "use-32bit-slots"]
 optional = true
 
-[dependencies.wasmi]
-git = "https://github.com/wasmi-labs/wasmi.git"
-default-features = false
-optional = true
-
 [dependencies.wasmtime]
-git = "https://github.com/bytecodealliance/wasmtime.git"
+version = "22.0.0"
+default-features = false
+features = ["cranelift", "runtime"]
 optional = true
 
 [features]
