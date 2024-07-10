@@ -29,7 +29,12 @@ cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nord
 # wasm3/source/wasm3.h:16:10: fatal error: 'stdlib.h' file not found
 # cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasm3
 cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasmi
-cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasmtime
+#error[E0463]: can't find crate for `std`
+#  |
+#  = note: the `thumbv7em-none-eabi` target may not support the standard library
+#  = note: `std` is required by `bitflags` because it does not declare `#![no_std]`
+#  = help: consider building the standard library from source with `cargo build -Zbuild-std`
+# cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasmtime
 
 cargo check --bin=wasm-bench --target=riscv32imc-unknown-none-elf \
   --features=target-riscv,runtime-base
