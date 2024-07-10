@@ -28,8 +28,6 @@ use clap::Parser;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::{channel, Receiver};
 use wasefire_board_api::Event;
-#[cfg(not(feature = "web"))]
-use wasefire_cli_tools as _;
 #[cfg(feature = "web")]
 use wasefire_cli_tools::cmd;
 #[cfg(feature = "wasm")]
