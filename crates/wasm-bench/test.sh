@@ -23,11 +23,13 @@ test_helper
 cargo test --bin=wasm-bench --features=target-linux,runtime-base
 cargo test --bin=wasm-bench --features=target-linux,runtime-wasm3
 cargo test --bin=wasm-bench --features=target-linux,runtime-wasmi
+cargo test --bin=wasm-bench --features=target-linux,runtime-wasmtime
 
 cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-base
 # wasm3/source/wasm3.h:16:10: fatal error: 'stdlib.h' file not found
 # cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasm3
 cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasmi
+cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasmtime
 
 cargo check --bin=wasm-bench --target=riscv32imc-unknown-none-elf \
   --features=target-riscv,runtime-base

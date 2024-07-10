@@ -34,10 +34,15 @@ git = "https://github.com/wasmi-labs/wasmi.git"
 default-features = false
 optional = true
 
+[dependencies.wasmtime]
+git = "https://github.com/bytecodealliance/wasmtime.git"
+optional = true
+
 [features]
 runtime-base = ["dep:wasefire-interpreter"]
 runtime-wasm3 = ["dep:wasm3"]
 runtime-wasmi = ["dep:wasmi"]
+runtime-wasmtime = ["dep:wasmtime"]
 target-linux = []
 target-nordic = [
   "dep:cortex-m",
