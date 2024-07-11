@@ -79,6 +79,10 @@ async fn main() -> Result<()> {
                 }
             }
         });
+        let mut wrapper_command = std::process::Command::new("../../scripts/wrapper.sh");
+        let build_command =
+            wrapper_command.args(["trunk", "build", "crates/web-client/index.html"]);
+        wasefire_cli_tools::cmd::execute(build_command)?;
         let url = format!("{}:{}", flags.web_options.web_host, flags.web_options.web_port);
         web_server::Client::new(&url, sender).await?
     };

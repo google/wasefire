@@ -42,7 +42,7 @@ impl Client {
         let (sender, mut receiver) = oneshot::channel();
         let client = Arc::new(Mutex::new(Some((sender, events))));
 
-        let static_files = warp::fs::dir("crates/web-server/public");
+        let static_files = warp::fs::dir("crates/web-client/dist");
         let ws = warp::path("board")
             .and(warp::ws())
             .and(warp::any().map(move || client.clone()))
