@@ -16,8 +16,6 @@
 #![feature(try_blocks)]
 
 use std::path::Path;
-#[cfg(feature = "web")]
-use std::process::Command;
 use std::sync::Mutex;
 
 use anyhow::Result;
@@ -26,8 +24,6 @@ use clap::Parser;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::{channel, Receiver};
 use wasefire_board_api::Event;
-#[cfg(feature = "web")]
-use wasefire_cli_tools::cmd;
 #[cfg(feature = "wasm")]
 use wasefire_interpreter as _;
 use wasefire_scheduler::Scheduler;
@@ -83,10 +79,10 @@ async fn main() -> Result<()> {
                 }
             }
         });
-        let mut wrapper_command = Command::new("../../scripts/wrapper.sh");
+        let mut wrapper_command = std::process::Command::new("../../scripts/wrapper.sh");
         let build_command =
             wrapper_command.args(["trunk", "build", "crates/web-client/index.html"]);
-        cmd::execute(build_command)?;
+        wasefire_cli_tools::cmd::execute(build_command)?;
         let url = format!("{}:{}", flags.web_options.web_host, flags.web_options.web_port);
         web_server::Client::new(&url, sender).await?
     };
