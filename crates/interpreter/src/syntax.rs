@@ -17,7 +17,7 @@ use core::ops::Deref;
 
 use num_enum::{TryFromPrimitive, UnsafeFromPrimitive};
 #[cfg(feature = "threads")]
-use portable_atomic::{AtomicI32, AtomicI64, AtomicU16, AtomicU32, AtomicU8, Ordering};
+use portable_atomic::{AtomicU16, AtomicU32, AtomicU64, AtomicU8, Ordering};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive, UnsafeFromPrimitive)]
 #[repr(u8)]
@@ -562,22 +562,22 @@ macro_rules! impl_atomic_op {
     ($u:ident) => {
         paste::paste! {
             impl AtomicUnOp {
-                pub fn $u(&self, mem: *mut $u, c: $u) -> $u {
-                    let atomic_val = unsafe { [< Atomic $u:upper >]::from_ptr(mem) };
+                pub fn $u(&self, ptr: *mut $u, c: $u) -> $u {
+                    let x = unsafe { [< Atomic $u:upper >]::from_ptr(ptr) };
                     match self {
-                        AtomicUnOp::Add => atomic_val.fetch_add(c, Ordering::SeqCst),
-                        AtomicUnOp::Sub => atomic_val.fetch_sub(c, Ordering::SeqCst),
-                        AtomicUnOp::And => atomic_val.fetch_and(c, Ordering::SeqCst),
-                        AtomicUnOp::Or => atomic_val.fetch_or(c, Ordering::SeqCst),
-                        AtomicUnOp::Xor => atomic_val.fetch_xor(c, Ordering::SeqCst),
-                        AtomicUnOp::Xchg => atomic_val.swap(c, Ordering::SeqCst),
+                        AtomicUnOp::Add => x.fetch_add(c, Ordering::SeqCst),
+                        AtomicUnOp::Sub => x.fetch_sub(c, Ordering::SeqCst),
+                        AtomicUnOp::And => x.fetch_and(c, Ordering::SeqCst),
+                        AtomicUnOp::Or => x.fetch_or(c, Ordering::SeqCst),
+                        AtomicUnOp::Xor => x.fetch_xor(c, Ordering::SeqCst),
+                        AtomicUnOp::Xchg => x.swap(c, Ordering::SeqCst),
                     }
                 }
             }
             impl AtomicBinOp {
-                pub fn $u(&self, mem: *mut $u, c: $u, c2: $u) -> $u {
-                    let atomic_val = unsafe { [< Atomic $u:upper >]::from_ptr(mem) };
-                    match atomic_val.compare_exchange(c2, c, Ordering::SeqCst, Ordering::SeqCst) {
+                pub fn $u(&self, ptr: *mut $u, c: $u, c2: $u) -> $u {
+                    let x = unsafe { [< Atomic $u:upper >]::from_ptr(ptr) };
+                    match x.compare_exchange(c2, c, Ordering::SeqCst, Ordering::SeqCst) {
                                 Err(v) => v,
                                 Ok(v) => v
                     }
@@ -588,9 +588,7 @@ macro_rules! impl_atomic_op {
 }
 
 #[cfg(feature = "threads")]
-impl_atomic_op!(i64);
-#[cfg(feature = "threads")]
-impl_atomic_op!(i32);
+impl_atomic_op!(u64);
 #[cfg(feature = "threads")]
 impl_atomic_op!(u32);
 #[cfg(feature = "threads")]

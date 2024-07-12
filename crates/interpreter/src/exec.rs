@@ -17,9 +17,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 #[cfg(feature = "threads")]
-use portable_atomic::{
-    AtomicI16, AtomicI32, AtomicI64, AtomicI8, AtomicU16, AtomicU32, AtomicU64, AtomicU8, Ordering,
-};
+use portable_atomic::{AtomicU16, AtomicU32, AtomicU64, AtomicU8, Ordering};
 
 use crate::error::*;
 use crate::module::*;
@@ -1504,26 +1502,24 @@ impl<'m> Thread<'m> {
 
         macro_rules! convert {
             ($s:ident, $t:ident) => {{
-                let atomic_val;
-                unsafe {
-                    paste::paste! {
-                        atomic_val = [< Atomic $t:upper >]::from_ptr(mem.as_mut_ptr() as *mut $t);
-                    }
-                }
+                let ptr = mem.as_mut_ptr() as *mut $t;
                 paste::paste! {
-                    atomic_val.store((c.[<unwrap_ $s>]() as $t).into(),Ordering::SeqCst)
+                    let ptr = unsafe {
+                        [< Atomic $t:upper >]::from_ptr(ptr)
+                    };
+                    ptr.store((c.[<unwrap_ $s>]() as $t).into(), Ordering::SeqCst);
                 }
             }};
         }
 
         match (t, n) {
-            (NumType::I32, 32) => convert!(i32, i32),
-            (NumType::I64, 64) => convert!(i64, i64),
-            (NumType::I32, 8) => convert!(i32, i8),
-            (NumType::I32, 16) => convert!(i32, i16),
-            (NumType::I64, 8) => convert!(i64, i8),
-            (NumType::I64, 16) => convert!(i64, i16),
-            (NumType::I64, 32) => convert!(i64, i32),
+            (NumType::I32, 32) => convert!(i32, u32),
+            (NumType::I64, 64) => convert!(i64, u64),
+            (NumType::I32, 8) => convert!(i32, u8),
+            (NumType::I32, 16) => convert!(i32, u16),
+            (NumType::I64, 8) => convert!(i64, u8),
+            (NumType::I64, 16) => convert!(i64, u16),
+            (NumType::I64, 32) => convert!(i64, u32),
             _ => unreachable!(),
         }
         Ok(())
@@ -1539,24 +1535,19 @@ impl<'m> Thread<'m> {
             None => return Err(trap()),
             Some(x) => x,
         };
+        macro_rules! convert {
+            ($n:ident, $u:ident) => {
+                paste::paste! { op.$u(mem.as_mut_ptr() as *mut $u, c.[< unwrap_$n:lower >]() as $u) }
+            };
+        }
         let c = match (t, n) {
-            (NumType::I32, 32) => {
-                Val::I32(op.i32(mem.as_mut_ptr() as *mut i32, c.unwrap_i32() as i32) as u32)
-            }
-            (NumType::I64, 64) => {
-                Val::I64(op.i64(mem.as_mut_ptr() as *mut i64, c.unwrap_i64() as i64) as u64)
-            }
-            (NumType::I32, 8) => Val::I32(op.u8(mem.as_mut_ptr(), c.unwrap_i32() as u8).into()),
-            (NumType::I32, 16) => {
-                Val::I32(op.u16(mem.as_mut_ptr() as *mut u16, c.unwrap_i32() as u16).into())
-            }
-            (NumType::I64, 8) => Val::I64(op.u8(mem.as_mut_ptr(), c.unwrap_i64() as u8).into()),
-            (NumType::I64, 16) => {
-                Val::I64(op.u16(mem.as_mut_ptr() as *mut u16, c.unwrap_i64() as u16).into())
-            }
-            (NumType::I64, 32) => {
-                Val::I64(op.u32(mem.as_mut_ptr() as *mut u32, c.unwrap_i64() as u32).into())
-            }
+            (NumType::I32, 32) => Val::I32(convert!(I32, u32)),
+            (NumType::I64, 64) => Val::I64(convert!(I64, u64)),
+            (NumType::I32, 8) => Val::I32(convert!(I32, u8).into()),
+            (NumType::I32, 16) => Val::I32(convert!(I32, u16).into()),
+            (NumType::I64, 8) => Val::I64(convert!(I64, u8).into()),
+            (NumType::I64, 16) => Val::I64(convert!(I64, u16).into()),
+            (NumType::I64, 32) => Val::I64(convert!(I64, u32).into()),
             _ => unreachable!(),
         };
         self.push_value(c);
@@ -1574,35 +1565,19 @@ impl<'m> Thread<'m> {
             None => return Err(trap()),
             Some(x) => x,
         };
+        macro_rules! convert {
+            ($n:ident, $u:ident) => {
+                paste::paste! { op.$u(mem.as_mut_ptr() as *mut $u, c.[< unwrap_$n:lower >]() as $u, c2.[< unwrap_$n:lower >]() as $u) }
+            };
+        }
         let c = match (t, n) {
-            (NumType::I32, 32) => Val::I32(op.i32(
-                mem.as_mut_ptr() as *mut i32,
-                c.unwrap_i32() as i32,
-                c2.unwrap_i32() as i32,
-            ) as u32),
-            (NumType::I64, 64) => Val::I64(op.i64(
-                mem.as_mut_ptr() as *mut i64,
-                c.unwrap_i64() as i64,
-                c2.unwrap_i64() as i64,
-            ) as u64),
-            (NumType::I32, 8) => Val::I32(
-                op.u8(mem.as_mut_ptr(), c.unwrap_i32() as u8, c2.unwrap_i32() as u8).into(),
-            ),
-            (NumType::I32, 16) => Val::I32(
-                op.u16(mem.as_mut_ptr() as *mut u16, c.unwrap_i32() as u16, c2.unwrap_i32() as u16)
-                    .into(),
-            ),
-            (NumType::I64, 8) => Val::I64(
-                op.u8(mem.as_mut_ptr(), c.unwrap_i64() as u8, c2.unwrap_i64() as u8).into(),
-            ),
-            (NumType::I64, 16) => Val::I64(
-                op.u16(mem.as_mut_ptr() as *mut u16, c.unwrap_i64() as u16, c2.unwrap_i64() as u16)
-                    .into(),
-            ),
-            (NumType::I64, 32) => Val::I64(
-                op.u32(mem.as_mut_ptr() as *mut u32, c.unwrap_i64() as u32, c2.unwrap_i64() as u32)
-                    .into(),
-            ),
+            (NumType::I32, 32) => Val::I32(convert!(I32, u32)),
+            (NumType::I64, 64) => Val::I64(convert!(I64, u64)),
+            (NumType::I32, 8) => Val::I32(convert!(I32, u8).into()),
+            (NumType::I32, 16) => Val::I32(convert!(I32, u16).into()),
+            (NumType::I64, 8) => Val::I64(convert!(I64, u8).into()),
+            (NumType::I64, 16) => Val::I64(convert!(I64, u16).into()),
+            (NumType::I64, 32) => Val::I64(convert!(I64, u32).into()),
             _ => unreachable!(),
         };
         self.push_value(c);
@@ -1711,7 +1686,7 @@ impl<'m> Memory<'m> {
         (self.size = limits.min);
         self.max = limits.max;
         #[cfg(feature = "threads")]
-        (self.share = limits.share == Share::Shared);
+        let () = self.share = limits.share == Share::Shared;
         Ok(())
     }
 
