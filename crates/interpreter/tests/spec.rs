@@ -488,9 +488,4 @@ test!(utf8_import_field, "utf8-import-field");
 test!(utf8_import_module, "utf8-import-module");
 test!(utf8_invalid_encoding, "utf8-invalid-encoding");
 
-test!(
-    // Not fully implemented yet, ignoring.
-    #[ignore]
-    "threads",
-    atomic
-);
+test!("threads", atomic);

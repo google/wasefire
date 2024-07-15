@@ -16,6 +16,9 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
+#[cfg(feature = "threads")]
+use portable_atomic::{AtomicU16, AtomicU32, AtomicU64, AtomicU8, Ordering};
+
 use crate::error::*;
 use crate::module::*;
 use crate::syntax::*;
@@ -856,6 +859,7 @@ impl<'m> Thread<'m> {
             }
             MemorySize => self.push_value(Val::I32(store.mem(inst_id, 0).size())),
             MemoryGrow => {
+                // TODO(threads): Add mutex for growing shared memory.
                 let n = self.pop_value().unwrap_i32();
                 self.push_value(Val::I32(grow(store.mem(inst_id, 0), n, ())));
             }
@@ -965,58 +969,52 @@ impl<'m> Thread<'m> {
                 table.elems[i ..][.. n].fill(val);
             }
             #[cfg(feature = "threads")]
-            AtomicNotify(_) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic notify");
-                return Err(trap());
-            }
+            AtomicNotify(m) => self.atomic_notify(store.mem(inst_id, 0), m)?,
             #[cfg(feature = "threads")]
-            AtomicWait(_, _) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic wait");
-                return Err(trap());
+            AtomicWait(n, m) => {
+                self.atomic_wait(store.mem(inst_id, 0), NumType::i(n), n.into(), m)?
             }
+
             #[cfg(feature = "threads")]
-            AtomicFence => {
-                #[cfg(feature = "debug")]
-                println!("Atomic fence");
-                return Err(trap());
+            AtomicFence => (),
+            #[cfg(feature = "threads")]
+            AtomicLoad(n, m) => {
+                self.atomic_load(store.mem(inst_id, 0), NumType::i(n), n.into(), m)?
             }
+
             #[cfg(feature = "threads")]
-            AtomicLoad(_, _) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic load");
-                return Err(trap());
+            AtomicLoad_(b, m) => {
+                self.atomic_load(store.mem(inst_id, 0), NumType::i(b.into()), b.into(), m)?
             }
+
             #[cfg(feature = "threads")]
-            AtomicLoad_(_, _) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic load");
-                return Err(trap());
+            AtomicStore(n, m) => {
+                self.atomic_store(store.mem(inst_id, 0), NumType::i(n), n.into(), m)?
             }
+
             #[cfg(feature = "threads")]
-            AtomicStore(_, _) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic store");
-                return Err(trap());
+            AtomicStore_(b, m) => {
+                self.atomic_store(store.mem(inst_id, 0), NumType::i(b.into()), b.into(), m)?
             }
+
             #[cfg(feature = "threads")]
-            AtomicStore_(_, _) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic store");
-                return Err(trap());
+            AtomicUnOp(n, op, m) => {
+                self.atomic_unop(op, store.mem(inst_id, 0), NumType::i(n), n.into(), m)?
             }
+
             #[cfg(feature = "threads")]
-            AtomicOp(_op, _, _) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic binop {:?} ", _op);
-                return Err(trap());
+            AtomicUnOp_(b, op, m) => {
+                self.atomic_unop(op, store.mem(inst_id, 0), NumType::i(b.into()), b.into(), m)?
             }
+
             #[cfg(feature = "threads")]
-            AtomicOp_(_op, _, _) => {
-                #[cfg(feature = "debug")]
-                println!("Atomic binopP {:?} ", _op);
-                return Err(trap());
+            AtomicBinOp(n, op, m) => {
+                self.atomic_binop(op, store.mem(inst_id, 0), NumType::i(n), n.into(), m)?
+            }
+
+            #[cfg(feature = "threads")]
+            AtomicBinOp_(b, op, m) => {
+                self.atomic_binop(op, store.mem(inst_id, 0), NumType::i(b.into()), b.into(), m)?
             }
         }
         Ok(ThreadResult::Continue(self))
@@ -1151,11 +1149,14 @@ impl<'m> Thread<'m> {
     }
 
     fn mem_slice<'a>(
-        &mut self, mem: &'a mut Memory<'m>, m: MemArg, i: u32, len: usize,
+        &mut self, mem: &'a mut Memory<'m>, m: MemArg, i: u32, len: usize, align: bool,
     ) -> Option<&'a mut [u8]> {
         let ea = i.checked_add(m.offset)?;
         if ea.checked_add(len as u32)? > mem.len() {
             memory_too_small(ea as usize, len, mem);
+            return None;
+        }
+        if align && ea % len as u32 != 0 {
             return None;
         }
         Some(&mut mem.data[ea as usize ..][.. len])
@@ -1165,7 +1166,7 @@ impl<'m> Thread<'m> {
         &mut self, mem: &mut Memory<'m>, t: NumType, n: usize, s: Sx, m: MemArg,
     ) -> Result<(), Error> {
         let i = self.pop_value().unwrap_i32();
-        let mem = match self.mem_slice(mem, m, i, n / 8) {
+        let mem = match self.mem_slice(mem, m, i, n / 8, false) {
             None => return Err(trap()),
             Some(x) => x,
         };
@@ -1202,7 +1203,7 @@ impl<'m> Thread<'m> {
     ) -> Result<(), Error> {
         let c = self.pop_value();
         let i = self.pop_value().unwrap_i32();
-        let mem = match self.mem_slice(mem, m, i, n / 8) {
+        let mem = match self.mem_slice(mem, m, i, n / 8, false) {
             None => return Err(trap()),
             Some(x) => x,
         };
@@ -1423,6 +1424,165 @@ impl<'m> Thread<'m> {
         self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals));
         Ok(ThreadResult::Continue(self))
     }
+
+    #[cfg(feature = "threads")]
+    fn atomic_notify(&mut self, mem: &mut Memory<'m>, m: MemArg) -> Result<(), Error> {
+        let count = self.pop_value();
+        let i = self.pop_value().unwrap_i32();
+
+        // Trap if memory access is OOB.
+        let _mem = match self.mem_slice(mem, m, i, 4, true) {
+            None => return Err(trap()),
+            Some(x) => x,
+        };
+        self.push_value(count);
+        Ok(())
+    }
+
+    #[cfg(feature = "threads")]
+    fn atomic_wait(
+        &mut self, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
+    ) -> Result<(), Error> {
+        if !mem.share {
+            return Err(trap());
+        }
+        let _timeout = self.pop_value().unwrap_i64();
+        let expected = self.pop_value();
+        self.atomic_load(mem, t, n, m)?;
+        let read = self.pop_value();
+        if read != expected {
+            self.push_value(Val::I32(1));
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "threads")]
+    fn atomic_load(
+        &mut self, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
+    ) -> Result<(), Error> {
+        let i = self.pop_value().unwrap_i32();
+        let mem = match self.mem_slice(mem, m, i, n / 8, true) {
+            None => return Err(trap()),
+            Some(x) => x,
+        };
+        macro_rules! convert {
+            ($T:ident, $t:ident, $s:ident) => {{
+                let ptr = mem.as_mut_ptr() as *mut $s;
+                let ptr = unsafe { paste::paste!([<Atomic $s:upper>]::from_ptr(ptr)) };
+                Val::$T(ptr.load(Ordering::SeqCst) as $t)
+            }};
+        }
+        let c = match (t, n) {
+            (NumType::I32, 32) => convert!(I32, u32, u32),
+            (NumType::I32, 16) => convert!(I32, u32, u16),
+            (NumType::I32, 8) => convert!(I32, u32, u8),
+            (NumType::I64, 64) => convert!(I64, u64, u64),
+            (NumType::I64, 32) => convert!(I64, u64, u32),
+            (NumType::I64, 16) => convert!(I64, u64, u16),
+            (NumType::I64, 8) => convert!(I64, u64, u8),
+            _ => unreachable!(),
+        };
+        self.push_value(c);
+        Ok(())
+    }
+
+    #[cfg(feature = "threads")]
+    fn atomic_store(
+        &mut self, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
+    ) -> Result<(), Error> {
+        let val = self.pop_value();
+        let i = self.pop_value().unwrap_i32();
+        let mem = match self.mem_slice(mem, m, i, n / 8, true) {
+            None => return Err(trap()),
+            Some(x) => x,
+        };
+        macro_rules! convert {
+            ($s:ident, $t:ident) => {{
+                let ptr = mem.as_mut_ptr() as *mut $t;
+                paste::paste! {
+                    let ptr = unsafe { [<Atomic $t:upper>]::from_ptr(ptr) };
+                    ptr.store(val.[<unwrap_ $s>]() as $t, Ordering::SeqCst);
+                }
+            }};
+        }
+        match (t, n) {
+            (NumType::I32, 32) => convert!(i32, u32),
+            (NumType::I32, 16) => convert!(i32, u16),
+            (NumType::I32, 8) => convert!(i32, u8),
+            (NumType::I64, 64) => convert!(i64, u64),
+            (NumType::I64, 32) => convert!(i64, u32),
+            (NumType::I64, 16) => convert!(i64, u16),
+            (NumType::I64, 8) => convert!(i64, u8),
+            _ => unreachable!(),
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "threads")]
+    fn atomic_unop(
+        &mut self, op: AtomicUnOp, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
+    ) -> Result<(), Error> {
+        let val = self.pop_value();
+        let i = self.pop_value().unwrap_i32();
+        let mem = match self.mem_slice(mem, m, i, n / 8, true) {
+            None => return Err(trap()),
+            Some(x) => x,
+        };
+        macro_rules! convert {
+            ($n:ident, $t:ident, $u:ident) => {{
+                let ptr = mem.as_mut_ptr() as *mut $u;
+                let val = paste::paste!(val.[<unwrap_ $n:lower>]() as $u);
+                Val::$n(op.$u(ptr, val) as $t)
+            }};
+        }
+        let res = match (t, n) {
+            (NumType::I32, 32) => convert!(I32, u32, u32),
+            (NumType::I32, 16) => convert!(I32, u32, u16),
+            (NumType::I32, 8) => convert!(I32, u32, u8),
+            (NumType::I64, 64) => convert!(I64, u64, u64),
+            (NumType::I64, 32) => convert!(I64, u64, u32),
+            (NumType::I64, 16) => convert!(I64, u64, u16),
+            (NumType::I64, 8) => convert!(I64, u64, u8),
+            _ => unreachable!(),
+        };
+        self.push_value(res);
+        Ok(())
+    }
+
+    #[cfg(feature = "threads")]
+    fn atomic_binop(
+        &mut self, op: AtomicBinOp, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
+    ) -> Result<(), Error> {
+        let val2 = self.pop_value();
+        let val1 = self.pop_value();
+        let i = self.pop_value().unwrap_i32();
+        let mem = match self.mem_slice(mem, m, i, n / 8, true) {
+            None => return Err(trap()),
+            Some(x) => x,
+        };
+        macro_rules! convert {
+            ($n:ident, $t:ident, $u:ident) => {{
+                paste::paste! {
+                    let ptr = mem.as_mut_ptr() as *mut $u;
+                    let val1 = val1.[<unwrap_ $n:lower>]() as $u;
+                    let val2 = val2.[<unwrap_ $n:lower>]() as $u;
+                    Val::$n(op.$u(ptr, val1, val2) as $t)
+                }
+            }};
+        }
+        let c = match (t, n) {
+            (NumType::I32, 32) => convert!(I32, u32, u32),
+            (NumType::I32, 16) => convert!(I32, u32, u16),
+            (NumType::I32, 8) => convert!(I32, u32, u8),
+            (NumType::I64, 64) => convert!(I64, u64, u64),
+            (NumType::I64, 32) => convert!(I64, u64, u32),
+            (NumType::I64, 16) => convert!(I64, u64, u16),
+            (NumType::I64, 8) => convert!(I64, u64, u8),
+            _ => unreachable!(),
+        };
+        self.push_value(c);
+        Ok(())
+    }
 }
 
 fn table_init(d: usize, s: usize, n: usize, table: &mut Table, elems: &[Val]) -> Result<(), Error> {
@@ -1496,8 +1656,15 @@ struct Memory<'m> {
     // May be shorter than the maximum length for the module, but not larger.
     data: &'m mut [u8],
     // The size currently available to the module. May be larger than the actual data.
+    #[cfg(feature = "threads")]
+    size: AtomicU32,
+    #[cfg(not(feature = "threads"))]
     size: u32,
     max: u32,
+    // TODO(threads): Extend here to store data about waiting threads etc.
+    // https://github.com/google/wasefire/pull/513#discussion_r1652977484
+    #[cfg(feature = "threads")]
+    share: bool,
 }
 
 impl<'m> Memory<'m> {
@@ -1513,13 +1680,18 @@ impl<'m> Memory<'m> {
         // TODO: Figure out if we need to do this or whether we can rely on the caller to provide a
         // zeroed-out slice.
         self.data.fill(0);
-        self.size = limits.min;
+        #[cfg(feature = "threads")]
+        self.size.store(limits.min, Ordering::SeqCst);
+        #[cfg(not(feature = "threads"))]
+        (self.size = limits.min);
         self.max = limits.max;
+        #[cfg(feature = "threads")]
+        let () = self.share = limits.share == Share::Shared;
         Ok(())
     }
 
     fn len(&self) -> u32 {
-        core::cmp::min(self.data.len() as u32, self.size * 0x10000)
+        core::cmp::min(self.data.len() as u32, self.size() * 0x10000)
     }
 }
 
@@ -1539,13 +1711,20 @@ trait Growable {
 impl<'m> Growable for Memory<'m> {
     type Item = ();
     fn size(&self) -> u32 {
-        self.size
+        #[cfg(feature = "threads")]
+        let size = self.size.load(Ordering::SeqCst);
+        #[cfg(not(feature = "threads"))]
+        let size = self.size;
+        size
     }
     fn max(&self) -> u32 {
         self.max
     }
     fn grow(&mut self, n: u32, _: Self::Item) {
-        self.size = n;
+        #[cfg(feature = "threads")]
+        self.size.store(n, Ordering::SeqCst);
+        #[cfg(not(feature = "threads"))]
+        (self.size = n);
     }
 }
 
