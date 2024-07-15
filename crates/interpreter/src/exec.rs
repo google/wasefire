@@ -1468,21 +1468,18 @@ impl<'m> Thread<'m> {
         macro_rules! convert {
             ($T:ident, $t:ident, $s:ident) => {{
                 let ptr = mem.as_mut_ptr() as *mut $s;
-                let ptr = unsafe {
-                    paste::paste! { [< Atomic $s:upper >]::from_ptr(ptr) }
-                };
+                let ptr = unsafe { paste::paste!([<Atomic $s:upper>]::from_ptr(ptr)) };
                 Val::$T(ptr.load(Ordering::SeqCst) as $t)
             }};
         }
-
         let c = match (t, n) {
             (NumType::I32, 32) => convert!(I32, u32, u32),
-            (NumType::I64, 64) => convert!(I64, u64, u64),
-            (NumType::I32, 8) => convert!(I32, u32, u8),
             (NumType::I32, 16) => convert!(I32, u32, u16),
-            (NumType::I64, 8) => convert!(I64, u64, u8),
-            (NumType::I64, 16) => convert!(I64, u64, u16),
+            (NumType::I32, 8) => convert!(I32, u32, u8),
+            (NumType::I64, 64) => convert!(I64, u64, u64),
             (NumType::I64, 32) => convert!(I64, u64, u32),
+            (NumType::I64, 16) => convert!(I64, u64, u16),
+            (NumType::I64, 8) => convert!(I64, u64, u8),
             _ => unreachable!(),
         };
         self.push_value(c);
@@ -1493,33 +1490,29 @@ impl<'m> Thread<'m> {
     fn atomic_store(
         &mut self, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
     ) -> Result<(), Error> {
-        let c = self.pop_value();
+        let val = self.pop_value();
         let i = self.pop_value().unwrap_i32();
         let mem = match self.mem_slice(mem, m, i, n / 8, true) {
             None => return Err(trap()),
             Some(x) => x,
         };
-
         macro_rules! convert {
             ($s:ident, $t:ident) => {{
                 let ptr = mem.as_mut_ptr() as *mut $t;
                 paste::paste! {
-                    let ptr = unsafe {
-                        [< Atomic $t:upper >]::from_ptr(ptr)
-                    };
-                    ptr.store((c.[<unwrap_ $s>]() as $t).into(), Ordering::SeqCst);
+                    let ptr = unsafe { [<Atomic $t:upper>]::from_ptr(ptr) };
+                    ptr.store(val.[<unwrap_ $s>]() as $t, Ordering::SeqCst);
                 }
             }};
         }
-
         match (t, n) {
             (NumType::I32, 32) => convert!(i32, u32),
-            (NumType::I64, 64) => convert!(i64, u64),
-            (NumType::I32, 8) => convert!(i32, u8),
             (NumType::I32, 16) => convert!(i32, u16),
-            (NumType::I64, 8) => convert!(i64, u8),
-            (NumType::I64, 16) => convert!(i64, u16),
+            (NumType::I32, 8) => convert!(i32, u8),
+            (NumType::I64, 64) => convert!(i64, u64),
             (NumType::I64, 32) => convert!(i64, u32),
+            (NumType::I64, 16) => convert!(i64, u16),
+            (NumType::I64, 8) => convert!(i64, u8),
             _ => unreachable!(),
         }
         Ok(())
@@ -1529,28 +1522,30 @@ impl<'m> Thread<'m> {
     fn atomic_unop(
         &mut self, op: AtomicUnOp, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
     ) -> Result<(), Error> {
-        let c = self.pop_value();
+        let val = self.pop_value();
         let i = self.pop_value().unwrap_i32();
         let mem = match self.mem_slice(mem, m, i, n / 8, true) {
             None => return Err(trap()),
             Some(x) => x,
         };
         macro_rules! convert {
-            ($n:ident, $u:ident) => {
-                paste::paste! { op.$u(mem.as_mut_ptr() as *mut $u, c.[< unwrap_$n:lower >]() as $u) }
-            };
+            ($n:ident, $t:ident, $u:ident) => {{
+                let ptr = mem.as_mut_ptr() as *mut $u;
+                let val = paste::paste!(val.[<unwrap_ $n:lower>]() as $u);
+                Val::$n(op.$u(ptr, val) as $t)
+            }};
         }
-        let c = match (t, n) {
-            (NumType::I32, 32) => Val::I32(convert!(I32, u32)),
-            (NumType::I64, 64) => Val::I64(convert!(I64, u64)),
-            (NumType::I32, 8) => Val::I32(convert!(I32, u8).into()),
-            (NumType::I32, 16) => Val::I32(convert!(I32, u16).into()),
-            (NumType::I64, 8) => Val::I64(convert!(I64, u8).into()),
-            (NumType::I64, 16) => Val::I64(convert!(I64, u16).into()),
-            (NumType::I64, 32) => Val::I64(convert!(I64, u32).into()),
+        let res = match (t, n) {
+            (NumType::I32, 32) => convert!(I32, u32, u32),
+            (NumType::I32, 16) => convert!(I32, u32, u16),
+            (NumType::I32, 8) => convert!(I32, u32, u8),
+            (NumType::I64, 64) => convert!(I64, u64, u64),
+            (NumType::I64, 32) => convert!(I64, u64, u32),
+            (NumType::I64, 16) => convert!(I64, u64, u16),
+            (NumType::I64, 8) => convert!(I64, u64, u8),
             _ => unreachable!(),
         };
-        self.push_value(c);
+        self.push_value(res);
         Ok(())
     }
 
@@ -1558,26 +1553,31 @@ impl<'m> Thread<'m> {
     fn atomic_binop(
         &mut self, op: AtomicBinOp, mem: &mut Memory<'m>, t: NumType, n: usize, m: MemArg,
     ) -> Result<(), Error> {
-        let c = self.pop_value();
-        let c2 = self.pop_value();
+        let val2 = self.pop_value();
+        let val1 = self.pop_value();
         let i = self.pop_value().unwrap_i32();
         let mem = match self.mem_slice(mem, m, i, n / 8, true) {
             None => return Err(trap()),
             Some(x) => x,
         };
         macro_rules! convert {
-            ($n:ident, $u:ident) => {
-                paste::paste! { op.$u(mem.as_mut_ptr() as *mut $u, c.[< unwrap_$n:lower >]() as $u, c2.[< unwrap_$n:lower >]() as $u) }
-            };
+            ($n:ident, $t:ident, $u:ident) => {{
+                paste::paste! {
+                    let ptr = mem.as_mut_ptr() as *mut $u;
+                    let val1 = val1.[<unwrap_ $n:lower>]() as $u;
+                    let val2 = val2.[<unwrap_ $n:lower>]() as $u;
+                    Val::$n(op.$u(ptr, val1, val2) as $t)
+                }
+            }};
         }
         let c = match (t, n) {
-            (NumType::I32, 32) => Val::I32(convert!(I32, u32)),
-            (NumType::I64, 64) => Val::I64(convert!(I64, u64)),
-            (NumType::I32, 8) => Val::I32(convert!(I32, u8).into()),
-            (NumType::I32, 16) => Val::I32(convert!(I32, u16).into()),
-            (NumType::I64, 8) => Val::I64(convert!(I64, u8).into()),
-            (NumType::I64, 16) => Val::I64(convert!(I64, u16).into()),
-            (NumType::I64, 32) => Val::I64(convert!(I64, u32).into()),
+            (NumType::I32, 32) => convert!(I32, u32, u32),
+            (NumType::I32, 16) => convert!(I32, u32, u16),
+            (NumType::I32, 8) => convert!(I32, u32, u8),
+            (NumType::I64, 64) => convert!(I64, u64, u64),
+            (NumType::I64, 32) => convert!(I64, u64, u32),
+            (NumType::I64, 16) => convert!(I64, u64, u16),
+            (NumType::I64, 8) => convert!(I64, u64, u8),
             _ => unreachable!(),
         };
         self.push_value(c);

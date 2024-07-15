@@ -560,27 +560,25 @@ impl CvtOp {
 #[cfg(feature = "threads")]
 macro_rules! impl_atomic_op {
     ($u:ident) => {
-        paste::paste! {
-            impl AtomicUnOp {
-                pub fn $u(&self, ptr: *mut $u, c: $u) -> $u {
-                    let x = unsafe { [< Atomic $u:upper >]::from_ptr(ptr) };
-                    match self {
-                        AtomicUnOp::Add => x.fetch_add(c, Ordering::SeqCst),
-                        AtomicUnOp::Sub => x.fetch_sub(c, Ordering::SeqCst),
-                        AtomicUnOp::And => x.fetch_and(c, Ordering::SeqCst),
-                        AtomicUnOp::Or => x.fetch_or(c, Ordering::SeqCst),
-                        AtomicUnOp::Xor => x.fetch_xor(c, Ordering::SeqCst),
-                        AtomicUnOp::Xchg => x.swap(c, Ordering::SeqCst),
-                    }
+        impl AtomicUnOp {
+            pub fn $u(&self, ptr: *mut $u, val: $u) -> $u {
+                let x = unsafe { paste::paste!([<Atomic $u:upper>]::from_ptr(ptr)) };
+                match self {
+                    AtomicUnOp::Add => x.fetch_add(val, Ordering::SeqCst),
+                    AtomicUnOp::Sub => x.fetch_sub(val, Ordering::SeqCst),
+                    AtomicUnOp::And => x.fetch_and(val, Ordering::SeqCst),
+                    AtomicUnOp::Or => x.fetch_or(val, Ordering::SeqCst),
+                    AtomicUnOp::Xor => x.fetch_xor(val, Ordering::SeqCst),
+                    AtomicUnOp::Xchg => x.swap(val, Ordering::SeqCst),
                 }
             }
-            impl AtomicBinOp {
-                pub fn $u(&self, ptr: *mut $u, c: $u, c2: $u) -> $u {
-                    let x = unsafe { [< Atomic $u:upper >]::from_ptr(ptr) };
-                    match x.compare_exchange(c2, c, Ordering::SeqCst, Ordering::SeqCst) {
-                                Err(v) => v,
-                                Ok(v) => v
-                    }
+        }
+        impl AtomicBinOp {
+            pub fn $u(&self, ptr: *mut $u, val1: $u, val2: $u) -> $u {
+                let x = unsafe { paste::paste!([<Atomic $u:upper>]::from_ptr(ptr)) };
+                match x.compare_exchange(val1, val2, Ordering::SeqCst, Ordering::SeqCst) {
+                    Err(v) => v,
+                    Ok(v) => v
                 }
             }
         }
