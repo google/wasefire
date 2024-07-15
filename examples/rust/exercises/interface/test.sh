@@ -19,5 +19,5 @@ set -e
 
 test_helper
 
-cargo test
-cargo check --target=wasm32-unknown-unknown
+cargo test --lib
+cargo check --lib --target=wasm32-unknown-unknown

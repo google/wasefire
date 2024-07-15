@@ -4,11 +4,14 @@
 
 ### Minor
 
-- Add `std` feature to implement `std::error::Error`
+- Implement `core::error::Error` for `Error`
+- Add `Error::new_const()` and make `Error::{space,code}()` const
 - Add an `OutOfBounds` error
 
 ### Patch
 
+- Publish LICENSE file
+- Depend on `alloc` to silence `unused-crate-dependencies` false positive
 - Update dependencies
 - Use common Wasefire lints
 

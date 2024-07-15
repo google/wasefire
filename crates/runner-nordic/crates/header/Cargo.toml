@@ -6,6 +6,10 @@ license = "Apache-2.0"
 publish = false
 edition = "2021"
 
+[features]
+# TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
+alloc = []
+
 [lints]
 clippy.unit-arg = "allow"
 rust.unsafe-op-in-unsafe-fn = "warn"

@@ -7,7 +7,7 @@ publish = true
 edition = "2021"
 description = "Wasefire scheduler"
 repository = "https://github.com/google/wasefire"
-include = ["/src"]
+include = ["/LICENSE", "/src/"]
 keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
@@ -25,7 +25,6 @@ wasefire-applet-api = { version = "0.6.1-git", path = "../api", features = ["hos
 wasefire-board-api = { version = "0.7.0-git", path = "../board" }
 wasefire-error = { version = "0.1.1-git", path = "../error" }
 wasefire-logger = { version = "0.1.5-git", path = "../logger" }
-wasefire-protocol = { version = "0.1.0-git", path = "../protocol", optional = true }
 wasefire-store = { version = "0.2.4-git", path = "../store", optional = true }
 wasefire-sync = { version = "0.1.1-git", path = "../sync", optional = true }
 
@@ -33,6 +32,12 @@ wasefire-sync = { version = "0.1.1-git", path = "../sync", optional = true }
 version = "0.3.0-git"
 path = "../interpreter"
 features = ["toctou"]
+optional = true
+
+[dependencies.wasefire-protocol]
+version = "0.1.0-git"
+path = "../protocol"
+features = ["device"]
 optional = true
 
 [features]
@@ -229,6 +234,7 @@ wasm = ["dep:wasefire-interpreter"]
 # safety invariant.
 unsafe-skip-validation = []
 # Internal features.
+_test = ["wasefire-protocol?/_exhaustive"]
 internal-applet-api-crypto = []
 internal-applet-api-crypto-hash = ["dep:digest", "dep:generic-array", "internal-applet-api-crypto"]
 internal-applet-api-platform = []

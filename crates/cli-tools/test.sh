@@ -19,4 +19,4 @@ set -e
 
 test_helper
 
-cargo test
+cargo test --lib

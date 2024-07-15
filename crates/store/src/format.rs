@@ -883,8 +883,8 @@ pub enum InternalEntry {
 
     /// Marks the start of a transaction.
     ///
-    /// The marker is followed by a given number of updates, which are either user entries or remove
-    /// entries.
+    /// The marker is followed by a given number of updates, which are either user entries or
+    /// remove entries.
     Marker {
         /// The number of updates in the transaction.
         count: Nat,

@@ -39,7 +39,7 @@ use nrf52840_hal::clocks::{self, ExternalOscillator, Internal, LfOscStopped};
 use nrf52840_hal::gpio;
 use nrf52840_hal::gpio::{Level, Output, Pin, PushPull};
 use nrf52840_hal::gpiote::Gpiote;
-use nrf52840_hal::pac::{interrupt, Interrupt};
+use nrf52840_hal::pac::{interrupt, Interrupt, FICR};
 use nrf52840_hal::rng::Rng;
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 #[cfg(feature = "release")]
@@ -77,6 +77,7 @@ type Clocks = clocks::Clocks<ExternalOscillator, Internal, LfOscStopped>;
 
 struct State {
     events: Events,
+    ficr: FICR,
     buttons: [Button; <button::Impl as Support<usize>>::SUPPORT],
     gpiote: Gpiote,
     protocol: wasefire_protocol_usb::Rpc<'static, Usb>,
@@ -117,6 +118,7 @@ fn main() -> ! {
     allocator::init();
     log::debug!("Runner starts.");
     let p = nrf52840_hal::pac::Peripherals::take().unwrap();
+    let ficr = p.FICR;
     let port0 = gpio::p0::Parts::new(p.P0);
     let port1 = gpio::p1::Parts::new(p.P1);
     let buttons = [
@@ -156,7 +158,7 @@ fn main() -> ! {
         .build();
     let radio = BleRadio::new(
         p.RADIO,
-        &p.FICR,
+        &ficr,
         BLE_TX.write([0; MIN_PDU_BUF]),
         BLE_RX.write([0; MIN_PDU_BUF]),
     );
@@ -172,6 +174,7 @@ fn main() -> ! {
     let events = Events::default();
     let state = State {
         events,
+        ficr,
         buttons,
         gpiote,
         protocol,

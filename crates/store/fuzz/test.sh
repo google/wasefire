@@ -19,5 +19,6 @@ set -e
 
 test_helper
 
-cargo check
-cargo test --lib --examples
+cargo test --lib
+cargo check --bin=store
+cargo check --example=store

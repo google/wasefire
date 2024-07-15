@@ -16,11 +16,12 @@ use std::time::Duration;
 
 use anyhow::Result;
 use rusb::{Error, GlobalContext};
-use wasefire_protocol::service::applet;
-use wasefire_protocol::{Api, Request};
+use wasefire_protocol::{applet, Api, Request};
 use wasefire_protocol_usb::Connection;
 
-pub fn main(connection: &Connection<GlobalContext>) -> Result<()> {
+pub fn main(mut connection: Connection<GlobalContext>) -> Result<()> {
+    connection.set_timeout(Duration::from_millis(200));
+    let connection = &connection;
     println!("Enter tunnel.");
     let tunnel = applet::Tunnel { applet_id: applet::AppletId, delimiter: b"EOF" };
     crate::send(connection, &Api::<Request>::AppletTunnel(tunnel))?;
@@ -30,13 +31,13 @@ pub fn main(connection: &Connection<GlobalContext>) -> Result<()> {
     for len in [0, 1, 62, 63, 64, 125, 126, 127, 188, 189] {
         print!("- {len}:");
         let packet: Vec<u8> = (b'1' ..= b'9').cycle().take(len).collect();
-        connection.send(&packet, TIMEOUT).unwrap();
-        assert_eq!(connection.receive(TIMEOUT).unwrap(), packet);
+        connection.send_raw(&packet).unwrap();
+        assert_eq!(connection.receive_raw().unwrap(), packet);
         println!(" ok");
     }
 
     println!("Not reading a response should not jam (a warning is expected).");
-    connection.send(b"hello", TIMEOUT).unwrap();
+    connection.send_raw(b"hello").unwrap();
     ping_pong(connection);
 
     println!("Short and invalid packets:");
@@ -52,23 +53,21 @@ pub fn main(connection: &Connection<GlobalContext>) -> Result<()> {
     }
 
     println!("Close tunnel.");
-    connection.send(b"EOF", TIMEOUT)?;
+    connection.send_raw(b"EOF")?;
     crate::read_tunnel(connection)?;
     Ok(())
 }
 
 fn write(connection: &Connection<GlobalContext>, packet: &[u8]) {
-    assert_eq!(connection.testonly_write(packet, TIMEOUT), Ok(packet.len()));
+    assert_eq!(connection.testonly_write(packet), Ok(packet.len()));
 }
 
 fn read_timeout(connection: &Connection<GlobalContext>) {
     let mut packet = [0; 64];
-    assert_eq!(connection.testonly_read(&mut packet, TIMEOUT), Err(Error::Timeout));
+    assert_eq!(connection.testonly_read(&mut packet), Err(Error::Timeout));
 }
 
 fn ping_pong(connection: &Connection<GlobalContext>) {
-    connection.send(b"ping", TIMEOUT).unwrap();
-    assert_eq!(connection.receive(TIMEOUT).unwrap(), b"PONG");
+    connection.send_raw(b"ping").unwrap();
+    assert_eq!(connection.receive_raw().unwrap(), b"PONG");
 }
-
-const TIMEOUT: Duration = Duration::from_millis(200);

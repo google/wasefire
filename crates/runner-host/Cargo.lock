@@ -1773,10 +1773,8 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.1.7-git"
+version = "0.2.0-git"
 dependencies = [
- "anyhow",
- "clap",
  "data-encoding",
  "data-encoding-macro",
  "proc-macro2",
@@ -1845,8 +1843,8 @@ dependencies = [
 name = "wasefire-protocol"
 version = "0.1.0-git"
 dependencies = [
- "sealed",
  "wasefire-error",
+ "wasefire-wire",
 ]
 
 [[package]]
@@ -1888,6 +1886,23 @@ version = "0.1.1-git"
 dependencies = [
  "portable-atomic",
  "spin",
+]
+
+[[package]]
+name = "wasefire-wire"
+version = "0.1.0-git"
+dependencies = [
+ "wasefire-error",
+ "wasefire-wire-derive",
+]
+
+[[package]]
+name = "wasefire-wire-derive"
+version = "0.1.0-git"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.66",
 ]
 
 [[package]]

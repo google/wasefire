@@ -46,8 +46,8 @@ pub enum StatKey {
 
     /// The number of used erase cycles of the initial storage.
     ///
-    /// This permits to check the store as if it already consumed lifetime. In particular it permits
-    /// to check the store when lifetime is almost out.
+    /// This permits to check the store as if it already consumed lifetime. In particular it
+    /// permits to check the store when lifetime is almost out.
     InitCycles,
 
     /// The number of words written during fuzzing.

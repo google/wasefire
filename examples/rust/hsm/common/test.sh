@@ -19,5 +19,5 @@ set -e
 
 test_helper
 
-cargo test --features=std
-cargo check --target=wasm32-unknown-unknown --features=api
+cargo test --lib --features=std
+cargo check --lib --target=wasm32-unknown-unknown --features=api

@@ -417,6 +417,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "derivative"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -822,6 +833,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "libusb1-sys"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da050ade7ac4ff1ba5379af847a10a10a8e284181e060105bf8d86960ce9ce0f"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+ "vcpkg",
+]
+
+[[package]]
 name = "linux-raw-sys"
 version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -924,6 +947,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "num_enum"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02339744ee7253741199f897151b38e72257d13802d4ee837285cc2990a90845"
+dependencies = [
+ "num_enum_derive",
+]
+
+[[package]]
+name = "num_enum_derive"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "681030a937600a36906c185595136d26abfebb4aa9c65701cefcaf8578bb982b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.66",
 ]
 
 [[package]]
@@ -1182,6 +1225,16 @@ dependencies = [
  "byteorder",
  "rmp",
  "serde",
+]
+
+[[package]]
+name = "rusb"
+version = "0.9.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab9f9ff05b63a786553a4c02943b74b34a988448671001e9a27e2f0565cc05a4"
+dependencies = [
+ "libc",
+ "libusb1-sys",
 ]
 
 [[package]]
@@ -1610,10 +1663,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 
 [[package]]
+name = "vcpkg"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
+
+[[package]]
 name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
+
+[[package]]
+name = "wasefire-board-api"
+version = "0.7.0-git"
+dependencies = [
+ "derivative",
+ "wasefire-error",
+ "wasefire-logger",
+ "wasefire-store",
+]
 
 [[package]]
 name = "wasefire-cli-tools"
@@ -1622,8 +1691,66 @@ dependencies = [
  "anyhow",
  "cargo_metadata",
  "clap",
+ "rusb",
  "serde",
  "toml",
+ "wasefire-protocol",
+ "wasefire-protocol-usb",
+]
+
+[[package]]
+name = "wasefire-error"
+version = "0.1.1-git"
+dependencies = [
+ "num_enum",
+]
+
+[[package]]
+name = "wasefire-logger"
+version = "0.1.5-git"
+dependencies = [
+ "log",
+]
+
+[[package]]
+name = "wasefire-protocol"
+version = "0.1.0-git"
+dependencies = [
+ "wasefire-error",
+ "wasefire-wire",
+]
+
+[[package]]
+name = "wasefire-protocol-usb"
+version = "0.1.0-git"
+dependencies = [
+ "anyhow",
+ "rusb",
+ "wasefire-board-api",
+ "wasefire-logger",
+ "wasefire-protocol",
+ "wasefire-wire",
+]
+
+[[package]]
+name = "wasefire-store"
+version = "0.2.4-git"
+
+[[package]]
+name = "wasefire-wire"
+version = "0.1.0-git"
+dependencies = [
+ "wasefire-error",
+ "wasefire-wire-derive",
+]
+
+[[package]]
+name = "wasefire-wire-derive"
+version = "0.1.0-git"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.66",
 ]
 
 [[package]]
@@ -1823,7 +1950,6 @@ dependencies = [
  "rustc-demangle",
  "serde",
  "stack-sizes",
- "strum",
  "wasefire-cli-tools",
 ]
 
