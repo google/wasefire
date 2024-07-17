@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+echo "hello ############"
+printenv
 set -e
 
 # This script installs the dependencies to run xtask. Any other dependencies
