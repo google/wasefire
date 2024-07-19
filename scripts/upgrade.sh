@@ -47,9 +47,8 @@ for path in $(git ls-files '*/Cargo.toml'); do
   cargo update --manifest-path=$path
 done
 
-( set -x
-  cd examples/assemblyscript
-  npm install --no-save assemblyscript
+( cd examples/assemblyscript
+  x npm install --no-save assemblyscript
 )
 ASC_VERSION=$(sed -n 's/^  "version": "\(.*\)",$/\1/p' \
   examples/assemblyscript/node_modules/assemblyscript/package.json)
