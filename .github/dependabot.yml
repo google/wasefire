@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directories:
+      - "/crates/**/*"
+      - "/examples/rust/**/*"
+    schedule: { interval: "monthly" }
+    groups: { all: { patterns: ["*"] } }
+    labels: []
+    # Version updates are done with ./scripts/upgrade.sh.
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "github-actions"
+    directories:
+      - "/.github/workflows"
+      - "/.github/actions/*"
+    schedule: { interval: "monthly" }
+    groups: { all: { patterns: ["*"] } }
+    labels: []

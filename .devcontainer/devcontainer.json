@@ -1,15 +1,17 @@
 {
-   "image":"mcr.microsoft.com/devcontainers/rust:latest",
-   "postCreateCommand":"./scripts/setup.sh -y && cargo xtask help",
-   "capAdd":[
-      "SYS_PTRACE"
-   ],
-   "forwardPorts":[5000],
-   "customizations":{
-      "codespaces":{
-         "openFiles":[
-            "book/src/quick/codespace.md"
-         ],
-      },
-   }
+  "image": "mcr.microsoft.com/devcontainers/rust:latest",
+  "postCreateCommand": "./scripts/setup.sh -y && cargo xtask help",
+  "capAdd": [
+    "SYS_PTRACE"
+  ],
+  "forwardPorts": [
+    5000
+  ],
+  "customizations": {
+    "codespaces": {
+      "openFiles": [
+        "book/src/quick/codespace.md"
+      ]
+    }
+  }
 }
