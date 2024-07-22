@@ -16,7 +16,6 @@ crypto-common = { version = "0.1.6", default-features = false }
 digest = { version = "0.10.7", default-features = false, features = ["mac"] }
 ecdsa = { version = "0.16.9", default-features = false, features = ["signing"] }
 elliptic-curve = { version = "0.13.8", default-features = false }
-generic-array = { version = "0.14.7", default-features = false }
 hkdf = { version = "0.12.4", default-features = false }
 hmac = { version = "0.12.1", default-features = false }
 p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }

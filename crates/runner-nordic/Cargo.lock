@@ -1137,7 +1137,6 @@ dependencies = [
  "digest",
  "ecdsa",
  "elliptic-curve",
- "generic-array",
  "p256",
  "sha2",
  "signature",

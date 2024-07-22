@@ -834,7 +834,7 @@ name = "wasefire"
 version = "0.6.0-git"
 dependencies = [
  "bytemuck",
- "generic-array",
+ "crypto-common",
  "sealed",
  "typenum",
  "wasefire-applet-api",

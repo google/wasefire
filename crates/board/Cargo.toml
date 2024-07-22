@@ -26,7 +26,6 @@ derivative = { version = "2.2.0", default-features = false, features = ["use_cor
 digest = { version = "0.10.7", default-features = false, optional = true }
 ecdsa = { version = "0.16.9", default-features = false, optional = true }
 elliptic-curve = { version = "0.13.8", default-features = false, optional = true }
-generic-array = { version = "0.14.7", default-features = false, optional = true }
 hmac = { version = "0.12.1", default-features = false, optional = true }
 p256 = { version = "0.13.2", default-features = false, optional = true }
 p384 = { version = "0.13.0", default-features = false, optional = true }
@@ -129,8 +128,8 @@ software-crypto-sha256 = ["api-crypto-sha256", "dep:sha2"]
 software-crypto-sha384 = ["api-crypto-sha384", "dep:sha2"]
 # Internal features.
 internal-api-crypto = []
-internal-api-crypto-aead = ["dep:generic-array", "dep:typenum", "internal-api-crypto"]
-internal-api-crypto-ecc = ["dep:generic-array", "dep:typenum", "internal-api-crypto"]
+internal-api-crypto-aead = ["dep:crypto-common", "dep:typenum", "internal-api-crypto"]
+internal-api-crypto-ecc = ["dep:crypto-common", "dep:typenum", "internal-api-crypto"]
 internal-api-crypto-hash = ["dep:crypto-common", "dep:digest", "dep:typenum", "internal-api-crypto"]
 internal-api-crypto-hmac = ["dep:crypto-common", "dep:typenum", "digest/mac", "internal-api-crypto"]
 internal-api-platform = []

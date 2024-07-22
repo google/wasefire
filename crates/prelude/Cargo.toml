@@ -21,7 +21,6 @@ bytemuck = { version = "1.16.0", default-features = false }
 const-default = { version = "1.0.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.6", default-features = false, optional = true }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
-generic-array = { version = "0.14.7", default-features = false, optional = true }
 rlsf = { version = "0.2.1", default-features = false, optional = true }
 sealed = { version = "0.5.0", default-features = false, optional = true }
 typenum = { version = "1.17.0", default-features = false, optional = true }
@@ -36,7 +35,7 @@ default = ["full-api"]
 api-button = ["wasefire-applet-api/api-button"]
 api-crypto-ccm = ["internal-api-crypto", "wasefire-applet-api/api-crypto-ccm"]
 api-crypto-ec = [
-  "dep:generic-array",
+  "dep:crypto-common",
   "dep:sealed",
   "dep:typenum",
   "internal-api-crypto",

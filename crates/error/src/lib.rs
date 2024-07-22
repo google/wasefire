@@ -15,7 +15,6 @@
 //! Applet and board API errors.
 
 #![no_std]
-#![feature(error_in_core)]
 
 // TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
 extern crate alloc;

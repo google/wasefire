@@ -269,7 +269,6 @@ dependencies = [
  "const-default",
  "crypto-common",
  "digest",
- "generic-array",
  "rlsf",
  "sealed",
  "typenum",

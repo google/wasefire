@@ -742,7 +742,6 @@ dependencies = [
  "digest",
  "ecdsa",
  "elliptic-curve",
- "generic-array",
  "hmac",
  "p256",
  "p384",

@@ -14,7 +14,7 @@
 
 //! Authenticated Encryption with Associated Data.
 
-use generic_array::{ArrayLength, GenericArray};
+use crypto_common::generic_array::{ArrayLength, GenericArray};
 
 use crate::{Error, Support};
 
