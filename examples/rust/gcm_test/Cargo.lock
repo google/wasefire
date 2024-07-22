@@ -221,7 +221,6 @@ dependencies = [
  "bytemuck",
  "crypto-common",
  "digest",
- "generic-array",
  "sealed",
  "typenum",
  "wasefire-applet-api",

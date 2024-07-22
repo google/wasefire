@@ -140,4 +140,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 40 -->
+<!-- Increment to skip CHANGELOG.md test: 41 -->

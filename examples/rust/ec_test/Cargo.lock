@@ -469,7 +469,7 @@ name = "wasefire"
 version = "0.6.0-git"
 dependencies = [
  "bytemuck",
- "generic-array",
+ "crypto-common",
  "sealed",
  "typenum",
  "wasefire-applet-api",
@@ -524,7 +524,6 @@ dependencies = [
  "digest",
  "ecdsa",
  "elliptic-curve",
- "generic-array",
  "hkdf",
  "hmac",
  "p256",
