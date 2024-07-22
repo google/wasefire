@@ -13,7 +13,10 @@ updates:
   - package-ecosystem: "github-actions"
     directories:
       - "/.github/workflows"
-      - "/.github/actions/*"
+      # TODO(https://github.com/dependabot/dependabot-core/issues/6345): Use glob.
+      - "/.github/actions/ci-cache"
+      - "/.github/actions/ci-checks"
+      - "/.github/actions/ci-footprint"
     schedule: { interval: "monthly" }
     groups: { all: { patterns: ["*"] } }
     labels: []
