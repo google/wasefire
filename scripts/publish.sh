@@ -19,17 +19,6 @@ set -e
 
 # This script publishes all crates.
 
-DRY_RUN=
-while [ $# -gt 0 ]; do
-  case $1 in
-    --dry-run) DRY_RUN=y ;;
-    --no-dry-run) DRY_RUN=n ;;
-    *) e "Unexpected argument '$1'" ;;
-  esac
-  shift
-done
-[ -n "$DRY_RUN" ] || e "Either --dry-run or --no-dry-run must be provided"
-
 [ -z "$(git status -s)" ] || e "Repository is not clean"
 
 TOPOLOGICAL_ORDER=(
@@ -82,19 +71,18 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
   done
 done
 
-if [ $DRY_RUN = n ]; then
-  i "Remove all -git suffixes"
-  sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})
-  if [ -n "$(git status -s)" ]; then
-    i "Commit release"
-    git commit -aqm'Release all crates'
-    t "Create a PR from this release commit"
-    d "Re-run from the merged PR"
-  fi
-  i "This looks like a release commit"
-else
-  i "Skip removing all -git suffixes"
+[ "$1" = --no-dry-run ] || d "Run with --no-dry-run from the merged PR to actually publish"
+
+i "Remove all -git suffixes"
+sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})
+if [ -n "$(git status -s)" ]; then
+  i "Commit release"
+  git commit -aqm'Release all crates'
+  t "Create a PR from this release commit"
+  d "Then re-run from the merged PR"
 fi
+git log -1 --pretty=%s | grep -q '^Release all crates (#[0-9]*)$' \
+  || e "This is not a merged release commit"
 
 get_latest() {
   name="$(package_name)"
@@ -110,9 +98,6 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
       exit
     fi
     i "Publish $crate from ${latest:--} to $current"
-    PATTERN='^cargo (check|test) --(lib|bin=[^ ]*)'
-    REPLACE='cargo publish'
-    [ $DRY_RUN = n ] || REPLACE="$REPLACE --dry-run"
-    eval "$(sed -En "s/$PATTERN/$REPLACE/p;T;q" test.sh)"
+    eval "$(sed -En 's/^cargo (check|test) --(lib|bin=[^ ]*)/cargo publish/p;T;q' test.sh)"
   )
 done
