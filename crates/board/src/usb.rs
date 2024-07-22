@@ -17,12 +17,18 @@
 #[cfg(feature = "api-usb-serial")]
 pub mod serial;
 
+// TODO: Should this also be gated behind api-usb-serial feature or should it be
+// a different one?
+pub mod ctap;
+
 /// USB event.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Event {
     /// Serial event.
     #[cfg(feature = "api-usb-serial")]
     Serial(serial::Event),
+
+    Ctap(ctap::Event),
 }
 
 impl<B: crate::Api> From<Event> for crate::Event<B> {
@@ -36,8 +42,12 @@ pub trait Api: Send {
     /// USB serial interface.
     #[cfg(feature = "api-usb-serial")]
     type Serial: serial::Api;
+
+    type Ctap: ctap::Api;
 }
 
 /// USB serial interface.
 #[cfg(feature = "api-usb-serial")]
 pub type Serial<B> = <super::Usb<B> as Api>::Serial;
+
+pub type Ctap<B> = <super::Usb<B> as Api>::Ctap;
