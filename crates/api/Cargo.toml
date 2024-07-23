@@ -1,13 +1,13 @@
 [package]
 name = "wasefire-applet-api"
-version = "0.6.1-git"
+version = "0.6.1"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
 edition = "2021"
 description = "Low-level Wasefire applet API"
 repository = "https://github.com/google/wasefire"
-include = ["/src"]
+include = ["/LICENSE", "/src/"]
 keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
@@ -18,9 +18,9 @@ features = ["full-api", "wasm"]
 [dependencies]
 bytemuck = { version = "1.16.0", default-features = false, features = ["derive"] }
 sealed = { version = "0.5.0", default-features = false, optional = true }
-wasefire-applet-api-macro = { version = "0.6.1-git", path = "../api-macro" }
-wasefire-error = { version = "0.1.1-git", path = "../error" }
-wasefire-logger = { version = "0.1.5-git", path = "../logger", optional = true }
+wasefire-applet-api-macro = { version = "0.6.1", path = "../api-macro" }
+wasefire-error = { version = "0.1.1", path = "../error" }
+wasefire-logger = { version = "0.1.5", path = "../logger", optional = true }
 
 [features]
 # Compiles for host or wasm (choose exactly one).

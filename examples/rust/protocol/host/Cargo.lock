@@ -100,7 +100,7 @@ version = "4.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "528131438037fd55894f62d6e9f068b8f45ac57ffa77517819645d10aed04f64"
 dependencies = [
- "heck 0.5.0",
+ "heck",
  "proc-macro2",
  "quote",
  "syn 2.0.66",
@@ -154,12 +154,6 @@ dependencies = [
 
 [[package]]
 name = "heck"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
-
-[[package]]
-name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
@@ -174,6 +168,7 @@ dependencies = [
  "rusb",
  "wasefire-protocol",
  "wasefire-protocol-usb",
+ "wasefire-wire",
 ]
 
 [[package]]
@@ -302,18 +297,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sealed"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4a8caec23b7800fb97971a1c6ae365b6239aaeddfb934d6265f8505e795699d"
-dependencies = [
- "heck 0.4.1",
- "proc-macro2",
- "quote",
- "syn 2.0.66",
-]
-
-[[package]]
 name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -361,7 +344,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.7.0-git"
+version = "0.7.0"
 dependencies = [
  "derivative",
  "wasefire-error",
@@ -371,40 +354,58 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.1-git"
+version = "0.1.1"
 dependencies = [
  "num_enum",
 ]
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.5-git"
+version = "0.1.5"
 dependencies = [
  "log",
 ]
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
- "sealed",
  "wasefire-error",
+ "wasefire-wire",
 ]
 
 [[package]]
 name = "wasefire-protocol-usb"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "rusb",
  "wasefire-board-api",
- "wasefire-error",
  "wasefire-logger",
+ "wasefire-protocol",
+ "wasefire-wire",
 ]
 
 [[package]]
 name = "wasefire-store"
-version = "0.2.4-git"
+version = "0.2.4"
+
+[[package]]
+name = "wasefire-wire"
+version = "0.1.0"
+dependencies = [
+ "wasefire-error",
+ "wasefire-wire-derive",
+]
+
+[[package]]
+name = "wasefire-wire-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.66",
+]
 
 [[package]]
 name = "windows-sys"

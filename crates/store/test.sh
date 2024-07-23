@@ -19,5 +19,6 @@ set -e
 
 test_helper
 
-cargo test --features=std
-cargo check --target=thumbv7em-none-eabi
+cargo test --lib --features=std
+cargo test --test=store --features=std
+cargo check --lib --target=thumbv7em-none-eabi

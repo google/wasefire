@@ -15,7 +15,12 @@
 //! Provides API to interact with the platform.
 
 #[cfg(feature = "api-platform")]
+use alloc::boxed::Box;
+
+#[cfg(feature = "api-platform")]
 use wasefire_applet_api::platform as api;
+#[cfg(feature = "api-platform")]
+use wasefire_sync::Lazy;
 
 #[cfg(feature = "api-platform")]
 use crate::{convert, convert_never};
@@ -25,23 +30,30 @@ pub mod protocol;
 #[cfg(feature = "api-platform-update")]
 pub mod update;
 
+/// Returns the serial of the platform.
+#[cfg(feature = "api-platform")]
+pub fn serial() -> &'static [u8] {
+    fn init() -> Box<[u8]> {
+        let mut ptr = core::ptr::null_mut();
+        let params = api::serial::Params { ptr: &mut ptr };
+        let len = convert(unsafe { api::serial(params) }).unwrap();
+        unsafe { Box::from_raw(core::slice::from_raw_parts_mut(ptr, len)) }
+    }
+    static SERIAL: Lazy<Box<[u8]>> = Lazy::new(init);
+    &SERIAL
+}
+
 /// Returns the version of the platform.
 #[cfg(feature = "api-platform")]
 pub fn version() -> &'static [u8] {
-    use wasefire_sync::Mutex;
-    static VERSION: Mutex<Option<&'static [u8]>> = Mutex::new(None);
-    let mut guard = VERSION.lock();
-    if let Some(version) = *guard {
-        return version;
+    fn init() -> Box<[u8]> {
+        let mut ptr = core::ptr::null_mut();
+        let params = api::version::Params { ptr: &mut ptr };
+        let len = convert(unsafe { api::version(params) }).unwrap();
+        unsafe { Box::from_raw(core::slice::from_raw_parts_mut(ptr, len)) }
     }
-    let params = api::version::Params { ptr: core::ptr::null_mut(), len: 0 };
-    let len = convert(unsafe { api::version(params) }).unwrap();
-    let mut version = alloc::vec![0; len];
-    let params = api::version::Params { ptr: version[..].as_mut_ptr(), len };
-    convert(unsafe { api::version(params) }).unwrap();
-    let version = alloc::boxed::Box::leak(version.into_boxed_slice());
-    *guard = Some(version);
-    version
+    static VERSION: Lazy<Box<[u8]>> = Lazy::new(init);
+    &VERSION
 }
 
 /// Reboots the device (thus platform and applets).

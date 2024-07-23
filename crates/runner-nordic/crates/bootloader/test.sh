@@ -19,5 +19,5 @@ set -e
 
 test_helper
 
-cargo check --target=thumbv7em-none-eabi
-cargo check --target=thumbv7em-none-eabi --release
+cargo check --bin=bootloader --target=thumbv7em-none-eabi
+cargo check --bin=bootloader --target=thumbv7em-none-eabi --release

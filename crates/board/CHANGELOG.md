@@ -1,9 +1,11 @@
 # Changelog
 
-## 0.7.0-git
+## 0.7.0
 
 ### Major
 
+- Add `platform::protocol::Api::vendor()` for vendor platform RPCs
+- Change `platform::version()` to return `Cow` and add `platform::serial()`
 - Change `Id::new` to return `Result` instead of `Option`
 - Change `crypto::{Hash,Hmac}` to depend on `crypto::WithError`
 
@@ -16,6 +18,7 @@
 
 ### Patch
 
+- Publish LICENSE file
 - Use common Wasefire lints and make most dependencies optional
 - Change `Id::new()` to return `OutOfBounds` error instead of `InvalidArgument`
 - Update dependencies
@@ -133,4 +136,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 21 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

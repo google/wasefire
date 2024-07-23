@@ -15,7 +15,7 @@
 //! Wrappers around `std::fs` with descriptive errors.
 
 use std::fs::Metadata;
-use std::io::ErrorKind;
+use std::io::{ErrorKind, Read, Write};
 use std::path::{Component, Path, PathBuf};
 
 use anyhow::{Context, Result};
@@ -113,6 +113,12 @@ pub fn read_toml<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {
     toml::from_str(&data).with_context(|| format!("parsing {name}"))
 }
 
+pub fn read_stdin() -> Result<Vec<u8>> {
+    let mut data = Vec::new();
+    std::io::stdin().read_to_end(&mut data).context("reading from stdin")?;
+    Ok(data)
+}
+
 pub fn remove_file(path: impl AsRef<Path>) -> Result<()> {
     let name = path.as_ref().display();
     debug!("rm {name:?}");
@@ -139,6 +145,12 @@ pub fn write_toml<T: Serialize>(path: impl AsRef<Path>, contents: &T) -> Result<
     let name = path.as_ref().display();
     let contents = toml::to_string(contents).with_context(|| format!("displaying {name}"))?;
     write(path.as_ref(), contents)?;
+    Ok(())
+}
+
+pub fn write_stdout(contents: impl AsRef<[u8]>) -> Result<()> {
+    let contents = contents.as_ref();
+    std::io::stdout().write_all(contents).context("writing to stdout")?;
     Ok(())
 }
 

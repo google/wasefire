@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuzz-store"
+name = "fuzz"
 version = "0.0.0"
 dependencies = [
  "libfuzzer-sys",
@@ -148,4 +148,4 @@ checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 
 [[package]]
 name = "wasefire-store"
-version = "0.2.4-git"
+version = "0.2.4"

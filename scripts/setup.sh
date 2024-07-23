@@ -56,7 +56,6 @@ fi
 # Transitive dependencies of xtask.
 ensure bin cc
 ensure lib libudev
-ensure lib libusb-1.0
 
 # Transitive dependencies of runner-host. This should ideally be installed on
 # demand by xtask.

@@ -1,13 +1,13 @@
 [package]
 name = "wasefire-store"
-version = "0.2.4-git"
+version = "0.2.4"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
 edition = "2021"
 description = "Key-value store for SLC flash storage"
 repository = "https://github.com/google/wasefire"
-include = ["/src"]
+include = ["/LICENSE", "/src/"]
 keywords = ["embedded", "no-std"]
 categories = ["embedded", "no-std"]
 

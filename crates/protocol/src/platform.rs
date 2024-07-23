@@ -12,14 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![no_main]
+use wasefire_wire::Wire;
 
-use libfuzzer_sys::fuzz_target;
-use wasefire_protocol::{Api, Response};
-
-fuzz_target!(|expected: &[u8]| {
-    if let Ok(response) = Api::<Response>::deserialize(expected) {
-        let actual = response.serialize();
-        assert_eq!(*actual, *expected);
-    }
-});
+#[derive(Debug, Wire)]
+pub struct Info<'a> {
+    pub serial: &'a [u8],
+    pub version: &'a [u8],
+}

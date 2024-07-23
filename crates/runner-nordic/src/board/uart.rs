@@ -38,18 +38,18 @@ const BUSY_SIZE: usize = 128; // must divide BUFFER_SIZE and be smaller than EAS
 struct State {
     // We use a cyclic buffer of size BUFFER_SIZE for reading, and partition it in 3 parts:
     //
-    // - The uninitialized part (possibly empty) contains uninitialized data. Bytes in this part are
-    // never read nor written until they move to another part.
+    // - The uninitialized part (possibly empty) contains uninitialized data. Bytes in this part
+    //   are never read nor written until they move to another part.
     //
     // - The ready part (possibly empty) contains initialized data that has been received but not
-    // yet read (thus ready to be read). Bytes in this part may be read but not written until they
-    // move to another part.
+    //   yet read (thus ready to be read). Bytes in this part may be read but not written until
+    //   they move to another part.
     //
     // - The busy part contains the data used or reserved for EasyDMA. Bytes in this part must not
-    // be read nor written until they move to another part. The busy part is BUSY_SIZE aligned and
-    // contains at least BUSY_SIZE bytes. It may contain an additional BUSY_SIZE bytes if the
-    // RXD.PTR field points right after the first BUSY_SIZE bytes (otherwise it must point to the
-    // first BUSY_SIZE bytes).
+    //   be read nor written until they move to another part. The busy part is BUSY_SIZE aligned
+    //   and contains at least BUSY_SIZE bytes. It may contain an additional BUSY_SIZE bytes if the
+    //   RXD.PTR field points right after the first BUSY_SIZE bytes (otherwise it must point to the
+    //   first BUSY_SIZE bytes).
     //
     // This could be graphically be represented as (all values are modulo BUFFER_SIZE):
     //

@@ -51,11 +51,7 @@ fn metadata<B: Board>(mut call: SchedulerCall<B, api::metadata::Sig>) {
     let mut memory = scheduler.applet.memory();
     let result = try {
         let metadata = board::platform::Update::<B>::metadata()?;
-        let len = metadata.len() as u32;
-        let ptr = memory.alloc(len, 1)?;
-        memory.get_mut(ptr, len)?.copy_from_slice(&metadata);
-        memory.get_mut(*ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
-        memory.get_mut(*len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
+        memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &metadata)?;
     };
     call.reply(result);
 }

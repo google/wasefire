@@ -1,9 +1,11 @@
 # Changelog
 
-## 0.1.5-git
+## 0.1.5
 
 ### Patch
 
+- Publish LICENSE file
+- Depend on `alloc` to silence `unused-crate-dependencies` false positive
 - Update dependencies
 - Use common Wasefire lints
 
@@ -39,4 +41,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 3 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

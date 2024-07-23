@@ -16,8 +16,8 @@ use std::fs::File;
 use std::io::{stdout, Write};
 
 use anyhow::Result;
-use clap::Parser;
-use wasefire_applet_api_desc::{Api, Lang};
+use clap::{Parser, ValueEnum};
+use wasefire_applet_api_desc::Api;
 
 #[derive(Parser)]
 struct Flags {
@@ -28,6 +28,21 @@ struct Flags {
     /// Language for which to generate the API.
     #[clap(long)]
     lang: Lang,
+}
+
+#[derive(Copy, Clone, ValueEnum)]
+pub enum Lang {
+    C,
+    Assemblyscript,
+}
+
+impl From<Lang> for wasefire_applet_api_desc::Lang {
+    fn from(value: Lang) -> Self {
+        match value {
+            Lang::C => wasefire_applet_api_desc::Lang::C,
+            Lang::Assemblyscript => wasefire_applet_api_desc::Lang::Assemblyscript,
+        }
+    }
 }
 
 fn main() -> Result<()> {
@@ -53,6 +68,6 @@ fn main() -> Result<()> {
 
 "#,
     )?;
-    Api::default().wasm(&mut output, flags.lang)?;
+    Api::default().wasm(&mut output, flags.lang.into())?;
     Ok(())
 }

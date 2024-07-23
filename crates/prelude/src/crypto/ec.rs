@@ -14,7 +14,7 @@
 
 //! Provides elliptic curve cryptography.
 
-use generic_array::{ArrayLength, GenericArray};
+use crypto_common::generic_array::{ArrayLength, GenericArray};
 use wasefire_applet_api::crypto::ec as api;
 #[cfg(any(feature = "api-crypto-hash", feature = "api-crypto-hkdf"))]
 use wasefire_applet_api::crypto::hash::Algorithm;

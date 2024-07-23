@@ -1,9 +1,18 @@
 # Changelog
 
-## 0.3.1-git
+## 0.3.2-git
+
+### Patch
+
+- Fix missing `build.rs` in cargo package
+
+## 0.3.1
 
 ### Minor
 
+- Support `PlatformVendor` protocol
+- Support `platform::serial()` function
+- Migrate `platform::version()` to the new board and applet APIs
 - Support `store::{keys,clear}()` functions
 - Support `platform::protocol` with the `{applet,board}-api-platform-protocol` features
 - Change `gpio` module to never trap and return an error instead
@@ -14,6 +23,8 @@
 
 ### Patch
 
+- Publish LICENSE file
+- Introduce `MemoryApi::alloc_copy()` to simplify a common pattern
 - Fix lints
 - Use common Wasefire lints and make most dependencies optional
 - Add `Failure` type to simplify try-blocks for `Scheduler::reply()` arguments
@@ -135,4 +146,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 37 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

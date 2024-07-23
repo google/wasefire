@@ -1,6 +1,6 @@
 [toolchain]
-channel = "nightly-2024-05-24"
-components = ["clippy", "llvm-tools", "rust-src", "rustfmt"]
+channel = "nightly-2024-07-22"
+components = ["clippy", "llvm-tools", "miri", "rust-src", "rustfmt"]
 targets = [
   "i686-unknown-linux-gnu",
   "riscv32imc-unknown-none-elf",

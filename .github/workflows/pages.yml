@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'book/**'
 
 permissions: {}
 
@@ -13,7 +15,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
       - run: sudo apt-get update

@@ -1,9 +1,10 @@
 # Changelog
 
-## 0.1.4-git
+## 0.1.4
 
 ### Patch
 
+- Publish LICENSE file
 - Use common Wasefire lints
 - Update dependencies
 
@@ -33,4 +34,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 8 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

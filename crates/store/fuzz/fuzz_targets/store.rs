@@ -17,5 +17,5 @@
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    fuzz_store::fuzz(data, false, None);
+    fuzz::fuzz(data, false, None);
 });

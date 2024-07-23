@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.1-git
+## 0.6.1
 
 ### Minor
 
@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Publish LICENSE file
 - Move lints to `Cargo.toml` and use common Wasefire lints
 - Update dependencies
 
@@ -86,4 +87,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 10 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

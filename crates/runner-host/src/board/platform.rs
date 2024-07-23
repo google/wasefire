@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::borrow::Cow;
+
 use data_encoding::HEXLOWER_PERMISSIVE;
-use wasefire_board_api::platform::{version_helper, Api};
+use wasefire_board_api::platform::Api;
 use wasefire_board_api::Error;
 use wasefire_error::Code;
 
@@ -23,14 +25,19 @@ impl Api for Impl {
     #[cfg(feature = "usb")]
     type Protocol = crate::board::usb::ProtocolImpl;
 
-    fn version(output: &mut [u8]) -> usize {
-        const VERSION: Option<&str> = option_env!("WASEFIRE_HOST_VERSION");
-        let version = VERSION.unwrap_or_default().as_bytes();
-        let version = HEXLOWER_PERMISSIVE.decode(version).expect("--version must be hexadecimal");
-        version_helper(&version, output)
+    fn serial() -> Cow<'static, [u8]> {
+        from_hex(option_env!("WASEFIRE_HOST_SERIAL"))
+    }
+
+    fn version() -> Cow<'static, [u8]> {
+        from_hex(option_env!("WASEFIRE_HOST_VERSION"))
     }
 
     fn reboot() -> Result<!, Error> {
         Err(Error::world(Code::NotImplemented))
     }
+}
+
+fn from_hex(x: Option<&str>) -> Cow<'static, [u8]> {
+    HEXLOWER_PERMISSIVE.decode(x.unwrap_or_default().as_bytes()).unwrap().into()
 }

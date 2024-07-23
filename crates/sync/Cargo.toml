@@ -1,19 +1,23 @@
 [package]
 name = "wasefire-sync"
-version = "0.1.1-git"
+version = "0.1.1"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
 edition = "2021"
 description = "Portable non-blocking mutex"
 repository = "https://github.com/google/wasefire"
-include = ["/src"]
+include = ["/LICENSE", "/src/"]
 keywords = ["framework", "mutex", "no-std"]
 categories = ["concurrency", "no-std"]
 
 [dependencies]
 portable-atomic = { version = "1.6.0", default-features = false }
-spin = { version = "0.9.8", default-features = false, features = ["portable_atomic", "spin_mutex"] }
+
+[dependencies.spin]
+version = "0.9.8"
+default-features = false
+features = ["lazy", "portable_atomic", "spin_mutex"]
 
 [features]
 unsafe-assume-single-core = ["portable-atomic/unsafe-assume-single-core"]

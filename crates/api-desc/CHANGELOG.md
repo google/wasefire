@@ -1,14 +1,22 @@
 # Changelog
 
-## 0.1.7-git
+## 0.2.0
+
+### Major
+
+- Remove the binary target making this crate a pure library
+- Remove implementation of `clap::ValueEnum` for `Lang`
 
 ### Minor
 
+- Add `platform::serial()` function
+- Change `platform::version()` to allocate the result instead
 - Add `store::{keys,clear}()` functions
 - Add `platform::protocol` module and `api-platform-protocol` feature for applet RPC
 
 ### Patch
 
+- Publish LICENSE file
 - Update dependencies
 - Use common Wasefire lints
 - Use `*const void` instead of `*const u8` for opaque data in `platform::protocol`
@@ -110,4 +118,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 16 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

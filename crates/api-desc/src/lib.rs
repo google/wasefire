@@ -15,7 +15,6 @@
 use std::io::Write;
 use std::ops;
 
-use clap::ValueEnum;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 
@@ -88,7 +87,7 @@ impl Default for Api {
     }
 }
 
-#[derive(Copy, Clone, ValueEnum)]
+#[derive(Copy, Clone)]
 pub enum Lang {
     C,
     Assemblyscript,

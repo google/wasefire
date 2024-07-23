@@ -12,11 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO: We need a wasm feature to only enable those dependencies in that case.
-#[cfg(any(feature = "native", feature = "test"))]
-use {const_default as _, rlsf as _};
-
 #[cfg(feature = "native")]
 mod native;
-#[cfg(not(any(feature = "native", feature = "test")))]
+#[cfg(feature = "wasm")]
 mod wasm;

@@ -16,7 +16,9 @@
 //!
 //! This crate defines a high-level protocol between a host and a device. The host initiates
 //! requests and the device responds. Requests and responses use the same [`Api`] but with a
-//! different type parameter: `Api<Request>` and `Api<Response>` respectively.
+//! different type parameter: `Api<Request>` and `Api<Response>` respectively. However, while the
+//! host sends an `Api<Request>`, the device responds with an `ApiResult<T>` where `T` is the
+//! service of the request.
 //!
 //! This high-level protocol is eventually wrapped in a lower-level protocol for a given transport,
 //! for example USB. The host should provide enough time for the device to respond, but should
@@ -25,153 +27,204 @@
 //! and cancel the request it was processing if any.
 
 #![no_std]
+#![feature(doc_auto_cfg)]
+#![feature(macro_metavar_expr)]
+#![feature(never_type)]
 
 extern crate alloc;
 
 use alloc::boxed::Box;
-use core::convert::Infallible;
 
-use sealed::sealed;
-use wasefire_error::{Code, Error};
+use wasefire_error::Error;
+use wasefire_wire::Wire;
+#[cfg(feature = "host")]
+use wasefire_wire::Yoke;
 
-pub use crate::reader::Reader;
-pub use crate::writer::Writer;
-
-mod reader;
-pub mod service;
-mod writer;
-
-/// Zero-copy serialization.
-#[sealed]
-pub trait Serializable<'a>: Sized {
-    /// Serializes without copy.
-    fn serialize(&self, writer: &mut Writer<'a>);
-
-    /// Deserializes without copy.
-    fn deserialize(reader: &mut Reader<'a>) -> Result<Self, Error>;
-}
-
-/// Message direction between host and device.
-#[sealed]
-pub trait Direction<'a> {
-    /// Returns the appropriate message type given a service.
-    type Type<T: Service<'a>>: Serializable<'a>;
-}
-
-/// Requests from host to device.
-pub enum Request {}
-#[sealed]
-impl<'a> Direction<'a> for Request {
-    type Type<T: Service<'a>> = T::Request;
-}
-
-/// Responses from device to host.
-#[derive(Debug)]
-pub enum Response {}
-#[sealed]
-impl<'a> Direction<'a> for Response {
-    type Type<T: Service<'a>> = T::Response;
-}
+pub mod applet;
+pub mod platform;
 
 /// Service description.
-#[sealed]
-pub trait Service<'a> {
-    const IDENTIFIER: u8;
-    type Request: Serializable<'a>;
-    type Response: Serializable<'a>;
+pub trait Service: 'static {
+    /// Range of versions implementing this service.
+    #[cfg(feature = "host")]
+    const VERSIONS: Versions;
+    type Request<'a>: Wire<'a>;
+    type Response<'a>: Wire<'a>;
+    #[cfg(feature = "host")]
+    fn request(x: Self::Request<'_>) -> Api<Request>;
 }
 
-/// Protocol API parametric over the message direction.
 #[derive(Debug)]
-#[non_exhaustive]
-pub enum Api<'a, T: Direction<'a>> {
-    /// Errors reported by the device.
-    ///
-    /// This may be returned regardless of the request type.
-    DeviceError(T::Type<service::DeviceError>),
+pub enum Request {}
+impl sealed::Direction for Request {
+    type Type<'a, T: Service> = T::Request<'a>;
+}
+
+#[derive(Debug)]
+#[cfg(feature = "_descriptor")]
+pub enum Response {}
+#[cfg(feature = "_descriptor")]
+impl sealed::Direction for Response {
+    type Type<'a, T: Service> = T::Response<'a>;
+}
+
+mod sealed {
+    pub trait Direction: 'static {
+        type Type<'a, T: crate::Service>: wasefire_wire::Wire<'a>;
+    }
+}
+
+#[derive(Wire)]
+#[wire(static = T, range = 2)]
+pub enum ApiResult<'a, T: Service> {
+    #[wire(tag = 0)]
+    Ok(T::Response<'a>),
+    #[wire(tag = 1)]
+    Err(Error),
+}
+
+impl<'a> Api<'a, Request> {
+    #[cfg(feature = "host")]
+    pub fn encode(&self) -> Result<Box<[u8]>, Error> {
+        wasefire_wire::encode(self)
+    }
+
+    #[cfg(feature = "device")]
+    pub fn decode(data: &'a [u8]) -> Result<Self, Error> {
+        wasefire_wire::decode(data)
+    }
+}
+
+impl<'a, T: Service> ApiResult<'a, T> {
+    #[cfg(feature = "device")]
+    pub fn encode(&self) -> Result<Box<[u8]>, Error> {
+        wasefire_wire::encode(self)
+    }
+
+    #[cfg(feature = "host")]
+    pub fn decode(data: &[u8]) -> Result<ApiResult<T>, Error> {
+        wasefire_wire::decode(data)
+    }
+
+    #[cfg(feature = "host")]
+    pub fn decode_yoke(data: Box<[u8]>) -> Result<Yoke<ApiResult<'static, T>>, Error> {
+        wasefire_wire::decode_yoke(data)
+    }
+}
+
+#[derive(Debug, Copy, Clone, Wire)]
+#[cfg(any(feature = "host", feature = "_descriptor"))]
+pub struct Versions {
+    pub min: u32,
+    pub max: Option<u32>,
+}
+
+#[cfg(feature = "host")]
+impl Versions {
+    pub fn contains(&self, version: u32) -> Result<bool, Error> {
+        match (self.min, self.max) {
+            // Deprecated service. The device needs to be within the range.
+            (min, Some(max)) => Ok((min ..= max).contains(&version)),
+            // The device is too old.
+            (min, None) if version < min => Ok(false),
+            // The device is newer than the host, so we don't know if the service has been
+            // deprecated for that device.
+            (_, None) if VERSION < version => Err(Error::world(wasefire_error::Code::OutOfBounds)),
+            // The device is older than the host but recent enough for the service.
+            _ => Ok(true),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Wire)]
+#[cfg(feature = "_descriptor")]
+pub struct Descriptor {
+    pub tag: u32,
+    pub versions: Versions,
+}
+
+#[cfg(feature = "_descriptor")]
+impl core::fmt::Display for Descriptor {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let Descriptor { tag, versions: Versions { min, max } } = *self;
+        match max {
+            Some(max) => write!(f, "{tag} [{min} - {max}]"),
+            None => write!(f, "{tag} [{min} -]"),
+        }
+    }
+}
+
+macro_rules! api {
+    ($(#![$api:meta])* version = $version:literal; next = $next:literal; $(
+        $(#[doc = $doc:literal])*
+        $tag:literal [$min:literal - $($max:literal)?] $Name:ident: $request:ty => $response:ty
+    ),*$(,)?) => {
+        $(#[$api])* #[derive(Debug, Wire)]
+        #[wire(static = T)]
+        #[cfg_attr(feature = "host", wire(range = $next))]
+        #[cfg_attr(not(feature = "_exhaustive"), non_exhaustive)]
+        pub enum Api<'a, T: sealed::Direction> {
+            $(
+                $(#[doc = $doc])* $(#[cfg(feature = "host")] ${ignore($max)})? #[wire(tag = $tag)]
+                $Name(T::Type<'a, $Name>),
+            )*
+        }
+        $(
+            $(#[doc = $doc])* $(#[cfg(feature = "host")] ${ignore($max)})? #[derive(Debug)]
+            pub enum $Name {}
+            $(#[cfg(feature = "host")] ${ignore($max)})?
+            impl Service for $Name {
+                #[cfg(feature = "host")]
+                const VERSIONS: Versions = api!(versions $min $($max)?);
+                type Request<'a> = $request;
+                type Response<'a> = $response;
+                #[cfg(feature = "host")]
+                fn request(x: Self::Request<'_>) -> Api<Request> { Api::$Name(x) }
+            }
+        )*
+        /// Device API version (or maximum supported device API version for host).
+        pub const VERSION: u32 = $version;
+        #[cfg(feature = "_descriptor")]
+        pub const DESCRIPTORS: &'static [Descriptor] = &[
+            $(
+                $(#[cfg(feature = "host")] ${ignore($max)})?
+                Descriptor { tag: $tag, versions: api!(versions $min $($max)?) },
+            )*
+        ];
+    };
+
+    (max) => (None);
+    (max $max:literal) => (Some($max));
+
+    (versions $min:literal $($max:literal)?) => (Versions { min: $min, max: api!(max $($max)?) });
+}
+
+api! {
+    //! Protocol API parametric over the message direction.
+    //!
+    //! Variants gated by the `full` feature are deprecated. They won't be used by new devices.
+    //! However, to support older devices, the host must be able to use them.
+    version = 2;
+    next = 7;
+
+    /// Returns the device API version.
+    0 [0 -] ApiVersion: () => u32,
 
     /// Sends a request to an applet.
-    AppletRequest(T::Type<service::AppletRequest>),
+    1 [0 -] AppletRequest: applet::Request<'a> => (),
 
     /// Reads a response from an applet.
-    AppletResponse(T::Type<service::AppletResponse>),
+    2 [0 -] AppletResponse: applet::AppletId => applet::Response<'a>,
 
     /// Reboots the platform.
-    PlatformReboot(T::Type<service::PlatformReboot>),
+    3 [0 -] PlatformReboot: () => !,
 
     /// Starts a direct tunnel with an applet.
-    AppletTunnel(T::Type<service::AppletTunnel>),
-}
+    4 [0 -] AppletTunnel: applet::Tunnel<'a> => (),
 
-#[sealed]
-impl<'a> Serializable<'a> for Infallible {
-    fn serialize(&self, _: &mut Writer<'a>) {
-        match *self {}
-    }
+    /// Returns platform information (e.g. serial and version).
+    5 [1 -] PlatformInfo: () => platform::Info<'a>,
 
-    fn deserialize(_: &mut Reader<'a>) -> Result<Self, Error> {
-        Err(Error::user(Code::InvalidArgument))
-    }
-}
-
-#[sealed]
-impl<'a> Serializable<'a> for () {
-    fn serialize(&self, _: &mut Writer<'a>) {}
-
-    fn deserialize(_: &mut Reader<'a>) -> Result<Self, Error> {
-        Ok(())
-    }
-}
-
-#[sealed]
-impl<'a> Serializable<'a> for Error {
-    fn serialize(&self, writer: &mut Writer) {
-        writer.put_u8(self.space());
-        writer.put_u16(self.code());
-    }
-
-    fn deserialize(reader: &mut Reader<'a>) -> Result<Self, Error> {
-        let space = reader.get_u8()?;
-        let code = reader.get_u16()?;
-        Ok(Error::new(space, code))
-    }
-}
-
-impl<'a, T: Direction<'a>> Api<'a, T> {
-    pub fn serialize(&self) -> Box<[u8]> {
-        let mut writer = Writer::new();
-        macro_rules! serialize {
-            ($N:ident, $x:ident) => {{
-                writer.put_u8(<service::$N as Service>::IDENTIFIER);
-                $x.serialize(&mut writer)
-            }};
-        }
-        match self {
-            Api::DeviceError(x) => serialize!(DeviceError, x),
-            Api::AppletRequest(x) => serialize!(AppletRequest, x),
-            Api::AppletResponse(x) => serialize!(AppletResponse, x),
-            Api::PlatformReboot(x) => serialize!(PlatformReboot, x),
-            Api::AppletTunnel(x) => serialize!(AppletTunnel, x),
-        }
-        writer.finalize()
-    }
-
-    pub fn deserialize(data: &'a [u8]) -> Result<Self, Error> {
-        let mut reader = Reader::new(data);
-        macro_rules! deserialize {
-            ($N:ident) => {
-                Api::$N(T::Type::<service::$N>::deserialize(&mut reader)?)
-            };
-        }
-        let result = match reader.get_u8()? {
-            service::DeviceError::IDENTIFIER => deserialize!(DeviceError),
-            service::AppletRequest::IDENTIFIER => deserialize!(AppletRequest),
-            service::AppletResponse::IDENTIFIER => deserialize!(AppletResponse),
-            service::PlatformReboot::IDENTIFIER => deserialize!(PlatformReboot),
-            service::AppletTunnel::IDENTIFIER => deserialize!(AppletTunnel),
-            _ => return Err(Error::user(Code::InvalidArgument)),
-        };
-        reader.finalize()?;
-        Ok(result)
-    }
+    /// Calls a vendor-specific platform command.
+    6 [2 -] PlatformVendor: &'a [u8] => &'a [u8],
 }

@@ -19,6 +19,9 @@ set -e
 
 # This script checks that Cargo.toml and CHANGELOG.md files are correct.
 
+INCLUDE='["/LICENSE", "/src/"]'
+INCLUDE_BUILD='["/LICENSE", "/build.rs", "/src/"]'
+LICENSE="$(readlink -f LICENSE)"
 for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   ( cd $dir
     publish="$(package_publish)"
@@ -26,7 +29,10 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
     [ -e test.sh ] || e "test.sh for $dir is missing"
     $publish || exit 0
     [ -e CHANGELOG.md ] || e "CHANGELOG.md for $dir is missing"
-    [ "$(package_include)" = '["/src"]' ] || e "Cargo.toml should only include the src directory"
+    include="$INCLUDE"
+    [ -e build.rs ] && include="$INCLUDE_BUILD"
+    [ "$(package_include)" = "$include" ] || e "Cargo.toml should include exactly $include"
+    [ "$(readlink -f LICENSE)" = "$LICENSE" ] || e "LICENSE is not a symlink to the top-level one"
     [ -z "$(package_exclude)" ] || e "Cargo.toml should not exclude anything"
     ref=$(git log -n1 --pretty=format:%H origin/main.. -- CHANGELOG.md)
     [ -n "$ref" ] || ref=origin/main

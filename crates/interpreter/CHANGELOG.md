@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0-git
+## 0.3.0
 
 ### Major
 
@@ -13,6 +13,7 @@
 
 ### Patch
 
+- Publish LICENSE file
 - Fix lints
 - Support aligned load and store in validation
 - Update dependencies
@@ -67,4 +68,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 4 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

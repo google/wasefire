@@ -53,9 +53,9 @@ pub struct Store<'m> {
     // reconstructed on demand (only counts can be stored).
     funcs: Vec<(HostName<'m>, FuncType<'m>)>,
     // When present, contains a module name and a length. In that case, any unresolved imported
-    // function for that module name is appended to funcs (one per type, so the function name is the
-    // name of the first unresolved function of that type). The length of resolvable host functions
-    // in `funcs` is stored to limit normal linking to that part.
+    // function for that module name is appended to funcs (one per type, so the function name is
+    // the name of the first unresolved function of that type). The length of resolvable host
+    // functions in `funcs` is stored to limit normal linking to that part.
     func_default: Option<(&'m str, usize)>,
     threads: Vec<Continuation<'m>>,
 }

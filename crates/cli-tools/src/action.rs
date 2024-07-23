@@ -16,11 +16,107 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use anyhow::{ensure, Result};
+use anyhow::{bail, ensure, Result};
 use cargo_metadata::{Metadata, MetadataCommand};
 use clap::{ValueEnum, ValueHint};
+use rusb::UsbContext;
+use wasefire_protocol::{self as service, applet, Api};
+use wasefire_protocol_usb::Connection;
 
 use crate::{cmd, fs};
+
+/// Parameters for an applet or platform RPC.
+#[derive(clap::Args)]
+pub struct Rpc {
+    /// Reads the request from this file instead of standard input.
+    #[arg(long, value_hint = ValueHint::FilePath)]
+    input: Option<PathBuf>,
+
+    /// Writes the response to this file instead of standard output.
+    #[arg(long, value_hint = ValueHint::AnyPath)]
+    output: Option<PathBuf>,
+}
+
+impl Rpc {
+    fn read(&self) -> Result<Vec<u8>> {
+        match &self.input {
+            Some(path) => fs::read(path),
+            None => fs::read_stdin(),
+        }
+    }
+
+    fn write(&self, response: &[u8]) -> Result<()> {
+        match &self.output {
+            Some(path) => fs::write(path, response),
+            None => fs::write_stdout(response),
+        }
+    }
+}
+
+/// Calls an RPC to an applet on a platform.
+#[derive(clap::Args)]
+pub struct AppletRpc {
+    /// Applet identifier in the platform.
+    applet: Option<String>,
+
+    #[clap(flatten)]
+    rpc: Rpc,
+
+    /// Number of retries to receive a response.
+    #[arg(long, default_value = "3")]
+    retries: usize,
+}
+
+impl AppletRpc {
+    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+        let AppletRpc { applet, rpc, retries } = self;
+        let applet_id = match applet {
+            Some(_) => bail!("applet identifiers are not supported yet"),
+            None => applet::AppletId,
+        };
+        let request = applet::Request { applet_id, request: &rpc.read()? };
+        connection.call::<service::AppletRequest>(request)?.get();
+        for _ in 0 .. retries {
+            let response = connection.call::<service::AppletResponse>(applet_id)?;
+            if let Some(response) = response.get().response {
+                return rpc.write(response);
+            }
+        }
+        bail!("did not receive a response after {retries} retries");
+    }
+}
+
+/// Reboots a platform.
+#[derive(clap::Args)]
+pub struct PlatformReboot {}
+
+impl PlatformReboot {
+    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+        let PlatformReboot {} = self;
+        connection.send(&Api::PlatformReboot(()))?;
+        match connection.receive::<service::PlatformReboot>() {
+            Ok(x) => *x.get(),
+            Err(e) => match e.downcast_ref::<rusb::Error>() {
+                Some(rusb::Error::Timeout | rusb::Error::NoDevice) => Ok(()),
+                _ => Err(e),
+            },
+        }
+    }
+}
+
+/// Calls a vendor RPC on a platform.
+#[derive(clap::Args)]
+pub struct PlatformRpc {
+    #[clap(flatten)]
+    rpc: Rpc,
+}
+
+impl PlatformRpc {
+    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+        let PlatformRpc { rpc } = self;
+        rpc.write(connection.call::<service::PlatformVendor>(&rpc.read()?)?.get())
+    }
+}
 
 /// Creates a new Rust applet project.
 #[derive(clap::Args)]
@@ -97,42 +193,38 @@ impl RustAppletBuild {
         let target_dir = fs::try_relative(std::env::current_dir()?, &metadata.target_directory)?;
         let name = package.name.replace('-', "_");
         let mut cargo = Command::new("cargo");
-        let mut rustflags = vec![
-            "-C panic=abort".to_string(),
-            "-C codegen-units=1".to_string(),
-            "-C embed-bitcode=yes".to_string(),
-            "-C lto=fat".to_string(),
-        ];
+        let mut rustflags = Vec::new();
         cargo.args(["rustc", "--lib"]);
+        // We deliberately don't use the provided profile for those configs because they don't
+        // depend on user-provided options (as opposed to opt-level).
+        cargo.arg("--config=profile.release.codegen-units=1");
+        cargo.arg("--config=profile.release.lto=true");
+        cargo.arg("--config=profile.release.panic=\"abort\"");
         match &self.native {
             None => {
                 rustflags.push(format!("-C link-arg=-zstack-size={}", self.stack_size));
                 rustflags.push("-C target-feature=+bulk-memory".to_string());
                 cargo.args(["--crate-type=cdylib", "--target=wasm32-unknown-unknown"]);
+                wasefire_feature(package, "wasm", &mut cargo)?;
             }
             Some(target) => {
                 cargo.args(["--crate-type=staticlib", &format!("--target={target}")]);
-                if package.features.contains_key("native") {
-                    cargo.arg("--features=native");
-                } else {
-                    ensure!(
-                        package.dependencies.iter().any(|x| x.name == "wasefire"),
-                        "wasefire must be a direct dependency for native builds"
-                    );
-                    cargo.arg("--features=wasefire/native");
-                }
+                wasefire_feature(package, "native", &mut cargo)?;
             }
         }
-        match &self.profile {
-            Some(profile) => drop(cargo.arg(format!("--profile={profile}"))),
-            None => drop(cargo.arg("--release")),
-        }
+        let profile = self.profile.as_deref().unwrap_or("release");
+        cargo.arg(format!("--profile={profile}"));
         if let Some(level) = self.opt_level {
-            rustflags.push(format!("-C opt-level={level}"));
+            cargo.arg(format!("--config=profile.{profile}.opt-level={level}"));
         }
         cargo.args(&self.cargo);
         if self.prod {
-            cargo.args(["-Zbuild-std=core,alloc", "-Zbuild-std-features=panic_immediate_abort"]);
+            cargo.arg("-Zbuild-std=core,alloc");
+            let mut features = "-Zbuild-std-features=panic_immediate_abort".to_string();
+            if self.opt_level.map_or(false, OptLevel::optimize_for_size) {
+                features.push_str(",optimize_for_size");
+            }
+            cargo.arg(features);
         } else {
             cargo.env("WASEFIRE_DEBUG", "");
         }
@@ -144,8 +236,8 @@ impl RustAppletBuild {
             None => "target/wasefire".into(),
         };
         let (src, dst) = match &self.native {
-            None => (format!("wasm32-unknown-unknown/release/{name}.wasm"), "applet.wasm"),
-            Some(target) => (format!("{target}/release/lib{name}.a"), "libapplet.a"),
+            None => (format!("wasm32-unknown-unknown/{profile}/{name}.wasm"), "applet.wasm"),
+            Some(target) => (format!("{target}/{profile}/lib{name}.a"), "libapplet.a"),
         };
         let applet = out_dir.join(dst);
         if fs::copy_if_changed(target_dir.join(src), &applet)? && dst.ends_with(".wasm") {
@@ -191,9 +283,22 @@ pub enum OptLevel {
     Oz,
 }
 
+impl OptLevel {
+    /// Returns whether the opt-level optimizes for size.
+    pub fn optimize_for_size(self) -> bool {
+        matches!(self, OptLevel::Os | OptLevel::Oz)
+    }
+}
+
 impl Display for OptLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_possible_value().unwrap().get_name())
+        let value = self.to_possible_value().unwrap();
+        let name = value.get_name();
+        if f.alternate() || !matches!(self, OptLevel::Os | OptLevel::Oz) {
+            write!(f, "{name}")
+        } else {
+            write!(f, "{name:?}")
+        }
     }
 }
 
@@ -205,7 +310,7 @@ pub fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> R
     let mut opt = Command::new("wasm-opt");
     opt.args(["--enable-bulk-memory", "--enable-sign-ext", "--enable-mutable-globals"]);
     match opt_level {
-        Some(level) => drop(opt.arg(format!("-O{level}"))),
+        Some(level) => drop(opt.arg(format!("-O{level:#}"))),
         None => drop(opt.arg("-O")),
     }
     opt.arg(applet.as_ref());
@@ -219,4 +324,19 @@ fn metadata(dir: impl Into<PathBuf>) -> Result<Metadata> {
     let metadata = MetadataCommand::new().current_dir(dir).no_deps().exec()?;
     ensure!(metadata.packages.len() == 1, "not exactly one package");
     Ok(metadata)
+}
+
+fn wasefire_feature(
+    package: &cargo_metadata::Package, feature: &str, cargo: &mut Command,
+) -> Result<()> {
+    if package.features.contains_key(feature) {
+        cargo.arg(format!("--features={feature}"));
+    } else {
+        ensure!(
+            package.dependencies.iter().any(|x| x.name == "wasefire"),
+            "wasefire must be a direct dependency"
+        );
+        cargo.arg(format!("--features=wasefire/{feature}"));
+    }
+    Ok(())
 }

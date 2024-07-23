@@ -18,9 +18,12 @@ package_publish() { _package_raw publish; }
 package_include() { _package_raw include; }
 package_exclude() { _package_raw exclude; }
 package_features() { sed -n '/^\[features]$/,/^$/{s/ = .*$//p}' Cargo.toml; }
+package_doc_all_features() { _package_doc_raw all-features; }
 package_doc_features() { _package_doc_raw features; }
 package_doc_targets() { _package_doc_raw targets; }
 package_doc_default_target() { _package_doc_raw default-target | tr -d '"'; }
+package_bin_name() { _package_bin_string name; }
+package_bin_path() { _package_bin_string path; }
 
 # Internal helpers
 _package_raw() { sed -n '/^\[package]$/,/^$/{s/^'"$1"' = //p}' Cargo.toml; }
@@ -28,3 +31,4 @@ _package_string() { _package_raw "$1" | sed 's/^"\(.*\)"$/\1/'; }
 _package_doc_raw() {
   sed -n '/^\[package\.metadata\.docs\.rs]$/,/^$/{s/^'"$1"' = //p}' Cargo.toml
 }
+_package_bin_string() { sed -n '/^\[\[bin\]\]$/,/^$/{s/^'"$1"' = "\(.*\)"$/\1/p}' Cargo.toml; }

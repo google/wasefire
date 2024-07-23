@@ -41,46 +41,46 @@
 //! [1023](format::Format::max_value_len) bytes (for large enough pages).
 //!
 //! The store provides the following _updates_:
-//! -   Given a key and a value, [`StoreUpdate::Insert`] updates the store such that the value is
-//!     associated with the key. The values for other keys are left unchanged.
-//! -   Given a key, [`StoreUpdate::Remove`] updates the store such that no value is associated with
-//!     the key. The values for other keys are left unchanged. Additionally, if there was a value
-//!     associated with the key, the value is wiped from the storage (all its bits are set to 0).
+//! - Given a key and a value, [`StoreUpdate::Insert`] updates the store such that the value is
+//!   associated with the key. The values for other keys are left unchanged.
+//! - Given a key, [`StoreUpdate::Remove`] updates the store such that no value is associated with
+//!   the key. The values for other keys are left unchanged. Additionally, if there was a value
+//!   associated with the key, the value is wiped from the storage (all its bits are set to 0).
 //!
 //! The store provides the following _read-only operations_:
-//! -   [`Store::iter`] iterates through the store returning all entries exactly once. The iteration
-//!     order is not specified but stable between mutable operations.
-//! -   [`Store::capacity`] returns how many words can be stored before the store is full.
-//! -   [`Store::lifetime`] returns how many words can be written before the storage lifetime is
-//!     consumed.
+//! - [`Store::iter`] iterates through the store returning all entries exactly once. The iteration
+//!   order is not specified but stable between mutable operations.
+//! - [`Store::capacity`] returns how many words can be stored before the store is full.
+//! - [`Store::lifetime`] returns how many words can be written before the storage lifetime is
+//!   consumed.
 //!
 //! The store provides the following _mutable operations_:
-//! -   Given a set of independent updates, [`Store::transaction`] applies the sequence of updates.
-//! -   Given a threshold, [`Store::clear`] removes all entries with a key greater or equal to the
-//!     threshold.
-//! -   Given a length in words, [`Store::prepare`] makes one step of compaction unless that many
-//!     words can be written without compaction. This operation has no effect on the store but may
-//!     still mutate its storage. In particular, the store has the same capacity but a possibly
-//!     reduced lifetime.
+//! - Given a set of independent updates, [`Store::transaction`] applies the sequence of updates.
+//! - Given a threshold, [`Store::clear`] removes all entries with a key greater or equal to the
+//!   threshold.
+//! - Given a length in words, [`Store::prepare`] makes one step of compaction unless that many
+//!   words can be written without compaction. This operation has no effect on the store but may
+//!   still mutate its storage. In particular, the store has the same capacity but a possibly
+//!   reduced lifetime.
 //!
 //! A mutable operation is _atomic_ if, when power is lost during the operation, the store is either
 //! updated (as if the operation succeeded) or left unchanged (as if the operation did not occur).
 //! If the store is left unchanged, lifetime may still be consumed.
 //!
 //! The store relies on the following _storage interface_:
-//! -   It is possible to [read](Storage::read_slice) a byte slice. The slice won't span multiple
-//!     pages.
-//! -   It is possible to [write](Storage::write_slice) a word slice. The slice won't span multiple
-//!     pages.
-//! -   It is possible to [erase](Storage::erase_page) a page.
-//! -   The pages are sequentially indexed from 0. If the actual underlying storage is segmented,
-//!     then the storage layer should translate those indices to actual page addresses.
+//! - It is possible to [read](Storage::read_slice) a byte slice. The slice won't span multiple
+//!   pages.
+//! - It is possible to [write](Storage::write_slice) a word slice. The slice won't span multiple
+//!   pages.
+//! - It is possible to [erase](Storage::erase_page) a page.
+//! - The pages are sequentially indexed from 0. If the actual underlying storage is segmented, then
+//!   the storage layer should translate those indices to actual page addresses.
 //!
 //! The store has a _total capacity_ of C = (N - 1) * (P - 4) - M - 1 words, where:
-//! -   P is the number of words per page
-//! -   [N](format::Format::num_pages) is the number of pages
-//! -   [M](format::Format::max_prefix_len) is the maximum length in words of a value (256 for large
-//!     enough pages)
+//! - P is the number of words per page
+//! - [N](format::Format::num_pages) is the number of pages
+//! - [M](format::Format::max_prefix_len) is the maximum length in words of a value (256 for large
+//!   enough pages)
 //!
 //! The capacity used by each mutable operation is given below (a transient word only uses capacity
 //! during the operation):
@@ -108,23 +108,21 @@
 //! ## Preconditions
 //!
 //! The following assumptions need to hold, or the store may behave in unexpected ways:
-//! -   A word can be written [twice](Storage::max_word_writes) between erase cycles.
-//! -   A page can be erased [E](Storage::max_page_erases) times after the first boot of the store.
-//! -   When power is lost while writing a slice or erasing a page, the next read returns a slice
-//!     where a subset (possibly none or all) of the bits that should have been modified have been
-//!     modified.
-//! -   Reading a slice is deterministic. When power is lost while writing a slice or erasing a
-//!     slice (erasing a page containing that slice), reading that slice repeatedly returns the same
-//!     result (until it is overwritten or its page is erased).
-//! -   To decide whether a page has been erased, it is enough to test if all its bits are equal
-//!     to 1.
-//! -   When power is lost while writing a slice or erasing a page, that operation does not count
-//!     towards the limits. However, completing that write or erase operation would count towards
-//!     the limits, as if the number of writes per word and number of erase cycles could be
-//!     fractional.
-//! -   The storage is only modified by the store. Note that completely erasing the storage is
-//!     supported, essentially losing all content and lifetime tracking. It is preferred to use
-//!     [`Store::clear`] with a threshold of 0 to keep the lifetime tracking.
+//! - A word can be written [twice](Storage::max_word_writes) between erase cycles.
+//! - A page can be erased [E](Storage::max_page_erases) times after the first boot of the store.
+//! - When power is lost while writing a slice or erasing a page, the next read returns a slice
+//!   where a subset (possibly none or all) of the bits that should have been modified have been
+//!   modified.
+//! - Reading a slice is deterministic. When power is lost while writing a slice or erasing a slice
+//!   (erasing a page containing that slice), reading that slice repeatedly returns the same result
+//!   (until it is overwritten or its page is erased).
+//! - To decide whether a page has been erased, it is enough to test if all its bits are equal to 1.
+//! - When power is lost while writing a slice or erasing a page, that operation does not count
+//!   towards the limits. However, completing that write or erase operation would count towards the
+//!   limits, as if the number of writes per word and number of erase cycles could be fractional.
+//! - The storage is only modified by the store. Note that completely erasing the storage is
+//!   supported, essentially losing all content and lifetime tracking. It is preferred to use
+//!   [`Store::clear`] with a threshold of 0 to keep the lifetime tracking.
 //!
 //! The store properties may still hold outside some of those assumptions, but with an increasing
 //! chance of failure.
@@ -132,21 +130,20 @@
 //! # Implementation
 //!
 //! We define the following constants:
-//! -   [E](format::Format::max_page_erases) <= [65535](format::MAX_ERASE_CYCLE) the number of times
-//!     a page can be erased.
-//! -   3 <= [N](format::Format::num_pages) < 64 the number of pages in the storage.
-//! -   8 <= P <= 1024 the number of words in a page.
-//! -   [Q](format::Format::virt_page_size) = P - 2 the number of words in a virtual page.
-//! -   [M](format::Format::max_prefix_len) = min(Q - 1, 256) the maximum length in words of a
-//!     value.
-//! -   [W](format::Format::window_size) = (N - 1) * Q - M the window size.
-//! -   [V](format::Format::virt_size) = (N - 1) * (Q - 1) - M the virtual capacity.
-//! -   [C](format::Format::total_capacity) = V - N the user capacity.
+//! - [E](format::Format::max_page_erases) <= [65535](format::MAX_ERASE_CYCLE) the number of times a
+//!   page can be erased.
+//! - 3 <= [N](format::Format::num_pages) < 64 the number of pages in the storage.
+//! - 8 <= P <= 1024 the number of words in a page.
+//! - [Q](format::Format::virt_page_size) = P - 2 the number of words in a virtual page.
+//! - [M](format::Format::max_prefix_len) = min(Q - 1, 256) the maximum length in words of a value.
+//! - [W](format::Format::window_size) = (N - 1) * Q - M the window size.
+//! - [V](format::Format::virt_size) = (N - 1) * (Q - 1) - M the virtual capacity.
+//! - [C](format::Format::total_capacity) = V - N the user capacity.
 //!
 //! We build a virtual storage from the physical storage using the first 2 words of each page:
-//! -   The first word contains the number of times the page has been erased.
-//! -   The second word contains the starting word to which this page is being moved during
-//!     compaction.
+//! - The first word contains the number of times the page has been erased.
+//! - The second word contains the starting word to which this page is being moved during
+//!   compaction.
 //!
 //! The virtual storage has a length of (E + 1) * N * Q words and represents the lifetime of the
 //! store. (We reserve the last Q + M words to support adding emergency lifetime.) This virtual
@@ -177,28 +174,27 @@
 //!
 //! Entries are identified by a prefix of bits. The prefix has to contain at least one bit set to
 //! zero to differentiate from the tail. Entries can be one of:
-//! -   [Padding](format::ID_PADDING): A word whose first bit is set to zero. The rest is arbitrary.
-//!     This entry is used to mark words partially written after an interrupted operation as padding
-//!     such that they are ignored by future operations.
-//! -   [Header](format::ID_HEADER): A word whose second bit is set to zero. It contains the
-//!     following fields:
-//!     -   A [bit](format::HEADER_DELETED) indicating whether the entry is deleted.
-//!     -   A [bit](format::HEADER_FLIPPED) indicating whether the value is word-aligned and has all
-//!         bits set to 1 in its last word. The last word of an entry is used to detect that an
-//!         entry has been fully written. As such it must contain at least one bit equal to zero.
-//!     -   The [key](format::HEADER_KEY) of the entry.
-//!     -   The [length](format::HEADER_LENGTH) in bytes of the value. The value follows the header.
-//!         The entry is word-aligned if the value is not.
-//!     -   The [checksum](format::HEADER_CHECKSUM) of the first and last word of the entry.
-//! -   [Erase](format::ID_ERASE): A word used during compaction. It contains the
-//!     [page](format::ERASE_PAGE) to be erased and a [checksum](format::WORD_CHECKSUM).
-//! -   [Clear](format::ID_CLEAR): A word used during the clear operation. It contains the
-//!     [threshold](format::CLEAR_MIN_KEY) and a [checksum](format::WORD_CHECKSUM).
-//! -   [Marker](format::ID_MARKER): A word used during a transaction. It contains the [number of
-//!     updates](format::MARKER_COUNT) following the marker and a [checksum](format::WORD_CHECKSUM).
-//! -   [Remove](format::ID_REMOVE): A word used inside a transaction. It contains the
-//!     [key](format::REMOVE_KEY) of the entry to be removed and a
-//!     [checksum](format::WORD_CHECKSUM).
+//! - [Padding](format::ID_PADDING): A word whose first bit is set to zero. The rest is arbitrary.
+//!   This entry is used to mark words partially written after an interrupted operation as padding
+//!   such that they are ignored by future operations.
+//! - [Header](format::ID_HEADER): A word whose second bit is set to zero. It contains the following
+//!   fields:
+//!     - A [bit](format::HEADER_DELETED) indicating whether the entry is deleted.
+//!     - A [bit](format::HEADER_FLIPPED) indicating whether the value is word-aligned and has all
+//!       bits set to 1 in its last word. The last word of an entry is used to detect that an entry
+//!       has been fully written. As such it must contain at least one bit equal to zero.
+//!     - The [key](format::HEADER_KEY) of the entry.
+//!     - The [length](format::HEADER_LENGTH) in bytes of the value. The value follows the header.
+//!       The entry is word-aligned if the value is not.
+//!     - The [checksum](format::HEADER_CHECKSUM) of the first and last word of the entry.
+//! - [Erase](format::ID_ERASE): A word used during compaction. It contains the
+//!   [page](format::ERASE_PAGE) to be erased and a [checksum](format::WORD_CHECKSUM).
+//! - [Clear](format::ID_CLEAR): A word used during the clear operation. It contains the
+//!   [threshold](format::CLEAR_MIN_KEY) and a [checksum](format::WORD_CHECKSUM).
+//! - [Marker](format::ID_MARKER): A word used during a transaction. It contains the [number of
+//!   updates](format::MARKER_COUNT) following the marker and a [checksum](format::WORD_CHECKSUM).
+//! - [Remove](format::ID_REMOVE): A word used inside a transaction. It contains the
+//!   [key](format::REMOVE_KEY) of the entry to be removed and a [checksum](format::WORD_CHECKSUM).
 //!
 //! Checksums are the number of bits equal to 0.
 //!
@@ -336,11 +332,11 @@
 //!
 //! To show that valid entries of a given type are not reachable from each other, we show 3 lemmas:
 //!
-//! 1.  A bit sequence is not reachable from another if its number of bits equal to 0 is smaller.
-//! 2.  A bit sequence is not reachable from another if they have the same number of bits equals to
-//!     0 and are different.
-//! 3.  A bit sequence is not reachable from another if it is bigger when they are interpreted as
-//!     numbers in binary representation.
+//! 1. A bit sequence is not reachable from another if its number of bits equal to 0 is smaller.
+//! 2. A bit sequence is not reachable from another if they have the same number of bits equals to 0
+//!    and are different.
+//! 3. A bit sequence is not reachable from another if it is bigger when they are interpreted as
+//!    numbers in binary representation.
 //!
 //! From those lemmas we consider the 2 cases. If both entries have the same number of bits equal to
 //! 0, they are either equal or not reachable from each other because of the second lemma. If they
