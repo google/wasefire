@@ -1676,7 +1676,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.7.0-git"
+version = "0.7.0"
 dependencies = [
  "derivative",
  "wasefire-error",
@@ -1686,7 +1686,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-cli-tools"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -1700,21 +1700,21 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.1-git"
+version = "0.1.1"
 dependencies = [
  "num_enum",
 ]
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.5-git"
+version = "0.1.5"
 dependencies = [
  "log",
 ]
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "wasefire-error",
  "wasefire-wire",
@@ -1722,7 +1722,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol-usb"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "rusb",
@@ -1734,11 +1734,11 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.2.4-git"
+version = "0.2.4"
 
 [[package]]
 name = "wasefire-wire"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "wasefire-error",
  "wasefire-wire-derive",
@@ -1746,7 +1746,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire-derive"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "quote",

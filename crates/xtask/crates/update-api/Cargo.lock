@@ -141,7 +141,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.2.0-git"
+version = "0.2.0"
 dependencies = [
  "data-encoding",
  "data-encoding-macro",
