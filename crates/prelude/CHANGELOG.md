@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0-git
+## 0.6.0
 
 ### Major
 

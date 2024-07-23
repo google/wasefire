@@ -71,9 +71,9 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
   done
 done
 
-[ "$1" = --no-dry-run ] || d "Run with --no-dry-run from the merged PR to actually publish"
+[ "$1" = --dry-run ] && d "Nothing more to do with --dry-run"
 
-i "Remove all -git suffixes"
+i "Remove all -git suffixes (if any)"
 sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})
 if [ -n "$(git status -s)" ]; then
   i "Commit release"
@@ -81,8 +81,11 @@ if [ -n "$(git status -s)" ]; then
   t "Create a PR from this release commit"
   d "Then re-run from the merged PR"
 fi
+
+i "Final checks before actually publishing"
 git log -1 --pretty=%s | grep -q '^Release all crates (#[0-9]*)$' \
   || e "This is not a merged release commit"
+[ "$1" = --no-dry-run ] || d "Run with --no-dry-run to actually publish"
 
 get_latest() {
   name="$(package_name)"

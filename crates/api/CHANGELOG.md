@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.1-git
+## 0.6.1
 
 ### Minor
 
