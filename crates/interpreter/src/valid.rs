@@ -504,7 +504,10 @@ impl<'a, 'm> Expr<'a, 'm> {
 
         label_stack.push((
             Label {
-                type_: FuncType { params: self.locals.iter().cloned().collect(), results },
+                type_: FuncType {
+                    params: ResultType::from(self.locals.iter().cloned().collect::<Vec<ValType>>()),
+                    results,
+                },
                 kind: LabelKind::Block,
                 polymorphic: false,
                 stack: Vec::new(),
@@ -581,7 +584,7 @@ impl<'a, 'm> Expr<'a, 'm> {
                 Instr::BrTable(ls, ln) => {
                     let default_index = label_stack.len() - 1 - (ln as usize);
                     jump_labels.entry(label_stack[default_index].1).or_default().push(current_pos);
-                    for &l in ls {
+                    for l in ls {
                         let target_index = label_stack.len() - 1 - (l as usize);
                         jump_labels
                             .entry(label_stack[target_index].1)
