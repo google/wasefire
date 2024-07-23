@@ -1,13 +1,13 @@
 [package]
 name = "wasefire-scheduler"
-version = "0.3.1"
+version = "0.3.2-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
 edition = "2021"
 description = "Wasefire scheduler"
 repository = "https://github.com/google/wasefire"
-include = ["/LICENSE", "/src/"]
+include = ["/LICENSE", "/build.rs", "/src/"]
 keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
