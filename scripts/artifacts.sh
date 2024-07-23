@@ -27,6 +27,10 @@ You can use the following command to verify a downloaded asset:
 
     gh attestation verify --repo=google/wasefire <asset-path>
 
+You may also download the provenance attestation and use the \`--bundle\` flag:
+
+    gh attestation verify --owner=google --bundle=attestation.intoto.jsonl <asset-path>
+
 [changelog]: https://github.com/google/wasefire/blob/main/docs/releases/$DATE.md
 EOF
 
