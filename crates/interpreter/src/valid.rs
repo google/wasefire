@@ -514,12 +514,9 @@ impl<'a, 'm> Expr<'a, 'm> {
             0,
         ));
 
-        // Iterate over instructions and handle labels/branches
         while let Ok(instr) = self.parser.parse_instr() {
             let current_pos = self.parser.pos() as usize;
-
             match instr {
-                // Push new labels for block, loop, and if constructs
                 Instr::Block(block_type) | Instr::Loop(block_type) | Instr::If(block_type) => {
                     let func_type = self.blocktype(&block_type)?;
                     label_stack.push((
@@ -537,24 +534,19 @@ impl<'a, 'm> Expr<'a, 'm> {
                         current_pos,
                     ));
                 }
-
-                // Change label kind for 'else' block
                 Instr::Else => {
                     if let Some((label, _)) = label_stack.last_mut() {
                         label.kind = LabelKind::Block;
                     }
                 }
-
-                // Pop labels and create side table entries for 'end' instructions
                 Instr::End => {
                     if let Some((label, label_pos)) = label_stack.pop() {
-                        // Handle any jumps targeting this label
                         if let Some(jump_targets) = jump_labels.remove(&label_pos) {
                             for target_pos in jump_targets {
                                 let side_table_entry = SideTableEntry {
                                     valcnt: label.type_.results.len() as u32,
                                     popcnt: label.stack.len() as u32,
-                                    delta_ip: (label_pos as i32) - (target_pos as i32), /* Calculate delta_ip */
+                                    delta_ip: (label_pos as i32) - (target_pos as i32),
                                     delta_stp: 0, // Not handling nested labels for simplicity
                                 };
                                 self.context.side_table.insert(target_pos, side_table_entry);
@@ -574,8 +566,6 @@ impl<'a, 'm> Expr<'a, 'm> {
                         self.context.side_table.insert(label_pos, side_table_entry);
                     }
                 }
-
-                // Track jumps for 'br', 'br_if', and 'br_table' instructions
                 Instr::Br(l) | Instr::BrIf(l) => {
                     let target_index = label_stack.len() - 1 - (l as usize);
                     jump_labels.entry(label_stack[target_index].1).or_default().push(current_pos);
