@@ -107,9 +107,12 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       - run: ./scripts/artifacts.sh
       - uses: actions/attest-build-provenance@897ed5eab6ed058a474202017ada7f40bfa52940 # v1.0.0
+        id: attest
         with:
           subject-path: 'artifacts/*'
       - run: |
+          mv ${{ steps.attest.outputs.bundle-path }} attestation.intoto.jsonl
+          echo 'attestation.intoto.jsonl#Provenance attestation' >> artifacts.txt
           COMMIT=$(git rev-parse -q --verify HEAD)
           DATE=$(git log -1 --pretty=%cs)
           xargs --arg-file=artifacts.txt --delimiter='\n' \
