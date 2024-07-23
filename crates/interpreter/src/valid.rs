@@ -16,6 +16,7 @@ use alloc::collections::BTreeSet;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
+use std::collections::HashMap;
 
 use crate::error::*;
 use crate::syntax::*;
@@ -30,6 +31,13 @@ pub fn validate(binary: &[u8]) -> Result<(), Error> {
 type Parser<'m> = parser::Parser<'m, Check>;
 type CheckResult = MResult<(), Check>;
 
+struct SideTableEntry {
+    valcnt: u32,
+    popcnt: u32,
+    delta_ip: i32,
+    delta_stp: i32,
+}
+
 #[derive(Default)]
 struct Context<'m> {
     types: Vec<FuncType<'m>>,
@@ -39,6 +47,8 @@ struct Context<'m> {
     globals: Vec<GlobalType>,
     elems: Vec<RefType>,
     datas: Option<usize>,
+    side_table: HashMap<usize, SideTableEntry>,
+    operand_stack: Vec<ValType>,
 }
 
 impl<'m> Context<'m> {
@@ -130,7 +140,16 @@ impl<'m> Context<'m> {
                 let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
+
+                let mut expr = Expr::new(self, &mut parser, Err(refs.as_slice()));
+                expr.operand_stack = &mut self.operand_stack;
+                // Build side table during Expr::check_body
+                expr.build_side_table(t.results);
                 Expr::check_body(self, &mut parser, &refs, locals, t.results)?;
+
+                // Clear context operand stack for next function
+                self.operand_stack.clear();
+
                 check(parser.is_empty())?;
             }
             check(parser.is_empty())?;
@@ -401,6 +420,7 @@ struct Expr<'a, 'm> {
     is_body: bool,
     locals: Vec<ValType>,
     labels: Vec<Label<'m>>,
+    operand_stack: &'a mut Vec<ValType>,
 }
 
 #[derive(Debug, Default)]
@@ -465,6 +485,16 @@ impl<'a, 'm> Expr<'a, 'm> {
         Ok(())
     }
 
+    fn do_control_transfer_from_stp(&mut self) {
+        let entry = &self.context.side_table[&self.parser.current_position()];
+
+        // Move values as per side table entry
+        let split_index = self.operand_stack.len() - (entry.popcnt as usize);
+        let mut moved_values = self.operand_stack.split_off(split_index);
+        self.operand_stack.truncate(self.operand_stack.len() - entry.valcnt as usize);
+        self.operand_stack.append(&mut moved_values);
+    }
+
     fn instr(&mut self) -> CheckResult {
         use Instr::*;
         let instr = self.parser.parse_instr()?;
@@ -489,6 +519,9 @@ impl<'a, 'm> Expr<'a, 'm> {
                 _ => return Err(invalid()),
             }
         }
+
+        let side_table_entry = self.context.side_table.get(&self.parser.current_position());
+
         match instr {
             Unreachable => self.stack_polymorphic(),
             Nop => (),
@@ -506,26 +539,46 @@ impl<'a, 'm> Expr<'a, 'm> {
                 check(self.stack().is_empty())?;
                 self.label().polymorphic = false;
                 self.pushs(params);
+                self.do_control_transfer_from_stp();
             }
             End => unreachable!(),
             Br(l) => {
                 self.pops(self.br_label(l)?)?;
-                self.stack_polymorphic();
+                self.do_control_transfer_from_stp();
             }
             BrIf(l) => {
                 self.pop_check(ValType::I32)?;
-                self.swaps(self.br_label(l)?)?;
+
+                if let Some(entry) = side_table_entry {
+                    self.operand_stack.truncate(self.operand_stack.len() - (entry.popcnt as usize));
+                    self.operand_stack.extend_from_slice(&self.br_label(l)?);
+
+                    if self.operand_stack.len() < entry.valcnt as usize {
+                        self.stack_polymorphic();
+                    } else {
+                        self.do_control_transfer_from_stp();
+                    }
+                } else {
+                    return Err(invalid());
+                }
             }
             BrTable(ls, ln) => {
                 self.pop_check(ValType::I32)?;
-                let tn = self.br_label(ln)?;
-                self.peeks(tn)?;
-                for l in ls {
-                    let t = self.br_label(l)?;
-                    check(tn.len() == t.len())?;
-                    self.peeks(t)?;
+                let default_label = self.br_label(ln)?;
+
+                if let Some(entry) = side_table_entry {
+                    self.operand_stack.pop();
+                    for l in ls {
+                        let label_type = self.br_label(l)?;
+                        if label_type != default_label {
+                            return Err(invalid());
+                        }
+                    }
+                    self.operand_stack.extend_from_slice(&default_label);
+                    self.do_control_transfer_from_stp();
+                } else {
+                    return Err(invalid());
                 }
-                self.stack_polymorphic();
             }
             Return => {
                 check(self.is_body)?;
