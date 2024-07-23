@@ -141,9 +141,8 @@ impl<'m> Context<'m> {
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
 
-                let mut expr =
-                    Expr::new(self, &mut parser, Err(refs.as_slice()), &mut self.operand_stack);
-                expr.operand_stack = &mut self.operand_stack;
+                let operand_stack = Vec::new();
+                let mut expr = Expr::new(self, &mut parser, Err(refs.as_slice()), operand_stack);
                 // Build side table during Expr::check_body
                 expr.build_side_table(t.results)?;
                 Expr::check_body(self, &mut parser, &refs, locals, t.results)?;
@@ -421,7 +420,7 @@ struct Expr<'a, 'm> {
     is_body: bool,
     locals: Vec<ValType>,
     labels: Vec<Label<'m>>,
-    operand_stack: &'a mut Vec<ValType>,
+    operand_stack: Vec<ValType>,
 }
 
 #[derive(Debug, Default)]
@@ -445,7 +444,7 @@ enum LabelKind {
 impl<'a, 'm> Expr<'a, 'm> {
     fn new(
         context: &'a Context<'m>, parser: &'a mut Parser<'m>,
-        is_const: Result<&'a mut [bool], &'a [bool]>, operand_stack: &'a mut Vec<ValType>,
+        is_const: Result<&'a mut [bool], &'a [bool]>, operand_stack: Vec<ValType>,
     ) -> Self {
         Self {
             context,
@@ -463,7 +462,8 @@ impl<'a, 'm> Expr<'a, 'm> {
         context: &'a mut Context<'m>, parser: &'a mut Parser<'m>, refs: &'a mut [bool],
         num_global_imports: usize, expected: ResultType<'m>,
     ) -> CheckResult {
-        let mut expr = Expr::new(context, parser, Ok(refs), &mut context.operand_stack);
+        let operand_stack = Vec::new();
+        let mut expr = Expr::new(context, parser, Ok(refs), operand_stack);
         expr.globals_len = num_global_imports;
         expr.label().type_.results = expected;
         expr.check()
@@ -473,7 +473,8 @@ impl<'a, 'm> Expr<'a, 'm> {
         context: &'a mut Context<'m>, parser: &'a mut Parser<'m>, refs: &'a [bool],
         locals: Vec<ValType>, results: ResultType<'m>,
     ) -> CheckResult {
-        let mut expr = Expr::new(context, parser, Err(refs), &mut context.operand_stack);
+        let operand_stack = Vec::new();
+        let mut expr = Expr::new(context, parser, Err(refs), operand_stack);
         expr.is_body = true;
         expr.locals = locals;
         expr.label().type_.results = results;
