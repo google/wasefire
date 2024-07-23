@@ -553,7 +553,6 @@ impl<'a, 'm> Expr<'a, 'm> {
                             }
                         }
 
-                        // Create side table entry for the end instruction itself
                         let side_table_entry = SideTableEntry {
                             valcnt: label.type_.results.len() as u32,
                             popcnt: match label.kind {
