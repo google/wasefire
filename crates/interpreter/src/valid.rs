@@ -141,10 +141,11 @@ impl<'m> Context<'m> {
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
 
-                let mut expr = Expr::new(self, &mut parser, Err(refs.as_slice()));
+                let mut expr =
+                    Expr::new(self, &mut parser, Err(refs.as_slice()), &mut self.operand_stack);
                 expr.operand_stack = &mut self.operand_stack;
                 // Build side table during Expr::check_body
-                expr.build_side_table(t.results);
+                expr.build_side_table(t.results)?;
                 Expr::check_body(self, &mut parser, &refs, locals, t.results)?;
 
                 // Clear context operand stack for next function
@@ -459,20 +460,20 @@ impl<'a, 'm> Expr<'a, 'm> {
     }
 
     fn check_const(
-        context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a mut [bool],
+        context: &'a mut Context<'m>, parser: &'a mut Parser<'m>, refs: &'a mut [bool],
         num_global_imports: usize, expected: ResultType<'m>,
     ) -> CheckResult {
-        let mut expr = Expr::new(context, parser, Ok(refs));
+        let mut expr = Expr::new(context, parser, Ok(refs), &mut context.operand_stack);
         expr.globals_len = num_global_imports;
         expr.label().type_.results = expected;
         expr.check()
     }
 
     fn check_body(
-        context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a [bool],
+        context: &'a mut Context<'m>, parser: &'a mut Parser<'m>, refs: &'a [bool],
         locals: Vec<ValType>, results: ResultType<'m>,
     ) -> CheckResult {
-        let mut expr = Expr::new(context, parser, Err(refs));
+        let mut expr = Expr::new(context, parser, Err(refs), &mut context.operand_stack);
         expr.is_body = true;
         expr.locals = locals;
         expr.label().type_.results = results;
@@ -487,7 +488,8 @@ impl<'a, 'm> Expr<'a, 'm> {
     }
 
     fn do_control_transfer_from_stp(&mut self) {
-        let entry = &self.context.side_table[&self.parser.current_position()];
+        let cur_pos = self.parser.pos() as usize;
+        let entry = &self.context.side_table[&cur_pos];
 
         // Move values as per side table entry
         let split_index = self.operand_stack.len() - (entry.popcnt as usize);
@@ -496,8 +498,10 @@ impl<'a, 'm> Expr<'a, 'm> {
         self.operand_stack.append(&mut moved_values);
     }
 
-    fn build_side_table(&mut self, results: ResultType<'m>) {
-        let mut label_stack: Vec<(Label<'m>, usize)> = Vec::new();
+    fn build_side_table(&mut self, results: ResultType<'m>) -> Result<(), Error> {
+        let mut label_stack: Vec<(Label<'m>, usize)> = Vec::new(); // Stack to track labels and their positions
+        let mut jump_labels: HashMap<usize, Vec<usize>> = HashMap::new(); // Map to track jump targets for labels
+
         label_stack.push((
             Label {
                 type_: FuncType { params: self.locals.iter().cloned().collect(), results },
@@ -507,13 +511,15 @@ impl<'a, 'm> Expr<'a, 'm> {
             },
             0,
         ));
-        let mut jump_labels: HashMap<usize, Vec<usize>> = HashMap::new();
 
-        while let Some(instr) = self.parser.parse_instr() {
-            let current_pos = self.parser.current_position() as usize;
+        // Iterate over instructions and handle labels/branches
+        while let Ok(instr) = self.parser.parse_instr() {
+            let current_pos = self.parser.pos() as usize;
+
             match instr {
+                // Push new labels for block, loop, and if constructs
                 Instr::Block(block_type) | Instr::Loop(block_type) | Instr::If(block_type) => {
-                    let func_type = self.blocktype(&block_type).unwrap();
+                    let func_type = self.blocktype(&block_type)?;
                     label_stack.push((
                         Label {
                             type_: func_type,
@@ -521,7 +527,7 @@ impl<'a, 'm> Expr<'a, 'm> {
                                 Instr::Block(_) => LabelKind::Block,
                                 Instr::Loop(_) => LabelKind::Loop,
                                 Instr::If(_) => LabelKind::If,
-                                _ => unreachable!(), // Should not happen
+                                _ => unreachable!(),
                             },
                             polymorphic: false,
                             stack: Vec::new(),
@@ -529,40 +535,45 @@ impl<'a, 'm> Expr<'a, 'm> {
                         current_pos,
                     ));
                 }
+
+                // Change label kind for 'else' block
                 Instr::Else => {
                     if let Some((label, _)) = label_stack.last_mut() {
                         label.kind = LabelKind::Block;
                     }
                 }
+
+                // Pop labels and create side table entries for 'end' instructions
                 Instr::End => {
                     if let Some((label, label_pos)) = label_stack.pop() {
-                        // Calculate side table entries for any jumps targeting this label
+                        // Handle any jumps targeting this label
                         if let Some(jump_targets) = jump_labels.remove(&label_pos) {
                             for target_pos in jump_targets {
                                 let side_table_entry = SideTableEntry {
                                     valcnt: label.type_.results.len() as u32,
-                                    popcnt: match label.kind {
-                                        LabelKind::Loop => 0,
-                                        _ => label.stack.len() as u32,
-                                    },
-                                    delta_ip: (label_pos - target_pos) as i32,
-                                    delta_stp: 0,
+                                    popcnt: label.stack.len() as u32,
+                                    delta_ip: (label_pos as i32) - (target_pos as i32), /* Calculate delta_ip */
+                                    delta_stp: 0, // Not handling nested labels for simplicity
                                 };
                                 self.context.side_table.insert(target_pos, side_table_entry);
                             }
                         }
+
+                        // Create side table entry for the end instruction itself
                         let side_table_entry = SideTableEntry {
                             valcnt: label.type_.results.len() as u32,
                             popcnt: match label.kind {
-                                LabelKind::Loop => 0,
+                                LabelKind::Loop => 0, // No values popped for loops
                                 _ => label.stack.len() as u32,
                             },
-                            delta_ip: (current_pos - label_pos + 1) as i32, /* +1 to skip the 'end' instruction */
+                            delta_ip: (current_pos - label_pos + 1) as i32, // +1 to skip 'end'
                             delta_stp: 0,
                         };
                         self.context.side_table.insert(label_pos, side_table_entry);
                     }
                 }
+
+                // Track jumps for 'br', 'br_if', and 'br_table' instructions
                 Instr::Br(l) | Instr::BrIf(l) => {
                     let target_index = label_stack.len() - 1 - (l as usize);
                     jump_labels.entry(label_stack[target_index].1).or_default().push(current_pos);
@@ -578,9 +589,11 @@ impl<'a, 'm> Expr<'a, 'm> {
                             .push(current_pos);
                     }
                 }
-                _ => {}
+                _ => {} // Ignore other instructions that don't affect control flow
             }
         }
+
+        Ok(())
     }
 
     fn instr(&mut self) -> CheckResult {
@@ -608,7 +621,8 @@ impl<'a, 'm> Expr<'a, 'm> {
             }
         }
 
-        let side_table_entry = self.context.side_table.get(&self.parser.current_position());
+        let cur_pos = self.parser.pos() as usize;
+        let side_table_entry = self.context.side_table.get(&cur_pos);
 
         match instr {
             Unreachable => self.stack_polymorphic(),
