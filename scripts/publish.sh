@@ -79,7 +79,7 @@ if [ -n "$(git status -s)" ]; then
   i "Commit release"
   git commit -aqm'Release all crates'
   t "Create a PR from this release commit"
-  d "Then re-run from the merged PR with --no-dry-run"
+  d "Then re-run from the merged PR"
 fi
 
 i "Final checks before actually publishing"
