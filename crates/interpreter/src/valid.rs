@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloc::collections::{BTreeSet, HashMap};
+use alloc::collections::BTreeSet;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
+
+use hashbrown::HashMap;
 
 use crate::error::*;
 use crate::syntax::*;
