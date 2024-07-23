@@ -16,8 +16,7 @@ use alloc::collections::BTreeSet;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
-
-use hashbrown::HashMap;
+use std::collections::HashMap;
 
 use crate::error::*;
 use crate::syntax::*;

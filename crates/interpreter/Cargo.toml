@@ -17,7 +17,6 @@ lru = { version = "0.12.3", default-features = false, optional = true }
 num_enum = { version = "0.7.2", default-features = false }
 paste = { version = "1.0.15", default-features = false }
 portable-atomic = { version = "1.6.0", default-features = false }
-hashbrown = { version = "0.14.5", default-features = false, features = ["raw"] }
 
 [dev-dependencies]
 lazy_static = "1.4.0"
