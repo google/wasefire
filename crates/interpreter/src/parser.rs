@@ -24,6 +24,7 @@ use crate::toctou::*;
 pub struct Parser<'m, M: Mode> {
     data: &'m [u8],
     mode: PhantomData<M>,
+    pos: usize,
 }
 
 impl<'m> Parser<'m, Check> {
@@ -57,10 +58,15 @@ impl<'m, M: Mode> Parser<'m, M> {
         M::check(|| len <= self.data.len())
     }
 
+    pub fn pos(&self) -> usize {
+        self.pos
+    }
+
     pub fn parse_bytes(&mut self, len: usize) -> MResult<&'m [u8], M> {
         self.check_len(len)?;
         let (result, data) = split_at(self.data, len);
         self.data = data;
+        self.pos += len;
         Ok(result)
     }
 
@@ -644,7 +650,7 @@ impl<'m, M: Mode> ParseData<'m, M> for SkipData {}
 
 impl<'m, M: Mode> Parser<'m, M> {
     fn internal_new(data: &'m [u8]) -> Self {
-        Self { data, mode: PhantomData }
+        Self { data, mode: PhantomData, pos: 0 }
     }
 }
 
