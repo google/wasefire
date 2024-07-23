@@ -73,8 +73,9 @@ done
 
 [ "$1" = --dry-run ] && d "Nothing more to do with --dry-run"
 
-i "Remove all -git suffixes (if any)"
+i "Remove all -git suffixes (if any) and reset CHANGELOG tests"
 sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})
+sed -i 's/\(^<!-- .* test\): [0-9]* -->$/\1: 0 -->/' $(git ls-files '*/CHANGELOG.md')
 if [ -n "$(git status -s)" ]; then
   i "Commit release"
   git commit -aqm'Release all crates'
