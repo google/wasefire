@@ -444,7 +444,7 @@ enum LabelKind {
 impl<'a, 'm> Expr<'a, 'm> {
     fn new(
         context: &'a Context<'m>, parser: &'a mut Parser<'m>,
-        is_const: Result<&'a mut [bool], &'a [bool]>,
+        is_const: Result<&'a mut [bool], &'a [bool]>, operand_stack: &'a mut Vec<ValType>,
     ) -> Self {
         Self {
             context,
@@ -454,6 +454,7 @@ impl<'a, 'm> Expr<'a, 'm> {
             is_body: false,
             locals: vec![],
             labels: vec![Label::default()],
+            operand_stack,
         }
     }
 
@@ -493,6 +494,93 @@ impl<'a, 'm> Expr<'a, 'm> {
         let mut moved_values = self.operand_stack.split_off(split_index);
         self.operand_stack.truncate(self.operand_stack.len() - entry.valcnt as usize);
         self.operand_stack.append(&mut moved_values);
+    }
+
+    fn build_side_table(&mut self, results: ResultType<'m>) {
+        let mut label_stack: Vec<(Label<'m>, usize)> = Vec::new();
+        label_stack.push((
+            Label {
+                type_: FuncType { params: self.locals.iter().cloned().collect(), results },
+                kind: LabelKind::Block,
+                polymorphic: false,
+                stack: Vec::new(),
+            },
+            0,
+        ));
+        let mut jump_labels: HashMap<usize, Vec<usize>> = HashMap::new();
+
+        while let Some(instr) = self.parser.parse_instr() {
+            let current_pos = self.parser.current_position() as usize;
+            match instr {
+                Instr::Block(block_type) | Instr::Loop(block_type) | Instr::If(block_type) => {
+                    let func_type = self.blocktype(&block_type).unwrap();
+                    label_stack.push((
+                        Label {
+                            type_: func_type,
+                            kind: match instr {
+                                Instr::Block(_) => LabelKind::Block,
+                                Instr::Loop(_) => LabelKind::Loop,
+                                Instr::If(_) => LabelKind::If,
+                                _ => unreachable!(), // Should not happen
+                            },
+                            polymorphic: false,
+                            stack: Vec::new(),
+                        },
+                        current_pos,
+                    ));
+                }
+                Instr::Else => {
+                    if let Some((label, _)) = label_stack.last_mut() {
+                        label.kind = LabelKind::Block;
+                    }
+                }
+                Instr::End => {
+                    if let Some((label, label_pos)) = label_stack.pop() {
+                        // Calculate side table entries for any jumps targeting this label
+                        if let Some(jump_targets) = jump_labels.remove(&label_pos) {
+                            for target_pos in jump_targets {
+                                let side_table_entry = SideTableEntry {
+                                    valcnt: label.type_.results.len() as u32,
+                                    popcnt: match label.kind {
+                                        LabelKind::Loop => 0,
+                                        _ => label.stack.len() as u32,
+                                    },
+                                    delta_ip: (label_pos - target_pos) as i32,
+                                    delta_stp: 0,
+                                };
+                                self.context.side_table.insert(target_pos, side_table_entry);
+                            }
+                        }
+                        let side_table_entry = SideTableEntry {
+                            valcnt: label.type_.results.len() as u32,
+                            popcnt: match label.kind {
+                                LabelKind::Loop => 0,
+                                _ => label.stack.len() as u32,
+                            },
+                            delta_ip: (current_pos - label_pos + 1) as i32, /* +1 to skip the 'end' instruction */
+                            delta_stp: 0,
+                        };
+                        self.context.side_table.insert(label_pos, side_table_entry);
+                    }
+                }
+                Instr::Br(l) | Instr::BrIf(l) => {
+                    let target_index = label_stack.len() - 1 - (l as usize);
+                    jump_labels.entry(label_stack[target_index].1).or_default().push(current_pos);
+                }
+                Instr::BrTable(ls, ln) => {
+                    let default_index = label_stack.len() - 1 - (ln as usize);
+                    jump_labels.entry(label_stack[default_index].1).or_default().push(current_pos);
+                    for &l in ls {
+                        let target_index = label_stack.len() - 1 - (l as usize);
+                        jump_labels
+                            .entry(label_stack[target_index].1)
+                            .or_default()
+                            .push(current_pos);
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 
     fn instr(&mut self) -> CheckResult {
