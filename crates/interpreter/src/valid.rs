@@ -502,13 +502,11 @@ impl<'a, 'm> Expr<'a, 'm> {
     fn build_side_table(&mut self, results: ResultType<'m>) -> Result<(), Error> {
         let mut label_stack: Vec<(Label<'m>, usize)> = Vec::new(); // Stack to track labels and their positions
         let mut jump_labels: HashMap<usize, Vec<usize>> = HashMap::new(); // Map to track jump targets for labels
+        let locals_slice = self.locals.iter().map(|&v| v.into()).collect::<Vec<_>>();
 
         label_stack.push((
             Label {
-                type_: FuncType {
-                    params: ResultType::from(self.locals.iter().cloned().collect::<Vec<ValType>>()),
-                    results,
-                },
+                type_: FuncType { params: ResultType::from(locals_slice.as_slice()), results },
                 kind: LabelKind::Block,
                 polymorphic: false,
                 stack: Vec::new(),
