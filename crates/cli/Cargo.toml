@@ -1,8 +1,6 @@
-cargo-features = ["trim-paths"]
-
 [package]
 name = "wasefire-cli"
-version = "0.1.1"
+version = "0.1.2-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -27,11 +25,6 @@ rusb = { version = "0.9.4", default-features = false }
 wasefire-cli-tools = { version = "0.1.0", path = "../cli-tools" }
 wasefire-protocol = { version = "0.1.0", path = "../protocol", features = ["host"] }
 wasefire-protocol-usb = { version = "0.1.0", path = "../protocol-usb", features = ["host"] }
-
-# Try to make the build as reproducible as possible in release mode.
-[profile.release]
-codegen-units = 1
-trim-paths = true
 
 [lints]
 clippy.unit-arg = "allow"
