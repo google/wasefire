@@ -19,7 +19,7 @@ use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 use wasefire_interpreter::*;
-use wast::core::{WastArgCore, WastRetCore};
+use wast::core::{AbstractHeapType, WastArgCore, WastRetCore};
 use wast::lexer::Lexer;
 use wast::token::Id;
 use wast::{parser, QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, WastRet, Wat};
@@ -86,6 +86,7 @@ fn mem_size(name: &str) -> usize {
         "bulk" => 0x10000,
         "data" => 0x20000,
         "linking" => 0x60000,
+        "memory" => 0x10000,
         "memory_copy" => 0x10000,
         "memory_fill" => 0x10000,
         "memory_grow" => 0x80000,
@@ -278,8 +279,14 @@ fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
             (F64(x), C(W::F64(_))) => assert!(f64::from_bits(x).is_nan()),
             #[cfg(feature = "vector-types")]
             (V128(_), _) => unimplemented!(),
-            (Null(RefType::ExternRef), C(W::RefNull(None | Some(HeapType::Extern)))) => (),
-            (Null(RefType::FuncRef), C(W::RefNull(None | Some(HeapType::Func)))) => (),
+            (
+                Null(RefType::ExternRef),
+                C(W::RefNull(None | Some(HeapType::Abstract { ty: AbstractHeapType::Extern, .. }))),
+            ) => (),
+            (
+                Null(RefType::FuncRef),
+                C(W::RefNull(None | Some(HeapType::Abstract { ty: AbstractHeapType::Func, .. }))),
+            ) => (),
             (Ref(_), _) => unimplemented!(),
             (RefExtern(x), C(W::RefExtern(Some(y)))) => assert_eq!(x, y as usize),
             (x, y) => panic!("{x:?} !~ {y:?}"),
@@ -365,8 +372,12 @@ fn wast_arg_core(core: WastArgCore) -> Val {
         WastArgCore::F32(x) => Val::F32(x.bits),
         #[cfg(feature = "float-types")]
         WastArgCore::F64(x) => Val::F64(x.bits),
-        WastArgCore::RefNull(HeapType::Func) => Val::Null(RefType::FuncRef),
-        WastArgCore::RefNull(HeapType::Extern) => Val::Null(RefType::ExternRef),
+        WastArgCore::RefNull(HeapType::Abstract { ty: AbstractHeapType::Func, .. }) => {
+            Val::Null(RefType::FuncRef)
+        }
+        WastArgCore::RefNull(HeapType::Abstract { ty: AbstractHeapType::Extern, .. }) => {
+            Val::Null(RefType::ExternRef)
+        }
         WastArgCore::RefExtern(x) => Val::RefExtern(x as usize),
         _ => unimplemented!("{:?}", core),
     }

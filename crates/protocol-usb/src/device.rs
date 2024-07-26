@@ -31,6 +31,8 @@ use wasefire_logger as log;
 
 use crate::common::{Decoder, Encoder};
 
+// TODO(https://github.com/rust-lang/rust/issues/128053): Remove dead-code.
+#[allow(dead_code)]
 pub struct Impl<'a, B: UsbBus, T: HasRpc<'a, B>> {
     _never: Infallible,
     _phantom: PhantomData<(&'a (), B, T)>,

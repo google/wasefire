@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crypto_common::generic_array::{ArrayLength, GenericArray};
 use crypto_common::BlockSizeUser;
 use digest::{Digest, FixedOutput, FixedOutputReset};
 use ecdsa::hazmat::{SignPrimitive, VerifyPrimitive};
@@ -23,7 +24,6 @@ use elliptic_curve::{
     AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, ProjectivePoint, Scalar,
     ScalarPrimitive,
 };
-use generic_array::{ArrayLength, GenericArray};
 use signature::hazmat::PrehashVerifier;
 use wasefire_applet_api::crypto::ec as api;
 use wasefire_error::Error;
