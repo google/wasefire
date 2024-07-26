@@ -88,6 +88,7 @@ GIT_MODULES='
 SchemaStore/schemastore
 WebAssembly/spec
 rust-lang/rustup
+wasm3/wasm-coremark
 '
 [ "$(echo "$GIT_MODULES" | sort | tail -n+2)" = "$(echo "$GIT_MODULES")" ] \
   || e "GIT_MODULES is not sorted"

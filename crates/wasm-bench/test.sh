@@ -13,10 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-. ./common.sh
-. "$ROOT"/scripts/test-helper.sh
+set -e
+
+. "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
 ensure_applet
+ensure_submodule third_party/wasm3/wasm-coremark
 
 test_helper
 

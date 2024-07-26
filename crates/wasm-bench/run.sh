@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-. ./common.sh
+set -e
+
+. "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
 case "$1" in
   linux) ;;

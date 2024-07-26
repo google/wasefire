@@ -31,8 +31,8 @@ mod runtime;
 #[cfg_attr(feature = "target-riscv", path = "target/riscv.rs")]
 mod target;
 
-// https://github.com/wasm3/wasm-coremark/blob/main/coremark-minimal.wasm
-const WASM: &[u8] = include_bytes!("../../../target/wasefire/coremark-minimal.wasm");
+const WASM: &[u8] =
+    include_bytes!("../../../third_party/wasm3/wasm-coremark/coremark-minimal.wasm");
 
 fn main() {
     println!("Running CoreMark measurement...");
