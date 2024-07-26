@@ -62,7 +62,7 @@ pub fn Board(Props { command_state, on_board_ready, on_event }: &Props) -> Html 
                     }
                 }).collect::<Html>()
             } else {
-                html!(<div>{"⏳"}</div>)
+                html!(<div>{""}</div>)
             }
         }</div>
     };

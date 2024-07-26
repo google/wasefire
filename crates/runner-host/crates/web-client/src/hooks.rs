@@ -68,7 +68,6 @@ pub fn use_runner_connection(backend_address: String) -> UseRunnerConnectionHand
                     let close_event_type = close_event.type_();
                     warn!("Socket closed {close_event_type} setting disconnect event.");
                     set_disconnected(command_state.clone());
-                    
                 }
             })),
             onerror: Some(Box::new({
