@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-protocol"
-version = "0.1.0-git"
+version = "0.1.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -15,8 +15,8 @@ categories = ["embedded", "no-std"]
 features = ["device", "host"]
 
 [dependencies]
-wasefire-error = { version = "0.1.1-git", path = "../error" }
-wasefire-wire = { version = "0.1.0-git", path = "../wire" }
+wasefire-error = { version = "0.1.1", path = "../error" }
+wasefire-wire = { version = "0.1.0", path = "../wire" }
 
 [features]
 _descriptor = []

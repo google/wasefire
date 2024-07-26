@@ -14,7 +14,7 @@
 
 //! Elliptic-curve cryptography.
 
-use generic_array::{ArrayLength, GenericArray};
+use crypto_common::generic_array::{ArrayLength, GenericArray};
 #[cfg(feature = "internal-software-crypto-ecc")]
 pub use software::*;
 

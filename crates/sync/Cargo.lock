@@ -19,7 +19,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-sync"
-version = "0.1.1-git"
+version = "0.1.1"
 dependencies = [
  "portable-atomic",
  "spin",

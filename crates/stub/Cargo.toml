@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-stub"
-version = "0.1.4-git"
+version = "0.1.4"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -16,7 +16,6 @@ crypto-common = { version = "0.1.6", default-features = false }
 digest = { version = "0.10.7", default-features = false, features = ["mac"] }
 ecdsa = { version = "0.16.9", default-features = false, features = ["signing"] }
 elliptic-curve = { version = "0.13.8", default-features = false }
-generic-array = { version = "0.14.7", default-features = false }
 hkdf = { version = "0.12.4", default-features = false }
 hmac = { version = "0.12.1", default-features = false }
 p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
@@ -24,12 +23,12 @@ p384 = { version = "0.13.0", default-features = false, features = ["ecdsa"] }
 rand = { version = "0.8.5", default-features = false, features = ["std", "std_rng"] }
 sha2 = { version = "0.10.8", default-features = false }
 signature = { version = "2.2.0", default-features = false }
-wasefire-error = { version = "0.1.1-git", path = "../error" }
-wasefire-logger = { version = "0.1.5-git", path = "../logger" }
+wasefire-error = { version = "0.1.1", path = "../error" }
+wasefire-logger = { version = "0.1.5", path = "../logger" }
 
 [dependencies.wasefire-applet-api]
 features = ["full-api", "native", "wasm"]
-version = "0.6.1-git"
+version = "0.6.1"
 path = "../api"
 
 [lints]

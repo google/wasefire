@@ -85,7 +85,7 @@ fn update<B: Board>(mut call: SchedulerCall<B, api::update::Sig>) {
     let api::update::Params { id, data, length } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.store.memory();
-    let result = try {
+    let result: Result<(), _> = try {
         let data = memory.get(*data, *length)?;
         match scheduler.applet.hashes.get_mut(*id as usize)? {
             #[cfg(feature = "board-api-crypto-sha256")]
@@ -154,7 +154,7 @@ fn hmac_update<B: Board>(mut call: SchedulerCall<B, api::hmac_update::Sig>) {
     let api::hmac_update::Params { id, data, length } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.store.memory();
-    let result = try {
+    let result: Result<(), _> = try {
         let data = memory.get(*data, *length)?;
         match scheduler.applet.hashes.get_mut(*id as usize)? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
@@ -204,7 +204,7 @@ fn hkdf_expand<B: Board>(mut call: SchedulerCall<B, api::hkdf_expand::Sig>) {
         call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.memory();
-    let result = try {
+    let result: Result<(), _> = try {
         let prk = memory.get(*prk, *prk_len)?;
         let info = memory.get(*info, *info_len)?;
         let okm = memory.get_mut(*okm, *okm_len)?;
