@@ -69,7 +69,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.2.4-git"
+version = "0.2.4"
 dependencies = [
  "tempfile",
 ]

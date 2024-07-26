@@ -37,7 +37,6 @@ ensure_cargo() {
   local flags="$1@$2"
   local locked=--locked
   { cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2:\$"; } && return
-  [ "$1" = cargo-edit ] && ensure lib openssl
   [ "$1" = taplo-cli ] && locked=
   [ "$1" = trunk ] && locked=
   shift 2
@@ -50,7 +49,6 @@ case "$1" in
   cargo)
     case "$2" in
       bloat) ensure_cargo cargo-bloat 0.12.1 ;;
-      upgrade) ensure_cargo cargo-edit 0.12.2 ;;
       *) e "Wrapper does not support 'cargo $2'" ;;
     esac
     ;;

@@ -71,14 +71,22 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
   done
 done
 
-[ "$1" = --no-dry-run ] || d "Run with --no-dry-run from the merged PR to actually publish"
+[ "$1" = --dry-run ] && d "Nothing more to do with --dry-run"
 
-i "Remove all -git suffixes"
+i "Remove all -git suffixes (if any) and reset CHANGELOG tests"
 sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})
+sed -i 's/\(^<!-- .* test\): [0-9]* -->$/\1: 0 -->/' $(git ls-files '*/CHANGELOG.md')
 if [ -n "$(git status -s)" ]; then
   i "Commit release"
   git commit -aqm'Release all crates'
+  t "Create a PR from this release commit"
+  d "Then re-run from the merged PR"
 fi
+
+i "Final checks before actually publishing"
+git log -1 --pretty=%s | grep -q '^Release all crates (#[0-9]*)$' \
+  || e "This is not a merged release commit"
+[ "$1" = --no-dry-run ] || d "Run with --no-dry-run to actually publish"
 
 get_latest() {
   name="$(package_name)"
@@ -93,7 +101,7 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
       i "Skipping $crate already published at $latest"
       exit
     fi
-    i "Publish $crate from $latest to $current"
+    i "Publish $crate from ${latest:--} to $current"
     eval "$(sed -En 's/^cargo (check|test) --(lib|bin=[^ ]*)/cargo publish/p;T;q' test.sh)"
   )
 done

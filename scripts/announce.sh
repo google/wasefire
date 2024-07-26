@@ -106,9 +106,14 @@ ins cli
 pri "## Internal crates"
 ins api-desc
 ins api-macro
+ins cli-tools
 ins interpreter
+ins protocol
+ins protocol-usb
 ins store
 ins stub
+ins wire
+ins wire-derive
 sed -i '$d' $OUTPUT
 
 [ ${#CRATES[@]} -eq 0 ] || e "Did not process all crates: $CRATES"

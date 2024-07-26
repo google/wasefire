@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0-git
+## 0.3.0
 
 ### Major
 
@@ -68,4 +68,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 5 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

@@ -1,9 +1,16 @@
 # Changelog
 
-## 0.1.1-git
+## 0.1.2-git
+
+### Patch
+
+- Restore release builds to the default
+
+## 0.1.1
 
 ### Minor
 
+- Make release builds more reproducible
 - Add `platform-rpc` for vendor-specific platform RPCs
 - Implement `platform-reboot` command
 - Add `--timeout` for platform protocol timeout
@@ -22,4 +29,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 1 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

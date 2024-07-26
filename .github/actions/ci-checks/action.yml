@@ -12,7 +12,7 @@ runs:
     - if: >-
         ${{ contains(fromJSON(inputs.checks), 'changelog')
          || contains(fromJSON(inputs.checks), 'sync') }}
-      uses: actions/checkout@v4
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       with:
         fetch-depth: 0
     - if: inputs.use-cache == 'true'
@@ -57,13 +57,16 @@ runs:
       run: ./scripts/ci-runners.sh
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-0') }}
-      run: ./scripts/ci-tests.sh 0 3
+      run: ./scripts/ci-tests.sh 0 4
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-1') }}
-      run: ./scripts/ci-tests.sh 1 3
+      run: ./scripts/ci-tests.sh 1 4
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-2') }}
-      run: ./scripts/ci-tests.sh 2 3
+      run: ./scripts/ci-tests.sh 2 4
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'tests-3') }}
+      run: ./scripts/ci-tests.sh 3 4
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'hw-host') }}
       run: ./scripts/hwci.sh host --no-default-features
