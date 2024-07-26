@@ -35,10 +35,18 @@ pub fn Board(Props { command_state, on_board_ready, on_event }: &Props) -> Html 
         let board_config = board_config.clone();
         let on_board_ready = on_board_ready.clone();
         move |command_state| {
-            if let Some(Command::BoardConfig { components }) = &**command_state {
-                info!("Board config: {components:?}");
-                board_config.set(Some(components.clone()));
-                on_board_ready.emit(());
+            if let Some(command) = &**command_state {
+                match command {
+                    Command::BoardConfig { components } => {
+                        info!("Board config: {components:?}");
+                        board_config.set(Some(components.clone()));
+                        on_board_ready.emit(());
+                    }
+                    Command::Disconnected => {
+                        board_config.set(None);
+                    }
+                    _ => (),
+                }
             }
             || ()
         }
@@ -54,7 +62,7 @@ pub fn Board(Props { command_state, on_board_ready, on_event }: &Props) -> Html 
                     }
                 }).collect::<Html>()
             } else {
-                html!(<div>{"Waiting for backend connection..."}</div>)
+                html!(<div>{"⏳"}</div>)
             }
         }</div>
     };
