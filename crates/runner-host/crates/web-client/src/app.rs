@@ -60,6 +60,11 @@ pub fn app() -> Html {
 
     html! {
         <main>
+        <object
+            class="title"
+            type="image/svg+xml"
+            data="title.svg"
+        />
             <Console
                 id={0}
                 command_state={runner_connection.command_state.clone()}
