@@ -17,6 +17,8 @@ set -e
 
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
+ensure_submodule third_party/wasm3/wasm-coremark
+
 case "$1" in
   linux) ;;
   nordic) TARGET=--target=thumbv7em-none-eabi ;;

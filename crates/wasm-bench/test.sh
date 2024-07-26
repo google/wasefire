@@ -17,7 +17,6 @@ set -e
 
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
-ensure_applet
 ensure_submodule third_party/wasm3/wasm-coremark
 
 test_helper
