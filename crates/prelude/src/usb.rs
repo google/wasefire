@@ -20,5 +20,5 @@
 #[cfg(feature = "api-usb-serial")]
 pub mod serial;
 
-// TODO: Add feature
+#[cfg(feature = "api-usb-ctap")]
 pub mod ctap;

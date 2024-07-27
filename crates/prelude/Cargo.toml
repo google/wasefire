@@ -61,6 +61,7 @@ api-store = ["internal-api-store", "wasefire-applet-api/api-store"]
 api-store-fragment = ["internal-api-store", "wasefire-applet-api/api-store-fragment"]
 api-timer = ["wasefire-applet-api/api-timer"]
 api-uart = ["internal-serial", "wasefire-applet-api/api-uart"]
+api-usb-ctap = ["internal-api-usb", "internal-serial", "wasefire-applet-api/api-usb-ctap"]
 api-usb-serial = ["internal-api-usb", "internal-serial", "wasefire-applet-api/api-usb-serial"]
 # Enables all API features.
 full-api = [

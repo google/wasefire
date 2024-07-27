@@ -43,12 +43,12 @@ pub trait Api: Send {
     /// Reads from the USB serial into a buffer.
     ///
     /// Returns the number of bytes read. It could be zero if there's nothing to read.
-    fn read(output: &mut [u8]) -> Result<usize, Error>;
+    fn read(output: &mut [u8; 64]) -> Result<usize, Error>;
 
     /// Writes from a buffer to the USB serial.
     ///
     /// Returns the number of bytes written. It could be zero if the other side is not ready.
-    fn write(input: &[u8]) -> Result<usize, Error>;
+    fn write(input: &[u8; 64]) -> Result<usize, Error>;
 }
 
 pub trait HasCtapHid: Send {
@@ -60,7 +60,7 @@ pub trait HasCtapHid: Send {
 /// Wrapper type for boards using the `usbd_ctaphid` crate.
 pub struct WithCtapHid<T: HasCtapHid> {
     _never: !,
-    _has_serial: T,
+    _has_ctap: T,
 }
 
 /// Helper struct for boards using the `usbd_ctaphid` crate.

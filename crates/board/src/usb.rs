@@ -17,8 +17,7 @@
 #[cfg(feature = "api-usb-serial")]
 pub mod serial;
 
-// TODO: Should this also be gated behind api-usb-serial feature or should it be
-// a different one?
+#[cfg(feature = "api-usb-ctap")]
 pub mod ctap;
 
 /// USB event.
