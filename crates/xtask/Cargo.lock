@@ -1686,7 +1686,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-cli-tools"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "anyhow",
  "cargo_metadata",
