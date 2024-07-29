@@ -115,7 +115,6 @@ checksum = "68f5e5f3158ecfd4b8ff6fe086db7c8467a2dfdac97fe420f2b7c4aa97af66d6"
 name = "wasefire-interpreter"
 version = "0.3.0"
 dependencies = [
- "hashbrown",
  "lazy_static",
  "libm",
  "lru",
