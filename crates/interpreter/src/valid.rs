@@ -32,7 +32,7 @@ pub struct SideTableEntry {
 #[derive(Debug)]
 pub struct FuncInfo<'m> {
     func_type: FuncType<'m>,
-    side_table: Vec<SideTableEntry>, // the key is the bytecode position in the function
+    side_table: Vec<SideTableEntry>,
 }
 
 /// Checks whether a WASM module in binary format is valid.
