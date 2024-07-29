@@ -61,12 +61,10 @@ pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html 
                         history.push(format!("[recv]: {message}"));
                     }
                     Command::Disconnected => {
-                        history.clear();
                         history.push("Disconnected from runner".to_string());
                         button_enabled.set(false);
                     }
                     Command::Connected => {
-                        history.clear();
                         history.push("Connected to runner".to_string());
                         button_enabled.set(true);
                     }
