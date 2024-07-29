@@ -65,8 +65,7 @@ impl ImportDesc {
 impl<'m> Module<'m> {
     /// Validates a WASM module in binary format.
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        let functions_info = validate(binary)?;
-        Self.functions_info = functions_info;
+        Self.functions_info = validate(binary)?;
         Ok(Self)
     }
 
