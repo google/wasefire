@@ -17,22 +17,37 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
+use hashbrown::HashMap;
+
 use crate::error::*;
 use crate::syntax::*;
 use crate::toctou::*;
 use crate::*;
 
+pub struct SideTableEntry {
+    delta_ip: i32,
+    delta_stp: i32,
+    val_cnt: u32,
+    pop_cnt: u32,
+}
+
+#[derive(Debug)]
+pub struct FuncInfo<'m> {
+    func_type: FuncType<'m>,
+    side_table: HashMap<usize, SideTableEntry>, // the key is the bytecode position in the function
+}
+
 /// Checks whether a WASM module in binary format is valid.
-pub fn validate(binary: &[u8]) -> Result<(), Error> {
+pub fn validate(binary: &[u8]) -> Result<Vec<FuncInfo>, Error> {
     Context::default().check_module(&mut Parser::new(binary))
 }
 
 type Parser<'m> = parser::Parser<'m, Check>;
-type CheckResult = MResult<(), Check>;
+type CheckResult<'m> = MResult<Vec<FuncInfo<'m>>, Check>;
 
 #[derive(Default)]
 struct Context<'m> {
-    types: Vec<FuncType<'m>>,
+    functions_info: Vec<FuncInfo<'m>>,
     funcs: Vec<TypeIdx>,
     tables: Vec<TableType>,
     mems: Vec<MemType>,
@@ -130,6 +145,7 @@ impl<'m> Context<'m> {
                 let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
+                // Build side table in check_body(), ultimately in instr()
                 Expr::check_body(self, &mut parser, &refs, locals, t.results)?;
                 check(parser.is_empty())?;
             }

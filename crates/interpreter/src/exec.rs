@@ -762,6 +762,7 @@ impl<'m> Thread<'m> {
         }
     }
 
+    // Use side table here (from module.functions_info.side_table)
     fn step(mut self, store: &mut Store<'m>) -> Result<ThreadResult<'m>, Error> {
         use Instr::*;
         let saved = self.parser.save();
