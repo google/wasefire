@@ -12,7 +12,6 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-hashbrown = { version = "0.14", default-features = false, features = ["nightly"] }
 libm = { version = "0.2.8", default-features = false, optional = true }
 lru = { version = "0.12.3", default-features = false, optional = true }
 num_enum = { version = "0.7.2", default-features = false }

@@ -17,8 +17,6 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
-use hashbrown::HashMap;
-
 use crate::error::*;
 use crate::syntax::*;
 use crate::toctou::*;
@@ -34,7 +32,7 @@ pub struct SideTableEntry {
 #[derive(Debug)]
 pub struct FuncInfo<'m> {
     func_type: FuncType<'m>,
-    side_table: HashMap<usize, SideTableEntry>, // the key is the bytecode position in the function
+    side_table: Vec<SideTableEntry>, // the key is the bytecode position in the function
 }
 
 /// Checks whether a WASM module in binary format is valid.

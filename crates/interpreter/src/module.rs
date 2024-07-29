@@ -14,7 +14,6 @@
 
 use alloc::vec::Vec;
 use core::cmp::Ordering;
-use hashbrown::HashMap;
 
 use crate::cache::Cache;
 use crate::parser::{SkipData, SkipElem};
