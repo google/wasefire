@@ -49,7 +49,7 @@ fn set_disconnected(command_state: UseStateHandle<Option<Command>>) {
 pub fn use_runner_connection(backend_address: String) -> UseRunnerConnectionHandle {
     let command_state = use_state(|| None);
     let ws = use_websocket_with_options(
-        backend_address.clone(),
+        backend_address,
         UseWebSocketOptions {
             reconnect_interval: Some(1000),
             onmessage: Some(Box::new({
