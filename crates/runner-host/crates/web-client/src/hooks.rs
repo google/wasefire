@@ -44,6 +44,7 @@ fn set_disconnected(command_state: UseStateHandle<Option<Command>>) {
         }
     }
 }
+
 #[hook]
 pub fn use_runner_connection(backend_address: String) -> UseRunnerConnectionHandle {
     let command_state = use_state(|| None);
@@ -51,7 +52,6 @@ pub fn use_runner_connection(backend_address: String) -> UseRunnerConnectionHand
         backend_address.clone(),
         UseWebSocketOptions {
             reconnect_interval: Some(1000),
-            manual: Some(false),
             onmessage: Some(Box::new({
                 let command_state = command_state.clone();
                 move |message| {
