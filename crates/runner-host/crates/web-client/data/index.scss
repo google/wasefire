@@ -22,6 +22,11 @@ svg {
   pointer-events: none;
 }
 
+.board {
+  padding: 18px;
+  width: 30px; // Matches size of icons.
+}
+
 .button {
   /*
   Prevents bug where button gets stuck on drag.
