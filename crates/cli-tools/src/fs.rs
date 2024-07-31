@@ -66,9 +66,18 @@ pub fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
 }
 
 pub fn copy_if_changed(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<bool> {
-    let changed = !exists(&dst) || metadata(&dst)?.modified()? < metadata(&src)?.modified()?;
+    let dst_orig = dst.as_ref().with_added_extension("orig");
+    let mut changed = !exists(&dst)
+        || metadata(&dst)?.modified()? < metadata(&src)?.modified()?
+        || !exists(&dst_orig);
+    if !changed {
+        let src_data = std::fs::read(&src)?;
+        let dst_data = std::fs::read(&dst_orig)?;
+        changed = src_data != dst_data;
+    }
     if changed {
-        copy(src, dst)?;
+        copy(&src, dst)?;
+        std::fs::copy(src, dst_orig)?;
     }
     Ok(changed)
 }
