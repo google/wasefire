@@ -7,7 +7,8 @@ publish = true
 edition = "2021"
 description = "Wasefire scheduler"
 repository = "https://github.com/google/wasefire"
-include = ["/LICENSE", "/build.rs", "/src/"]
+include = ["/LICENSE", "/src/"]
+build = "src/build.rs"
 keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
