@@ -82,7 +82,7 @@ pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html 
             </div>
             <form class="console-form" onsubmit={onsubmit}>
                 <input ref={console_ref} type="text" id="consolein" />
-                <input disabled={!*button_enabled}  type="submit" value="Send"/>
+                <input disabled={!*button_enabled}  type="submit" value="Send" />
             </form>
         </div>
     }

@@ -38,10 +38,9 @@ impl UseRunnerConnectionHandle {
 }
 
 fn set_disconnected(command_state: UseStateHandle<Option<Command>>) {
-    if let Some(command) = &*command_state {
-        if *command != Command::Disconnected {
-            command_state.set(Some(Command::Disconnected))
-        }
+    match &*command_state {
+        None | Some(Command::Disconnected) => (),
+        _ => command_state.set(Some(Command::Disconnected)),
     }
 }
 
