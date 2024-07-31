@@ -52,9 +52,9 @@ impl Client {
         tokio::spawn(async move { warp::serve(routes).run((addr, port)).await });
         let url = format!("http://{addr}:{port}/");
 
-        // Wait 3 seconds for a client to connect, otherwise open a browser. The client is supposed
+        // Wait 2 seconds for a client to connect, otherwise open a browser. The client is supposed
         // to connect every second. This should ensure that at most one client is open.
-        let sleep = tokio::time::sleep(Duration::from_secs(3));
+        let sleep = tokio::time::sleep(Duration::from_secs(2));
         log::info!("Waiting for client to connect.");
         tokio::select! {
             _ = sleep => {
