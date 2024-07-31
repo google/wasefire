@@ -10,3 +10,6 @@
 [submodule "third_party/rust-lang/rustup"]
 	path = third_party/rust-lang/rustup
 	url = https://github.com/rust-lang/rustup.git
+[submodule "third_party/wasm3/wasm-coremark"]
+	path = third_party/wasm3/wasm-coremark
+	url = https://github.com/wasm3/wasm-coremark.git

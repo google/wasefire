@@ -12,20 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides command-line utilities for Wasefire CLI.
-//!
-//! This library is also used for the internal maintenance CLI of Wasefire called xtask.
+use portable_atomic::AtomicU32;
 
-#![feature(path_add_extension)]
+pub(crate) fn clock_ms() -> u64 {
+    // TODO
+    0
+}
 
-macro_rules! debug {
+static _COUNT: AtomicU32 = AtomicU32::new(0);
+
+#[macro_export]
+macro_rules! println {
     ($($x:tt)*) => {
-        print!("\x1b[1;36m");
-        print!($($x)*);
-        println!("\x1b[m");
+        let _msg = alloc::format!($($x)*);
+        // TODO
     };
 }
 
-pub mod action;
-pub mod cmd;
-pub mod fs;
+pub(crate) fn init() {
+    crate::allocator::init();
+}
+
+#[panic_handler]
+fn panic(_: &core::panic::PanicInfo) -> ! {
+    loop {
+        unsafe { riscv::asm::ebreak() };
+    }
+}

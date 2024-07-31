@@ -12,20 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides command-line utilities for Wasefire CLI.
-//!
-//! This library is also used for the internal maintenance CLI of Wasefire called xtask.
+use std::sync::OnceLock;
+use std::time::Instant;
 
-#![feature(path_add_extension)]
-
-macro_rules! debug {
-    ($($x:tt)*) => {
-        print!("\x1b[1;36m");
-        print!($($x)*);
-        println!("\x1b[m");
-    };
+pub(crate) fn clock_ms() -> u64 {
+    static START: OnceLock<Instant> = OnceLock::new();
+    let start = *START.get_or_init(Instant::now);
+    Instant::now().duration_since(start).as_millis() as u64
 }
 
-pub mod action;
-pub mod cmd;
-pub mod fs;
+#[macro_export]
+macro_rules! println {
+    ($($x:tt)*) => { std::println!($($x)*) };
+}

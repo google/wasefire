@@ -12,20 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides command-line utilities for Wasefire CLI.
-//!
-//! This library is also used for the internal maintenance CLI of Wasefire called xtask.
+use wasm3::{Environment, Module};
 
-#![feature(path_add_extension)]
-
-macro_rules! debug {
-    ($($x:tt)*) => {
-        print!("\x1b[1;36m");
-        print!($($x)*);
-        println!("\x1b[m");
-    };
+pub(crate) fn run(wasm: &[u8]) -> f32 {
+    let env = Environment::new().unwrap();
+    let rt = env.create_runtime(4096).unwrap();
+    let module = Module::parse(&env, wasm).unwrap();
+    let mut module = rt.load_module(module).unwrap();
+    module.link_closure("env", "clock_ms", |_, ()| Ok(crate::target::clock_ms())).unwrap();
+    let func = module.find_function::<(), f32>("run").unwrap();
+    func.call().unwrap()
 }
-
-pub mod action;
-pub mod cmd;
-pub mod fs;
