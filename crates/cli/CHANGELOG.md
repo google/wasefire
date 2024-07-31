@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Update dependencies
 - Restore release builds to the default
 
 ## 0.1.1
