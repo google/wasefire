@@ -16,6 +16,8 @@
 //!
 //! This library is also used for the internal maintenance CLI of Wasefire called xtask.
 
+#![feature(path_add_extension)]
+
 macro_rules! debug {
     ($($x:tt)*) => {
         print!("\x1b[1;36m");
