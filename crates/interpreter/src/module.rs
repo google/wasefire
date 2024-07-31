@@ -19,14 +19,14 @@ use crate::cache::Cache;
 use crate::parser::{SkipData, SkipElem};
 use crate::syntax::*;
 use crate::toctou::*;
-use crate::valid::validate;
+use crate::valid::{validate, FuncInfo};
 use crate::*;
 
 /// Valid module.
 #[derive(Debug)]
 pub struct Module<'m> {
     binary: &'m [u8],
-    types: Vec<FuncType<'m>>,
+    functions_info: Vec<FuncInfo<'m>>,
     cache: Cache<CacheKey, CacheValue>,
 }
 
@@ -65,8 +65,8 @@ impl ImportDesc {
 impl<'m> Module<'m> {
     /// Validates a WASM module in binary format.
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        validate(binary)?;
-        Ok(unsafe { Self::new_unchecked(binary) })
+        Self.functions_info = validate(binary)?;
+        Ok(Self)
     }
 
     /// Creates a valid module from binary format.
