@@ -31,6 +31,7 @@ pub struct Props {
 pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html {
     let history = use_list(vec![]);
     let console_ref = use_node_ref();
+    let button_enabled = use_state(|| false);
 
     let onsubmit = Callback::from({
         let history = history.clone();
@@ -50,11 +51,24 @@ pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html 
 
     use_effect_with(command_state.clone(), {
         let history = history.clone();
+        let button_enabled = button_enabled.clone();
         move |command_state| {
             if let Some(command) = &**command_state {
                 info!("Command: {command:?}");
-                if let Command::Log { message } = command {
-                    history.push(format!("[recv]: {message}"));
+
+                match command {
+                    Command::Log { message } => {
+                        history.push(format!("[recv]: {message}"));
+                    }
+                    Command::Disconnected => {
+                        history.push("Disconnected from runner".to_string());
+                        button_enabled.set(false);
+                    }
+                    Command::Connected => {
+                        history.push("Connected to runner".to_string());
+                        button_enabled.set(true);
+                    }
+                    _ => (),
                 }
             }
             || ()
@@ -63,11 +77,12 @@ pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html 
 
     html! {
         <div id={id.to_string()} class={"console"}>
-            <p><b>{ "Log history: " }</b></p>
-            { for history.current().iter().map(|message| html!(<p>{ message }</p>)) }
-            <form onsubmit={onsubmit}>
+            <div class="console-display">
+                { for history.current().iter().rev().map(|message| html!(<div>{ message }</div>)) }
+            </div>
+            <form class="console-form" onsubmit={onsubmit}>
                 <input ref={console_ref} type="text" id="consolein" />
-                <input  type="submit" value="Send"/>
+                <input disabled={!*button_enabled}  type="submit" value="Send" />
             </form>
         </div>
     }
