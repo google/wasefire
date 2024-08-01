@@ -29,8 +29,7 @@ impl UseRunnerConnectionHandle {
         warn!("Ignoring message: {console_msg}");
     }
     pub fn send_board_ready(&self) {
-        let command = Event::BoardReady;
-        self.ws.send(serde_json::to_string(&command).unwrap());
+        self.ws.send(serde_json::to_string(&Event::BoardReady).unwrap());
     }
     pub fn send_event(&self, event: Event) {
         self.ws.send(serde_json::to_string(&event).unwrap());
@@ -55,7 +54,7 @@ pub fn use_runner_connection(backend_address: String) -> UseRunnerConnectionHand
                 let command_state = command_state.clone();
                 move |message| {
                     info!("Message: {message}");
-                    match serde_json::from_str::<Command>(message.as_str()) {
+                    match serde_json::from_str::<Command>(&message) {
                         Ok(command) => command_state.set(Some(command)),
                         Err(err) => warn!("Error parsing message: {err}"),
                     }
@@ -80,6 +79,5 @@ pub fn use_runner_connection(backend_address: String) -> UseRunnerConnectionHand
             ..Default::default()
         },
     );
-
-    return UseRunnerConnectionHandle { ws, command_state };
+    UseRunnerConnectionHandle { ws, command_state }
 }

@@ -20,19 +20,18 @@ use yew::prelude::*;
 use yew_hooks::prelude::*;
 
 #[derive(Properties, PartialEq)]
-
 pub struct Props {
     #[prop_or_default]
     pub id: usize,
     pub command_state: UseStateHandle<Option<Command>>,
     pub on_new_console_msg: Callback<String>,
 }
+
 #[function_component(Console)]
 pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html {
     let history = use_list(vec![]);
     let console_ref = use_node_ref();
     let button_enabled = use_state(|| false);
-
     let onsubmit = Callback::from({
         let history = history.clone();
         let console_ref = console_ref.clone();
@@ -55,7 +54,6 @@ pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html 
         move |command_state| {
             if let Some(command) = &**command_state {
                 info!("Command: {command:?}");
-
                 match command {
                     Command::Log { message } => {
                         history.push(format!("[recv]: {message}"));
@@ -77,12 +75,12 @@ pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html 
 
     html! {
         <div id={id.to_string()} class={"console"}>
-            <div class="console-display">
-                { for history.current().iter().rev().map(|message| html!(<div>{ message }</div>)) }
-            </div>
+            <div class="console-display">{
+                for history.current().iter().rev().map(|message| html!(<div>{ message }</div>))
+            }</div>
             <form class="console-form" onsubmit={onsubmit}>
                 <input ref={console_ref} type="text" id="consolein" />
-                <input disabled={!*button_enabled}  type="submit" value="Send" />
+                <input disabled={!*button_enabled} type="submit" value="Send" />
             </form>
         </div>
     }

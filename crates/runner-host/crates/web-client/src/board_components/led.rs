@@ -27,8 +27,8 @@ pub struct Props {
 pub fn LED(Props { id, command_state }: &Props) -> Html {
     let id = *id;
     let lit = use_state(|| false);
-    let command_state = command_state.clone();
-    use_effect_with(command_state, {
+
+    use_effect_with(command_state.clone(), {
         let lit = lit.clone();
         move |command_state| {
             if let Some(Command::Set { component_id, state }) = &**command_state {
@@ -40,7 +40,7 @@ pub fn LED(Props { id, command_state }: &Props) -> Html {
         }
     });
 
-    return html! {
+    html! {
         <div class="monochrome_led" id={id.to_string()}>
             <object
                 class="led" type="image/svg+xml"
@@ -54,5 +54,5 @@ pub fn LED(Props { id, command_state }: &Props) -> Html {
                 style={if !*lit { "" } else { "display: none;" }}
             />
         </div>
-    };
+    }
 }

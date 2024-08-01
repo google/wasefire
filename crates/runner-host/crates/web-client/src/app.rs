@@ -15,7 +15,7 @@
 use gloo_utils::window;
 use log::{info, warn};
 use wasm_bindgen::UnwrapThrowExt;
-use web_common::{Command, Event};
+use web_common::Command;
 use yew::prelude::*;
 
 use crate::board::Board;
@@ -30,20 +30,17 @@ pub fn app() -> Html {
         info!("Connecting to runner at {web_socket_url}");
         use_runner_connection(web_socket_url)
     };
-
     let on_new_console_msg = Callback::from({
         let runner_connection = runner_connection.clone();
-        move |msg: String| runner_connection.send_console_event(msg)
+        move |msg| runner_connection.send_console_event(msg)
     });
-
     let on_board_ready = Callback::from({
         let runner_connection = runner_connection.clone();
         move |()| runner_connection.send_board_ready()
     });
-
     let send_event_callback = Callback::from({
         let runner_connection = runner_connection.clone();
-        move |event: Event| runner_connection.send_event(event)
+        move |event| runner_connection.send_event(event)
     });
 
     use_effect_with(runner_connection.command_state.clone(), move |command_state| {
@@ -60,11 +57,7 @@ pub fn app() -> Html {
 
     html! {
         <main>
-            <object
-                class="title"
-                type="image/svg+xml"
-                data="title.svg"
-            />
+            <object class="title" type="image/svg+xml" data="title.svg" />
             <Console
                 id={0}
                 command_state={runner_connection.command_state.clone()}

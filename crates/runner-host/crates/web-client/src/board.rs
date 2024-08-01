@@ -52,12 +52,12 @@ pub fn Board(Props { command_state, on_board_ready, on_event }: &Props) -> Html 
         }
     });
 
-    return html! {
+    html! {
         <div class="board">{
             if let Some(board_config) = &*board_config {
                 board_config.iter().map(|component| match component {
-                    Component::Button{id} => html!(<Button id={id} on_event={on_event} />),
-                    Component::MonochromeLed{id} => html! {
+                    Component::Button { id } => html!(<Button id={id} on_event={on_event} />),
+                    Component::MonochromeLed { id } => html! {
                         <LED id={id} command_state={command_state.clone()} />
                     }
                 }).collect::<Html>()
@@ -65,5 +65,5 @@ pub fn Board(Props { command_state, on_board_ready, on_event }: &Props) -> Html 
                 html!(<div></div>)
             }
         }</div>
-    };
+    }
 }

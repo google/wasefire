@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use app::App;
-
 mod app;
 mod board;
 mod board_components;
@@ -22,5 +20,5 @@ mod hooks;
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
-    yew::Renderer::<App>::new().render();
+    yew::Renderer::<app::App>::new().render();
 }

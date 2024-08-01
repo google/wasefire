@@ -36,7 +36,6 @@ pub fn Button(Props { id, on_event }: &Props) -> Html {
             on_event.emit(Event::Button { component_id: id, state: ButtonState::Pressed });
         }
     });
-
     let unpress = Callback::from({
         let pressed = pressed.clone();
         let on_event = on_event.clone();
@@ -51,7 +50,7 @@ pub fn Button(Props { id, on_event }: &Props) -> Html {
         }
     });
 
-    return html! {
+    html! {
         <div
             id={id.to_string()}
             onmousedown={press}
@@ -73,5 +72,5 @@ pub fn Button(Props { id, on_event }: &Props) -> Html {
                 style={if !*pressed { "" } else { "display: none;" }}
             />
         </div>
-    };
+    }
 }
