@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1-git
+
+### Patch
+
+- Remove workaround lint false positive
+
 ## 0.7.0
 
 ### Major

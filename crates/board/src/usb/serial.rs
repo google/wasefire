@@ -73,8 +73,6 @@ pub trait HasSerial: Send {
 }
 
 /// Wrapper type for boards using the `usbd_serial` crate.
-// TODO(https://github.com/rust-lang/rust/issues/128053): Remove dead-code.
-#[allow(dead_code)]
 pub struct WithSerial<T: HasSerial> {
     _never: !,
     _has_serial: T,
