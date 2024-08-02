@@ -1,0 +1,76 @@
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(12, 74, 19) rgb(10, 10, 10);
+}
+
+*::-webkit-scrollbar {
+  width: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(10, 10, 10, .9);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: blue;
+  border-radius: 20px;
+  border: 3px solid rgb(12, 74, 19);
+}
+
+svg {
+  pointer-events: none;
+}
+
+.board {
+  padding: 18px;
+  width: 30px; // Matches size of icons.
+}
+
+.button {
+  /*
+  Prevents bug where button gets stuck on drag.
+  */
+  user-drag: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
+
+.console {
+  position: absolute;
+  min-width: 20px;
+  min-height: 20px;
+  background: rgba(45, 45, 45, 0.95);
+  box-shadow: rgba(10, 10, 10, 0.95) 3px 3px 0px;
+  inset: 100px 20px 20px 79px;
+  display: flex;
+  flex-direction: column;
+}
+
+.console-form {
+  display: flex;
+}
+
+input#consolein {
+  flex-grow: 1;
+}
+
+.console-display {
+  flex-grow: 1;
+  color: white;
+  overflow-y: auto;
+  flex-direction: column-reverse;
+  display: flex;
+  font-family: "Fira Code", monospace;
+}
+
+body {
+  background-color: rgb(51, 126, 58);
+  border: 7px solid white;
+  border-top: 14px solid white;
+  min-height: 100vh;
+  margin: 0;
+}

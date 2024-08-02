@@ -17,6 +17,7 @@ usb-device = { version = "0.3.2", optional = true }
 usbd-serial = { version = "0.2.2", optional = true }
 usbip-device = { version = "0.2.0", optional = true }
 wasefire-board-api = { path = "../board", features = ["std"] }
+wasefire-cli-tools = { path = "../cli-tools", optional = true }
 wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
@@ -55,7 +56,7 @@ usb = [
   "wasefire-scheduler/board-api-platform-protocol",
   "wasefire-scheduler/board-api-usb-serial",
 ]
-web = ["dep:web-server"]
+web = ["dep:wasefire-cli-tools", "dep:web-server"]
 # Exactly one is enabled by xtask.
 debug = ["wasefire-logger/log", "wasefire-protocol-usb?/log", "wasefire-scheduler/log"]
 release = []

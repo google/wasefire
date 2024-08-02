@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,16 +14,9 @@
 # limitations under the License.
 
 set -e
-. scripts/log.sh
 
-# This script checks that all source files have a copyright notice in the first
-# 2 lines.
+. "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
-for file in $(git ls-files ':(attr:textreview)'); do
-  case "$file" in
-    *.gitignore|.git*|LICENSE|*/LICENSE) continue ;;
-    *.cff|*.css|*.html|*.json|*.lock|*.md|*.scss|*.svg|*.toml|*.txt|*.x|*.yml) continue ;;
-    crates/cli-tools/src/data/lib.rs) continue ;;
-  esac
-  sed -n 'N;/Copyright/q;q1' "$file" || e "No copyright notice in $file"
-done
+test_helper
+
+cargo test --bin=web-client
