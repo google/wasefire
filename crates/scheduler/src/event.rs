@@ -148,15 +148,16 @@ impl<B: Board> Borrow<Key<B>> for Handler<B> {
 
 #[cfg_attr(feature = "native", allow(clippy::needless_pass_by_ref_mut))]
 pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
-    let Handler { inst, func, data, .. } = match scheduler.applet.get(Key::from(&event)) {
-        Some(x) => x,
+    let applet = scheduler.applet.as_mut().unwrap();
+    let (inst, func, data) = match applet.get(Key::from(&event)) {
+        Some(x) => (x.inst, x.func, x.data),
         None => {
             // This should not happen because we remove pending events when disabling an event.
             log::error!("Missing handler for event.");
             return;
         }
     };
-    let mut params = vec![*func, *data];
+    let mut params = vec![func, data];
     let _ = (&inst, &mut params); // in case there are no events
     match event {
         #[cfg(feature = "board-api-button")]
@@ -186,7 +187,7 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
     {
         use alloc::format;
         let name = format!("cb{}", params.len() - 2);
-        scheduler.call(*inst, &name, &params);
+        scheduler.call(inst, &name, &params);
     }
     #[allow(unreachable_code)] // when there are no events
     #[cfg(feature = "native")]

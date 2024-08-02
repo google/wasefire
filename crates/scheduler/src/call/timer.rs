@@ -50,7 +50,7 @@ fn allocate<B: Board>(mut call: SchedulerCall<B, api::allocate::Sig>) {
         let timers = &mut call.scheduler().timers;
         let timer = timers.iter().position(|x| x.is_none()).ok_or(Trap)?;
         timers[timer] = Some(Timer {});
-        call.scheduler().applet.enable(Handler {
+        call.applet().enable(Handler {
             key: Key { timer: Id::new(timer).unwrap() }.into(),
             inst,
             func: *handler_func,

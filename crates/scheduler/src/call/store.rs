@@ -54,7 +54,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let api::insert::Params { key, ptr, len } = call.read();
     let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let memory = scheduler.applet.as_mut().unwrap().memory();
     let result = try {
         let value = memory.get(*ptr, *len)?;
         scheduler.store.insert(*key as usize, value).map_err(convert)?
@@ -73,7 +73,7 @@ fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
 fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let api::find::Params { key, ptr: ptr_ptr, len: len_ptr } = call.read();
     let scheduler = call.scheduler();
-    let mut memory = scheduler.applet.memory();
+    let mut memory = scheduler.applet.as_mut().unwrap().memory();
     let result = try {
         match scheduler.store.find(*key as usize).map_err(convert)? {
             None => false,
@@ -90,7 +90,7 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
 fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
     let api::keys::Params { ptr: ptr_ptr } = call.read();
     let scheduler = call.scheduler();
-    let mut memory = scheduler.applet.memory();
+    let mut memory = scheduler.applet.as_mut().unwrap().memory();
     let result = try {
         let mut keys = Vec::new();
         for handle in scheduler.store.iter().map_err(convert)? {
@@ -113,8 +113,7 @@ fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
 #[cfg(feature = "board-api-storage")]
 fn clear<B: Board>(mut call: SchedulerCall<B, api::clear::Sig>) {
     let api::clear::Params {} = call.read();
-    let scheduler = call.scheduler();
-    let result = try { scheduler.store.clear(0).map_err(convert)? };
+    let result = try { call.scheduler().store.clear(0).map_err(convert)? };
     call.reply(result);
 }
 

@@ -46,8 +46,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let inst = call.inst();
     let result = try {
         let button = Id::new(*button as usize)?;
-        call.scheduler()
-            .applet
+        call.applet()
             .enable(Handler {
                 key: Key { button }.into(),
                 inst,
