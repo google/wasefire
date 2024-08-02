@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Update dependencies
 - Fix missing `build.rs` in cargo package
 
 ## 0.3.1
