@@ -37,7 +37,6 @@ ensure_cargo() {
   local flags="$1@$2"
   local locked=--locked
   { cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2:\$"; } && return
-  [ "$1" = taplo-cli ] && locked=
   [ "$1" = trunk ] && locked=
   shift 2
   x cargo install $locked --root="$CARGO_ROOT" "$flags" "$@"
@@ -55,7 +54,7 @@ case "$1" in
   mdbook) ensure_cargo mdbook 0.4.40 ;;
   probe-rs) ensure_cargo probe-rs-tools 0.24.0 ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
-  taplo) ensure_cargo taplo-cli 0.9.0 ;;
+  taplo) ensure_cargo taplo-cli 0.9.3 ;;
   trunk) ensure_cargo trunk 0.19.3 ;;
   twiggy) ensure_cargo twiggy 0.7.0 ;;
   *) IS_CARGO=n ;;
