@@ -30,6 +30,57 @@ pub fn validate(binary: &[u8]) -> Result<(), Error> {
 type Parser<'m> = parser::Parser<'m, Check>;
 type CheckResult = MResult<(), Check>;
 
+#[allow(dead_code)]
+#[derive(Default, Copy, Clone)]
+pub struct SideTableEntry {
+    data: u32,
+}
+
+#[allow(dead_code)]
+impl SideTableEntry {
+    const DELTA_IP_MASK: u32 = 0xFFFF; // 16 bits for delta_ip
+    const DELTA_STP_MASK: u32 = 0x3F << 16; // 6 bits for delta_stp
+    const VAL_CNT_MASK: u32 = 0x1F << 22; // 5 bits for val_cnt
+    const POP_CNT_MASK: u32 = 0x1F << 27; // 5 bits for pop_cnt
+
+    #[allow(clippy::manual_range_contains)]
+    fn new(delta_ip: i32, delta_stp: i32, val_cnt: u32, pop_cnt: u32) -> Self {
+        assert!(delta_ip >= -32768 && delta_ip <= 32767);
+        assert!(delta_stp >= -32 && delta_stp <= 31);
+        assert!(val_cnt <= 31);
+        assert!(pop_cnt <= 31);
+
+        let delta_ip = (delta_ip as u32) & Self::DELTA_IP_MASK;
+        let delta_stp = ((delta_stp as u32) & 0x3F) << 16;
+        let val_cnt = (val_cnt & 0x1F) << 22;
+        let pop_cnt = (pop_cnt & 0x1F) << 27;
+
+        SideTableEntry { data: delta_ip | delta_stp | val_cnt | pop_cnt }
+    }
+
+    /// Get the amount to adjust the instruction pointer by if the branch is taken.
+    fn get_delta_ip(&self) -> i32 {
+        (self.data & Self::DELTA_IP_MASK) as i32
+            - (((self.data & Self::DELTA_IP_MASK) & 0x8000) << 16) as i32
+    }
+
+    /// Get the amount to adjust the side-table pointer by if the branch is taken.
+    fn get_delta_stp(&self) -> i32 {
+        ((self.data & Self::DELTA_STP_MASK) >> 16) as i32
+            - ((((self.data & Self::DELTA_STP_MASK) >> 16) & 0x20) << 6) as i32
+    }
+
+    /// Get the number of values that will be copied if the branch is taken.
+    fn get_val_cnt(&self) -> u32 {
+        (self.data & Self::VAL_CNT_MASK) >> 22
+    }
+
+    /// Get the number of values that will be popped if the branch is taken.
+    fn get_pop_cnt(&self) -> u32 {
+        (self.data & Self::POP_CNT_MASK) >> 27
+    }
+}
+
 #[derive(Default)]
 struct Context<'m> {
     types: Vec<FuncType<'m>>,
