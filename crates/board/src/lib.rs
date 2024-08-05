@@ -150,6 +150,7 @@ pub trait Singleton: Sized {
 ///
 /// Events are de-duplicated if the previous one was not processed yet, because some events may
 /// trigger repeatedly.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Derivative)]
 #[derivative(Debug(bound = ""), PartialEq(bound = ""), Eq(bound = ""))]
 pub enum Event<B: Api + ?Sized> {
@@ -190,6 +191,13 @@ pub enum Event<B: Api + ?Sized> {
 #[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
 #[derivative(Ord = "feature_allow_slow_enum")]
 pub struct Impossible<B: Api + ?Sized>(Void, PhantomData<B>);
+
+#[cfg(feature = "defmt")]
+impl<B: Api + ?Sized> defmt::Format for Impossible<B> {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "Impossible");
+    }
+}
 
 // TODO(https://github.com/mcarton/rust-derivative/issues/112): Use Clone(bound = "") instead.
 impl<B: Api + ?Sized> Clone for Impossible<B> {
@@ -270,6 +278,13 @@ pub struct Id<T: Support<usize> + ?Sized> {
     // Invariant: value < T::SUPPORT
     value: usize,
     count: PhantomData<T>,
+}
+
+#[cfg(feature = "defmt")]
+impl<T: Support<usize> + ?Sized> defmt::Format for Id<T> {
+    fn format(&self, fmt: defmt::Formatter) {
+        self.value.format(fmt)
+    }
 }
 
 // TODO(https://github.com/mcarton/rust-derivative/issues/112): Use Clone(bound = "") instead.

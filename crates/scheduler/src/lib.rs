@@ -74,17 +74,17 @@ impl<B: Board> Events<B> {
     pub fn push(&mut self, event: board::Event<B>) {
         const MAX_EVENTS: usize = 10;
         if self.0.contains(&event) {
-            log::trace!("Merging {}", log::Debug2Format(&event));
+            log::trace!("Merging {:?}", event);
         } else if self.0.len() < MAX_EVENTS {
-            log::debug!("Pushing {}", log::Debug2Format(&event));
+            log::debug!("Pushing {:?}", event);
             self.0.push_back(event);
         } else {
-            log::warn!("Dropping {}", log::Debug2Format(&event));
+            log::warn!("Dropping {:?}", event);
         }
     }
 
     pub fn pop(&mut self) -> Option<board::Event<B>> {
-        self.0.pop_front().inspect(|event| log::debug!("Popping {}", log::Debug2Format(&event)))
+        self.0.pop_front().inspect(|event| log::debug!("Popping {:?}", event))
     }
 }
 
@@ -359,7 +359,7 @@ impl<B: Board> Scheduler<B> {
             return protocol::process_event(self, event);
         }
         match &mut self.applet {
-            None => log::warn!("{} matches no applet", log::Debug2Format(&event)),
+            None => log::warn!("{:?} matches no applet", event),
             Some(applet) => applet.push(event),
         }
     }

@@ -19,6 +19,7 @@ use alloc::boxed::Box;
 use crate::Error;
 
 /// Request received.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, PartialEq, Eq)]
 pub struct Event;
 

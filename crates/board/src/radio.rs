@@ -18,6 +18,7 @@
 pub mod ble;
 
 /// Radio event.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Event {
     /// BLE event.

@@ -2,6 +2,10 @@
 
 ## 0.7.1-git
 
+### Minor
+
+- Implement `defmt::Format` for `Event` when `defmt` is enabled
+
 ### Patch
 
 - Remove workaround lint false positive
