@@ -47,8 +47,8 @@ fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
 #[cfg(feature = "board-api-platform-update")]
 fn metadata<B: Board>(mut call: SchedulerCall<B, api::metadata::Sig>) {
     let api::metadata::Params { ptr: ptr_ptr, len: len_ptr } = call.read();
-    let scheduler = call.scheduler();
-    let mut memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let mut memory = applet.memory();
     let result = try {
         let metadata = board::platform::Update::<B>::metadata()?;
         memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &metadata)?;
@@ -73,8 +73,8 @@ fn initialize<B: Board>(call: SchedulerCall<B, api::initialize::Sig>) {
 #[cfg(feature = "board-api-platform-update")]
 fn process_<B: Board>(mut call: SchedulerCall<B, api::process::Sig>) {
     let api::process::Params { ptr, len } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         let chunk = memory.get(*ptr, *len)?;
         board::platform::Update::<B>::process(chunk)?

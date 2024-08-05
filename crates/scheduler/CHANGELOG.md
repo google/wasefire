@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Make applet optional
 - Update dependencies
 - Fix missing `build.rs` in cargo package
 
