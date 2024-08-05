@@ -207,6 +207,7 @@ dependencies = [
  "bytemuck",
  "wasefire-applet-api-macro",
  "wasefire-error",
+ "wasefire-logger",
 ]
 
 [[package]]
@@ -233,6 +234,10 @@ version = "0.1.1"
 dependencies = [
  "num_enum",
 ]
+
+[[package]]
+name = "wasefire-logger"
+version = "0.1.5"
 
 [[package]]
 name = "wasefire-sync"
