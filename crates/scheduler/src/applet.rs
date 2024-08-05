@@ -134,14 +134,14 @@ impl<B: Board> Applet<B> {
         if !self.handlers.contains(&Key::from(&event)) {
             // This can happen after an event is disabled and the event queue of the board is
             // flushed.
-            log::trace!("Discarding {}", log::Debug2Format(&event));
+            log::trace!("Discarding {:?}", event);
         } else if self.events.contains(&event) {
-            log::trace!("Merging {}", log::Debug2Format(&event));
+            log::trace!("Merging {:?}", event);
         } else if self.events.len() < MAX_EVENTS {
-            log::debug!("Pushing {}", log::Debug2Format(&event));
+            log::debug!("Pushing {:?}", event);
             self.events.push_back(event);
         } else {
-            log::warn!("Dropping {}", log::Debug2Format(&event));
+            log::warn!("Dropping {:?}", event);
         }
     }
 

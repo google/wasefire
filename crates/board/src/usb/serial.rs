@@ -22,6 +22,7 @@ use wasefire_logger as log;
 use crate::Error;
 
 /// USB serial event.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, PartialEq, Eq)]
 pub enum Event {
     /// There might be data to read.

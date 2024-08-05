@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Stop using `log::Debug2Format()` when logging events
 - Make applet optional
 - Update dependencies
 - Fix missing `build.rs` in cargo package

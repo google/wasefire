@@ -22,6 +22,7 @@ use derivative::Derivative;
 use crate::{Error, Id, Support};
 
 /// Button event.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Derivative)]
 #[derivative(Debug(bound = ""), PartialEq(bound = ""), Eq(bound = ""))]
 pub struct Event<B: crate::Api + ?Sized> {

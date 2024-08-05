@@ -23,6 +23,7 @@ pub mod protocol;
 pub mod update;
 
 /// Platform event.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, PartialEq, Eq)]
 pub enum Event {
     /// Protocol event.

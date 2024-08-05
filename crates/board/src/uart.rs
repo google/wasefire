@@ -19,6 +19,7 @@ use derivative::Derivative;
 use crate::{Error, Id, Support};
 
 /// UART event.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Derivative)]
 #[derivative(Debug(bound = ""), PartialEq(bound = ""), Eq(bound = ""))]
 pub struct Event<B: crate::Api + ?Sized> {
@@ -30,6 +31,7 @@ pub struct Event<B: crate::Api + ?Sized> {
 }
 
 /// Whether it might be possible to read or write.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Direction {
     /// There might be data to read.

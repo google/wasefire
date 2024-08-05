@@ -19,6 +19,7 @@ use wasefire_applet_api::radio::ble::Advertisement;
 use crate::{Error, Support};
 
 /// BLE event.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Event {
     /// Received an advertisement packet.
