@@ -54,3 +54,8 @@ pub fn wait_indefinitely() -> ! {
 pub fn abort() -> ! {
     convert_never(unsafe { api::abort() }).unwrap();
 }
+
+/// Exits the applet.
+pub fn exit() -> ! {
+    convert_never(unsafe { api::exit() }).unwrap();
+}

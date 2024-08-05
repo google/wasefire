@@ -1342,10 +1342,12 @@ dependencies = [
  "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
+ "wasefire-protocol",
  "wasefire-protocol-tokio",
  "wasefire-protocol-usb",
  "wasefire-scheduler",
  "wasefire-store",
+ "wasefire-wire",
  "web-server",
 ]
 

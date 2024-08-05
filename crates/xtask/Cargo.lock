@@ -2133,6 +2133,7 @@ dependencies = [
  "stack-sizes",
  "tokio",
  "wasefire-cli-tools",
+ "wasefire-error",
 ]
 
 [[package]]

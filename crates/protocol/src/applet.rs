@@ -28,3 +28,18 @@ pub struct Tunnel<'a> {
     pub applet_id: AppletId,
     pub delimiter: &'a [u8],
 }
+
+#[derive(Debug, Copy, Clone, Wire)]
+pub enum ExitStatus {
+    /// The applet exited successfully.
+    Exit,
+
+    /// The applet aborted (e.g. it panicked).
+    Abort,
+
+    /// The applet trapped (e.g. bad memory access).
+    Trap,
+
+    /// The applet was killed (e.g. it was uninstalled).
+    Kill,
+}

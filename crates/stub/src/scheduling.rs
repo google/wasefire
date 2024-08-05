@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api as board;
+#[no_mangle]
+unsafe extern "C" fn env_sa() {
+    std::process::exit(1)
+}
 
-pub enum Impl {}
-
-impl board::debug::Api for Impl {
-    #[cfg(feature = "debug")]
-    const MAX_TIME: u64 = 0x00ffffff_ffffffff;
-    #[cfg(feature = "release")]
-    const MAX_TIME: u64 = 0;
-
-    fn time() -> u64 {
-        #[cfg(feature = "debug")]
-        let time = crate::systick::uptime_us();
-        #[cfg(feature = "release")]
-        let time = 0;
-        time
-    }
+#[no_mangle]
+unsafe extern "C" fn env_se() {
+    std::process::exit(0)
 }

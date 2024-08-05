@@ -24,7 +24,6 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Println(call) => println(call),
         Api::Time(call) => time(call),
         Api::Perf(call) => perf(call),
-        Api::Exit(call) => exit(call),
     }
 }
 
@@ -62,9 +61,4 @@ fn perf<B: Board>(mut call: SchedulerCall<B, api::perf::Sig>) {
         *memory.from_bytes_mut::<Perf>(*ptr)? = perf;
     };
     call.reply(result)
-}
-
-fn exit<B: Board>(call: SchedulerCall<B, api::exit::Sig>) {
-    let api::exit::Params { code } = call.read();
-    board::Debug::<B>::exit(*code == 0);
 }

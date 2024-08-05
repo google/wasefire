@@ -27,14 +27,14 @@ fn main() {
     test(|| unsafe { test_only_1(0) });
     test(|| unsafe { test_only_1b(0) });
     test(|| unsafe { test_only_10(0, 0, 0, 0, 0, 0, 0, 0, 0, 0) });
-    debug::exit(true);
+    scheduling::exit();
 }
 
 fn test(f: impl FnOnce() -> isize) {
     let actual = f();
     debug!("- {:08x} {:?}", actual as usize, Error::decode(actual as i32));
     let expected = Error::encode(Err(Error::world(Code::NotImplemented))) as isize;
-    debug::assert_eq(&actual, &expected);
+    assert_eq!(actual, expected);
 }
 
 #[cfg(not(feature = "native"))]

@@ -240,5 +240,19 @@ api! {
     /// Updates the platform.
     8 [3 -] PlatformUpdateTransfer: transfer::Request<'a> => (),
 
-    next 9 [4 - ]
+    /// Installs an applet.
+    9 [4 -] AppletInstall: transfer::Request<'a> => (),
+
+    /// Uninstalls an applet.
+    10 [4 -] AppletUninstall: () => (),
+
+    /// Returns the exit status of an applet, if not running.
+    11 [4 -] AppletExitStatus: applet::AppletId => Option<applet::ExitStatus>,
+
+    /// Locks a platform until reboot.
+    ///
+    /// This is useful for testing purposes by locking a platform before flashing a new one.
+    12 [4 -] PlatformLock: () => (),
+
+    next 13 [5 -]
 }

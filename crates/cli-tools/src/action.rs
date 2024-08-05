@@ -43,7 +43,7 @@ pub struct ConnectionOptions {
     protocol: protocol::Protocol,
 
     /// Timeout to send or receive with the USB protocol.
-    #[arg(long, default_value = "5s")]
+    #[arg(long, default_value = "0s")]
     timeout: humantime::Duration,
 }
 
@@ -51,6 +51,99 @@ impl ConnectionOptions {
     /// Establishes a connection.
     pub async fn connect(&self) -> Result<Box<dyn Connection>> {
         self.protocol.connect(*self.timeout).await
+    }
+}
+
+/// Returns the API version of a platform.
+#[derive(clap::Args)]
+pub struct PlatformApiVersion {}
+
+impl PlatformApiVersion {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<u32> {
+        let PlatformApiVersion {} = self;
+        connection.call::<service::ApiVersion>(()).await.map(|x| *x.get())
+    }
+}
+
+/// Installs an applet on a platform.
+#[derive(clap::Args)]
+pub struct AppletInstall {
+    /// Path to the applet to install.
+    #[arg(value_hint = ValueHint::FilePath)]
+    pub applet: PathBuf,
+
+    #[clap(flatten)]
+    pub transfer: Transfer,
+}
+
+impl AppletInstall {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let AppletInstall { applet, transfer } = self;
+        transfer
+            .run::<service::AppletInstall>(connection, applet, "Installed", None::<fn(_) -> _>)
+            .await
+    }
+}
+
+/// Uninstalls an applet from a platform.
+#[derive(clap::Args)]
+pub struct AppletUninstall {}
+
+impl AppletUninstall {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let AppletUninstall {} = self;
+        connection.call::<service::AppletUninstall>(()).await.map(|x| *x.get())
+    }
+}
+
+/// Prints the exit status of an applet from a platform.
+#[derive(Default, clap::Args)]
+#[non_exhaustive]
+pub struct AppletExitStatus {
+    #[clap(flatten)]
+    pub wait: Wait,
+
+    /// Also exits with the applet exit code.
+    #[arg(long)]
+    exit_code: bool,
+}
+
+impl AppletExitStatus {
+    fn print(status: Option<applet::ExitStatus>) {
+        match status {
+            Some(applet::ExitStatus::Exit) => println!("The applet exited."),
+            Some(applet::ExitStatus::Abort) => println!("The applet aborted."),
+            Some(applet::ExitStatus::Trap) => println!("The applet trapped."),
+            Some(applet::ExitStatus::Kill) => println!("The applet was killed."),
+            None => println!("The applet is still running."),
+        }
+    }
+
+    fn code(status: Option<applet::ExitStatus>) -> i32 {
+        match status {
+            Some(applet::ExitStatus::Exit) => 0,
+            Some(applet::ExitStatus::Abort) => 1,
+            Some(applet::ExitStatus::Trap) => 2,
+            Some(applet::ExitStatus::Kill) => 62,
+            None => 63,
+        }
+    }
+
+    pub fn ensure_exit(&mut self) {
+        self.exit_code = true;
+    }
+
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let AppletExitStatus { wait, exit_code } = self;
+        let status = wait
+            .run::<service::AppletExitStatus, applet::ExitStatus>(connection, applet::AppletId)
+            .await?
+            .map(|x| *x.get());
+        Self::print(status);
+        if exit_code {
+            std::process::exit(Self::code(status))
+        }
+        Ok(())
     }
 }
 
@@ -113,7 +206,7 @@ impl AppletRpc {
 }
 
 /// Options to repeatedly call a command with an optional response.
-#[derive(clap::Args)]
+#[derive(Default, clap::Args)]
 pub struct Wait {
     /// Waits until there is a response.
     ///
@@ -134,6 +227,11 @@ impl Wait {
             return;
         }
         self.wait = true;
+    }
+
+    pub fn set_period(&mut self, period: Duration) {
+        self.wait = false;
+        self.period = Some(period.into());
     }
 
     pub async fn run<S, T: wire::Wire<'static>>(
@@ -190,6 +288,10 @@ impl PlatformList {
 /// Updates a platform.
 #[derive(clap::Args)]
 pub struct PlatformUpdate {
+    /// Path to the new platform.
+    #[arg(value_hint = ValueHint::FilePath)]
+    platform: PathBuf,
+
     #[clap(flatten)]
     transfer: Transfer,
 }
@@ -200,21 +302,24 @@ impl PlatformUpdate {
     }
 
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
-        let PlatformUpdate { transfer } = self;
-        transfer.run::<service::PlatformUpdateTransfer>(connection).await
+        let PlatformUpdate { platform, transfer } = self;
+        transfer
+            .run::<service::PlatformUpdateTransfer>(
+                connection,
+                platform,
+                "Updated",
+                Some(|_| bail!("device responded to a transfer finish")),
+            )
+            .await
     }
 }
 
 /// Parameters for a transfer from the host to the device.
 #[derive(clap::Args)]
-struct Transfer {
+pub struct Transfer {
     /// Whether the transfer is a dry-run.
     #[arg(long)]
     dry_run: bool,
-
-    /// Path to the payload to transfer.
-    #[arg(value_hint = ValueHint::FilePath)]
-    payload: PathBuf,
 
     /// How to chunk the payload.
     #[arg(long, default_value_t = 1024)]
@@ -222,47 +327,54 @@ struct Transfer {
 }
 
 impl Transfer {
-    async fn run<S>(&self, connection: &mut dyn Connection) -> Result<()>
-    where S: for<'a> service::Service<
+    async fn run<S>(
+        &self, connection: &mut dyn Connection, payload: impl AsRef<Path>, message: &'static str,
+        finish: Option<impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>>,
+    ) -> Result<()>
+    where
+        S: for<'a> service::Service<
             Request<'a> = service::transfer::Request<'a>,
             Response<'a> = (),
-        > {
+        >,
+    {
         use wasefire_protocol::transfer::Request;
-        let Transfer { dry_run, payload, chunk_size } = self;
+        let Transfer { dry_run, chunk_size } = self;
         let payload = fs::read(payload).await?;
-        let progress = indicatif::ProgressBar::new(payload.len() as u64).with_style(
-            indicatif::ProgressStyle::with_template(
-                "[{wide_bar}] {bytes:>10} / {total_bytes:<10} {elapsed:>4}",
-            )?
-            .progress_chars("##-"),
-        );
+        let progress = indicatif::ProgressBar::new(payload.len() as u64)
+            .with_style(
+                indicatif::ProgressStyle::with_template(
+                    "{msg:9} {elapsed:>3} {spinner} [{wide_bar}] {bytes:>10} / {total_bytes:<10}",
+                )?
+                .tick_chars("-\\|/ ")
+                .progress_chars("##-"),
+            )
+            .with_message("Starting");
+        progress.enable_steady_tick(Duration::from_millis(200));
         connection.call::<S>(Request::Start { dry_run: *dry_run }).await?.get();
+        progress.set_message("Writing");
         for chunk in payload.chunks(*chunk_size) {
-            connection.call::<S>(Request::Write { chunk }).await?.get();
             progress.inc(chunk.len() as u64);
+            connection.call::<S>(Request::Write { chunk }).await?.get();
         }
-        progress.finish();
-        if *dry_run {
-            connection.call::<S>(Request::Finish).await?.get();
-        } else {
-            final_call::<S>(connection, Request::Finish, |_| {
-                bail!("device responded to a transfer finish")
-            })
-            .await?;
+        progress.set_message("Finishing");
+        match (*dry_run, finish) {
+            (false, Some(finish)) => final_call::<S>(connection, Request::Finish, finish).await?,
+            _ => *connection.call::<S>(Request::Finish).await?.get(),
         }
+        progress.finish_with_message(message);
         Ok(())
     }
 }
 
 async fn final_call<S: service::Service>(
     connection: &mut dyn Connection, request: S::Request<'_>,
-    response: impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>,
+    proof: impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>,
 ) -> Result<()> {
     connection.send(&S::request(request)).await?;
     match connection.receive::<S>().await {
-        Ok(x) => response(x)?,
+        Ok(x) => proof(x)?,
         Err(e) => match e.downcast_ref::<rusb::Error>() {
-            Some(rusb::Error::Timeout | rusb::Error::NoDevice) => Ok(()),
+            Some(rusb::Error::NoDevice) => Ok(()),
             _ => Err(e),
         },
     }
@@ -276,6 +388,17 @@ impl PlatformReboot {
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let PlatformReboot {} = self;
         final_call::<service::PlatformReboot>(connection, (), |x| match *x.get() {}).await
+    }
+}
+
+/// Locks a platform.
+#[derive(clap::Args)]
+pub struct PlatformLock {}
+
+impl PlatformLock {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let PlatformLock {} = self;
+        connection.call::<service::PlatformLock>(()).await.map(|x| *x.get())
     }
 }
 

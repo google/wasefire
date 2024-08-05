@@ -1,6 +1,15 @@
 # Changelog
 
-## 0.6.1-git
+## 0.7.0-git
+
+### Major
+
+- Remove `debug::{assert,assert_eq}()` in favor of `core::{assert,assert_eq}!`
+- Remove `debug::exit()` in favor of `scheduling::{abort,exit}()`
+
+### Minor
+
+- Add `scheduling::exit()` for successful applet exit
 
 ### Patch
 

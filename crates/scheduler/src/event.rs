@@ -17,6 +17,7 @@ use core::borrow::Borrow;
 
 use derive_where::derive_where;
 use wasefire_board_api::{Api as Board, Event, Impossible};
+use wasefire_error::Error;
 #[cfg(feature = "wasm")]
 pub use wasefire_interpreter::InstId;
 use wasefire_logger as log;
@@ -103,6 +104,25 @@ impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
     }
 }
 
+impl<B: Board> Key<B> {
+    pub fn disable(self) -> Result<(), Error> {
+        match self {
+            #[cfg(feature = "board-api-button")]
+            Key::Button(x) => x.disable(),
+            Key::Platform(x) => x.disable(),
+            #[cfg(feature = "internal-board-api-radio")]
+            Key::Radio(x) => x.disable::<B>(),
+            #[cfg(feature = "board-api-timer")]
+            Key::Timer(x) => x.disable(),
+            #[cfg(feature = "board-api-uart")]
+            Key::Uart(x) => x.disable(),
+            #[cfg(feature = "internal-board-api-usb")]
+            Key::Usb(x) => x.disable::<B>(),
+            Key::_Impossible(x) => x.unreachable(),
+        }
+    }
+}
+
 #[derive_where(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Handler<B: Board> {
     pub key: Key<B>,
@@ -119,7 +139,7 @@ impl<B: Board> Borrow<Key<B>> for Handler<B> {
 
 #[cfg_attr(feature = "native", allow(clippy::needless_pass_by_ref_mut))]
 pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
-    let applet = scheduler.applet.as_mut().unwrap();
+    let applet = scheduler.applet.get().unwrap();
     let (inst, func, data) = match applet.get(Key::from(&event)) {
         Some(x) => (x.inst, x.func, x.data),
         None => {
