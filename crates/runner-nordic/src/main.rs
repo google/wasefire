@@ -16,7 +16,6 @@
 #![no_main]
 #![feature(never_type)]
 #![feature(ptr_metadata)]
-#![feature(slice_ptr_get)]
 #![feature(try_blocks)]
 
 extern crate alloc;
