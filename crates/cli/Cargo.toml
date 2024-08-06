@@ -23,7 +23,7 @@ data-encoding = { version = "2.6.0", default-features = false, features = ["std"
 humantime = { version = "2.1.0", default-features = false }
 rusb = { version = "0.9.4", default-features = false }
 wasefire-cli-tools = { version = "0.1.1-git", path = "../cli-tools" }
-wasefire-protocol = { version = "0.1.0", path = "../protocol", features = ["host"] }
+wasefire-protocol = { version = "0.1.1-git", path = "../protocol", features = ["host"] }
 wasefire-protocol-usb = { version = "0.1.1-git", path = "../protocol-usb", features = ["host"] }
 
 [lints]

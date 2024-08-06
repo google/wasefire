@@ -18,7 +18,7 @@ rusb = { version = "0.9.4", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false, optional = true }
 wasefire-error = { version = "0.1.1", path = "../error", optional = true }
 wasefire-logger = { version = "0.1.5", path = "../logger" }
-wasefire-wire = { version = "0.1.0", path = "../wire", optional = true }
+wasefire-wire = { version = "0.1.1-git", path = "../wire", optional = true }
 
 [dependencies.wasefire-board-api]
 version = "0.7.1-git"
@@ -27,7 +27,7 @@ features = ["api-platform-protocol"]
 optional = true
 
 [dependencies.wasefire-protocol]
-version = "0.1.0"
+version = "0.1.1-git"
 path = "../protocol"
 features = ["host"]
 optional = true

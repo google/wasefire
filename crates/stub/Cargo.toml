@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-stub"
-version = "0.1.4"
+version = "0.1.5-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -28,7 +28,7 @@ wasefire-logger = { version = "0.1.5", path = "../logger" }
 
 [dependencies.wasefire-applet-api]
 features = ["full-api", "native", "wasm"]
-version = "0.6.1"
+version = "0.6.2-git"
 path = "../api"
 
 [lints]

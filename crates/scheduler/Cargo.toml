@@ -22,7 +22,7 @@ derivative = { version = "2.2.0", default-features = false, features = ["use_cor
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
 generic-array = { version = "=0.14.7", default-features = false, optional = true }
 typenum = { version = "1.17.0", default-features = false, optional = true }
-wasefire-applet-api = { version = "0.6.1", path = "../api", features = ["host"] }
+wasefire-applet-api = { version = "0.6.2-git", path = "../api", features = ["host"] }
 wasefire-board-api = { version = "0.7.1-git", path = "../board" }
 wasefire-error = { version = "0.1.1", path = "../error" }
 wasefire-logger = { version = "0.1.5", path = "../logger" }
@@ -36,7 +36,7 @@ features = ["toctou"]
 optional = true
 
 [dependencies.wasefire-protocol]
-version = "0.1.0"
+version = "0.1.1-git"
 path = "../protocol"
 features = ["device"]
 optional = true
