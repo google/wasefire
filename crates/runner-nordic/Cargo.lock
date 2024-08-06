@@ -1098,7 +1098,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.6.1"
+version = "0.6.2-git"
 dependencies = [
  "bytemuck",
  "sealed",
@@ -1108,7 +1108,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.2.0"
+version = "0.2.1-git"
 dependencies = [
  "data-encoding",
  "data-encoding-macro",
@@ -1119,7 +1119,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.6.1"
+version = "0.6.2-git"
 dependencies = [
  "wasefire-applet-api-desc",
 ]
@@ -1175,7 +1175,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "wasefire-error",
  "wasefire-wire",
@@ -1226,7 +1226,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "wasefire-error",
  "wasefire-wire-derive",
@@ -1234,7 +1234,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire-derive"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "proc-macro2",
  "quote",

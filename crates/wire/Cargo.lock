@@ -66,7 +66,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "wasefire-error",
  "wasefire-wire-derive",
@@ -74,7 +74,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire-derive"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "proc-macro2",
  "quote",

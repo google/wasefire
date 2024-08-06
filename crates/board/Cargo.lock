@@ -701,7 +701,7 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.6.1"
+version = "0.6.2-git"
 dependencies = [
  "bytemuck",
  "sealed",
@@ -711,7 +711,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.2.0"
+version = "0.2.1-git"
 dependencies = [
  "data-encoding",
  "data-encoding-macro",
@@ -722,7 +722,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.6.1"
+version = "0.6.2-git"
 dependencies = [
  "wasefire-applet-api-desc",
 ]
