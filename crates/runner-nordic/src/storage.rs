@@ -14,6 +14,7 @@
 
 use alloc::borrow::Cow;
 use alloc::vec;
+use alloc::vec::Vec;
 use core::ptr::addr_of_mut;
 
 use embedded_storage::nor_flash::{
@@ -21,9 +22,11 @@ use embedded_storage::nor_flash::{
 };
 use nrf52840_hal::nvmc::Nvmc;
 use nrf52840_hal::pac::NVMC;
+use wasefire_error::{Code, Error};
 use wasefire_store::{self as store, StorageError, StorageIndex, StorageResult};
 use wasefire_sync::{AtomicBool, Ordering, TakeCell};
 
+const WORD_SIZE: usize = <Nvmc<NVMC>>::WRITE_SIZE;
 const PAGE_SIZE: usize = <Nvmc<NVMC>>::ERASE_SIZE;
 
 static DRIVER: TakeCell<NVMC> = TakeCell::new(None);
@@ -90,20 +93,107 @@ impl Storage {
         unsafe { &*self.ptr }
     }
 
+    pub fn ptr(&self) -> *const u8 {
+        self.ptr as *const u8
+    }
+
     pub fn len(&self) -> usize {
         self.ptr.len()
     }
+}
 
-    pub const ERASE_SIZE: usize = PAGE_SIZE;
-    pub fn erase(&self, offset: usize, length: usize) -> StorageResult<()> {
-        let mut helper = Helper::new(self);
-        helper.nvmc().erase(offset as u32, (offset + length) as u32).map_err(convert)
+pub struct StorageWriter {
+    storage: Storage,
+    // None if not running.
+    dry_run: Option<bool>,
+    // offset + buffer.len() <= storage.len() && offset % WORD_SIZE == 0
+    offset: usize,
+    // buffer.len() < WORD_SIZE
+    buffer: Vec<u8>,
+}
+
+impl StorageWriter {
+    pub fn new(storage: Storage) -> Result<Self, (Storage, Error)> {
+        Ok(StorageWriter {
+            storage,
+            dry_run: None,
+            offset: 0,
+            buffer: Vec::with_capacity(WORD_SIZE),
+        })
     }
 
-    pub const WRITE_SIZE: usize = <Nvmc<NVMC>>::WRITE_SIZE;
-    pub fn write(&self, offset: usize, data: &[u8]) -> StorageResult<()> {
-        let mut helper = Helper::new(self);
-        helper.nvmc().write(offset as u32, data).map_err(convert)
+    pub fn dry_run(&self) -> Result<bool, Error> {
+        self.dry_run.ok_or(Error::user(Code::InvalidState))
+    }
+
+    pub fn start(&mut self, dry_run: bool) -> Result<(), Error> {
+        self.dry_run = Some(dry_run);
+        assert_eq!(self.offset, 0);
+        assert!(self.buffer.is_empty());
+        if !self.dry_run()? {
+            // Erase the storage.
+            for offset in (0 .. self.storage.len()).step_by(PAGE_SIZE) {
+                let content = unsafe { self.storage.get() };
+                // Only erase a page if needed.
+                if content[offset ..][.. PAGE_SIZE].iter().all(|x| *x == 0xff) {
+                    continue;
+                }
+                let from = offset as u32;
+                let to = from + PAGE_SIZE as u32;
+                Helper::new(&self.storage).nvmc().erase(from, to).map_err(into_wasefire_error)?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn write(&mut self, mut chunk: &[u8]) -> Result<(), Error> {
+        if !self.buffer.is_empty() {
+            assert!(self.buffer.len() < WORD_SIZE);
+            let length = core::cmp::min(chunk.len(), WORD_SIZE - self.buffer.len());
+            self.buffer.extend_from_slice(&chunk[.. length]);
+            chunk = &chunk[length ..];
+            if self.buffer.len() < WORD_SIZE {
+                return Ok(());
+            }
+            assert_eq!(self.buffer.len(), WORD_SIZE);
+            self.write_buffer()?;
+        }
+        assert!(self.buffer.is_empty());
+        let length = chunk.len() / WORD_SIZE * WORD_SIZE;
+        self.aligned_write(&chunk[.. length])?;
+        self.buffer.extend_from_slice(&chunk[length ..]);
+        Ok(())
+    }
+
+    fn write_buffer(&mut self) -> Result<(), Error> {
+        let data = core::mem::take(&mut self.buffer);
+        self.aligned_write(&data)?;
+        self.buffer = data;
+        self.buffer.clear();
+        Ok(())
+    }
+
+    fn aligned_write(&mut self, data: &[u8]) -> Result<(), Error> {
+        assert_eq!(data.len() % WORD_SIZE, 0);
+        if !self.dry_run()? {
+            Helper::new(&self.storage)
+                .nvmc()
+                .write(self.offset as u32, data)
+                .map_err(into_wasefire_error)?;
+        }
+        self.offset += data.len();
+        Ok(())
+    }
+
+    pub fn flush(&mut self) -> Result<(), Error> {
+        if !self.buffer.is_empty() {
+            assert!(self.buffer.len() < WORD_SIZE);
+            self.buffer.resize(WORD_SIZE, 0xff);
+            self.write_buffer()?;
+        }
+        self.dry_run = None;
+        self.offset = 0;
+        Ok(())
     }
 }
 
@@ -133,7 +223,7 @@ impl<'a> Drop for Helper<'a> {
 
 impl store::Storage for Storage {
     fn word_size(&self) -> usize {
-        <Nvmc<NVMC>>::WRITE_SIZE
+        WORD_SIZE
     }
 
     fn page_size(&self) -> usize {
@@ -156,21 +246,21 @@ impl store::Storage for Storage {
         let offset = offset(self, length, index)?;
         let mut result = vec![0; length];
         let mut helper = Helper::new(self);
-        helper.nvmc().read(offset, &mut result).map_err(convert)?;
+        helper.nvmc().read(offset, &mut result).map_err(into_storage_error)?;
         Ok(Cow::Owned(result))
     }
 
     fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> StorageResult<()> {
         let offset = offset(self, value.len(), index)?;
         let mut helper = Helper::new(self);
-        helper.nvmc().write(offset, value).map_err(convert)
+        helper.nvmc().write(offset, value).map_err(into_storage_error)
     }
 
     fn erase_page(&mut self, page: usize) -> StorageResult<()> {
         let from = offset(self, PAGE_SIZE, StorageIndex { page, byte: 0 })?;
         let to = from + PAGE_SIZE as u32;
         let mut helper = Helper::new(self);
-        helper.nvmc().erase(from, to).map_err(convert)
+        helper.nvmc().erase(from, to).map_err(into_storage_error)
     }
 }
 
@@ -178,10 +268,18 @@ fn offset(storage: &Storage, length: usize, index: StorageIndex) -> StorageResul
     Ok(index.range(length, storage)?.start as u32)
 }
 
-fn convert(e: <Nvmc<NVMC> as ErrorType>::Error) -> StorageError {
+fn into_storage_error(e: <Nvmc<NVMC> as ErrorType>::Error) -> StorageError {
     match e.kind() {
         NorFlashErrorKind::NotAligned => StorageError::NotAligned,
         NorFlashErrorKind::OutOfBounds => StorageError::OutOfBounds,
         _ => StorageError::CustomError,
+    }
+}
+
+fn into_wasefire_error(e: <Nvmc<NVMC> as ErrorType>::Error) -> Error {
+    match e.kind() {
+        NorFlashErrorKind::NotAligned => Error::user(Code::InvalidAlign),
+        NorFlashErrorKind::OutOfBounds => Error::user(Code::OutOfBounds),
+        _ => Error::world(0),
     }
 }
