@@ -28,7 +28,12 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
     publish="$(package_publish)"
     [ -n "$publish" ] || e "Cargo.toml for $dir is missing the publish field"
     [ -e test.sh ] || e "test.sh for $dir is missing"
-    $publish || exit 0
+    if ! $publish; then
+      [ "$(package_version)" = 0.1.0 ] || e "Unpublished $dir should have version 0.1.0"
+      [ -e CHANGELOG.md ] && e "Unpublished $dir should not have a CHANGELOG.md"
+      [ -e LICENSE ] && e "Unpublished $dir should not have a LICENSE"
+      exit 0
+    fi
     [ -e CHANGELOG.md ] || e "CHANGELOG.md for $dir is missing"
     [ "$(package_include)" = "$INCLUDE" ] || e "Cargo.toml should include exactly $INCLUDE"
     [ "$(readlink -f LICENSE)" = "$LICENSE" ] || e "LICENSE is not a symlink to the top-level one"
