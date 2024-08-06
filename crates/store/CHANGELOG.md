@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0-git
+
+### Major
+
+- Use `wasefire-error` for errors
+
 ## 0.2.4
 
 ### Patch

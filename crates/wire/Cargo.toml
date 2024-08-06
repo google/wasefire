@@ -15,7 +15,7 @@ categories = ["embedded", "no-std"]
 all-features = true
 
 [dependencies]
-wasefire-error = { version = "0.1.1", path = "../error" }
+wasefire-error = { version = "0.1.2-git", path = "../error" }
 wasefire-wire-derive = { version = "0.1.1-git", path = "../wire-derive" }
 
 [features]

@@ -1904,7 +1904,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.7.1-git"
+version = "0.8.0-git"
 dependencies = [
  "aead",
  "aes",
@@ -1944,7 +1944,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "num_enum",
 ]
@@ -2008,7 +2008,10 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.2.4"
+version = "0.3.0-git"
+dependencies = [
+ "wasefire-error",
+]
 
 [[package]]
 name = "wasefire-sync"

@@ -382,10 +382,8 @@ pub use self::driver::{
 pub use self::file::{FileOptions, FileStorage};
 #[cfg(feature = "std")]
 pub use self::model::{StoreModel, StoreOperation};
-pub use self::storage::{Storage, StorageError, StorageIndex, StorageResult};
-pub use self::store::{
-    Store, StoreError, StoreHandle, StoreIter, StoreRatio, StoreResult, StoreUpdate,
-};
+pub use self::storage::{Storage, StorageIndex};
+pub use self::store::{Store, StoreHandle, StoreIter, StoreRatio, StoreUpdate};
 
 /// Internal representation of natural numbers.
 ///

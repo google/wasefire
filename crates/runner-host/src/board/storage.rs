@@ -15,7 +15,8 @@
 use std::borrow::Cow;
 
 use wasefire_board_api::Singleton;
-use wasefire_store::{FileStorage, Storage, StorageIndex, StorageResult};
+use wasefire_error::Error;
+use wasefire_store::{FileStorage, Storage, StorageIndex};
 
 use crate::with_state;
 
@@ -48,15 +49,15 @@ impl Storage for Impl {
         self.0.max_page_erases()
     }
 
-    fn read_slice(&self, index: StorageIndex, length: usize) -> StorageResult<Cow<[u8]>> {
+    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<[u8]>, Error> {
         self.0.read_slice(index, length)
     }
 
-    fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> StorageResult<()> {
+    fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> Result<(), Error> {
         self.0.write_slice(index, value)
     }
 
-    fn erase_page(&mut self, page: usize) -> StorageResult<()> {
+    fn erase_page(&mut self, page: usize) -> Result<(), Error> {
         self.0.erase_page(page)
     }
 }

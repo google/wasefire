@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.7.1-git
+## 0.8.0-git
+
+### Major
+
+- (Only when `api-storage` is used) The reexported `wasefire-store::Storage` now uses
+  `wasefire-error` for errors
 
 ### Minor
 

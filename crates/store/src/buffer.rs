@@ -21,7 +21,9 @@ use alloc::borrow::{Borrow, Cow};
 use alloc::boxed::Box;
 use alloc::vec;
 
-use crate::{Storage, StorageError, StorageIndex, StorageResult};
+use wasefire_error::{Code, Error, Space};
+
+use crate::{Storage, StorageIndex};
 
 /// Simulates a flash storage using a buffer in memory.
 ///
@@ -267,7 +269,7 @@ impl BufferStorage {
     /// Returns the storage range of an operation.
     fn operation_range(
         &self, operation: &BufferOperation<impl Borrow<[u8]>>,
-    ) -> StorageResult<core::ops::Range<usize>> {
+    ) -> Result<core::ops::Range<usize>, Error> {
         match *operation {
             BufferOperation::Write { index, ref value } => index.range(value.borrow().len(), self),
             BufferOperation::Erase { page } => {
@@ -298,13 +300,13 @@ impl Storage for BufferStorage {
         self.options.max_page_erases
     }
 
-    fn read_slice(&self, index: StorageIndex, length: usize) -> StorageResult<Cow<[u8]>> {
+    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<[u8]>, Error> {
         Ok(Cow::Borrowed(&self.storage[index.range(length, self)?]))
     }
 
-    fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> StorageResult<()> {
+    fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> Result<(), Error> {
         if !self.is_word_aligned(index.byte) || !self.is_word_aligned(value.len()) {
-            return Err(StorageError::NotAligned);
+            return Err(Error::user(Code::InvalidAlign));
         }
         let operation = BufferOperation::Write { index, value };
         let range = self.operation_range(&operation)?;
@@ -323,7 +325,7 @@ impl Storage for BufferStorage {
         Ok(())
     }
 
-    fn erase_page(&mut self, page: usize) -> StorageResult<()> {
+    fn erase_page(&mut self, page: usize) -> Result<(), Error> {
         let operation = BufferOperation::Erase { page };
         let range = self.operation_range(&operation)?;
         // Interrupt operation if armed and delay expired.
@@ -452,13 +454,13 @@ impl Interruption {
     ///
     /// Panics if an operation has already been interrupted and the interruption has not been
     /// disarmed.
-    fn tick(&mut self, operation: &SharedBufferOperation) -> StorageResult<()> {
+    fn tick(&mut self, operation: &SharedBufferOperation) -> Result<(), Error> {
         match self {
             Interruption::Ready => (),
             Interruption::Armed { delay } if *delay == 0 => {
                 let operation = operation.to_owned();
                 *self = Interruption::Saved { operation };
-                return Err(StorageError::CustomError);
+                return Err(INTERRUPTION_ERROR);
             }
             Interruption::Armed { delay } => *delay -= 1,
             Interruption::Saved { .. } => panic!(),
@@ -466,6 +468,8 @@ impl Interruption {
         Ok(())
     }
 }
+
+pub(crate) const INTERRUPTION_ERROR: Error = Error::new_const(Space::World as u8, 0xffff);
 
 #[cfg(test)]
 mod tests {

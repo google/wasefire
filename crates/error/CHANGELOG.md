@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2-git
+
+### Minor
+
+- Implement `From<std::io::Error>` with `std` feature
+- Add `std` feature
+
 ## 0.1.1
 
 ### Minor
