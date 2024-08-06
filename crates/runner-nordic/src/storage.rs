@@ -106,20 +106,15 @@ pub struct StorageWriter {
     storage: Storage,
     // None if not running.
     dry_run: Option<bool>,
-    // offset + buffer.len() <= storage.len() && offset % WORD_SIZE == 0
+    // offset % WORD_SIZE == 0
     offset: usize,
     // buffer.len() < WORD_SIZE
     buffer: Vec<u8>,
 }
 
 impl StorageWriter {
-    pub fn new(storage: Storage) -> Result<Self, (Storage, Error)> {
-        Ok(StorageWriter {
-            storage,
-            dry_run: None,
-            offset: 0,
-            buffer: Vec::with_capacity(WORD_SIZE),
-        })
+    pub fn new(storage: Storage) -> Self {
+        StorageWriter { storage, dry_run: None, offset: 0, buffer: Vec::with_capacity(WORD_SIZE) }
     }
 
     pub fn dry_run(&self) -> Result<bool, Error> {
@@ -127,6 +122,10 @@ impl StorageWriter {
     }
 
     pub fn start(&mut self, dry_run: bool) -> Result<(), Error> {
+        if self.dry_run.is_some() {
+            self.offset = 0;
+            self.buffer.clear();
+        }
         self.dry_run = Some(dry_run);
         assert_eq!(self.offset, 0);
         assert!(self.buffer.is_empty());
@@ -155,7 +154,6 @@ impl StorageWriter {
             if self.buffer.len() < WORD_SIZE {
                 return Ok(());
             }
-            assert_eq!(self.buffer.len(), WORD_SIZE);
             self.write_buffer()?;
         }
         assert!(self.buffer.is_empty());
@@ -166,6 +164,7 @@ impl StorageWriter {
     }
 
     fn write_buffer(&mut self) -> Result<(), Error> {
+        assert_eq!(self.buffer.len(), WORD_SIZE);
         let data = core::mem::take(&mut self.buffer);
         self.aligned_write(&data)?;
         self.buffer = data;

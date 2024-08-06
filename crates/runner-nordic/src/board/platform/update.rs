@@ -19,7 +19,6 @@ use header::{Header, Side};
 use wasefire_board_api::platform::update::Api;
 use wasefire_board_api::Supported;
 use wasefire_error::{Code, Error};
-use wasefire_logger as log;
 use wasefire_sync::TakeCell;
 
 use crate::storage::{Storage, StorageWriter};
@@ -58,12 +57,7 @@ impl Api for Impl {
 }
 
 pub fn init(storage: Storage) {
-    match StorageWriter::new(storage) {
-        Ok(x) => STATE.put(x),
-        Err((s, e)) => {
-            log::error!("Init storage [{:08x}; {:08x}] failed: {}", s.ptr(), s.len(), e);
-        }
-    }
+    STATE.put(StorageWriter::new(storage));
 }
 
 static STATE: TakeCell<StorageWriter> = TakeCell::new(None);
