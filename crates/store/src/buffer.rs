@@ -202,7 +202,11 @@ impl BufferStorage {
 }
 
 /// Error indicating that an operation was interrupted.
-pub const INTERRUPTION: Error = Error::new_const(Space::World as u8, 0xffff);
+pub const INTERRUPTION: Error = Error::new_const(Space::World as u8, INTERRUPT.code());
+// By generating the interruption error as an internal error and letting user test for it as a world
+// error, we make sure the error got popped at least once in between (thus making sure we didn't
+// forget to pop errors for mutable operations).
+const INTERRUPT: Error = Error::new_const(Space::Internal as u8, 0xffff);
 
 impl BufferStorage {
     /// Returns whether a number is word-aligned.
@@ -465,7 +469,7 @@ impl Interruption {
             Interruption::Armed { delay } if *delay == 0 => {
                 let operation = operation.to_owned();
                 *self = Interruption::Saved { operation };
-                return Err(INTERRUPTION);
+                return Err(INTERRUPT);
             }
             Interruption::Armed { delay } => *delay -= 1,
             Interruption::Saved { .. } => panic!(),
