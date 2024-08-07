@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `action::{ConnectionOptions,GlobalConnection}` for lazy platform connection
 - Change the behavior of `fs::copy_if_changed()` to keep an original source
 
 ### Patch

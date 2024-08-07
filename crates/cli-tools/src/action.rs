@@ -15,15 +15,100 @@
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::Duration;
 
 use anyhow::{bail, ensure, Result};
 use cargo_metadata::{Metadata, MetadataCommand};
 use clap::{ValueEnum, ValueHint};
-use rusb::UsbContext;
+use data_encoding::HEXLOWER_PERMISSIVE as HEX;
+use rusb::{GlobalContext, UsbContext};
 use wasefire_protocol::{self as service, applet, Api};
-use wasefire_protocol_usb::Connection;
+use wasefire_protocol_usb::{Candidate, Connection};
 
 use crate::{cmd, fs};
+
+/// Options to connect to a platform.
+#[derive(Clone, clap::Args)]
+pub struct ConnectionOptions {
+    /// Serial of the platform to connect to.
+    #[arg(long, env = "WASEFIRE_SERIAL")]
+    serial: Option<String>,
+
+    /// Timeout to send or receive on the platform protocol.
+    #[arg(long, default_value = "1s")]
+    timeout: humantime::Duration,
+}
+
+impl ConnectionOptions {
+    /// Returns the timeout for platform connection.
+    pub fn timeout(&self) -> Duration {
+        *self.timeout
+    }
+}
+
+/// Reusable lazy connection to a platform.
+pub enum GlobalConnection {
+    /// The connection is not yet configured and can be established.
+    Invalid,
+    /// The connection is configured but not yet established.
+    Ready { options: ConnectionOptions },
+    /// The connection is established.
+    Connected { connection: Connection<GlobalContext> },
+}
+
+impl GlobalConnection {
+    /// Configures the connection (required to access it).
+    pub fn configure(&mut self, options: ConnectionOptions) {
+        match self {
+            GlobalConnection::Invalid => *self = GlobalConnection::Ready { options },
+            _ => panic!("connection already configured"),
+        }
+    }
+
+    /// Accesses the connection (establishing it if needed).
+    pub fn get(&mut self) -> Result<&Connection<GlobalContext>> {
+        if let GlobalConnection::Ready { options } = self {
+            let connection = connect(options.timeout(), options.serial.as_deref())?;
+            *self = GlobalConnection::Connected { connection };
+        }
+        match self {
+            GlobalConnection::Connected { connection } => Ok(connection),
+            _ => panic!("connection not yet configured"),
+        }
+    }
+}
+
+fn connect(timeout: Duration, serial: Option<&str>) -> Result<Connection<GlobalContext>> {
+    let context = GlobalContext::default();
+    let mut candidates = wasefire_protocol_usb::list(&context)?;
+    let candidate = match (serial, candidates.len()) {
+        (None, 0) => bail!("no connected platforms"),
+        (None, 1) => candidates.pop().unwrap(),
+        (None, n) => {
+            eprintln!("Choose one of the {n} connected platforms using its --serial option:");
+            for candidate in candidates {
+                eprintln!("    --serial={}", get_serial(&candidate, timeout)?);
+            }
+            bail!("more than one connected platform");
+        }
+        (Some(serial), _) => {
+            match candidates
+                .into_iter()
+                .try_find(|x| anyhow::Ok(get_serial(x, timeout)? == serial))?
+            {
+                Some(x) => x,
+                None => bail!("no connected platform with serial={serial}"),
+            }
+        }
+    };
+    Ok(candidate.connect(timeout)?)
+}
+
+fn get_serial(candidate: &Candidate<GlobalContext>, timeout: Duration) -> Result<String> {
+    let connection = candidate.clone().connect(timeout)?;
+    let info = connection.call::<service::PlatformInfo>(())?;
+    Ok(HEX.encode(info.get().serial))
+}
 
 /// Parameters for an applet or platform RPC.
 #[derive(clap::Args)]
