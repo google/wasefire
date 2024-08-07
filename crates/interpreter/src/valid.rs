@@ -935,8 +935,7 @@ mod tests {
 
         let result = into_field(mask, value);
         assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(matches!(err, Error::Unsupported(_)));
+        assert!(matches!(result.unwrap_err(), Error::Unsupported(_)));
     }
 
     #[test]
@@ -948,5 +947,18 @@ mod tests {
 
         let field = into_field(mask, value).unwrap();
         assert_ne!(value, field);
+    }
+
+    #[test]
+    fn into_signed_field_overflow() {
+        let mask = 0b1111000;
+        let value = i32::MAX;
+
+        // The offset for this mask is 8, and adding it to `value` will cause
+        // overflow.
+        let result = into_signed_field(mask, value);
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), Error::Unsupported(_)));
     }
 }
