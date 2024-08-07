@@ -20,7 +20,7 @@ use core::cmp::Ordering;
 use crate::error::*;
 use crate::syntax::*;
 use crate::toctou::*;
-use crate::{Unsupported, *};
+use crate::*;
 
 /// Checks whether a WASM module in binary format is valid.
 pub fn validate(binary: &[u8]) -> Result<(), Error> {
