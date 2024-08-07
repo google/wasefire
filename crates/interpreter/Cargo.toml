@@ -20,8 +20,8 @@ portable-atomic = { version = "1.6.0", default-features = false }
 
 [dev-dependencies]
 lazy_static = "1.4.0"
-wast = "214.0.0"
 proptest = "1.5.0"
+wast = "214.0.0"
 
 [features]
 # Enable debugging features (only works for targets with std).
