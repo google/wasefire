@@ -33,13 +33,28 @@ use crate::{usize_to_nat, Nat, Storage, StorageIndex};
 #[cfg(feature = "std")]
 use crate::{BufferStorage, StoreOperation};
 
-pub(crate) const INVALID_ARGUMENT: Error =
+/// Invalid argument.
+///
+/// The store is left unchanged. The operation will repeatedly fail until the argument is fixed.
+pub const INVALID_ARGUMENT: Error =
     Error::new_const(Space::User as u8, Code::InvalidArgument as u16);
-pub(crate) const INVALID_STORAGE: Error =
-    Error::new_const(Space::World as u8, Code::InvalidState as u16);
-pub(crate) const NO_CAPACITY: Error = Error::new_const(Space::World as u8, Code::NotEnough as u16);
-pub(crate) const NO_LIFETIME: Error =
-    Error::new_const(Space::World as u8, Code::OutOfBounds as u16);
+
+/// Not enough capacity.
+///
+/// The store is left unchanged. The operation will repeatedly fail until capacity is freed.
+pub const NO_CAPACITY: Error = Error::new_const(Space::World as u8, Code::NotEnough as u16);
+
+/// Reached end of lifetime.
+///
+/// The store is left unchanged. The operation will repeatedly fail until emergency lifetime is
+/// added.
+pub const NO_LIFETIME: Error = Error::new_const(Space::World as u8, Code::OutOfBounds as u16);
+
+/// Storage is invalid.
+///
+/// The storage should be erased and the store [recovered](Store::recover). The store would be empty
+/// and have lost track of lifetime.
+pub const INVALID_STORAGE: Error = Error::new_const(Space::World as u8, Code::InvalidState as u16);
 
 /// Progression ratio for store metrics.
 ///
@@ -101,7 +116,7 @@ impl StoreHandle {
     ///
     /// # Errors
     ///
-    /// Returns an error if the entry has been deleted or compacted.
+    /// Returns [`INVALID_ARGUMENT`] if the entry has been deleted or compacted.
     pub fn get_length<S: Storage>(&self, store: &Store<S>) -> Result<usize, Error> {
         store.get_length(self)
     }
@@ -110,7 +125,7 @@ impl StoreHandle {
     ///
     /// # Errors
     ///
-    /// Returns an error if the entry has been deleted or compacted.
+    /// Returns [`INVALID_ARGUMENT`] if the entry has been deleted or compacted.
     pub fn get_value<S: Storage>(&self, store: &Store<S>) -> Result<Vec<u8>, Error> {
         store.get_value(self)
     }
@@ -173,7 +188,8 @@ impl<S: Storage> Store<S> {
     ///
     /// # Errors
     ///
-    /// Returns an error if the storage is not [supported](Format::is_storage_supported).
+    /// Returns [`INVALID_ARGUMENT`] if the storage is not
+    /// [supported](Format::is_storage_supported).
     pub fn new(storage: S) -> Result<Store<S>, (Error, S)> {
         let format = match Format::new(&storage) {
             None => return Err((INVALID_ARGUMENT, storage)),
@@ -233,7 +249,7 @@ impl<S: Storage> Store<S> {
     ///
     /// # Errors
     ///
-    /// Returns an error in the following circumstances:
+    /// Returns [`INVALID_ARGUMENT`] in the following circumstances:
     /// - There are [too many](Format::max_updates) updates.
     /// - The updates overlap, i.e. their keys are not disjoint.
     /// - The updates are invalid, e.g. key [out of bound](Format::max_key) or value [too
@@ -1060,7 +1076,7 @@ impl<S: Storage> Store<S> {
                     byte: (usize_to_nat(index.byte) + start) as usize,
                 };
                 let value = &value[start as usize ..];
-                self.storage.write_slice(index, value)?;
+                self.storage.write_slice(index, value).map_err(Error::pop)?;
                 break;
             }
         }
@@ -1071,7 +1087,7 @@ impl<S: Storage> Store<S> {
     /// Erases a page if not already erased.
     fn storage_erase_page(&mut self, page: Nat) -> Result<(), Error> {
         if !is_erased(&self.read_page(page)) {
-            self.storage.erase_page(page as usize)?;
+            self.storage.erase_page(page as usize).map_err(Error::pop)?;
         }
         Ok(())
     }

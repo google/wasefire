@@ -117,8 +117,8 @@ impl BufferStorage {
     /// Arms an interruption after a given delay.
     ///
     /// Before each subsequent mutable operation (write or erase), the delay is decremented if
-    /// positive. If the delay is elapsed, the operation is saved and an error is returned.
-    /// Subsequent operations will panic until either of:
+    /// positive. If the delay is elapsed, the operation is saved and the [`INTERRUPTION`] error is
+    /// returned. Subsequent operations will panic until either of:
     /// - The interrupted operation is [corrupted](BufferStorage::corrupt_operation).
     /// - The interruption is [reset](BufferStorage::reset_interruption).
     ///
@@ -199,7 +199,12 @@ impl BufferStorage {
     pub fn set_page_erases(&mut self, page: usize, cycle: usize) {
         self.page_erases[page] = cycle;
     }
+}
 
+/// Error indicating that an operation was interrupted.
+pub const INTERRUPTION: Error = Error::new_const(Space::World as u8, 0xffff);
+
+impl BufferStorage {
     /// Returns whether a number is word-aligned.
     fn is_word_aligned(&self, x: usize) -> bool {
         x & (self.options.word_size - 1) == 0
@@ -447,8 +452,8 @@ impl Interruption {
 
     /// Interrupts an operation if the delay is over.
     ///
-    /// Decrements the delay if positive. Otherwise, the operation is stored and an error is
-    /// returned to interrupt the operation.
+    /// Decrements the delay if positive. Otherwise, the operation is stored and the
+    /// [`INTERRUPTION`] error is returned to interrupt the operation.
     ///
     /// # Panics
     ///
@@ -460,7 +465,7 @@ impl Interruption {
             Interruption::Armed { delay } if *delay == 0 => {
                 let operation = operation.to_owned();
                 *self = Interruption::Saved { operation };
-                return Err(INTERRUPTION_ERROR);
+                return Err(INTERRUPTION);
             }
             Interruption::Armed { delay } => *delay -= 1,
             Interruption::Saved { .. } => panic!(),
@@ -468,8 +473,6 @@ impl Interruption {
         Ok(())
     }
 }
-
-pub(crate) const INTERRUPTION_ERROR: Error = Error::new_const(Space::World as u8, 0xffff);
 
 #[cfg(test)]
 mod tests {

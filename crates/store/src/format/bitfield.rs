@@ -50,12 +50,12 @@ impl Field {
     /// - The value must only change bits from 1 to 0: `self.get(*word) & value == value`.
     pub fn set(&self, word: &mut Word, value: Nat) -> Result<(), Error> {
         if value & self.mask() != value {
-            return Err(crate::store::INVALID_STORAGE);
+            return Err(crate::INVALID_STORAGE);
         }
         let mask = !(self.mask() << self.pos);
         word.0 &= mask | (value << self.pos);
         if self.get(*word) != value {
-            return Err(crate::store::INVALID_STORAGE);
+            return Err(crate::INVALID_STORAGE);
         }
         Ok(())
     }
@@ -135,7 +135,7 @@ impl Checksum {
     pub fn get(&self, word: Word) -> Result<Nat, Error> {
         let checksum = self.field.get(word);
         let zeros = word.0.count_zeros() - (self.field.len - checksum.count_ones());
-        checksum.checked_sub(zeros).ok_or(crate::store::INVALID_STORAGE)
+        checksum.checked_sub(zeros).ok_or(crate::INVALID_STORAGE)
     }
 
     /// Sets the checksum to the external increment value.
@@ -326,12 +326,12 @@ mod tests {
     #[test]
     fn checksum_ok() {
         let field = Checksum { field: Field { pos: 3, len: 5 } };
-        assert_eq!(field.get(Word(0x00000000)), Err(crate::store::INVALID_STORAGE));
+        assert_eq!(field.get(Word(0x00000000)), Err(crate::INVALID_STORAGE));
         assert_eq!(field.get(Word(0xffffffff)), Ok(31));
         assert_eq!(field.get(Word(0xffffff07)), Ok(0));
         assert_eq!(field.get(Word(0xffffff0f)), Ok(1));
         assert_eq!(field.get(Word(0x00ffff67)), Ok(4));
-        assert_eq!(field.get(Word(0x7fffff07)), Err(crate::store::INVALID_STORAGE));
+        assert_eq!(field.get(Word(0x7fffff07)), Err(crate::INVALID_STORAGE));
         let mut word = Word(0x0fffffff);
         field.set(&mut word, 4).unwrap();
         assert_eq!(word, Word(0x0fffff47));

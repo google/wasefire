@@ -373,7 +373,7 @@ mod store;
 mod test;
 
 #[cfg(feature = "std")]
-pub use self::buffer::{BufferCorruptFunction, BufferOptions, BufferStorage};
+pub use self::buffer::{BufferCorruptFunction, BufferOptions, BufferStorage, INTERRUPTION};
 #[cfg(feature = "std")]
 pub use self::driver::{
     StoreDriver, StoreDriverOff, StoreDriverOn, StoreInterruption, StoreInvariant,
@@ -383,7 +383,10 @@ pub use self::file::{FileOptions, FileStorage};
 #[cfg(feature = "std")]
 pub use self::model::{StoreModel, StoreOperation};
 pub use self::storage::{Storage, StorageIndex};
-pub use self::store::{Store, StoreHandle, StoreIter, StoreRatio, StoreUpdate};
+pub use self::store::{
+    Store, StoreHandle, StoreIter, StoreRatio, StoreUpdate, INVALID_ARGUMENT, INVALID_STORAGE,
+    NO_CAPACITY, NO_LIFETIME,
+};
 
 /// Internal representation of natural numbers.
 ///

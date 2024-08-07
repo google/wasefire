@@ -4,7 +4,8 @@
 
 ### Minor
 
-- Implement `From<std::io::Error>` with `std` feature
+- Add `Error::pop()` to propagate errors through space
+- Implement `From<std::io::Error>` for `Error` with `std` feature
 - Add `std` feature
 
 ## 0.1.1

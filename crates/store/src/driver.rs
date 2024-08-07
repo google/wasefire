@@ -305,7 +305,7 @@ impl StoreDriverOff {
                     },
                 )?)
             }
-            Err((crate::buffer::INTERRUPTION_ERROR, mut storage)) => {
+            Err((crate::INTERRUPTION, mut storage)) => {
                 storage.corrupt_operation(interruption.corrupt);
                 StoreDriver::Off(StoreDriverOff { storage, ..self })
             }
@@ -370,8 +370,8 @@ impl StoreDriverOn {
         self.store.storage_mut().arm_interruption(interruption.delay);
         let (deleted, store_result) = self.store.apply(&operation);
         Ok(match store_result {
-            Err(crate::store::NO_LIFETIME) => return Err((self.store, StoreInvariant::NoLifetime)),
-            Ok(()) | Err(crate::store::NO_CAPACITY) | Err(crate::store::INVALID_ARGUMENT) => {
+            Err(crate::NO_LIFETIME) => return Err((self.store, StoreInvariant::NoLifetime)),
+            Ok(()) | Err(crate::NO_CAPACITY) | Err(crate::store::INVALID_ARGUMENT) => {
                 self.store.storage_mut().disarm_interruption();
                 let model_result = self.model.apply(operation);
                 if store_result != model_result {
@@ -390,7 +390,7 @@ impl StoreDriverOn {
                 }
                 (store_result.err(), StoreDriver::On(self))
             }
-            Err(crate::buffer::INTERRUPTION_ERROR) => {
+            Err(crate::INTERRUPTION) => {
                 let mut driver = StoreDriverOff {
                     storage: self.store.extract_storage(),
                     model: self.model,

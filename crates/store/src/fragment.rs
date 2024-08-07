@@ -84,7 +84,7 @@ pub fn read_range(
     store: &Store<impl Storage>, keys: &impl Keys, range: Range<usize>,
 ) -> Result<Option<Vec<u8>>, Error> {
     let range_len = match range.end.checked_sub(range.start) {
-        None => return Err(crate::store::INVALID_ARGUMENT),
+        None => return Err(crate::INVALID_ARGUMENT),
         Some(x) => x,
     };
     let handles = get_handles(store, keys)?;
@@ -126,7 +126,7 @@ pub fn write(store: &mut Store<impl Storage>, keys: &impl Keys, value: &[u8]) ->
     }
     if chunks.next().is_some() {
         // The value is too long.
-        return Err(crate::store::INVALID_ARGUMENT);
+        return Err(crate::INVALID_ARGUMENT);
     }
     store.transaction(&updates)
 }
@@ -153,14 +153,14 @@ fn get_handles(store: &Store<impl Storage>, keys: &impl Keys) -> Result<Vec<Stor
             None => continue,
         };
         if pos >= keys_len {
-            return Err(crate::store::INVALID_ARGUMENT);
+            return Err(crate::INVALID_ARGUMENT);
         }
         if let Some(old_handle) = &handles[pos] {
             if old_handle.get_key() != handle.get_key() {
                 // The user provided a non-injective `pos` function.
-                return Err(crate::store::INVALID_ARGUMENT);
+                return Err(crate::INVALID_ARGUMENT);
             } else {
-                return Err(crate::store::INVALID_STORAGE);
+                return Err(crate::INVALID_STORAGE);
             }
         }
         handles[pos] = Some(handle);
@@ -172,7 +172,7 @@ fn get_handles(store: &Store<impl Storage>, keys: &impl Keys) -> Result<Vec<Stor
             (true, Some(handle)) => result.push(handle),
             (false, None) => (),
             // We should have `num_handles` Somes followed by Nones.
-            _ => return Err(crate::store::INVALID_STORAGE),
+            _ => return Err(crate::INVALID_STORAGE),
         }
     }
     Ok(result)

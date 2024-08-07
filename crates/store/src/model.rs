@@ -94,12 +94,12 @@ impl StoreModel {
     fn transaction(&mut self, updates: Vec<StoreUpdate<Vec<u8>>>) -> Result<(), Error> {
         // Fail if the transaction is invalid.
         if self.format.transaction_valid(&updates).is_none() {
-            return Err(crate::store::INVALID_ARGUMENT);
+            return Err(crate::INVALID_ARGUMENT);
         }
         // Fail if there is not enough capacity.
         let capacity = self.format.transaction_capacity(&updates) as usize;
         if self.capacity().remaining() < capacity {
-            return Err(crate::store::NO_CAPACITY);
+            return Err(crate::NO_CAPACITY);
         }
         // Apply the updates.
         for update in updates {
@@ -118,7 +118,7 @@ impl StoreModel {
     /// Applies a clear operation.
     fn clear(&mut self, min_key: usize) -> Result<(), Error> {
         if min_key > self.format.max_key() as usize {
-            return Err(crate::store::INVALID_ARGUMENT);
+            return Err(crate::INVALID_ARGUMENT);
         }
         self.content.retain(|&k, _| k < min_key);
         Ok(())
@@ -127,7 +127,7 @@ impl StoreModel {
     /// Applies a prepare operation.
     fn prepare(&self, length: usize) -> Result<(), Error> {
         if self.capacity().remaining() < length {
-            return Err(crate::store::NO_CAPACITY);
+            return Err(crate::NO_CAPACITY);
         }
         Ok(())
     }

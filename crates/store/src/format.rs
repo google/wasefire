@@ -328,7 +328,7 @@ impl Format {
             let cycle = INIT_CYCLE.get(word);
             let prefix = INIT_PREFIX.get(word);
             if cycle > self.max_page_erases() || prefix > self.max_prefix_len() {
-                return Err(crate::store::INVALID_STORAGE);
+                return Err(crate::INVALID_STORAGE);
             }
             WordState::Valid(InitInfo { cycle, prefix })
         })
@@ -358,7 +358,7 @@ impl Format {
         } else {
             let tail = COMPACT_TAIL.get(word);
             if tail > self.window_size() {
-                return Err(crate::store::INVALID_STORAGE);
+                return Err(crate::INVALID_STORAGE);
             }
             WordState::Valid(CompactInfo { tail })
         })
@@ -405,7 +405,7 @@ impl Format {
             if HEADER_DELETED.get(word) {
                 let length = HEADER_LENGTH.get(word);
                 if length > self.max_value_len() {
-                    return Err(crate::store::INVALID_STORAGE);
+                    return Err(crate::INVALID_STORAGE);
                 }
                 let length = self.bytes_to_words(length);
                 ParsedWord::Padding(Padding { length })
@@ -444,7 +444,7 @@ impl Format {
                 InternalEntry::Remove { key } => *key > self.max_key(),
             };
             if invalid {
-                return Err(crate::store::INVALID_STORAGE);
+                return Err(crate::INVALID_STORAGE);
             }
         }
         Ok(WordState::Valid(valid))
