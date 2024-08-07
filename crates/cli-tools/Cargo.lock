@@ -364,7 +364,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.7.1-git"
+version = "0.8.0-git"
 dependencies = [
  "derivative",
  "wasefire-error",
@@ -388,7 +388,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "num_enum",
 ]
@@ -422,7 +422,10 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.2.4"
+version = "0.3.0-git"
+dependencies = [
+ "wasefire-error",
+]
 
 [[package]]
 name = "wasefire-wire"

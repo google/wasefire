@@ -19,7 +19,7 @@ features = ["full-api", "wasm"]
 bytemuck = { version = "1.16.0", default-features = false, features = ["derive"] }
 sealed = { version = "0.5.0", default-features = false, optional = true }
 wasefire-applet-api-macro = { version = "0.6.2-git", path = "../api-macro" }
-wasefire-error = { version = "0.1.1", path = "../error" }
+wasefire-error = { version = "0.1.2-git", path = "../error" }
 wasefire-logger = { version = "0.1.5", path = "../logger", optional = true }
 
 [features]

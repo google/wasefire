@@ -23,68 +23,38 @@ use core::convert::TryFrom;
 #[cfg(feature = "std")]
 use std::collections::HashSet;
 
+use wasefire_error::{Code, Error, Space};
+
 use crate::format::{
     is_erased, CompactInfo, Format, Header, InitInfo, InternalEntry, Padding, ParsedWord, Position,
     Word, WordState,
 };
-use crate::{usize_to_nat, Nat, Storage, StorageError, StorageIndex};
+use crate::{usize_to_nat, Nat, Storage, StorageIndex};
 #[cfg(feature = "std")]
 use crate::{BufferStorage, StoreOperation};
 
-/// Errors returned by store operations.
-#[derive(Debug, PartialEq, Eq)]
-pub enum StoreError {
-    /// Invalid argument.
-    ///
-    /// The store is left unchanged. The operation will repeatedly fail until the argument is
-    /// fixed.
-    InvalidArgument,
-
-    /// Not enough capacity.
-    ///
-    /// The store is left unchanged. The operation will repeatedly fail until capacity is freed.
-    NoCapacity,
-
-    /// Reached end of lifetime.
-    ///
-    /// The store is left unchanged. The operation will repeatedly fail until emergency lifetime is
-    /// added.
-    NoLifetime,
-
-    /// A storage operation failed.
-    ///
-    /// The consequences depend on the storage failure. In particular, the operation may or may not
-    /// have succeeded, and the storage may have become invalid. Before doing any other operation,
-    /// the store should be [recovered](Store::recover). The operation may then be retried if
-    /// idempotent.
-    StorageError,
-
-    /// Storage is invalid.
-    ///
-    /// The storage should be erased and the store [recovered](Store::recover). The store would be
-    /// empty and have lost track of lifetime.
-    InvalidStorage,
-}
-
-impl From<StorageError> for StoreError {
-    fn from(error: StorageError) -> StoreError {
-        match error {
-            StorageError::CustomError => StoreError::StorageError,
-            // The store always calls the storage correctly.
-            StorageError::NotAligned | StorageError::OutOfBounds => unreachable!(),
-        }
-    }
-}
-
-/// Result of store operations.
-pub type StoreResult<T> = Result<T, StoreError>;
-
-/// Converts an Option into a StoreResult.
+/// Invalid argument.
 ///
-/// The None case is considered invalid and returns [`StoreError::InvalidStorage`].
-fn or_invalid<T>(x: Option<T>) -> StoreResult<T> {
-    x.ok_or(StoreError::InvalidStorage)
-}
+/// The store is left unchanged. The operation will repeatedly fail until the argument is fixed.
+pub const INVALID_ARGUMENT: Error =
+    Error::new_const(Space::User as u8, Code::InvalidArgument as u16);
+
+/// Not enough capacity.
+///
+/// The store is left unchanged. The operation will repeatedly fail until capacity is freed.
+pub const NO_CAPACITY: Error = Error::new_const(Space::World as u8, Code::NotEnough as u16);
+
+/// Reached end of lifetime.
+///
+/// The store is left unchanged. The operation will repeatedly fail until emergency lifetime is
+/// added.
+pub const NO_LIFETIME: Error = Error::new_const(Space::World as u8, Code::OutOfBounds as u16);
+
+/// Storage is invalid.
+///
+/// The storage should be erased and the store [recovered](Store::recover). The store would be empty
+/// and have lost track of lifetime.
+pub const INVALID_STORAGE: Error = Error::new_const(Space::World as u8, Code::InvalidState as u16);
 
 /// Progression ratio for store metrics.
 ///
@@ -146,8 +116,8 @@ impl StoreHandle {
     ///
     /// # Errors
     ///
-    /// Returns [`StoreError::InvalidArgument`] if the entry has been deleted or compacted.
-    pub fn get_length<S: Storage>(&self, store: &Store<S>) -> StoreResult<usize> {
+    /// Returns [`INVALID_ARGUMENT`] if the entry has been deleted or compacted.
+    pub fn get_length<S: Storage>(&self, store: &Store<S>) -> Result<usize, Error> {
         store.get_length(self)
     }
 
@@ -155,8 +125,8 @@ impl StoreHandle {
     ///
     /// # Errors
     ///
-    /// Returns [`StoreError::InvalidArgument`] if the entry has been deleted or compacted.
-    pub fn get_value<S: Storage>(&self, store: &Store<S>) -> StoreResult<Vec<u8>> {
+    /// Returns [`INVALID_ARGUMENT`] if the entry has been deleted or compacted.
+    pub fn get_value<S: Storage>(&self, store: &Store<S>) -> Result<Vec<u8>, Error> {
         store.get_value(self)
     }
 }
@@ -189,7 +159,7 @@ impl<ByteSlice: Borrow<[u8]>> StoreUpdate<ByteSlice> {
     }
 }
 
-pub type StoreIter<'a> = Box<dyn Iterator<Item = StoreResult<StoreHandle>> + 'a>;
+pub type StoreIter<'a> = Box<dyn Iterator<Item = Result<StoreHandle, Error>> + 'a>;
 
 /// Implements a store with a map interface over a storage.
 #[derive(Clone)]
@@ -218,11 +188,11 @@ impl<S: Storage> Store<S> {
     ///
     /// # Errors
     ///
-    /// Returns [`StoreError::InvalidArgument`] if the storage is not
+    /// Returns [`INVALID_ARGUMENT`] if the storage is not
     /// [supported](Format::is_storage_supported).
-    pub fn new(storage: S) -> Result<Store<S>, (StoreError, S)> {
+    pub fn new(storage: S) -> Result<Store<S>, (Error, S)> {
         let format = match Format::new(&storage) {
-            None => return Err((StoreError::InvalidArgument, storage)),
+            None => return Err((INVALID_ARGUMENT, storage)),
             Some(x) => x,
         };
         let mut store = Store { storage, format, head: None, entries: None };
@@ -238,15 +208,15 @@ impl<S: Storage> Store<S> {
     }
 
     /// Iterates over the entries.
-    pub fn iter(&self) -> StoreResult<StoreIter> {
-        let head = or_invalid(self.head)?;
-        Ok(Box::new(or_invalid(self.entries.as_ref())?.iter().map(move |&offset| {
+    pub fn iter(&self) -> Result<StoreIter, Error> {
+        let head = self.head.ok_or(INVALID_STORAGE)?;
+        Ok(Box::new(self.entries.as_ref().ok_or(INVALID_STORAGE)?.iter().map(move |&offset| {
             let pos = head + offset as Nat;
             match self.parse_entry(&mut pos.clone())? {
                 ParsedEntry::User(Header { key, length: len, .. }) => {
                     Ok(StoreHandle { key, pos, len })
                 }
-                _ => Err(StoreError::InvalidStorage),
+                _ => Err(INVALID_STORAGE),
             }
         })))
     }
@@ -254,7 +224,7 @@ impl<S: Storage> Store<S> {
     /// Returns the current and total capacity in words.
     ///
     /// The capacity represents the size of what is stored.
-    pub fn capacity(&self) -> StoreResult<StoreRatio> {
+    pub fn capacity(&self) -> Result<StoreRatio, Error> {
         let total = self.format.total_capacity();
         let mut used = 0;
         for handle in self.iter()? {
@@ -269,7 +239,7 @@ impl<S: Storage> Store<S> {
     /// The lifetime represents the age of the storage. The limit is an over-approximation by at
     /// most the maximum length of a value (the actual limit depends on the length of the prefix of
     /// the first physical page once all its erase cycles have been used).
-    pub fn lifetime(&self) -> StoreResult<StoreRatio> {
+    pub fn lifetime(&self) -> Result<StoreRatio, Error> {
         let total = self.format.total_lifetime().get();
         let used = self.tail()?.get();
         Ok(StoreRatio { used, total })
@@ -279,14 +249,14 @@ impl<S: Storage> Store<S> {
     ///
     /// # Errors
     ///
-    /// Returns [`StoreError::InvalidArgument`] in the following circumstances:
+    /// Returns [`INVALID_ARGUMENT`] in the following circumstances:
     /// - There are [too many](Format::max_updates) updates.
     /// - The updates overlap, i.e. their keys are not disjoint.
     /// - The updates are invalid, e.g. key [out of bound](Format::max_key) or value [too
     ///   long](Format::max_value_len).
     pub fn transaction<ByteSlice: Borrow<[u8]>>(
         &mut self, updates: &[StoreUpdate<ByteSlice>],
-    ) -> StoreResult<()> {
+    ) -> Result<(), Error> {
         let count = usize_to_nat(updates.len());
         if count == 0 {
             return Ok(());
@@ -299,7 +269,7 @@ impl<S: Storage> Store<S> {
         }
         // Get the sorted keys. Fail if the transaction is invalid.
         let sorted_keys = match self.format.transaction_valid(updates) {
-            None => return Err(StoreError::InvalidArgument),
+            None => return Err(INVALID_ARGUMENT),
             Some(x) => x,
         };
         // Reserve the capacity.
@@ -338,10 +308,10 @@ impl<S: Storage> Store<S> {
     /// Removes multiple entries as part of a single transaction.
     ///
     /// Entries with a key larger or equal to `min_key` are deleted.
-    pub fn clear(&mut self, min_key: usize) -> StoreResult<()> {
+    pub fn clear(&mut self, min_key: usize) -> Result<(), Error> {
         let min_key = usize_to_nat(min_key);
         if min_key > self.format.max_key() {
-            return Err(StoreError::InvalidArgument);
+            return Err(INVALID_ARGUMENT);
         }
         let clear = self.format.build_internal(InternalEntry::Clear { min_key })?;
         // We always have one word available. We can't use `reserve` because this is internal
@@ -358,9 +328,9 @@ impl<S: Storage> Store<S> {
     ///
     /// If the immediate capacity is at least `length` words, then nothing is modified. Otherwise,
     /// one page is compacted.
-    pub fn prepare(&mut self, length: usize) -> Result<(), StoreError> {
+    pub fn prepare(&mut self, length: usize) -> Result<(), Error> {
         if self.capacity()?.remaining() < length {
-            return Err(StoreError::NoCapacity);
+            return Err(NO_CAPACITY);
         }
         if self.immediate_capacity()? < usize_to_nat(length) {
             self.compact()?;
@@ -371,7 +341,7 @@ impl<S: Storage> Store<S> {
     /// Recovers a possible interrupted operation.
     ///
     /// If the storage is completely erased, it is initialized.
-    pub fn recover(&mut self) -> StoreResult<()> {
+    pub fn recover(&mut self) -> Result<(), Error> {
         self.recover_initialize()?;
         self.recover_erase()?;
         self.recover_compaction()?;
@@ -380,7 +350,7 @@ impl<S: Storage> Store<S> {
     }
 
     /// Returns the value of an entry given its key.
-    pub fn find(&self, key: usize) -> StoreResult<Option<Vec<u8>>> {
+    pub fn find(&self, key: usize) -> Result<Option<Vec<u8>>, Error> {
         Ok(match self.find_handle(key)? {
             None => None,
             Some(handle) => Some(self.get_value(&handle)?),
@@ -388,7 +358,7 @@ impl<S: Storage> Store<S> {
     }
 
     /// Returns a handle to an entry given its key.
-    pub fn find_handle(&self, key: usize) -> StoreResult<Option<StoreHandle>> {
+    pub fn find_handle(&self, key: usize) -> Result<Option<StoreHandle>, Error> {
         let key = usize_to_nat(key);
         for handle in self.iter()? {
             let handle = handle?;
@@ -402,12 +372,12 @@ impl<S: Storage> Store<S> {
     /// Inserts an entry in the store.
     ///
     /// If an entry for the same key is already present, it is replaced.
-    pub fn insert(&mut self, key: usize, value: &[u8]) -> StoreResult<()> {
+    pub fn insert(&mut self, key: usize, value: &[u8]) -> Result<(), Error> {
         // NOTE: This (and transaction) could take a position hint on the value to delete.
         let key = usize_to_nat(key);
         let value_len = usize_to_nat(value.len());
         if key > self.format.max_key() || value_len > self.format.max_value_len() {
-            return Err(StoreError::InvalidArgument);
+            return Err(INVALID_ARGUMENT);
         }
         let entry = self.format.build_user(key, value)?;
         let entry_len = usize_to_nat(entry.len());
@@ -424,16 +394,16 @@ impl<S: Storage> Store<S> {
     /// Removes an entry given its key.
     ///
     /// This is not an error if there is no entry for this key.
-    pub fn remove(&mut self, key: usize) -> StoreResult<()> {
+    pub fn remove(&mut self, key: usize) -> Result<(), Error> {
         let key = usize_to_nat(key);
         if key > self.format.max_key() {
-            return Err(StoreError::InvalidArgument);
+            return Err(INVALID_ARGUMENT);
         }
         self.delete_keys(&[key], self.tail()?)
     }
 
     /// Removes an entry given a handle.
-    pub fn remove_handle(&mut self, handle: &StoreHandle) -> StoreResult<()> {
+    pub fn remove_handle(&mut self, handle: &StoreHandle) -> Result<(), Error> {
         self.check_handle(handle)?;
         self.delete_pos(handle.pos, self.format.bytes_to_words(handle.len))?;
         self.remove_entry(handle.pos)
@@ -445,18 +415,18 @@ impl<S: Storage> Store<S> {
     }
 
     /// Returns the length of the value of an entry given its handle.
-    fn get_length(&self, handle: &StoreHandle) -> StoreResult<usize> {
+    fn get_length(&self, handle: &StoreHandle) -> Result<usize, Error> {
         self.check_handle(handle)?;
         let mut pos = handle.pos;
         match self.parse_entry(&mut pos)? {
             ParsedEntry::User(header) => Ok(header.length as usize),
-            ParsedEntry::Padding => Err(StoreError::InvalidArgument),
-            _ => Err(StoreError::InvalidStorage),
+            ParsedEntry::Padding => Err(INVALID_ARGUMENT),
+            _ => Err(INVALID_STORAGE),
         }
     }
 
     /// Returns the value of an entry given its handle.
-    fn get_value(&self, handle: &StoreHandle) -> StoreResult<Vec<u8>> {
+    fn get_value(&self, handle: &StoreHandle) -> Result<Vec<u8>, Error> {
         self.check_handle(handle)?;
         let mut pos = handle.pos;
         match self.parse_entry(&mut pos)? {
@@ -468,13 +438,13 @@ impl<S: Storage> Store<S> {
                 }
                 Ok(result)
             }
-            ParsedEntry::Padding => Err(StoreError::InvalidArgument),
-            _ => Err(StoreError::InvalidStorage),
+            ParsedEntry::Padding => Err(INVALID_ARGUMENT),
+            _ => Err(INVALID_STORAGE),
         }
     }
 
     /// Initializes the storage if completely erased or partially initialized.
-    fn recover_initialize(&mut self) -> StoreResult<()> {
+    fn recover_initialize(&mut self) -> Result<(), Error> {
         let word_size = self.format.word_size();
         for page in 0 .. self.format.num_pages() {
             let content = self.read_page(page);
@@ -489,7 +459,7 @@ impl<S: Storage> Store<S> {
     }
 
     /// Recovers a possible compaction interrupted while erasing the page.
-    fn recover_erase(&mut self) -> StoreResult<()> {
+    fn recover_erase(&mut self) -> Result<(), Error> {
         let mut pos = self.get_extremum_page_head(Ordering::Greater)?;
         let end = pos.next_page(&self.format);
         while pos < end {
@@ -506,7 +476,7 @@ impl<S: Storage> Store<S> {
     }
 
     /// Recovers a possible compaction interrupted while copying the entries.
-    fn recover_compaction(&mut self) -> StoreResult<()> {
+    fn recover_compaction(&mut self) -> Result<(), Error> {
         let head = self.get_extremum_page_head(Ordering::Less)?;
         self.head = Some(head);
         let head_page = head.page(&self.format);
@@ -518,9 +488,9 @@ impl<S: Storage> Store<S> {
     }
 
     /// Recover a possible interrupted operation which is not a compaction.
-    fn recover_operation(&mut self) -> StoreResult<()> {
+    fn recover_operation(&mut self) -> Result<(), Error> {
         self.entries = Some(Vec::new());
-        let mut pos = or_invalid(self.head)?;
+        let mut pos = self.head.ok_or(INVALID_STORAGE)?;
         let mut prev_pos = pos;
         let end = pos + self.format.window_size();
         while pos < end {
@@ -532,7 +502,7 @@ impl<S: Storage> Store<S> {
                     self.wipe_span(entry_pos + 1, pos - entry_pos - 1)?;
                 }
                 ParsedEntry::Internal(InternalEntry::Erase { .. }) => {
-                    return Err(StoreError::InvalidStorage);
+                    return Err(INVALID_STORAGE);
                 }
                 ParsedEntry::Internal(InternalEntry::Clear { .. }) => {
                     return self.clear_delete(entry_pos);
@@ -560,17 +530,17 @@ impl<S: Storage> Store<S> {
     }
 
     /// Recovers a possible interrupted transaction.
-    fn recover_transaction(&mut self, marker: Position, end: Position) -> StoreResult<()> {
+    fn recover_transaction(&mut self, marker: Position, end: Position) -> Result<(), Error> {
         let mut pos = marker;
         let count = match self.parse_entry(&mut pos)? {
             ParsedEntry::Internal(InternalEntry::Marker { count }) => count,
-            _ => return Err(StoreError::InvalidStorage),
+            _ => return Err(INVALID_STORAGE),
         };
         let sorted_keys = self.recover_transaction_keys(count, pos, end)?;
         match usize_to_nat(sorted_keys.len()).cmp(&count) {
             Ordering::Less => (),
             Ordering::Equal => return self.transaction_apply(&sorted_keys, marker),
-            Ordering::Greater => return Err(StoreError::InvalidStorage),
+            Ordering::Greater => return Err(INVALID_STORAGE),
         }
         while pos < end {
             let entry_pos = pos;
@@ -594,7 +564,7 @@ impl<S: Storage> Store<S> {
                 ParsedEntry::Internal(InternalEntry::Erase { .. })
                 | ParsedEntry::Internal(InternalEntry::Clear { .. })
                 | ParsedEntry::Internal(InternalEntry::Marker { .. }) => {
-                    return Err(StoreError::InvalidStorage);
+                    return Err(INVALID_STORAGE);
                 }
             }
         }
@@ -608,7 +578,7 @@ impl<S: Storage> Store<S> {
     /// The domain is returned as a sorted list of keys.
     fn recover_transaction_keys(
         &mut self, count: Nat, mut pos: Position, end: Position,
-    ) -> StoreResult<Vec<Nat>> {
+    ) -> Result<Vec<Nat>, Error> {
         let mut sorted_keys = Vec::with_capacity(count as usize);
         let mut prev_pos = pos;
         while pos < end {
@@ -620,10 +590,10 @@ impl<S: Storage> Store<S> {
                 | ParsedEntry::PartialUser => break,
                 ParsedEntry::User(header) => header.key,
                 ParsedEntry::Internal(InternalEntry::Remove { key }) => key,
-                ParsedEntry::Internal(_) => return Err(StoreError::InvalidStorage),
+                ParsedEntry::Internal(_) => return Err(INVALID_STORAGE),
             };
             match sorted_keys.binary_search(&key) {
-                Ok(_) => return Err(StoreError::InvalidStorage),
+                Ok(_) => return Err(INVALID_STORAGE),
                 Err(pos) => sorted_keys.insert(pos, key),
             }
             prev_pos = entry_pos;
@@ -640,7 +610,7 @@ impl<S: Storage> Store<S> {
     }
 
     /// Completes a possible partial entry wipe.
-    fn recover_wipe_partial(&mut self, pos: Position, length: Nat) -> StoreResult<()> {
+    fn recover_wipe_partial(&mut self, pos: Position, length: Nat) -> Result<(), Error> {
         self.wipe_span(pos + 1, length)?;
         self.init_page(pos, pos + length)?;
         self.set_padding(pos)?;
@@ -648,7 +618,7 @@ impl<S: Storage> Store<S> {
     }
 
     /// Completes a possible partial entry deletion.
-    fn recover_delete_user(&mut self, pos: Position, length: Nat) -> StoreResult<()> {
+    fn recover_delete_user(&mut self, pos: Position, length: Nat) -> Result<(), Error> {
         self.init_page(pos, pos + length)?;
         self.delete_pos(pos, length)
     }
@@ -656,9 +626,9 @@ impl<S: Storage> Store<S> {
     /// Checks that a handle still points in the current window.
     ///
     /// In particular, the handle has not been compacted.
-    fn check_handle(&self, handle: &StoreHandle) -> StoreResult<()> {
-        if handle.pos < or_invalid(self.head)? {
-            Err(StoreError::InvalidArgument)
+    fn check_handle(&self, handle: &StoreHandle) -> Result<(), Error> {
+        if handle.pos < self.head.ok_or(INVALID_STORAGE)? {
+            Err(INVALID_ARGUMENT)
         } else {
             Ok(())
         }
@@ -668,9 +638,9 @@ impl<S: Storage> Store<S> {
     ///
     /// If there is at least `length` words of remaining capacity, pages are compacted until that
     /// amount is immediately available.
-    fn reserve(&mut self, length: Nat) -> Result<(), StoreError> {
+    fn reserve(&mut self, length: Nat) -> Result<(), Error> {
         if self.capacity()?.remaining() < length as usize {
-            return Err(StoreError::NoCapacity);
+            return Err(NO_CAPACITY);
         }
         while self.immediate_capacity()? < length {
             self.compact()?;
@@ -679,17 +649,17 @@ impl<S: Storage> Store<S> {
     }
 
     /// Continues an entry insertion after it has been written.
-    fn insert_init(&mut self, pos: Position, length: Nat, key: Nat) -> StoreResult<()> {
+    fn insert_init(&mut self, pos: Position, length: Nat, key: Nat) -> Result<(), Error> {
         self.init_page(pos, pos + length)?;
         self.delete_keys(&[key], pos)?;
         Ok(())
     }
 
     /// Compacts one page.
-    fn compact(&mut self) -> StoreResult<()> {
-        let head = or_invalid(self.head)?;
+    fn compact(&mut self) -> Result<(), Error> {
+        let head = self.head.ok_or(INVALID_STORAGE)?;
         if head.cycle(&self.format) >= self.format.max_page_erases() {
-            return Err(StoreError::NoLifetime);
+            return Err(NO_LIFETIME);
         }
         let tail = max(self.tail()?, head.next_page(&self.format));
         let index = self.format.index_compact(head.page(&self.format));
@@ -699,16 +669,16 @@ impl<S: Storage> Store<S> {
     }
 
     /// Continues a compaction after its compact page info has been written.
-    fn compact_copy(&mut self) -> StoreResult<()> {
-        let mut head = or_invalid(self.head)?;
+    fn compact_copy(&mut self) -> Result<(), Error> {
+        let mut head = self.head.ok_or(INVALID_STORAGE)?;
         let page = head.page(&self.format);
         let end = head.next_page(&self.format);
         let mut tail = match self.parse_compact(page)? {
             WordState::Valid(CompactInfo { tail }) => head + tail,
-            _ => return Err(StoreError::InvalidStorage),
+            _ => return Err(INVALID_STORAGE),
         };
         if tail < end {
-            return Err(StoreError::InvalidStorage);
+            return Err(INVALID_STORAGE);
         }
         while head < end {
             let pos = head;
@@ -719,7 +689,7 @@ impl<S: Storage> Store<S> {
                 ParsedEntry::Partial if head > end => break,
                 ParsedEntry::User(_) => (),
                 ParsedEntry::Padding => continue,
-                _ => return Err(StoreError::InvalidStorage),
+                _ => return Err(INVALID_STORAGE),
             };
             let length = head - pos;
             // We have to copy the slice to work around the lifetime without using unsafe.
@@ -737,11 +707,11 @@ impl<S: Storage> Store<S> {
     }
 
     /// Continues a compaction after its erase entry has been written.
-    fn compact_erase(&mut self, erase: Position) -> StoreResult<()> {
+    fn compact_erase(&mut self, erase: Position) -> Result<(), Error> {
         // Read the page to erase from the erase entry.
         let mut page = match self.parse_entry(&mut erase.clone())? {
             ParsedEntry::Internal(InternalEntry::Erase { page }) => page,
-            _ => return Err(StoreError::InvalidStorage),
+            _ => return Err(INVALID_STORAGE),
         };
         // Erase the page.
         self.storage_erase_page(page)?;
@@ -749,13 +719,14 @@ impl<S: Storage> Store<S> {
         page = (page + 1) % self.format.num_pages();
         let init = match self.parse_init(page)? {
             WordState::Valid(x) => x,
-            _ => return Err(StoreError::InvalidStorage),
+            _ => return Err(INVALID_STORAGE),
         };
         let head = self.format.page_head(init, page);
         if let Some(entries) = &mut self.entries {
-            let head_offset = or_invalid(u16::try_from(head - or_invalid(self.head)?).ok())?;
+            let head_offset = u16::try_from(head - self.head.ok_or(INVALID_STORAGE)?)
+                .map_err(|_| INVALID_STORAGE)?;
             for entry in entries {
-                *entry = or_invalid(entry.checked_sub(head_offset))?;
+                *entry = entry.checked_sub(head_offset).ok_or(INVALID_STORAGE)?;
             }
         }
         self.head = Some(head);
@@ -768,10 +739,10 @@ impl<S: Storage> Store<S> {
     }
 
     /// Continues a transaction after it has been written.
-    fn transaction_apply(&mut self, sorted_keys: &[Nat], marker: Position) -> StoreResult<()> {
+    fn transaction_apply(&mut self, sorted_keys: &[Nat], marker: Position) -> Result<(), Error> {
         self.delete_keys(sorted_keys, marker)?;
         self.set_padding(marker)?;
-        let end = or_invalid(self.head)? + self.format.window_size();
+        let end = self.head.ok_or(INVALID_STORAGE)? + self.format.window_size();
         let mut pos = marker + 1;
         while pos < end {
             let entry_pos = pos;
@@ -781,18 +752,18 @@ impl<S: Storage> Store<S> {
                 ParsedEntry::Internal(InternalEntry::Remove { .. }) => {
                     self.set_padding(entry_pos)?
                 }
-                _ => return Err(StoreError::InvalidStorage),
+                _ => return Err(INVALID_STORAGE),
             }
         }
         Ok(())
     }
 
     /// Continues a clear operation after its internal entry has been written.
-    fn clear_delete(&mut self, clear: Position) -> StoreResult<()> {
+    fn clear_delete(&mut self, clear: Position) -> Result<(), Error> {
         self.init_page(clear, clear)?;
         let min_key = match self.parse_entry(&mut clear.clone())? {
             ParsedEntry::Internal(InternalEntry::Clear { min_key }) => min_key,
-            _ => return Err(StoreError::InvalidStorage),
+            _ => return Err(INVALID_STORAGE),
         };
         self.delete_if(clear, |key| key >= min_key)?;
         self.set_padding(clear)?;
@@ -800,14 +771,14 @@ impl<S: Storage> Store<S> {
     }
 
     /// Deletes a set of entries up to a certain position.
-    fn delete_keys(&mut self, sorted_keys: &[Nat], end: Position) -> StoreResult<()> {
+    fn delete_keys(&mut self, sorted_keys: &[Nat], end: Position) -> Result<(), Error> {
         self.delete_if(end, |key| sorted_keys.binary_search(&key).is_ok())
     }
 
     /// Deletes entries matching a predicate up to a certain position.
-    fn delete_if(&mut self, end: Position, delete: impl Fn(Nat) -> bool) -> StoreResult<()> {
-        let head = or_invalid(self.head)?;
-        let mut entries = or_invalid(self.entries.take())?;
+    fn delete_if(&mut self, end: Position, delete: impl Fn(Nat) -> bool) -> Result<(), Error> {
+        let head = self.head.ok_or(INVALID_STORAGE)?;
+        let mut entries = self.entries.take().ok_or(INVALID_STORAGE)?;
         let mut i = 0;
         while i < entries.len() {
             let pos = head + entries[i] as Nat;
@@ -816,7 +787,7 @@ impl<S: Storage> Store<S> {
             }
             let header = match self.parse_entry(&mut pos.clone())? {
                 ParsedEntry::User(x) => x,
-                _ => return Err(StoreError::InvalidStorage),
+                _ => return Err(INVALID_STORAGE),
             };
             if delete(header.key) {
                 self.delete_pos(pos, self.format.bytes_to_words(header.length))?;
@@ -830,7 +801,7 @@ impl<S: Storage> Store<S> {
     }
 
     /// Deletes the entry at a given position.
-    fn delete_pos(&mut self, pos: Position, length: Nat) -> StoreResult<()> {
+    fn delete_pos(&mut self, pos: Position, length: Nat) -> Result<(), Error> {
         self.set_deleted(pos)?;
         self.wipe_span(pos + 1, length)?;
         Ok(())
@@ -842,7 +813,7 @@ impl<S: Storage> Store<S> {
     /// highest page is written in any of the following conditions:
     /// - The entry starts at the beginning of a virtual page.
     /// - The entry spans 2 pages.
-    fn init_page(&mut self, first: Position, last: Position) -> StoreResult<()> {
+    fn init_page(&mut self, first: Position, last: Position) -> Result<(), Error> {
         debug_assert!(first <= last);
         debug_assert!(last - first < self.format.virt_page_size());
         let new_first = if first.word(&self.format) == 0 {
@@ -866,7 +837,7 @@ impl<S: Storage> Store<S> {
     }
 
     /// Sets the padding bit of a user header.
-    fn set_padding(&mut self, pos: Position) -> StoreResult<()> {
+    fn set_padding(&mut self, pos: Position) -> Result<(), Error> {
         let mut word = Word::from_slice(&self.read_word(pos));
         self.format.set_padding(&mut word)?;
         self.write_slice(pos, &word.as_slice())?;
@@ -874,7 +845,7 @@ impl<S: Storage> Store<S> {
     }
 
     /// Sets the deleted bit of a user header.
-    fn set_deleted(&mut self, pos: Position) -> StoreResult<()> {
+    fn set_deleted(&mut self, pos: Position) -> Result<(), Error> {
         let mut word = Word::from_slice(&self.read_word(pos));
         self.format.set_deleted(&mut word);
         self.write_slice(pos, &word.as_slice())?;
@@ -882,7 +853,7 @@ impl<S: Storage> Store<S> {
     }
 
     /// Wipes a slice of words.
-    fn wipe_span(&mut self, pos: Position, length: Nat) -> StoreResult<()> {
+    fn wipe_span(&mut self, pos: Position, length: Nat) -> Result<(), Error> {
         let length = (length * self.format.word_size()) as usize;
         self.write_slice(pos, &vec![0x00; length])
     }
@@ -891,7 +862,7 @@ impl<S: Storage> Store<S> {
     ///
     /// With `Greater` returns the most recent page (or the tail). With `Less` returns the oldest
     /// page (or the head).
-    fn get_extremum_page_head(&self, ordering: Ordering) -> StoreResult<Position> {
+    fn get_extremum_page_head(&self, ordering: Ordering) -> Result<Position, Error> {
         let mut best = None;
         for page in 0 .. self.format.num_pages() {
             let init = match self.parse_init(page)? {
@@ -904,24 +875,24 @@ impl<S: Storage> Store<S> {
             }
         }
         // There is always at least one initialized page.
-        or_invalid(best)
+        best.ok_or(INVALID_STORAGE)
     }
 
     /// Returns the number of words that can be written without compaction.
-    fn immediate_capacity(&self) -> StoreResult<Nat> {
+    fn immediate_capacity(&self) -> Result<Nat, Error> {
         let tail = self.tail()?;
-        let end = or_invalid(self.head)? + self.format.virt_size();
+        let end = self.head.ok_or(INVALID_STORAGE)? + self.format.virt_size();
         Ok(end.get().saturating_sub(tail.get()))
     }
 
     /// Returns the position of the first word in the store.
     #[cfg(feature = "std")]
-    pub(crate) fn head(&self) -> StoreResult<Position> {
-        or_invalid(self.head)
+    pub(crate) fn head(&self) -> Result<Position, Error> {
+        self.head.ok_or(INVALID_STORAGE)
     }
 
     /// Returns one past the position of the last word in the store.
-    pub(crate) fn tail(&self) -> StoreResult<Position> {
+    pub(crate) fn tail(&self) -> Result<Position, Error> {
         let mut pos = self.get_extremum_page_head(Ordering::Greater)?;
         let end = pos.next_page(&self.format);
         while pos < end {
@@ -932,26 +903,26 @@ impl<S: Storage> Store<S> {
         Ok(pos)
     }
 
-    fn push_entry(&mut self, pos: Position) -> StoreResult<()> {
+    fn push_entry(&mut self, pos: Position) -> Result<(), Error> {
         let entries = match &mut self.entries {
             None => return Ok(()),
             Some(x) => x,
         };
-        let head = or_invalid(self.head)?;
-        let offset = or_invalid(u16::try_from(pos - head).ok())?;
+        let head = self.head.ok_or(INVALID_STORAGE)?;
+        let offset = u16::try_from(pos - head).map_err(|_| INVALID_STORAGE)?;
         debug_assert!(!entries.contains(&offset));
         entries.push(offset);
         Ok(())
     }
 
-    fn remove_entry(&mut self, pos: Position) -> StoreResult<()> {
+    fn remove_entry(&mut self, pos: Position) -> Result<(), Error> {
         let entries = match &mut self.entries {
             None => return Ok(()),
             Some(x) => x,
         };
-        let head = or_invalid(self.head)?;
-        let offset = or_invalid(u16::try_from(pos - head).ok())?;
-        let i = or_invalid(entries.iter().position(|x| *x == offset))?;
+        let head = self.head.ok_or(INVALID_STORAGE)?;
+        let offset = u16::try_from(pos - head).map_err(|_| INVALID_STORAGE)?;
+        let i = entries.iter().position(|x| *x == offset).ok_or(INVALID_STORAGE)?;
         entries.swap_remove(i);
         Ok(())
     }
@@ -959,7 +930,7 @@ impl<S: Storage> Store<S> {
     /// Parses the entry at a given position.
     ///
     /// The position is updated to point to the next entry.
-    fn parse_entry(&self, pos: &mut Position) -> StoreResult<ParsedEntry> {
+    fn parse_entry(&self, pos: &mut Position) -> Result<ParsedEntry, Error> {
         let valid = match self.parse_word(*pos)? {
             WordState::Erased | WordState::Partial => return Ok(self.parse_partial(pos)),
             WordState::Valid(x) => x,
@@ -980,7 +951,7 @@ impl<S: Storage> Store<S> {
                 };
                 if header.check(footer.as_deref()) {
                     if header.key > self.format.max_key() {
-                        return Err(StoreError::InvalidStorage);
+                        return Err(INVALID_STORAGE);
                     }
                     *pos += 1 + length;
                     ParsedEntry::User(header)
@@ -1019,21 +990,21 @@ impl<S: Storage> Store<S> {
     }
 
     /// Parses the init info of a page.
-    fn parse_init(&self, page: Nat) -> StoreResult<WordState<InitInfo>> {
+    fn parse_init(&self, page: Nat) -> Result<WordState<InitInfo>, Error> {
         let index = self.format.index_init(page);
         let word = self.storage_read_slice(index, self.format.word_size());
         self.format.parse_init(Word::from_slice(&word))
     }
 
     /// Parses the compact info of a page.
-    fn parse_compact(&self, page: Nat) -> StoreResult<WordState<CompactInfo>> {
+    fn parse_compact(&self, page: Nat) -> Result<WordState<CompactInfo>, Error> {
         let index = self.format.index_compact(page);
         let word = self.storage_read_slice(index, self.format.word_size());
         self.format.parse_compact(Word::from_slice(&word))
     }
 
     /// Parses a word from the virtual storage.
-    fn parse_word(&self, pos: Position) -> StoreResult<WordState<ParsedWord>> {
+    fn parse_word(&self, pos: Position) -> Result<WordState<ParsedWord>, Error> {
         self.format.parse_word(Word::from_slice(&self.read_word(pos)))
     }
 
@@ -1073,7 +1044,7 @@ impl<S: Storage> Store<S> {
     /// Writes a slice to the virtual storage.
     ///
     /// The slice may span 2 pages.
-    fn write_slice(&mut self, pos: Position, value: &[u8]) -> StoreResult<()> {
+    fn write_slice(&mut self, pos: Position, value: &[u8]) -> Result<(), Error> {
         let index = pos.index(&self.format);
         let max_length = (self.format.page_size() - usize_to_nat(index.byte)) as usize;
         self.storage_write_slice(index, &value[.. min(value.len(), max_length)])?;
@@ -1089,10 +1060,10 @@ impl<S: Storage> Store<S> {
     ///
     /// Only starts writing the slice from the first word that needs to be written (because it
     /// differs from the current value).
-    fn storage_write_slice(&mut self, index: StorageIndex, value: &[u8]) -> StoreResult<()> {
+    fn storage_write_slice(&mut self, index: StorageIndex, value: &[u8]) -> Result<(), Error> {
         let word_size = self.format.word_size();
         debug_assert!(usize_to_nat(value.len()) % word_size == 0);
-        let slice = self.storage.read_slice(index, value.len())?;
+        let slice = self.storage.read_slice(index, value.len()).map_err(Error::pop)?;
         // Skip as many words that don't need to be written as possible.
         for start in (0 .. usize_to_nat(value.len())).step_by(word_size as usize) {
             if is_write_needed(
@@ -1105,7 +1076,7 @@ impl<S: Storage> Store<S> {
                     byte: (usize_to_nat(index.byte) + start) as usize,
                 };
                 let value = &value[start as usize ..];
-                self.storage.write_slice(index, value)?;
+                self.storage.write_slice(index, value).map_err(Error::pop)?;
                 break;
             }
         }
@@ -1114,9 +1085,9 @@ impl<S: Storage> Store<S> {
     }
 
     /// Erases a page if not already erased.
-    fn storage_erase_page(&mut self, page: Nat) -> StoreResult<()> {
+    fn storage_erase_page(&mut self, page: Nat) -> Result<(), Error> {
         if !is_erased(&self.read_page(page)) {
-            self.storage.erase_page(page as usize)?;
+            self.storage.erase_page(page as usize).map_err(Error::pop)?;
         }
         Ok(())
     }
@@ -1166,7 +1137,7 @@ impl Store<BufferStorage> {
     /// Note that the deleted entries are before any compaction, so they may point outside the
     /// window. This is more expressive than returning the deleted entries after compaction since
     /// compaction can be controlled independently.
-    pub fn apply(&mut self, operation: &StoreOperation) -> (Vec<StoreHandle>, StoreResult<()>) {
+    pub fn apply(&mut self, operation: &StoreOperation) -> (Vec<StoreHandle>, Result<(), Error>) {
         let deleted = |store: &Store<BufferStorage>, delete_key: &dyn Fn(usize) -> bool| {
             store
                 .iter()
@@ -1249,11 +1220,11 @@ enum ParsedEntry {
 /// Returns whether 2 slices are different.
 ///
 /// Returns an error if `target` has a bit set to one for which `source` is set to zero.
-fn is_write_needed(source: &[u8], target: &[u8]) -> StoreResult<bool> {
+fn is_write_needed(source: &[u8], target: &[u8]) -> Result<bool, Error> {
     debug_assert_eq!(source.len(), target.len());
     for (&source, &target) in source.iter().zip(target.iter()) {
         if source & target != target {
-            return Err(StoreError::InvalidStorage);
+            return Err(INVALID_STORAGE);
         }
         if source != target {
             return Ok(true);
@@ -1271,7 +1242,7 @@ mod tests {
     fn is_write_needed_ok() {
         assert_eq!(is_write_needed(&[], &[]), Ok(false));
         assert_eq!(is_write_needed(&[0], &[0]), Ok(false));
-        assert_eq!(is_write_needed(&[0], &[1]), Err(StoreError::InvalidStorage));
+        assert_eq!(is_write_needed(&[0], &[1]), Err(INVALID_STORAGE));
         assert_eq!(is_write_needed(&[1], &[0]), Ok(true));
         assert_eq!(is_write_needed(&[1], &[1]), Ok(false));
     }

@@ -23,7 +23,7 @@ use embedded_storage::nor_flash::{
 use nrf52840_hal::nvmc::Nvmc;
 use nrf52840_hal::pac::NVMC;
 use wasefire_error::{Code, Error};
-use wasefire_store::{self as store, StorageError, StorageIndex, StorageResult};
+use wasefire_store::{self as store, StorageIndex};
 use wasefire_sync::{AtomicBool, Ordering, TakeCell};
 
 const WORD_SIZE: usize = <Nvmc<NVMC>>::WRITE_SIZE;
@@ -139,7 +139,7 @@ impl StorageWriter {
                 }
                 let from = offset as u32;
                 let to = from + PAGE_SIZE as u32;
-                Helper::new(&self.storage).nvmc().erase(from, to).map_err(into_wasefire_error)?;
+                Helper::new(&self.storage).nvmc().erase(from, to).map_err(convert)?;
             }
         }
         Ok(())
@@ -175,10 +175,7 @@ impl StorageWriter {
     fn aligned_write(&mut self, data: &[u8]) -> Result<(), Error> {
         assert_eq!(data.len() % WORD_SIZE, 0);
         if !self.dry_run()? {
-            Helper::new(&self.storage)
-                .nvmc()
-                .write(self.offset as u32, data)
-                .map_err(into_wasefire_error)?;
+            Helper::new(&self.storage).nvmc().write(self.offset as u32, data).map_err(convert)?;
         }
         self.offset += data.len();
         Ok(())
@@ -241,41 +238,33 @@ impl store::Storage for Storage {
         10000
     }
 
-    fn read_slice(&self, index: StorageIndex, length: usize) -> StorageResult<Cow<[u8]>> {
+    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<[u8]>, Error> {
         let offset = offset(self, length, index)?;
         let mut result = vec![0; length];
         let mut helper = Helper::new(self);
-        helper.nvmc().read(offset, &mut result).map_err(into_storage_error)?;
+        helper.nvmc().read(offset, &mut result).map_err(convert)?;
         Ok(Cow::Owned(result))
     }
 
-    fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> StorageResult<()> {
+    fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> Result<(), Error> {
         let offset = offset(self, value.len(), index)?;
         let mut helper = Helper::new(self);
-        helper.nvmc().write(offset, value).map_err(into_storage_error)
+        helper.nvmc().write(offset, value).map_err(convert)
     }
 
-    fn erase_page(&mut self, page: usize) -> StorageResult<()> {
+    fn erase_page(&mut self, page: usize) -> Result<(), Error> {
         let from = offset(self, PAGE_SIZE, StorageIndex { page, byte: 0 })?;
         let to = from + PAGE_SIZE as u32;
         let mut helper = Helper::new(self);
-        helper.nvmc().erase(from, to).map_err(into_storage_error)
+        helper.nvmc().erase(from, to).map_err(convert)
     }
 }
 
-fn offset(storage: &Storage, length: usize, index: StorageIndex) -> StorageResult<u32> {
+fn offset(storage: &Storage, length: usize, index: StorageIndex) -> Result<u32, Error> {
     Ok(index.range(length, storage)?.start as u32)
 }
 
-fn into_storage_error(e: <Nvmc<NVMC> as ErrorType>::Error) -> StorageError {
-    match e.kind() {
-        NorFlashErrorKind::NotAligned => StorageError::NotAligned,
-        NorFlashErrorKind::OutOfBounds => StorageError::OutOfBounds,
-        _ => StorageError::CustomError,
-    }
-}
-
-fn into_wasefire_error(e: <Nvmc<NVMC> as ErrorType>::Error) -> Error {
+fn convert(e: <Nvmc<NVMC> as ErrorType>::Error) -> Error {
     match e.kind() {
         NorFlashErrorKind::NotAligned => Error::user(Code::InvalidAlign),
         NorFlashErrorKind::OutOfBounds => Error::user(Code::OutOfBounds),

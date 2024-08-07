@@ -20,8 +20,6 @@ use wasefire_board_api::Api as Board;
 use wasefire_store::fragment;
 
 #[cfg(feature = "board-api-storage")]
-use super::convert;
-#[cfg(feature = "board-api-storage")]
 use crate::applet::store::MemoryApi;
 use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-storage")]
@@ -43,7 +41,7 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let result = try {
         let keys = decode_keys(keys)?;
         let value = memory.get(*ptr, *len)?;
-        fragment::write(&mut scheduler.store, &keys, value).map_err(convert)?
+        fragment::write(&mut scheduler.store, &keys, value)?
     };
     call.reply(result);
 }
@@ -51,9 +49,7 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
 #[cfg(feature = "board-api-storage")]
 fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
     let api::remove::Params { keys } = call.read();
-    let result = try {
-        fragment::delete(&mut call.scheduler().store, &decode_keys(keys)?).map_err(convert)?
-    };
+    let result = try { fragment::delete(&mut call.scheduler().store, &decode_keys(keys)?)? };
     call.reply(result);
 }
 
@@ -63,7 +59,7 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let scheduler = call.scheduler();
     let mut memory = scheduler.applet.as_mut().unwrap().memory();
     let result = try {
-        match fragment::read(&scheduler.store, &decode_keys(keys)?).map_err(convert)? {
+        match fragment::read(&scheduler.store, &decode_keys(keys)?)? {
             None => false,
             Some(value) => {
                 memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &value)?;
