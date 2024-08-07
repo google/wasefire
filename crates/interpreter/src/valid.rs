@@ -20,7 +20,7 @@ use core::cmp::Ordering;
 use crate::error::*;
 use crate::syntax::*;
 use crate::toctou::*;
-use crate::*;
+use crate::{Unsupported, *};
 
 /// Checks whether a WASM module in binary format is valid.
 pub fn validate(binary: &[u8]) -> Result<(), Error> {
@@ -30,54 +30,75 @@ pub fn validate(binary: &[u8]) -> Result<(), Error> {
 type Parser<'m> = parser::Parser<'m, Check>;
 type CheckResult = MResult<(), Check>;
 
-#[allow(dead_code)]
+#[allow(dead_code)] // TODO(dev/fast-interp)
 #[derive(Default, Copy, Clone)]
-pub struct SideTableEntry {
-    data: u32,
+pub struct SideTableEntry(u32);
+
+pub struct SideTableEntryView {
+    /// The amount to adjust the instruction pointer by if the branch is taken.
+    pub delta_ip: i32,
+    /// The amount to adjust the side-table pointer by if the branch is taken.
+    pub delta_stp: i32,
+    /// The number of values that will be copied if the branch is taken.
+    pub val_cnt: u32,
+    /// The number of values that will be popped if the branch is taken.
+    pub pop_cnt: u32,
 }
 
-#[allow(dead_code)]
+#[allow(dead_code)] // TODO(dev/fast-interp)
 impl SideTableEntry {
-    const DELTA_IP_MASK: u32 = 0xFFFF; // 16 bits for delta_ip
-    const DELTA_STP_MASK: u32 = 0x3F << 16; // 6 bits for delta_stp
-    const VAL_CNT_MASK: u32 = 0x1F << 22; // 5 bits for val_cnt
-    const POP_CNT_MASK: u32 = 0x1F << 27; // 5 bits for pop_cnt
+    const DELTA_IP_MASK: u32 = 0x0000ffff;
+    const DELTA_STP_MASK: u32 = 0x003f0000;
+    const VAL_CNT_MASK: u32 = 0x07c00000;
+    const POP_CNT_MASK: u32 = 0xf8000000;
 
-    #[allow(clippy::manual_range_contains)]
-    fn new(delta_ip: i32, delta_stp: i32, val_cnt: u32, pop_cnt: u32) -> Self {
-        assert!(delta_ip >= -32768 && delta_ip <= 32767);
-        assert!(delta_stp >= -32 && delta_stp <= 31);
-        assert!(val_cnt <= 31);
-        assert!(pop_cnt <= 31);
+    fn new(view: SideTableEntryView) -> Result<Self, Error> {
+        let mut fields = 0;
+        fields |= bit_field::into_signed_field(Self::DELTA_IP_MASK, view.delta_ip)?;
+        fields |= bit_field::into_signed_field(Self::DELTA_STP_MASK, view.delta_stp)?;
+        fields |= bit_field::into_field(Self::VAL_CNT_MASK, view.val_cnt)?;
+        fields |= bit_field::into_field(Self::POP_CNT_MASK, view.pop_cnt)?;
 
-        let delta_ip = (delta_ip as u32) & Self::DELTA_IP_MASK;
-        let delta_stp = ((delta_stp as u32) & 0x3F) << 16;
-        let val_cnt = (val_cnt & 0x1F) << 22;
-        let pop_cnt = (pop_cnt & 0x1F) << 27;
-
-        SideTableEntry { data: delta_ip | delta_stp | val_cnt | pop_cnt }
+        Ok(SideTableEntry(fields))
     }
 
-    /// Get the amount to adjust the instruction pointer by if the branch is taken.
-    fn get_delta_ip(&self) -> i32 {
-        (self.data & Self::DELTA_IP_MASK) as i32
-            - (((self.data & Self::DELTA_IP_MASK) & 0x8000) << 16) as i32
+    fn view(self) -> SideTableEntryView {
+        let delta_ip = bit_field::from_signed_field(Self::DELTA_IP_MASK, self.0);
+        let delta_stp = bit_field::from_signed_field(Self::DELTA_STP_MASK, self.0);
+        let val_cnt = bit_field::from_field(Self::VAL_CNT_MASK, self.0);
+        let pop_cnt = bit_field::from_field(Self::POP_CNT_MASK, self.0);
+
+        SideTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt }
+    }
+}
+
+mod bit_field {
+    #[allow(unused_imports)]
+    use super::{unsupported, Error, Unsupported};
+
+    pub fn into_signed_field(mask: u32, value: i32) -> Result<u32, Error> {
+        let value = value.wrapping_add(offset(mask)) as u32;
+        into_field(mask, value)
     }
 
-    /// Get the amount to adjust the side-table pointer by if the branch is taken.
-    fn get_delta_stp(&self) -> i32 {
-        ((self.data & Self::DELTA_STP_MASK) >> 16) as i32
-            - ((((self.data & Self::DELTA_STP_MASK) >> 16) & 0x20) << 6) as i32
+    pub fn from_signed_field(mask: u32, field: u32) -> i32 {
+        from_field(mask, field) as i32 - offset(mask)
     }
 
-    /// Get the number of values that will be copied if the branch is taken.
-    fn get_val_cnt(&self) -> u32 {
-        (self.data & Self::VAL_CNT_MASK) >> 22
+    pub fn offset(mask: u32) -> i32 {
+        1 << (mask.count_ones() - 1)
     }
 
-    /// Get the number of values that will be popped if the branch is taken.
-    fn get_pop_cnt(&self) -> u32 {
-        (self.data & Self::POP_CNT_MASK) >> 27
+    pub fn into_field(mask: u32, value: u32) -> Result<u32, Error> {
+        let field = (value << mask.trailing_zeros()) & mask;
+        if from_field(mask, field) != value {
+            return Err(unsupported(if_debug!(Unsupported::SideTable)));
+        }
+        Ok(field)
+    }
+
+    pub fn from_field(mask: u32, field: u32) -> u32 {
+        (field & mask) >> mask.trailing_zeros()
     }
 }
 
@@ -875,5 +896,57 @@ impl<'a, 'm> Expr<'a, 'm> {
             (true, Some(m), n) if m == n => Ok(()),
             _ => Err(invalid()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::format;
+
+    use proptest::prelude::*;
+
+    use super::bit_field::*;
+    use crate::Error;
+
+    proptest! {
+        #[test]
+        fn signed_field_round_trip(value in -8i32..8) {
+            let mask = 0b1111000;
+            let field = into_signed_field(mask, value).unwrap();
+            let recovered = from_signed_field(mask, field);
+            prop_assert_eq!(value, recovered);
+        }
+
+        #[test]
+        fn unsigned_field_round_trip(value in 0u32..8) {
+            let mask = 0b111000;
+            let field = into_field(mask, value).unwrap();
+            let recovered = from_field(mask, field);
+            prop_assert_eq!(value, recovered);
+        }
+    }
+
+    #[test]
+    #[cfg(debug_assertions)]
+    fn into_field_error_debug() {
+        // This mask has 3 bits set, so it can only represent values 0-7.
+        let mask = 0b111000;
+        let value = 8;
+
+        let result = into_field(mask, value);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, Error::Unsupported(_)));
+    }
+
+    #[test]
+    #[cfg(not(debug_assertions))]
+    fn into_field_error_release() {
+        // This mask has 3 bits set, so it can only represent values 0-7.
+        let mask = 0b111000;
+        let value = 8;
+
+        let field = into_field(mask, value).unwrap();
+        assert_ne!(value, field);
     }
 }
