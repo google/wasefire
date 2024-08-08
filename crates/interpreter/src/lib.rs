@@ -139,6 +139,7 @@ macro_rules! support_if {
     }};
 }
 
+mod bit_field;
 mod cache;
 mod error;
 mod exec;
@@ -148,7 +149,6 @@ mod parser;
 mod syntax;
 mod toctou;
 mod valid;
-mod bit_field;
 
 pub use error::{Error, Unsupported};
 pub use exec::{Call, InstId, RunAnswer, RunResult, Store, StoreId, Val, MEMORY_ALIGN};
