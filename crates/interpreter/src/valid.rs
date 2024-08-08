@@ -17,6 +17,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
+use crate::bit_field::*;
 use crate::error::*;
 use crate::syntax::*;
 use crate::toctou::*;
@@ -29,6 +30,47 @@ pub fn validate(binary: &[u8]) -> Result<(), Error> {
 
 type Parser<'m> = parser::Parser<'m, Check>;
 type CheckResult = MResult<(), Check>;
+
+#[allow(dead_code)] // TODO(dev/fast-interp)
+#[derive(Default, Copy, Clone)]
+#[repr(transparent)]
+pub struct SideTableEntry(u32);
+
+pub struct SideTableEntryView {
+    /// The amount to adjust the instruction pointer by if the branch is taken.
+    pub delta_ip: i32,
+    /// The amount to adjust the side-table pointer by if the branch is taken.
+    pub delta_stp: i32,
+    /// The number of values that will be copied if the branch is taken.
+    pub val_cnt: u32,
+    /// The number of values that will be popped if the branch is taken.
+    pub pop_cnt: u32,
+}
+
+#[allow(dead_code)] // TODO(dev/fast-interp)
+impl SideTableEntry {
+    const DELTA_IP_MASK: u32 = 0x0000ffff;
+    const DELTA_STP_MASK: u32 = 0x003f0000;
+    const VAL_CNT_MASK: u32 = 0x07c00000;
+    const POP_CNT_MASK: u32 = 0xf8000000;
+
+    fn new(view: SideTableEntryView) -> Result<Self, Error> {
+        let mut fields = 0;
+        fields |= into_signed_field(Self::DELTA_IP_MASK, view.delta_ip)?;
+        fields |= into_signed_field(Self::DELTA_STP_MASK, view.delta_stp)?;
+        fields |= into_field(Self::VAL_CNT_MASK, view.val_cnt)?;
+        fields |= into_field(Self::POP_CNT_MASK, view.pop_cnt)?;
+        Ok(SideTableEntry(fields))
+    }
+
+    fn view(self) -> SideTableEntryView {
+        let delta_ip = from_signed_field(Self::DELTA_IP_MASK, self.0);
+        let delta_stp = from_signed_field(Self::DELTA_STP_MASK, self.0);
+        let val_cnt = from_field(Self::VAL_CNT_MASK, self.0);
+        let pop_cnt = from_field(Self::POP_CNT_MASK, self.0);
+        SideTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt }
+    }
+}
 
 #[derive(Default)]
 struct Context<'m> {
