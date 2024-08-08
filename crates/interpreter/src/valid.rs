@@ -17,6 +17,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
+use crate::bit_field::*;
 use crate::error::*;
 use crate::syntax::*;
 use crate::toctou::*;
@@ -32,6 +33,7 @@ type CheckResult = MResult<(), Check>;
 
 #[allow(dead_code)] // TODO(dev/fast-interp)
 #[derive(Default, Copy, Clone)]
+#[repr(transparent)]
 pub struct SideTableEntry(u32);
 
 pub struct SideTableEntryView {
@@ -54,51 +56,19 @@ impl SideTableEntry {
 
     fn new(view: SideTableEntryView) -> Result<Self, Error> {
         let mut fields = 0;
-        fields |= bit_field::into_signed_field(Self::DELTA_IP_MASK, view.delta_ip)?;
-        fields |= bit_field::into_signed_field(Self::DELTA_STP_MASK, view.delta_stp)?;
-        fields |= bit_field::into_field(Self::VAL_CNT_MASK, view.val_cnt)?;
-        fields |= bit_field::into_field(Self::POP_CNT_MASK, view.pop_cnt)?;
-
+        fields |= into_signed_field(Self::DELTA_IP_MASK, view.delta_ip)?;
+        fields |= into_signed_field(Self::DELTA_STP_MASK, view.delta_stp)?;
+        fields |= into_field(Self::VAL_CNT_MASK, view.val_cnt)?;
+        fields |= into_field(Self::POP_CNT_MASK, view.pop_cnt)?;
         Ok(SideTableEntry(fields))
     }
 
     fn view(self) -> SideTableEntryView {
-        let delta_ip = bit_field::from_signed_field(Self::DELTA_IP_MASK, self.0);
-        let delta_stp = bit_field::from_signed_field(Self::DELTA_STP_MASK, self.0);
-        let val_cnt = bit_field::from_field(Self::VAL_CNT_MASK, self.0);
-        let pop_cnt = bit_field::from_field(Self::POP_CNT_MASK, self.0);
-
+        let delta_ip = from_signed_field(Self::DELTA_IP_MASK, self.0);
+        let delta_stp = from_signed_field(Self::DELTA_STP_MASK, self.0);
+        let val_cnt = from_field(Self::VAL_CNT_MASK, self.0);
+        let pop_cnt = from_field(Self::POP_CNT_MASK, self.0);
         SideTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt }
-    }
-}
-
-mod bit_field {
-    #[allow(unused_imports)]
-    use super::{unsupported, Error, Unsupported};
-
-    pub fn into_signed_field(mask: u32, value: i32) -> Result<u32, Error> {
-        let value = value.wrapping_add(offset(mask)) as u32;
-        into_field(mask, value)
-    }
-
-    pub fn from_signed_field(mask: u32, field: u32) -> i32 {
-        from_field(mask, field) as i32 - offset(mask)
-    }
-
-    pub fn offset(mask: u32) -> i32 {
-        1 << (mask.count_ones() - 1)
-    }
-
-    pub fn into_field(mask: u32, value: u32) -> Result<u32, Error> {
-        let field = (value << mask.trailing_zeros()) & mask;
-        if from_field(mask, field) != value {
-            return Err(unsupported(if_debug!(Unsupported::SideTable)));
-        }
-        Ok(field)
-    }
-
-    pub fn from_field(mask: u32, field: u32) -> u32 {
-        (field & mask) >> mask.trailing_zeros()
     }
 }
 
@@ -896,69 +866,5 @@ impl<'a, 'm> Expr<'a, 'm> {
             (true, Some(m), n) if m == n => Ok(()),
             _ => Err(invalid()),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use alloc::format;
-
-    use proptest::prelude::*;
-
-    use super::bit_field::*;
-    use crate::Error;
-
-    proptest! {
-        #[test]
-        fn signed_field_round_trip(value in -8i32..8) {
-            let mask = 0b1111000;
-            let field = into_signed_field(mask, value).unwrap();
-            let recovered = from_signed_field(mask, field);
-            prop_assert_eq!(value, recovered);
-        }
-
-        #[test]
-        fn unsigned_field_round_trip(value in 0u32..8) {
-            let mask = 0b111000;
-            let field = into_field(mask, value).unwrap();
-            let recovered = from_field(mask, field);
-            prop_assert_eq!(value, recovered);
-        }
-    }
-
-    #[test]
-    #[cfg(debug_assertions)]
-    fn into_field_error_debug() {
-        // This mask has 3 bits set, so it can only represent values 0-7.
-        let mask = 0b111000;
-        let value = 8;
-
-        let result = into_field(mask, value);
-        assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), Error::Unsupported(_)));
-    }
-
-    #[test]
-    #[cfg(not(debug_assertions))]
-    fn into_field_error_release() {
-        // This mask has 3 bits set, so it can only represent values 0-7.
-        let mask = 0b111000;
-        let value = 8;
-
-        let field = into_field(mask, value).unwrap();
-        assert_ne!(value, field);
-    }
-
-    #[test]
-    fn into_signed_field_overflow() {
-        let mask = 0b1111000;
-        let value = i32::MAX;
-
-        // The offset for this mask is 8, and adding it to `value` will cause
-        // overflow.
-        let result = into_signed_field(mask, value);
-
-        assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), Error::Unsupported(_)));
     }
 }
