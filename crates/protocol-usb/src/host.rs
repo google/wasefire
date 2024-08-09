@@ -145,15 +145,21 @@ impl<T: UsbContext> Candidate<T> {
             handle.set_active_configuration(configuration)?;
         }
         handle.claim_interface(interface)?;
-        Ok(Connection { _device: device, handle, timeout })
+        Ok(Connection { device, handle, timeout })
     }
 }
 
 /// Holds a connection to a device.
 pub struct Connection<T: UsbContext> {
-    _device: Device<T>,
+    device: Device<T>,
     handle: DeviceHandle<T>,
     timeout: Duration,
+}
+
+impl<T: UsbContext> Display for Connection<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:?}", self.device)
+    }
 }
 
 impl<T: UsbContext> Connection<T> {

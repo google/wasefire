@@ -15,7 +15,7 @@
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::Duration;
+use std::str::FromStr;
 
 use anyhow::{bail, ensure, Result};
 use cargo_metadata::{Metadata, MetadataCommand};
@@ -23,91 +23,79 @@ use clap::{ValueEnum, ValueHint};
 use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use rusb::{GlobalContext, UsbContext};
 use wasefire_protocol::{self as service, applet, Api};
-use wasefire_protocol_usb::{Candidate, Connection};
+use wasefire_protocol_usb::Connection;
 
 use crate::{cmd, fs};
+
+/// Platform information.
+pub type PlatformInfo = wasefire_wire::Yoke<service::platform::Info<'static>>;
 
 /// Options to connect to a platform.
 #[derive(Clone, clap::Args)]
 pub struct ConnectionOptions {
-    /// Serial of the platform to connect to.
+    /// Serial of the platform to connect to (in hexadecimal).
     #[arg(long, env = "WASEFIRE_SERIAL")]
-    serial: Option<String>,
+    serial: Option<Hex>,
 
     /// Timeout to send or receive on the platform protocol.
     #[arg(long, default_value = "1s")]
     timeout: humantime::Duration,
 }
 
+#[derive(Clone)]
+struct Hex(Vec<u8>);
+
+impl Display for Hex {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        HEX.encode(&self.0).fmt(f)
+    }
+}
+
+impl FromStr for Hex {
+    type Err = data_encoding::DecodeError;
+    fn from_str(input: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(Hex(HEX.decode(input.as_bytes())?))
+    }
+}
+
 impl ConnectionOptions {
-    /// Returns the timeout for platform connection.
-    pub fn timeout(&self) -> Duration {
-        *self.timeout
-    }
-}
-
-/// Reusable lazy connection to a platform.
-pub enum GlobalConnection {
-    /// The connection is not yet configured and can be established.
-    Invalid,
-    /// The connection is configured but not yet established.
-    Ready { options: ConnectionOptions },
-    /// The connection is established.
-    Connected { connection: Connection<GlobalContext> },
-}
-
-impl GlobalConnection {
-    /// Configures the connection (required to access it).
-    pub fn configure(&mut self, options: ConnectionOptions) {
-        match self {
-            GlobalConnection::Invalid => *self = GlobalConnection::Ready { options },
-            _ => panic!("connection already configured"),
-        }
-    }
-
-    /// Accesses the connection (establishing it if needed).
-    pub fn get(&mut self) -> Result<&Connection<GlobalContext>> {
-        if let GlobalConnection::Ready { options } = self {
-            let connection = connect(options.timeout(), options.serial.as_deref())?;
-            *self = GlobalConnection::Connected { connection };
-        }
-        match self {
-            GlobalConnection::Connected { connection } => Ok(connection),
-            _ => panic!("connection not yet configured"),
-        }
-    }
-}
-
-fn connect(timeout: Duration, serial: Option<&str>) -> Result<Connection<GlobalContext>> {
-    let context = GlobalContext::default();
-    let mut candidates = wasefire_protocol_usb::list(&context)?;
-    let candidate = match (serial, candidates.len()) {
-        (None, 0) => bail!("no connected platforms"),
-        (None, 1) => candidates.pop().unwrap(),
-        (None, n) => {
-            eprintln!("Choose one of the {n} connected platforms using its --serial option:");
-            for candidate in candidates {
-                eprintln!("    --serial={}", get_serial(&candidate, timeout)?);
+    /// Establishes a connection.
+    pub fn connect(&self) -> Result<Connection<GlobalContext>> {
+        let context = GlobalContext::default();
+        let mut matches = Vec::new();
+        let serial = self.serial.as_ref();
+        for candidate in wasefire_protocol_usb::list(&context)? {
+            let connection = candidate.connect(*self.timeout)?;
+            let info = connection.call::<service::PlatformInfo>(())?;
+            if serial.map_or(false, |x| x.0 != info.get().serial) {
+                continue;
             }
-            bail!("more than one connected platform");
+            matches.push((connection, info));
         }
-        (Some(serial), _) => {
-            match candidates
-                .into_iter()
-                .try_find(|x| anyhow::Ok(get_serial(x, timeout)? == serial))?
-            {
-                Some(x) => x,
-                None => bail!("no connected platform with serial={serial}"),
-            }
+        match matches.len() {
+            1 => Ok(matches.pop().unwrap().0),
+            0 => match serial {
+                None => bail!("no connected platforms"),
+                Some(serial) => bail!("no connected platforms with serial={serial}"),
+            },
+            _ => match serial {
+                None => {
+                    eprintln!("Choose one of the connected platforms using its serial:");
+                    for (_, info) in matches {
+                        eprintln!("    --serial={}", HEX.encode(info.get().serial));
+                    }
+                    bail!("more than one connected platform");
+                }
+                Some(serial) => {
+                    eprintln!("Multiple connected platforms with serial={serial}:");
+                    for (connection, _) in matches {
+                        eprintln!("  - {connection}");
+                    }
+                    bail!("more than one connected platform with serial={serial}");
+                }
+            },
         }
-    };
-    Ok(candidate.connect(timeout)?)
-}
-
-fn get_serial(candidate: &Candidate<GlobalContext>, timeout: Duration) -> Result<String> {
-    let connection = candidate.clone().connect(timeout)?;
-    let info = connection.call::<service::PlatformInfo>(())?;
-    Ok(HEX.encode(info.get().serial))
+    }
 }
 
 /// Parameters for an applet or platform RPC.
@@ -168,6 +156,29 @@ impl AppletRpc {
             }
         }
         bail!("did not receive a response after {retries} retries");
+    }
+}
+
+/// Lists the connected platforms.
+#[derive(clap::Args)]
+pub struct PlatformList {
+    /// Timeout to send or receive on the platform protocol.
+    #[arg(long, default_value = "1s")]
+    timeout: humantime::Duration,
+}
+
+impl PlatformList {
+    pub fn run(self) -> Result<Vec<PlatformInfo>> {
+        let PlatformList { timeout } = self;
+        let context = GlobalContext::default();
+        let candidates = wasefire_protocol_usb::list(&context)?;
+        println!("There are {} connected platforms:", candidates.len());
+        let mut platforms = Vec::new();
+        for candidate in candidates {
+            let connection = candidate.connect(*timeout)?;
+            platforms.push(connection.call::<service::PlatformInfo>(())?);
+        }
+        Ok(platforms)
     }
 }
 

@@ -2,6 +2,10 @@
 
 ## 0.1.1-git
 
+### Minor
+
+- Implement `Display` for `Connection<T>`
+
 ### Patch
 
 - Update dependencies

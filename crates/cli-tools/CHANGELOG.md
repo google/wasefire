@@ -4,7 +4,8 @@
 
 ### Minor
 
-- Add `action::{ConnectionOptions,GlobalConnection}` for lazy platform connection
+- Add `action::PlatformList` to list connected platforms
+- Add `action::ConnectionOptions` for commands that need a platform connection
 - Change the behavior of `fs::copy_if_changed()` to keep an original source
 
 ### Patch
