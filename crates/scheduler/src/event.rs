@@ -41,6 +41,7 @@ pub mod usb;
 pub struct InstId;
 
 // TODO: This could be encoded into a u32 for performance/footprint.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Derivative)]
 #[derivative(Debug(bound = ""), Copy(bound = ""), Hash(bound = ""))]
 #[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
