@@ -57,6 +57,7 @@ features = [
   "board-api-storage",
   "board-api-timer",
   "board-api-uart",
+  "board-api-usb-ctap",
   "board-api-usb-serial",
 ]
 

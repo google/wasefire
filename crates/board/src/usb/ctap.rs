@@ -14,8 +14,9 @@
 
 //! CTAP HID interface.
 
-use usb_device::bus::UsbBus;
-use usbd_ctaphid::CtapHid;
+use ctap_hid_fido2::{Cfg, FidoKeyHid, HidParam};
+use usb_device::device::{Config, UsbDevice};
+use usbip_device::UsbIpBus;
 
 use super::serial::{self, HasSerial};
 
@@ -49,37 +50,83 @@ pub trait Api: Send {
     ///
     /// Returns the number of bytes written. It could be zero if the other side is not ready.
     fn write(input: &[u8; 64]) -> Result<usize, Error>;
+
+    /// Enables a given event to be triggered.
+    fn enable(event: &Event) -> Result<(), Error>;
+
+    /// Disables a given event from being triggered.
+    fn disable(event: &Event) -> Result<(), Error>;
 }
 
+// Helper trait for boards using the `ctap_hid_fido2` crate.
 pub trait HasCtapHid: Send {
-    type UsbBus: UsbBus;
+    type UsbDevice: UsbDevice<'static, UsbIpBus>;
 
-    fn with_ctaphid<R>(f: impl FnOnce(&mut CtapHid<Self::UsbBus>) -> R) -> R;
+    fn with_ctaphid<R>(f: impl FnOnce(&mut CtapHid<Self::Hid>) -> R) -> R;
 }
 
-/// Wrapper type for boards using the `usbd_ctaphid` crate.
+/// Wrapper type for boards using the `ctap_hid_fido2` crate.
 pub struct WithCtapHid<T: HasCtapHid> {
     _never: !,
     _has_ctap: T,
 }
 
-/// Helper struct for boards using the `usbd_ctaphid` crate.
-pub struct CtapHid<'a, T: UsbBus> {
-    ctap_hid: usbd_ctaphid::CtapHid,
+/// Helper struct for boards using the `ctap_hid_fido2` crate.
+pub struct CtapHid {
+    ctap_hid: ctap_hid_fido2::FidoKeyHid,
     read_enabled: bool,
     write_enabled: bool,
 }
 
+impl CtapHid {
+    pub fn new(config: Config) -> Self {
+        params = HidParam::VidPid { vid: config.vendor_id, pid: config.product_id };
+        ctap_hid = FidoKeyHid::new(params, &Cfg::init());
+        Self { ctap_hid, read_enabled: false, write_enabled: false }
+    }
+
+    pub fn set(&mut self, event: &Event, enabled: bool) {
+        match event {
+            Event::Read => self.read_enabled = enabled,
+            Event::Write => self.write_enabled = enabled,
+        }
+    }
+}
+
 impl<T: HasCtapHid> Api for WithCtapHid<T> {
-    fn read(output: &mut [u8]) -> Result<usize, Error> {
-        match T::with_ctaphid(|ctap_hid| ctap_hid.pipe.read_and_handle_packet()) {
-          // todo!()
+    fn read(output: &mut [u8; 64]) -> Result<usize, Error> {
+        match T::with_ctaphid(|ctap_hid| ctap_hid.read()) {
+            Ok(len) => {
+                log::trace!("{}{:?} = read({})", len, &output[.. len], output.len());
+                Ok(len)
+            }
+            Err(e) => {
+                log::debug!("{} = read({})", log::Debug2Format(&e), output.len());
+                Err(Error::world(0))
+            }
         }
     }
 
-    fn write(input: &[u8]) -> Result<usize, Error> {
-        match T::with_ctaphid(|ctap_hid| ctap_hid.check_for_app_response()) {
-          // todo!()
+    fn write(input: &[u8; 64]) -> Result<usize, Error> {
+        match T::with_ctaphid(|ctap_hid| ctap_hid.write(input)) {
+            Ok(len) => {
+                log::trace!("{} = write({}{:?})", len, input.len(), input);
+                Ok(len)
+            }
+            Err(e) => {
+                log::debug!("{} = write({}{:?})", log::Debug2Format(&e), input.len(), input);
+                Err(Error::world(0))
+            }
         }
+    }
+
+    fn enable(event: &Event) -> Result<(), Error> {
+        T::with_ctaphid(|ctap_hid| ctap_hid.set(event, true));
+        Ok(())
+    }
+
+    fn disable(event: &Event) -> Result<(), Error> {
+        T::with_ctaphid(|ctap_hid| ctap_hid.set(event, false));
+        Ok(())
     }
 }

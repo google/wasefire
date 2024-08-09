@@ -18,10 +18,15 @@ use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-usb-serial")]
 pub mod serial;
 
+#[cfg(feature = "board-api-usb-ctap")]
+pub mod ctap;
+
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
     #[cfg(feature = "board-api-usb-serial")]
     Serial(serial::Key),
+    #[cfg(feature = "board-api-usb-ctap")]
+    Ctap(ctap::Key),
 }
 
 impl<B: Board> From<Key> for crate::event::Key<B> {
@@ -35,6 +40,8 @@ impl<'a> From<&'a Event> for Key {
         match event {
             #[cfg(feature = "board-api-usb-serial")]
             Event::Serial(event) => Key::Serial(event.into()),
+            #[cfg(feature = "board-api-usb-ctap")]
+            Event::Ctap(event) => Key::Ctap(event.into()),
         }
     }
 }
@@ -43,5 +50,7 @@ pub fn process(event: Event) {
     match event {
         #[cfg(feature = "board-api-usb-serial")]
         Event::Serial(_) => serial::process(),
+        #[cfg(feature = "board-api-usb-ctap")]
+        Event::Ctap(_) => ctap::process(),
     }
 }

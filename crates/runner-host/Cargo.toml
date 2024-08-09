@@ -53,6 +53,7 @@ usb = [
   "dep:usbip-device",
   "dep:wasefire-protocol-usb",
   "wasefire-scheduler/board-api-platform-protocol",
+  "wasefire-scheduler/board-api-usb-ctap",
   "wasefire-scheduler/board-api-usb-serial",
 ]
 web = ["dep:web-server"]

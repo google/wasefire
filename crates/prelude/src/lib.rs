@@ -51,8 +51,6 @@ pub mod button;
 mod callback;
 #[cfg(feature = "internal-api-crypto")]
 pub mod crypto;
-// TODO: Add feature
-pub mod ctap;
 pub mod debug;
 #[cfg(feature = "api-gpio")]
 pub mod gpio;
