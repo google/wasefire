@@ -112,8 +112,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68f5e5f3158ecfd4b8ff6fe086db7c8467a2dfdac97fe420f2b7c4aa97af66d6"
 
 [[package]]
+name = "wasefire-error"
+version = "0.1.2-git"
+dependencies = [
+ "num_enum",
+]
+
+[[package]]
 name = "wasefire-interpreter"
-version = "0.3.0"
+version = "0.3.1-git"
 dependencies = [
  "lazy_static",
  "libm",
@@ -121,6 +128,7 @@ dependencies = [
  "num_enum",
  "paste",
  "portable-atomic",
+ "wasefire-error",
  "wast",
 ]
 

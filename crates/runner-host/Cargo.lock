@@ -1953,11 +1953,12 @@ dependencies = [
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.3.0"
+version = "0.3.1-git"
 dependencies = [
  "num_enum",
  "paste",
  "portable-atomic",
+ "wasefire-error",
 ]
 
 [[package]]
