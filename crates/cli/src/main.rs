@@ -36,6 +36,11 @@ struct Flags {
     action: Action,
 }
 
+#[test]
+fn flags() {
+    <Flags as clap::CommandFactory>::command().debug_assert();
+}
+
 #[derive(clap::Subcommand)]
 enum Action {
     /// Lists the applets installed on a platform.

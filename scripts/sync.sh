@@ -36,7 +36,7 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   add_lint $file allow clippy.unit-arg
   # add_lint $file warn rust.elided-lifetimes-in-paths
   # add_lint $file warn rust.missing-debug-implementations
-  # TODO: Use the same [ -e src/lib.rs -a "$(package_publish)" = true ] test is test-helper.
+  # TODO: Use the same [ -e src/lib.rs -a "$(package_publish)" = true ] test as in test-helper.
   case $crate in
     board|prelude) add_lint $file warn rust.missing-docs ;;
   esac

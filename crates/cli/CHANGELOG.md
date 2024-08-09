@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Check for bad command-line configuration
 - Update dependencies
 - Restore release builds to the default
 

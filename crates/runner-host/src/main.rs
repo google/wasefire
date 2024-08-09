@@ -45,6 +45,11 @@ struct Flags {
     web_options: WebOptions,
 }
 
+#[test]
+fn flags() {
+    <Flags as clap::CommandFactory>::command().debug_assert();
+}
+
 #[derive(clap::Args)]
 struct WebOptions {
     /// Host to start the webserver.
