@@ -15,22 +15,18 @@
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
-use std::time::Duration;
 
 use anyhow::{bail, Result};
 use clap::{CommandFactory, Parser, ValueHint};
 use clap_complete::Shell;
 use data_encoding::HEXLOWER_PERMISSIVE as HEX;
-use rusb::GlobalContext;
 use wasefire_cli_tools::{action, fs};
-use wasefire_protocol::{self as service, platform};
 
 #[derive(Parser)]
 #[command(version, about)]
 struct Flags {
     #[command(flatten)]
-    connection_options: action::ConnectionOptions,
+    options: Options,
 
     #[command(subcommand)]
     action: Action,
@@ -40,6 +36,9 @@ struct Flags {
 fn flags() {
     <Flags as clap::CommandFactory>::command().debug_assert();
 }
+
+#[derive(clap::Args)]
+struct Options {}
 
 #[derive(clap::Subcommand)]
 enum Action {
@@ -55,16 +54,34 @@ enum Action {
     /// Uninstalls an applet from a platform.
     AppletUninstall,
 
-    AppletRpc(action::AppletRpc),
-
-    /// Lists the connected platforms.
-    PlatformList,
+    // TODO(https://github.com/clap-rs/clap/issues/2621): We should be able to remove the explicit
+    // group name.
+    #[group(id = "Action::AppletRpc")]
+    AppletRpc {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        action: action::AppletRpc,
+    },
+    PlatformList(action::PlatformList),
 
     /// Updates a connected platform.
     PlatformUpdate,
 
-    PlatformReboot(action::PlatformReboot),
-    PlatformRpc(action::PlatformRpc),
+    #[group(id = "Action::PlatformReboot")]
+    PlatformReboot {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        action: action::PlatformReboot,
+    },
+    #[group(id = "Action::PlatformRpc")]
+    PlatformRpc {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        action: action::PlatformRpc,
+    },
     RustAppletNew(action::RustAppletNew),
     RustAppletBuild(action::RustAppletBuild),
     RustAppletTest(action::RustAppletTest),
@@ -104,38 +121,28 @@ impl Completion {
 
 fn main() -> Result<()> {
     let flags = Flags::parse();
-    CONNECTION.lock().unwrap().configure(flags.connection_options.clone());
     let dir = std::env::current_dir()?;
     match flags.action {
         Action::AppletList => bail!("not implemented yet"),
         Action::AppletInstall => bail!("not implemented yet"),
         Action::AppletUpdate => bail!("not implemented yet"),
         Action::AppletUninstall => bail!("not implemented yet"),
-        Action::AppletRpc(x) => x.run(CONNECTION.lock().unwrap().get()?),
-        Action::PlatformList => platform_list(flags.connection_options.timeout()),
+        Action::AppletRpc { options, action } => action.run(&options.connect()?),
+        Action::PlatformList(x) => {
+            let platforms = x.run()?;
+            for platform in platforms {
+                let serial = HEX.encode(platform.get().serial);
+                let version = HEX.encode(platform.get().version);
+                println!("- serial={serial} version={version}");
+            }
+            Ok(())
+        }
         Action::PlatformUpdate => bail!("not implemented yet"),
-        Action::PlatformReboot(x) => x.run(CONNECTION.lock().unwrap().get()?),
-        Action::PlatformRpc(x) => x.run(CONNECTION.lock().unwrap().get()?),
+        Action::PlatformReboot { options, action } => action.run(&options.connect()?),
+        Action::PlatformRpc { options, action } => action.run(&options.connect()?),
         Action::RustAppletNew(x) => x.run(),
         Action::RustAppletBuild(x) => x.run(dir),
         Action::RustAppletTest(x) => x.run(dir),
         Action::Completion(x) => x.run(),
     }
-}
-
-static CONNECTION: Mutex<action::GlobalConnection> = Mutex::new(action::GlobalConnection::Invalid);
-
-fn platform_list(timeout: Duration) -> Result<()> {
-    let context = GlobalContext::default();
-    let candidates = wasefire_protocol_usb::list(&context)?;
-    println!("There are {} connected platforms:", candidates.len());
-    for candidate in candidates {
-        let connection = candidate.clone().connect(timeout)?;
-        let info = connection.call::<service::PlatformInfo>(())?;
-        let platform::Info { serial, version } = info.get();
-        let serial = HEX.encode(serial);
-        let version = HEX.encode(version);
-        println!("- serial={serial} version={version}");
-    }
-    Ok(())
 }
