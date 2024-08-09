@@ -17,9 +17,6 @@ use crate::*;
 #[cfg(feature = "api-usb-serial")]
 mod serial;
 
-#[cfg(feature = "api-usb-ctap")]
-mod ctap;
-
 pub(crate) fn new() -> Item {
     let docs = docs! {
         /// USB operations.
@@ -28,8 +25,6 @@ pub(crate) fn new() -> Item {
     let items = vec![
         #[cfg(feature = "api-usb-serial")]
         serial::new(),
-        #[cfg(feature = "api-usb-ctap")]
-        ctap::new(),
     ];
     Item::Mod(Mod { docs, name, items })
 }

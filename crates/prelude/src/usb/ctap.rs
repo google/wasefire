@@ -23,7 +23,7 @@ use wasefire_applet_api::usb::serial as api;
 
 use crate::{convert, convert_unit, scheduling, Error};
 
-/// Implements the [`CtapHid`](crate::ctap::CtapHid) interface for USB transport.
+/// Implements a CTAP HID interface for USB transport.
 pub struct CtapHid;
 
 impl CtapHid {
