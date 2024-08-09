@@ -16,6 +16,7 @@ use derivative::Derivative;
 use wasefire_board_api::timer::Event;
 use wasefire_board_api::{self as board, Api as Board, Id};
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Derivative)]
 #[derivative(Debug(bound = ""), Copy(bound = ""), Hash(bound = ""))]
 #[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]

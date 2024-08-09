@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Implement `defmt::Format` for `Key` when `defmt` is enabled
 - Stop using `log::Debug2Format()` when logging events
 - Make applet optional
 - Update dependencies
