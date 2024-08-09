@@ -79,13 +79,6 @@ enum MainCommand {
     /// Compiles a runner.
     Runner(Runner),
 
-    /// Updates the applet API for all languages.
-    UpdateApis {
-        /// Cargo features.
-        #[clap(long, default_values_t = ["full-api".to_string()])]
-        features: Vec<String>,
-    },
-
     /// Appends a comparison between footprint-base.toml and footprint-pull_request.toml.
     ///
     /// If any file is missing, it is assumed to have no measurements.
@@ -220,24 +213,11 @@ struct RunnerOptions {
 impl Flags {
     fn execute(self) -> Result<()> {
         match self.command {
-            MainCommand::Applet(applet) => applet.execute(&self.options)?,
-            MainCommand::Runner(runner) => runner.execute(&self.options)?,
-            MainCommand::UpdateApis { features } => {
-                let (lang, ext) = ("assemblyscript", "ts");
-                let mut cargo = Command::new("cargo");
-                cargo.args(["run", "--manifest-path=crates/xtask/crates/update-api/Cargo.toml"]);
-                for features in features {
-                    cargo.arg(format!("--features=wasefire-applet-api-desc/{features}"));
-                }
-                cargo.arg("--");
-                cargo.arg(format!("--lang={lang}"));
-                cargo.arg(format!("--output=examples/{lang}/api.{ext}"));
-                cmd::execute(&mut cargo)?;
-            }
-            MainCommand::Footprint { output } => footprint::compare(&output)?,
-            MainCommand::Textreview => textreview::execute()?,
+            MainCommand::Applet(applet) => applet.execute(&self.options),
+            MainCommand::Runner(runner) => runner.execute(&self.options),
+            MainCommand::Footprint { output } => footprint::compare(&output),
+            MainCommand::Textreview => textreview::execute(),
         }
-        Ok(())
     }
 }
 

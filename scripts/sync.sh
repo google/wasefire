@@ -20,7 +20,11 @@ set -e
 
 [ "$1" = --force ] && FORCE=y
 
-cargo xtask update-apis
+update_api() {
+  cargo update-api --features=wasefire-applet-api-desc/full-api -- \
+    --lang=$1 --output=examples/$1/api.$2
+}
+update_api assemblyscript ts
 
 add_lint() { echo "$3 = \"$2\"" >> $1; }
 for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
