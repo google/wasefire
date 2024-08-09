@@ -2,7 +2,7 @@
 
 ## 0.3.1-git
 
-### Major
+### Minor
 
 - Implement `From<Error>` for `wasefire_error::Error`
 
