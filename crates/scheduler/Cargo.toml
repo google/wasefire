@@ -84,7 +84,6 @@ applet-api-store = ["internal-applet-api-store", "wasefire-applet-api/api-store"
 applet-api-store-fragment = ["internal-applet-api-store", "wasefire-applet-api/api-store-fragment"]
 applet-api-timer = ["wasefire-applet-api/api-timer"]
 applet-api-uart = ["wasefire-applet-api/api-uart"]
-applet-api-usb-ctap = ["internal-applet-api-usb", "wasefire-applet-api/api-usb-ctap"]
 applet-api-usb-serial = ["internal-applet-api-usb", "wasefire-applet-api/api-usb-serial"]
 # Board API features. Enabling a board API feature automatically enables all
 # applet API features that would be implemented.
@@ -154,11 +153,6 @@ board-api-storage = [
 ]
 board-api-timer = ["applet-api-timer", "wasefire-board-api/api-timer"]
 board-api-uart = ["applet-api-uart", "wasefire-board-api/api-uart"]
-board-api-usb-ctap = [
-  "applet-api-usb-ctap",
-  "internal-board-api-usb",
-  "wasefire-board-api/api-usb-ctap",
-]
 board-api-usb-serial = [
   "applet-api-usb-serial",
   "internal-board-api-usb",
@@ -186,7 +180,6 @@ full-applet-api = [
   "applet-api-store-fragment",
   "applet-api-timer",
   "applet-api-uart",
-  "applet-api-usb-ctap",
   "applet-api-usb-serial",
 ]
 # Enables all board API features (unstable).
@@ -210,7 +203,6 @@ full-board-api = [
   "board-api-storage",
   "board-api-timer",
   "board-api-uart",
-  "board-api-usb-ctap",
   "board-api-usb-serial",
 ]
 # Software crypto features. Enabling a software crypto feature automatically
