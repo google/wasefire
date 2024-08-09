@@ -39,6 +39,11 @@ struct Flags {
     command: MainCommand,
 }
 
+#[test]
+fn flags() {
+    <Flags as clap::CommandFactory>::command().debug_assert();
+}
+
 #[derive(clap::Args)]
 struct MainOptions {
     /// Compiles without debugging support.

@@ -30,6 +30,11 @@ struct Flags {
     lang: Lang,
 }
 
+#[test]
+fn flags() {
+    <Flags as clap::CommandFactory>::command().debug_assert();
+}
+
 #[derive(Copy, Clone, ValueEnum)]
 pub enum Lang {
     C,
