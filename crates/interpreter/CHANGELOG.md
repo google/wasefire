@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1-git
+
+### Major
+
+- Implement `From<Error>` for `wasefire_error::Error`
+
 ## 0.3.0
 
 ### Major

@@ -30,7 +30,7 @@ wasefire-store = { version = "0.3.0-git", path = "../store", optional = true }
 wasefire-sync = { version = "0.1.1", path = "../sync", optional = true }
 
 [dependencies.wasefire-interpreter]
-version = "0.3.0"
+version = "0.3.1-git"
 path = "../interpreter"
 features = ["toctou"]
 optional = true
