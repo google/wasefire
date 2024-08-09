@@ -38,6 +38,7 @@ api-store = ["internal-api-store"]
 api-store-fragment = ["internal-api-store"]
 api-timer = []
 api-uart = []
+api-usb-ctap = ["internal-api-usb"]
 api-usb-serial = ["internal-api-usb"]
 # Enables all API features.
 full-api = [
@@ -59,6 +60,7 @@ full-api = [
   "api-store-fragment",
   "api-timer",
   "api-uart",
+  "api-usb-ctap",
   "api-usb-serial",
 ]
 # Internal features.
