@@ -15,15 +15,14 @@
 use crate::error::*;
 
 pub fn into_signed_field(mask: u32, value: i32) -> Result<u32, Error> {
-    let value = value.wrapping_add(offset(mask)) as u32;
-    into_field(mask, value)
+    into_field(mask, value.wrapping_add(offset(mask)) as u32)
 }
 
 pub fn from_signed_field(mask: u32, field: u32) -> i32 {
     from_field(mask, field) as i32 - offset(mask)
 }
 
-pub fn offset(mask: u32) -> i32 {
+fn offset(mask: u32) -> i32 {
     1 << (mask.count_ones() - 1)
 }
 
@@ -56,13 +55,21 @@ mod tests {
             prop_assert_eq!(actual, expected);
         }
 
-        #[test]
-        fn signed_field_error_positive(expected in 8i32..100) {
+       #[test]
+        fn signed_field_error_positive(expected in prop_oneof![
+            Just(8),
+            9..100,
+            100..,
+        ]) {
             prop_assert!(matches!(into_signed_field(0b1111000, expected), Err(Error::Unsupported(_))));
         }
 
         #[test]
-        fn signed_field_error_negative(expected in -100..-8i32) {
+        fn signed_field_error_negative(expected in prop_oneof![
+            Just(-9),
+            -100..-10,
+            ..-100,
+        ]) {
             prop_assert!(matches!(into_signed_field(0b1111000, expected), Err(Error::Unsupported(_))));
         }
 
