@@ -57,8 +57,7 @@ mod tests {
 
        #[test]
         fn signed_field_error_positive(expected in prop_oneof![
-            Just(8),
-            9..100,
+            8..100,
             100..,
         ]) {
             prop_assert!(matches!(into_signed_field(0b1111000, expected), Err(Error::Unsupported(_))));
@@ -66,8 +65,7 @@ mod tests {
 
         #[test]
         fn signed_field_error_negative(expected in prop_oneof![
-            Just(-9),
-            -100..-10,
+            -100..-9,
             ..-100,
         ]) {
             prop_assert!(matches!(into_signed_field(0b1111000, expected), Err(Error::Unsupported(_))));
