@@ -19,3 +19,6 @@
 
 #[cfg(feature = "api-usb-serial")]
 pub mod serial;
+
+#[cfg(feature = "api-usb-ctap")]
+pub mod ctap;

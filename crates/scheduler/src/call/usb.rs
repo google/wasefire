@@ -17,8 +17,8 @@ use wasefire_board_api::Api as Board;
 
 use crate::DispatchSchedulerCall;
 
-#[cfg(feature = "applet-api-usb-serial")]
-mod serial;
+#[cfg(feature = "applet-api-usb-ctap")]
+mod ctap;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {

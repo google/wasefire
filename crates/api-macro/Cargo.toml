@@ -36,6 +36,7 @@ api-store = ["wasefire-applet-api-desc/api-store"]
 api-store-fragment = ["wasefire-applet-api-desc/api-store-fragment"]
 api-timer = ["wasefire-applet-api-desc/api-timer"]
 api-uart = ["wasefire-applet-api-desc/api-uart"]
+api-usb-ctap = ["wasefire-applet-api-desc/api-usb-ctap"]
 api-usb-serial = ["wasefire-applet-api-desc/api-usb-serial"]
 
 [lints]
