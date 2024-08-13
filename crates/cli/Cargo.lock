@@ -464,16 +464,13 @@ dependencies = [
 
 [[package]]
 name = "wasefire-cli"
-version = "0.1.2-git"
+version = "0.2.0-git"
 dependencies = [
  "anyhow",
  "clap",
  "clap_complete",
  "data-encoding",
- "rusb",
  "wasefire-cli-tools",
- "wasefire-protocol",
- "wasefire-protocol-usb",
 ]
 
 [[package]]
@@ -490,6 +487,7 @@ dependencies = [
  "toml",
  "wasefire-protocol",
  "wasefire-protocol-usb",
+ "wasefire-wire",
 ]
 
 [[package]]

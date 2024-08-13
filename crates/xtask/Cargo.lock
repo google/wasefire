@@ -1704,6 +1704,7 @@ dependencies = [
  "toml",
  "wasefire-protocol",
  "wasefire-protocol-usb",
+ "wasefire-wire",
 ]
 
 [[package]]
