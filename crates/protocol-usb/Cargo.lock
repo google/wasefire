@@ -302,13 +302,14 @@ dependencies = [
 name = "wasefire-protocol"
 version = "0.1.1-git"
 dependencies = [
+ "anyhow",
  "wasefire-error",
  "wasefire-wire",
 ]
 
 [[package]]
 name = "wasefire-protocol-usb"
-version = "0.1.1-git"
+version = "0.2.0-git"
 dependencies = [
  "anyhow",
  "defmt",
@@ -318,7 +319,6 @@ dependencies = [
  "wasefire-error",
  "wasefire-logger",
  "wasefire-protocol",
- "wasefire-wire",
 ]
 
 [[package]]

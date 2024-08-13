@@ -4,6 +4,7 @@
 
 ### Major
 
+- Rename `--serial` to `--protocol` with a more complex syntax
 - Move `--serial` and `--timeout` to commands that need them
 
 ### Patch

@@ -24,7 +24,7 @@ use usbd_serial::SerialPort;
 use usbip_device::UsbIpBus;
 use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
 use wasefire_board_api::usb::Api;
-use wasefire_error::{Code, Error};
+use wasefire_error::Error;
 use wasefire_protocol_usb::{HasRpc, Rpc};
 
 use crate::board::State;
@@ -44,20 +44,7 @@ impl HasRpc<'static, UsbIpBus> for Impl {
     }
 
     fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error> {
-        if let Some(request) = request.strip_prefix(b"echo ") {
-            let mut response = request.to_vec().into_boxed_slice();
-            for x in &mut response {
-                if x.is_ascii_alphabetic() {
-                    *x ^= 0x20;
-                }
-                if matches!(*x, b'I' | b'O' | b'i' | b'o') {
-                    *x ^= 0x6;
-                }
-            }
-            Ok(response)
-        } else {
-            Err(Error::user(Code::InvalidArgument))
-        }
+        crate::board::platform::vendor(request)
     }
 }
 

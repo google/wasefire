@@ -37,6 +37,8 @@ pub struct State {
     pub led: bool,
     pub timers: timer::Timers,
     pub uarts: uart::Uarts,
+    #[cfg(any(feature = "tcp", feature = "unix"))]
+    pub pipe: wasefire_protocol_tokio::Pipe,
     #[cfg(feature = "usb")]
     pub usb: usb::Usb,
     pub storage: Option<FileStorage>,

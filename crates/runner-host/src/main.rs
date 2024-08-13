@@ -33,6 +33,7 @@ mod board;
 
 static STATE: Mutex<Option<board::State>> = Mutex::new(None);
 static RECEIVER: Mutex<Option<Receiver<Event<Board>>>> = Mutex::new(None);
+static CLEANUP: Mutex<Vec<Box<dyn FnOnce() + Send>>> = Mutex::new(Vec::new());
 
 fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
     f(STATE.lock().unwrap().as_mut().unwrap())
@@ -40,6 +41,14 @@ fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
 
 #[derive(Parser)]
 struct Flags {
+    #[cfg(feature = "tcp")]
+    #[clap(long, default_value = "127.0.0.1:3457")]
+    tcp_addr: std::net::SocketAddr,
+
+    #[cfg(feature = "unix")]
+    #[clap(long, default_value = "/tmp/wasefire")]
+    unix_path: std::path::PathBuf,
+
     #[cfg(feature = "web")]
     #[clap(flatten)]
     web_options: WebOptions,
@@ -64,8 +73,22 @@ struct WebOptions {
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
-    #[cfg_attr(not(feature = "web"), allow(unused_variables))]
+    #[cfg_attr(feature = "usb", allow(unused_variables))]
     let flags = Flags::parse();
+    tokio::spawn(async {
+        use futures::stream::StreamExt;
+        use signal_hook::consts::{SIGINT, SIGTERM};
+        let mut signals = signal_hook_tokio::Signals::new([SIGINT, SIGTERM]).unwrap();
+        if let Some(signal) = signals.next().await {
+            use wasefire_board_api::debug::Api;
+            wasefire_board_api::Debug::<Board>::exit(signal == SIGTERM);
+        }
+    });
+    std::panic::set_hook(Box::new(|info| {
+        eprintln!("{info}");
+        use wasefire_board_api::debug::Api;
+        wasefire_board_api::Debug::<Board>::exit(false);
+    }));
     // TODO: Should be a flag controlled by xtask (value is duplicated there).
     const STORAGE: &str = "../../target/wasefire/storage.bin";
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
@@ -90,12 +113,31 @@ async fn main() -> Result<()> {
         let url = format!("{}:{}", flags.web_options.web_host, flags.web_options.web_port);
         web_server::Client::new(&url, sender).await?
     };
+    #[cfg(any(feature = "tcp", feature = "unix"))]
+    let push = {
+        use wasefire_board_api::platform::protocol::Event;
+        let sender = sender.clone();
+        move |event: Event| drop(sender.try_send(event.into()))
+    };
+    #[cfg(feature = "tcp")]
+    let pipe = wasefire_protocol_tokio::Pipe::new_tcp(flags.tcp_addr, push).await.unwrap();
+    #[cfg(feature = "unix")]
+    let pipe = {
+        let pipe = wasefire_protocol_tokio::Pipe::new_unix(&flags.unix_path, push).await.unwrap();
+        let unix_path = flags.unix_path.clone();
+        CLEANUP.lock().unwrap().push(Box::new(move || {
+            let _ = std::fs::remove_file(unix_path);
+        }));
+        pipe
+    };
     *STATE.lock().unwrap() = Some(board::State {
         sender,
         button: false,
         led: false,
         timers: board::timer::Timers::default(),
         uarts: board::uart::Uarts::new(),
+        #[cfg(any(feature = "tcp", feature = "unix"))]
+        pipe,
         #[cfg(feature = "usb")]
         usb: board::usb::Usb::default(),
         storage,
