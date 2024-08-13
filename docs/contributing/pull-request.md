@@ -1,29 +1,28 @@
-# How to create a pull request?
+# How to change code?
 
 All changes in this repository should go through a pull request.
 
 ## Documentation
 
-The pull request should document why it is needed. This could be either omitted (for typos and other
+A pull request should document why it is needed. This could be either omitted (for typos and other
 obvious changes), a link to an issue, or a description in the pull request (for complex changes). In
-both cases, the pull request title should be clear and concise.
+all cases, the pull request title should be clear and concise.
 
-If the change modifies the public API of a published crate, the API documentation should be
-modified accordingly.
+If a pull request adds or modifies specified code, documentation should be added or updated to make
+sure everyone agrees on what the code should do.
+
+See the [documentation page](./documentation.md) for more information.
 
 ## Testing
 
-You can run `./scripts/ci.sh` to locally run the tests that would run as part of the continuous
-integration on GitHub. If this is your first change, you might need to run `./scripts/setup.sh`
-after cloning the repository.
+If a pull request adds non-trivial code, tests should be added to make sure it is working as
+intended and won't be broken in the future.
 
-For faster iteration, you can run `./test.sh` from the directory where you are working. Such a
-script is present at the root of all crates.
-
-If the change adds a non-trivial functionality, additional tests should be added to make sure it is
-working as intended and won't be broken in the future.
+See the [testing page](./testing.md) for more information.
 
 ## Changelog
 
-If the change modifies a published crate, the change should be logged (see the
-[changelog](./changelog.md) documentation for more information).
+If a pull request modifies a published crate, the change should be logged to make sure it will be
+documented when released.
+
+See the [changelog page](./changelog.md) for more information.
