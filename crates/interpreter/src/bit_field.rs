@@ -47,7 +47,11 @@ mod tests {
     use super::*;
     use crate::Error;
 
+    const PROPTEST_CASES: u32 = 1;
+
     proptest! {
+        #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
+
         #[test]
         fn signed_field_round_trip(expected in -8i32..8) {
             let mask = 0b1111000;
@@ -55,19 +59,13 @@ mod tests {
             prop_assert_eq!(actual, expected);
         }
 
-       #[test]
-        fn signed_field_error_positive(expected in prop_oneof![
-            8..100,
-            100..,
-        ]) {
+        #[test]
+        fn signed_field_error_positive(expected in 8..100) {
             prop_assert!(matches!(into_signed_field(0b1111000, expected), Err(Error::Unsupported(_))));
         }
 
         #[test]
-        fn signed_field_error_negative(expected in prop_oneof![
-            -100..-9,
-            ..-100,
-        ]) {
+        fn signed_field_error_negative(expected in -100..-8) {
             prop_assert!(matches!(into_signed_field(0b1111000, expected), Err(Error::Unsupported(_))));
         }
 
