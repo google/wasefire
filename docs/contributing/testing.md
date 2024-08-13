@@ -9,6 +9,7 @@ permits developing faster, but too much testing time slows down development.
 ## Guidelines
 
 This repository makes the trade-off between testing benefits and testing costs in the following way:
+
 - Trivial code should not be tested.
 - Non-trivial code should be unit-tested (best effort coverage).
 - Code processing non-trivial user inputs (e.g. parsers) should also be fuzzed (ideally with a

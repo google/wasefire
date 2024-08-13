@@ -8,6 +8,7 @@ clarity) and documentation costs (reading and writing time).
 
 This repository makes the trade-off between documentation benefits and documentation costs in the
 following way:
+
 - All public items (function, module, trait, macro, etc) should be documented[^lints].
 - Unsafe items should be documented with a safety section.
 - Items with non-trivial usage should be documented with an examples section.
