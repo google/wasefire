@@ -12,30 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use derivative::Derivative;
+use derive_where::derive_where;
 use wasefire_board_api::timer::Event;
 use wasefire_board_api::{self as board, Api as Board, Id};
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Derivative)]
-#[derivative(Debug(bound = ""), Copy(bound = ""), Hash(bound = ""))]
-#[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
+#[derive_where(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Key<B: Board> {
     pub timer: Id<board::Timer<B>>,
-}
-
-// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use Clone(bound = "") instead.
-impl<B: Board> Clone for Key<B> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use PartialOrd(bound = "") instead.
-impl<B: Board> PartialOrd for Key<B> {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 impl<B: Board> From<Key<B>> for crate::event::Key<B> {

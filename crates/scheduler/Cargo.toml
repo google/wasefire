@@ -18,7 +18,7 @@ features = ["std", "wasm"]
 [dependencies]
 bytemuck = { version = "1.16.0", default-features = false }
 defmt = { version = "0.3.8", default-features = false, optional = true }
-derivative = { version = "2.2.0", default-features = false, features = ["use_core"] }
+derive-where = { version = "1.2.7", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
 generic-array = { version = "=0.14.7", default-features = false, optional = true }
 typenum = { version = "1.17.0", default-features = false, optional = true }
