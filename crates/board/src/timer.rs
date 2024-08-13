@@ -16,14 +16,13 @@
 //!
 //! A timer triggers an event after a given amount of time (possibly periodically).
 
-use derivative::Derivative;
+use derive_where::derive_where;
 
 use crate::{Error, Id, Support};
 
 /// Timer event.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Derivative)]
-#[derivative(Debug(bound = ""), PartialEq(bound = ""), Eq(bound = ""))]
+#[derive_where(Debug, PartialEq, Eq)]
 pub struct Event<B: crate::Api + ?Sized> {
     /// The timer that triggered the event.
     pub timer: Id<crate::Timer<B>>,

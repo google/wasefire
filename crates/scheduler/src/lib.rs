@@ -26,7 +26,7 @@ use alloc::vec::Vec;
 use core::ffi::CStr;
 use core::marker::PhantomData;
 
-use derivative::Derivative;
+use derive_where::derive_where;
 use event::Key;
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature, U32};
 #[cfg(feature = "board-api-storage")]
@@ -58,8 +58,7 @@ mod protocol;
 #[cfg(all(feature = "native", not(target_pointer_width = "32")))]
 compile_error!("Only 32-bits architectures support native applets.");
 
-#[derive(Derivative)]
-#[derivative(Default(bound = ""))]
+#[derive_where(Default)]
 pub struct Events<B: Board>(VecDeque<board::Event<B>>);
 
 impl<B: Board> Events<B> {

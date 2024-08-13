@@ -17,14 +17,13 @@
 //! A button is an input interface with 2 states: pressed and released. Buttons must support
 //! triggering events when changing state. Events may be enabled or disabled per button.
 
-use derivative::Derivative;
+use derive_where::derive_where;
 
 use crate::{Error, Id, Support};
 
 /// Button event.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Derivative)]
-#[derivative(Debug(bound = ""), PartialEq(bound = ""), Eq(bound = ""))]
+#[derive_where(Debug, PartialEq, Eq)]
 pub struct Event<B: crate::Api + ?Sized> {
     /// The button that triggered the event.
     pub button: Id<crate::Button<B>>,

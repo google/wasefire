@@ -26,7 +26,7 @@ extern crate alloc;
 use core::marker::PhantomData;
 use core::ops::Deref;
 
-use derivative::Derivative;
+use derive_where::derive_where;
 use wasefire_error::Code;
 pub use wasefire_error::Error;
 
@@ -151,8 +151,7 @@ pub trait Singleton: Sized {
 /// Events are de-duplicated if the previous one was not processed yet, because some events may
 /// trigger repeatedly.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Derivative)]
-#[derivative(Debug(bound = ""), PartialEq(bound = ""), Eq(bound = ""))]
+#[derive_where(Debug, PartialEq, Eq)]
 pub enum Event<B: Api + ?Sized> {
     /// Button event.
     #[cfg(feature = "api-button")]
@@ -186,30 +185,13 @@ pub enum Event<B: Api + ?Sized> {
 ///
 /// This type is useful when the type parameter `B` needs to be mentioned in an enum. This type can
 /// be destructed by calling its unreachable method.
-#[derive(Derivative)]
-#[derivative(Debug(bound = ""), Copy(bound = ""), Hash(bound = ""))]
-#[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
-#[derivative(Ord = "feature_allow_slow_enum")]
-pub struct Impossible<B: Api + ?Sized>(Void, PhantomData<B>);
+#[derive_where(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Impossible<B: Api + ?Sized>(!, PhantomData<B>);
 
 #[cfg(feature = "defmt")]
 impl<B: Api + ?Sized> defmt::Format for Impossible<B> {
     fn format(&self, fmt: defmt::Formatter) {
         defmt::write!(fmt, "Impossible");
-    }
-}
-
-// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use Clone(bound = "") instead.
-impl<B: Api + ?Sized> Clone for Impossible<B> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use PartialOrd(bound = "") instead.
-impl<B: Api + ?Sized> PartialOrd for Impossible<B> {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.cmp(other))
     }
 }
 
@@ -219,9 +201,6 @@ impl<B: Api + ?Sized> Impossible<B> {
         match self.0 {}
     }
 }
-
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-enum Void {}
 
 /// Button interface.
 #[cfg(feature = "api-button")]
@@ -271,9 +250,7 @@ pub type Uart<B> = <B as Api>::Uart;
 pub type Usb<B> = <B as Api>::Usb;
 
 /// Valid identifier for a countable API.
-#[derive(Derivative)]
-#[derivative(Debug(bound = ""), Copy(bound = ""), Hash(bound = ""))]
-#[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
+#[derive_where(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Id<T: Support<usize> + ?Sized> {
     // Invariant: value < T::SUPPORT
     value: usize,
@@ -284,20 +261,6 @@ pub struct Id<T: Support<usize> + ?Sized> {
 impl<T: Support<usize> + ?Sized> defmt::Format for Id<T> {
     fn format(&self, fmt: defmt::Formatter) {
         self.value.format(fmt)
-    }
-}
-
-// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use Clone(bound = "") instead.
-impl<T: Support<usize> + ?Sized> Clone for Id<T> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use PartialOrd(bound = "") instead.
-impl<T: Support<usize> + ?Sized> PartialOrd for Id<T> {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.cmp(other))
     }
 }
 
