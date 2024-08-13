@@ -25,12 +25,12 @@ changelog](../../crates/prelude/CHANGELOG.md) for an example):
 - The last version is 0.1.0 and contains no changes.
 - The last line is a comment with a counter to skip the CI test for that changelog.
 
-The `scripts/ci-changelog.sh` script verifies some of those rules, but not all. See [#448] for the
-tracking issue to check all rules.
+The `scripts/ci-changelog.sh` script verifies some of those rules, but not all. See the [tracking
+issue][#448] to check all rules.
 
 ## Logging a change
 
-Changes are currently logged manually (see [#448] for the tracking issue to automate that). When the
+Changes are currently logged manually (see the [tracking issue][#448] to automate that). When the
 pre-release version already exists at the correct version, then this is just a matter of adding an
 item to the list for that category in the pre-release version.
 

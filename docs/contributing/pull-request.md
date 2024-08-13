@@ -1,4 +1,4 @@
-# How to create a change code?
+# How to change code?
 
 All changes in this repository should go through a pull request.
 
