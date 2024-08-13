@@ -1,8 +1,9 @@
 # How to log a change?
 
-All changes in this repository should go through a pull request. If a change modifies a published
-crate, the change should be logged in the `CHANGELOG.md` file of that crate. Those files follow a
-specific format parsed by different tools and scripts, in particular during continuous integration.
+All changes in this repository should go through a pull request. If a pull request modifies a
+published crate, the change should be logged in the `CHANGELOG.md` file of that crate. Those files
+follow a specific format parsed by different tools and scripts, in particular during continuous
+integration and the release process.
 
 ## Changelog format
 
@@ -24,13 +25,14 @@ changelog](../../crates/prelude/CHANGELOG.md) for an example):
 - The last version is 0.1.0 and contains no changes.
 - The last line is a comment with a counter to skip the CI test for that changelog.
 
-The `scripts/ci-changelog.sh` script verifies some of those rules, but not all.
+The `scripts/ci-changelog.sh` script verifies some of those rules, but not all. See [#448] for the
+tracking issue to check all rules.
 
 ## Logging a change
 
-Changes are currently logged manually. When the pre-release version already exists at the correct
-version, then this is just a matter of adding an item to the list for that category in the
-pre-release version.
+Changes are currently logged manually (see [#448] for the tracking issue to automate that). When the
+pre-release version already exists at the correct version, then this is just a matter of adding an
+item to the list for that category in the pre-release version.
 
 However, if this is the first change since the last release, or if the change needs to create a high
 category that would update the pre-release version, then the `Cargo.toml` file needs to be modified
@@ -39,5 +41,6 @@ modified to reflect the new version. In turn, those crates also need to update t
 with a patch change that their dependencies were updated. This can result in automatable manual
 work. There should ultimately be a tool to update a changelog (and so recursively when needed).
 
+[#448]: https://github.com/google/wasefire/issues/448
 [Cargo Book]: https://doc.rust-lang.org/cargo/reference/resolver.html#semver-compatibility
 [SemVer]: https://semver.org/
