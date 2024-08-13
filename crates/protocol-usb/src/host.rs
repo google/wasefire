@@ -14,7 +14,7 @@
 
 use alloc::string::String;
 use alloc::vec::Vec;
-use core::fmt::Display;
+use core::fmt::{Debug, Display};
 use std::io::Write;
 use std::time::Duration;
 
@@ -158,7 +158,7 @@ pub struct Connection<T: UsbContext> {
 
 impl<T: UsbContext> Display for Connection<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{:?}", self.device)
+        self.device.fmt(f)
     }
 }
 

@@ -82,14 +82,14 @@ impl ConnectionOptions {
                 None => {
                     eprintln!("Choose one of the connected platforms using its serial:");
                     for (_, info) in matches {
-                        eprintln!("    --serial={}", HEX.encode(info.get().serial));
+                        eprintln!("--serial={}", HEX.encode(info.get().serial));
                     }
                     bail!("more than one connected platform");
                 }
                 Some(serial) => {
                     eprintln!("Multiple connected platforms with serial={serial}:");
                     for (connection, _) in matches {
-                        eprintln!("  - {connection}");
+                        eprintln!("- {connection}");
                     }
                     bail!("more than one connected platform with serial={serial}");
                 }

@@ -129,8 +129,7 @@ fn main() -> Result<()> {
         Action::AppletUninstall => bail!("not implemented yet"),
         Action::AppletRpc { options, action } => action.run(&options.connect()?),
         Action::PlatformList(x) => {
-            let platforms = x.run()?;
-            for platform in platforms {
+            for platform in x.run()? {
                 let serial = HEX.encode(platform.get().serial);
                 let version = HEX.encode(platform.get().version);
                 println!("- serial={serial} version={version}");
