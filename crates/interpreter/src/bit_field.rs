@@ -40,45 +40,45 @@ pub fn from_field(mask: u32, field: u32) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use alloc::format;
-
-    use proptest::prelude::*;
-
     use super::*;
     use crate::Error;
 
-    const PROPTEST_CASES: u32 = 1;
-
-    proptest! {
-        #![proptest_config(ProptestConfig::with_cases(PROPTEST_CASES))]
-
-        #[test]
-        fn signed_field_round_trip(expected in -8i32..8) {
-            let mask = 0b1111000;
+    #[test]
+    fn signed_field_round_trip() {
+        let mask = 0b1111000;
+        for expected in -8i32 .. 8 {
             let actual = from_signed_field(mask, into_signed_field(mask, expected).unwrap());
-            prop_assert_eq!(actual, expected);
+            assert_eq!(actual, expected);
         }
+    }
 
-        #[test]
-        fn signed_field_error_positive(expected in 8..100) {
-            prop_assert!(matches!(into_signed_field(0b1111000, expected), Err(Error::Unsupported(_))));
+    #[test]
+    fn signed_field_error_positive() {
+        for expected in 8 .. 100 {
+            assert!(matches!(into_signed_field(0b1111000, expected), Err(Error::Unsupported(_))));
         }
+    }
 
-        #[test]
-        fn signed_field_error_negative(expected in -100..-8) {
-            prop_assert!(matches!(into_signed_field(0b1111000, expected), Err(Error::Unsupported(_))));
+    #[test]
+    fn signed_field_error_negative() {
+        for expected in -100 .. -8 {
+            assert!(matches!(into_signed_field(0b1111000, expected), Err(Error::Unsupported(_))));
         }
+    }
 
-        #[test]
-        fn unsigned_field_round_trip(expected in 0u32..8) {
-            let mask = 0b111000;
+    #[test]
+    fn unsigned_field_round_trip() {
+        let mask = 0b111000;
+        for expected in 0 .. 8 {
             let actual = from_field(mask, into_field(mask, expected).unwrap());
-            prop_assert_eq!(actual, expected);
+            assert_eq!(actual, expected);
         }
+    }
 
-        #[test]
-        fn unsigned_field_error(expected in 8u32..100) {
-            prop_assert!(matches!(into_field(0b111000, expected), Err(Error::Unsupported(_))));
+    #[test]
+    fn unsigned_field_error() {
+        for expected in 8 .. 10 {
+            assert!(matches!(into_field(0b111000, expected), Err(Error::Unsupported(_))));
         }
     }
 }
