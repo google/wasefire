@@ -28,10 +28,10 @@ use crate::{DispatchSchedulerCall, SchedulerCall};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::IsSupported(call) => is_supported(call),
-        Api::Metadata(call) => or_trap!("board-api-platform-update", metadata(call)),
-        Api::Initialize(call) => or_trap!("board-api-platform-update", initialize(call)),
-        Api::Process(call) => or_trap!("board-api-platform-update", process_(call)),
-        Api::Finalize(call) => or_trap!("board-api-platform-update", finalize(call)),
+        Api::Metadata(call) => or_fail!("board-api-platform-update", metadata(call)),
+        Api::Initialize(call) => or_fail!("board-api-platform-update", initialize(call)),
+        Api::Process(call) => or_fail!("board-api-platform-update", process_(call)),
+        Api::Finalize(call) => or_fail!("board-api-platform-update", finalize(call)),
     }
 }
 

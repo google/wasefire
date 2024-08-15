@@ -30,9 +30,9 @@ use crate::{Scheduler, Timer};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Allocate(call) => allocate(call),
-        Api::Start(call) => or_trap!("board-api-timer", start(call)),
-        Api::Stop(call) => or_trap!("board-api-timer", stop(call)),
-        Api::Free(call) => or_trap!("board-api-timer", free(call)),
+        Api::Start(call) => or_fail!("board-api-timer", start(call)),
+        Api::Stop(call) => or_fail!("board-api-timer", stop(call)),
+        Api::Free(call) => or_fail!("board-api-timer", free(call)),
     }
 }
 

@@ -28,8 +28,8 @@ use crate::{DispatchSchedulerCall, SchedulerCall};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::IsSupported(call) => is_supported(call),
-        Api::Encrypt(call) => or_trap!("board-api-crypto-aes128-ccm", encrypt(call)),
-        Api::Decrypt(call) => or_trap!("board-api-crypto-aes128-ccm", decrypt(call)),
+        Api::Encrypt(call) => or_fail!("board-api-crypto-aes128-ccm", encrypt(call)),
+        Api::Decrypt(call) => or_fail!("board-api-crypto-aes128-ccm", decrypt(call)),
     }
 }
 

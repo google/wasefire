@@ -15,6 +15,7 @@
 
 ### Minor
 
+- Migrate `or_trap!` to `or_fail!` for when there's no board support
 - Support `PlatformVendor` protocol
 - Support `platform::serial()` function
 - Migrate `platform::version()` to the new board and applet APIs

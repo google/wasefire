@@ -29,13 +29,13 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::IsSupported(call) => is_supported(call),
         Api::IsValidScalar(call) => {
-            or_trap!("internal-board-api-crypto-ecc", is_valid_scalar(call))
+            or_fail!("internal-board-api-crypto-ecc", is_valid_scalar(call))
         }
-        Api::IsValidPoint(call) => or_trap!("internal-board-api-crypto-ecc", is_valid_point(call)),
-        Api::BasePointMul(call) => or_trap!("internal-board-api-crypto-ecc", base_point_mul(call)),
-        Api::PointMul(call) => or_trap!("internal-board-api-crypto-ecc", point_mul(call)),
-        Api::EcdsaSign(call) => or_trap!("internal-board-api-crypto-ecc", ecdsa_sign(call)),
-        Api::EcdsaVerify(call) => or_trap!("internal-board-api-crypto-ecc", ecdsa_verify(call)),
+        Api::IsValidPoint(call) => or_fail!("internal-board-api-crypto-ecc", is_valid_point(call)),
+        Api::BasePointMul(call) => or_fail!("internal-board-api-crypto-ecc", base_point_mul(call)),
+        Api::PointMul(call) => or_fail!("internal-board-api-crypto-ecc", point_mul(call)),
+        Api::EcdsaSign(call) => or_fail!("internal-board-api-crypto-ecc", ecdsa_sign(call)),
+        Api::EcdsaVerify(call) => or_fail!("internal-board-api-crypto-ecc", ecdsa_verify(call)),
     }
 }
 

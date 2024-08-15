@@ -30,13 +30,13 @@ use crate::{DispatchSchedulerCall, SchedulerCall};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Count(call) => count(call),
-        Api::SetBaudrate(call) => or_trap!("board-api-uart", set_baudrate(call)),
-        Api::Start(call) => or_trap!("board-api-uart", start(call)),
-        Api::Stop(call) => or_trap!("board-api-uart", stop(call)),
-        Api::Read(call) => or_trap!("board-api-uart", read(call)),
-        Api::Write(call) => or_trap!("board-api-uart", write(call)),
-        Api::Register(call) => or_trap!("board-api-uart", register(call)),
-        Api::Unregister(call) => or_trap!("board-api-uart", unregister(call)),
+        Api::SetBaudrate(call) => or_fail!("board-api-uart", set_baudrate(call)),
+        Api::Start(call) => or_fail!("board-api-uart", start(call)),
+        Api::Stop(call) => or_fail!("board-api-uart", stop(call)),
+        Api::Read(call) => or_fail!("board-api-uart", read(call)),
+        Api::Write(call) => or_fail!("board-api-uart", write(call)),
+        Api::Register(call) => or_fail!("board-api-uart", register(call)),
+        Api::Unregister(call) => or_fail!("board-api-uart", unregister(call)),
     }
 }
 
