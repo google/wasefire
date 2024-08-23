@@ -19,6 +19,12 @@ mod console;
 mod hooks;
 
 fn main() {
-    wasm_logger::init(wasm_logger::Config::default());
+    if cfg!(debug_assertions) {
+        // More verbose logging when NOT built with release flag
+        wasm_logger::init(wasm_logger::Config::new(log::Level::Debug));
+    } else {
+        wasm_logger::init(wasm_logger::Config::new(log::Level::Warn));
+    }
+
     yew::Renderer::<app::App>::new().render();
 }
