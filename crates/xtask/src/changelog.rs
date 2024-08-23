@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Context, Result};
 use clap::ValueEnum;
 use semver::Version;
 
@@ -37,9 +37,7 @@ struct Changelog {
 }
 
 impl Changelog {
-    fn read_file(crate_path: &str) -> Result<Changelog> {
-        let changelog_path = format!("{crate_path}/CHANGELOG.md");
-
+    fn read_file(changelog_path: &str) -> Result<Changelog> {
         let changelog_contents = wasefire_cli_tools::fs::read(&changelog_path)?;
 
         Self::parse(String::from_utf8(changelog_contents)?)
@@ -72,7 +70,7 @@ impl Changelog {
         for each_release in contents.split("\n## ").skip(1) {
             let mut version_iter = each_release.split("\n### ").into_iter();
             let release_string = version_iter.next().expect("No release version detected.").trim();
-            let mut release = Release::from(release_string);
+            let mut release = Release::from(release_string)?;
 
             // Each 'Major', 'Minor', 'Patch' section within this release.
             for each_version in version_iter {
@@ -117,19 +115,47 @@ struct Release {
 }
 
 impl Release {
-    fn from(version: &str) -> Self {
-        let semver = Version::parse(version).expect("Invalid string version format.");
-        Release { version: semver, major: Vec::new(), minor: Vec::new(), patch: Vec::new() }
+    fn from(version: &str) -> Result<Self> {
+        let semver = Version::parse(version)?;
+
+        Ok(Release { version: semver, major: Vec::new(), minor: Vec::new(), patch: Vec::new() })
     }
 }
 
-pub fn execute(crate_path: &str, _version: &ReleaseType, _message: &str) -> Result<()> {
-    ensure!(wasefire_cli_tools::fs::exists(crate_path), "Crate does not exist: {}", crate_path);
+/// Validates CHANGELOG.md files for all Wasefire crates.
+pub fn execute_ci() -> Result<()> {
+    let dir_entries = wasefire_cli_tools::fs::read_dir("crates")?;
 
-    let _changelog = Changelog::read_file(crate_path)?;
-    // TODO: act upon changelog...
+    let existing_changelog_paths = dir_entries.filter_map(|entry| {
+        if let Ok(crate_path) = entry {
+            if crate_path.metadata().is_ok_and(|metadata| metadata.is_dir()) {
+                let changelog_file_path = format!("{}/CHANGELOG.md", crate_path.path().display());
+
+                if wasefire_cli_tools::fs::exists(&changelog_file_path) {
+                    return Some(changelog_file_path);
+                }
+            }
+        }
+
+        None
+    });
+
+    for changelog_path in existing_changelog_paths {
+        // Validation done during parsing.
+        Changelog::read_file(&changelog_path)
+            .with_context(|| format!("validating changelog file: {changelog_path}"))?;
+    }
 
     Ok(())
+}
+
+/// Updates a CHANGELOG.md file and CHANGELOG.md files of dependencies.
+pub fn execute_change(crate_path: &str, _version: &ReleaseType, _message: &str) -> Result<()> {
+    ensure!(wasefire_cli_tools::fs::exists(crate_path), "Crate does not exist: {}", crate_path);
+
+    let _changelog = Changelog::read_file(format!("{crate_path}/CHANGELOG.md").as_str())?;
+
+    todo!("Implement changelog updates");
 }
 
 #[cfg(test)]

@@ -96,17 +96,8 @@ enum MainCommand {
     /// Ensures review can be done in printed form.
     Textreview,
 
-    /// Updates change log of a crate and all dependent crates.
-    Changelog {
-        /// Crate to update suchas "crate/board".
-        crate_path: String,
-
-        // Either "major", "minor", or "patch".
-        version: changelog::ReleaseType,
-
-        /// Message added to the CHANGELOG.md.
-        message: String,
-    },
+    /// Performs a changelog operation.
+    Changelog(Changelog),
 }
 
 #[derive(clap::Args)]
@@ -228,6 +219,30 @@ struct RunnerOptions {
     memory_page_count: Option<usize>,
 }
 
+#[derive(clap::Args)]
+struct Changelog {
+    #[clap(subcommand)]
+    command: ChangelogCommand,
+}
+
+#[derive(clap::Subcommand)]
+enum ChangelogCommand {
+    /// Validates all CHANGELOG.md files.
+    Ci,
+
+    /// Updates change log of a crate and all dependent crates.
+    Change {
+        /// Crate to update suchas "crate/board".
+        crate_path: String,
+
+        // Either "major", "minor", or "patch".
+        version: changelog::ReleaseType,
+
+        /// Message added to the CHANGELOG.md.
+        message: String,
+    },
+}
+
 impl Flags {
     fn execute(self) -> Result<()> {
         match self.command {
@@ -235,9 +250,12 @@ impl Flags {
             MainCommand::Runner(runner) => runner.execute(&self.options),
             MainCommand::Footprint { output } => footprint::compare(&output),
             MainCommand::Textreview => textreview::execute(),
-            MainCommand::Changelog { crate_path, version, message } => {
-                changelog::execute(&crate_path, &version, &message)
-            }
+            MainCommand::Changelog(subcommand) => match subcommand.command {
+                ChangelogCommand::Ci => changelog::execute_ci(),
+                ChangelogCommand::Change { crate_path, version, message } => {
+                    changelog::execute_change(&crate_path, &version, &message)
+                }
+            },
         }
     }
 }

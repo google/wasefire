@@ -14,7 +14,7 @@
 
 //! Wrappers around `std::fs` with descriptive errors.
 
-use std::fs::Metadata;
+use std::fs::{Metadata, ReadDir};
 use std::io::{ErrorKind, Read, Write};
 use std::path::{Component, Path, PathBuf};
 
@@ -113,6 +113,12 @@ pub fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
     let name = path.as_ref().display();
     debug!("read < {name:?}");
     std::fs::read(path.as_ref()).with_context(|| format!("reading {name}"))
+}
+
+pub fn read_dir(path: impl AsRef<Path>) -> Result<ReadDir> {
+    let dir = path.as_ref().display();
+    debug!("read_dir < {dir:?}");
+    std::fs::read_dir(path.as_ref()).with_context(|| format!("reading directory {dir}"))
 }
 
 pub fn read_toml<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {
