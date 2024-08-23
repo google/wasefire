@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use clap::ValueEnum;
 use semver::Version;
 
@@ -33,7 +33,7 @@ struct Changelog {
     /// modifications are already documented in the changelog, so the test will have a false
     /// positive. This counter is used to artificially modify the changelog and explicitly
     /// acknowledge that it's already up-to-date.
-    skip_counter: Option<u32>,
+    skip_counter: u32,
 }
 
 impl Changelog {
@@ -44,24 +44,30 @@ impl Changelog {
     }
 
     /// Converts raw file contents into a Changelog data structure.
+    ///
+    /// Validates requirements in docs/contributing/changelog.md
     fn parse(contents: String) -> Result<Changelog> {
-        let mut skip_counter = None;
-        let mut releases = Vec::new();
+        let mut releases: Vec<Release> = Vec::new();
+
+        if !contents.starts_with("# Changelog") {
+            return Err(anyhow!("H1 with 'Changelog' is required"));
+        }
 
         // Trim off the trailing comment: <!-- Increment to skip ... -->
         let contents: Vec<&str> =
             contents.split("\n\n<!-- Increment to skip CHANGELOG.md test:").collect();
 
-        // Populate skip_counter if we have one.
-        if contents.len() > 1 {
-            let ending = contents[1]
-                .trim()
-                .strip_suffix("-->")
-                .expect("Malformed 'Increment to skip CHANGELOG.md test'")
-                .trim();
-
-            skip_counter = ending.parse::<u32>().ok();
+        if contents.len() <= 1 {
+            return Err(anyhow!("skip_counter is required"));
         }
+
+        // Populate skip_counter if we have one.
+        let skip_counter = contents[1]
+            .trim()
+            .strip_suffix("-->")
+            .expect("Malformed 'Increment to skip CHANGELOG.md test'")
+            .trim()
+            .parse::<u32>()?;
 
         let contents = contents[0];
 
@@ -98,7 +104,32 @@ impl Changelog {
                 }
             }
 
+            if let Some(previous_version) = releases.last() {
+                if release.version > previous_version.version {
+                    return Err(anyhow!("Versions out of order"));
+                }
+            }
+
+            if !releases.is_empty() && !release.version.pre.is_empty() {
+                return Err(anyhow!("Only the first version can be pre-release"));
+            }
+
             releases.push(release);
+        }
+
+        if let Some(last_release) = releases.last() {
+            if last_release.version.to_string() != "0.1.0" {
+                return Err(anyhow!("The last release must be version 0.1.0"));
+            }
+
+            if last_release.major.len() > 0
+                || last_release.minor.len() > 0
+                || last_release.patch.len() > 0
+            {
+                return Err(anyhow!("The last release must contain no changes"));
+            }
+        } else {
+            return Err(anyhow!("At least 1 release is required"));
         }
 
         Ok(Changelog { releases, skip_counter })
@@ -166,6 +197,23 @@ mod tests {
     fn parse_changelog_success() {
         let changelog = r"# Changelog
 
+## 0.3.0
+
+### Major
+
+- major update 1
+- major update 2
+
+### Minor
+
+- minor update 1
+- minor update 2
+
+### Patch
+
+- patch update 1
+- patch update 2
+
 ## 0.2.0
 
 ### Major
@@ -185,26 +233,18 @@ mod tests {
 
 ## 0.1.0
 
-### Major
-
-- major update 1
-- major update 2
-
-### Minor
-
-- minor update 1
-- minor update 2
-
-### Patch
-
-- patch update 1
-- patch update 2
-";
+<!-- Increment to skip CHANGELOG.md test: 0 -->";
 
         assert_eq!(
             Changelog::parse(changelog.to_string()).expect("Failed to parse changelog."),
             Changelog {
                 releases: vec![
+                    Release {
+                        version: Version::parse("0.3.0").unwrap(),
+                        major: vec!["major update 1".to_string(), "major update 2".to_string()],
+                        minor: vec!["minor update 1".to_string(), "minor update 2".to_string()],
+                        patch: vec!["patch update 1".to_string(), "patch update 2".to_string()],
+                    },
                     Release {
                         version: Version::parse("0.2.0").unwrap(),
                         major: vec!["major update 1".to_string(), "major update 2".to_string()],
@@ -213,12 +253,12 @@ mod tests {
                     },
                     Release {
                         version: Version::parse("0.1.0").unwrap(),
-                        major: vec!["major update 1".to_string(), "major update 2".to_string()],
-                        minor: vec!["minor update 1".to_string(), "minor update 2".to_string()],
-                        patch: vec!["patch update 1".to_string(), "patch update 2".to_string()],
+                        major: Vec::new(),
+                        minor: Vec::new(),
+                        patch: Vec::new(),
                     }
                 ],
-                skip_counter: None,
+                skip_counter: 0,
             }
         );
     }
@@ -227,52 +267,61 @@ mod tests {
     fn parse_changelog_with_missing_release_type_success() {
         let changelog = r"# Changelog
 
-## 0.2.0
+## 0.4.0
 
 ### Major
 
 - major update 1
 - major update 2
 
-## 0.1.0
+## 0.3.0
 
 ### Minor
 
 - minor update 1
 - minor update 2
 
-## 0.0.1
+## 0.2.0
 
 ### Patch
 
 - patch update 1
 - patch update 2
-";
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->";
 
         assert_eq!(
             Changelog::parse(changelog.to_string()).expect("Failed to parse changelog."),
             Changelog {
                 releases: vec![
                     Release {
-                        version: Version::parse("0.2.0").unwrap(),
+                        version: Version::parse("0.4.0").unwrap(),
                         major: vec!["major update 1".to_string(), "major update 2".to_string()],
                         minor: Vec::new(),
                         patch: Vec::new(),
                     },
                     Release {
-                        version: Version::parse("0.1.0").unwrap(),
+                        version: Version::parse("0.3.0").unwrap(),
                         major: Vec::new(),
                         minor: vec!["minor update 1".to_string(), "minor update 2".to_string()],
                         patch: Vec::new(),
                     },
                     Release {
-                        version: Version::parse("0.0.1").unwrap(),
+                        version: Version::parse("0.2.0").unwrap(),
                         major: Vec::new(),
                         minor: Vec::new(),
                         patch: vec!["patch update 1".to_string(), "patch update 2".to_string()],
+                    },
+                    Release {
+                        version: Version::parse("0.1.0").unwrap(),
+                        major: Vec::new(),
+                        minor: Vec::new(),
+                        patch: Vec::new(),
                     }
                 ],
-                skip_counter: None,
+                skip_counter: 0,
             }
         );
     }
@@ -281,7 +330,7 @@ mod tests {
     fn parse_changelog_handles_multi_line_description() {
         let changelog = r"# Changelog
 
-## 0.1.0
+## 0.2.0
 
 ### Major
 
@@ -290,22 +339,32 @@ mod tests {
   that spans many lines.
 - short 2
 
-";
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->";
 
         assert_eq!(
             Changelog::parse(changelog.to_string()).expect("Failed to parse changelog."),
             Changelog {
-                releases: vec![Release {
-                    version: Version::parse("0.1.0").unwrap(),
-                    major: vec![
-                        "short 1".to_string(),
-                        "my long description\n  that spans many lines.".to_string(),
-                        "short 2".to_string()
-                    ],
-                    minor: Vec::new(),
-                    patch: Vec::new(),
-                }],
-                skip_counter: None,
+                releases: vec![
+                    Release {
+                        version: Version::parse("0.2.0").unwrap(),
+                        major: vec![
+                            "short 1".to_string(),
+                            "my long description\n  that spans many lines.".to_string(),
+                            "short 2".to_string()
+                        ],
+                        minor: Vec::new(),
+                        patch: Vec::new(),
+                    },
+                    Release {
+                        version: Version::parse("0.1.0").unwrap(),
+                        major: Vec::new(),
+                        minor: Vec::new(),
+                        patch: Vec::new(),
+                    }
+                ],
+                skip_counter: 0,
             }
         );
     }
@@ -315,7 +374,8 @@ mod tests {
         let changelog = r"# Changelog
 
 ## 0.1.0
-";
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->";
 
         assert_eq!(
             Changelog::parse(changelog.to_string()).expect("Failed to parse changelog."),
@@ -326,19 +386,15 @@ mod tests {
                     minor: Vec::new(),
                     patch: Vec::new(),
                 }],
-                skip_counter: None,
+                skip_counter: 0,
             }
         );
     }
 
     #[test]
-    fn parse_changelog_handles_increment_comment_at_end() {
+    fn parse_changelog_handles_skip_counter_at_end() {
         let changelog = r"# Changelog
 ## 0.1.0
-
-### Major
-
-- A change
 
 <!-- Increment to skip CHANGELOG.md test: 5 -->";
 
@@ -347,12 +403,130 @@ mod tests {
             Changelog {
                 releases: vec![Release {
                     version: Version::parse("0.1.0").unwrap(),
-                    major: vec!["A change".to_string()],
+                    major: Vec::new(),
                     minor: Vec::new(),
                     patch: Vec::new(),
                 }],
-                skip_counter: Some(5),
+                skip_counter: 5,
             }
         );
+    }
+
+    #[test]
+    fn parse_changelog_requires_skip_counter_at_end() {
+        let changelog = r"# Changelog
+## 0.1.0";
+
+        assert!(Changelog::parse(changelog.to_string())
+            .expect_err("Parse changelog was successful.")
+            .to_string()
+            .contains("skip_counter is required"))
+    }
+
+    #[test]
+    fn parse_changelog_must_start_with_h1_changelog() {
+        let changelog = r"
+## 0.1.0";
+
+        assert!(Changelog::parse(changelog.to_string())
+            .expect_err("Parse changelog was successful.")
+            .to_string()
+            .contains("H1 with 'Changelog' is required"))
+    }
+
+    #[test]
+    fn parse_changelog_versions_must_be_in_order() {
+        let changelog = r"# Changelog
+
+## 0.1.0
+
+### Major
+
+- A change
+
+## 0.2.0
+
+### Major
+
+- A change
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->";
+
+        assert!(Changelog::parse(changelog.to_string())
+            .expect_err("Parse changelog was successful.")
+            .to_string()
+            .contains("Versions out of order"))
+    }
+
+    #[test]
+    fn parse_changelog_versions_requires_at_least_one_release() {
+        let changelog = r"# Changelog
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->";
+
+        assert!(Changelog::parse(changelog.to_string())
+            .expect_err("Parse changelog was successful.")
+            .to_string()
+            .contains("At least 1 release is required"))
+    }
+
+    #[test]
+    fn parse_changelog_versions_last_version_must_be_0_1_0() {
+        let changelog = r"# Changelog
+
+## 0.2.0
+
+### Major
+
+- A change
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->";
+
+        assert!(Changelog::parse(changelog.to_string())
+            .expect_err("Parse changelog was successful.")
+            .to_string()
+            .contains("The last release must be version 0.1.0"))
+    }
+
+    #[test]
+    fn parse_changelog_versions_last_version_must_be_empty() {
+        let changelog = r"# Changelog
+
+## 0.1.0
+
+### Major
+
+- A change
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->";
+
+        assert!(Changelog::parse(changelog.to_string())
+            .expect_err("Parse changelog was successful.")
+            .to_string()
+            .contains("The last release must contain no changes"))
+    }
+
+    #[test]
+    fn parse_changelog_versions_only_first_can_be_prerelease() {
+        let changelog = r"# Changelog
+
+## 0.6.0-git
+
+### Major
+
+- A change
+
+## 0.5.0-git
+
+### Major
+
+- A change
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->";
+
+        assert!(Changelog::parse(changelog.to_string())
+            .expect_err("Parse changelog was successful.")
+            .to_string()
+            .contains("Only the first version can be pre-release"))
     }
 }
