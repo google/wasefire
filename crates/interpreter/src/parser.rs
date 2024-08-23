@@ -702,7 +702,8 @@ impl<'m, M: Mode> Parser<'m, M> {
 
 /// Maximum number of locals (must be less than 2^32).
 // NOTE: This should be configurable.
-const MAX_LOCALS: usize = 100;
+// NOTE: Spec test skip_stack_guard_page needs lots of locals.
+const MAX_LOCALS: usize = 10000;
 
 fn check_eq<M: Mode, T: Eq>(x: T, y: T) -> MResult<(), M> {
     M::check(|| x == y)

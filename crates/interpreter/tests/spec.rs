@@ -13,9 +13,13 @@
 // limitations under the License.
 
 #![feature(int_roundings)]
+#![feature(get_mut_unchecked)]
 #![allow(unused_crate_dependencies)]
 
+use std::borrow::BorrowMut;
 use std::collections::HashMap;
+use std::sync::Arc;
+use std::{thread, vec};
 
 use lazy_static::lazy_static;
 use wasefire_interpreter::*;
@@ -24,6 +28,69 @@ use wast::lexer::Lexer;
 use wast::token::Id;
 use wast::{parser, QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, WastRet, Wat};
 
+fn parse_directives(name: &str, directives: Vec<WastDirective>, root_env: Option<Arc<Env>>) {
+    let layout = std::alloc::Layout::from_size_align(pool_size(name), MEMORY_ALIGN).unwrap();
+    let pool =
+        unsafe { std::slice::from_raw_parts_mut(std::alloc::alloc_zeroed(layout), layout.size()) };
+    let mut env_arc = Arc::new(Env::new(pool));
+    let first_call = root_env.is_some();
+    if root_env.is_some() {
+        env_arc = root_env.unwrap();
+    }
+    let env_arc_cpy = env_arc.clone();
+    let env = unsafe { Arc::<Env<'_>>::get_mut_unchecked(env_arc.borrow_mut()) };
+    let mut threads = Vec::new();
+    let mut register_directives = Vec::new();
+    if !first_call {
+        let inst_id = env.instantiate("spectest", &SPECTEST);
+        env.register_name("spectest", None, Some(inst_id));
+    }
+    let mut inst = None;
+    for directive in directives {
+        eprintln!("{name}:{}", directive.span().offset());
+        match directive {
+            WastDirective::Wat(QuoteWat::Wat(Wat::Module(mut m))) => {
+                inst = Some(env.instantiate(name, &m.encode().unwrap()));
+                env.register_id(m.id, inst.unwrap());
+            }
+            WastDirective::Wat(mut wat) => {
+                inst = Some(env.instantiate(name, &wat.encode().unwrap()));
+            }
+            WastDirective::AssertMalformed { module, .. } => assert_malformed(module),
+            WastDirective::AssertInvalid { module, .. } => assert_invalid(module),
+            WastDirective::AssertReturn { exec, results, .. } => {
+                assert_return(env, exec, results, inst)
+            }
+            WastDirective::AssertTrap { exec, .. } => assert_trap(env, exec, inst),
+            WastDirective::Invoke(invoke) => assert_invoke(env, invoke, inst),
+            WastDirective::AssertExhaustion { call, .. } => assert_exhaustion(env, call, inst),
+            WastDirective::Register { name, module, span } => {
+                env.register_name(name, module, inst);
+                register_directives.push(WastDirective::Register { name, module, span });
+            }
+            WastDirective::AssertUnlinkable { module, .. } => assert_unlinkable(env, module),
+            WastDirective::Thread(thread) => {
+                println!("DBK wast-thread {:?}", thread.name);
+                threads.push(thread);
+            }
+            WastDirective::Wait { span, thread } => {
+                if !first_call {
+                    thread::scope(|s| {
+                        for t in threads.drain(0 ..) {
+                            let env_cpy = env_arc_cpy.clone();
+                            s.spawn(|| {
+                                parse_directives(name, t.directives, Some(env_cpy));
+                            });
+                        }
+                    });
+                }
+                println!("DBK wast-wait {:?}, {:?}", thread, span)
+            }
+            _ => unimplemented!("{:?}", directive),
+        }
+    }
+}
+
 fn test(repo: &str, name: &str) {
     let path = format!("../../third_party/WebAssembly/{repo}/test/core/{name}.wast");
     let content = std::fs::read_to_string(path).unwrap();
@@ -31,35 +98,7 @@ fn test(repo: &str, name: &str) {
     lexer.allow_confusing_unicode(true);
     let buffer = parser::ParseBuffer::new_with_lexer(lexer).unwrap();
     let wast: Wast = parser::parse(&buffer).unwrap();
-    let layout = std::alloc::Layout::from_size_align(pool_size(name), MEMORY_ALIGN).unwrap();
-    let pool = unsafe { std::slice::from_raw_parts_mut(std::alloc::alloc(layout), layout.size()) };
-    let mut env = Env::new(pool);
-    env.instantiate("spectest", &SPECTEST);
-    env.register_name("spectest", None);
-    assert!(env.inst.is_ok());
-    for directive in wast.directives {
-        eprintln!("{name}:{}", directive.span().offset());
-        match directive {
-            WastDirective::Wat(QuoteWat::Wat(Wat::Module(mut m))) => {
-                env.instantiate(name, &m.encode().unwrap());
-                if !matches!(env.inst, Err(Error::Unsupported(_))) {
-                    env.register_id(m.id, env.inst.unwrap());
-                }
-            }
-            WastDirective::Wat(mut wat) => env.instantiate(name, &wat.encode().unwrap()),
-            WastDirective::AssertMalformed { module, .. } => assert_malformed(module),
-            WastDirective::AssertInvalid { module, .. } => assert_invalid(module),
-            WastDirective::AssertReturn { exec, results, .. } => {
-                assert_return(&mut env, exec, results)
-            }
-            WastDirective::AssertTrap { exec, .. } => assert_trap(&mut env, exec),
-            WastDirective::Invoke(invoke) => assert_invoke(&mut env, invoke),
-            WastDirective::AssertExhaustion { call, .. } => assert_exhaustion(&mut env, call),
-            WastDirective::Register { name, module, .. } => env.register_name(name, module),
-            WastDirective::AssertUnlinkable { module, .. } => assert_unlinkable(&mut env, module),
-            _ => unimplemented!("{:?}", directive),
-        }
-    }
+    parse_directives(name, wast.directives, None);
 }
 
 fn pool_size(name: &str) -> usize {
@@ -100,16 +139,17 @@ fn mem_size(name: &str) -> usize {
 struct Env<'m> {
     pool: &'m mut [u8],
     store: Store<'m>,
-    inst: Result<InstId, Error>,
     map: HashMap<Id<'m>, InstId>,
+    lock: spin::Mutex<()>,
 }
 
 impl<'m> Env<'m> {
     fn new(pool: &'m mut [u8]) -> Self {
-        Env { pool, store: Store::default(), inst: Err(Error::Invalid), map: HashMap::new() }
+        Env { pool, store: Store::default(), map: HashMap::new(), lock: spin::Mutex::new(()) }
     }
 
     fn alloc(&mut self, size: usize) -> &'m mut [u8] {
+        let _lock = self.lock.lock();
         if self.pool.len() < size {
             panic!("pool is too small");
         }
@@ -118,14 +158,6 @@ impl<'m> Env<'m> {
         let (result, pool) = self_pool.split_at_mut(size.next_multiple_of(MEMORY_ALIGN));
         self.pool = pool;
         &mut result[.. size]
-    }
-
-    fn set_inst(&mut self, inst: Result<InstId, Error>) {
-        match inst {
-            Ok(_) | Err(Error::Unsupported(_)) => (),
-            Err(e) => panic!("{e:?}"),
-        }
-        self.inst = inst;
     }
 
     fn maybe_instantiate(&mut self, name: &str, wasm: &[u8]) -> Result<InstId, Error> {
@@ -139,9 +171,10 @@ impl<'m> Env<'m> {
         self.store.instantiate(module, memory)
     }
 
-    fn instantiate(&mut self, name: &str, wasm: &[u8]) {
+    fn instantiate(&mut self, name: &str, wasm: &[u8]) -> InstId {
         let inst = self.maybe_instantiate(name, wasm);
-        self.set_inst(inst);
+        println!("DBK (spec.rs): instantiate inst_id={:?} for module {:?}", inst, name);
+        inst.unwrap()
     }
 
     fn invoke(&mut self, inst_id: InstId, name: &str, args: Vec<Val>) -> Result<Vec<Val>, Error> {
@@ -151,8 +184,10 @@ impl<'m> Env<'m> {
         })
     }
 
-    fn register_name(&mut self, name: &'m str, module: Option<Id<'m>>) {
-        let inst_id = self.inst.unwrap();
+    fn register_name(&mut self, name: &'m str, module: Option<Id<'m>>, inst_id: Option<InstId>) {
+        println!("DBK (spec.rs): register_name name={:?} for module {:?}", name, module);
+
+        let inst_id = self.inst_id(module, inst_id).unwrap();
         self.register_id(module, inst_id);
         self.store.set_name(inst_id, name).unwrap();
     }
@@ -163,10 +198,10 @@ impl<'m> Env<'m> {
         }
     }
 
-    fn inst_id(&self, id: Option<Id>) -> Result<InstId, Error> {
+    fn inst_id(&self, id: Option<Id>, default: Option<InstId>) -> Result<InstId, Error> {
         match id {
             Some(x) => Ok(self.map[&x]),
-            None => self.inst,
+            None => Ok(default.unwrap()),
         }
     }
 }
@@ -256,8 +291,8 @@ fn spectest() -> Vec<u8> {
     wasm
 }
 
-fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
-    let actual = wast_execute(env, exec).unwrap();
+fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>, inst: Option<InstId>) {
+    let actual = wast_execute(env, exec, inst).unwrap();
     assert_eq!(actual.len(), expected.len());
     for (actual, expected) in actual.into_iter().zip(expected.into_iter()) {
         use wast::core::HeapType;
@@ -294,12 +329,12 @@ fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
     }
 }
 
-fn assert_trap(env: &mut Env, exec: WastExecute) {
-    assert_eq!(wast_execute(env, exec), Err(Error::Trap));
+fn assert_trap(env: &mut Env, exec: WastExecute, inst: Option<InstId>) {
+    assert_eq!(wast_execute(env, exec, inst), Err(Error::Trap));
 }
 
-fn assert_invoke(env: &mut Env, invoke: WastInvoke) {
-    assert_eq!(wast_invoke(env, invoke), Ok(Vec::new()));
+fn assert_invoke(env: &mut Env, invoke: WastInvoke, inst: Option<InstId>) {
+    assert_eq!(wast_invoke(env, invoke, inst), Ok(Vec::new()));
 }
 
 fn assert_malformed(mut wat: QuoteWat) {
@@ -319,8 +354,8 @@ fn assert_invalid(mut wat: QuoteWat) {
     }
 }
 
-fn assert_exhaustion(env: &mut Env, call: WastInvoke) {
-    let result = wast_invoke(env, call);
+fn assert_exhaustion(env: &mut Env, call: WastInvoke, inst: Option<InstId>) {
+    let result = wast_invoke(env, call, inst);
     if !matches!(result, Err(Error::Unsupported(_))) {
         assert_eq!(result, Err(Error::Trap));
     }
@@ -333,21 +368,23 @@ fn assert_unlinkable(env: &mut Env, mut wat: Wat) {
     }
 }
 
-fn wast_execute(env: &mut Env, exec: WastExecute) -> Result<Vec<Val>, Error> {
+fn wast_execute(env: &mut Env, exec: WastExecute, inst: Option<InstId>) -> Result<Vec<Val>, Error> {
     match exec {
-        WastExecute::Invoke(invoke) => wast_invoke(env, invoke),
+        WastExecute::Invoke(invoke) => wast_invoke(env, invoke, inst),
         WastExecute::Wat(mut wat) => {
             env.maybe_instantiate("", &wat.encode().unwrap()).map(|_| Vec::new())
         }
         WastExecute::Get { module, global, .. } => {
-            let inst_id = env.inst_id(module)?;
+            let inst_id = env.inst_id(module, inst)?;
             env.store.get_global(inst_id, global).map(|x| vec![x])
         }
     }
 }
 
-fn wast_invoke(env: &mut Env, invoke: WastInvoke) -> Result<Vec<Val>, Error> {
-    let inst_id = env.inst_id(invoke.module)?;
+fn wast_invoke(env: &mut Env, invoke: WastInvoke, inst: Option<InstId>) -> Result<Vec<Val>, Error> {
+    // let inst_id = inst.unwrap_or(env.inst_id(invoke.module)?);
+    let inst_id = env.inst_id(invoke.module, inst)?;
+    println!("DBK (spec.rs): got inst_id = {:?} for module {:?}", inst_id, invoke.module);
     let args = wast_args(invoke.args);
     env.invoke(inst_id, invoke.name, args)
 }
@@ -498,5 +535,13 @@ test!(utf8_custom_section_id, "utf8-custom-section-id");
 test!(utf8_import_field, "utf8-import-field");
 test!(utf8_import_module, "utf8-import-module");
 test!(utf8_invalid_encoding, "utf8-invalid-encoding");
-
 test!("threads", atomic);
+test!("threads", wait_notify, "threads/wait_notify");
+
+test!("threads", lb_atomic, "threads/LB_atomic");
+test!("threads", lb, "threads/LB");
+test!("threads", mp_atomic, "threads/MP_atomic");
+test!("threads", mp, "threads/MP");
+test!("threads", mp_wait, "threads/MP_wait");
+test!("threads", sb_atomic, "threads/SB_atomic");
+test!("threads", sb, "threads/SB");

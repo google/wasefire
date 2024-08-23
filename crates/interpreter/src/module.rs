@@ -41,6 +41,9 @@ enum CacheKey {
     Skip { ptr: *const u8, depth: LabelIdx },
 }
 
+unsafe impl Send for CacheKey {}
+unsafe impl Sync for CacheKey {}
+
 union CacheValue {
     skip: usize, // delta
 }
@@ -106,7 +109,7 @@ impl<'m> Module<'m> {
 pub type Parser<'m> = parser::Parser<'m, Use>;
 
 impl<'m> Module<'m> {
-    pub(crate) fn section(&self, expected_id: SectionId) -> Option<Parser<'m>> {
+    pub fn section(&self, expected_id: SectionId) -> Option<Parser<'m>> {
         let mut parser = unsafe { Parser::new(self.binary) };
         loop {
             if parser.is_empty() {
@@ -171,6 +174,8 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn export(&self, expected_name: &str) -> Option<ExportDesc> {
+        #[cfg(feature = "debug")]
+        eprintln!("DBK export {}", expected_name);
         let mut parser = self.section(SectionId::Export).unwrap();
         for _ in 0 .. parser.parse_vec().into_ok() {
             let actual_name = parser.parse_name().into_ok();
