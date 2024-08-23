@@ -16,13 +16,15 @@ libm = { version = "0.2.8", default-features = false, optional = true }
 lru = { version = "0.12.3", default-features = false, optional = true }
 num_enum = { version = "0.7.2", default-features = false }
 paste = { version = "1.0.15", default-features = false }
-portable-atomic = { version = "1.6.0", default-features = false }
+portable-atomic = { version = "1.6.0" }# , default-features = false }
+spin = { version = "0.9.8",  default-features = false, features = ["spin_mutex", "portable_atomic"]}
 
 [dev-dependencies]
 lazy_static = "1.4.0"
 wast = "214.0.0"
 
 [features]
+# default = ["threads", "debug"]
 # Enable debugging features (only works for targets with std).
 debug = []
 # Use safe operations when time-of-use and time-of-check differ.

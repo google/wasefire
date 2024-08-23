@@ -1829,6 +1829,7 @@ dependencies = [
  "num_enum",
  "paste",
  "portable-atomic",
+ "spin",
 ]
 
 [[package]]
