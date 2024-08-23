@@ -26,6 +26,7 @@ use probe_rs::{flashing, Permissions, Session};
 use rustc_demangle::demangle;
 use wasefire_cli_tools::{action, cmd, fs};
 
+mod changelog;
 mod footprint;
 mod lazy;
 mod textreview;
@@ -94,6 +95,18 @@ enum MainCommand {
 
     /// Ensures review can be done in printed form.
     Textreview,
+
+    /// Updates change log of a crate and all dependent crates.
+    Changelog {
+        /// Crate to update suchas "crate/board".
+        crate_path: String,
+
+        // Either "major", "minor", or "patch".
+        version: changelog::ReleaseType,
+
+        /// Message added to the CHANGELOG.md.
+        message: String,
+    },
 }
 
 #[derive(clap::Args)]
@@ -222,6 +235,9 @@ impl Flags {
             MainCommand::Runner(runner) => runner.execute(&self.options),
             MainCommand::Footprint { output } => footprint::compare(&output),
             MainCommand::Textreview => textreview::execute(),
+            MainCommand::Changelog { crate_path, version, message } => {
+                changelog::execute(&crate_path, &version, &message)
+            }
         }
     }
 }
