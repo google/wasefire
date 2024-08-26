@@ -47,74 +47,91 @@ impl Changelog {
     ///
     /// Validates requirements in docs/contributing/changelog.md
     fn parse(contents: String) -> Result<Changelog> {
+        let mut skip_counter = 0;
         let mut releases: Vec<Release> = Vec::new();
 
-        if !contents.starts_with("# Changelog") {
+        let mut lines = contents.lines().filter(|line| !line.is_empty()).peekable();
+
+        // First line is H1.
+        if lines.next() != Some("# Changelog") {
             return Err(anyhow!("H1 with 'Changelog' is required"));
         }
 
-        // Trim off the trailing comment: <!-- Increment to skip ... -->
-        let contents: Vec<&str> =
-            contents.split("\n\n<!-- Increment to skip CHANGELOG.md test:").collect();
+        while let Some(mut current_line) = lines.next() {
+            let mut next_line = lines.peek();
 
-        if contents.len() <= 1 {
-            return Err(anyhow!("skip_counter is required"));
-        }
+            // Parse a whole release
+            if let Some(version_string) = current_line.strip_prefix("## ") {
+                let mut release = Release::from(version_string)?;
 
-        // Populate skip_counter if we have one.
-        let skip_counter = contents[1]
-            .trim()
-            .strip_suffix("-->")
-            .expect("Malformed 'Increment to skip CHANGELOG.md test'")
-            .trim()
-            .parse::<u32>()?;
+                // Parse each release type (major, minor, patch)
+                while next_line.is_some_and(|line| line.starts_with("### ")) {
+                    // Advance
+                    current_line = lines.next().unwrap();
+                    next_line = lines.peek();
 
-        let contents = contents[0];
+                    let release_type_string = current_line.trim_start_matches("### ");
+                    let release_type = ReleaseType::from_str(release_type_string, true)
+                        .map_err(|err| anyhow!("Failed to parse version_type: {err}"))?;
 
-        // Split by release.
-        // Skip(1) to skip the prefix.
-        for each_release in contents.split("\n## ").skip(1) {
-            let mut version_iter = each_release.split("\n### ").into_iter();
-            let release_string = version_iter.next().expect("No release version detected.").trim();
-            let mut release = Release::from(release_string)?;
+                    let mut release_descriptions = Vec::new();
 
-            // Each 'Major', 'Minor', 'Patch' section within this release.
-            for each_version in version_iter {
-                let version_parts: Vec<_> = each_version.split_terminator("\n\n").collect();
+                    // Parse the release descriptions
+                    // Some lines may be a new description. Some lines may be continuation of
+                    // previous descriptions.
+                    while next_line
+                        .is_some_and(|line| line.starts_with("- ") || line.starts_with("  "))
+                    {
+                        // Advance
+                        current_line = lines.next().unwrap();
+                        next_line = lines.peek();
 
-                ensure!(version_parts.len() == 2, "Failed to parse release: {}", each_version);
+                        // New description
+                        if current_line.starts_with("- ") {
+                            release_descriptions
+                                .push(current_line.trim_start_matches("- ").to_string());
+                        } else if current_line.starts_with("  ") {
+                            // Append to previous description
+                            let mut last = release_descriptions
+                                .pop()
+                                .expect("No last description to append to.");
+                            last.push_str(format!("\n{current_line}").as_str());
+                            release_descriptions.push(last);
+                        }
+                    }
 
-                let version_type = ReleaseType::from_str(version_parts[0], true).expect(
-                    format!(
-                        "Failed to parse version_type: {}. Must be 'Major', 'Minor', or 'Patch'.",
-                        version_parts[0]
-                    )
-                    .as_str(),
-                );
-                let version_contents = version_parts[1]
-                    .split("- ")
-                    .map(|str| str.trim().to_string())
-                    .filter(|str| !str.is_empty())
-                    .collect();
-
-                match version_type {
-                    ReleaseType::Major => release.major = version_contents,
-                    ReleaseType::Minor => release.minor = version_contents,
-                    ReleaseType::Patch => release.patch = version_contents,
+                    match release_type {
+                        ReleaseType::Major => release.major = release_descriptions,
+                        ReleaseType::Minor => release.minor = release_descriptions,
+                        ReleaseType::Patch => release.patch = release_descriptions,
+                    }
                 }
-            }
 
-            if let Some(previous_version) = releases.last() {
-                if release.version > previous_version.version {
-                    return Err(anyhow!("Versions out of order"));
+                // Validate descending versions.
+                if let Some(previous_version) = releases.last() {
+                    if release.version > previous_version.version {
+                        return Err(anyhow!("Versions out of order"));
+                    }
                 }
+
+                // Validate pre-release.
+                if !releases.is_empty() && !release.version.pre.is_empty() {
+                    return Err(anyhow!("Only the first version can be pre-release"));
+                }
+
+                releases.push(release);
             }
 
-            if !releases.is_empty() && !release.version.pre.is_empty() {
-                return Err(anyhow!("Only the first version can be pre-release"));
+            // Hit last line. Done parsing releases. Look for skip counter.
+            if next_line.is_none() {
+                skip_counter = current_line
+                    .trim_start_matches("<!-- Increment to skip CHANGELOG.md test: ")
+                    .trim_end_matches(" -->")
+                    .parse::<u32>()
+                    .map_err(|err| {
+                        anyhow!("Invalid skip_counter at the end of the changelog ({err})")
+                    })?;
             }
-
-            releases.push(release);
         }
 
         if let Some(last_release) = releases.last() {
@@ -420,7 +437,7 @@ mod tests {
         assert!(Changelog::parse(changelog.to_string())
             .expect_err("Parse changelog was successful.")
             .to_string()
-            .contains("skip_counter is required"))
+            .contains("Invalid skip_counter at the end of the changelog"))
     }
 
     #[test]
