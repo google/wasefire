@@ -15,6 +15,7 @@
 
 ### Minor
 
+- Return an error when calling an unimplemented API
 - Support `PlatformVendor` protocol
 - Support `platform::serial()` function
 - Migrate `platform::version()` to the new board and applet APIs
