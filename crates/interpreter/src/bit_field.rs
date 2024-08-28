@@ -54,15 +54,17 @@ mod tests {
 
     #[test]
     fn signed_field_error_positive() {
-        for expected in 8 .. 100 {
-            assert!(matches!(into_signed_field(0b1111000, expected), Err(Error::Unsupported(_))));
+        let mask = 0b1111000;
+        for value in [8, i32::MAX] {
+            assert!(matches!(into_signed_field(mask, value), Err(Error::Unsupported(_))));
         }
     }
 
     #[test]
     fn signed_field_error_negative() {
-        for expected in -100 .. -8 {
-            assert!(matches!(into_signed_field(0b1111000, expected), Err(Error::Unsupported(_))));
+        let mask = 0b1111000;
+        for value in [-9, i32::MIN] {
+            assert!(matches!(into_signed_field(mask, value), Err(Error::Unsupported(_))));
         }
     }
 
@@ -77,8 +79,9 @@ mod tests {
 
     #[test]
     fn unsigned_field_error() {
-        for expected in 8 .. 10 {
-            assert!(matches!(into_field(0b111000, expected), Err(Error::Unsupported(_))));
+        let mask = 0b111000;
+        for value in [8, u32::MAX] {
+            assert!(matches!(into_field(mask, value), Err(Error::Unsupported(_))));
         }
     }
 }
