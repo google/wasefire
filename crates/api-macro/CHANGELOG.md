@@ -2,7 +2,7 @@
 
 ## 0.6.2-git
 
-## Patch
+### Patch
 
 - Update dependencies
 
