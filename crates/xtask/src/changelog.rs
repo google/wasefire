@@ -12,11 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::{anyhow, ensure, Context, Result};
-use clap::ValueEnum;
-use semver::Version;
+use core::str;
+use std::collections::BTreeMap;
+use std::fmt::Write;
+use std::io::BufRead;
+use std::process::Command;
 
-#[derive(Debug, Clone, clap::ValueEnum)]
+use anyhow::{anyhow, bail, ensure, Context, Result};
+use semver::Version;
+use wasefire_cli_tools::{cmd, fs};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
 pub enum ReleaseType {
     Major,
     Minor,
@@ -37,117 +43,116 @@ struct Changelog {
 }
 
 impl Changelog {
-    fn read_file(changelog_path: &str) -> Result<Changelog> {
-        let changelog_contents = wasefire_cli_tools::fs::read(&changelog_path)?;
-
-        Self::parse(String::from_utf8(changelog_contents)?)
+    fn read_file(path: &str) -> Result<Changelog> {
+        Self::parse(String::from_utf8(fs::read(&path)?)?.as_str())
     }
 
     /// Converts raw file contents into a Changelog data structure.
     ///
-    /// Validates requirements in docs/contributing/changelog.md
-    fn parse(contents: String) -> Result<Changelog> {
-        let mut skip_counter = 0;
+    /// Validates requirements in docs/contributing/changelog.md.
+    fn parse(contents: &str) -> Result<Changelog> {
+        let mut skip_counter: u32 = 0;
         let mut releases: Vec<Release> = Vec::new();
 
         let mut lines = contents.lines().filter(|line| !line.is_empty()).peekable();
 
         // First line is H1.
-        if lines.next() != Some("# Changelog") {
-            return Err(anyhow!("H1 with 'Changelog' is required"));
-        }
+        ensure!(lines.next() == Some("# Changelog"), "H1 with 'Changelog' is required");
 
         while let Some(mut current_line) = lines.next() {
             let mut next_line = lines.peek();
 
-            // Parse a whole release
-            if let Some(version_string) = current_line.strip_prefix("## ") {
-                let mut release = Release::from(version_string)?;
+            // Hit last line. Done parsing releases. Look for skip counter.
+            if next_line.is_none() {
+                skip_counter = current_line
+                    .strip_prefix("<!-- Increment to skip CHANGELOG.md test: ")
+                    .ok_or_else(|| anyhow!("Malformed or missing skip counter: {current_line}"))?
+                    .strip_suffix(" -->")
+                    .ok_or_else(|| anyhow!("Malformed or missing skip counter: {current_line}"))?
+                    .parse::<u32>()?;
+                break;
+            }
 
-                // Parse each release type (major, minor, patch)
-                while next_line.is_some_and(|line| line.starts_with("### ")) {
+            let mut release = match current_line.strip_prefix("## ") {
+                Some(version_string) => Release::new(version_string)?,
+                None => bail!("Failed to find release starting with '## ': {current_line}"),
+            };
+
+            // Parse each release type (major, minor, patch)
+            while next_line.is_some_and(|line| line.starts_with("### ")) {
+                // Advance
+                current_line = lines.next().unwrap();
+                next_line = lines.peek();
+
+                let release_type_string = match current_line.strip_prefix("### ") {
+                    Some(l) => l,
+                    _ => bail!("Failed to parse version header {current_line}"),
+                };
+                let release_type = match release_type_string {
+                    "Major" => ReleaseType::Major,
+                    "Minor" => ReleaseType::Minor,
+                    "Patch" => ReleaseType::Patch,
+                    _ => bail!("Failed to parse version header {current_line}"),
+                };
+
+                let mut release_descriptions = Vec::new();
+
+                // Parse the release descriptions
+                // Some lines may be a new description. Some lines may be continuation of
+                // previous descriptions.
+                while next_line.is_some_and(|line| line.starts_with("- ") || line.starts_with("  "))
+                {
                     // Advance
                     current_line = lines.next().unwrap();
                     next_line = lines.peek();
 
-                    let release_type_string = current_line.trim_start_matches("### ");
-                    let release_type = ReleaseType::from_str(release_type_string, true)
-                        .map_err(|err| anyhow!("Failed to parse version_type: {err}"))?;
+                    ensure!(
+                        !current_line.ends_with("."),
+                        "Each description must not end in a '.' ({current_line})"
+                    );
 
-                    let mut release_descriptions = Vec::new();
-
-                    // Parse the release descriptions
-                    // Some lines may be a new description. Some lines may be continuation of
-                    // previous descriptions.
-                    while next_line
-                        .is_some_and(|line| line.starts_with("- ") || line.starts_with("  "))
-                    {
-                        // Advance
-                        current_line = lines.next().unwrap();
-                        next_line = lines.peek();
-
-                        // New description
-                        if current_line.starts_with("- ") {
-                            release_descriptions
-                                .push(current_line.trim_start_matches("- ").to_string());
-                        } else if current_line.starts_with("  ") {
-                            // Append to previous description
-                            let mut last = release_descriptions
-                                .pop()
-                                .expect("No last description to append to.");
-                            last.push_str(format!("\n{current_line}").as_str());
-                            release_descriptions.push(last);
-                        }
-                    }
-
-                    match release_type {
-                        ReleaseType::Major => release.major = release_descriptions,
-                        ReleaseType::Minor => release.minor = release_descriptions,
-                        ReleaseType::Patch => release.patch = release_descriptions,
+                    // New description
+                    if let Some(l) = current_line.strip_prefix("- ") {
+                        release_descriptions.push(l.to_string());
+                    } else if current_line.starts_with("  ") {
+                        // Append to previous description
+                        write!(
+                            release_descriptions.last_mut().context("Invalid continuation")?,
+                            "\n{current_line}"
+                        )?;
                     }
                 }
 
-                // Validate descending versions.
-                if let Some(previous_version) = releases.last() {
-                    if release.version > previous_version.version {
-                        return Err(anyhow!("Versions out of order"));
-                    }
-                }
-
-                // Validate pre-release.
-                if !releases.is_empty() && !release.version.pre.is_empty() {
-                    return Err(anyhow!("Only the first version can be pre-release"));
-                }
-
-                releases.push(release);
+                ensure!(
+                    release.contents.insert(release_type, release_descriptions).is_none(),
+                    "Duplicate release type detected for {release_type:?}"
+                );
             }
 
-            // Hit last line. Done parsing releases. Look for skip counter.
-            if next_line.is_none() {
-                skip_counter = current_line
-                    .trim_start_matches("<!-- Increment to skip CHANGELOG.md test: ")
-                    .trim_end_matches(" -->")
-                    .parse::<u32>()
-                    .map_err(|err| {
-                        anyhow!("Invalid skip_counter at the end of the changelog ({err})")
-                    })?;
+            // Validate descending versions.
+            if let Some(previous_version) = releases.last() {
+                ensure!(
+                    release.version < previous_version.version,
+                    "Versions should be order by decreasing precedence"
+                );
             }
+
+            // Validate pre-release.
+            ensure!(
+                releases.is_empty() || release.version.pre.is_empty(),
+                "Only the first version can be pre-release"
+            );
+
+            releases.push(release);
         }
 
-        if let Some(last_release) = releases.last() {
-            if last_release.version.to_string() != "0.1.0" {
-                return Err(anyhow!("The last release must be version 0.1.0"));
-            }
+        let last_release = releases.last().context("At least 1 release is required")?;
 
-            if last_release.major.len() > 0
-                || last_release.minor.len() > 0
-                || last_release.patch.len() > 0
-            {
-                return Err(anyhow!("The last release must contain no changes"));
-            }
-        } else {
-            return Err(anyhow!("At least 1 release is required"));
-        }
+        ensure!(
+            last_release.version.to_string() == "0.1.0",
+            "The first release must be version 0.1.0"
+        );
+        ensure!(last_release.contents.is_empty(), "The last release must contain no changes");
 
         Ok(Changelog { releases, skip_counter })
     }
@@ -157,49 +162,35 @@ impl Changelog {
 struct Release {
     version: Version,
 
-    major: Vec<String>,
-    minor: Vec<String>,
-    patch: Vec<String>,
+    contents: BTreeMap<ReleaseType, Vec<String>>,
 }
 
 impl Release {
-    fn from(version: &str) -> Result<Self> {
-        let semver = Version::parse(version)?;
-
-        Ok(Release { version: semver, major: Vec::new(), minor: Vec::new(), patch: Vec::new() })
+    fn new(version: &str) -> Result<Self> {
+        Ok(Release { version: Version::parse(version)?, contents: BTreeMap::new() })
     }
 }
 
 /// Validates CHANGELOG.md files for all Wasefire crates.
 pub fn execute_ci() -> Result<()> {
-    let dir_entries = wasefire_cli_tools::fs::read_dir("crates")?;
+    let paths = cmd::output(Command::new("git").args(["ls-files", "*/CHANGELOG.md"]))?;
 
-    let existing_changelog_paths = dir_entries.filter_map(|entry| {
-        if let Ok(crate_path) = entry {
-            if crate_path.metadata().is_ok_and(|metadata| metadata.is_dir()) {
-                let changelog_file_path = format!("{}/CHANGELOG.md", crate_path.path().display());
+    for path in paths.stdout.lines() {
+        let path = path?;
 
-                if wasefire_cli_tools::fs::exists(&changelog_file_path) {
-                    return Some(changelog_file_path);
-                }
-            }
-        }
-
-        None
-    });
-
-    for changelog_path in existing_changelog_paths {
         // Validation done during parsing.
-        Changelog::read_file(&changelog_path)
-            .with_context(|| format!("validating changelog file: {changelog_path}"))?;
+        Changelog::read_file(&path)
+            .with_context(|| format!("validating changelog file: {path}"))?;
     }
 
     Ok(())
 }
 
 /// Updates a CHANGELOG.md file and CHANGELOG.md files of dependencies.
-pub fn execute_change(crate_path: &str, _version: &ReleaseType, _message: &str) -> Result<()> {
-    ensure!(wasefire_cli_tools::fs::exists(crate_path), "Crate does not exist: {}", crate_path);
+pub fn execute_change(
+    crate_path: &str, _release_type: &ReleaseType, _description: &str,
+) -> Result<()> {
+    ensure!(fs::exists(crate_path), "Crate does not exist: {}", crate_path);
 
     let _changelog = Changelog::read_file(format!("{crate_path}/CHANGELOG.md").as_str())?;
 
@@ -253,26 +244,46 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->";
 
         assert_eq!(
-            Changelog::parse(changelog.to_string()).expect("Failed to parse changelog."),
+            Changelog::parse(changelog).expect("Failed to parse changelog."),
             Changelog {
                 releases: vec![
                     Release {
                         version: Version::parse("0.3.0").unwrap(),
-                        major: vec!["major update 1".to_string(), "major update 2".to_string()],
-                        minor: vec!["minor update 1".to_string(), "minor update 2".to_string()],
-                        patch: vec!["patch update 1".to_string(), "patch update 2".to_string()],
+                        contents: BTreeMap::from([
+                            (
+                                ReleaseType::Major,
+                                vec!["major update 1".to_string(), "major update 2".to_string()]
+                            ),
+                            (
+                                ReleaseType::Minor,
+                                vec!["minor update 1".to_string(), "minor update 2".to_string()]
+                            ),
+                            (
+                                ReleaseType::Patch,
+                                vec!["patch update 1".to_string(), "patch update 2".to_string()]
+                            )
+                        ]),
                     },
                     Release {
                         version: Version::parse("0.2.0").unwrap(),
-                        major: vec!["major update 1".to_string(), "major update 2".to_string()],
-                        minor: vec!["minor update 1".to_string(), "minor update 2".to_string()],
-                        patch: vec!["patch update 1".to_string(), "patch update 2".to_string()],
+                        contents: BTreeMap::from([
+                            (
+                                ReleaseType::Major,
+                                vec!["major update 1".to_string(), "major update 2".to_string()]
+                            ),
+                            (
+                                ReleaseType::Minor,
+                                vec!["minor update 1".to_string(), "minor update 2".to_string()]
+                            ),
+                            (
+                                ReleaseType::Patch,
+                                vec!["patch update 1".to_string(), "patch update 2".to_string()]
+                            )
+                        ]),
                     },
                     Release {
                         version: Version::parse("0.1.0").unwrap(),
-                        major: Vec::new(),
-                        minor: Vec::new(),
-                        patch: Vec::new(),
+                        contents: BTreeMap::new(),
                     }
                 ],
                 skip_counter: 0,
@@ -310,32 +321,33 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->";
 
         assert_eq!(
-            Changelog::parse(changelog.to_string()).expect("Failed to parse changelog."),
+            Changelog::parse(changelog).expect("Failed to parse changelog."),
             Changelog {
                 releases: vec![
                     Release {
                         version: Version::parse("0.4.0").unwrap(),
-                        major: vec!["major update 1".to_string(), "major update 2".to_string()],
-                        minor: Vec::new(),
-                        patch: Vec::new(),
+                        contents: BTreeMap::from([(
+                            ReleaseType::Major,
+                            vec!["major update 1".to_string(), "major update 2".to_string()]
+                        )]),
                     },
                     Release {
                         version: Version::parse("0.3.0").unwrap(),
-                        major: Vec::new(),
-                        minor: vec!["minor update 1".to_string(), "minor update 2".to_string()],
-                        patch: Vec::new(),
+                        contents: BTreeMap::from([(
+                            ReleaseType::Minor,
+                            vec!["minor update 1".to_string(), "minor update 2".to_string()]
+                        )]),
                     },
                     Release {
                         version: Version::parse("0.2.0").unwrap(),
-                        major: Vec::new(),
-                        minor: Vec::new(),
-                        patch: vec!["patch update 1".to_string(), "patch update 2".to_string()],
+                        contents: BTreeMap::from([(
+                            ReleaseType::Patch,
+                            vec!["patch update 1".to_string(), "patch update 2".to_string()]
+                        )]),
                     },
                     Release {
                         version: Version::parse("0.1.0").unwrap(),
-                        major: Vec::new(),
-                        minor: Vec::new(),
-                        patch: Vec::new(),
+                        contents: BTreeMap::new(),
                     }
                 ],
                 skip_counter: 0,
@@ -353,7 +365,7 @@ mod tests {
 
 - short 1
 - my long description
-  that spans many lines.
+  that spans many lines
 - short 2
 
 ## 0.1.0
@@ -361,29 +373,48 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->";
 
         assert_eq!(
-            Changelog::parse(changelog.to_string()).expect("Failed to parse changelog."),
+            Changelog::parse(changelog).expect("Failed to parse changelog."),
             Changelog {
                 releases: vec![
                     Release {
                         version: Version::parse("0.2.0").unwrap(),
-                        major: vec![
-                            "short 1".to_string(),
-                            "my long description\n  that spans many lines.".to_string(),
-                            "short 2".to_string()
-                        ],
-                        minor: Vec::new(),
-                        patch: Vec::new(),
+                        contents: BTreeMap::from([(
+                            ReleaseType::Major,
+                            vec![
+                                "short 1".to_string(),
+                                "my long description\n  that spans many lines".to_string(),
+                                "short 2".to_string()
+                            ]
+                        )]),
                     },
                     Release {
                         version: Version::parse("0.1.0").unwrap(),
-                        major: Vec::new(),
-                        minor: Vec::new(),
-                        patch: Vec::new(),
+                        contents: BTreeMap::new(),
                     }
                 ],
                 skip_counter: 0,
             }
         );
+    }
+
+    #[test]
+    fn parse_changelog_handles_description_must_not_end_with_period() {
+        let changelog = r"# Changelog
+
+## 0.2.0
+
+### Major
+
+- short 1.
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->";
+
+        assert!(Changelog::parse(changelog)
+            .expect_err("Parse changelog was successful.")
+            .to_string()
+            .contains("Each description must not end in a '.' (- short 1.)"))
     }
 
     #[test]
@@ -395,13 +426,11 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->";
 
         assert_eq!(
-            Changelog::parse(changelog.to_string()).expect("Failed to parse changelog."),
+            Changelog::parse(changelog).expect("Failed to parse changelog."),
             Changelog {
                 releases: vec![Release {
                     version: Version::parse("0.1.0").unwrap(),
-                    major: Vec::new(),
-                    minor: Vec::new(),
-                    patch: Vec::new(),
+                    contents: BTreeMap::new(),
                 }],
                 skip_counter: 0,
             }
@@ -416,13 +445,11 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 5 -->";
 
         assert_eq!(
-            Changelog::parse(changelog.to_string()).expect("Failed to parse changelog."),
+            Changelog::parse(changelog).expect("Failed to parse changelog."),
             Changelog {
                 releases: vec![Release {
                     version: Version::parse("0.1.0").unwrap(),
-                    major: Vec::new(),
-                    minor: Vec::new(),
-                    patch: Vec::new(),
+                    contents: BTreeMap::new(),
                 }],
                 skip_counter: 5,
             }
@@ -434,10 +461,10 @@ mod tests {
         let changelog = r"# Changelog
 ## 0.1.0";
 
-        assert!(Changelog::parse(changelog.to_string())
+        assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
             .to_string()
-            .contains("Invalid skip_counter at the end of the changelog"))
+            .contains("Malformed or missing skip counter"))
     }
 
     #[test]
@@ -445,7 +472,7 @@ mod tests {
         let changelog = r"
 ## 0.1.0";
 
-        assert!(Changelog::parse(changelog.to_string())
+        assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
             .to_string()
             .contains("H1 with 'Changelog' is required"))
@@ -469,10 +496,10 @@ mod tests {
 
 <!-- Increment to skip CHANGELOG.md test: 0 -->";
 
-        assert!(Changelog::parse(changelog.to_string())
+        assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
             .to_string()
-            .contains("Versions out of order"))
+            .contains("Versions should be order by decreasing precedence"))
     }
 
     #[test]
@@ -481,7 +508,7 @@ mod tests {
 
 <!-- Increment to skip CHANGELOG.md test: 0 -->";
 
-        assert!(Changelog::parse(changelog.to_string())
+        assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
             .to_string()
             .contains("At least 1 release is required"))
@@ -499,10 +526,10 @@ mod tests {
 
 <!-- Increment to skip CHANGELOG.md test: 0 -->";
 
-        assert!(Changelog::parse(changelog.to_string())
+        assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
             .to_string()
-            .contains("The last release must be version 0.1.0"))
+            .contains("The first release must be version 0.1.0"))
     }
 
     #[test]
@@ -517,7 +544,7 @@ mod tests {
 
 <!-- Increment to skip CHANGELOG.md test: 0 -->";
 
-        assert!(Changelog::parse(changelog.to_string())
+        assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
             .to_string()
             .contains("The last release must contain no changes"))
@@ -541,7 +568,7 @@ mod tests {
 
 <!-- Increment to skip CHANGELOG.md test: 0 -->";
 
-        assert!(Changelog::parse(changelog.to_string())
+        assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
             .to_string()
             .contains("Only the first version can be pre-release"))

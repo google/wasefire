@@ -230,16 +230,16 @@ enum ChangelogCommand {
     /// Validates all CHANGELOG.md files.
     Ci,
 
-    /// Updates change log of a crate and all dependent crates.
+    /// Records a change to a crate.
     Change {
-        /// Crate to update suchas "crate/board".
-        crate_path: String,
+        /// Path to the crate that changed (e.g. `crates/board`).
+        path: String,
 
-        // Either "major", "minor", or "patch".
-        version: changelog::ReleaseType,
+        // Type of change
+        release_type: changelog::ReleaseType,
 
-        /// Message added to the CHANGELOG.md.
-        message: String,
+        /// One-line description of the change.
+        description: String,
     },
 }
 
@@ -252,8 +252,8 @@ impl Flags {
             MainCommand::Textreview => textreview::execute(),
             MainCommand::Changelog(subcommand) => match subcommand.command {
                 ChangelogCommand::Ci => changelog::execute_ci(),
-                ChangelogCommand::Change { crate_path, version, message } => {
-                    changelog::execute_change(&crate_path, &version, &message)
+                ChangelogCommand::Change { path, release_type, description } => {
+                    changelog::execute_change(&path, &release_type, &description)
                 }
             },
         }

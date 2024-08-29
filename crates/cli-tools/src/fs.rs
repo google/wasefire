@@ -117,8 +117,8 @@ pub fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
 
 pub fn read_dir(path: impl AsRef<Path>) -> Result<ReadDir> {
     let dir = path.as_ref().display();
-    debug!("read_dir < {dir:?}");
-    std::fs::read_dir(path.as_ref()).with_context(|| format!("reading directory {dir}"))
+    debug!("walk < {dir:?}");
+    std::fs::read_dir(path.as_ref()).with_context(|| format!("walking {dir}"))
 }
 
 pub fn read_toml<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {
