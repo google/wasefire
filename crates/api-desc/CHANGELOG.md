@@ -75,7 +75,7 @@
 ### Minor
 
 - Add `scheduling::abort()`
-- Require the `U32` type to implement `bytemuck::Pod`.
+- Require the `U32` type to implement `bytemuck::Pod`
 - Add `debug::time()`, `debug::perf()`, and `debug::Perf` for simple performance
   measurement
 
