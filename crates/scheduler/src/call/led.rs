@@ -24,8 +24,8 @@ use crate::{DispatchSchedulerCall, SchedulerCall};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Count(call) => count(call),
-        Api::Get(call) => or_trap!("board-api-led", get(call)),
-        Api::Set(call) => or_trap!("board-api-led", set(call)),
+        Api::Get(call) => or_fail!("board-api-led", get(call)),
+        Api::Set(call) => or_fail!("board-api-led", set(call)),
     }
 }
 

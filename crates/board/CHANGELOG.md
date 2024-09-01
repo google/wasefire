@@ -13,6 +13,7 @@
 
 ### Patch
 
+- Use `derive-where` instead of `derivative`
 - Update dependencies
 - Remove workaround lint false positive
 

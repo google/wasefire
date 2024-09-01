@@ -419,14 +419,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "derivative"
-version = "2.2.0"
+name = "derive-where"
+version = "1.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
+checksum = "62d671cc41a825ebabc75757b62d3d168c577f9149b2d49ece1dad1f72119d25"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.66",
 ]
 
 [[package]]
@@ -1911,7 +1911,7 @@ dependencies = [
  "aes-gcm",
  "ccm",
  "crypto-common",
- "derivative",
+ "derive-where",
  "digest",
  "ecdsa",
  "elliptic-curve",
@@ -1942,6 +1942,7 @@ dependencies = [
  "toml",
  "wasefire-protocol",
  "wasefire-protocol-usb",
+ "wasefire-wire",
 ]
 
 [[package]]
@@ -1995,7 +1996,7 @@ name = "wasefire-scheduler"
 version = "0.3.2-git"
 dependencies = [
  "bytemuck",
- "derivative",
+ "derive-where",
  "digest",
  "generic-array",
  "typenum",
