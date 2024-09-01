@@ -117,7 +117,7 @@ pub fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
 
 pub fn read_dir(path: impl AsRef<Path>) -> Result<ReadDir> {
     let dir = path.as_ref().display();
-    debug!("walk < {dir:?}");
+    debug!("walk {dir:?}");
     std::fs::read_dir(path.as_ref()).with_context(|| format!("walking {dir}"))
 }
 

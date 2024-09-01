@@ -235,8 +235,8 @@ enum ChangelogCommand {
         /// Path to the crate that changed (e.g. `crates/board`).
         path: String,
 
-        // Type of change
-        release_type: changelog::ReleaseType,
+        /// Semver scope of the change.
+        scope: changelog::ReleaseType,
 
         /// One-line description of the change.
         description: String,
@@ -252,8 +252,8 @@ impl Flags {
             MainCommand::Textreview => textreview::execute(),
             MainCommand::Changelog(subcommand) => match subcommand.command {
                 ChangelogCommand::Ci => changelog::execute_ci(),
-                ChangelogCommand::Change { path, release_type, description } => {
-                    changelog::execute_change(&path, &release_type, &description)
+                ChangelogCommand::Change { path, scope, description } => {
+                    changelog::execute_change(&path, &scope, &description)
                 }
             },
         }

@@ -44,7 +44,7 @@ struct Changelog {
 
 impl Changelog {
     fn read_file(path: &str) -> Result<Changelog> {
-        Self::parse(String::from_utf8(fs::read(&path)?)?.as_str())
+        Self::parse(String::from_utf8(fs::read(path)?)?.as_str())
     }
 
     /// Converts raw file contents into a Changelog data structure.
@@ -171,7 +171,7 @@ impl Release {
     }
 }
 
-/// Validates CHANGELOG.md files for all Wasefire crates.
+/// Validates all changelog files.
 pub fn execute_ci() -> Result<()> {
     let paths = cmd::output(Command::new("git").args(["ls-files", "*/CHANGELOG.md"]))?;
 
@@ -186,13 +186,11 @@ pub fn execute_ci() -> Result<()> {
     Ok(())
 }
 
-/// Updates a CHANGELOG.md file and CHANGELOG.md files of dependencies.
-pub fn execute_change(
-    crate_path: &str, _release_type: &ReleaseType, _description: &str,
-) -> Result<()> {
-    ensure!(fs::exists(crate_path), "Crate does not exist: {}", crate_path);
+/// Updates the changelog of a crate and its dependents.
+pub fn execute_change(path: &str, _scope: &ReleaseType, _description: &str) -> Result<()> {
+    ensure!(fs::exists(path), "Crate does not exist: {path}");
 
-    let _changelog = Changelog::read_file(format!("{crate_path}/CHANGELOG.md").as_str())?;
+    let _changelog = Changelog::read_file(format!("{path}/CHANGELOG.md").as_str())?;
 
     todo!("Implement changelog updates");
 }
