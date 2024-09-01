@@ -26,6 +26,7 @@ use probe_rs::{flashing, Permissions, Session};
 use rustc_demangle::demangle;
 use wasefire_cli_tools::{action, cmd, fs};
 
+mod changelog;
 mod footprint;
 mod lazy;
 mod textreview;
@@ -94,6 +95,9 @@ enum MainCommand {
 
     /// Ensures review can be done in printed form.
     Textreview,
+
+    /// Performs a changelog operation.
+    Changelog(Changelog),
 }
 
 #[derive(clap::Args)]
@@ -215,6 +219,30 @@ struct RunnerOptions {
     memory_page_count: Option<usize>,
 }
 
+#[derive(clap::Args)]
+struct Changelog {
+    #[clap(subcommand)]
+    command: ChangelogCommand,
+}
+
+#[derive(clap::Subcommand)]
+enum ChangelogCommand {
+    /// Validates all CHANGELOG.md files.
+    Ci,
+
+    /// Records a change to a crate.
+    Change {
+        /// Path to the crate that changed (e.g. `crates/board`).
+        path: String,
+
+        /// Semver scope of the change.
+        scope: changelog::ReleaseType,
+
+        /// One-line description of the change.
+        description: String,
+    },
+}
+
 impl Flags {
     fn execute(self) -> Result<()> {
         match self.command {
@@ -222,6 +250,12 @@ impl Flags {
             MainCommand::Runner(runner) => runner.execute(&self.options),
             MainCommand::Footprint { output } => footprint::compare(&output),
             MainCommand::Textreview => textreview::execute(),
+            MainCommand::Changelog(subcommand) => match subcommand.command {
+                ChangelogCommand::Ci => changelog::execute_ci(),
+                ChangelogCommand::Change { path, scope, description } => {
+                    changelog::execute_change(&path, &scope, &description)
+                }
+            },
         }
     }
 }

@@ -1960,6 +1960,7 @@ dependencies = [
  "log",
  "probe-rs",
  "rustc-demangle",
+ "semver",
  "serde",
  "stack-sizes",
  "wasefire-cli-tools",
