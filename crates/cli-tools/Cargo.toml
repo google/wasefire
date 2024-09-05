@@ -24,7 +24,7 @@ wasefire-protocol = { version = "0.1.1-git", path = "../protocol", features = ["
 wasefire-wire = { version = "0.1.1-git", path = "../wire" }
 
 [dependencies.tokio]
-version = "1.37.0"
+version = "1.40.0"
 default-features = false
 features = ["fs", "io-std", "process", "rt"]
 
