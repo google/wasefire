@@ -1016,10 +1016,7 @@ impl<'m> Thread<'m> {
     }
 
     fn pop_value(&mut self) -> Val {
-        // There may be multiple drops in wasm.
-        if self.label().values_cnt >= 1 {
-            self.label().values_cnt -= 1;
-        }
+        self.label().values_cnt -= 1;
         self.values().pop().unwrap()
     }
 
@@ -1033,14 +1030,14 @@ impl<'m> Thread<'m> {
     }
 
     fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind<'m>) {
-        let values = self.pop_values(type_.params.len());
+        let params_len = type_.params.len();
         let arity = match kind {
             LabelKind::Block | LabelKind::If => type_.results.len(),
-            LabelKind::Loop(_) => type_.params.len(),
+            LabelKind::Loop(_) => params_len,
         };
-        let label = Label { arity, kind, values_cnt: values.len() };
+        self.label().values_cnt -= params_len;
+        let label = Label { arity, kind, values_cnt: params_len };
         self.labels().push(label);
-        self.values().extend_from_slice(&*values);
     }
 
     fn pop_label(mut self, inst: &mut Instance<'m>, l: LabelIdx) -> ThreadResult<'m> {
@@ -1048,17 +1045,18 @@ impl<'m> Thread<'m> {
         if i == 0 {
             return self.exit_frame();
         }
-        let values = core::mem::take(self.values());
         let frame = self.frame();
+        // TODO: Store prefix sums of the labels' values_cnt in Frame to quickly compute
+        // label_values_cnt_before.
         let label_values_cnt_before: usize =
-            frame.labels[0 .. i].iter().map(|l| l.values_cnt).sum();
-        let label_values_cnt_after: usize =
-            frame.labels[i + 1 ..].iter().map(|l| l.values_cnt).sum();
+            frame.labels[0 .. i].iter().map(|label| label.values_cnt).sum();
         let Label { arity, kind, values_cnt } = frame.labels.drain(i ..).next().unwrap();
-        self.values().extend_from_slice(&values[0 .. label_values_cnt_before]);
+        // TODO: Is the following line necessary?
+        self.values().drain(label_values_cnt_before + values_cnt ..);
         self.values()
-            .extend_from_slice(&values[values.len() - label_values_cnt_after - values_cnt ..]);
-        self.label().values_cnt = values_cnt;
+            .drain(label_values_cnt_before .. label_values_cnt_before + values_cnt - arity);
+        // The (i-1)-th label
+        self.label().values_cnt += arity;
         match kind {
             LabelKind::Loop(pos) => unsafe { self.parser.restore(pos) },
             LabelKind::Block | LabelKind::If => self.skip_to_end(inst, l),
@@ -1069,8 +1067,8 @@ impl<'m> Thread<'m> {
     fn exit_label(mut self) -> ThreadResult<'m> {
         let frame = self.frame();
         let label = frame.labels.pop().unwrap();
-        let popped_values: Vec<Val> =
-            frame.labels_values.drain(frame.labels_values.len() - label.values_cnt ..).collect();
+        let popped_values =
+            frame.labels_values.split_off(frame.labels_values.len() - label.values_cnt);
         if frame.labels.is_empty() {
             let frame = self.frames.pop().unwrap();
             debug_assert_eq!(label.values_cnt, frame.arity);
@@ -1079,8 +1077,8 @@ impl<'m> Thread<'m> {
             }
             unsafe { self.parser.restore(frame.ret) };
         }
-        self.values().extend_from_slice(&popped_values);
-        self.label().values_cnt = label.values_cnt;
+        self.values().extend(popped_values);
+        self.label().values_cnt += label.values_cnt;
         ThreadResult::Continue(self)
     }
 
