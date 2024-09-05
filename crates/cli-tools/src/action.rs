@@ -14,12 +14,12 @@
 
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use anyhow::{bail, ensure, Result};
 use cargo_metadata::{Metadata, MetadataCommand};
 use clap::{ValueEnum, ValueHint};
 use rusb::GlobalContext;
+use tokio::process::Command;
 use wasefire_protocol::{self as service, applet, Api, Connection, ConnectionExt};
 
 use crate::{cmd, fs};
@@ -65,17 +65,17 @@ pub struct Rpc {
 }
 
 impl Rpc {
-    fn read(&self) -> Result<Vec<u8>> {
+    async fn read(&self) -> Result<Vec<u8>> {
         match &self.input {
-            Some(path) => fs::read(path),
-            None => fs::read_stdin(),
+            Some(path) => fs::read(path).await,
+            None => fs::read_stdin().await,
         }
     }
 
-    fn write(&self, response: &[u8]) -> Result<()> {
+    async fn write(&self, response: &[u8]) -> Result<()> {
         match &self.output {
-            Some(path) => fs::write(path, response),
-            None => fs::write_stdout(response),
+            Some(path) => fs::write(path, response).await,
+            None => fs::write_stdout(response).await,
         }
     }
 }
@@ -101,12 +101,12 @@ impl AppletRpc {
             Some(_) => bail!("applet identifiers are not supported yet"),
             None => applet::AppletId,
         };
-        let request = applet::Request { applet_id, request: &rpc.read()? };
+        let request = applet::Request { applet_id, request: &rpc.read().await? };
         connection.call::<service::AppletRequest>(request).await?.get();
         for _ in 0 .. retries {
             let response = connection.call::<service::AppletResponse>(applet_id).await?;
             if let Some(response) = response.get().response {
-                return rpc.write(response);
+                return rpc.write(response).await;
             }
         }
         bail!("did not receive a response after {retries} retries");
@@ -168,7 +168,9 @@ pub struct PlatformRpc {
 impl PlatformRpc {
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let PlatformRpc { rpc } = self;
-        rpc.write(connection.call::<service::PlatformVendor>(&rpc.read()?).await?.get())
+        let request = rpc.read().await?;
+        let response = connection.call::<service::PlatformVendor>(&request).await?;
+        rpc.write(response.get()).await
     }
 }
 
@@ -185,25 +187,25 @@ pub struct RustAppletNew {
 }
 
 impl RustAppletNew {
-    pub fn run(&self) -> Result<()> {
+    pub async fn run(&self) -> Result<()> {
         let RustAppletNew { path, name } = self;
         let mut cargo = Command::new("cargo");
         cargo.args(["new", "--lib"]).arg(path);
         if let Some(name) = name {
             cargo.arg(format!("--name={name}"));
         }
-        cmd::execute(&mut cargo)?;
-        cmd::execute(Command::new("cargo").args(["add", "wasefire"]).current_dir(path))?;
+        cmd::execute(&mut cargo).await?;
+        cmd::execute(Command::new("cargo").args(["add", "wasefire"]).current_dir(path)).await?;
         let mut cargo = Command::new("cargo");
         cargo.args(["add", "wasefire-stub", "--optional"]);
-        cmd::execute(cargo.current_dir(path))?;
+        cmd::execute(cargo.current_dir(path)).await?;
         let mut sed = Command::new("sed");
         sed.arg("-i");
         sed.arg("s#^wasefire-stub\\( = .\"dep:wasefire-stub\"\\)#test\\1, \"wasefire/test\"#");
         sed.arg("Cargo.toml");
-        cmd::execute(sed.current_dir(path))?;
-        std::fs::remove_file(path.join("src/lib.rs"))?;
-        fs::write(path.join("src/lib.rs"), include_str!("data/lib.rs"))?;
+        cmd::execute(sed.current_dir(path)).await?;
+        tokio::fs::remove_file(path.join("src/lib.rs")).await?;
+        fs::write(path.join("src/lib.rs"), include_str!("data/lib.rs")).await?;
         Ok(())
     }
 }
@@ -241,10 +243,11 @@ pub struct RustAppletBuild {
 }
 
 impl RustAppletBuild {
-    pub fn run(&self, dir: impl AsRef<Path>) -> Result<()> {
-        let metadata = metadata(dir.as_ref())?;
+    pub async fn run(&self, dir: impl AsRef<Path>) -> Result<()> {
+        let metadata = metadata(dir.as_ref()).await?;
         let package = &metadata.packages[0];
-        let target_dir = fs::try_relative(std::env::current_dir()?, &metadata.target_directory)?;
+        let target_dir =
+            fs::try_relative(std::env::current_dir()?, &metadata.target_directory).await?;
         let name = package.name.replace('-', "_");
         let mut cargo = Command::new("cargo");
         let mut rustflags = Vec::new();
@@ -284,7 +287,7 @@ impl RustAppletBuild {
         }
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(dir);
-        cmd::execute(&mut cargo)?;
+        cmd::execute(&mut cargo).await?;
         let out_dir = match &self.output {
             Some(x) => x.clone(),
             None => "target/wasefire".into(),
@@ -294,8 +297,8 @@ impl RustAppletBuild {
             Some(target) => (format!("{target}/{profile}/lib{name}.a"), "libapplet.a"),
         };
         let applet = out_dir.join(dst);
-        if fs::copy_if_changed(target_dir.join(src), &applet)? && dst.ends_with(".wasm") {
-            optimize_wasm(&applet, self.opt_level)?;
+        if fs::copy_if_changed(target_dir.join(src), &applet).await? && dst.ends_with(".wasm") {
+            optimize_wasm(&applet, self.opt_level).await?;
         }
         Ok(())
     }
@@ -310,8 +313,8 @@ pub struct RustAppletTest {
 }
 
 impl RustAppletTest {
-    pub fn run(&self, dir: impl AsRef<Path>) -> Result<()> {
-        let metadata = metadata(dir.as_ref())?;
+    pub async fn run(&self, dir: impl AsRef<Path>) -> Result<()> {
+        let metadata = metadata(dir.as_ref()).await?;
         let package = &metadata.packages[0];
         ensure!(package.features.contains_key("test"), "missing test feature");
         let mut cargo = Command::new("cargo");
@@ -357,10 +360,10 @@ impl Display for OptLevel {
 }
 
 /// Strips and optimizes a WASM applet.
-pub fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> Result<()> {
+pub async fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> Result<()> {
     let mut strip = Command::new("wasm-strip");
     strip.arg(applet.as_ref());
-    cmd::execute(&mut strip)?;
+    cmd::execute(&mut strip).await?;
     let mut opt = Command::new("wasm-opt");
     opt.args(["--enable-bulk-memory", "--enable-sign-ext", "--enable-mutable-globals"]);
     match opt_level {
@@ -370,12 +373,15 @@ pub fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> R
     opt.arg(applet.as_ref());
     opt.arg("-o");
     opt.arg(applet.as_ref());
-    cmd::execute(&mut opt)?;
+    cmd::execute(&mut opt).await?;
     Ok(())
 }
 
-fn metadata(dir: impl Into<PathBuf>) -> Result<Metadata> {
-    let metadata = MetadataCommand::new().current_dir(dir).no_deps().exec()?;
+async fn metadata(dir: impl Into<PathBuf>) -> Result<Metadata> {
+    let dir = dir.into();
+    let metadata =
+        tokio::task::spawn_blocking(|| MetadataCommand::new().current_dir(dir).no_deps().exec())
+            .await??;
     ensure!(metadata.packages.len() == 1, "not exactly one package");
     Ok(metadata)
 }

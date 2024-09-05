@@ -4,7 +4,7 @@
 
 ### Major
 
-- Change all actions requiring a connection to use async
+- Change API to be async using tokio
 
 ### Minor
 

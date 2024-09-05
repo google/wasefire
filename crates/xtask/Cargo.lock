@@ -841,12 +841,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lazy_static"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
-
-[[package]]
 name = "leb128"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1420,6 +1414,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "signal-hook-registry"
+version = "1.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a9e9e0b4211b72e7b8b6e85c807d36c212bdb33ea8587f7569562a84df5465b1"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "slab"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1581,7 +1584,9 @@ dependencies = [
  "bytes",
  "libc",
  "mio",
+ "parking_lot",
  "pin-project-lite",
+ "signal-hook-registry",
  "socket2",
  "tokio-macros",
  "windows-sys 0.52.0",
@@ -1789,6 +1794,7 @@ dependencies = [
  "humantime",
  "rusb",
  "serde",
+ "tokio",
  "toml",
  "wasefire-protocol",
  "wasefire-protocol-tokio",
@@ -2062,12 +2068,12 @@ dependencies = [
  "anyhow",
  "clap",
  "env_logger",
- "lazy_static",
  "log",
  "probe-rs",
  "rustc-demangle",
  "serde",
  "stack-sizes",
+ "tokio",
  "wasefire-cli-tools",
 ]
 
