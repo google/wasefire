@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-cli-tools"
-version = "0.1.1-git"
+version = "0.2.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -20,11 +20,16 @@ humantime = { version = "2.1.0", default-features = false }
 rusb = { version = "0.9.4", default-features = false }
 serde = { version = "1.0.202", default-features = false, features = ["derive"] }
 toml = { version = "0.8.13", default-features = false, features = ["display", "parse"] }
-wasefire-protocol = { version = "0.1.1-git", path = "../protocol" }
+wasefire-protocol = { version = "0.1.1-git", path = "../protocol", features = ["host"] }
 wasefire-wire = { version = "0.1.1-git", path = "../wire" }
 
+[dependencies.wasefire-protocol-tokio]
+version = "0.1.0-git"
+path = "../protocol-tokio"
+features = ["host", "log"]
+
 [dependencies.wasefire-protocol-usb]
-version = "0.1.1-git"
+version = "0.2.0-git"
 path = "../protocol-usb"
 features = ["host", "log"]
 

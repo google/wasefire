@@ -2,6 +2,10 @@
 
 ## 0.1.1-git
 
+### Minor
+
+- Add a `Connection` abstraction with `host` feature
+
 ### Patch
 
 - Update dependencies

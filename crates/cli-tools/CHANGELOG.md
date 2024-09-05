@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.1.1-git
+## 0.2.0-git
+
+### Major
+
+- Change all actions requiring a connection to use async
 
 ### Minor
 

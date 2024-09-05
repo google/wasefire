@@ -15,86 +15,40 @@
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::str::FromStr;
 
 use anyhow::{bail, ensure, Result};
 use cargo_metadata::{Metadata, MetadataCommand};
 use clap::{ValueEnum, ValueHint};
-use data_encoding::HEXLOWER_PERMISSIVE as HEX;
-use rusb::{GlobalContext, UsbContext};
-use wasefire_protocol::{self as service, applet, Api};
-use wasefire_protocol_usb::Connection;
+use rusb::GlobalContext;
+use wasefire_protocol::{self as service, applet, Api, Connection, ConnectionExt};
 
 use crate::{cmd, fs};
 
-/// Platform information.
-pub type PlatformInfo = wasefire_wire::Yoke<service::platform::Info<'static>>;
+mod protocol;
 
 /// Options to connect to a platform.
 #[derive(Clone, clap::Args)]
 pub struct ConnectionOptions {
-    /// Serial of the platform to connect to (in hexadecimal).
-    #[arg(long, env = "WASEFIRE_SERIAL")]
-    serial: Option<Hex>,
+    /// How to connect to the platform.
+    ///
+    /// Possible values are:
+    /// - usb (there must be exactly one connected platform on USB)
+    /// - usb:SERIAL (the serial must be in hexadecimal)
+    /// - usb:BUS:DEV
+    /// - unix[:PATH] (defaults to /tmp/wasefire)
+    /// - tcp[:HOST:PORT] (defaults to 127.0.0.1:3457)
+    #[arg(long, default_value = "usb", env = "WASEFIRE_PROTOCOL", verbatim_doc_comment)]
+    protocol: protocol::Protocol,
 
-    /// Timeout to send or receive on the platform protocol.
+    /// Timeout to send or receive with the USB protocol.
     #[arg(long, default_value = "1s")]
     timeout: humantime::Duration,
 }
 
-#[derive(Clone)]
-struct Hex(Vec<u8>);
-
-impl Display for Hex {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        HEX.encode(&self.0).fmt(f)
-    }
-}
-
-impl FromStr for Hex {
-    type Err = data_encoding::DecodeError;
-    fn from_str(input: &str) -> std::result::Result<Self, Self::Err> {
-        Ok(Hex(HEX.decode(input.as_bytes())?))
-    }
-}
-
 impl ConnectionOptions {
     /// Establishes a connection.
-    pub fn connect(&self) -> Result<Connection<GlobalContext>> {
-        let context = GlobalContext::default();
-        let mut matches = Vec::new();
-        let serial = self.serial.as_ref();
-        for candidate in wasefire_protocol_usb::list(&context)? {
-            let connection = candidate.connect(*self.timeout)?;
-            let info = connection.call::<service::PlatformInfo>(())?;
-            if serial.map_or(false, |x| x.0 != info.get().serial) {
-                continue;
-            }
-            matches.push((connection, info));
-        }
-        match matches.len() {
-            1 => Ok(matches.pop().unwrap().0),
-            0 => match serial {
-                None => bail!("no connected platforms"),
-                Some(serial) => bail!("no connected platforms with serial={serial}"),
-            },
-            _ => match serial {
-                None => {
-                    eprintln!("Choose one of the connected platforms using its serial:");
-                    for (_, info) in matches {
-                        eprintln!("--serial={}", HEX.encode(info.get().serial));
-                    }
-                    bail!("more than one connected platform");
-                }
-                Some(serial) => {
-                    eprintln!("Multiple connected platforms with serial={serial}:");
-                    for (connection, _) in matches {
-                        eprintln!("- {connection}");
-                    }
-                    bail!("more than one connected platform with serial={serial}");
-                }
-            },
-        }
+    pub async fn connect(&self) -> Result<Box<dyn Connection>> {
+        self.protocol.connect(*self.timeout).await
     }
 }
 
@@ -141,16 +95,16 @@ pub struct AppletRpc {
 }
 
 impl AppletRpc {
-    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let AppletRpc { applet, rpc, retries } = self;
         let applet_id = match applet {
             Some(_) => bail!("applet identifiers are not supported yet"),
             None => applet::AppletId,
         };
         let request = applet::Request { applet_id, request: &rpc.read()? };
-        connection.call::<service::AppletRequest>(request)?.get();
+        connection.call::<service::AppletRequest>(request).await?.get();
         for _ in 0 .. retries {
-            let response = connection.call::<service::AppletResponse>(applet_id)?;
+            let response = connection.call::<service::AppletResponse>(applet_id).await?;
             if let Some(response) = response.get().response {
                 return rpc.write(response);
             }
@@ -159,7 +113,7 @@ impl AppletRpc {
     }
 }
 
-/// Lists the connected platforms.
+/// Lists the platforms connected on USB.
 #[derive(clap::Args)]
 pub struct PlatformList {
     /// Timeout to send or receive on the platform protocol.
@@ -168,17 +122,21 @@ pub struct PlatformList {
 }
 
 impl PlatformList {
-    pub fn run(self) -> Result<Vec<PlatformInfo>> {
+    pub async fn run(self) -> Result<()> {
         let PlatformList { timeout } = self;
         let context = GlobalContext::default();
         let candidates = wasefire_protocol_usb::list(&context)?;
-        println!("There are {} connected platforms:", candidates.len());
-        let mut platforms = Vec::new();
+        println!("There are {} connected platforms on USB:", candidates.len());
         for candidate in candidates {
-            let connection = candidate.connect(*timeout)?;
-            platforms.push(connection.call::<service::PlatformInfo>(())?);
+            let mut connection = candidate.connect(*timeout)?;
+            let info = connection.call::<service::PlatformInfo>(()).await?;
+            let serial = protocol::ProtocolUsb::Serial(protocol::Hex(info.get().serial.to_vec()));
+            let bus = connection.device().bus_number();
+            let dev = connection.device().address();
+            let busdev = protocol::ProtocolUsb::BusDev { bus, dev };
+            println!("- {serial} or {busdev}");
         }
-        Ok(platforms)
+        Ok(())
     }
 }
 
@@ -187,10 +145,10 @@ impl PlatformList {
 pub struct PlatformReboot {}
 
 impl PlatformReboot {
-    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let PlatformReboot {} = self;
-        connection.send(&Api::PlatformReboot(()))?;
-        match connection.receive::<service::PlatformReboot>() {
+        connection.send(&Api::PlatformReboot(())).await?;
+        match connection.receive::<service::PlatformReboot>().await {
             Ok(x) => *x.get(),
             Err(e) => match e.downcast_ref::<rusb::Error>() {
                 Some(rusb::Error::Timeout | rusb::Error::NoDevice) => Ok(()),
@@ -208,9 +166,9 @@ pub struct PlatformRpc {
 }
 
 impl PlatformRpc {
-    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let PlatformRpc { rpc } = self;
-        rpc.write(connection.call::<service::PlatformVendor>(&rpc.read()?)?.get())
+        rpc.write(connection.call::<service::PlatformVendor>(&rpc.read()?).await?.get())
     }
 }
 

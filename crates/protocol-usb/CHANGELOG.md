@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.1.1-git
+## 0.2.0-git
+
+### Major
+
+- Implement `wasefire_protocol::Connection` for `Connection` renaming some existing methods
 
 ### Minor
 

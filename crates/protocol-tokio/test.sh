@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2022 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,13 +17,9 @@ set -e
 
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
-ensure_applet
-
 test_helper
 
-cargo test --bin=runner-host --features=wasm,debug
-cargo check --bin=runner-host --features=wasm,debug,web
-cargo check --bin=runner-host --features=wasm,release
-cargo check --bin=runner-host --target=i686-unknown-linux-gnu --features=native,release
-cargo check --bin=runner-host --no-default-features --features=wasm,debug,tcp
-cargo check --bin=runner-host --no-default-features --features=wasm,debug,unix
+cargo test --lib --features=device
+cargo test --lib --features=host
+cargo check --lib --features=device,log
+cargo check --lib --features=host,log

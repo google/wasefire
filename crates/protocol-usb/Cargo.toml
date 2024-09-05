@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-protocol-usb"
-version = "0.1.1-git"
+version = "0.2.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -18,7 +18,6 @@ rusb = { version = "0.9.4", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false, optional = true }
 wasefire-error = { version = "0.1.2-git", path = "../error", optional = true }
 wasefire-logger = { version = "0.1.5", path = "../logger" }
-wasefire-wire = { version = "0.1.1-git", path = "../wire", optional = true }
 
 [dependencies.wasefire-board-api]
 version = "0.8.0-git"
@@ -38,7 +37,7 @@ log = ["wasefire-board-api?/log", "wasefire-logger/log"]
 std = ["wasefire-board-api?/std"]
 # Exactly one of host or device must be selected.
 device = ["dep:usb-device", "dep:wasefire-board-api", "dep:wasefire-error"]
-host = ["dep:anyhow", "dep:rusb", "dep:wasefire-protocol", "dep:wasefire-wire", "std"]
+host = ["dep:anyhow", "dep:rusb", "dep:wasefire-protocol", "std"]
 
 [lints]
 clippy.unit-arg = "allow"

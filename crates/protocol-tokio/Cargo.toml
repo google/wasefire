@@ -1,0 +1,49 @@
+[package]
+name = "wasefire-protocol-tokio"
+version = "0.1.0-git"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = true
+edition = "2021"
+description = "Wasefire protocol using std::io::Read and Write"
+repository = "https://github.com/google/wasefire"
+include = ["/LICENSE", "/src/"]
+keywords = ["framework"]
+categories = []
+
+[package.metadata.docs.rs]
+features = ["device"]
+
+[dependencies]
+anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
+wasefire-error = { version = "0.1.2-git", path = "../error", optional = true }
+wasefire-logger = { version = "0.1.5", path = "../logger" }
+
+[dependencies.tokio]
+version = "1.37.0"
+default-features = false
+features = ["io-util", "macros", "net", "rt", "sync"]
+
+[dependencies.wasefire-board-api]
+version = "0.8.0-git"
+path = "../board"
+features = ["api-platform-protocol", "std"]
+optional = true
+
+[dependencies.wasefire-protocol]
+version = "0.1.1-git"
+path = "../protocol"
+features = ["host"]
+optional = true
+
+[features]
+log = ["wasefire-board-api?/log", "wasefire-logger/log"]
+# Exactly one of host or device must be selected.
+device = ["dep:wasefire-board-api", "dep:wasefire-error"]
+host = ["dep:wasefire-protocol"]
+
+[lints]
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-crate-dependencies = "warn"
