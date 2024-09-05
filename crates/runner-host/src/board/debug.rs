@@ -37,9 +37,7 @@ impl board::debug::Api for Impl {
     }
 
     fn exit(success: bool) -> ! {
-        for cleanup in std::mem::take(&mut *crate::CLEANUP.lock().unwrap()) {
-            cleanup();
-        }
+        crate::cleanup::flush();
         std::process::exit(if success { 0 } else { 1 })
     }
 }

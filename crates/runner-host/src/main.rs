@@ -30,10 +30,10 @@ use wasefire_scheduler::Scheduler;
 use wasefire_store::{FileOptions, FileStorage};
 
 mod board;
+mod cleanup;
 
 static STATE: Mutex<Option<board::State>> = Mutex::new(None);
 static RECEIVER: Mutex<Option<Receiver<Event<Board>>>> = Mutex::new(None);
-static CLEANUP: Mutex<Vec<Box<dyn FnOnce() + Send>>> = Mutex::new(Vec::new());
 
 fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
     f(STATE.lock().unwrap().as_mut().unwrap())
@@ -75,20 +75,17 @@ async fn main() -> Result<()> {
     env_logger::init();
     #[cfg_attr(feature = "usb", allow(unused_variables))]
     let flags = Flags::parse();
-    tokio::spawn(async {
-        use futures::stream::StreamExt;
-        use signal_hook::consts::{SIGINT, SIGTERM};
-        let mut signals = signal_hook_tokio::Signals::new([SIGINT, SIGTERM]).unwrap();
-        if let Some(signal) = signals.next().await {
-            use wasefire_board_api::debug::Api;
-            wasefire_board_api::Debug::<Board>::exit(signal == SIGTERM);
-        }
-    });
     std::panic::set_hook(Box::new(|info| {
         eprintln!("{info}");
         use wasefire_board_api::debug::Api;
         wasefire_board_api::Debug::<Board>::exit(false);
     }));
+    tokio::spawn(async {
+        use futures::stream::StreamExt;
+        use signal_hook::consts::{SIGINT, SIGTERM};
+        let mut signals = signal_hook_tokio::Signals::new([SIGINT, SIGTERM]).unwrap();
+        assert!(signals.next().await.is_none());
+    });
     // TODO: Should be a flag controlled by xtask (value is duplicated there).
     const STORAGE: &str = "../../target/wasefire/storage.bin";
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
@@ -125,9 +122,7 @@ async fn main() -> Result<()> {
     let pipe = {
         let pipe = wasefire_protocol_tokio::Pipe::new_unix(&flags.unix_path, push).await.unwrap();
         let unix_path = flags.unix_path.clone();
-        CLEANUP.lock().unwrap().push(Box::new(move || {
-            let _ = std::fs::remove_file(unix_path);
-        }));
+        crate::cleanup::push(Box::new(move || drop(std::fs::remove_file(unix_path))));
         pipe
     };
     *STATE.lock().unwrap() = Some(board::State {

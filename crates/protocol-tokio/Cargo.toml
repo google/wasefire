@@ -8,8 +8,8 @@ edition = "2021"
 description = "Wasefire protocol using std::io::Read and Write"
 repository = "https://github.com/google/wasefire"
 include = ["/LICENSE", "/src/"]
-keywords = ["embedded", "framework", "no-std"]
-categories = ["embedded", "no-std"]
+keywords = ["framework"]
+categories = []
 
 [package.metadata.docs.rs]
 features = ["device"]
