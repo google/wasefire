@@ -1030,32 +1030,25 @@ impl<'m> Thread<'m> {
     }
 
     fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind<'m>) {
-        let params_len = type_.params.len();
         let arity = match kind {
             LabelKind::Block | LabelKind::If => type_.results.len(),
-            LabelKind::Loop(_) => params_len,
+            LabelKind::Loop(_) => type_.params.len(),
         };
-        self.label().values_cnt -= params_len;
-        let label = Label { arity, kind, values_cnt: params_len };
+        let label = Label { arity, kind, values_cnt: type_.params.len() };
+        self.label().values_cnt -= label.values_cnt;
         self.labels().push(label);
     }
 
     fn pop_label(mut self, inst: &mut Instance<'m>, l: LabelIdx) -> ThreadResult<'m> {
-        let last_label_values_cnt = self.label().values_cnt;
         let i = self.labels().len() - l as usize - 1;
         if i == 0 {
             return self.exit_frame();
         }
         let frame = self.frame();
-        let label_values_cnt_before: usize =
-            frame.labels[0 .. i].iter().map(|label| label.values_cnt).sum();
+        let values_cnt: usize = frame.labels[i ..].iter().map(|label| label.values_cnt).sum();
         let Label { arity, kind, .. } = frame.labels.drain(i ..).next().unwrap();
         let values_len = self.values().len();
-        self.values().drain(values_len - last_label_values_cnt .. values_len - arity);
-        if l != 0 {
-            let new_values_len = self.values().len();
-            self.values().drain(label_values_cnt_before .. new_values_len - arity);
-        }
+        self.values().drain(values_len - values_cnt .. values_len - arity);
         self.label().values_cnt += arity;
         match kind {
             LabelKind::Loop(pos) => unsafe { self.parser.restore(pos) },
@@ -1067,17 +1060,16 @@ impl<'m> Thread<'m> {
     fn exit_label(mut self) -> ThreadResult<'m> {
         let frame = self.frame();
         let label = frame.labels.pop().unwrap();
-        let popped_values =
-            frame.labels_values.split_off(frame.labels_values.len() - label.values_cnt);
         if frame.labels.is_empty() {
             let frame = self.frames.pop().unwrap();
-            debug_assert_eq!(label.values_cnt, frame.arity);
+            debug_assert_eq!(frame.labels_values.len(), label.values_cnt);
+            debug_assert_eq!(frame.labels_values.len(), frame.arity);
             if self.frames.is_empty() {
-                return ThreadResult::Done(popped_values);
+                return ThreadResult::Done(frame.labels_values);
             }
             unsafe { self.parser.restore(frame.ret) };
+            self.values().extend(frame.labels_values);
         }
-        self.values().extend(popped_values);
         self.label().values_cnt += label.values_cnt;
         ThreadResult::Continue(self)
     }
