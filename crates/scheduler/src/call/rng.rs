@@ -36,8 +36,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 #[cfg(feature = "board-api-rng")]
 fn fill_bytes<B: Board>(mut call: SchedulerCall<B, api::fill_bytes::Sig>) {
     let api::fill_bytes::Params { ptr, len } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         let output = memory.get_mut(*ptr, *len)?;
         board::Rng::<B>::fill_bytes(output)?

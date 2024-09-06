@@ -15,7 +15,7 @@
 use alloc::vec;
 use core::borrow::Borrow;
 
-use derivative::Derivative;
+use derive_where::derive_where;
 use wasefire_board_api::{Api as Board, Event, Impossible};
 #[cfg(feature = "wasm")]
 pub use wasefire_interpreter::InstId;
@@ -41,10 +41,8 @@ pub mod usb;
 pub struct InstId;
 
 // TODO: This could be encoded into a u32 for performance/footprint.
-#[derive(Derivative)]
-#[derivative(Debug(bound = ""), Copy(bound = ""), Hash(bound = ""))]
-#[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
-#[derivative(Ord = "feature_allow_slow_enum")]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive_where(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key<B: Board> {
     #[cfg(feature = "board-api-button")]
     Button(button::Key<B>),
@@ -59,20 +57,6 @@ pub enum Key<B: Board> {
     #[cfg(feature = "internal-board-api-usb")]
     Usb(usb::Key),
     _Impossible(Impossible<B>),
-}
-
-// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use Clone(bound = "") instead.
-impl<B: Board> Clone for Key<B> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use PartialOrd(bound = "") instead.
-impl<B: Board> PartialOrd for Key<B> {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 #[cfg_attr(not(feature = "board-api-button"), allow(unused_macros))]
@@ -122,22 +106,12 @@ impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
     }
 }
 
-#[derive(Derivative)]
-#[derivative(Debug(bound = ""), Clone(bound = ""))]
-#[derivative(PartialEq(bound = ""), Eq(bound = ""), Ord(bound = ""))]
-#[derivative(Ord = "feature_allow_slow_enum")]
+#[derive_where(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Handler<B: Board> {
     pub key: Key<B>,
     pub inst: InstId,
     pub func: u32,
     pub data: u32,
-}
-
-// TODO(https://github.com/mcarton/rust-derivative/issues/112): Use PartialOrd(bound = "") instead.
-impl<B: Board> PartialOrd for Handler<B> {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 impl<B: Board> Borrow<Key<B>> for Handler<B> {
@@ -148,15 +122,16 @@ impl<B: Board> Borrow<Key<B>> for Handler<B> {
 
 #[cfg_attr(feature = "native", allow(clippy::needless_pass_by_ref_mut))]
 pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
-    let Handler { inst, func, data, .. } = match scheduler.applet.get(Key::from(&event)) {
-        Some(x) => x,
+    let applet = scheduler.applet.as_mut().unwrap();
+    let (inst, func, data) = match applet.get(Key::from(&event)) {
+        Some(x) => (x.inst, x.func, x.data),
         None => {
             // This should not happen because we remove pending events when disabling an event.
             log::error!("Missing handler for event.");
             return;
         }
     };
-    let mut params = vec![*func, *data];
+    let mut params = vec![func, data];
     let _ = (&inst, &mut params); // in case there are no events
     match event {
         #[cfg(feature = "board-api-button")]
@@ -186,7 +161,7 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
     {
         use alloc::format;
         let name = format!("cb{}", params.len() - 2);
-        scheduler.call(*inst, &name, &params);
+        scheduler.call(inst, &name, &params);
     }
     #[allow(unreachable_code)] // when there are no events
     #[cfg(feature = "native")]

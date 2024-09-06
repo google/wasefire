@@ -19,10 +19,9 @@ use header::{Header, Side};
 use wasefire_board_api::platform::update::Api;
 use wasefire_board_api::Supported;
 use wasefire_error::{Code, Error};
-use wasefire_store::{Storage as _, StorageIndex};
 use wasefire_sync::TakeCell;
 
-use crate::storage::Storage;
+use crate::storage::{Storage, StorageWriter};
 
 pub enum Impl {}
 
@@ -38,25 +37,18 @@ impl Api for Impl {
     }
 
     fn initialize(dry_run: bool) -> Result<(), Error> {
-        STATE.with(|state| {
-            state.reset(dry_run);
-            Ok(())
-        })
+        STATE.with(|state| state.start(dry_run))
     }
 
-    fn process(mut chunk: &[u8]) -> Result<(), Error> {
-        STATE.with(|state| {
-            while !chunk.is_empty() {
-                state.write(&mut chunk)?;
-            }
-            Ok(())
-        })
+    fn process(chunk: &[u8]) -> Result<(), Error> {
+        STATE.with(|state| state.write(chunk))
     }
 
     fn finalize() -> Result<(), Error> {
         STATE.with(|state| {
+            let dry_run = state.dry_run()?;
             state.flush()?;
-            match state.dry_run {
+            match dry_run {
                 true => Ok(()),
                 false => super::reboot(),
             }
@@ -65,76 +57,10 @@ impl Api for Impl {
 }
 
 pub fn init(storage: Storage) {
-    STATE.put(Update::new(storage));
+    STATE.put(StorageWriter::new(storage));
 }
 
-static STATE: TakeCell<Update> = TakeCell::new(None);
-
-struct Update {
-    storage: Storage,
-    dry_run: bool,
-    // offset + buffer.len() <= storage.len()
-    offset: usize,
-    buffer: Vec<u8>,
-}
-
-impl Update {
-    fn new(storage: Storage) -> Self {
-        Update { storage, dry_run: false, offset: 0, buffer: Vec::new() }
-    }
-
-    fn reset(&mut self, dry_run: bool) {
-        self.dry_run = dry_run;
-        self.offset = 0;
-        self.buffer.clear();
-    }
-
-    fn write(&mut self, chunk: &mut &[u8]) -> Result<(), Error> {
-        let page_size = self.storage.page_size();
-        let word_size = self.storage.word_size();
-        let page = self.offset / page_size;
-        let byte = self.offset % page_size;
-        let index = StorageIndex { page, byte };
-        let (value, rest) = if self.buffer.is_empty() {
-            let length = core::cmp::min(chunk.len(), page_size - byte);
-            let length = length / word_size * word_size;
-            chunk.split_at(length)
-        } else {
-            assert!(self.buffer.len() < word_size);
-            let length = core::cmp::min(chunk.len(), word_size - self.buffer.len());
-            self.buffer.extend_from_slice(&chunk[.. length]);
-            (&self.buffer[..], &chunk[length ..])
-        };
-        if value.is_empty() {
-            self.buffer = chunk.to_vec();
-            *chunk = &[];
-            return Ok(());
-        }
-        if !self.dry_run {
-            if byte == 0 {
-                self.storage.erase_page(page).map_err(|_| Error::world(0))?;
-            }
-            self.storage.write_slice(index, value).map_err(|_| Error::world(0))?;
-        }
-        *chunk = rest;
-        self.offset += value.len();
-        Ok(())
-    }
-
-    fn flush(&mut self) -> Result<(), Error> {
-        if self.buffer.is_empty() {
-            return Ok(());
-        }
-        let word_size = self.storage.word_size();
-        assert!(self.buffer.len() < word_size);
-        self.buffer.resize(word_size, 0xff);
-        let chunk = core::mem::take(&mut self.buffer);
-        let mut chunk = &chunk[..];
-        self.write(&mut chunk)?;
-        assert!(chunk.is_empty());
-        Ok(())
-    }
-}
+static STATE: TakeCell<StorageWriter> = TakeCell::new(None);
 
 fn push_header(metadata: &mut Vec<u8>, header: Header) {
     match header.side() {

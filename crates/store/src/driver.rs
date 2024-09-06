@@ -16,12 +16,14 @@
 //!
 //! [`StoreDriver`] wraps a [`Store`] and compares its behavior with its associated [`StoreModel`].
 
+use wasefire_error::Error;
+
 use crate::format::{Format, Position};
 #[cfg(feature = "std")]
 use crate::StoreUpdate;
 use crate::{
-    BufferCorruptFunction, BufferOptions, BufferStorage, Nat, Store, StoreError, StoreHandle,
-    StoreModel, StoreOperation, StoreResult,
+    BufferCorruptFunction, BufferOptions, BufferStorage, Nat, Store, StoreHandle, StoreModel,
+    StoreOperation,
 };
 
 /// Tracks the store behavior against its model and its storage.
@@ -85,7 +87,7 @@ pub enum StoreInvariant {
     NoLifetime,
 
     /// The store returned an unexpected error.
-    StoreError(StoreError),
+    StoreError(Error),
 
     /// The store did not recover an interrupted operation.
     Interrupted {
@@ -99,10 +101,10 @@ pub enum StoreInvariant {
     /// The store returned a different result than the model.
     DifferentResult {
         /// The result of the store.
-        store: StoreResult<()>,
+        store: Result<(), Error>,
 
         /// The result of the model.
-        model: StoreResult<()>,
+        model: Result<(), Error>,
     },
 
     /// The store did not wipe an entry.
@@ -185,8 +187,8 @@ pub enum StoreInvariant {
     },
 }
 
-impl From<StoreError> for StoreInvariant {
-    fn from(error: StoreError) -> StoreInvariant {
+impl From<Error> for StoreInvariant {
+    fn from(error: Error) -> StoreInvariant {
         StoreInvariant::StoreError(error)
     }
 }
@@ -303,7 +305,7 @@ impl StoreDriverOff {
                     },
                 )?)
             }
-            Err((StoreError::StorageError, mut storage)) => {
+            Err((crate::INTERRUPTION, mut storage)) => {
                 storage.corrupt_operation(interruption.corrupt);
                 StoreDriver::Off(StoreDriverOff { storage, ..self })
             }
@@ -364,12 +366,12 @@ impl StoreDriverOn {
     /// Applies a store operation to the store and model with a possible interruption.
     pub fn partial_apply(
         mut self, operation: StoreOperation, interruption: StoreInterruption,
-    ) -> Result<(Option<StoreError>, StoreDriver), (Store<BufferStorage>, StoreInvariant)> {
+    ) -> Result<(Option<Error>, StoreDriver), (Store<BufferStorage>, StoreInvariant)> {
         self.store.storage_mut().arm_interruption(interruption.delay);
         let (deleted, store_result) = self.store.apply(&operation);
         Ok(match store_result {
-            Err(StoreError::NoLifetime) => return Err((self.store, StoreInvariant::NoLifetime)),
-            Ok(()) | Err(StoreError::NoCapacity) | Err(StoreError::InvalidArgument) => {
+            Err(crate::NO_LIFETIME) => return Err((self.store, StoreInvariant::NoLifetime)),
+            Ok(()) | Err(crate::NO_CAPACITY) | Err(crate::store::INVALID_ARGUMENT) => {
                 self.store.storage_mut().disarm_interruption();
                 let model_result = self.model.apply(operation);
                 if store_result != model_result {
@@ -388,7 +390,7 @@ impl StoreDriverOn {
                 }
                 (store_result.err(), StoreDriver::On(self))
             }
-            Err(StoreError::StorageError) => {
+            Err(crate::INTERRUPTION) => {
                 let mut driver = StoreDriverOff {
                     storage: self.store.extract_storage(),
                     model: self.model,

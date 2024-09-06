@@ -15,6 +15,7 @@
 #![no_std]
 #![no_main]
 #![feature(never_type)]
+#![feature(ptr_metadata)]
 #![feature(try_blocks)]
 
 extern crate alloc;

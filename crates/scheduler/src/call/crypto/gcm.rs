@@ -28,9 +28,9 @@ use crate::{DispatchSchedulerCall, SchedulerCall};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Support(call) => support(call),
-        Api::TagLength(call) => or_trap!("board-api-crypto-aes256-gcm", tag_length(call)),
-        Api::Encrypt(call) => or_trap!("board-api-crypto-aes256-gcm", encrypt(call)),
-        Api::Decrypt(call) => or_trap!("board-api-crypto-aes256-gcm", decrypt(call)),
+        Api::TagLength(call) => or_fail!("board-api-crypto-aes256-gcm", tag_length(call)),
+        Api::Encrypt(call) => or_fail!("board-api-crypto-aes256-gcm", encrypt(call)),
+        Api::Decrypt(call) => or_fail!("board-api-crypto-aes256-gcm", decrypt(call)),
     }
 }
 
@@ -57,8 +57,8 @@ fn tag_length<B: Board>(call: SchedulerCall<B, api::tag_length::Sig>) {
 #[cfg(feature = "board-api-crypto-aes256-gcm")]
 fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
     let api::encrypt::Params { key, iv, aad, aad_len, length, clear, cipher, tag } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         ensure_support::<B>()?;
         let key = memory.get_array::<32>(*key)?.into();
@@ -76,8 +76,8 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
 #[cfg(feature = "board-api-crypto-aes256-gcm")]
 fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
     let api::decrypt::Params { key, iv, aad, aad_len, tag, length, cipher, clear } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         ensure_support::<B>()?;
         let key = memory.get_array::<32>(*key)?.into();

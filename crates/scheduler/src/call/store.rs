@@ -19,10 +19,6 @@ use wasefire_applet_api::store::Api;
 #[cfg(feature = "board-api-storage")]
 use wasefire_applet_api::store::{self as api};
 use wasefire_board_api::Api as Board;
-#[cfg(feature = "board-api-storage")]
-use wasefire_error::{Code, Error};
-#[cfg(feature = "board-api-storage")]
-use wasefire_store::StoreError;
 
 #[cfg(feature = "board-api-storage")]
 use crate::applet::store::MemoryApi;
@@ -54,10 +50,10 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let api::insert::Params { key, ptr, len } = call.read();
     let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let memory = scheduler.applet.as_mut().unwrap().memory();
     let result = try {
         let value = memory.get(*ptr, *len)?;
-        scheduler.store.insert(*key as usize, value).map_err(convert)?
+        scheduler.store.insert(*key as usize, value)?
     };
     call.reply(result);
 }
@@ -65,7 +61,7 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
 #[cfg(feature = "board-api-storage")]
 fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
     let api::remove::Params { key } = call.read();
-    let res = try { call.scheduler().store.remove(*key as usize).map_err(convert)? };
+    let res = try { call.scheduler().store.remove(*key as usize)? };
     call.reply(res);
 }
 
@@ -73,9 +69,9 @@ fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
 fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let api::find::Params { key, ptr: ptr_ptr, len: len_ptr } = call.read();
     let scheduler = call.scheduler();
-    let mut memory = scheduler.applet.memory();
+    let mut memory = scheduler.applet.as_mut().unwrap().memory();
     let result = try {
-        match scheduler.store.find(*key as usize).map_err(convert)? {
+        match scheduler.store.find(*key as usize)? {
             None => false,
             Some(value) => {
                 memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &value)?;
@@ -90,11 +86,11 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
 fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
     let api::keys::Params { ptr: ptr_ptr } = call.read();
     let scheduler = call.scheduler();
-    let mut memory = scheduler.applet.memory();
+    let mut memory = scheduler.applet.as_mut().unwrap().memory();
     let result = try {
         let mut keys = Vec::new();
-        for handle in scheduler.store.iter().map_err(convert)? {
-            keys.push(handle.map_err(convert)?.get_key() as u16);
+        for handle in scheduler.store.iter()? {
+            keys.push(handle?.get_key() as u16);
         }
         match keys {
             keys if keys.is_empty() => 0,
@@ -113,17 +109,6 @@ fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
 #[cfg(feature = "board-api-storage")]
 fn clear<B: Board>(mut call: SchedulerCall<B, api::clear::Sig>) {
     let api::clear::Params {} = call.read();
-    let scheduler = call.scheduler();
-    let result = try { scheduler.store.clear(0).map_err(convert)? };
+    let result = try { call.scheduler().store.clear(0)? };
     call.reply(result);
-}
-
-#[cfg(feature = "board-api-storage")]
-fn convert(err: StoreError) -> Error {
-    match err {
-        StoreError::InvalidArgument => Error::user(Code::InvalidArgument),
-        StoreError::NoCapacity | StoreError::NoLifetime => Error::world(Code::NotEnough),
-        StoreError::StorageError => Error::world(Code::Generic),
-        StoreError::InvalidStorage => Error::world(Code::InvalidState),
-    }
 }

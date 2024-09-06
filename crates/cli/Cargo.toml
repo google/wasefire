@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-cli"
-version = "0.1.2-git"
+version = "0.2.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -19,12 +19,12 @@ path = "src/main.rs"
 anyhow = { version = "1.0.86", default-features = false }
 clap = { version = "4.5.4", default-features = false, features = ["default", "derive", "env"] }
 clap_complete = { version = "4.5.2", default-features = false }
-data-encoding = { version = "2.6.0", default-features = false, features = ["std"] }
-humantime = { version = "2.1.0", default-features = false }
-rusb = { version = "0.9.4", default-features = false }
-wasefire-cli-tools = { version = "0.1.1-git", path = "../cli-tools" }
-wasefire-protocol = { version = "0.1.0", path = "../protocol", features = ["host"] }
-wasefire-protocol-usb = { version = "0.1.0", path = "../protocol-usb", features = ["host"] }
+wasefire-cli-tools = { version = "0.2.0-git", path = "../cli-tools" }
+
+[dependencies.tokio]
+version = "1.40.0"
+default-features = false
+features = ["macros", "parking_lot", "rt", "rt-multi-thread"]
 
 [lints]
 clippy.unit-arg = "allow"

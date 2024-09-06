@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.2-git
+
+### Patch
+
+- Update dependencies
+
 ## 0.6.1
 
 ### Minor

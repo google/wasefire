@@ -23,7 +23,9 @@ use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
-use crate::{Storage, StorageIndex, StorageResult};
+use wasefire_error::Error;
+
+use crate::{Storage, StorageIndex};
 
 /// Simulates a flash storage using a host-based file.
 ///
@@ -55,7 +57,7 @@ pub struct FileOptions {
 }
 
 impl FileStorage {
-    pub fn new(path: &Path, options: FileOptions) -> StorageResult<FileStorage> {
+    pub fn new(path: &Path, options: FileOptions) -> Result<FileStorage, Error> {
         let mut file_ref = RefCell::new(
             OpenOptions::new().read(true).write(true).create(true).truncate(false).open(path)?,
         );
@@ -103,7 +105,7 @@ impl Storage for FileStorage {
         u16::MAX as usize
     }
 
-    fn read_slice(&self, index: StorageIndex, length: usize) -> StorageResult<Cow<[u8]>> {
+    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<[u8]>, Error> {
         let mut file = self.file.borrow_mut();
         file.seek(SeekFrom::Start(index.range(length, self)?.start as u64))?;
         let mut buf = vec![0u8; length];
@@ -111,14 +113,14 @@ impl Storage for FileStorage {
         Ok(Cow::Owned(buf))
     }
 
-    fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> StorageResult<()> {
+    fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> Result<(), Error> {
         let mut file = self.file.borrow_mut();
         file.seek(SeekFrom::Start(index.range(value.len(), self)?.start as u64))?;
         file.write_all(value)?;
         Ok(())
     }
 
-    fn erase_page(&mut self, page: usize) -> StorageResult<()> {
+    fn erase_page(&mut self, page: usize) -> Result<(), Error> {
         let mut file = self.file.borrow_mut();
         let index = StorageIndex { page, byte: 0 };
         file.seek(SeekFrom::Start(index.range(self.page_size(), self)?.start as u64))?;

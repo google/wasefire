@@ -150,7 +150,7 @@ mod syntax;
 mod toctou;
 mod valid;
 
-pub use error::{Error, Unsupported};
+pub use error::{Error, Unsupported, TRAP_CODE};
 pub use exec::{Call, InstId, RunAnswer, RunResult, Store, StoreId, Val, MEMORY_ALIGN};
 pub use module::Module;
 pub use syntax::{

@@ -18,6 +18,7 @@ use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-platform-protocol")]
 pub mod protocol;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
     #[cfg(feature = "board-api-platform-protocol")]

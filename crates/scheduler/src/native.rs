@@ -24,6 +24,7 @@ use crate::perf::Slot;
 use crate::Scheduler;
 
 pub(crate) trait ErasedScheduler: Send {
+    fn new_applet(&mut self);
     fn dispatch(&mut self, link: &CStr, params: *const u32) -> isize;
     fn flush_events(&mut self);
     fn process_event(&mut self);
@@ -32,6 +33,10 @@ pub(crate) trait ErasedScheduler: Send {
 }
 
 impl<B: Board> ErasedScheduler for Scheduler<B> {
+    fn new_applet(&mut self) {
+        self.new_applet();
+    }
+
     fn dispatch(&mut self, link: &CStr, params: *const u32) -> isize {
         self.dispatch(link, params)
     }

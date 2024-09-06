@@ -29,13 +29,13 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::IsSupported(call) => is_supported(call),
         Api::IsValidScalar(call) => {
-            or_trap!("internal-board-api-crypto-ecc", is_valid_scalar(call))
+            or_fail!("internal-board-api-crypto-ecc", is_valid_scalar(call))
         }
-        Api::IsValidPoint(call) => or_trap!("internal-board-api-crypto-ecc", is_valid_point(call)),
-        Api::BasePointMul(call) => or_trap!("internal-board-api-crypto-ecc", base_point_mul(call)),
-        Api::PointMul(call) => or_trap!("internal-board-api-crypto-ecc", point_mul(call)),
-        Api::EcdsaSign(call) => or_trap!("internal-board-api-crypto-ecc", ecdsa_sign(call)),
-        Api::EcdsaVerify(call) => or_trap!("internal-board-api-crypto-ecc", ecdsa_verify(call)),
+        Api::IsValidPoint(call) => or_fail!("internal-board-api-crypto-ecc", is_valid_point(call)),
+        Api::BasePointMul(call) => or_fail!("internal-board-api-crypto-ecc", base_point_mul(call)),
+        Api::PointMul(call) => or_fail!("internal-board-api-crypto-ecc", point_mul(call)),
+        Api::EcdsaSign(call) => or_fail!("internal-board-api-crypto-ecc", ecdsa_sign(call)),
+        Api::EcdsaVerify(call) => or_fail!("internal-board-api-crypto-ecc", ecdsa_verify(call)),
     }
 }
 
@@ -47,8 +47,8 @@ fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
 #[cfg(feature = "internal-board-api-crypto-ecc")]
 fn is_valid_scalar<B: Board>(mut call: SchedulerCall<B, api::is_valid_scalar::Sig>) {
     let api::is_valid_scalar::Params { curve, n } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
@@ -71,8 +71,8 @@ fn is_valid_scalar<B: Board>(mut call: SchedulerCall<B, api::is_valid_scalar::Si
 #[cfg(feature = "internal-board-api-crypto-ecc")]
 fn is_valid_point<B: Board>(mut call: SchedulerCall<B, api::is_valid_point::Sig>) {
     let api::is_valid_point::Params { curve, x, y } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
@@ -97,8 +97,8 @@ fn is_valid_point<B: Board>(mut call: SchedulerCall<B, api::is_valid_point::Sig>
 #[cfg(feature = "internal-board-api-crypto-ecc")]
 fn base_point_mul<B: Board>(mut call: SchedulerCall<B, api::base_point_mul::Sig>) {
     let api::base_point_mul::Params { curve, n, x, y } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
@@ -125,8 +125,8 @@ fn base_point_mul<B: Board>(mut call: SchedulerCall<B, api::base_point_mul::Sig>
 #[cfg(feature = "internal-board-api-crypto-ecc")]
 fn point_mul<B: Board>(mut call: SchedulerCall<B, api::point_mul::Sig>) {
     let api::point_mul::Params { curve, n, in_x, in_y, out_x, out_y } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
@@ -157,8 +157,8 @@ fn point_mul<B: Board>(mut call: SchedulerCall<B, api::point_mul::Sig>) {
 #[cfg(feature = "internal-board-api-crypto-ecc")]
 fn ecdsa_sign<B: Board>(mut call: SchedulerCall<B, api::ecdsa_sign::Sig>) {
     let api::ecdsa_sign::Params { curve, key, message, r, s } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]
@@ -187,8 +187,8 @@ fn ecdsa_sign<B: Board>(mut call: SchedulerCall<B, api::ecdsa_sign::Sig>) {
 #[cfg(feature = "internal-board-api-crypto-ecc")]
 fn ecdsa_verify<B: Board>(mut call: SchedulerCall<B, api::ecdsa_verify::Sig>) {
     let api::ecdsa_verify::Params { curve, message, x, y, r, s } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         match convert_curve::<B>(*curve)?? {
             #[cfg(feature = "board-api-crypto-p256")]

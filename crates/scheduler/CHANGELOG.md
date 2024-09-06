@@ -4,12 +4,18 @@
 
 ### Patch
 
+- Use `derive-where` instead of `derivative`
+- Implement `defmt::Format` for `Key` when `defmt` is enabled
+- Stop using `log::Debug2Format()` when logging events
+- Make applet optional
+- Update dependencies
 - Fix missing `build.rs` in cargo package
 
 ## 0.3.1
 
 ### Minor
 
+- Return an error when calling an unimplemented API
 - Support `PlatformVendor` protocol
 - Support `platform::serial()` function
 - Migrate `platform::version()` to the new board and applet APIs
@@ -146,4 +152,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 4 -->

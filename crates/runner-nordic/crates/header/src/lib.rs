@@ -68,7 +68,7 @@ impl Side {
         extern "C" {
             static mut __header_origin: u32;
         }
-        Self::new(unsafe { addr_of!(__header_origin) } as u32)
+        Self::new(addr_of!(__header_origin) as u32)
     }
 
     fn new(addr: u32) -> Option<Self> {

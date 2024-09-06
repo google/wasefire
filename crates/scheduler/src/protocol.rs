@@ -14,13 +14,15 @@
 
 use alloc::boxed::Box;
 
+use wasefire_applet_api::platform::protocol as applet_api;
 use wasefire_board_api::platform::protocol::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
 use wasefire_error::{Code, Error};
 use wasefire_logger as log;
+use wasefire_protocol::applet::AppletId;
 use wasefire_protocol::{self as service, Api, ApiResult, Request, Service, VERSION};
 
-use crate::Scheduler;
+use crate::{Applet, Scheduler, SchedulerCall};
 
 #[derive(Debug, Default)]
 pub enum State {
@@ -48,57 +50,41 @@ pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event
         Ok(None) => return log::warn!("Expected platform protocol request, but found none."),
         Err(error) => return log::warn!("Failed to read platform protocol request: {}", error),
     };
+    match process_event_(scheduler, event, request) {
+        Ok(()) => (),
+        Err(error) => reply_error::<B>(error),
+    }
+}
+
+fn process_event_<B: Board>(
+    scheduler: &mut Scheduler<B>, event: board::Event<B>, request: Box<[u8]>,
+) -> Result<(), Error> {
     match &scheduler.protocol {
         State::Normal => (),
         State::Tunnel { applet_id, delimiter } => {
             if request == *delimiter {
                 scheduler.protocol = State::Normal;
-                return reply::<B, service::AppletTunnel>(());
+                return Ok(reply::<B, service::AppletTunnel>(()));
             }
-            let service::applet::AppletId = applet_id;
-            match scheduler.applet.put_request(event, &request) {
-                Ok(()) => (),
-                Err(error) => {
-                    log::warn!("Failed to put platform protocol request: {}", error);
-                    reply_error::<B>(error);
-                }
-            }
-            return;
+            return applet::<B>(scheduler, *applet_id)?.put_request(event, &request);
         }
     }
-    let request = match Api::<Request>::decode(&request) {
-        Ok(x) => x,
-        Err(error) => {
-            log::warn!("Failed to deserialize platform protocol request: {}", error);
-            return reply_error::<B>(error);
-        }
-    };
+    let request = Api::<Request>::decode(&request)?;
     match request {
         Api::ApiVersion(()) => reply::<B, service::ApiVersion>(VERSION),
         Api::AppletRequest(service::applet::Request { applet_id, request }) => {
-            let service::applet::AppletId = applet_id;
-            match scheduler.applet.put_request(event, request) {
-                Ok(()) => reply::<B, service::AppletRequest>(()),
-                Err(e) => reply_error::<B>(e),
-            }
+            applet::<B>(scheduler, applet_id)?.put_request(event, request)?;
+            reply::<B, service::AppletRequest>(());
         }
         Api::AppletResponse(applet_id) => {
-            let service::applet::AppletId = applet_id;
-            match scheduler.applet.get_response() {
-                Ok(response) => {
-                    let response = response.as_deref();
-                    reply::<B, service::AppletResponse>(service::applet::Response { response })
-                }
-                Err(e) => reply_error::<B>(e),
-            }
+            let response = applet::<B>(scheduler, applet_id)?.get_response()?;
+            let response = response.as_deref();
+            reply::<B, service::AppletResponse>(service::applet::Response { response });
         }
         #[cfg(feature = "board-api-platform")]
         Api::PlatformReboot(()) => {
             use wasefire_board_api::platform::Api as _;
-            match board::Platform::<B>::reboot() {
-                Ok(x) => x,
-                Err(e) => reply_error::<B>(e),
-            }
+            board::Platform::<B>::reboot()?;
         }
         Api::AppletTunnel(service::applet::Tunnel { applet_id, delimiter }) => {
             match scheduler.protocol {
@@ -120,33 +106,32 @@ pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event
         }
         Api::PlatformVendor(request) => {
             use wasefire_board_api::platform::protocol::Api as _;
-            match board::platform::Protocol::<B>::vendor(request) {
-                Ok(response) => reply::<B, service::PlatformVendor>(&response),
-                Err(error) => reply_error::<B>(error),
-            }
+            let response = board::platform::Protocol::<B>::vendor(request)?;
+            reply::<B, service::PlatformVendor>(&response);
         }
         #[cfg(not(feature = "_test"))]
-        _ => reply_error::<B>(Error::internal(Code::NotImplemented)),
+        _ => return Err(Error::internal(Code::NotImplemented)),
     }
+    Ok(())
 }
 
 pub fn put_response<B: Board>(
-    scheduler: &mut Scheduler<B>, response: Box<[u8]>,
+    call: &mut SchedulerCall<B, applet_api::write::Sig>, response: Box<[u8]>,
 ) -> Result<(), Error> {
-    match scheduler.applet.put_response(response) {
+    match call.applet().put_response(response) {
         Ok(()) => (),
         Err(error) if error == Error::world(Code::InvalidState) => {
             // The response was discarded because there is a new request. Send the event.
-            scheduler.applet.push(board::platform::protocol::Event.into());
+            call.applet().push(board::platform::protocol::Event.into());
             return Ok(());
         }
         Err(error) => return Err(error),
     }
-    match &scheduler.protocol {
+    match &call.scheduler().protocol {
         State::Normal => Ok(()),
         State::Tunnel { applet_id, .. } => {
             let service::applet::AppletId = applet_id;
-            match scheduler.applet.get_response()? {
+            match call.applet().get_response()? {
                 Some(response) => board::platform::Protocol::<B>::write(&response),
                 None => {
                     log::error!("Failed to read response back.");
@@ -155,6 +140,16 @@ pub fn put_response<B: Board>(
             }
         }
     }
+}
+
+fn applet<B: Board>(
+    scheduler: &mut Scheduler<B>, applet_id: AppletId,
+) -> Result<&mut Applet<B>, Error> {
+    let AppletId = applet_id;
+    scheduler.applet.as_mut().ok_or_else(|| {
+        log::warn!("Failed to find applet");
+        Error::world(Code::NotFound)
+    })
 }
 
 fn reply<B: Board, T: Service>(response: T::Response<'_>) {

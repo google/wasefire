@@ -29,6 +29,20 @@ pub enum Error {
     Trap,
 }
 
+pub const TRAP_CODE: u16 = 0xffff;
+
+impl From<Error> for wasefire_error::Error {
+    fn from(value: Error) -> Self {
+        use wasefire_error::{Code, Error as WError};
+        match value {
+            Error::Invalid => WError::user(Code::InvalidArgument),
+            Error::NotFound => WError::user(Code::NotFound),
+            Error::Unsupported(_) => WError::internal(Code::NotImplemented),
+            Error::Trap => WError::user(TRAP_CODE),
+        }
+    }
+}
+
 #[cfg(not(feature = "debug"))]
 pub type Unsupported = ();
 

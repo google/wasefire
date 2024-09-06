@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-cli-tools"
-version = "0.1.1-git"
+version = "0.2.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -14,14 +14,27 @@ categories = ["command-line-utilities", "embedded", "wasm"]
 [dependencies]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
 cargo_metadata = { version = "0.18.1", default-features = false }
-clap = { version = "4.5.4", default-features = false, features = ["derive", "std"] }
+clap = { version = "4.5.4", default-features = false, features = ["derive", "env", "std"] }
+data-encoding = { version = "2.6.0", default-features = false, features = ["std"] }
+humantime = { version = "2.1.0", default-features = false }
 rusb = { version = "0.9.4", default-features = false }
 serde = { version = "1.0.202", default-features = false, features = ["derive"] }
 toml = { version = "0.8.13", default-features = false, features = ["display", "parse"] }
-wasefire-protocol = { version = "0.1.0", path = "../protocol" }
+wasefire-protocol = { version = "0.1.1-git", path = "../protocol", features = ["host"] }
+wasefire-wire = { version = "0.1.1-git", path = "../wire" }
+
+[dependencies.tokio]
+version = "1.40.0"
+default-features = false
+features = ["fs", "io-std", "process", "rt"]
+
+[dependencies.wasefire-protocol-tokio]
+version = "0.1.0-git"
+path = "../protocol-tokio"
+features = ["host", "log"]
 
 [dependencies.wasefire-protocol-usb]
-version = "0.1.0"
+version = "0.2.0-git"
 path = "../protocol-usb"
 features = ["host", "log"]
 

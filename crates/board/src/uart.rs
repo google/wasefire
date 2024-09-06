@@ -14,13 +14,13 @@
 
 //! UART interface.
 
-use derivative::Derivative;
+use derive_where::derive_where;
 
 use crate::{Error, Id, Support};
 
 /// UART event.
-#[derive(Derivative)]
-#[derivative(Debug(bound = ""), PartialEq(bound = ""), Eq(bound = ""))]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive_where(Debug, PartialEq, Eq)]
 pub struct Event<B: crate::Api + ?Sized> {
     /// The UART that triggered the event.
     pub uart: Id<crate::Uart<B>>,
@@ -30,6 +30,7 @@ pub struct Event<B: crate::Api + ?Sized> {
 }
 
 /// Whether it might be possible to read or write.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Direction {
     /// There might be data to read.
