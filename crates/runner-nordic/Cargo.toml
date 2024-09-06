@@ -64,7 +64,7 @@ features = [
 # Software crypto features. The software-crypto feature enables all of them.
 software-crypto = ["software-crypto-aes256-gcm", "software-crypto-p256", "software-crypto-sha256"]
 software-crypto-aes256-gcm = ["wasefire-scheduler/software-crypto-aes256-gcm"]
-software-crypto-p256 = ["wasefire-scheduler/software-crypto-p256"]
+software-crypto-p256 = ["software-crypto-sha256", "wasefire-scheduler/software-crypto-p256"]
 software-crypto-sha256 = ["wasefire-scheduler/software-crypto-sha256"]
 # Exactly one is enabled by xtask.
 debug = [
