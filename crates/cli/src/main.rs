@@ -100,7 +100,7 @@ struct Completion {
 }
 
 impl Completion {
-    fn run(&self) -> Result<()> {
+    async fn run(&self) -> Result<()> {
         let shell = match self.shell.or_else(Shell::from_env) {
             Some(x) => x,
             None => bail!("failed to guess a shell"),
@@ -110,7 +110,7 @@ impl Completion {
         let mut output: Box<dyn Write> = if self.output == Path::new("-") {
             Box::new(std::io::stdout())
         } else {
-            fs::create_parent(&self.output)?;
+            fs::create_parent(&self.output).await?;
             Box::new(File::create(&self.output)?)
         };
         clap_complete::generate(shell, &mut cmd, name, &mut output);
@@ -134,9 +134,9 @@ async fn main() -> Result<()> {
             action.run(&mut options.connect().await?).await
         }
         Action::PlatformRpc { options, action } => action.run(&mut options.connect().await?).await,
-        Action::RustAppletNew(x) => x.run(),
-        Action::RustAppletBuild(x) => x.run(dir),
-        Action::RustAppletTest(x) => x.run(dir),
-        Action::Completion(x) => x.run(),
+        Action::RustAppletNew(x) => x.run().await,
+        Action::RustAppletBuild(x) => x.run(dir).await,
+        Action::RustAppletTest(x) => x.run(dir).await,
+        Action::Completion(x) => x.run().await,
     }
 }

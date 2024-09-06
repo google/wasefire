@@ -20,7 +20,7 @@ wasefire-error = { version = "0.1.2-git", path = "../error", optional = true }
 wasefire-logger = { version = "0.1.5", path = "../logger" }
 
 [dependencies.tokio]
-version = "1.37.0"
+version = "1.40.0"
 default-features = false
 features = ["io-util", "macros", "net", "rt", "sync"]
 

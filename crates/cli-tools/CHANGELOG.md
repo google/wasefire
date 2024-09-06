@@ -4,7 +4,7 @@
 
 ### Major
 
-- Change all actions requiring a connection to use async
+- Change API to be async using tokio
 
 ### Minor
 
@@ -18,4 +18,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 2 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->

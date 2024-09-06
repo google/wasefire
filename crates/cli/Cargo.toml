@@ -22,7 +22,7 @@ clap_complete = { version = "4.5.2", default-features = false }
 wasefire-cli-tools = { version = "0.2.0-git", path = "../cli-tools" }
 
 [dependencies.tokio]
-version = "1.37.0"
+version = "1.40.0"
 default-features = false
 features = ["macros", "parking_lot", "rt", "rt-multi-thread"]
 
