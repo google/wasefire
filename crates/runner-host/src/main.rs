@@ -22,6 +22,7 @@ use anyhow::Result;
 use board::Board;
 use clap::Parser;
 use tokio::runtime::Handle;
+use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver};
 use wasefire_board_api::Event;
 #[cfg(feature = "wasm")]
@@ -77,14 +78,17 @@ async fn main() -> Result<()> {
     let flags = Flags::parse();
     std::panic::set_hook(Box::new(|info| {
         eprintln!("{info}");
-        use wasefire_board_api::debug::Api;
-        wasefire_board_api::Debug::<Board>::exit(false);
+        cleanup::shutdown(1)
     }));
     tokio::spawn(async {
-        use futures::stream::StreamExt;
-        use signal_hook::consts::{SIGINT, SIGTERM};
-        let mut signals = signal_hook_tokio::Signals::new([SIGINT, SIGTERM]).unwrap();
-        assert!(signals.next().await.is_none());
+        use tokio::signal::unix::{signal, SignalKind};
+        let mut sigint = signal(SignalKind::interrupt()).unwrap();
+        let mut sigterm = signal(SignalKind::terminate()).unwrap();
+        let signal = select! {
+            _ = sigint.recv() => SignalKind::interrupt(),
+            _ = sigterm.recv() => SignalKind::terminate(),
+        };
+        cleanup::shutdown(128 + signal.as_raw_value());
     });
     // TODO: Should be a flag controlled by xtask (value is duplicated there).
     const STORAGE: &str = "../../target/wasefire/storage.bin";
@@ -98,6 +102,7 @@ async fn main() -> Result<()> {
         tokio::spawn(async move {
             while let Some(event) = receiver.recv().await {
                 match event {
+                    web_server::Event::Exit => cleanup::shutdown(0),
                     web_server::Event::Button { pressed } => {
                         with_state(|state| board::button::event(state, Some(pressed)));
                     }
