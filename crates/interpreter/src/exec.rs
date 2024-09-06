@@ -1041,21 +1041,21 @@ impl<'m> Thread<'m> {
     }
 
     fn pop_label(mut self, inst: &mut Instance<'m>, l: LabelIdx) -> ThreadResult<'m> {
+        let last_label_values_cnt = self.label().values_cnt;
         let i = self.labels().len() - l as usize - 1;
         if i == 0 {
             return self.exit_frame();
         }
         let frame = self.frame();
-        // TODO: Store prefix sums of the labels' values_cnt in Frame to quickly compute
-        // label_values_cnt_before.
         let label_values_cnt_before: usize =
             frame.labels[0 .. i].iter().map(|label| label.values_cnt).sum();
-        let Label { arity, kind, values_cnt } = frame.labels.drain(i ..).next().unwrap();
-        // TODO: Is the following line necessary?
-        self.values().drain(label_values_cnt_before + values_cnt ..);
-        self.values()
-            .drain(label_values_cnt_before .. label_values_cnt_before + values_cnt - arity);
-        // The (i-1)-th label
+        let Label { arity, kind, .. } = frame.labels.drain(i ..).next().unwrap();
+        let values_len = self.values().len();
+        self.values().drain(values_len - last_label_values_cnt .. values_len - arity);
+        if l != 0 {
+            let new_values_len = self.values().len();
+            self.values().drain(label_values_cnt_before .. new_values_len - arity);
+        }
         self.label().values_cnt += arity;
         match kind {
             LabelKind::Loop(pos) => unsafe { self.parser.restore(pos) },
@@ -1092,6 +1092,7 @@ impl<'m> Thread<'m> {
         }
         unsafe { self.parser.restore(frame.ret) };
         self.values().extend_from_slice(&values[mid ..]);
+        self.label().values_cnt += frame.arity;
         ThreadResult::Continue(self)
     }
 
