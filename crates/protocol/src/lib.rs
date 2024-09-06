@@ -159,10 +159,10 @@ impl core::fmt::Display for Descriptor {
 }
 
 macro_rules! api {
-    ($(#![$api:meta])* version = $version:literal; next = $next:literal; $(
+    ($(#![$api:meta])* $(
         $(#[doc = $doc:literal])*
-        $tag:literal [$min:literal - $($max:literal)?] $Name:ident: $request:ty => $response:ty
-    ),*$(,)?) => {
+        $tag:literal [$min:literal - $($max:literal)?] $Name:ident: $request:ty => $response:ty,
+    )* next $next:literal [$version:literal - ]) => {
         $(#[$api])* #[derive(Debug, Wire)]
         #[wire(static = T)]
         #[cfg_attr(feature = "host", wire(range = $next))]
@@ -187,7 +187,7 @@ macro_rules! api {
             }
         )*
         /// Device API version (or maximum supported device API version for host).
-        pub const VERSION: u32 = $version;
+        pub const VERSION: u32 = $version - 1;
         #[cfg(feature = "_descriptor")]
         pub const DESCRIPTORS: &'static [Descriptor] = &[
             $(
@@ -208,8 +208,6 @@ api! {
     //!
     //! Variants gated by the `full` feature are deprecated. They won't be used by new devices.
     //! However, to support older devices, the host must be able to use them.
-    version = 2;
-    next = 7;
 
     /// Returns the device API version.
     0 [0 -] ApiVersion: () => u32,
@@ -231,4 +229,6 @@ api! {
 
     /// Calls a vendor-specific platform command.
     6 [2 -] PlatformVendor: &'a [u8] => &'a [u8],
+
+    next 7 [3 - ]
 }
