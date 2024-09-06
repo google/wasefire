@@ -21,11 +21,12 @@ pub fn push(cleanup: Cleanup) {
     CLEANUP.lock().unwrap().push(cleanup);
 }
 
-pub fn flush() {
+pub fn shutdown(status: i32) -> ! {
     let cleanups = std::mem::take(&mut *CLEANUP.lock().unwrap());
     for cleanup in cleanups {
         cleanup();
     }
+    std::process::exit(status)
 }
 
 static CLEANUP: Mutex<Vec<Cleanup>> = Mutex::new(Vec::new());
