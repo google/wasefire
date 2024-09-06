@@ -187,7 +187,7 @@ macro_rules! api {
             }
         )*
         /// Device API version (or maximum supported device API version for host).
-        pub const VERSION: u32 = $version;
+        pub const VERSION: u32 = $version - 1;
         #[cfg(feature = "_descriptor")]
         pub const DESCRIPTORS: &'static [Descriptor] = &[
             $(
@@ -230,5 +230,5 @@ api! {
     /// Calls a vendor-specific platform command.
     6 [2 -] PlatformVendor: &'a [u8] => &'a [u8],
 
-    next 7 [2 - ]
+    next 7 [3 - ]
 }
