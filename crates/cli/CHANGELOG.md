@@ -4,6 +4,7 @@
 
 ### Major
 
+- Rename `--serial` to `--protocol` with more support
 - Move `--serial` and `--timeout` to commands that need them
 
 ### Patch
@@ -35,4 +36,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 4 -->
+<!-- Increment to skip CHANGELOG.md test: 6 -->

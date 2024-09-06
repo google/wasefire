@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.1.1-git
+## 0.2.0-git
+
+### Major
+
+- Change API to be async using tokio
 
 ### Minor
 
@@ -14,4 +18,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 2 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->

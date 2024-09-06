@@ -12,22 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides command-line utilities for Wasefire CLI.
-//!
-//! This library is also used for the internal maintenance CLI of Wasefire called xtask.
+//! Wasefire protocol for Unix and TCP streams.
 
-#![feature(async_fn_track_caller)]
-#![feature(path_add_extension)]
-#![feature(try_find)]
+#![feature(never_type)]
+#![feature(trait_alias)]
 
-macro_rules! debug {
-    ($($x:tt)*) => {
-        print!("\x1b[1;36m");
-        print!($($x)*);
-        println!("\x1b[m");
-    };
-}
+#[cfg(feature = "device")]
+pub use device::*;
+#[cfg(feature = "host")]
+pub use host::*;
 
-pub mod action;
-pub mod cmd;
-pub mod fs;
+mod common;
+#[cfg(feature = "device")]
+mod device;
+#[cfg(feature = "host")]
+mod host;

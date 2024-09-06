@@ -26,6 +26,7 @@ use web_common::{ButtonState, Command, Component};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Event {
+    Exit,
     Button { pressed: bool },
 }
 
@@ -165,7 +166,7 @@ async fn handle(mut ws: WebSocket, client: ClientInput) {
         }
     }
     log::info!("The client disconnected. Exiting the runner.");
-    std::process::exit(0);
+    event_sender.send(Event::Exit).await.unwrap();
 }
 
 fn to_message(command: &Command) -> Message {

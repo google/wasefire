@@ -12,22 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides command-line utilities for Wasefire CLI.
-//!
-//! This library is also used for the internal maintenance CLI of Wasefire called xtask.
+use std::sync::Mutex;
 
-#![feature(async_fn_track_caller)]
-#![feature(path_add_extension)]
-#![feature(try_find)]
+pub type Cleanup = Box<dyn FnOnce() + Send>;
 
-macro_rules! debug {
-    ($($x:tt)*) => {
-        print!("\x1b[1;36m");
-        print!($($x)*);
-        println!("\x1b[m");
-    };
+#[cfg(feature = "unix")]
+pub fn push(cleanup: Cleanup) {
+    CLEANUP.lock().unwrap().push(cleanup);
 }
 
-pub mod action;
-pub mod cmd;
-pub mod fs;
+pub fn shutdown(status: i32) -> ! {
+    let cleanups = std::mem::take(&mut *CLEANUP.lock().unwrap());
+    for cleanup in cleanups {
+        cleanup();
+    }
+    std::process::exit(status)
+}
+
+static CLEANUP: Mutex<Vec<Cleanup>> = Mutex::new(Vec::new());

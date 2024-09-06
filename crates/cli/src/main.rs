@@ -19,7 +19,6 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Result};
 use clap::{CommandFactory, Parser, ValueHint};
 use clap_complete::Shell;
-use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use wasefire_cli_tools::{action, fs};
 
 #[derive(Parser)]
@@ -101,7 +100,7 @@ struct Completion {
 }
 
 impl Completion {
-    fn run(&self) -> Result<()> {
+    async fn run(&self) -> Result<()> {
         let shell = match self.shell.or_else(Shell::from_env) {
             Some(x) => x,
             None => bail!("failed to guess a shell"),
@@ -111,7 +110,7 @@ impl Completion {
         let mut output: Box<dyn Write> = if self.output == Path::new("-") {
             Box::new(std::io::stdout())
         } else {
-            fs::create_parent(&self.output)?;
+            fs::create_parent(&self.output).await?;
             Box::new(File::create(&self.output)?)
         };
         clap_complete::generate(shell, &mut cmd, name, &mut output);
@@ -119,7 +118,8 @@ impl Completion {
     }
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let flags = Flags::parse();
     let dir = std::env::current_dir()?;
     match flags.action {
@@ -127,21 +127,16 @@ fn main() -> Result<()> {
         Action::AppletInstall => bail!("not implemented yet"),
         Action::AppletUpdate => bail!("not implemented yet"),
         Action::AppletUninstall => bail!("not implemented yet"),
-        Action::AppletRpc { options, action } => action.run(&options.connect()?),
-        Action::PlatformList(x) => {
-            for platform in x.run()? {
-                let serial = HEX.encode(platform.get().serial);
-                let version = HEX.encode(platform.get().version);
-                println!("- serial={serial} version={version}");
-            }
-            Ok(())
-        }
+        Action::AppletRpc { options, action } => action.run(&mut options.connect().await?).await,
+        Action::PlatformList(x) => x.run().await,
         Action::PlatformUpdate => bail!("not implemented yet"),
-        Action::PlatformReboot { options, action } => action.run(&options.connect()?),
-        Action::PlatformRpc { options, action } => action.run(&options.connect()?),
-        Action::RustAppletNew(x) => x.run(),
-        Action::RustAppletBuild(x) => x.run(dir),
-        Action::RustAppletTest(x) => x.run(dir),
-        Action::Completion(x) => x.run(),
+        Action::PlatformReboot { options, action } => {
+            action.run(&mut options.connect().await?).await
+        }
+        Action::PlatformRpc { options, action } => action.run(&mut options.connect().await?).await,
+        Action::RustAppletNew(x) => x.run().await,
+        Action::RustAppletBuild(x) => x.run(dir).await,
+        Action::RustAppletTest(x) => x.run(dir).await,
+        Action::Completion(x) => x.run().await,
     }
 }

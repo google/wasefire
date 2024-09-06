@@ -22,6 +22,7 @@ use anyhow::Result;
 use board::Board;
 use clap::Parser;
 use tokio::runtime::Handle;
+use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver};
 use wasefire_board_api::Event;
 #[cfg(feature = "wasm")]
@@ -30,6 +31,7 @@ use wasefire_scheduler::Scheduler;
 use wasefire_store::{FileOptions, FileStorage};
 
 mod board;
+mod cleanup;
 
 static STATE: Mutex<Option<board::State>> = Mutex::new(None);
 static RECEIVER: Mutex<Option<Receiver<Event<Board>>>> = Mutex::new(None);
@@ -40,6 +42,14 @@ fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
 
 #[derive(Parser)]
 struct Flags {
+    #[cfg(feature = "tcp")]
+    #[clap(long, default_value = "127.0.0.1:3457")]
+    tcp_addr: std::net::SocketAddr,
+
+    #[cfg(feature = "unix")]
+    #[clap(long, default_value = "/tmp/wasefire")]
+    unix_path: std::path::PathBuf,
+
     #[cfg(feature = "web")]
     #[clap(flatten)]
     web_options: WebOptions,
@@ -64,8 +74,22 @@ struct WebOptions {
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
-    #[cfg_attr(not(feature = "web"), allow(unused_variables))]
+    #[cfg_attr(feature = "usb", allow(unused_variables))]
     let flags = Flags::parse();
+    std::panic::set_hook(Box::new(|info| {
+        eprintln!("{info}");
+        cleanup::shutdown(1)
+    }));
+    tokio::spawn(async {
+        use tokio::signal::unix::{signal, SignalKind};
+        let mut sigint = signal(SignalKind::interrupt()).unwrap();
+        let mut sigterm = signal(SignalKind::terminate()).unwrap();
+        let signal = select! {
+            _ = sigint.recv() => SignalKind::interrupt(),
+            _ = sigterm.recv() => SignalKind::terminate(),
+        };
+        cleanup::shutdown(128 + signal.as_raw_value());
+    });
     // TODO: Should be a flag controlled by xtask (value is duplicated there).
     const STORAGE: &str = "../../target/wasefire/storage.bin";
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
@@ -78,6 +102,7 @@ async fn main() -> Result<()> {
         tokio::spawn(async move {
             while let Some(event) = receiver.recv().await {
                 match event {
+                    web_server::Event::Exit => cleanup::shutdown(0),
                     web_server::Event::Button { pressed } => {
                         with_state(|state| board::button::event(state, Some(pressed)));
                     }
@@ -90,12 +115,29 @@ async fn main() -> Result<()> {
         let url = format!("{}:{}", flags.web_options.web_host, flags.web_options.web_port);
         web_server::Client::new(&url, sender).await?
     };
+    #[cfg(any(feature = "tcp", feature = "unix"))]
+    let push = {
+        use wasefire_board_api::platform::protocol::Event;
+        let sender = sender.clone();
+        move |event: Event| drop(sender.try_send(event.into()))
+    };
+    #[cfg(feature = "tcp")]
+    let pipe = wasefire_protocol_tokio::Pipe::new_tcp(flags.tcp_addr, push).await.unwrap();
+    #[cfg(feature = "unix")]
+    let pipe = {
+        let pipe = wasefire_protocol_tokio::Pipe::new_unix(&flags.unix_path, push).await.unwrap();
+        let unix_path = flags.unix_path.clone();
+        crate::cleanup::push(Box::new(move || drop(std::fs::remove_file(unix_path))));
+        pipe
+    };
     *STATE.lock().unwrap() = Some(board::State {
         sender,
         button: false,
         led: false,
         timers: board::timer::Timers::default(),
         uarts: board::uart::Uarts::new(),
+        #[cfg(any(feature = "tcp", feature = "unix"))]
+        pipe,
         #[cfg(feature = "usb")]
         usb: board::usb::Usb::default(),
         storage,

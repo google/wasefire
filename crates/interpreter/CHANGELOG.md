@@ -6,6 +6,10 @@
 
 - Implement `From<Error>` for `wasefire_error::Error`
 
+### Patch
+
+- Fix and test the `cache` feature in continuous integration
+
 ## 0.3.0
 
 ### Major

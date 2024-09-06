@@ -37,6 +37,6 @@ impl board::debug::Api for Impl {
     }
 
     fn exit(success: bool) -> ! {
-        std::process::exit(if success { 0 } else { 1 })
+        crate::cleanup::shutdown(if success { 0 } else { 1 })
     }
 }
