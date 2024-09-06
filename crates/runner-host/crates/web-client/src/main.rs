@@ -18,13 +18,27 @@ mod board_components;
 mod console;
 mod hooks;
 
+use cfg_if::cfg_if;
+
 fn main() {
-    if cfg!(debug_assertions) {
-        // More verbose logging when NOT built with release flag
-        wasm_logger::init(wasm_logger::Config::new(log::Level::Debug));
-    } else {
-        wasm_logger::init(wasm_logger::Config::new(log::Level::Warn));
-    }
+    wasm_logger::init(wasm_logger::Config::new(get_log_level()));
 
     yew::Renderer::<app::App>::new().render();
+}
+
+fn get_log_level() -> log::Level {
+    cfg_if! {
+        if #[cfg(feature = "web_client_log_level_trace")] {
+            log::Level::Trace
+        }
+        else if #[cfg(feature = "web_client_log_level_debug")] {
+            log::Level::Debug
+        } else if #[cfg(feature = "web_client_log_level_info")] {
+            log::Level::Info
+        } else if #[cfg(feature = "web_client_log_level_warn")] {
+            log::Level::Warn
+        } else {
+            log::Level::Error
+        }
+    }
 }

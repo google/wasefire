@@ -7,6 +7,7 @@ publish = false
 edition = "2021"
 
 [dependencies]
+cfg-if = "1.0.0"
 gloo-utils = "0.2.0"
 log = "0.4.21"
 serde_json = "1.0.117"
@@ -21,3 +22,11 @@ yew-hooks = "0.3.2"
 clippy.unit-arg = "allow"
 rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"
+
+[features]
+web_client_log_level_info = []
+web_client_log_level_debug = []
+web_client_log_level_warn = []
+web_client_log_level_error = []
+web_client_log_level_trace = []
+
