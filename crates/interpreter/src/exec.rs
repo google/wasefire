@@ -989,7 +989,7 @@ impl<'m> Thread<'m> {
     }
 
     fn values(&mut self) -> &mut Vec<Val> {
-        &mut self.label().values
+        &mut self.frame().labels_values
     }
 
     fn peek_value(&mut self) -> Val {
@@ -998,6 +998,7 @@ impl<'m> Thread<'m> {
 
     fn push_value(&mut self, value: Val) {
         self.values().push(value);
+        self.label().values_cnt += 1;
     }
 
     fn push_value_or_trap(&mut self, value: Option<Val>) -> Result<(), Error> {
@@ -1011,9 +1012,11 @@ impl<'m> Thread<'m> {
 
     fn push_values(&mut self, values: &[Val]) {
         self.values().extend_from_slice(values);
+        self.label().values_cnt += values.len();
     }
 
     fn pop_value(&mut self) -> Val {
+        self.label().values_cnt -= 1;
         self.values().pop().unwrap()
     }
 
@@ -1027,12 +1030,12 @@ impl<'m> Thread<'m> {
     }
 
     fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind<'m>) {
-        let values = self.pop_values(type_.params.len());
         let arity = match kind {
             LabelKind::Block | LabelKind::If => type_.results.len(),
             LabelKind::Loop(_) => type_.params.len(),
         };
-        let label = Label { arity, kind, values };
+        let label = Label { arity, kind, values_cnt: type_.params.len() };
+        self.label().values_cnt -= label.values_cnt;
         self.labels().push(label);
     }
 
@@ -1041,10 +1044,12 @@ impl<'m> Thread<'m> {
         if i == 0 {
             return self.exit_frame();
         }
-        let values = core::mem::take(self.values());
         let frame = self.frame();
+        let values_cnt: usize = frame.labels[i ..].iter().map(|label| label.values_cnt).sum();
         let Label { arity, kind, .. } = frame.labels.drain(i ..).next().unwrap();
-        self.values().extend_from_slice(&values[values.len() - arity ..]);
+        let values_len = self.values().len();
+        self.values().drain(values_len - values_cnt .. values_len - arity);
+        self.label().values_cnt += arity;
         match kind {
             LabelKind::Loop(pos) => unsafe { self.parser.restore(pos) },
             LabelKind::Block | LabelKind::If => self.skip_to_end(inst, l),
@@ -1057,13 +1062,15 @@ impl<'m> Thread<'m> {
         let label = frame.labels.pop().unwrap();
         if frame.labels.is_empty() {
             let frame = self.frames.pop().unwrap();
-            debug_assert_eq!(label.values.len(), frame.arity);
+            debug_assert_eq!(frame.labels_values.len(), label.values_cnt);
+            debug_assert_eq!(frame.labels_values.len(), frame.arity);
             if self.frames.is_empty() {
-                return ThreadResult::Done(label.values);
+                return ThreadResult::Done(frame.labels_values);
             }
             unsafe { self.parser.restore(frame.ret) };
+            self.values().extend(frame.labels_values);
         }
-        self.values().extend_from_slice(&label.values);
+        self.label().values_cnt += label.values_cnt;
         ThreadResult::Continue(self)
     }
 
@@ -1077,6 +1084,7 @@ impl<'m> Thread<'m> {
         }
         unsafe { self.parser.restore(frame.ret) };
         self.values().extend_from_slice(&values[mid ..]);
+        self.label().values_cnt += frame.arity;
         ThreadResult::Continue(self)
     }
 
@@ -1401,12 +1409,13 @@ struct Frame<'m> {
     ret: &'m [u8],
     locals: Vec<Val>,
     labels: Vec<Label<'m>>,
+    labels_values: Vec<Val>,
 }
 
 impl<'m> Frame<'m> {
     fn new(inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>) -> Self {
-        let label = Label { arity, kind: LabelKind::Block, values: vec![] };
-        Frame { inst_id, arity, ret, locals, labels: vec![label] }
+        let label = Label { arity, kind: LabelKind::Block, values_cnt: 0 };
+        Frame { inst_id, arity, ret, locals, labels: vec![label], labels_values: vec![] }
     }
 }
 
@@ -1414,7 +1423,7 @@ impl<'m> Frame<'m> {
 struct Label<'m> {
     arity: usize,
     kind: LabelKind<'m>,
-    values: Vec<Val>,
+    values_cnt: usize,
 }
 
 #[derive(Debug)]
