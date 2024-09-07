@@ -15,6 +15,7 @@
 use wasefire_board_api::platform::protocol::Event;
 use wasefire_board_api::Api as Board;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
     Request,

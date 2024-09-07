@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
-use core::fmt::Display;
+use core::fmt::{Debug, Display};
 use std::io::Write;
 use std::time::Duration;
 
 use anyhow::{anyhow, ensure, Context};
 use rusb::{Device, DeviceHandle, Error, TransferType, UsbContext};
 use wasefire_logger as log;
-use wasefire_protocol::{Api, ApiResult, Request, Service};
-use wasefire_wire::Yoke;
+use wasefire_protocol::DynFuture;
 
 use crate::common::{Decoder, Encoder};
 
@@ -145,79 +145,34 @@ impl<T: UsbContext> Candidate<T> {
             handle.set_active_configuration(configuration)?;
         }
         handle.claim_interface(interface)?;
-        Ok(Connection { _device: device, handle, timeout })
+        Ok(Connection { device, handle, timeout })
     }
 }
 
 /// Holds a connection to a device.
 pub struct Connection<T: UsbContext> {
-    _device: Device<T>,
+    device: Device<T>,
     handle: DeviceHandle<T>,
     timeout: Duration,
 }
 
+impl<T: UsbContext> Display for Connection<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.device.fmt(f)
+    }
+}
+
 impl<T: UsbContext> Connection<T> {
+    /// Provides access to the USB device.
+    pub fn device(&self) -> &Device<T> {
+        &self.device
+    }
+
     /// Sets the timeout for subsequent send and receive operations.
     ///
     /// The default timeout is 1 second.
     pub fn set_timeout(&mut self, timeout: Duration) {
         self.timeout = timeout;
-    }
-
-    /// Calls a service on the device.
-    pub fn call<S: Service>(
-        &self, request: S::Request<'_>,
-    ) -> anyhow::Result<Yoke<S::Response<'static>>> {
-        self.send(&S::request(request)).context("sending request")?;
-        self.receive::<S>().context("receiving response")
-    }
-
-    /// Sends a request to the device.
-    pub fn send(&self, request: &Api<Request>) -> anyhow::Result<()> {
-        let request = request.encode().context("encoding request")?;
-        Ok(self.send_raw(&request)?)
-    }
-
-    /// Receives a response from the device.
-    pub fn receive<S: Service>(&self) -> anyhow::Result<Yoke<S::Response<'static>>> {
-        let response = self.receive_raw()?.into_boxed_slice();
-        ApiResult::<S>::decode_yoke(response).context("decoding response")?.try_map(|x| match x {
-            ApiResult::Ok(x) => Ok(x),
-            ApiResult::Err(error) => anyhow::bail!("error response: {error}"),
-        })
-    }
-
-    /// Sends a raw request (possibly tunneled) to the device.
-    pub fn send_raw(&self, request: &[u8]) -> rusb::Result<()> {
-        for packet in Encoder::new(request) {
-            let written = self.handle.write_bulk(EP_OUT, &packet, self.timeout)?;
-            if written != MAX_PACKET_SIZE {
-                log::error!("Sent only {written} bytes instead of {MAX_PACKET_SIZE}.");
-                return Err(Error::Io);
-            }
-        }
-        Ok(())
-    }
-
-    /// Receives a raw response (possibly tunneled) from the device.
-    pub fn receive_raw(&self) -> rusb::Result<Vec<u8>> {
-        let mut decoder = Decoder::default();
-        loop {
-            let mut packet = [0; MAX_PACKET_SIZE];
-            let read = self.handle.read_bulk(EP_IN, &mut packet, self.timeout)?;
-            if read != MAX_PACKET_SIZE {
-                log::error!("Received only {read} bytes instead of {MAX_PACKET_SIZE}.");
-                return Err(Error::Io);
-            }
-            match decoder.push(&packet) {
-                Some(Ok(x)) => return Ok(x),
-                Some(Err(x)) => decoder = x,
-                None => {
-                    log::error!("Could not decode packet {packet:02x?}.");
-                    return Err(Error::Io);
-                }
-            }
-        }
     }
 
     /// FOR TESTING ONLY: Writes a packet directly to the endpoint.
@@ -228,6 +183,43 @@ impl<T: UsbContext> Connection<T> {
     /// FOR TESTING ONLY: Reads a packet directly from the endpoint.
     pub fn testonly_read(&self, packet: &mut [u8]) -> rusb::Result<usize> {
         self.handle.read_bulk(EP_IN, packet, self.timeout)
+    }
+}
+
+impl<T: UsbContext> wasefire_protocol::Connection for Connection<T> {
+    fn write<'a>(&'a mut self, request: &'a [u8]) -> DynFuture<'a, ()> {
+        Box::pin(async move {
+            for packet in Encoder::new(request) {
+                let written = self.handle.write_bulk(EP_OUT, &packet, self.timeout)?;
+                if written != MAX_PACKET_SIZE {
+                    log::error!("Sent only {written} bytes instead of {MAX_PACKET_SIZE}.");
+                    return Err(Error::Io.into());
+                }
+            }
+            Ok(())
+        })
+    }
+
+    fn read(&mut self) -> DynFuture<Box<[u8]>> {
+        Box::pin(async move {
+            let mut decoder = Decoder::default();
+            loop {
+                let mut packet = [0; MAX_PACKET_SIZE];
+                let read = self.handle.read_bulk(EP_IN, &mut packet, self.timeout)?;
+                if read != MAX_PACKET_SIZE {
+                    log::error!("Received only {read} bytes instead of {MAX_PACKET_SIZE}.");
+                    return Err(Error::Io.into());
+                }
+                match decoder.push(&packet) {
+                    Some(Ok(x)) => return Ok(x.into_boxed_slice()),
+                    Some(Err(x)) => decoder = x,
+                    None => {
+                        log::error!("Could not decode packet {packet:02x?}.");
+                        return Err(Error::Io.into());
+                    }
+                }
+            }
+        })
     }
 }
 

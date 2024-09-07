@@ -10,12 +10,7 @@
 <circle id="Ellipse 24" cx="4.5" cy="24.5" r="1.5" fill="#868686"/>
 <circle id="Ellipse 25" cx="4.5" cy="4.5" r="1.5" fill="#868686"/>
 <circle id="Ellipse 26" cx="14.5" cy="14.5" r="8.5" fill="#0F0E0E"/>
-<g id="pressed">
 <circle id="Ellipse 27" cx="12.5" cy="13.5" r="8.5" fill="#6C6767"/>
-</g>
-<g id="not_pressed">
-<circle id="Ellipse 27_2" cx="10.5" cy="12.5" r="8.5" fill="#877978"/>
-</g>
 </g>
 <defs>
 <clipPath id="clip0_7_19">
@@ -23,3 +18,4 @@
 </clipPath>
 </defs>
 </svg>
+

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.8.0-git
+
+### Major
+
+- (Only when `api-platform-protocol` is used) Change `platform::protocol::Api::{enable,disable}()`
+  to also control whether requests are accepted
+- (Only when `api-storage` is used) The reexported `wasefire-store::Storage` now uses
+  `wasefire-error` for errors
+
+### Minor
+
+- Implement `defmt::Format` for `Event` when `defmt` is enabled
+
+### Patch
+
+- Use `derive-where` instead of `derivative`
+- Update dependencies
+- Remove workaround lint false positive
+
 ## 0.7.0
 
 ### Major

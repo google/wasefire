@@ -24,7 +24,7 @@ macro_rules! addr_of_sym {
         extern "C" {
             static mut $sym: u32;
         }
-        unsafe { addr_of_mut!($sym) as usize }
+        addr_of_mut!($sym) as usize
     }};
 }
 

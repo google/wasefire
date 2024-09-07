@@ -16,34 +16,14 @@
 
 use alloc::borrow::Cow;
 
+use wasefire_error::{Code, Error};
+
 /// Represents a byte position in a storage.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct StorageIndex {
     pub page: usize,
     pub byte: usize,
 }
-
-/// Represents a possible storage error.
-#[derive(Debug, PartialEq, Eq)]
-pub enum StorageError {
-    /// Arguments are not correctly aligned.
-    NotAligned,
-
-    /// Arguments are out of bounds.
-    OutOfBounds,
-
-    /// Implementation-specific error.
-    CustomError,
-}
-
-#[cfg(feature = "std")]
-impl From<std::io::Error> for StorageError {
-    fn from(_: std::io::Error) -> Self {
-        Self::CustomError
-    }
-}
-
-pub type StorageResult<T> = Result<T, StorageError>;
 
 /// Abstracts a flash storage.
 pub trait Storage {
@@ -72,7 +52,7 @@ pub trait Storage {
     ///
     /// Note that we use `Cow` just because it derefs to `[u8]`. We don't really need the fact that
     /// one can convert it to a `Vec`. In particular we don't do it in the store implementation.
-    fn read_slice(&self, index: StorageIndex, length: usize) -> StorageResult<Cow<[u8]>>;
+    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<[u8]>, Error>;
 
     /// Writes a word slice to the storage.
     ///
@@ -81,13 +61,13 @@ pub trait Storage {
     /// - Both `index` and `value.len()` must be word-aligned.
     /// - The written words should not have been written [too many](Self::max_word_writes) times
     ///   since the last page erasure.
-    fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> StorageResult<()>;
+    fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> Result<(), Error>;
 
     /// Erases a page of the storage.
     ///
     /// The `page` must be in the storage, i.e. less than [`Storage::num_pages`]. And the page
     /// should not have been erased [too many](Self::max_page_erases) times.
-    fn erase_page(&mut self, page: usize) -> StorageResult<()>;
+    fn erase_page(&mut self, page: usize) -> Result<(), Error>;
 }
 
 impl StorageIndex {
@@ -102,12 +82,12 @@ impl StorageIndex {
     /// The range starts at `self` with `length` bytes.
     pub fn range(
         self, length: usize, storage: &impl Storage,
-    ) -> StorageResult<core::ops::Range<usize>> {
+    ) -> Result<core::ops::Range<usize>, Error> {
         if self.is_valid(length, storage) {
             let start = self.page * storage.page_size() + self.byte;
             Ok(start .. start + length)
         } else {
-            Err(StorageError::OutOfBounds)
+            Err(Error::user(Code::OutOfBounds))
         }
     }
 }

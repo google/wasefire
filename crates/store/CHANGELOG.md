@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0-git
+
+### Major
+
+- Use `wasefire-error` for errors
+
 ## 0.2.4
 
 ### Patch
@@ -54,4 +60,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 2 -->

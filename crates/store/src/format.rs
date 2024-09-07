@@ -22,10 +22,12 @@ use core::borrow::Borrow;
 use core::cmp::min;
 use core::convert::TryFrom;
 
+use wasefire_error::Error;
+
 #[cfg(test)]
 use self::bitfield::Length;
 use self::bitfield::{count_zeros, num_bits, Bit, Checksum, ConstField, Field};
-use crate::{usize_to_nat, Nat, Storage, StorageIndex, StoreError, StoreResult, StoreUpdate};
+use crate::{usize_to_nat, Nat, Storage, StorageIndex, StoreUpdate};
 
 /// Internal representation of a word in flash.
 ///
@@ -317,7 +319,7 @@ impl Format {
     }
 
     /// Parses the init info of a page from its storage representation.
-    pub fn parse_init(&self, word: Word) -> StoreResult<WordState<InitInfo>> {
+    pub fn parse_init(&self, word: Word) -> Result<WordState<InitInfo>, Error> {
         Ok(if word == ERASED_WORD {
             WordState::Erased
         } else if WORD_CHECKSUM.get(word)? != 0 {
@@ -326,14 +328,14 @@ impl Format {
             let cycle = INIT_CYCLE.get(word);
             let prefix = INIT_PREFIX.get(word);
             if cycle > self.max_page_erases() || prefix > self.max_prefix_len() {
-                return Err(StoreError::InvalidStorage);
+                return Err(crate::INVALID_STORAGE);
             }
             WordState::Valid(InitInfo { cycle, prefix })
         })
     }
 
     /// Builds the storage representation of an init info.
-    pub fn build_init(&self, init: InitInfo) -> StoreResult<WordSlice> {
+    pub fn build_init(&self, init: InitInfo) -> Result<WordSlice, Error> {
         let mut word = ERASED_WORD;
         INIT_CYCLE.set(&mut word, init.cycle)?;
         INIT_PREFIX.set(&mut word, init.prefix)?;
@@ -348,7 +350,7 @@ impl Format {
     }
 
     /// Parses the compact info of a page from its storage representation.
-    pub fn parse_compact(&self, word: Word) -> StoreResult<WordState<CompactInfo>> {
+    pub fn parse_compact(&self, word: Word) -> Result<WordState<CompactInfo>, Error> {
         Ok(if word == ERASED_WORD {
             WordState::Erased
         } else if WORD_CHECKSUM.get(word)? != 0 {
@@ -356,14 +358,14 @@ impl Format {
         } else {
             let tail = COMPACT_TAIL.get(word);
             if tail > self.window_size() {
-                return Err(StoreError::InvalidStorage);
+                return Err(crate::INVALID_STORAGE);
             }
             WordState::Valid(CompactInfo { tail })
         })
     }
 
     /// Builds the storage representation of a compact info.
-    pub fn build_compact(&self, compact: CompactInfo) -> StoreResult<WordSlice> {
+    pub fn build_compact(&self, compact: CompactInfo) -> Result<WordSlice, Error> {
         let mut word = ERASED_WORD;
         COMPACT_TAIL.set(&mut word, compact.tail)?;
         WORD_CHECKSUM.set(&mut word, 0)?;
@@ -371,7 +373,7 @@ impl Format {
     }
 
     /// Builds the storage representation of an internal entry.
-    pub fn build_internal(&self, internal: InternalEntry) -> StoreResult<WordSlice> {
+    pub fn build_internal(&self, internal: InternalEntry) -> Result<WordSlice, Error> {
         let mut word = ERASED_WORD;
         match internal {
             InternalEntry::Erase { page } => {
@@ -396,14 +398,14 @@ impl Format {
     }
 
     /// Parses the first word of an entry from its storage representation.
-    pub fn parse_word(&self, word: Word) -> StoreResult<WordState<ParsedWord>> {
+    pub fn parse_word(&self, word: Word) -> Result<WordState<ParsedWord>, Error> {
         let valid = if ID_PADDING.check(word) {
             ParsedWord::Padding(Padding { length: 0 })
         } else if ID_HEADER.check(word) {
             if HEADER_DELETED.get(word) {
                 let length = HEADER_LENGTH.get(word);
                 if length > self.max_value_len() {
-                    return Err(StoreError::InvalidStorage);
+                    return Err(crate::INVALID_STORAGE);
                 }
                 let length = self.bytes_to_words(length);
                 ParsedWord::Padding(Padding { length })
@@ -442,14 +444,14 @@ impl Format {
                 InternalEntry::Remove { key } => *key > self.max_key(),
             };
             if invalid {
-                return Err(StoreError::InvalidStorage);
+                return Err(crate::INVALID_STORAGE);
             }
         }
         Ok(WordState::Valid(valid))
     }
 
     /// Builds the storage representation of a user entry.
-    pub fn build_user(&self, key: Nat, value: &[u8]) -> StoreResult<Vec<u8>> {
+    pub fn build_user(&self, key: Nat, value: &[u8]) -> Result<Vec<u8>, Error> {
         let length = usize_to_nat(value.len());
         let word_size = self.word_size();
         let footer = self.bytes_to_words(length);
@@ -469,7 +471,7 @@ impl Format {
     }
 
     /// Sets the padding bit in the first word of a user entry.
-    pub fn set_padding(&self, word: &mut Word) -> StoreResult<()> {
+    pub fn set_padding(&self, word: &mut Word) -> Result<(), Error> {
         ID_PADDING.set(word)
     }
 

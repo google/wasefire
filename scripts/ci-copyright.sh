@@ -22,7 +22,7 @@ set -e
 for file in $(git ls-files ':(attr:textreview)'); do
   case "$file" in
     *.gitignore|.git*|LICENSE|*/LICENSE) continue ;;
-    *.cff|*.css|*.html|*.json|*.lock|*.md|*.svg|*.toml|*.txt|*.x|*.yml) continue ;;
+    *.cff|*.css|*.html|*.json|*.lock|*.md|*.scss|*.svg|*.toml|*.txt|*.x|*.yml) continue ;;
     crates/cli-tools/src/data/lib.rs) continue ;;
   esac
   sed -n 'N;/Copyright/q;q1' "$file" || e "No copyright notice in $file"

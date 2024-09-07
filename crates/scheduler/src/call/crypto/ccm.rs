@@ -28,8 +28,8 @@ use crate::{DispatchSchedulerCall, SchedulerCall};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::IsSupported(call) => is_supported(call),
-        Api::Encrypt(call) => or_trap!("board-api-crypto-aes128-ccm", encrypt(call)),
-        Api::Decrypt(call) => or_trap!("board-api-crypto-aes128-ccm", decrypt(call)),
+        Api::Encrypt(call) => or_fail!("board-api-crypto-aes128-ccm", encrypt(call)),
+        Api::Decrypt(call) => or_fail!("board-api-crypto-aes128-ccm", decrypt(call)),
     }
 }
 
@@ -45,8 +45,8 @@ fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
 fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
     let api::encrypt::Params { key, iv, len, clear, cipher } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         ensure_support::<B>()?;
         let key = memory.get(*key, 16)?.into();
@@ -63,8 +63,8 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
 fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
     let api::decrypt::Params { key, iv, len, cipher, clear } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         ensure_support::<B>()?;
         let key = memory.get(*key, 16)?.into();

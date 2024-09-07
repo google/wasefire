@@ -1265,13 +1265,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasefire-error"
+version = "0.1.2-git"
+dependencies = [
+ "num_enum",
+]
+
+[[package]]
 name = "wasefire-interpreter"
-version = "0.3.0"
+version = "0.3.1-git"
 dependencies = [
  "libm",
  "num_enum",
  "paste",
  "portable-atomic",
+ "wasefire-error",
 ]
 
 [[package]]

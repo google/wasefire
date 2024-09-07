@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-interpreter"
-version = "0.3.0"
+version = "0.3.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -13,10 +13,11 @@ categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
 libm = { version = "0.2.8", default-features = false, optional = true }
-lru = { version = "0.12.3", default-features = false, optional = true }
+lru = { version = "0.12.3", default-features = false, features = ["hashbrown"], optional = true }
 num_enum = { version = "0.7.2", default-features = false }
 paste = { version = "1.0.15", default-features = false }
 portable-atomic = { version = "1.6.0", default-features = false }
+wasefire-error = { version = "0.1.2-git", path = "../error" }
 
 [dev-dependencies]
 lazy_static = "1.4.0"

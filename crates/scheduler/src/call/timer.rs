@@ -30,9 +30,9 @@ use crate::{Scheduler, Timer};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Allocate(call) => allocate(call),
-        Api::Start(call) => or_trap!("board-api-timer", start(call)),
-        Api::Stop(call) => or_trap!("board-api-timer", stop(call)),
-        Api::Free(call) => or_trap!("board-api-timer", free(call)),
+        Api::Start(call) => or_fail!("board-api-timer", start(call)),
+        Api::Stop(call) => or_fail!("board-api-timer", stop(call)),
+        Api::Free(call) => or_fail!("board-api-timer", free(call)),
     }
 }
 
@@ -50,7 +50,7 @@ fn allocate<B: Board>(mut call: SchedulerCall<B, api::allocate::Sig>) {
         let timers = &mut call.scheduler().timers;
         let timer = timers.iter().position(|x| x.is_none()).ok_or(Trap)?;
         timers[timer] = Some(Timer {});
-        call.scheduler().applet.enable(Handler {
+        call.applet().enable(Handler {
             key: Key { timer: Id::new(timer).unwrap() }.into(),
             inst,
             func: *handler_func,

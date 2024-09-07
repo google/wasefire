@@ -18,6 +18,7 @@
 pub mod serial;
 
 /// USB event.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, PartialEq, Eq)]
 pub enum Event {
     /// Serial event.

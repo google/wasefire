@@ -18,6 +18,8 @@
 
 // TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
 extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
 
 use num_enum::{IntoPrimitive, TryFromPrimitive, TryFromPrimitiveError};
 
@@ -66,6 +68,20 @@ impl Error {
     /// Creates a world error.
     pub fn world(code: impl CodeParam) -> Self {
         Error::new(Space::World, code)
+    }
+
+    /// Pops the error one level up.
+    ///
+    /// User errors become internal errors. Internal errors become world errors.
+    pub fn pop(self) -> Self {
+        let mut space = self.space();
+        match Space::try_from_primitive(space) {
+            Ok(Space::User) => space = Space::Internal as u8,
+            Ok(Space::Internal) => space = Space::World as u8,
+            _ => (),
+        }
+        let code = self.code();
+        Error::new_const(space, code)
     }
 
     /// Decodes a signed integer as a result (where errors are negative values).
@@ -222,6 +238,13 @@ impl defmt::Format for Error {
 }
 
 impl core::error::Error for Error {}
+
+#[cfg(feature = "std")]
+impl From<std::io::Error> for Error {
+    fn from(_: std::io::Error) -> Self {
+        Error::world(Code::Generic)
+    }
+}
 
 #[cfg(test)]
 mod tests {

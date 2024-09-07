@@ -35,12 +35,16 @@ extern crate alloc;
 
 use alloc::boxed::Box;
 
+#[cfg(feature = "host")]
+pub use connection::*;
 use wasefire_error::Error;
 use wasefire_wire::Wire;
 #[cfg(feature = "host")]
 use wasefire_wire::Yoke;
 
 pub mod applet;
+#[cfg(feature = "host")]
+mod connection;
 pub mod platform;
 
 /// Service description.

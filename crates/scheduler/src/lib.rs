@@ -26,7 +26,7 @@ use alloc::vec::Vec;
 use core::ffi::CStr;
 use core::marker::PhantomData;
 
-use derivative::Derivative;
+use derive_where::derive_where;
 use event::Key;
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature, U32};
 #[cfg(feature = "board-api-storage")]
@@ -58,8 +58,7 @@ mod protocol;
 #[cfg(all(feature = "native", not(target_pointer_width = "32")))]
 compile_error!("Only 32-bits architectures support native applets.");
 
-#[derive(Derivative)]
-#[derivative(Default(bound = ""))]
+#[derive_where(Default)]
 pub struct Events<B: Board>(VecDeque<board::Event<B>>);
 
 impl<B: Board> Events<B> {
@@ -74,17 +73,17 @@ impl<B: Board> Events<B> {
     pub fn push(&mut self, event: board::Event<B>) {
         const MAX_EVENTS: usize = 10;
         if self.0.contains(&event) {
-            log::trace!("Merging {}", log::Debug2Format(&event));
+            log::trace!("Merging {:?}", event);
         } else if self.0.len() < MAX_EVENTS {
-            log::debug!("Pushing {}", log::Debug2Format(&event));
+            log::debug!("Pushing {:?}", event);
             self.0.push_back(event);
         } else {
-            log::warn!("Dropping {}", log::Debug2Format(&event));
+            log::warn!("Dropping {:?}", event);
         }
     }
 
     pub fn pop(&mut self) -> Option<board::Event<B>> {
-        self.0.pop_front().inspect(|event| log::debug!("Popping {}", log::Debug2Format(&event)))
+        self.0.pop_front().inspect(|event| log::debug!("Popping {:?}", event))
     }
 }
 
@@ -92,7 +91,7 @@ pub struct Scheduler<B: Board> {
     #[cfg(feature = "board-api-storage")]
     store: store::Store<B::Storage>,
     host_funcs: Vec<Api<Id>>,
-    applet: Applet<B>,
+    applet: Option<Applet<B>>,
     #[cfg(feature = "board-api-timer")]
     timers: Vec<Option<Timer>>,
     #[cfg(feature = "internal-debug")]
@@ -211,7 +210,7 @@ impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
     }
 
     fn applet(&mut self) -> &mut Applet<B> {
-        &mut self.erased.scheduler.applet
+        self.erased.scheduler.applet.as_mut().unwrap()
     }
 
     fn store(&mut self) -> &mut Store {
@@ -239,6 +238,7 @@ impl<B: Board> Scheduler<B> {
     #[cfg(feature = "native")]
     pub fn run() -> ! {
         native::set_scheduler(Self::new());
+        native::with_scheduler(|x| x.new_applet());
         extern "C" {
             fn applet_init();
             fn applet_main();
@@ -287,26 +287,13 @@ impl<B: Board> Scheduler<B> {
         Api::<Id>::iter(&mut host_funcs, |x| x);
         host_funcs.sort_by_key(|x| x.descriptor().name);
         assert!(host_funcs.windows(2).all(|x| x[0].descriptor().name != x[1].descriptor().name));
-        #[cfg(feature = "wasm")]
-        let applet = {
-            let mut applet = Applet::default();
-            let store = applet.store_mut();
-            for f in &host_funcs {
-                let d = f.descriptor();
-                store.link_func("env", d.name, d.params, 1).unwrap();
-            }
-            store.link_func_default("env").unwrap();
-            applet
-        };
         #[cfg(feature = "board-api-platform-protocol")]
         protocol::enable::<B>();
-        #[cfg(feature = "native")]
-        let applet = Applet::default();
         Self {
             #[cfg(feature = "board-api-storage")]
             store: store::Store::new(board::Storage::<B>::take().unwrap()).ok().unwrap(),
             host_funcs,
-            applet,
+            applet: None,
             #[cfg(feature = "board-api-timer")]
             timers: alloc::vec![None; board::Timer::<B>::SUPPORT],
             #[cfg(feature = "internal-debug")]
@@ -316,31 +303,44 @@ impl<B: Board> Scheduler<B> {
         }
     }
 
+    fn new_applet(&mut self) {
+        assert!(self.applet.is_none());
+        self.applet = Some(Applet::default());
+    }
+
     #[cfg(feature = "wasm")]
     fn load(&mut self, wasm: &'static [u8]) {
         const MEMORY_SIZE: usize = memory_size();
         #[repr(align(16))]
         struct Memory([u8; MEMORY_SIZE]);
         static mut MEMORY: Memory = Memory([0; MEMORY_SIZE]);
+
         #[cfg(not(feature = "unsafe-skip-validation"))]
         let module = Module::new(wasm).unwrap();
         // SAFETY: The module is valid by the feature invariant.
         #[cfg(feature = "unsafe-skip-validation")]
         let module = unsafe { Module::new_unchecked(wasm) };
-        let store = self.applet.store_mut();
+        self.new_applet();
+        let applet = self.applet.as_mut().unwrap();
+        let store = applet.store_mut();
+        for f in &self.host_funcs {
+            let d = f.descriptor();
+            store.link_func("env", d.name, d.params, 1).unwrap();
+        }
+        store.link_func_default("env").unwrap();
         // SAFETY: This function is called once in `run()`.
         let inst = store.instantiate(module, unsafe { &mut MEMORY.0 }).unwrap();
         #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Platform);
         self.call(inst, "init", &[]);
-        while let Some(call) = self.applet.store_mut().last_call() {
+        while let Some(call) = self.applet.as_mut().unwrap().store_mut().last_call() {
             match self.host_funcs[call.index()].descriptor().name {
                 "dp" => (),
                 x => log::panic!("init called {} into host", log::Debug2Format(&x)),
             }
             self.process_applet();
         }
-        assert!(matches!(self.applet.pop(), EventAction::Reply));
+        assert!(matches!(self.applet.as_mut().unwrap().pop(), EventAction::Reply));
         #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Applets);
         self.call(inst, "main", &[]);
@@ -355,16 +355,18 @@ impl<B: Board> Scheduler<B> {
     fn triage_event(&mut self, event: board::Event<B>) {
         #[cfg(feature = "board-api-platform-protocol")]
         if protocol::should_process_event(&event) {
-            protocol::process_event(self, event);
-            return;
+            return protocol::process_event(self, event);
         }
-        self.applet.push(event);
+        match &mut self.applet {
+            None => log::warn!("{:?} matches no applet", event),
+            Some(applet) => applet.push(event),
+        }
     }
 
     /// Returns whether execution should resume.
     fn process_event(&mut self) -> bool {
         let event = loop {
-            match self.applet.pop() {
+            match self.applet.as_mut().map_or(EventAction::Wait, |x| x.pop()) {
                 EventAction::Handle(event) => break event,
                 EventAction::Wait => {
                     #[cfg(feature = "internal-debug")]
@@ -384,7 +386,11 @@ impl<B: Board> Scheduler<B> {
 
     #[cfg(feature = "wasm")]
     fn process_applet(&mut self) {
-        let call = match self.applet.store_mut().last_call() {
+        let applet = match &mut self.applet {
+            Some(x) => x,
+            None => return,
+        };
+        let call = match applet.store_mut().last_call() {
             Some(x) => x,
             None => {
                 self.process_event();
@@ -411,7 +417,9 @@ impl<B: Board> Scheduler<B> {
 
     #[allow(dead_code)] // in case there are no events
     fn disable_event(&mut self, key: Key<B>) -> Result<(), Trap> {
-        self.applet.disable(key)?;
+        if let Some(applet) = &mut self.applet {
+            applet.disable(key)?;
+        }
         self.flush_events();
         Ok(())
     }
@@ -422,7 +430,8 @@ impl<B: Board> Scheduler<B> {
         let args = args.iter().map(|&x| Val::I32(x)).collect();
         #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Platform);
-        let answer = self.applet.store_mut().invoke(inst, name, args).map(|x| x.forget());
+        let applet = self.applet.as_mut().unwrap();
+        let answer = applet.store_mut().invoke(inst, name, args).map(|x| x.forget());
         #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Applets);
         self.process_answer(answer);
@@ -434,7 +443,7 @@ impl<B: Board> Scheduler<B> {
             Ok(RunAnswer::Done(x)) => {
                 log::debug!("Thread is done.");
                 debug_assert!(x.is_empty());
-                self.applet.done();
+                self.applet.as_mut().unwrap().done();
             }
             Ok(RunAnswer::Host) => (),
             Err(interpreter::Error::Trap) => applet_trapped::<B>(None),

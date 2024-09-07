@@ -37,12 +37,12 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 #[cfg(feature = "board-api-platform-protocol")]
 fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { ptr: ptr_ptr, len: len_ptr } = call.read();
-    let scheduler = call.scheduler();
+    let applet = call.applet();
     let result = try {
-        match scheduler.applet.get_request()? {
+        match applet.get_request()? {
             None => false,
             Some(value) => {
-                let mut memory = scheduler.applet.memory();
+                let mut memory = applet.memory();
                 memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &value)?;
                 true
             }
@@ -54,11 +54,9 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
 #[cfg(feature = "board-api-platform-protocol")]
 fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let api::write::Params { ptr, len } = call.read();
-    let scheduler = call.scheduler();
     let result = try {
-        let memory = scheduler.applet.memory();
-        let input = memory.get(*ptr, *len)?.into();
-        crate::protocol::put_response(scheduler, input)?
+        let input = call.memory().get(*ptr, *len)?.into();
+        crate::protocol::put_response(&mut call, input)?
     };
     call.reply(result);
 }
@@ -67,10 +65,10 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
 fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { handler_func, handler_data } = call.read();
     let inst = call.inst();
-    let scheduler = call.scheduler();
+    let applet = call.applet();
     let result = try {
         // We don't need to enable the event at the board level because it's always enabled.
-        scheduler.applet.enable(Handler {
+        applet.enable(Handler {
             key: Key::Request.into(),
             inst,
             func: *handler_func,
@@ -83,10 +81,9 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
 #[cfg(feature = "board-api-platform-protocol")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params {} = call.read();
-    let scheduler = call.scheduler();
     let result = try {
         // We only disable the applet handler because we still need to process non-applet requests.
-        scheduler.disable_event(Key::Request.into())?
+        call.scheduler().disable_event(Key::Request.into())?
     };
     call.reply(result);
 }

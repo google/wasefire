@@ -131,7 +131,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 
 [[package]]
-name = "update-api"
+name = "update"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -141,7 +141,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.2.0"
+version = "0.2.1-git"
 dependencies = [
  "data-encoding",
  "data-encoding-macro",

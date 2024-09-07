@@ -37,6 +37,7 @@ TOPOLOGICAL_ORDER=(
   prelude
   board
   scheduler
+  protocol-tokio
   protocol-usb
   cli-tools
   cli

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1-git
+
+### Patch
+
+- Update dependencies
+
 ## 0.2.0
 
 ### Major
@@ -69,7 +75,7 @@
 ### Minor
 
 - Add `scheduling::abort()`
-- Require the `U32` type to implement `bytemuck::Pod`.
+- Require the `U32` type to implement `bytemuck::Pod`
 - Add `debug::time()`, `debug::perf()`, and `debug::Perf` for simple performance
   measurement
 
