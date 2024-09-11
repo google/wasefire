@@ -20,7 +20,8 @@ use cargo_metadata::{Metadata, MetadataCommand};
 use clap::{ValueEnum, ValueHint};
 use rusb::GlobalContext;
 use tokio::process::Command;
-use wasefire_protocol::{self as service, applet, Api, Connection, ConnectionExt};
+use wasefire_protocol::{self as service, applet, Connection, ConnectionExt};
+use wasefire_wire::Yoke;
 
 use crate::{cmd, fs};
 
@@ -41,7 +42,7 @@ pub struct ConnectionOptions {
     protocol: protocol::Protocol,
 
     /// Timeout to send or receive with the USB protocol.
-    #[arg(long, default_value = "1s")]
+    #[arg(long, default_value = "5s")]
     timeout: humantime::Duration,
 }
 
@@ -140,6 +141,84 @@ impl PlatformList {
     }
 }
 
+/// Updates a platform.
+#[derive(clap::Args)]
+pub struct PlatformUpdate {
+    #[clap(flatten)]
+    transfer: Transfer,
+}
+
+impl PlatformUpdate {
+    pub async fn metadata(connection: &mut dyn Connection) -> Result<Yoke<&'static [u8]>> {
+        connection.call::<service::PlatformUpdateMetadata>(()).await
+    }
+
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let PlatformUpdate { transfer } = self;
+        transfer.run::<service::PlatformUpdateTransfer>(connection).await
+    }
+}
+
+/// Parameters for a transfer from the host to the device.
+#[derive(clap::Args)]
+struct Transfer {
+    /// Whether the transfer is a dry-run.
+    #[arg(long)]
+    dry_run: bool,
+
+    /// Path to the payload to transfer.
+    #[arg(value_hint = ValueHint::FilePath)]
+    payload: PathBuf,
+
+    /// How to chunk the payload.
+    #[arg(long, default_value_t = 1024)]
+    chunk_size: usize,
+}
+
+impl Transfer {
+    async fn run<S>(&self, connection: &mut dyn Connection) -> Result<()>
+    where S: for<'a> service::Service<
+            Request<'a> = service::transfer::Request<'a>,
+            Response<'a> = (),
+        > {
+        use wasefire_protocol::transfer::Request;
+        let Transfer { dry_run, payload, chunk_size } = self;
+        let payload = fs::read(payload).await?;
+        let progress = indicatif::ProgressBar::new(payload.len() as u64).with_style(
+            indicatif::ProgressStyle::with_template(
+                "[{wide_bar}] {bytes:>10} / {total_bytes:<10} {elapsed:>4}",
+            )?
+            .progress_chars("##-"),
+        );
+        connection.call::<S>(Request::Start { dry_run: *dry_run }).await?.get();
+        for chunk in payload.chunks(*chunk_size) {
+            connection.call::<S>(Request::Write { chunk }).await?.get();
+            progress.inc(chunk.len() as u64);
+        }
+        progress.finish();
+        if *dry_run {
+            connection.call::<S>(Request::Finish).await?.get();
+        } else {
+            final_call::<S>(connection, Request::Finish, |x| Ok(*x.get())).await?;
+        }
+        Ok(())
+    }
+}
+
+async fn final_call<S: service::Service>(
+    connection: &mut dyn Connection, request: S::Request<'_>,
+    response: impl FnOnce(Yoke<S::Response<'static>>) -> Result<()>,
+) -> Result<()> {
+    connection.send(&S::request(request)).await?;
+    match connection.receive::<S>().await {
+        Ok(x) => response(x),
+        Err(e) => match e.downcast_ref::<rusb::Error>() {
+            Some(rusb::Error::Timeout | rusb::Error::NoDevice) => Ok(()),
+            _ => Err(e),
+        },
+    }
+}
+
 /// Reboots a platform.
 #[derive(clap::Args)]
 pub struct PlatformReboot {}
@@ -147,14 +226,7 @@ pub struct PlatformReboot {}
 impl PlatformReboot {
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let PlatformReboot {} = self;
-        connection.send(&Api::PlatformReboot(())).await?;
-        match connection.receive::<service::PlatformReboot>().await {
-            Ok(x) => *x.get(),
-            Err(e) => match e.downcast_ref::<rusb::Error>() {
-                Some(rusb::Error::Timeout | rusb::Error::NoDevice) => Ok(()),
-                _ => Err(e),
-            },
-        }
+        final_call::<service::PlatformReboot>(connection, (), |x| match *x.get() {}).await
     }
 }
 

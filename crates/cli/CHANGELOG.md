@@ -7,6 +7,10 @@
 - Rename `--serial` to `--protocol` with more support
 - Move `--serial` and `--timeout` to commands that need them
 
+### Minor
+
+- Add `platform-update-{metadata,transfer}` for platform update
+
 ### Patch
 
 - Check for bad command-line configuration

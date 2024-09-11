@@ -53,10 +53,12 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   # add_lint $file warn rust.unused-results
 done
 
-( cd crates/protocol/crates/schema
-  cargo run --features=host
-  cargo run --features=device
-)
+for dir in $(git ls-files '*/sync.sh'); do
+  dir=$(dirname $dir)
+  [ $dir = scripts ] && continue
+  i "Sync $dir"
+  ( cd $dir && ./sync.sh )
+done
 
 book_example() {
   local src=book/src/applet/prelude/$1.rs

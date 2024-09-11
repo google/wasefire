@@ -30,6 +30,7 @@
 #![feature(doc_auto_cfg)]
 #![feature(macro_metavar_expr)]
 #![feature(never_type)]
+#![feature(try_blocks)]
 
 extern crate alloc;
 
@@ -46,9 +47,12 @@ pub mod applet;
 #[cfg(feature = "host")]
 mod connection;
 pub mod platform;
+pub mod transfer;
 
 /// Service description.
 pub trait Service: 'static {
+    #[cfg(feature = "host")]
+    const NAME: &str;
     /// Range of versions implementing this service.
     #[cfg(feature = "host")]
     const VERSIONS: Versions;
@@ -179,6 +183,8 @@ macro_rules! api {
             $(#[cfg(feature = "host")] ${ignore($max)})?
             impl Service for $Name {
                 #[cfg(feature = "host")]
+                const NAME: &str = stringify!($Name);
+                #[cfg(feature = "host")]
                 const VERSIONS: Versions = api!(versions $min $($max)?);
                 type Request<'a> = $request;
                 type Response<'a> = $response;
@@ -206,8 +212,7 @@ macro_rules! api {
 api! {
     //! Protocol API parametric over the message direction.
     //!
-    //! Variants gated by the `full` feature are deprecated. They won't be used by new devices.
-    //! However, to support older devices, the host must be able to use them.
+    //! Deprecated variants are only available to the host (to support older devices).
 
     /// Returns the device API version.
     0 [0 -] ApiVersion: () => u32,
@@ -224,11 +229,17 @@ api! {
     /// Starts a direct tunnel with an applet.
     4 [0 -] AppletTunnel: applet::Tunnel<'a> => (),
 
-    /// Returns platform information (e.g. serial and version).
+    /// Returns platform information.
     5 [1 -] PlatformInfo: () => platform::Info<'a>,
 
     /// Calls a vendor-specific platform command.
     6 [2 -] PlatformVendor: &'a [u8] => &'a [u8],
 
-    next 7 [3 - ]
+    /// Returns the metadata for platform update.
+    7 [3 -] PlatformUpdateMetadata: () => &'a [u8],
+
+    /// Updates the platform.
+    8 [3 -] PlatformUpdateTransfer: transfer::Request<'a> => (),
+
+    next 9 [4 - ]
 }
