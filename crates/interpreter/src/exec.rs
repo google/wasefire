@@ -818,16 +818,16 @@ impl<'m> Thread<'m> {
                 });
             }
             LocalGet(x) => {
-                let v = self.frame().locals[x as usize];
+                let v = self.frame().values[x as usize];
                 self.push_value(v);
             }
             LocalSet(x) => {
                 let v = self.pop_value();
-                self.frame().locals[x as usize] = v;
+                self.frame().values[x as usize] = v;
             }
             LocalTee(x) => {
                 let v = self.peek_value();
-                self.frame().locals[x as usize] = v;
+                self.frame().values[x as usize] = v;
             }
             GlobalGet(x) => self.push_value(store.global(inst_id, x).value),
             GlobalSet(x) => store.global(inst_id, x).value = self.pop_value(),
@@ -989,7 +989,7 @@ impl<'m> Thread<'m> {
     }
 
     fn values(&mut self) -> &mut Vec<Val> {
-        &mut self.frame().labels_values
+        &mut self.frame().values
     }
 
     fn peek_value(&mut self) -> Val {
@@ -1061,14 +1061,15 @@ impl<'m> Thread<'m> {
         let frame = self.frame();
         let label = frame.labels.pop().unwrap();
         if frame.labels.is_empty() {
-            let frame = self.frames.pop().unwrap();
-            debug_assert_eq!(frame.labels_values.len(), label.values_cnt);
-            debug_assert_eq!(frame.labels_values.len(), frame.arity);
+            let mut frame = self.frames.pop().unwrap();
+            frame.values.drain(0 .. frame.locals_cnt);
+            debug_assert_eq!(frame.values.len(), label.values_cnt);
+            debug_assert_eq!(frame.values.len(), frame.arity);
             if self.frames.is_empty() {
-                return ThreadResult::Done(frame.labels_values);
+                return ThreadResult::Done(frame.values);
             }
             unsafe { self.parser.restore(frame.ret) };
-            self.values().extend(frame.labels_values);
+            self.values().extend(frame.values);
         }
         self.label().values_cnt += label.values_cnt;
         ThreadResult::Continue(self)
@@ -1407,15 +1408,16 @@ struct Frame<'m> {
     inst_id: usize,
     arity: usize,
     ret: &'m [u8],
-    locals: Vec<Val>,
     labels: Vec<Label<'m>>,
-    labels_values: Vec<Val>,
+    values: Vec<Val>, // Locals and label values.
+    locals_cnt: usize,
 }
 
 impl<'m> Frame<'m> {
     fn new(inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>) -> Self {
         let label = Label { arity, kind: LabelKind::Block, values_cnt: 0 };
-        Frame { inst_id, arity, ret, locals, labels: vec![label], labels_values: vec![] }
+        let locals_cnt = locals.len();
+        Frame { inst_id, arity, ret, labels: vec![label], values: locals, locals_cnt }
     }
 }
 
