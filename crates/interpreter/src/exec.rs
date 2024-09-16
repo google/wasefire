@@ -460,6 +460,9 @@ struct Instance<'m> {
 struct Thread<'m> {
     parser: Parser<'m>,
     frames: Vec<Frame<'m>>,
+    // TODO: Consider the performance tradeoff between keeping the locals in and out of the value
+    // stack. See the comments in PR #605 for more details.
+    values: Vec<Val>,
 }
 
 /// Runtime result.
@@ -728,7 +731,7 @@ enum ThreadResult<'m> {
 
 impl<'m> Thread<'m> {
     fn new(parser: Parser<'m>, frames: Vec<Frame<'m>>) -> Thread<'m> {
-        Thread { parser, frames }
+        Thread { parser, frames, values: vec![] }
     }
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
@@ -989,7 +992,11 @@ impl<'m> Thread<'m> {
     }
 
     fn values(&mut self) -> &mut Vec<Val> {
-        &mut self.frame().labels_values
+        &mut self.values
+    }
+
+    fn last_frame_values_cnt(&mut self) -> usize {
+        self.frame().labels.iter().map(|label| label.values_cnt).sum()
     }
 
     fn peek_value(&mut self) -> Val {
@@ -1029,6 +1036,15 @@ impl<'m> Thread<'m> {
         values
     }
 
+    fn only_pop_values(&mut self, n: usize) -> Vec<Val> {
+        let mut values = Vec::new();
+        for _ in 0 .. n {
+            values.push(self.values().pop().unwrap());
+        }
+        values.reverse();
+        values
+    }
+
     fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind<'m>) {
         let arity = match kind {
             LabelKind::Block | LabelKind::If => type_.results.len(),
@@ -1058,24 +1074,31 @@ impl<'m> Thread<'m> {
     }
 
     fn exit_label(mut self) -> ThreadResult<'m> {
+        let values_cnt = self.last_frame_values_cnt();
         let frame = self.frame();
         let label = frame.labels.pop().unwrap();
         if frame.labels.is_empty() {
+            let values = self.only_pop_values(values_cnt);
             let frame = self.frames.pop().unwrap();
-            debug_assert_eq!(frame.labels_values.len(), label.values_cnt);
-            debug_assert_eq!(frame.labels_values.len(), frame.arity);
+            debug_assert_eq!(values.len(), label.values_cnt);
+            debug_assert_eq!(values.len(), frame.arity);
             if self.frames.is_empty() {
-                return ThreadResult::Done(frame.labels_values);
+                return ThreadResult::Done(values);
             }
             unsafe { self.parser.restore(frame.ret) };
-            self.values().extend(frame.labels_values);
+            self.values().extend(values);
         }
         self.label().values_cnt += label.values_cnt;
         ThreadResult::Continue(self)
     }
 
     fn exit_frame(mut self) -> ThreadResult<'m> {
-        let mut values = core::mem::take(self.values());
+        // TODO: very expensive to copy
+        // let mut values = core::mem::take(self.values());
+        let values_cnt = self.last_frame_values_cnt();
+        let mut values = self.only_pop_values(values_cnt);
+        // let values_from_earlier_frames =
+        // values.drain(self.last_frame_values_start()..).collect();
         let frame = self.frames.pop().unwrap();
         let mid = values.len() - frame.arity;
         if self.frames.is_empty() {
@@ -1083,6 +1106,7 @@ impl<'m> Thread<'m> {
             return ThreadResult::Done(values);
         }
         unsafe { self.parser.restore(frame.ret) };
+        // self.values().extend(values_from_earlier_frames);
         self.values().extend_from_slice(&values[mid ..]);
         self.label().values_cnt += frame.arity;
         ThreadResult::Continue(self)
@@ -1409,13 +1433,12 @@ struct Frame<'m> {
     ret: &'m [u8],
     locals: Vec<Val>,
     labels: Vec<Label<'m>>,
-    labels_values: Vec<Val>,
 }
 
 impl<'m> Frame<'m> {
     fn new(inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>) -> Self {
         let label = Label { arity, kind: LabelKind::Block, values_cnt: 0 };
-        Frame { inst_id, arity, ret, locals, labels: vec![label], labels_values: vec![] }
+        Frame { inst_id, arity, ret, locals, labels: vec![label] }
     }
 }
 
