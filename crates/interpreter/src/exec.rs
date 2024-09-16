@@ -1093,12 +1093,8 @@ impl<'m> Thread<'m> {
     }
 
     fn exit_frame(mut self) -> ThreadResult<'m> {
-        // TODO: very expensive to copy
-        // let mut values = core::mem::take(self.values());
         let values_cnt = self.last_frame_values_cnt();
         let mut values = self.only_pop_values(values_cnt);
-        // let values_from_earlier_frames =
-        // values.drain(self.last_frame_values_start()..).collect();
         let frame = self.frames.pop().unwrap();
         let mid = values.len() - frame.arity;
         if self.frames.is_empty() {
@@ -1106,7 +1102,6 @@ impl<'m> Thread<'m> {
             return ThreadResult::Done(values);
         }
         unsafe { self.parser.restore(frame.ret) };
-        // self.values().extend(values_from_earlier_frames);
         self.values().extend_from_slice(&values[mid ..]);
         self.label().values_cnt += frame.arity;
         ThreadResult::Continue(self)
