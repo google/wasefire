@@ -821,16 +821,16 @@ impl<'m> Thread<'m> {
                 });
             }
             LocalGet(x) => {
-                let v = self.frame().values[x as usize];
+                let v = self.frame().locals[x as usize];
                 self.push_value(v);
             }
             LocalSet(x) => {
                 let v = self.pop_value();
-                self.frame().values[x as usize] = v;
+                self.frame().locals[x as usize] = v;
             }
             LocalTee(x) => {
                 let v = self.peek_value();
-                self.frame().values[x as usize] = v;
+                self.frame().locals[x as usize] = v;
             }
             GlobalGet(x) => self.push_value(store.global(inst_id, x).value),
             GlobalSet(x) => store.global(inst_id, x).value = self.pop_value(),
