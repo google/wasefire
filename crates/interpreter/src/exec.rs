@@ -1388,10 +1388,10 @@ impl<'m> Thread<'m> {
     }
 }
 
-fn pop_values<F: FnMut() -> Val>(n: usize, mut individual_pop: F) -> Vec<Val> {
+fn pop_values<F: FnMut() -> Val>(n: usize, mut pop_once: F) -> Vec<Val> {
     let mut values = Vec::new();
     for _ in 0 .. n {
-        values.push(individual_pop());
+        values.push(pop_once());
     }
     values.reverse();
     values
