@@ -1028,21 +1028,11 @@ impl<'m> Thread<'m> {
     }
 
     fn pop_values(&mut self, n: usize) -> Vec<Val> {
-        let mut values = Vec::new();
-        for _ in 0 .. n {
-            values.push(self.pop_value());
-        }
-        values.reverse();
-        values
+        pop_values(n, || self.pop_value())
     }
 
     fn only_pop_values(&mut self, n: usize) -> Vec<Val> {
-        let mut values = Vec::new();
-        for _ in 0 .. n {
-            values.push(self.values().pop().unwrap());
-        }
-        values.reverse();
-        values
+        pop_values(n, || self.values().pop().unwrap())
     }
 
     fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind<'m>) {
@@ -1396,6 +1386,15 @@ impl<'m> Thread<'m> {
         self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals));
         Ok(ThreadResult::Continue(self))
     }
+}
+
+fn pop_values<F: FnMut() -> Val>(n: usize, mut individual_pop: F) -> Vec<Val> {
+    let mut values = Vec::new();
+    for _ in 0 .. n {
+        values.push(individual_pop());
+    }
+    values.reverse();
+    values
 }
 
 fn table_init(d: usize, s: usize, n: usize, table: &mut Table, elems: &[Val]) -> Result<(), Error> {
