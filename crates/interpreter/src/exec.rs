@@ -460,6 +460,9 @@ struct Instance<'m> {
 struct Thread<'m> {
     parser: Parser<'m>,
     frames: Vec<Frame<'m>>,
+    // TODO: Consider the performance tradeoff between keeping the locals in and out of the value
+    // stack. See the comments in PR #605 for more details.
+    values: Vec<Val>,
 }
 
 /// Runtime result.
@@ -728,7 +731,7 @@ enum ThreadResult<'m> {
 
 impl<'m> Thread<'m> {
     fn new(parser: Parser<'m>, frames: Vec<Frame<'m>>) -> Thread<'m> {
-        Thread { parser, frames }
+        Thread { parser, frames, values: vec![] }
     }
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
@@ -818,16 +821,16 @@ impl<'m> Thread<'m> {
                 });
             }
             LocalGet(x) => {
-                let v = self.frame().values[x as usize];
+                let v = self.frame().locals[x as usize];
                 self.push_value(v);
             }
             LocalSet(x) => {
                 let v = self.pop_value();
-                self.frame().values[x as usize] = v;
+                self.frame().locals[x as usize] = v;
             }
             LocalTee(x) => {
                 let v = self.peek_value();
-                self.frame().values[x as usize] = v;
+                self.frame().locals[x as usize] = v;
             }
             GlobalGet(x) => self.push_value(store.global(inst_id, x).value),
             GlobalSet(x) => store.global(inst_id, x).value = self.pop_value(),
@@ -989,7 +992,11 @@ impl<'m> Thread<'m> {
     }
 
     fn values(&mut self) -> &mut Vec<Val> {
-        &mut self.frame().values
+        &mut self.values
+    }
+
+    fn last_frame_values_cnt(&mut self) -> usize {
+        self.frame().labels.iter().map(|label| label.values_cnt).sum()
     }
 
     fn peek_value(&mut self) -> Val {
@@ -1021,12 +1028,13 @@ impl<'m> Thread<'m> {
     }
 
     fn pop_values(&mut self, n: usize) -> Vec<Val> {
-        let mut values = Vec::new();
-        for _ in 0 .. n {
-            values.push(self.pop_value());
-        }
-        values.reverse();
-        values
+        self.label().values_cnt -= n;
+        self.only_pop_values(n)
+    }
+
+    fn only_pop_values(&mut self, n: usize) -> Vec<Val> {
+        let len = self.values().len() - n;
+        self.values().split_off(len)
     }
 
     fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind<'m>) {
@@ -1061,22 +1069,22 @@ impl<'m> Thread<'m> {
         let frame = self.frame();
         let label = frame.labels.pop().unwrap();
         if frame.labels.is_empty() {
-            let mut frame = self.frames.pop().unwrap();
-            frame.values.drain(0 .. frame.locals_cnt);
-            debug_assert_eq!(frame.values.len(), label.values_cnt);
-            debug_assert_eq!(frame.values.len(), frame.arity);
+            let values = self.only_pop_values(label.values_cnt);
+            let frame = self.frames.pop().unwrap();
+            debug_assert_eq!(values.len(), frame.arity);
             if self.frames.is_empty() {
-                return ThreadResult::Done(frame.values);
+                return ThreadResult::Done(values);
             }
             unsafe { self.parser.restore(frame.ret) };
-            self.values().extend(frame.values);
+            self.values().extend(values);
         }
         self.label().values_cnt += label.values_cnt;
         ThreadResult::Continue(self)
     }
 
     fn exit_frame(mut self) -> ThreadResult<'m> {
-        let mut values = core::mem::take(self.values());
+        let values_cnt = self.last_frame_values_cnt();
+        let mut values = self.only_pop_values(values_cnt);
         let frame = self.frames.pop().unwrap();
         let mid = values.len() - frame.arity;
         if self.frames.is_empty() {
@@ -1408,16 +1416,14 @@ struct Frame<'m> {
     inst_id: usize,
     arity: usize,
     ret: &'m [u8],
+    locals: Vec<Val>,
     labels: Vec<Label<'m>>,
-    values: Vec<Val>, // Locals and label values.
-    locals_cnt: usize,
 }
 
 impl<'m> Frame<'m> {
     fn new(inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>) -> Self {
         let label = Label { arity, kind: LabelKind::Block, values_cnt: 0 };
-        let locals_cnt = locals.len();
-        Frame { inst_id, arity, ret, labels: vec![label], values: locals, locals_cnt }
+        Frame { inst_id, arity, ret, locals, labels: vec![label] }
     }
 }
 
