@@ -1028,11 +1028,13 @@ impl<'m> Thread<'m> {
     }
 
     fn pop_values(&mut self, n: usize) -> Vec<Val> {
-        pop_values(n, || self.pop_value())
+        self.label().values_cnt -= n;
+        self.only_pop_values(n)
     }
 
     fn only_pop_values(&mut self, n: usize) -> Vec<Val> {
-        pop_values(n, || self.values().pop().unwrap())
+        let len = self.values().len() - n;
+        self.values().split_off(len)
     }
 
     fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind<'m>) {
@@ -1064,13 +1066,11 @@ impl<'m> Thread<'m> {
     }
 
     fn exit_label(mut self) -> ThreadResult<'m> {
-        let values_cnt = self.last_frame_values_cnt();
         let frame = self.frame();
         let label = frame.labels.pop().unwrap();
         if frame.labels.is_empty() {
-            let values = self.only_pop_values(values_cnt);
+            let values = self.only_pop_values(label.values_cnt);
             let frame = self.frames.pop().unwrap();
-            debug_assert_eq!(values.len(), label.values_cnt);
             debug_assert_eq!(values.len(), frame.arity);
             if self.frames.is_empty() {
                 return ThreadResult::Done(values);
@@ -1386,15 +1386,6 @@ impl<'m> Thread<'m> {
         self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals));
         Ok(ThreadResult::Continue(self))
     }
-}
-
-fn pop_values<F: FnMut() -> Val>(n: usize, mut pop_once: F) -> Vec<Val> {
-    let mut values = Vec::new();
-    for _ in 0 .. n {
-        values.push(pop_once());
-    }
-    values.reverse();
-    values
 }
 
 fn table_init(d: usize, s: usize, n: usize, table: &mut Table, elems: &[Val]) -> Result<(), Error> {
