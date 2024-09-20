@@ -27,7 +27,7 @@ features = ["io-util", "macros", "net", "rt", "sync"]
 [dependencies.wasefire-board-api]
 version = "0.8.0-git"
 path = "../board"
-features = ["api-platform-protocol", "std"]
+features = ["std"]
 optional = true
 
 [dependencies.wasefire-protocol]

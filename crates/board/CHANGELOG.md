@@ -4,6 +4,7 @@
 
 ### Major
 
+- Remove `api-platform{,-protocol,-update}` features making those APIs required
 - (Only when `api-platform-protocol` is used) Change `platform::protocol::Api::{enable,disable}()`
   to also control whether requests are accepted
 - (Only when `api-storage` is used) The reexported `wasefire-store::Storage` now uses

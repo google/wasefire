@@ -39,7 +39,6 @@ pub mod debug;
 pub mod gpio;
 #[cfg(feature = "api-led")]
 pub mod led;
-#[cfg(feature = "internal-api-platform")]
 pub mod platform;
 #[cfg(feature = "internal-api-radio")]
 pub mod radio;
@@ -98,7 +97,6 @@ pub trait Api: Send + 'static {
     type Led: led::Api;
 
     /// Platform interface.
-    #[cfg(feature = "internal-api-platform")]
     type Platform: platform::Api;
 
     /// Radio interface.
@@ -158,7 +156,6 @@ pub enum Event<B: Api + ?Sized> {
     Button(button::Event<B>),
 
     /// Platform event.
-    #[cfg(feature = "internal-api-platform")]
     Platform(platform::Event),
 
     /// Radio event.
@@ -222,7 +219,6 @@ pub type Gpio<B> = <B as Api>::Gpio;
 pub type Led<B> = <B as Api>::Led;
 
 /// Platform interface.
-#[cfg(feature = "internal-api-platform")]
 pub type Platform<B> = <B as Api>::Platform;
 
 /// Radio interface.

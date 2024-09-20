@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-scheduler"
-version = "0.3.2-git"
+version = "0.4.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -39,7 +39,6 @@ optional = true
 version = "0.1.1-git"
 path = "../protocol"
 features = ["device"]
-optional = true
 
 [features]
 std = ["wasefire-board-api/std", "wasefire-store?/std"]
@@ -124,22 +123,6 @@ board-api-crypto-sha256 = ["applet-api-crypto-hash", "wasefire-board-api/api-cry
 board-api-crypto-sha384 = ["applet-api-crypto-hash", "wasefire-board-api/api-crypto-sha384"]
 board-api-gpio = ["applet-api-gpio", "wasefire-board-api/api-gpio"]
 board-api-led = ["applet-api-led", "wasefire-board-api/api-led"]
-board-api-platform = [
-  "applet-api-platform",
-  "internal-board-api-platform",
-  "wasefire-board-api/api-platform",
-]
-board-api-platform-protocol = [
-  "applet-api-platform-protocol",
-  "dep:wasefire-protocol",
-  "internal-board-api-platform",
-  "wasefire-board-api/api-platform-protocol",
-]
-board-api-platform-update = [
-  "applet-api-platform-update",
-  "internal-board-api-platform",
-  "wasefire-board-api/api-platform-update",
-]
 board-api-radio-ble = [
   "applet-api-radio-ble",
   "internal-board-api-radio",
@@ -196,9 +179,6 @@ full-board-api = [
   "board-api-crypto-sha384",
   "board-api-gpio",
   "board-api-led",
-  "board-api-platform",
-  "board-api-platform-protocol",
-  "board-api-platform-update",
   "board-api-radio-ble",
   "board-api-rng",
   "board-api-storage",
@@ -235,7 +215,7 @@ wasm = ["dep:wasefire-interpreter"]
 # safety invariant.
 unsafe-skip-validation = []
 # Internal features.
-_test = ["wasefire-protocol?/_exhaustive"]
+_test = ["wasefire-protocol/_exhaustive"]
 internal-applet-api-crypto = []
 internal-applet-api-crypto-hash = ["dep:digest", "dep:generic-array", "internal-applet-api-crypto"]
 internal-applet-api-platform = []
@@ -243,7 +223,6 @@ internal-applet-api-radio = []
 internal-applet-api-store = []
 internal-applet-api-usb = []
 internal-board-api-crypto-ecc = []
-internal-board-api-platform = []
 internal-board-api-radio = []
 internal-board-api-usb = []
 internal-debug = []

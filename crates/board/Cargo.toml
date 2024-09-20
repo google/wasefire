@@ -62,9 +62,6 @@ api-crypto-sha256 = ["internal-api-crypto-hash"]
 api-crypto-sha384 = ["internal-api-crypto-hash"]
 api-gpio = ["bytemuck/derive"]
 api-led = []
-api-platform = ["internal-api-platform"]
-api-platform-protocol = ["internal-api-platform"]
-api-platform-update = ["internal-api-platform"]
 api-radio-ble = ["internal-api-radio", "wasefire-applet-api/api-radio-ble"]
 api-rng = []
 api-storage = ["dep:wasefire-store"]
@@ -84,9 +81,6 @@ full-api = [
   "api-crypto-sha384",
   "api-gpio",
   "api-led",
-  "api-platform",
-  "api-platform-protocol",
-  "api-platform-update",
   "api-radio-ble",
   "api-rng",
   "api-storage",
@@ -132,7 +126,6 @@ internal-api-crypto-aead = ["dep:crypto-common", "dep:typenum", "internal-api-cr
 internal-api-crypto-ecc = ["dep:crypto-common", "dep:typenum", "internal-api-crypto"]
 internal-api-crypto-hash = ["dep:crypto-common", "dep:digest", "dep:typenum", "internal-api-crypto"]
 internal-api-crypto-hmac = ["dep:crypto-common", "dep:typenum", "digest/mac", "internal-api-crypto"]
-internal-api-platform = []
 internal-api-radio = []
 internal-api-usb = []
 internal-software-crypto = [

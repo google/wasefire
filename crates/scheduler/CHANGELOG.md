@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.3.2-git
+## 0.4.0-git
+
+### Major
+
+- Remove `board-api-platform{,-protocol,-update}` features
 
 ### Minor
 
