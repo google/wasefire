@@ -199,7 +199,10 @@ impl Transfer {
         if *dry_run {
             connection.call::<S>(Request::Finish).await?.get();
         } else {
-            final_call::<S>(connection, Request::Finish, |x| Ok(*x.get())).await?;
+            final_call::<S>(connection, Request::Finish, |_| {
+                bail!("device responded to a transfer finish")
+            })
+            .await?;
         }
         Ok(())
     }
@@ -207,11 +210,11 @@ impl Transfer {
 
 async fn final_call<S: service::Service>(
     connection: &mut dyn Connection, request: S::Request<'_>,
-    response: impl FnOnce(Yoke<S::Response<'static>>) -> Result<()>,
+    response: impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>,
 ) -> Result<()> {
     connection.send(&S::request(request)).await?;
     match connection.receive::<S>().await {
-        Ok(x) => response(x),
+        Ok(x) => response(x)?,
         Err(e) => match e.downcast_ref::<rusb::Error>() {
             Some(rusb::Error::Timeout | rusb::Error::NoDevice) => Ok(()),
             _ => Err(e),

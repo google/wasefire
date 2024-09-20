@@ -30,7 +30,6 @@
 #![feature(doc_auto_cfg)]
 #![feature(macro_metavar_expr)]
 #![feature(never_type)]
-#![feature(try_blocks)]
 
 extern crate alloc;
 
@@ -229,7 +228,7 @@ api! {
     /// Starts a direct tunnel with an applet.
     4 [0 -] AppletTunnel: applet::Tunnel<'a> => (),
 
-    /// Returns platform information.
+    /// Returns platform information (e.g. serial and version).
     5 [1 -] PlatformInfo: () => platform::Info<'a>,
 
     /// Calls a vendor-specific platform command.

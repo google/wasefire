@@ -64,6 +64,7 @@ enum Action {
     },
     PlatformList(action::PlatformList),
 
+    /// Prints the platform update metadata (possibly binary output).
     PlatformUpdateMetadata {
         #[command(flatten)]
         options: action::ConnectionOptions,

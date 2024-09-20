@@ -48,11 +48,10 @@ pub trait ConnectionExt: Connection {
         &mut self, request: S::Request<'_>,
     ) -> impl Future<Output = anyhow::Result<Yoke<S::Response<'static>>>> {
         async {
-            let result: anyhow::Result<_> = try {
-                self.send(&S::request(request)).await.context("sending request")?;
-                self.receive::<S>().await.context("receiving response")?
-            };
-            result.with_context(|| format!("calling {}", S::NAME))
+            self.send(&S::request(request))
+                .await
+                .with_context(|| format!("sending {}", S::NAME))?;
+            self.receive::<S>().await.with_context(|| format!("receiving {}", S::NAME))
         }
     }
 
