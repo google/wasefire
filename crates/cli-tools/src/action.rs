@@ -98,13 +98,13 @@ pub struct AppletRpc {
 impl AppletRpc {
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let AppletRpc { applet, rpc, mut wait } = self;
-        wait.ensure_wait();
         let applet_id = match applet {
             Some(_) => bail!("applet identifiers are not supported yet"),
             None => applet::AppletId,
         };
         let request = applet::Request { applet_id, request: &rpc.read().await? };
         connection.call::<service::AppletRequest>(request).await?.get();
+        wait.ensure_wait();
         match wait.run::<service::AppletResponse, &[u8]>(connection, applet_id).await? {
             None => bail!("did not receive a response"),
             Some(response) => rpc.write(response.get()).await,
