@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
             connection.call::<service::AppletRequest>(request).await?.get();
             loop {
                 let response = connection.call::<service::AppletResponse>(AppletId).await?;
-                if let Some(response) = response.get().response {
+                if let Some(response) = response.get() {
                     print!("{}", std::str::from_utf8(response).unwrap());
                     break Ok(());
                 }

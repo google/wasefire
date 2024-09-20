@@ -1,9 +1,14 @@
 # Changelog
 
-## 0.1.1-git
+## 0.2.0-git
+
+### Major
+
+- Remove `applet::Response` and inline its definition in `AppletResponse::Response`
 
 ### Minor
 
+- Add `ConnectionExt::call_ref()` to share a request between calls
 - Add a `Service::NAME` constant with `host` feature
 - Add `PlatformUpdate{Metadata,Transfer}` calls and `transfer` module for platform updates
 - Add a `Connection` abstraction with `host` feature

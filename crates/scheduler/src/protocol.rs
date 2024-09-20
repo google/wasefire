@@ -75,8 +75,7 @@ fn process_event_<B: Board>(
         }
         Api::AppletResponse(applet_id) => {
             let response = applet::<B>(scheduler, applet_id)?.get_response()?;
-            let response = response.as_deref();
-            reply::<B, service::AppletResponse>(service::applet::Response { response });
+            reply::<B, service::AppletResponse>(response.as_deref());
         }
         Api::PlatformReboot(()) => {
             use wasefire_board_api::platform::Api as _;

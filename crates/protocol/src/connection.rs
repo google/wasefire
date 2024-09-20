@@ -47,10 +47,14 @@ pub trait ConnectionExt: Connection {
     fn call<S: Service>(
         &mut self, request: S::Request<'_>,
     ) -> impl Future<Output = anyhow::Result<Yoke<S::Response<'static>>>> {
+        async { self.call_ref::<S>(&S::request(request)).await }
+    }
+
+    fn call_ref<S: Service>(
+        &mut self, request: &Api<Request>,
+    ) -> impl Future<Output = anyhow::Result<Yoke<S::Response<'static>>>> {
         async {
-            self.send(&S::request(request))
-                .await
-                .with_context(|| format!("sending {}", S::NAME))?;
+            self.send(request).await.with_context(|| format!("sending {}", S::NAME))?;
             self.receive::<S>().await.with_context(|| format!("receiving {}", S::NAME))
         }
     }

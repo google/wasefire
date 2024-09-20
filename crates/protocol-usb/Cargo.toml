@@ -25,7 +25,7 @@ path = "../board"
 optional = true
 
 [dependencies.wasefire-protocol]
-version = "0.1.1-git"
+version = "0.2.0-git"
 path = "../protocol"
 features = ["host"]
 optional = true

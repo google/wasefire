@@ -21,13 +21,13 @@ indicatif = { version = "0.17.8", default-features = false }
 rusb = { version = "0.9.4", default-features = false }
 serde = { version = "1.0.202", default-features = false, features = ["derive"] }
 toml = { version = "0.8.13", default-features = false, features = ["display", "parse"] }
-wasefire-protocol = { version = "0.1.1-git", path = "../protocol", features = ["host"] }
+wasefire-protocol = { version = "0.2.0-git", path = "../protocol", features = ["host"] }
 wasefire-wire = { version = "0.1.1-git", path = "../wire" }
 
 [dependencies.tokio]
 version = "1.40.0"
 default-features = false
-features = ["fs", "io-std", "process", "rt"]
+features = ["fs", "io-std", "process", "rt", "time"]
 
 [dependencies.wasefire-protocol-tokio]
 version = "0.1.0-git"

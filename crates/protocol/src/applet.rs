@@ -20,11 +20,6 @@ pub struct Request<'a> {
     pub request: &'a [u8],
 }
 
-#[derive(Debug, Wire)]
-pub struct Response<'a> {
-    pub response: Option<&'a [u8]>,
-}
-
 #[derive(Debug, Copy, Clone, Wire)]
 pub struct AppletId;
 

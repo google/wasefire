@@ -220,7 +220,7 @@ api! {
     1 [0 -] AppletRequest: applet::Request<'a> => (),
 
     /// Reads a response from an applet.
-    2 [0 -] AppletResponse: applet::AppletId => applet::Response<'a>,
+    2 [0 -] AppletResponse: applet::AppletId => Option<&'a [u8]>,
 
     /// Reboots the platform.
     3 [0 -] PlatformReboot: () => !,
