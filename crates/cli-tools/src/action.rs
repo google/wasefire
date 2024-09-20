@@ -14,6 +14,7 @@
 
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use anyhow::{bail, ensure, Result};
 use cargo_metadata::{Metadata, MetadataCommand};
@@ -21,7 +22,7 @@ use clap::{ValueEnum, ValueHint};
 use rusb::GlobalContext;
 use tokio::process::Command;
 use wasefire_protocol::{self as service, applet, Connection, ConnectionExt};
-use wasefire_wire::Yoke;
+use wasefire_wire::{self as wire, Yoke};
 
 use crate::{cmd, fs};
 
@@ -90,27 +91,72 @@ pub struct AppletRpc {
     #[clap(flatten)]
     rpc: Rpc,
 
-    /// Number of retries to receive a response.
-    #[arg(long, default_value = "3")]
-    retries: usize,
+    #[clap(flatten)]
+    wait: Wait,
 }
 
 impl AppletRpc {
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
-        let AppletRpc { applet, rpc, retries } = self;
+        let AppletRpc { applet, rpc, mut wait } = self;
+        wait.ensure_wait();
         let applet_id = match applet {
             Some(_) => bail!("applet identifiers are not supported yet"),
             None => applet::AppletId,
         };
         let request = applet::Request { applet_id, request: &rpc.read().await? };
         connection.call::<service::AppletRequest>(request).await?.get();
-        for _ in 0 .. retries {
-            let response = connection.call::<service::AppletResponse>(applet_id).await?;
-            if let Some(response) = response.get().response {
-                return rpc.write(response).await;
+        match wait.run::<service::AppletResponse, &[u8]>(connection, applet_id).await? {
+            None => bail!("did not receive a response"),
+            Some(response) => rpc.write(response.get()).await,
+        }
+    }
+}
+
+/// Options to repeatedly call a command with an optional response.
+#[derive(clap::Args)]
+pub struct Wait {
+    /// Waits until there is a response.
+    ///
+    /// This is equivalent to --period=100ms.
+    #[arg(long)]
+    wait: bool,
+
+    /// Retries every so often until there is a response.
+    ///
+    /// The command doesn't return `None` in that case.
+    #[arg(long, conflicts_with = "wait")]
+    period: Option<humantime::Duration>,
+}
+
+impl Wait {
+    pub fn ensure_wait(&mut self) {
+        if self.wait || self.period.is_some() {
+            return;
+        }
+        self.wait = true;
+    }
+
+    pub async fn run<S, T: wire::Wire<'static>>(
+        self, connection: &mut dyn Connection, request: S::Request<'_>,
+    ) -> Result<Option<Yoke<T::Type<'static>>>>
+    where S: for<'a> service::Service<Response<'a> = Option<T::Type<'a>>> {
+        let Wait { wait, period } = self;
+        let period = match (wait, period) {
+            (true, None) => Some(Duration::from_millis(100)),
+            (true, Some(_)) => unreachable!(),
+            (false, None) => None,
+            (false, Some(x)) => Some(*x),
+        };
+        let request = S::request(request);
+        loop {
+            match connection.call_ref::<S>(&request).await?.try_map(|x| x.ok_or(())) {
+                Ok(x) => break Ok(Some(x)),
+                Err(()) => match period {
+                    Some(period) => tokio::time::sleep(period).await,
+                    None => break Ok(None),
+                },
             }
         }
-        bail!("did not receive a response after {retries} retries");
     }
 }
 
