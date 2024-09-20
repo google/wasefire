@@ -1,5 +1,5 @@
 result: {Ok=0:() Err=1:(space:u8 code:u16)}
-version: 2
+version: 3
 0 [0 -] ApiVersion: () -> u32
 1 [0 -] AppletRequest: (applet_id:() request:[u8]) -> ()
 2 [0 -] AppletResponse: () -> (response:{None=0:() Some=1:[u8]})
@@ -7,3 +7,5 @@ version: 2
 4 [0 -] AppletTunnel: (applet_id:() delimiter:[u8]) -> ()
 5 [1 -] PlatformInfo: () -> (serial:[u8] version:[u8])
 6 [2 -] PlatformVendor: [u8] -> [u8]
+7 [3 -] PlatformUpdateMetadata: () -> [u8]
+8 [3 -] PlatformUpdateTransfer: {Start=0:(dry_run:bool) Write=1:(chunk:[u8]) Finish=2:()} -> ()

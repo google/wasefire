@@ -64,8 +64,18 @@ enum Action {
     },
     PlatformList(action::PlatformList),
 
-    /// Updates a connected platform.
-    PlatformUpdate,
+    /// Prints the platform update metadata (possibly binary output).
+    PlatformUpdateMetadata {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+    },
+
+    PlatformUpdateTransfer {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        action: action::PlatformUpdate,
+    },
 
     #[group(id = "Action::PlatformReboot")]
     PlatformReboot {
@@ -129,7 +139,13 @@ async fn main() -> Result<()> {
         Action::AppletUninstall => bail!("not implemented yet"),
         Action::AppletRpc { options, action } => action.run(&mut options.connect().await?).await,
         Action::PlatformList(x) => x.run().await,
-        Action::PlatformUpdate => bail!("not implemented yet"),
+        Action::PlatformUpdateMetadata { options } => {
+            let metadata = action::PlatformUpdate::metadata(&mut options.connect().await?).await?;
+            fs::write_stdout(metadata.get()).await
+        }
+        Action::PlatformUpdateTransfer { options, action } => {
+            action.run(&mut options.connect().await?).await
+        }
         Action::PlatformReboot { options, action } => {
             action.run(&mut options.connect().await?).await
         }

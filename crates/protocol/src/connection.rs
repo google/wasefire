@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use alloc::boxed::Box;
+use alloc::format;
 use core::future::Future;
 use core::pin::Pin;
 
@@ -47,8 +48,10 @@ pub trait ConnectionExt: Connection {
         &mut self, request: S::Request<'_>,
     ) -> impl Future<Output = anyhow::Result<Yoke<S::Response<'static>>>> {
         async {
-            self.send(&S::request(request)).await.context("sending request")?;
-            self.receive::<S>().await.context("receiving response")
+            self.send(&S::request(request))
+                .await
+                .with_context(|| format!("sending {}", S::NAME))?;
+            self.receive::<S>().await.with_context(|| format!("receiving {}", S::NAME))
         }
     }
 

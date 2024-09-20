@@ -2,6 +2,10 @@
 
 ## 0.3.2-git
 
+### Minor
+
+- Support `PlatformUpdate{Metadata,Transfer}` protocol calls
+
 ### Patch
 
 - Use `derive-where` instead of `derivative`

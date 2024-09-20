@@ -25,13 +25,10 @@ use wasefire_protocol::{self as service, Api, ApiResult, Request, Service, VERSI
 use crate::{Applet, Scheduler, SchedulerCall};
 
 #[derive(Debug, Default)]
-pub enum State {
-    #[default]
-    Normal,
-    Tunnel {
-        applet_id: service::applet::AppletId,
-        delimiter: Box<[u8]>,
-    },
+pub struct State {
+    tunnel: TunnelState,
+    #[cfg(feature = "board-api-platform-update")]
+    update: TransferState,
 }
 
 pub fn enable<B: Board>() {
@@ -59,11 +56,11 @@ pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event
 fn process_event_<B: Board>(
     scheduler: &mut Scheduler<B>, event: board::Event<B>, request: Box<[u8]>,
 ) -> Result<(), Error> {
-    match &scheduler.protocol {
-        State::Normal => (),
-        State::Tunnel { applet_id, delimiter } => {
+    match &scheduler.protocol.tunnel {
+        TunnelState::Normal => (),
+        TunnelState::Tunnel { applet_id, delimiter } => {
             if request == *delimiter {
-                scheduler.protocol = State::Normal;
+                scheduler.protocol.tunnel = TunnelState::Normal;
                 return Ok(reply::<B, service::AppletTunnel>(()));
             }
             return applet::<B>(scheduler, *applet_id)?.put_request(event, &request);
@@ -87,13 +84,13 @@ fn process_event_<B: Board>(
             board::Platform::<B>::reboot()?;
         }
         Api::AppletTunnel(service::applet::Tunnel { applet_id, delimiter }) => {
-            match scheduler.protocol {
-                State::Normal => {
+            match scheduler.protocol.tunnel {
+                TunnelState::Normal => {
                     let delimiter = delimiter.to_vec().into_boxed_slice();
-                    scheduler.protocol = State::Tunnel { applet_id, delimiter };
+                    scheduler.protocol.tunnel = TunnelState::Tunnel { applet_id, delimiter };
                     reply::<B, service::AppletTunnel>(())
                 }
-                State::Tunnel { .. } => unreachable!(),
+                TunnelState::Tunnel { .. } => unreachable!(),
             }
         }
         #[cfg(feature = "board-api-platform")]
@@ -109,6 +106,14 @@ fn process_event_<B: Board>(
             let response = board::platform::Protocol::<B>::vendor(request)?;
             reply::<B, service::PlatformVendor>(&response);
         }
+        #[cfg(feature = "board-api-platform-update")]
+        Api::PlatformUpdateMetadata(()) => {
+            use wasefire_board_api::platform::update::Api as _;
+            let response = board::platform::Update::<B>::metadata()?;
+            reply::<B, service::PlatformUpdateMetadata>(&response);
+        }
+        #[cfg(feature = "board-api-platform-update")]
+        Api::PlatformUpdateTransfer(request) => process_transfer::<B>(scheduler, request)?,
         #[cfg(not(feature = "_test"))]
         _ => return Err(Error::internal(Code::NotImplemented)),
     }
@@ -127,9 +132,9 @@ pub fn put_response<B: Board>(
         }
         Err(error) => return Err(error),
     }
-    match &call.scheduler().protocol {
-        State::Normal => Ok(()),
-        State::Tunnel { applet_id, .. } => {
+    match &call.scheduler().protocol.tunnel {
+        TunnelState::Normal => Ok(()),
+        TunnelState::Tunnel { applet_id, .. } => {
             let service::applet::AppletId = applet_id;
             match call.applet().get_response()? {
                 Some(response) => board::platform::Protocol::<B>::write(&response),
@@ -138,6 +143,60 @@ pub fn put_response<B: Board>(
                     Err(Error::internal(Code::InvalidState))
                 }
             }
+        }
+    }
+}
+
+#[cfg(feature = "board-api-platform-update")]
+fn process_transfer<B: Board>(
+    scheduler: &mut Scheduler<B>, request: service::transfer::Request,
+) -> Result<(), Error> {
+    use wasefire_board_api::platform::update::Api as _;
+    match request {
+        service::transfer::Request::Start { dry_run } => {
+            scheduler.protocol.update = TransferState::Running { dry_run };
+            board::platform::Update::<B>::initialize(dry_run)?;
+        }
+        service::transfer::Request::Write { chunk } => {
+            let _ = scheduler.protocol.update.dry_run()?;
+            board::platform::Update::<B>::process(chunk)?;
+        }
+        service::transfer::Request::Finish => {
+            let _ = scheduler.protocol.update.dry_run()?;
+            board::platform::Update::<B>::finalize()?;
+            scheduler.protocol.update = TransferState::Ready;
+        }
+    }
+    reply::<B, service::PlatformUpdateTransfer>(());
+    Ok(())
+}
+
+#[derive(Debug, Default)]
+enum TunnelState {
+    #[default]
+    Normal,
+    Tunnel {
+        applet_id: service::applet::AppletId,
+        delimiter: Box<[u8]>,
+    },
+}
+
+#[cfg(feature = "board-api-platform-update")]
+#[derive(Debug, Default)]
+enum TransferState {
+    #[default]
+    Ready,
+    Running {
+        dry_run: bool,
+    },
+}
+
+#[cfg(feature = "board-api-platform-update")]
+impl TransferState {
+    fn dry_run(&self) -> Result<bool, Error> {
+        match self {
+            TransferState::Ready => Err(Error::user(Code::InvalidState)),
+            TransferState::Running { dry_run } => Ok(*dry_run),
         }
     }
 }
