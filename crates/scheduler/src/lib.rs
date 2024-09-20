@@ -52,7 +52,6 @@ mod event;
 mod native;
 #[cfg(feature = "internal-debug")]
 mod perf;
-#[cfg(feature = "board-api-platform-protocol")]
 mod protocol;
 
 #[cfg(all(feature = "native", not(target_pointer_width = "32")))]
@@ -96,7 +95,6 @@ pub struct Scheduler<B: Board> {
     timers: Vec<Option<Timer>>,
     #[cfg(feature = "internal-debug")]
     perf: perf::Perf<B>,
-    #[cfg(feature = "board-api-platform-protocol")]
     protocol: protocol::State,
 }
 
@@ -287,7 +285,6 @@ impl<B: Board> Scheduler<B> {
         Api::<Id>::iter(&mut host_funcs, |x| x);
         host_funcs.sort_by_key(|x| x.descriptor().name);
         assert!(host_funcs.windows(2).all(|x| x[0].descriptor().name != x[1].descriptor().name));
-        #[cfg(feature = "board-api-platform-protocol")]
         protocol::enable::<B>();
         Self {
             #[cfg(feature = "board-api-storage")]
@@ -298,7 +295,6 @@ impl<B: Board> Scheduler<B> {
             timers: alloc::vec![None; board::Timer::<B>::SUPPORT],
             #[cfg(feature = "internal-debug")]
             perf: perf::Perf::default(),
-            #[cfg(feature = "board-api-platform-protocol")]
             protocol: protocol::State::default(),
         }
     }
@@ -353,7 +349,6 @@ impl<B: Board> Scheduler<B> {
     }
 
     fn triage_event(&mut self, event: board::Event<B>) {
-        #[cfg(feature = "board-api-platform-protocol")]
         if protocol::should_process_event(&event) {
             return protocol::process_event(self, event);
         }
@@ -415,7 +410,7 @@ impl<B: Board> Scheduler<B> {
         call::process(call);
     }
 
-    #[allow(dead_code)] // in case there are no events
+    #[allow(dead_code)] // in case there are no applet-controlled events
     fn disable_event(&mut self, key: Key<B>) -> Result<(), Trap> {
         if let Some(applet) = &mut self.applet {
             applet.disable(key)?;

@@ -187,9 +187,6 @@ crypto-sha256
 crypto-sha384
 gpio
 led
-platform
-platform-protocol
-platform-update
 radio-ble
 rng
 storage

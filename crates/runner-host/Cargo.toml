@@ -31,8 +31,6 @@ path = "../scheduler"
 features = [
   "board-api-button",
   "board-api-led",
-  "board-api-platform",
-  "board-api-platform-protocol",
   "board-api-rng",
   "board-api-storage",
   "board-api-timer",

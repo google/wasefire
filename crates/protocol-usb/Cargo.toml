@@ -22,7 +22,6 @@ wasefire-logger = { version = "0.1.5", path = "../logger" }
 [dependencies.wasefire-board-api]
 version = "0.8.0-git"
 path = "../board"
-features = ["api-platform-protocol"]
 optional = true
 
 [dependencies.wasefire-protocol]

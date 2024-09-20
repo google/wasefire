@@ -14,6 +14,7 @@
 
 use alloc::boxed::Box;
 
+#[cfg(feature = "applet-api-platform-protocol")]
 use wasefire_applet_api::platform::protocol as applet_api;
 use wasefire_board_api::platform::protocol::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
@@ -22,12 +23,11 @@ use wasefire_logger as log;
 use wasefire_protocol::applet::AppletId;
 use wasefire_protocol::{self as service, Api, ApiResult, Request, Service, VERSION};
 
-use crate::{Applet, Scheduler, SchedulerCall};
+use crate::{Applet, Scheduler};
 
 #[derive(Debug, Default)]
 pub struct State {
     tunnel: TunnelState,
-    #[cfg(feature = "board-api-platform-update")]
     update: TransferState,
 }
 
@@ -78,7 +78,6 @@ fn process_event_<B: Board>(
             let response = response.as_deref();
             reply::<B, service::AppletResponse>(service::applet::Response { response });
         }
-        #[cfg(feature = "board-api-platform")]
         Api::PlatformReboot(()) => {
             use wasefire_board_api::platform::Api as _;
             board::Platform::<B>::reboot()?;
@@ -93,7 +92,6 @@ fn process_event_<B: Board>(
                 TunnelState::Tunnel { .. } => unreachable!(),
             }
         }
-        #[cfg(feature = "board-api-platform")]
         Api::PlatformInfo(()) => {
             use wasefire_board_api::platform::Api as _;
             reply::<B, service::PlatformInfo>(service::platform::Info {
@@ -106,13 +104,11 @@ fn process_event_<B: Board>(
             let response = board::platform::Protocol::<B>::vendor(request)?;
             reply::<B, service::PlatformVendor>(&response);
         }
-        #[cfg(feature = "board-api-platform-update")]
         Api::PlatformUpdateMetadata(()) => {
             use wasefire_board_api::platform::update::Api as _;
             let response = board::platform::Update::<B>::metadata()?;
             reply::<B, service::PlatformUpdateMetadata>(&response);
         }
-        #[cfg(feature = "board-api-platform-update")]
         Api::PlatformUpdateTransfer(request) => process_transfer::<B>(scheduler, request)?,
         #[cfg(not(feature = "_test"))]
         _ => return Err(Error::internal(Code::NotImplemented)),
@@ -120,8 +116,9 @@ fn process_event_<B: Board>(
     Ok(())
 }
 
+#[cfg(feature = "applet-api-platform-protocol")]
 pub fn put_response<B: Board>(
-    call: &mut SchedulerCall<B, applet_api::write::Sig>, response: Box<[u8]>,
+    call: &mut crate::SchedulerCall<B, applet_api::write::Sig>, response: Box<[u8]>,
 ) -> Result<(), Error> {
     match call.applet().put_response(response) {
         Ok(()) => (),
@@ -147,7 +144,6 @@ pub fn put_response<B: Board>(
     }
 }
 
-#[cfg(feature = "board-api-platform-update")]
 fn process_transfer<B: Board>(
     scheduler: &mut Scheduler<B>, request: service::transfer::Request,
 ) -> Result<(), Error> {
@@ -181,7 +177,6 @@ enum TunnelState {
     },
 }
 
-#[cfg(feature = "board-api-platform-update")]
 #[derive(Debug, Default)]
 enum TransferState {
     #[default]
@@ -191,7 +186,6 @@ enum TransferState {
     },
 }
 
-#[cfg(feature = "board-api-platform-update")]
 impl TransferState {
     fn dry_run(&self) -> Result<bool, Error> {
         match self {
