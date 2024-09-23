@@ -99,6 +99,14 @@ pub struct Yoke<T: Wire<'static>> {
     data: *mut [u8],
 }
 
+impl<T: Wire<'static>> core::fmt::Debug for Yoke<T>
+where for<'a> T::Type<'a>: core::fmt::Debug
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        <T::Type<'_> as core::fmt::Debug>::fmt(self.get(), f)
+    }
+}
+
 impl<T: Wire<'static>> Drop for Yoke<T> {
     fn drop(&mut self) {
         // SAFETY: data comes from into_raw and has been used linearly since then.

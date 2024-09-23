@@ -8,6 +8,8 @@
 
 ### Minor
 
+- Add error message when missing udev rule
+- Implement `Debug` for `Candidate<T>` and `Connection<T>`
 - Implement `Display` for `Connection<T>`
 
 ### Patch
