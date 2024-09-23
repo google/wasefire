@@ -8,7 +8,7 @@
 
 ### Patch
 
-- Only take the initial frame in `Thread::new()` 
+- Only take the initial frame in `Thread::new()`
 - Fix and test the `cache` feature in continuous integration
 
 ## 0.3.0
