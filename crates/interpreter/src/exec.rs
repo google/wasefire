@@ -195,7 +195,7 @@ impl<'m> Store<'m> {
             let mut parser = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            let thread = Thread::new(parser, vec![Frame::new(inst_id, 0, &[], locals)]);
+            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals));
             let result = thread.run(self)?;
             assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
         }
@@ -225,7 +225,7 @@ impl<'m> Store<'m> {
         let mut locals = args;
         append_locals(&mut parser, &mut locals);
         let frame = Frame::new(inst_id, t.results.len(), &[], locals);
-        Thread::new(parser, vec![frame]).run(self)
+        Thread::new(parser, frame).run(self)
     }
 
     /// Returns the value of a global of an instance.
@@ -727,14 +727,13 @@ enum ThreadResult<'m> {
 }
 
 impl<'m> Thread<'m> {
-    fn new(parser: Parser<'m>, frames: Vec<Frame<'m>>) -> Thread<'m> {
-        Thread { parser, frames }
+    fn new(parser: Parser<'m>, frame: Frame<'m>) -> Thread<'m> {
+        Thread { parser, frames: vec![frame] }
     }
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
-        let frames = vec![Frame::new(inst_id, 1, &[], Vec::new())];
         let parser = mut_parser.clone();
-        let mut thread = Thread::new(parser, frames);
+        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new()));
         let (parser, results) = loop {
             let p = thread.parser.save();
             match thread.step(store).unwrap() {
