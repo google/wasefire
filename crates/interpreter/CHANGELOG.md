@@ -5,6 +5,7 @@
 ### Minor
 
 - Implement `From<Error>` for `wasefire_error::Error`
+- Simplify `Thread::new`
 
 ### Patch
 
