@@ -125,6 +125,12 @@ pub struct Candidate<T: UsbContext> {
     interface: u8,
 }
 
+impl<T: UsbContext> Debug for Candidate<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
 impl<T: UsbContext> Display for Candidate<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let Candidate { device, configuration, interface } = self;
@@ -138,7 +144,26 @@ impl<T: UsbContext> Candidate<T> {
     /// The timeout is used for all send and receive operations using this connection.
     pub fn connect(self, timeout: Duration) -> rusb::Result<Connection<T>> {
         let Candidate { device, configuration, interface } = self;
-        let handle = device.open()?;
+        let handle = device.open().inspect_err(|&e| {
+            if e == Error::Access {
+                std::eprintln!(
+                    r#"
+You don't have permission to access a USB device that looks like a Wasefire platform:
+{device:?}
+
+If you are running Linux and are in the plugdev group, you can copy/paste the following 4 lines to
+add a udev rule for USB devices that look like Wasefire platforms:
+
+sudo tee /etc/udev/rules.d/99-wasefire.rules << EOF
+SUBSYSTEM=="usb", ATTR{{product}}=="Wasefire", ENV{{ID_USB_INTERFACES}}=="*:ff5801:*", MODE="0664", GROUP="plugdev"
+EOF
+sudo udevadm control --reload
+
+Then replug your device for the udev rule to take effect.
+"#
+                );
+            }
+        })?;
         let current_configuration = handle.active_configuration()?;
         if current_configuration != configuration {
             log::info!("Configuring the device from {current_configuration} to {configuration}.");
@@ -154,6 +179,12 @@ pub struct Connection<T: UsbContext> {
     device: Device<T>,
     handle: DeviceHandle<T>,
     timeout: Duration,
+}
+
+impl<T: UsbContext> Debug for Connection<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{self}")
+    }
 }
 
 impl<T: UsbContext> Display for Connection<T> {
