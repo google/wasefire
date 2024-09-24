@@ -72,10 +72,17 @@ impl SideTableEntry {
     }
 }
 
+pub struct FuncMetadata {
+    type_idx: TypeIdx,
+    #[allow(dead_code)]
+    // TODO(dev/fast-interp): Change to `&'m [SideTableEntry]` when making it persistent in flash.
+    side_table: Vec<SideTableEntry>,
+}
+
 #[derive(Default)]
 struct Context<'m> {
     types: Vec<FuncType<'m>>,
-    funcs: Vec<TypeIdx>,
+    funcs: Vec<FuncMetadata>,
     tables: Vec<TableType>,
     mems: Vec<MemType>,
     globals: Vec<GlobalType>,
@@ -231,7 +238,7 @@ impl<'m> Context<'m> {
 
     fn add_functype(&mut self, x: TypeIdx) -> CheckResult {
         check((x as usize) < self.types.len())?;
-        self.funcs.push(x);
+        self.funcs.push(FuncMetadata { type_idx: x, side_table: vec![] });
         Ok(())
     }
 
@@ -267,7 +274,7 @@ impl<'m> Context<'m> {
     }
 
     fn functype(&self, x: FuncIdx) -> Result<FuncType<'m>, Error> {
-        self.type_(*self.funcs.get(x as usize).ok_or_else(invalid)?)
+        self.type_(self.funcs.get(x as usize).ok_or_else(invalid)?.type_idx)
     }
 
     fn table(&self, x: TableIdx) -> Result<&TableType, Error> {
