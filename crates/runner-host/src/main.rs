@@ -15,7 +15,7 @@
 #![feature(never_type)]
 #![feature(try_blocks)]
 
-use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Mutex;
 
 use anyhow::Result;
@@ -42,6 +42,10 @@ fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
 
 #[derive(Parser)]
 struct Flags {
+    /// Directory containing files representing the flash.
+    #[clap(long, default_value = "../../target/wasefire")]
+    flash_dir: PathBuf,
+
     #[cfg(feature = "tcp")]
     #[clap(long, default_value = "127.0.0.1:3457")]
     tcp_addr: std::net::SocketAddr,
@@ -90,10 +94,9 @@ async fn main() -> Result<()> {
         };
         cleanup::shutdown(128 + signal.as_raw_value());
     });
-    // TODO: Should be a flag controlled by xtask (value is duplicated there).
-    const STORAGE: &str = "../../target/wasefire/storage.bin";
+    let storage = flags.flash_dir.join("storage.bin");
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
-    let storage = Some(FileStorage::new(Path::new(STORAGE), options).unwrap());
+    let storage = Some(FileStorage::new(&storage, options).unwrap());
     let (sender, receiver) = channel(10);
     *RECEIVER.lock().unwrap() = Some(receiver);
     #[cfg(feature = "web")]
