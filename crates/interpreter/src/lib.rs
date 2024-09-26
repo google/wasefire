@@ -146,10 +146,10 @@ mod exec;
 mod id;
 mod module;
 mod parser;
+mod side_table;
 mod syntax;
 mod toctou;
 mod valid;
-mod side_table;
 
 pub use error::{Error, Unsupported, TRAP_CODE};
 pub use exec::{Call, InstId, RunAnswer, RunResult, Store, StoreId, Val, MEMORY_ALIGN};
