@@ -103,13 +103,13 @@ fn process_event_<B: Board>(
             let response = board::platform::Update::<B>::metadata()?;
             reply::<B, service::PlatformUpdateMetadata>(&response);
         }
-        Api::PlatformUpdateTransfer(request) => process_update_transfer::<B>(scheduler, request)?,
+        Api::PlatformUpdateTransfer(request) => process_update::<B>(scheduler, request)?,
         #[cfg(feature = "native")]
         Api::AppletInstall(_) | Api::AppletUninstall(_) => {
             return Err(Error::world(Code::NotImplemented));
         }
         #[cfg(feature = "wasm")]
-        Api::AppletInstall(request) => process_install_transfer::<B>(scheduler, request)?,
+        Api::AppletInstall(request) => process_install::<B>(scheduler, request)?,
         #[cfg(feature = "wasm")]
         Api::AppletUninstall(()) => {
             use wasefire_board_api::applet::Api as _;
@@ -168,7 +168,7 @@ pub fn put_response<B: Board>(
     }
 }
 
-fn process_update_transfer<B: Board>(
+fn process_update<B: Board>(
     scheduler: &mut Scheduler<B>, request: service::transfer::Request,
 ) -> Result<(), Error> {
     use wasefire_board_api::platform::update::Api as _;
@@ -192,7 +192,7 @@ fn process_update_transfer<B: Board>(
 }
 
 #[cfg(feature = "wasm")]
-fn process_install_transfer<B: Board>(
+fn process_install<B: Board>(
     scheduler: &mut Scheduler<B>, request: service::transfer::Request,
 ) -> Result<(), Error> {
     use wasefire_board_api::applet::Api as _;
@@ -265,8 +265,7 @@ impl StateImpl {
     fn update(&mut self) -> &mut TransferState {
         match self {
             Normal { update, .. } => update,
-            Locked => unreachable!(),
-            Tunnel { .. } => unreachable!(),
+            _ => unreachable!(),
         }
     }
 
@@ -274,8 +273,7 @@ impl StateImpl {
     fn install(&mut self) -> &mut TransferState {
         match self {
             Normal { install, .. } => install,
-            Locked => unreachable!(),
-            Tunnel { .. } => unreachable!(),
+            _ => unreachable!(),
         }
     }
 }
