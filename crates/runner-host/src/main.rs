@@ -93,9 +93,10 @@ async fn main() -> Result<()> {
         };
         cleanup::shutdown(128 + signal.as_raw_value());
     });
+    wasefire_cli_tools::fs::create_dir_all(&flags.flash_dir).await?;
     let storage = flags.flash_dir.join("storage.bin");
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
-    let storage = Some(FileStorage::new(&storage, options).unwrap());
+    let storage = Some(FileStorage::new(&storage, options)?);
     board::applet::init(flags.flash_dir.join("applet.bin")).await;
     let (sender, receiver) = channel(10);
     *RECEIVER.lock().unwrap() = Some(receiver);
