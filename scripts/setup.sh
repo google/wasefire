@@ -59,4 +59,3 @@ ensure lib libudev
 
 # Transitive dependencies of runner-host.
 ensure bin usbip
-ensure apt gcc-multilib
