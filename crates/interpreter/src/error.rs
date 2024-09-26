@@ -95,3 +95,11 @@ pub fn check(cond: bool) -> Result<(), Error> {
         Err(invalid())
     }
 }
+
+pub fn check_and_return<T>(cond: bool, res: T) -> Result<T, Error> {
+    if cond {
+        Ok(res)
+    } else {
+        Err(invalid())
+    }
+}

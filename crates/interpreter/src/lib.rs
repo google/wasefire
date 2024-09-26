@@ -149,6 +149,7 @@ mod parser;
 mod syntax;
 mod toctou;
 mod valid;
+mod side_table;
 
 pub use error::{Error, Unsupported, TRAP_CODE};
 pub use exec::{Call, InstId, RunAnswer, RunResult, Store, StoreId, Val, MEMORY_ALIGN};
