@@ -30,6 +30,7 @@ use derive_where::derive_where;
 use wasefire_error::Code;
 pub use wasefire_error::Error;
 
+pub mod applet;
 #[cfg(feature = "api-button")]
 pub mod button;
 #[cfg(feature = "internal-api-crypto")]
@@ -76,6 +77,9 @@ pub trait Api: Send + 'static {
     fn syscall(_x1: u32, _x2: u32, _x3: u32, _x4: u32) -> Option<Result<u32, Error>> {
         None
     }
+
+    /// Applet interface.
+    type Applet: applet::Api;
 
     /// Button interface.
     #[cfg(feature = "api-button")]
@@ -198,6 +202,9 @@ impl<B: Api + ?Sized> Impossible<B> {
         match self.0 {}
     }
 }
+
+/// Applet interface.
+pub type Applet<B> = <B as Api>::Applet;
 
 /// Button interface.
 #[cfg(feature = "api-button")]

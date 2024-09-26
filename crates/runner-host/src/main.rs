@@ -21,7 +21,6 @@ use std::sync::Mutex;
 use anyhow::Result;
 use board::Board;
 use clap::Parser;
-use tokio::runtime::Handle;
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver};
 use wasefire_board_api::Event;
@@ -94,9 +93,11 @@ async fn main() -> Result<()> {
         };
         cleanup::shutdown(128 + signal.as_raw_value());
     });
+    wasefire_cli_tools::fs::create_dir_all(&flags.flash_dir).await?;
     let storage = flags.flash_dir.join("storage.bin");
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
-    let storage = Some(FileStorage::new(&storage, options).unwrap());
+    let storage = Some(FileStorage::new(&storage, options)?);
+    board::applet::init(flags.flash_dir.join("applet.bin")).await;
     let (sender, receiver) = channel(10);
     *RECEIVER.lock().unwrap() = Some(receiver);
     #[cfg(feature = "web")]
@@ -169,11 +170,6 @@ async fn main() -> Result<()> {
         }
     });
     println!("Board initialized. Starting scheduler.");
-    #[cfg(feature = "wasm")]
-    const WASM: &[u8] = include_bytes!("../../../target/wasefire/applet.wasm");
-    #[cfg(feature = "wasm")]
-    Handle::current().spawn_blocking(|| Scheduler::<board::Board>::run(WASM)).await?;
-    #[cfg(feature = "native")]
-    Handle::current().spawn_blocking(|| Scheduler::<board::Board>::run()).await?;
-    Ok(())
+    // Not sure why Rust doesn't figure out this can't return (maybe async).
+    let _: ! = tokio::task::spawn_blocking(|| Scheduler::<board::Board>::run()).await?;
 }

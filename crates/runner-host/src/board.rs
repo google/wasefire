@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+pub mod applet;
 pub mod button;
 mod crypto;
 mod debug;
 mod led;
-mod platform;
+pub mod platform;
 mod rng;
 mod storage;
 pub mod timer;
@@ -65,6 +66,7 @@ impl Api for Board {
         }
     }
 
+    type Applet = applet::Impl;
     type Button = button::Impl;
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;

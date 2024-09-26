@@ -14,6 +14,7 @@
 
 use wasefire_board_api::usb::Event;
 use wasefire_board_api::Api as Board;
+use wasefire_error::Error;
 
 #[cfg(feature = "board-api-usb-serial")]
 pub mod serial;
@@ -36,6 +37,14 @@ impl<'a> From<&'a Event> for Key {
         match event {
             #[cfg(feature = "board-api-usb-serial")]
             Event::Serial(event) => Key::Serial(event.into()),
+        }
+    }
+}
+
+impl Key {
+    pub fn disable<B: Board>(self) -> Result<(), Error> {
+        match self {
+            Key::Serial(x) => x.disable::<B>(),
         }
     }
 }

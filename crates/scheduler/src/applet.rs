@@ -27,6 +27,22 @@ use crate::Trap;
 
 pub mod store;
 
+pub enum Slot<B: Board> {
+    #[cfg(feature = "wasm")]
+    Empty,
+    Running(Applet<B>),
+    Exited(wasefire_protocol::applet::ExitStatus),
+}
+
+impl<B: Board> Slot<B> {
+    pub fn get(&mut self) -> Option<&mut Applet<B>> {
+        match self {
+            Slot::Running(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
 pub struct Applet<B: Board> {
     pub store: self::store::Store,
 
@@ -175,6 +191,15 @@ impl<B: Board> Applet<B> {
             false => {
                 log::warn!("Tried to remove non-existing handler");
                 Err(Trap)
+            }
+        }
+    }
+
+    pub fn free(&mut self) {
+        self.events.clear();
+        for &Handler { key, .. } in &self.handlers {
+            if let Err(error) = key.disable() {
+                log::warn!("Failed disabling {:?}: {}", key, error);
             }
         }
     }

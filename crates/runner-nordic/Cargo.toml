@@ -9,7 +9,6 @@ edition = "2021"
 [dependencies]
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
 cortex-m-rt = { version = "0.7.3", features = ["set-vtor"] }
-cortex-m-semihosting = "0.5.0"
 critical-section = "1.1.2"
 defmt = { version = "0.3.8", features = ["avoid-default-panic"], optional = true }
 defmt-rtt = { version = "0.4.1", optional = true }
@@ -45,6 +44,9 @@ features = ["52840"]
 [dependencies.wasefire-scheduler]
 path = "../scheduler"
 features = [
+  "applet-api-platform",
+  "applet-api-platform-protocol",
+  "applet-api-platform-update",
   "board-api-button",
   "board-api-crypto-aes128-ccm",
   "board-api-gpio",
@@ -58,8 +60,7 @@ features = [
 ]
 
 [features]
-# Software crypto features. The software-crypto feature enables all of them.
-software-crypto = ["software-crypto-aes256-gcm", "software-crypto-p256", "software-crypto-sha256"]
+# Software crypto features.
 software-crypto-aes256-gcm = ["wasefire-scheduler/software-crypto-aes256-gcm"]
 software-crypto-p256 = ["software-crypto-sha256", "wasefire-scheduler/software-crypto-p256"]
 software-crypto-sha256 = ["wasefire-scheduler/software-crypto-sha256"]
@@ -78,6 +79,8 @@ release = ["dep:panic-abort"]
 # Exactly one is enabled by xtask.
 native = ["wasefire-scheduler/native"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
+# Internal features.
+_software-crypto = ["software-crypto-aes256-gcm", "software-crypto-p256", "software-crypto-sha256"]
 
 [lints]
 clippy.unit-arg = "allow"

@@ -14,6 +14,7 @@
 
 use wasefire_board_api::platform::Event;
 use wasefire_board_api::Api as Board;
+use wasefire_error::Error;
 
 pub mod protocol;
 
@@ -33,6 +34,14 @@ impl<'a> From<&'a Event> for Key {
     fn from(event: &'a Event) -> Self {
         match *event {
             Event::Protocol(ref event) => Key::Protocol(event.into()),
+        }
+    }
+}
+
+impl Key {
+    pub fn disable(self) -> Result<(), Error> {
+        match self {
+            Key::Protocol(x) => x.disable(),
         }
     }
 }

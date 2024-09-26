@@ -69,7 +69,7 @@ runs:
       run: ./scripts/ci-tests.sh 3 4
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'hw-host') }}
-      run: ./scripts/hwci.sh host --no-default-features --features=unix
+      run: ./scripts/hwci.sh host
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'book') }}
       run: ./scripts/ci-book.sh

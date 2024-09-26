@@ -151,7 +151,7 @@ macro_rules! applet {
 #[cfg(not(feature = "test"))]
 #[panic_handler]
 fn handle_panic(info: &core::panic::PanicInfo) -> ! {
-    debug!("{}", info);
+    debug!("{info}");
     scheduling::abort();
 }
 

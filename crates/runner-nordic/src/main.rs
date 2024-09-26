@@ -169,6 +169,7 @@ fn main() -> ! {
     storage::init(p.NVMC);
     let storage = Some(Storage::new_store());
     crate::board::platform::update::init(Storage::new_other());
+    crate::board::applet::init(Storage::new_applet());
     let uart_rx = port0.p0_28.into_floating_input().degrade();
     let uart_tx = port0.p0_29.into_push_pull_output(gpio::Level::High).degrade();
     let uarts = Uarts::new(p.UARTE0, uart_rx, uart_tx, p.UARTE1);
@@ -197,11 +198,6 @@ fn main() -> ! {
         unsafe { NVIC::unmask(interrupt) };
     }
     log::debug!("Runner is initialized.");
-    #[cfg(feature = "wasm")]
-    const WASM: &[u8] = include_bytes!("../../../target/wasefire/applet.wasm");
-    #[cfg(feature = "wasm")]
-    Scheduler::<Board>::run(WASM);
-    #[cfg(feature = "native")]
     Scheduler::<Board>::run();
 }
 

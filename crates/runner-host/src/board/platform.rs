@@ -24,7 +24,6 @@ pub enum Impl {}
 impl Api for Impl {
     #[cfg(any(feature = "tcp", feature = "unix"))]
     type Protocol = wasefire_protocol_tokio::Impl<pipe::Impl>;
-
     #[cfg(feature = "usb")]
     type Protocol = crate::board::usb::ProtocolImpl;
 

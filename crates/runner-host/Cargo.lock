@@ -1342,10 +1342,12 @@ dependencies = [
  "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
+ "wasefire-protocol",
  "wasefire-protocol-tokio",
  "wasefire-protocol-usb",
  "wasefire-scheduler",
  "wasefire-store",
+ "wasefire-wire",
  "web-server",
 ]
 
@@ -1918,7 +1920,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.6.2-git"
+version = "0.7.0-git"
 dependencies = [
  "bytemuck",
  "sealed",
@@ -1939,7 +1941,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.6.2-git"
+version = "0.7.0-git"
 dependencies = [
  "wasefire-applet-api-desc",
 ]

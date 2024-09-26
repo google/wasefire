@@ -8,6 +8,10 @@
 
 ### Minor
 
+- Support `PlatformLock` protocol call
+- Support `AppletExitStatus` protocol call (the platform keeps running when the applet exits)
+- Support `Applet{Install,Uninstall}` protocol calls
+- Migrate from `debug::exit()` to `scheduling::exit()`
 - Support `PlatformUpdate{Metadata,Transfer}` protocol calls
 
 ### Patch
@@ -160,4 +164,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 5 -->
+<!-- Increment to skip CHANGELOG.md test: 7 -->

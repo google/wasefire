@@ -76,7 +76,7 @@ pub trait ConnectionExt: Connection {
             let response = ApiResult::<S>::decode_yoke(response).context("decoding response")?;
             response.try_map(|x| match x {
                 ApiResult::Ok(x) => Ok(x),
-                ApiResult::Err(error) => anyhow::bail!("error response: {error}"),
+                ApiResult::Err(error) => Err(anyhow::Error::new(error)),
             })
         }
     }

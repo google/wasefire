@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Migrate to removal of `platform::protocol::Api::disable()`
 - Add error message when missing udev rule
 - Implement `Debug` for `Candidate<T>` and `Connection<T>`
 - Implement `Display` for `Connection<T>`

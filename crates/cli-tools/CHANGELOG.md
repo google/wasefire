@@ -8,9 +8,14 @@
 
 ### Minor
 
+- Add `action::PlatformLock` for locking a platform protocol
+- Expose `action::Transfer` for transfers from host to device
+- Add `action::AppletExitStatus` to get the applet exit status
+- Add `action::Applet{Install,Uninstall}` for simple applet management
+- Add `action::PlatformApiVersion` to get a platform API version
 - Change the flags of `action::AppletRpc` to use `action::Wait`
 - Add `action::Wait` for commands returning an optional response
-- Increase the default connection timeout from 1 to 5 seconds
+- Change the default connection timeout from 1 second to infinite (0 seconds)
 - Add `action::PlatformUpdate` for platform update
 - Add `action::PlatformList` to list connected platforms
 - Add `action::ConnectionOptions` for commands that need a platform connection

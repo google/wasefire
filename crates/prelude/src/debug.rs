@@ -23,7 +23,7 @@ use wasefire_applet_api::debug as api;
 pub use wasefire_applet_api::debug::Perf;
 use wasefire_error::Error;
 
-use crate::{convert, convert_never, convert_unit};
+use crate::{convert, convert_unit};
 
 /// Prints a line to the debug output.
 pub fn println(msg: &str) {
@@ -64,28 +64,4 @@ macro_rules! debug {
             $crate::debug::println(&alloc::format!($($args)*));
         }
     };
-}
-
-/// Exits the platform indicating success of failure.
-pub fn exit(success: bool) -> ! {
-    let params = api::exit::Params { code: if success { 0 } else { 1 } };
-    convert_never(unsafe { api::exit(params) }).unwrap();
-}
-
-/// Asserts that a condition holds and exits with an error otherwise.
-#[track_caller]
-pub fn assert(condition: bool) {
-    if !condition {
-        debug!("Assertion failed at {}", core::panic::Location::caller());
-        exit(false);
-    }
-}
-
-/// Asserts that an equality holds and exits with an error otherwise.
-#[track_caller]
-pub fn assert_eq<T: ?Sized + Eq + core::fmt::Debug>(x: &T, y: &T) {
-    if x != y {
-        debug!("{x:?} != {y:?} at {}", core::panic::Location::caller());
-        exit(false);
-    }
 }
