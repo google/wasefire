@@ -4,6 +4,7 @@
 
 ### Major
 
+- Remove `platform::protocol::Api::disable()` in favor of locking
 - Add `Api::Applet` as a required API for simple applet management
 - Remove `debug::Api::exit()`
 - Remove `api-platform{,-protocol,-update}` features making those APIs required

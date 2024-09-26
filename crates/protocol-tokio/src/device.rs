@@ -201,20 +201,6 @@ impl<T: HasPipe> Api for Impl<T> {
         })
     }
 
-    fn disable() -> Result<(), Error> {
-        T::with_pipe(|x| {
-            let mut state = x.shared.state.lock().unwrap();
-            match &mut *state {
-                State::Disabled => Err(Error::user(Code::InvalidState)),
-                _ => {
-                    *state = State::Disabled;
-                    x.shared.notify.notify_one();
-                    Ok(())
-                }
-            }
-        })
-    }
-
     fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error> {
         T::vendor(request)
     }

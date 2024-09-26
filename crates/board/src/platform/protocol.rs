@@ -42,9 +42,6 @@ pub trait Api {
     /// Also triggers an event each time a request is received.
     fn enable() -> Result<(), Error>;
 
-    /// Stops accepting requests.
-    fn disable() -> Result<(), Error>;
-
     /// Handles vendor-specific requests.
     fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error>;
 }

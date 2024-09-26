@@ -59,16 +59,6 @@ impl<'a, B: UsbBus, T: HasRpc<'a, B>> Api for Impl<'a, B, T> {
         })
     }
 
-    fn disable() -> Result<(), Error> {
-        T::with_rpc(|rpc| match rpc.state {
-            State::Disabled => Err(Error::user(Code::InvalidState)),
-            _ => {
-                rpc.state = Disabled;
-                Ok(())
-            }
-        })
-    }
-
     fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error> {
         T::vendor(request)
     }
