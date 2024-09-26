@@ -29,8 +29,8 @@ pub fn validate(binary: &[u8]) -> Result<Vec<SideTableEntry>, Error> {
 }
 
 type Parser<'m> = parser::Parser<'m, Check>;
-type CheckResult = MResult<(), Check>;
-type CheckResultAsSideTables = MResult<Vec<SideTableEntry>, Check>;
+type CheckedResult = MResult<(), Check>;
+type CheckedResultAsSideTables = MResult<Vec<SideTableEntry>, Check>;
 
 struct FuncMetadata {
     type_idx: TypeIdx,
@@ -51,7 +51,7 @@ struct Context<'m> {
 }
 
 impl<'m> Context<'m> {
-    fn check_module(&mut self, parser: &mut Parser<'m>) -> CheckResultAsSideTables {
+    fn check_module(&mut self, parser: &mut Parser<'m>) -> CheckedResultAsSideTables {
         check(parser.parse_bytes(8)? == b"\0asm\x01\0\0\0")?;
         if let Some(mut parser) = self.check_section(parser, SectionId::Type)? {
             let n = parser.parse_vec()?;
@@ -185,7 +185,7 @@ impl<'m> Context<'m> {
         }
     }
 
-    fn add_import(&mut self, parser: &mut Parser) -> CheckResult {
+    fn add_import(&mut self, parser: &mut Parser) -> CheckedResult {
         parser.parse_name()?;
         parser.parse_name()?;
         match parser.parse_importdesc()? {
@@ -196,30 +196,30 @@ impl<'m> Context<'m> {
         }
     }
 
-    fn add_functype(&mut self, x: TypeIdx) -> CheckResult {
+    fn add_functype(&mut self, x: TypeIdx) -> CheckedResult {
         check((x as usize) < self.types.len())?;
         self.funcs.push(FuncMetadata { type_idx: x, side_table: vec![] });
         Ok(())
     }
 
-    fn add_tabletype(&mut self, t: TableType) -> CheckResult {
+    fn add_tabletype(&mut self, t: TableType) -> CheckedResult {
         check(t.limits.valid(TABLE_MAX))?;
         self.tables.push(t);
         Ok(())
     }
 
-    fn add_memtype(&mut self, m: MemType) -> CheckResult {
+    fn add_memtype(&mut self, m: MemType) -> CheckedResult {
         check(m.valid(MEM_MAX))?;
         self.mems.push(m);
         Ok(())
     }
 
-    fn add_globaltype(&mut self, g: GlobalType) -> CheckResult {
+    fn add_globaltype(&mut self, g: GlobalType) -> CheckedResult {
         self.globals.push(g);
         Ok(())
     }
 
-    fn check_exportdesc(&self, desc: &ExportDesc) -> CheckResult {
+    fn check_exportdesc(&self, desc: &ExportDesc) -> CheckedResult {
         let (&x, n) = match desc {
             ExportDesc::Func(x) => (x, self.funcs.len()),
             ExportDesc::Table(x) => (x, self.tables.len()),
@@ -253,7 +253,7 @@ impl<'m> Context<'m> {
         self.elems.get(x as usize).cloned().ok_or_else(invalid)
     }
 
-    fn data(&self, x: DataIdx) -> CheckResult {
+    fn data(&self, x: DataIdx) -> CheckedResult {
         check(self.datas.map_or(false, |n| (x as usize) < n))
     }
 }
@@ -449,7 +449,7 @@ impl<'a, 'm> Expr<'a, 'm> {
     fn check_const(
         context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a mut [bool],
         num_global_imports: usize, expected: ResultType<'m>,
-    ) -> CheckResult {
+    ) -> CheckedResult {
         let mut expr = Expr::new(context, parser, Ok(refs));
         expr.globals_len = num_global_imports;
         expr.label().type_.results = expected;
@@ -459,7 +459,7 @@ impl<'a, 'm> Expr<'a, 'm> {
     fn check_body(
         context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a [bool],
         locals: Vec<ValType>, results: ResultType<'m>,
-    ) -> CheckResult {
+    ) -> CheckedResult {
         let mut expr = Expr::new(context, parser, Err(refs));
         expr.is_body = true;
         expr.locals = locals;
@@ -467,14 +467,14 @@ impl<'a, 'm> Expr<'a, 'm> {
         expr.check()
     }
 
-    fn check(mut self) -> CheckResult {
+    fn check(mut self) -> CheckedResult {
         while !self.labels.is_empty() {
             self.instr()?;
         }
         Ok(())
     }
 
-    fn instr(&mut self) -> CheckResult {
+    fn instr(&mut self) -> CheckedResult {
         use Instr::*;
         let instr = self.parser.parse_instr()?;
         if matches!(instr, End) {
@@ -697,26 +697,26 @@ impl<'a, 'm> Expr<'a, 'm> {
         })
     }
 
-    fn pop_check(&mut self, expected: ValType) -> CheckResult {
+    fn pop_check(&mut self, expected: ValType) -> CheckedResult {
         check(self.pop()?.matches(expected))
     }
 
-    fn pops(&mut self, expected: ResultType) -> CheckResult {
+    fn pops(&mut self, expected: ResultType) -> CheckedResult {
         for &y in expected.iter().rev() {
             check(self.pop()?.matches(y))?;
         }
         Ok(())
     }
 
-    fn swap(&mut self, t: ValType) -> CheckResult {
+    fn swap(&mut self, t: ValType) -> CheckedResult {
         self.pop_check(t)?;
         self.push(t.into());
         Ok(())
     }
 
     fn for_each(
-        &mut self, expected: ResultType, mut f: impl FnMut(&mut OpdType, ValType) -> CheckResult,
-    ) -> CheckResult {
+        &mut self, expected: ResultType, mut f: impl FnMut(&mut OpdType, ValType) -> CheckedResult,
+    ) -> CheckedResult {
         let label = self.label();
         if label.stack.len() < expected.len() {
             check(label.polymorphic)?;
@@ -731,16 +731,16 @@ impl<'a, 'm> Expr<'a, 'm> {
         Ok(())
     }
 
-    fn swaps(&mut self, expected: ResultType) -> CheckResult {
+    fn swaps(&mut self, expected: ResultType) -> CheckedResult {
         #[allow(clippy::unit_arg)]
         self.for_each(expected, |x, y| Ok(*x = x.unify(y.into())?))
     }
 
-    fn peeks(&mut self, expected: ResultType) -> CheckResult {
+    fn peeks(&mut self, expected: ResultType) -> CheckedResult {
         self.for_each(expected, |x, y| check(x.matches(y)))
     }
 
-    fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind) -> CheckResult {
+    fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind) -> CheckedResult {
         self.pops(type_.params)?;
         let stack = type_.params.iter().cloned().map(OpdType::from).collect();
         let label = Label { type_, kind, polymorphic: false, stack };
@@ -748,7 +748,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         Ok(())
     }
 
-    fn end_label(&mut self) -> CheckResult {
+    fn end_label(&mut self) -> CheckedResult {
         let label = self.label();
         if label.kind == LabelKind::If {
             check(label.type_.params == label.type_.results)?;
@@ -773,7 +773,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         })
     }
 
-    fn call(&mut self, t: FuncType) -> CheckResult {
+    fn call(&mut self, t: FuncType) -> CheckedResult {
         self.pops(t.params)?;
         self.pushs(t.results);
         Ok(())
@@ -785,48 +785,48 @@ impl<'a, 'm> Expr<'a, 'm> {
         label.polymorphic = true;
     }
 
-    fn load(&mut self, aligned: bool, t: NumType, n: usize, m: MemArg) -> CheckResult {
+    fn load(&mut self, aligned: bool, t: NumType, n: usize, m: MemArg) -> CheckedResult {
         self.check_mem(aligned, n, m)?;
         self.pop_check(ValType::I32)?;
         self.push(t.into());
         Ok(())
     }
 
-    fn store(&mut self, aligned: bool, t: NumType, n: usize, m: MemArg) -> CheckResult {
+    fn store(&mut self, aligned: bool, t: NumType, n: usize, m: MemArg) -> CheckedResult {
         self.check_mem(aligned, n, m)?;
         self.pop_check(t.into())?;
         self.pop_check(ValType::I32)?;
         Ok(())
     }
 
-    fn testop(&mut self, t: NumType) -> CheckResult {
+    fn testop(&mut self, t: NumType) -> CheckedResult {
         self.pop_check(t.into())?;
         self.push(OpdType::I32);
         Ok(())
     }
 
-    fn relop(&mut self, t: NumType) -> CheckResult {
+    fn relop(&mut self, t: NumType) -> CheckedResult {
         self.pops([t.into(); 2][..].into())?;
         self.push(OpdType::I32);
         Ok(())
     }
 
-    fn unop(&mut self, t: NumType) -> CheckResult {
+    fn unop(&mut self, t: NumType) -> CheckedResult {
         self.swap(ValType::from(t))
     }
 
-    fn binop(&mut self, t: NumType) -> CheckResult {
+    fn binop(&mut self, t: NumType) -> CheckedResult {
         self.pop_check(t.into())?;
         self.swap(ValType::from(t))
     }
 
-    fn cvtop(&mut self, dst: NumType, src: NumType) -> CheckResult {
+    fn cvtop(&mut self, dst: NumType, src: NumType) -> CheckedResult {
         self.pop_check(src.into())?;
         self.push(dst.into());
         Ok(())
     }
 
-    fn check_mem(&self, aligned: bool, n: usize, m: MemArg) -> CheckResult {
+    fn check_mem(&self, aligned: bool, n: usize, m: MemArg) -> CheckedResult {
         check(!self.context.mems.is_empty())?;
         match (aligned, 1usize.checked_shl(m.align), n / 8) {
             (false, Some(m), n) if m <= n => Ok(()),
