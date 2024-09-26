@@ -79,6 +79,8 @@ release = ["dep:panic-abort"]
 # Exactly one is enabled by xtask.
 native = ["wasefire-scheduler/native"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
+# Internal features.
+_software-crypto = ["software-crypto-aes256-gcm", "software-crypto-p256", "software-crypto-sha256"]
 
 [lints]
 clippy.unit-arg = "allow"

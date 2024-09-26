@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.6.2-git
+## 0.7.0-git
+
+### Major
+
+- Update `wasefire-applet-api-macro` version
 
 ### Patch
 

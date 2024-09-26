@@ -39,7 +39,7 @@ wasefire-logger = { version = "0.1.5", path = "../logger" }
 wasefire-store = { version = "0.3.0-git", path = "../store", optional = true }
 
 [dependencies.wasefire-applet-api]
-version = "0.6.2-git"
+version = "0.7.0-git"
 path = "../api"
 features = ["host"]
 optional = true

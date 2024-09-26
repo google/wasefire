@@ -28,7 +28,7 @@ wasefire-logger = { version = "0.1.5", path = "../logger" }
 
 [dependencies.wasefire-applet-api]
 features = ["full-api", "native", "wasm"]
-version = "0.6.2-git"
+version = "0.7.0-git"
 path = "../api"
 
 [lints]

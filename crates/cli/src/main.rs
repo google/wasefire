@@ -104,6 +104,7 @@ enum Action {
         #[command(flatten)]
         action: action::PlatformReboot,
     },
+
     #[group(id = "Action::PlatformLock")]
     PlatformLock {
         #[command(flatten)]
@@ -111,6 +112,7 @@ enum Action {
         #[command(flatten)]
         action: action::PlatformLock,
     },
+
     #[group(id = "Action::PlatformRpc")]
     PlatformRpc {
         #[command(flatten)]
@@ -118,6 +120,7 @@ enum Action {
         #[command(flatten)]
         action: action::PlatformRpc,
     },
+
     RustAppletNew(action::RustAppletNew),
     RustAppletBuild(action::RustAppletBuild),
     RustAppletTest(action::RustAppletTest),
