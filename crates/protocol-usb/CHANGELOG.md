@@ -15,6 +15,7 @@
 
 ### Patch
 
+- Fail to compile if `device` and `host` features are used together
 - Update dependencies
 - Remove workaround lint false positive
 

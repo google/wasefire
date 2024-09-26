@@ -19,6 +19,11 @@
 #![no_std]
 #![feature(never_type)]
 
+#[cfg(feature = "device")]
+const _DEVICE_OR_HOST: () = ();
+#[cfg(feature = "host")]
+const _DEVICE_OR_HOST: () = ();
+
 extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;

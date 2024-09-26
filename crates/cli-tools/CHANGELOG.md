@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add `action` feature to gate the `action` module
 - Change API to be async using tokio
 
 ### Minor

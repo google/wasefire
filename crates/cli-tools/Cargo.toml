@@ -11,33 +11,63 @@ include = ["/LICENSE", "/src/"]
 keywords = ["cli", "embedded", "framework", "wasm"]
 categories = ["command-line-utilities", "embedded", "wasm"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
-cargo_metadata = { version = "0.18.1", default-features = false }
-clap = { version = "4.5.4", default-features = false, features = ["derive", "env", "std"] }
-data-encoding = { version = "2.6.0", default-features = false, features = ["std"] }
-humantime = { version = "2.1.0", default-features = false }
-indicatif = { version = "0.17.8", default-features = false }
-rusb = { version = "0.9.4", default-features = false }
+cargo_metadata = { version = "0.18.1", default-features = false, optional = true }
+data-encoding = { version = "2.6.0", default-features = false, features = ["std"], optional = true }
+humantime = { version = "2.1.0", default-features = false, optional = true }
+indicatif = { version = "0.17.8", default-features = false, optional = true }
+rusb = { version = "0.9.4", default-features = false, optional = true }
 serde = { version = "1.0.202", default-features = false, features = ["derive"] }
 toml = { version = "0.8.13", default-features = false, features = ["display", "parse"] }
-wasefire-protocol = { version = "0.2.0-git", path = "../protocol", features = ["host"] }
-wasefire-wire = { version = "0.1.1-git", path = "../wire" }
+wasefire-wire = { version = "0.1.1-git", path = "../wire", optional = true }
+
+[dependencies.clap]
+version = "4.5.4"
+default-features = false
+features = ["derive", "env", "std"]
+optional = true
 
 [dependencies.tokio]
 version = "1.40.0"
 default-features = false
-features = ["fs", "io-std", "process", "rt", "time"]
+features = ["fs", "io-std", "io-util", "macros", "process", "rt"]
+
+[dependencies.wasefire-protocol]
+version = "0.2.0-git"
+path = "../protocol"
+features = ["host"]
+optional = true
 
 [dependencies.wasefire-protocol-tokio]
 version = "0.1.0-git"
 path = "../protocol-tokio"
 features = ["host", "log"]
+optional = true
 
 [dependencies.wasefire-protocol-usb]
 version = "0.2.0-git"
 path = "../protocol-usb"
 features = ["host", "log"]
+optional = true
+
+[features]
+action = [
+  "dep:cargo_metadata",
+  "dep:clap",
+  "dep:data-encoding",
+  "dep:humantime",
+  "dep:indicatif",
+  "dep:rusb",
+  "dep:wasefire-protocol",
+  "dep:wasefire-protocol-tokio",
+  "dep:wasefire-protocol-usb",
+  "dep:wasefire-wire",
+  "tokio/time",
+]
 
 [lints]
 clippy.unit-arg = "allow"
