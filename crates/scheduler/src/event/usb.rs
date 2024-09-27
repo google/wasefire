@@ -44,6 +44,7 @@ impl<'a> From<&'a Event> for Key {
 impl Key {
     pub fn disable<B: Board>(self) -> Result<(), Error> {
         match self {
+            #[cfg(feature = "board-api-usb-serial")]
             Key::Serial(x) => x.disable::<B>(),
         }
     }
