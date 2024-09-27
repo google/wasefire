@@ -243,8 +243,6 @@ impl<'a, const N: usize> internal::Wire<'a> for &'a [u8; N] {
         }
     }
     fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
-        // TODO(https://github.com/rust-lang/rust-clippy/issues/9841): Remove.
-        #[allow(clippy::explicit_auto_deref)]
         Ok(writer.put_share(*self))
     }
     fn decode(reader: &mut Reader<'a>) -> Result<Self, Error> {
