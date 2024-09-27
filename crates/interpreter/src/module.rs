@@ -17,6 +17,7 @@ use core::cmp::Ordering;
 
 use crate::cache::Cache;
 use crate::parser::{SkipData, SkipElem};
+use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
 use crate::valid::validate;
@@ -27,12 +28,15 @@ use crate::*;
 pub struct Module<'m> {
     binary: &'m [u8],
     types: Vec<FuncType<'m>>,
+    // TODO(dev/fast-interp): Flatten it to 1D array when making it persistent in
+    // flash.
+    side_tables: Vec<Vec<SideTableEntry>>,
     cache: Cache<CacheKey, CacheValue>,
 }
 
 impl<'m> Default for Module<'m> {
     fn default() -> Self {
-        Self { binary: &[], types: Vec::new(), cache: Cache::unbounded() }
+        Self { binary: &[], types: Vec::new(), side_tables: Vec::new(), cache: Cache::unbounded() }
     }
 }
 
@@ -65,8 +69,10 @@ impl ImportDesc {
 impl<'m> Module<'m> {
     /// Validates a WASM module in binary format.
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        validate(binary)?;
-        Ok(unsafe { Self::new_unchecked(binary) })
+        let side_tables = validate(binary)?;
+        let mut module = unsafe { Self::new_unchecked(binary) };
+        module.side_tables = side_tables;
+        Ok(module)
     }
 
     /// Creates a valid module from binary format.

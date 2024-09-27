@@ -146,6 +146,7 @@ mod exec;
 mod id;
 mod module;
 mod parser;
+mod side_table;
 mod syntax;
 mod toctou;
 mod valid;
