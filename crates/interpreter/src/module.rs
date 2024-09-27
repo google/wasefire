@@ -28,8 +28,9 @@ use crate::*;
 pub struct Module<'m> {
     binary: &'m [u8],
     types: Vec<FuncType<'m>>,
-    // TODO(dev/fast-interp): Change to `&'m [SideTableEntry]` when making it persistent in flash.
-    side_tables: Vec<SideTableEntry>,
+    // TODO(dev/fast-interp): Flatten it to 1D array when making it persistent in
+    // flash.
+    side_tables: Vec<Vec<SideTableEntry>>,
     cache: Cache<CacheKey, CacheValue>,
 }
 
