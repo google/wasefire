@@ -18,6 +18,7 @@ features = ["device"]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
 wasefire-error = { version = "0.1.2-git", path = "../error", optional = true }
 wasefire-logger = { version = "0.1.5", path = "../logger" }
+wasefire-one-of = { version = "0.1.0-git", path = "../one-of" }
 
 [dependencies.tokio]
 version = "1.40.0"

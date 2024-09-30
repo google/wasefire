@@ -141,6 +141,7 @@ dependencies = [
  "wasefire-applet-api-macro",
  "wasefire-error",
  "wasefire-logger",
+ "wasefire-one-of",
 ]
 
 [[package]]
@@ -171,3 +172,7 @@ dependencies = [
 [[package]]
 name = "wasefire-logger"
 version = "0.1.5"
+
+[[package]]
+name = "wasefire-one-of"
+version = "0.1.0-git"

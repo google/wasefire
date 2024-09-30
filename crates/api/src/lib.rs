@@ -24,11 +24,14 @@ extern crate alloc;
 #[cfg(feature = "host")]
 pub use host::*;
 use wasefire_error as _;
+use wasefire_one_of::exactly_one_of;
 
 #[cfg(feature = "host")]
 mod host;
 #[cfg(feature = "wasm")]
 pub(crate) mod wasm;
+
+exactly_one_of!["host", "wasm"];
 
 #[cfg(feature = "wasm")]
 wasefire_applet_api_macro::wasm!();

@@ -38,6 +38,7 @@ use wasefire_error::Error;
 #[cfg(feature = "wasm")]
 use wasefire_interpreter::{self as interpreter, Call, Module, RunAnswer, Val};
 use wasefire_logger as log;
+use wasefire_one_of::exactly_one_of;
 use wasefire_protocol::applet::ExitStatus;
 #[cfg(feature = "board-api-storage")]
 use wasefire_store as store;
@@ -57,6 +58,8 @@ mod protocol;
 
 #[cfg(all(feature = "native", not(target_pointer_width = "32")))]
 compile_error!("Only 32-bits architectures support native applets.");
+
+exactly_one_of!["native", "wasm"];
 
 #[derive_where(Default)]
 pub struct Events<B: Board>(VecDeque<board::Event<B>>);

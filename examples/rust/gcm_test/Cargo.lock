@@ -225,6 +225,7 @@ dependencies = [
  "typenum",
  "wasefire-applet-api",
  "wasefire-error",
+ "wasefire-one-of",
  "wasefire-sync",
  "zeroize",
 ]
@@ -236,6 +237,7 @@ dependencies = [
  "bytemuck",
  "wasefire-applet-api-macro",
  "wasefire-error",
+ "wasefire-one-of",
 ]
 
 [[package]]
@@ -262,6 +264,10 @@ version = "0.1.2-git"
 dependencies = [
  "num_enum",
 ]
+
+[[package]]
+name = "wasefire-one-of"
+version = "0.1.0-git"
 
 [[package]]
 name = "wasefire-sync"
