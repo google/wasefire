@@ -4,6 +4,7 @@
 
 ### Major
 
+- Remove `Default` for `action::RustAppletBuild` (implement `clap::Parser` instead)
 - Add `action` feature to gate the `action` module
 - Change API to be async using tokio
 

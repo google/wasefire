@@ -17,6 +17,7 @@
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::error::Error;
+use std::ffi::OsString;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -330,7 +331,7 @@ impl AppletOptions {
             profile: self.profile.clone(),
             opt_level: self.opt_level,
             stack_size: self.stack_size,
-            ..Default::default()
+            ..action::RustAppletBuild::parse_from::<_, OsString>([])
         };
         for features in &self.features {
             action.cargo.push(format!("--features={features}"));
@@ -686,7 +687,7 @@ impl Wait {
         let period = Duration::from_millis(300);
         loop {
             tokio::time::sleep(period).await;
-            let mut action = action::AppletExitStatus::default();
+            let mut action = action::AppletExitStatus::parse_from::<_, OsString>([]);
             action.wait.set_period(period);
             if applet {
                 action.ensure_exit();
