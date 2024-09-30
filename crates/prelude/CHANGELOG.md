@@ -13,6 +13,7 @@
 
 ### Patch
 
+- Make sure at compile-time that at most one `native`, `test`, or `wasm` feature is enabled
 - Update dependencies
 
 ## 0.6.0

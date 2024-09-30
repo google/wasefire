@@ -57,6 +57,7 @@ use wasefire_board_api::{Id, Support};
 #[cfg(feature = "wasm")]
 use wasefire_interpreter as _;
 use wasefire_logger as log;
+use wasefire_one_of::exactly_one_of;
 use wasefire_scheduler::Scheduler;
 
 use crate::board::button::{channel, Button};
@@ -67,6 +68,9 @@ use crate::board::uart::Uarts;
 use crate::board::usb::Usb;
 use crate::board::{button, led, Events};
 use crate::storage::Storage;
+
+exactly_one_of!["debug", "release"];
+exactly_one_of!["native", "wasm"];
 
 #[cfg(feature = "debug")]
 #[defmt::panic_handler]

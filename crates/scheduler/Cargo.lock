@@ -722,6 +722,7 @@ dependencies = [
  "sealed",
  "wasefire-applet-api-macro",
  "wasefire-error",
+ "wasefire-one-of",
 ]
 
 [[package]]
@@ -798,6 +799,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasefire-one-of"
+version = "0.1.0-git"
+
+[[package]]
 name = "wasefire-protocol"
 version = "0.2.0-git"
 dependencies = [
@@ -820,6 +825,7 @@ dependencies = [
  "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
+ "wasefire-one-of",
  "wasefire-protocol",
  "wasefire-store",
  "wasefire-sync",

@@ -21,6 +21,7 @@ sealed = { version = "0.5.0", default-features = false, optional = true }
 wasefire-applet-api-macro = { version = "0.7.0-git", path = "../api-macro" }
 wasefire-error = { version = "0.1.2-git", path = "../error" }
 wasefire-logger = { version = "0.1.5", path = "../logger", optional = true }
+wasefire-one-of = { version = "0.1.0-git", path = "../one-of" }
 
 [features]
 # Compiles for host or wasm (choose exactly one).

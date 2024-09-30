@@ -35,10 +35,9 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   [ "$(tail -n1 $file)" = '[lints]' ] || printf '\n[lints]\n' >> $file
   add_lint $file allow clippy.unit-arg
   # add_lint $file warn rust.elided-lifetimes-in-paths
-  # add_lint $file warn rust.missing-debug-implementations
   # TODO: Use the same [ -e src/lib.rs -a "$(package_publish)" = true ] test as in test-helper.
   case $crate in
-    board|prelude) add_lint $file warn rust.missing-docs ;;
+    board|one-of|prelude) add_lint $file warn rust.missing-docs ;;
   esac
   # TODO: Enable for all crates.
   case $crate in

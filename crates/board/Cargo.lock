@@ -707,6 +707,7 @@ dependencies = [
  "sealed",
  "wasefire-applet-api-macro",
  "wasefire-error",
+ "wasefire-one-of",
 ]
 
 [[package]]
@@ -771,6 +772,10 @@ dependencies = [
  "defmt",
  "log",
 ]
+
+[[package]]
+name = "wasefire-one-of"
+version = "0.1.0-git"
 
 [[package]]
 name = "wasefire-store"

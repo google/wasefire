@@ -38,6 +38,7 @@ extern crate alloc;
 
 use wasefire_applet_api as api;
 pub use wasefire_error::Error;
+use wasefire_one_of::at_most_one_of;
 #[cfg(feature = "rust-crypto")]
 use {aead as _, crypto_common as _, digest as _, typenum as _, zeroize as _};
 
@@ -76,6 +77,8 @@ pub mod timer;
 pub mod uart;
 #[cfg(feature = "internal-api-usb")]
 pub mod usb;
+
+at_most_one_of!["native", "test", "wasm"];
 
 /// Board-specific syscalls.
 ///

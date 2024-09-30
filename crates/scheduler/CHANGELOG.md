@@ -16,6 +16,7 @@
 
 ### Patch
 
+- Make sure at compile-time that exactly one `native` or `wasm` feature is enabled
 - Use `derive-where` instead of `derivative`
 - Implement `defmt::Format` for `Key` when `defmt` is enabled
 - Stop using `log::Debug2Format()` when logging events

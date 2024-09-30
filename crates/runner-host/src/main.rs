@@ -26,11 +26,16 @@ use tokio::sync::mpsc::{channel, Receiver};
 use wasefire_board_api::Event;
 #[cfg(feature = "wasm")]
 use wasefire_interpreter as _;
+use wasefire_one_of::exactly_one_of;
 use wasefire_scheduler::Scheduler;
 use wasefire_store::{FileOptions, FileStorage};
 
 mod board;
 mod cleanup;
+
+exactly_one_of!["tcp", "unix", "usb"];
+exactly_one_of!["debug", "release"];
+exactly_one_of!["native", "wasm"];
 
 static STATE: Mutex<Option<board::State>> = Mutex::new(None);
 static RECEIVER: Mutex<Option<Receiver<Event<Board>>>> = Mutex::new(None);

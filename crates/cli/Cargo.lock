@@ -765,6 +765,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasefire-one-of"
+version = "0.1.0-git"
+
+[[package]]
 name = "wasefire-protocol"
 version = "0.2.0-git"
 dependencies = [
@@ -781,6 +785,7 @@ dependencies = [
  "tokio",
  "wasefire-board-api",
  "wasefire-logger",
+ "wasefire-one-of",
  "wasefire-protocol",
 ]
 
@@ -792,6 +797,7 @@ dependencies = [
  "rusb",
  "wasefire-board-api",
  "wasefire-logger",
+ "wasefire-one-of",
  "wasefire-protocol",
 ]
 

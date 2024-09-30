@@ -11,6 +11,9 @@ include = ["/LICENSE", "/src/"]
 keywords = ["embedded", "framework", "no-std"]
 categories = ["embedded", "no-std"]
 
+[package.metadata.docs.rs]
+features = ["device"]
+
 [dependencies]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"], optional = true }
 defmt = { version = "0.3.8", default-features = false, optional = true }
@@ -18,6 +21,7 @@ rusb = { version = "0.9.4", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false, optional = true }
 wasefire-error = { version = "0.1.2-git", path = "../error", optional = true }
 wasefire-logger = { version = "0.1.5", path = "../logger" }
+wasefire-one-of = { version = "0.1.0-git", path = "../one-of" }
 
 [dependencies.wasefire-board-api]
 version = "0.8.0-git"

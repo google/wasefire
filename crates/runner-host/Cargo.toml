@@ -21,6 +21,7 @@ wasefire-cli-tools = { path = "../cli-tools" }
 wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
+wasefire-one-of = { version = "0.1.0-git", path = "../one-of" }
 wasefire-protocol = { path = "../protocol", features = ["device"], optional = true }
 wasefire-protocol-tokio = { path = "../protocol-tokio", features = ["device"], optional = true }
 wasefire-protocol-usb = { path = "../protocol-usb", features = ["device", "std"], optional = true }
