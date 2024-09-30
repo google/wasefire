@@ -97,7 +97,7 @@ impl AppletUninstall {
 }
 
 /// Prints the exit status of an applet from a platform.
-#[derive(Default, clap::Args)]
+#[derive(clap::Parser)]
 #[non_exhaustive]
 pub struct AppletExitStatus {
     #[clap(flatten)]
@@ -206,7 +206,7 @@ impl AppletRpc {
 }
 
 /// Options to repeatedly call a command with an optional response.
-#[derive(Default, clap::Args)]
+#[derive(clap::Parser)]
 pub struct Wait {
     /// Waits until there is a response.
     ///
@@ -455,7 +455,7 @@ impl RustAppletNew {
 }
 
 /// Builds a Rust applet from its project.
-#[derive(Default, clap::Args)]
+#[derive(clap::Parser)]
 pub struct RustAppletBuild {
     /// Builds for production, disabling debugging facilities.
     #[arg(long)]
