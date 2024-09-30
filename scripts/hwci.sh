@@ -80,5 +80,5 @@ case $1 in
   host) full unix host --no-default-features --features=unix ;;
   # P1.01, P1.02, and P1.03 must be connected together (gpio_test).
   nordic) full usb nordic ;;
-  *) run "$@" ;;
+  *) run --protocol=${1:-usb} "$2" ;;
 esac
