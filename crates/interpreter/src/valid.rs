@@ -473,8 +473,10 @@ impl<'a, 'm> Expr<'a, 'm> {
     }
 
     fn check(mut self) -> CheckResult {
+        self.instr_idx = 0;
         while !self.labels.is_empty() {
             self.instr()?;
+            self.instr_idx += 1;
         }
         Ok(())
     }
