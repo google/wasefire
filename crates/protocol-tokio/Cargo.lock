@@ -285,7 +285,6 @@ dependencies = [
  "tokio",
  "wasefire-board-api",
  "wasefire-error",
- "wasefire-logger",
  "wasefire-one-of",
  "wasefire-protocol",
 ]

@@ -465,7 +465,11 @@ impl RunnerOptions {
         if self.name == "host" {
             if let Some(version) = &self.version {
                 cargo.env("WASEFIRE_HOST_VERSION", version);
-            };
+            }
+            cmd::execute(
+                &mut Command::new("make").current_dir("crates/runner-host/crates/web-client"),
+            )
+            .await?;
         }
         if self.name == "nordic" {
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
@@ -533,7 +537,7 @@ impl RunnerOptions {
                     }
                 }
             }
-            cargo.arg("--");
+            cargo.args(["--", "../../target/wasefire"]);
             if std::env::var_os("CODESPACES").is_some() {
                 log::warn!("Assuming runner --arg=--protocol=unix when running in a codespace.");
                 cargo.arg("--protocol=unix");
@@ -600,10 +604,14 @@ impl RunnerOptions {
             }
         }
         if matches!(cmd, Some(RunnerCommand::Bundle)) {
-            let mut objcopy = wrap_command().await?;
-            objcopy.args(["rust-objcopy", "-O", "binary", &elf]);
-            objcopy.arg(format!("target/wasefire/platform{side}.bin"));
-            cmd::execute(&mut objcopy).await?;
+            let bundle = format!("target/wasefire/platform{side}.bin");
+            if self.name == "host" {
+                fs::copy(elf, bundle).await?;
+            } else {
+                let mut objcopy = wrap_command().await?;
+                objcopy.args(["rust-objcopy", "-O", "binary", &elf, &bundle]);
+                cmd::execute(&mut objcopy).await?;
+            }
             if step < max_step {
                 return Box::pin(self.execute(main, step + 1, cmd)).await;
             }

@@ -11,6 +11,9 @@ include = ["/LICENSE", "/src/"]
 keywords = ["cli", "embedded", "framework", "wasm"]
 categories = ["command-line-utilities", "embedded", "wasm"]
 
+[package.metadata.docs.rs]
+features = ["_dev"]
+
 [[bin]]
 name = "wasefire"
 path = "src/main.rs"
@@ -26,6 +29,9 @@ wasefire-cli-tools = { version = "0.2.0-git", path = "../cli-tools", features = 
 version = "1.40.0"
 default-features = false
 features = ["macros", "parking_lot", "rt", "rt-multi-thread"]
+
+[features]
+_dev = []
 
 [lints]
 clippy.unit-arg = "allow"

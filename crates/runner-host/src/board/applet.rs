@@ -41,7 +41,8 @@ impl Api for Impl {
     }
 }
 
-pub async fn init(path: PathBuf) {
+pub async fn init() {
+    let path = crate::FLAGS.dir.join("applet.bin");
     let applet = read(&path).await;
     *STATE.lock().unwrap() = Some(State { path, applet, update: None });
 }

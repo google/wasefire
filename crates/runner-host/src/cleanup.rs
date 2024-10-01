@@ -22,6 +22,7 @@ pub fn push(cleanup: Cleanup) {
 }
 
 pub fn shutdown(status: i32) -> ! {
+    wasefire_logger::info!("Shutting down.");
     let cleanups = std::mem::take(&mut *CLEANUP.lock().unwrap());
     for cleanup in cleanups {
         cleanup();

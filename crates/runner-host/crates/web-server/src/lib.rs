@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -35,11 +36,11 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn new(addr: SocketAddr, events: mpsc::Sender<Event>) -> Result<Self> {
+    pub async fn new(dir: PathBuf, addr: SocketAddr, events: mpsc::Sender<Event>) -> Result<Self> {
         let (sender, mut receiver) = oneshot::channel();
         let client = Arc::new(Mutex::new(Some((sender, events))));
 
-        let static_files = warp::fs::dir("crates/web-client/dist");
+        let static_files = warp::fs::dir(dir);
         let ws = warp::path("board")
             .and(warp::ws())
             .and(warp::any().map(move || client.clone()))
