@@ -35,7 +35,7 @@ struct FuncMetadata {
     type_idx: TypeIdx,
     #[allow(dead_code)]
     // TODO(dev/fast-interp): Change to `&'m [SideTableEntry]` when making it persistent in flash.
-    side_table: Vec<SideTableEntry>,
+    side_table: Vec<SideTableEntryView>,
 }
 
 #[derive(Default)]
@@ -404,7 +404,7 @@ impl OpdType {
 }
 
 struct Expr<'a, 'm> {
-    context: &'a Context<'m>,
+    context: &'a mut Context<'m>,
     parser: &'a mut Parser<'m>,
     globals_len: usize,
     /// Whether the expression is const and the function references.
@@ -412,6 +412,7 @@ struct Expr<'a, 'm> {
     is_body: bool,
     locals: Vec<ValType>,
     labels: Vec<Label<'m>>,
+    instr_idx: i32,
 }
 
 #[derive(Debug, Default)]
@@ -434,22 +435,24 @@ enum LabelKind {
 
 impl<'a, 'm> Expr<'a, 'm> {
     fn new(
-        context: &'a Context<'m>, parser: &'a mut Parser<'m>,
+        context: &'a mut Context<'m>, parser: &'a mut Parser<'m>,
         is_const: Result<&'a mut [bool], &'a [bool]>,
     ) -> Self {
+        let globals_len = context.globals.len();
         Self {
             context,
             parser,
-            globals_len: context.globals.len(),
+            globals_len,
             is_const,
             is_body: false,
             locals: vec![],
             labels: vec![Label::default()],
+            instr_idx: 0,
         }
     }
 
     fn check_const(
-        context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a mut [bool],
+        context: &'a mut Context<'m>, parser: &'a mut Parser<'m>, refs: &'a mut [bool],
         num_global_imports: usize, expected: ResultType<'m>,
     ) -> CheckResult {
         let mut expr = Expr::new(context, parser, Ok(refs));
@@ -459,7 +462,7 @@ impl<'a, 'm> Expr<'a, 'm> {
     }
 
     fn check_body(
-        context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a [bool],
+        context: &'a mut Context<'m>, parser: &'a mut Parser<'m>, refs: &'a [bool],
         locals: Vec<ValType>, results: ResultType<'m>,
     ) -> CheckResult {
         let mut expr = Expr::new(context, parser, Err(refs));
@@ -508,6 +511,14 @@ impl<'a, 'm> Expr<'a, 'm> {
             If(b) => {
                 self.pop_check(ValType::I32)?;
                 self.push_label(self.blocktype(&b)?, LabelKind::If)?;
+                let cur_instr_idx = self.instr_idx;
+                self.side_table().push(SideTableEntryView {
+                    delta_ip: -cur_instr_idx,
+                    // TODO(dev/fast-interp): implement below.
+                    delta_stp: 0,
+                    val_cnt: 0,
+                    pop_cnt: 0,
+                });
             }
             Else => {
                 let label = self.label();
@@ -517,8 +528,24 @@ impl<'a, 'm> Expr<'a, 'm> {
                 check(self.stack().is_empty())?;
                 self.label().polymorphic = false;
                 self.pushs(params);
+                let cur_instr_idx = self.instr_idx;
+                self.side_table_last_entry().delta_ip += cur_instr_idx + 1;
+                self.side_table().push(SideTableEntryView {
+                    delta_ip: -cur_instr_idx,
+                    // TODO(dev/fast-interp): implement below.
+                    delta_stp: 0,
+                    val_cnt: 0,
+                    pop_cnt: 0,
+                });
             }
-            End => unreachable!(),
+            End => {
+                // TODO(dev/fast-interp): This is only intended to work with "Else" for now. May
+                // need to change to accommodate other branch types.
+                if self.side_table_last_entry().delta_ip < 0 {
+                    self.side_table_last_entry().delta_ip += self.instr_idx;
+                }
+                unreachable!()
+            }
             Br(l) => {
                 self.pops(self.br_label(l)?)?;
                 self.stack_polymorphic();
@@ -674,6 +701,14 @@ impl<'a, 'm> Expr<'a, 'm> {
 
     fn label(&mut self) -> &mut Label<'m> {
         self.labels.last_mut().unwrap()
+    }
+
+    fn side_table(&mut self) -> &mut Vec<SideTableEntryView> {
+        &mut self.context.funcs.last_mut().unwrap().side_table
+    }
+
+    fn side_table_last_entry(&mut self) -> &mut SideTableEntryView {
+        self.side_table().last_mut().unwrap()
     }
 
     fn stack(&mut self) -> &mut Vec<OpdType> {
