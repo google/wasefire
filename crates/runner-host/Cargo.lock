@@ -1859,6 +1859,7 @@ name = "wasefire-cli-tools"
 version = "0.2.0-git"
 dependencies = [
  "anyhow",
+ "log",
  "serde",
  "tokio",
  "toml",

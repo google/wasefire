@@ -101,7 +101,7 @@ impl Pipe {
                 }
                 match Self::manage_stream::<L, P>(&mut stream, &shared, &push).await {
                     Ok(()) => (),
-                    Err(()) => match &mut *shared.state.lock().unwrap() {
+                    Err(_) => match &mut *shared.state.lock().unwrap() {
                         State::Disabled => (),
                         x => *x = State::Accept,
                     },
@@ -116,7 +116,7 @@ impl Pipe {
 
     async fn manage_stream<L: Listener, P: Push>(
         stream: &mut L::Stream, shared: &Shared, push: &P,
-    ) -> Result<(), ()> {
+    ) -> std::io::Result<()> {
         loop {
             enum Action {
                 Receive,

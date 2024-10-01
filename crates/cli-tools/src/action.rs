@@ -24,6 +24,7 @@ use tokio::process::Command;
 use wasefire_protocol::{self as service, applet, Connection, ConnectionExt};
 use wasefire_wire::{self as wire, Yoke};
 
+use crate::error::root_cause_is;
 use crate::{cmd, fs};
 
 mod protocol;
@@ -373,10 +374,18 @@ async fn final_call<S: service::Service>(
     connection.send(&S::request(request)).await?;
     match connection.receive::<S>().await {
         Ok(x) => proof(x)?,
-        Err(e) => match e.downcast_ref::<rusb::Error>() {
-            Some(rusb::Error::NoDevice) => Ok(()),
-            _ => Err(e),
-        },
+        Err(e) => {
+            if root_cause_is::<rusb::Error>(&e, |x| matches!(x, rusb::Error::NoDevice)) {
+                return Ok(());
+            }
+            if root_cause_is::<std::io::Error>(&e, |x| {
+                use std::io::ErrorKind::*;
+                matches!(x.kind(), NotConnected | BrokenPipe | UnexpectedEof)
+            }) {
+                return Ok(());
+            }
+            Err(e)
+        }
     }
 }
 

@@ -10,6 +10,8 @@
 
 ### Minor
 
+- Extend `fs::write()` first parameter to set the `OpenOptions` too
+- Add `error::root_cause_is()` to check the `anyhow::Error` root cause
 - Add `action::PlatformLock` for locking a platform protocol
 - Expose `action::Transfer` for transfers from host to device
 - Add `action::AppletExitStatus` to get the applet exit status
@@ -25,6 +27,8 @@
 
 ### Patch
 
+- Fix incorrect error with UNIX and TCP platform protocols
+- Only print commands and file system operations when warnings are logged
 - Update dependencies
 
 ## 0.1.0

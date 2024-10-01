@@ -15,12 +15,14 @@
 //! Wrappers around `tokio::fs` with descriptive errors.
 
 use std::fs::Metadata;
+use std::future::Future;
 use std::io::ErrorKind;
 use std::path::{Component, Path, PathBuf};
 
 use anyhow::{Context, Result};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use tokio::fs::{File, OpenOptions};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub async fn canonicalize(path: impl AsRef<Path>) -> Result<PathBuf> {
@@ -144,12 +146,65 @@ pub async fn touch(path: impl AsRef<Path>) -> Result<()> {
     write(path, "").await
 }
 
-pub async fn write(path: impl AsRef<Path>, contents: impl AsRef<[u8]>) -> Result<()> {
-    let name = path.as_ref().display();
+pub struct WriteParams<P: AsRef<Path>> {
+    path: P,
+    options: OpenOptions,
+}
+
+impl<P: AsRef<Path>> WriteParams<P> {
+    pub fn new(path: P) -> Self {
+        WriteParams { path, options: OpenOptions::new() }
+    }
+}
+
+impl<P: AsRef<Path>> WriteParams<P> {
+    pub fn options(&mut self) -> &mut OpenOptions {
+        &mut self.options
+    }
+}
+
+pub trait WriteFile {
+    fn path(&self) -> &Path;
+    fn file(self) -> impl Future<Output = Result<File>>;
+}
+
+impl<P: AsRef<Path>> WriteFile for WriteParams<P> {
+    fn path(&self) -> &Path {
+        self.path.as_ref()
+    }
+    async fn file(self) -> Result<File> {
+        (&self).file().await
+    }
+}
+
+impl<P: AsRef<Path>> WriteFile for &WriteParams<P> {
+    fn path(&self) -> &Path {
+        self.path.as_ref()
+    }
+    async fn file(self) -> Result<File> {
+        Ok(self.options.open(&self.path).await?)
+    }
+}
+
+impl<P: AsRef<Path>> WriteFile for P {
+    fn path(&self) -> &Path {
+        self.as_ref()
+    }
+    async fn file(self) -> Result<File> {
+        let mut params = WriteParams::new(self);
+        params.options().write(true).create(true).truncate(true);
+        params.file().await
+    }
+}
+
+pub async fn write(param: impl WriteFile, contents: impl AsRef<[u8]>) -> Result<()> {
+    let name = format!("{}", param.path().display());
     let contents = contents.as_ref();
-    create_parent(path.as_ref()).await?;
+    create_parent(param.path()).await?;
     debug!("write > {name:?}");
-    tokio::fs::write(path.as_ref(), contents).await.with_context(|| format!("writing {name}"))?;
+    let mut file = param.file().await.with_context(|| format!("creating {name}"))?;
+    file.write_all(contents).await.with_context(|| format!("writing {name}"))?;
+    file.flush().await.with_context(|| format!("flushing {name}"))?;
     Ok(())
 }
 

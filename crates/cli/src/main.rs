@@ -82,6 +82,7 @@ enum Action {
         #[command(flatten)]
         action: action::AppletRpc,
     },
+
     PlatformList(action::PlatformList),
 
     /// Prints the platform update metadata (possibly binary output).
@@ -170,6 +171,7 @@ impl Completion {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    env_logger::init();
     let flags = Flags::parse();
     let dir = std::env::current_dir()?;
     match flags.action {

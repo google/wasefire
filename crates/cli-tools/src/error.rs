@@ -12,28 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides command-line utilities for Wasefire CLI.
-//!
-//! This library is also used for the internal maintenance CLI of Wasefire called xtask.
+use std::error::Error;
 
-#![feature(async_fn_track_caller)]
-#![feature(doc_auto_cfg)]
-#![feature(never_type)]
-#![feature(path_add_extension)]
-#![feature(try_find)]
-
-macro_rules! debug {
-    ($($x:tt)*) => {
-        if log::log_enabled!(log::Level::Warn) {
-            print!("\x1b[1;36m");
-            print!($($x)*);
-            println!("\x1b[m");
-        }
-    };
+/// Checks the root cause of an error.
+///
+/// Returns whether the root cause of the error is of the provided type and satisfies the predicate.
+pub fn root_cause_is<E: Error + Send + Sync + 'static>(
+    error: &anyhow::Error, predicate: impl FnOnce(&E) -> bool,
+) -> bool {
+    error.root_cause().downcast_ref::<E>().map_or(false, predicate)
 }
-
-#[cfg(feature = "action")]
-pub mod action;
-pub mod cmd;
-pub mod error;
-pub mod fs;

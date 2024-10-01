@@ -15,7 +15,7 @@
 use std::net::SocketAddr;
 use std::path::Path;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{TcpStream, UnixStream};
 use wasefire_protocol::DynFuture;
@@ -43,20 +43,10 @@ impl Connection<TcpStream> {
 
 impl<T: AsyncRead + AsyncWrite + Send + Unpin> wasefire_protocol::Connection for Connection<T> {
     fn read(&mut self) -> DynFuture<Box<[u8]>> {
-        Box::pin(async move {
-            match read(&mut self.stream).await {
-                Ok(x) => Ok(x),
-                Err(()) => bail!("Error reading from the device."),
-            }
-        })
+        Box::pin(async move { Ok(read(&mut self.stream).await?) })
     }
 
     fn write<'a>(&'a mut self, request: &'a [u8]) -> DynFuture<'a, ()> {
-        Box::pin(async move {
-            match write(&mut self.stream, request).await {
-                Ok(()) => Ok(()),
-                Err(()) => bail!("Error writing to the device."),
-            }
-        })
+        Box::pin(async move { Ok(write(&mut self.stream, request).await?) })
     }
 }
