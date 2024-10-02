@@ -155,9 +155,6 @@ impl<P: AsRef<Path>> WriteParams<P> {
     pub fn new(path: P) -> Self {
         WriteParams { path, options: OpenOptions::new() }
     }
-}
-
-impl<P: AsRef<Path>> WriteParams<P> {
     pub fn options(&mut self) -> &mut OpenOptions {
         &mut self.options
     }
@@ -165,23 +162,23 @@ impl<P: AsRef<Path>> WriteParams<P> {
 
 pub trait WriteFile {
     fn path(&self) -> &Path;
-    fn file(self) -> impl Future<Output = Result<File>>;
+    fn open(self) -> impl Future<Output = Result<File>>;
 }
 
 impl<P: AsRef<Path>> WriteFile for WriteParams<P> {
     fn path(&self) -> &Path {
         self.path.as_ref()
     }
-    async fn file(self) -> Result<File> {
-        (&self).file().await
+    async fn open(self) -> Result<File> {
+        (&self).open().await
     }
 }
 
 impl<P: AsRef<Path>> WriteFile for &WriteParams<P> {
     fn path(&self) -> &Path {
-        self.path.as_ref()
+        (*self).path()
     }
-    async fn file(self) -> Result<File> {
+    async fn open(self) -> Result<File> {
         Ok(self.options.open(&self.path).await?)
     }
 }
@@ -190,19 +187,19 @@ impl<P: AsRef<Path>> WriteFile for P {
     fn path(&self) -> &Path {
         self.as_ref()
     }
-    async fn file(self) -> Result<File> {
+    async fn open(self) -> Result<File> {
         let mut params = WriteParams::new(self);
         params.options().write(true).create(true).truncate(true);
-        params.file().await
+        params.open().await
     }
 }
 
-pub async fn write(param: impl WriteFile, contents: impl AsRef<[u8]>) -> Result<()> {
-    let name = format!("{}", param.path().display());
+pub async fn write(file: impl WriteFile, contents: impl AsRef<[u8]>) -> Result<()> {
+    let name = format!("{}", file.path().display());
     let contents = contents.as_ref();
-    create_parent(param.path()).await?;
+    create_parent(file.path()).await?;
     debug!("write > {name:?}");
-    let mut file = param.file().await.with_context(|| format!("creating {name}"))?;
+    let mut file = file.open().await.with_context(|| format!("creating {name}"))?;
     file.write_all(contents).await.with_context(|| format!("writing {name}"))?;
     file.flush().await.with_context(|| format!("flushing {name}"))?;
     Ok(())
