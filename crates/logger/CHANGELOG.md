@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6-git
+
+### Minor
+
+- Add `flush()` to flush possible buffered logs
+
 ## 0.1.5
 
 ### Patch

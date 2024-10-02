@@ -20,7 +20,7 @@ defmt = { version = "0.3.8", default-features = false, optional = true }
 rusb = { version = "0.9.4", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false, optional = true }
 wasefire-error = { version = "0.1.2-git", path = "../error", optional = true }
-wasefire-logger = { version = "0.1.5", path = "../logger" }
+wasefire-logger = { version = "0.1.6-git", path = "../logger" }
 wasefire-one-of = { version = "0.1.0-git", path = "../one-of" }
 
 [dependencies.wasefire-board-api]
