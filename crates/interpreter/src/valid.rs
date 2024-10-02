@@ -419,8 +419,8 @@ struct Label<'m> {
     polymorphic: bool,
     stack: Vec<OpdType>,
     side_table_idx: Option<usize>,
-    /// Whether the `block` is under `else`
-    is_block_under_else: Option<bool>,
+    /// Whether it is a `block` under `else`
+    is_block_under_else: bool,
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
@@ -507,15 +507,15 @@ impl<'a, 'm> Expr<'a, 'm> {
         match instr {
             Unreachable => self.stack_polymorphic(),
             Nop => (),
-            Block(b) => self.push_label(self.blocktype(&b)?, LabelKind::Block, None, None)?,
-            Loop(b) => self.push_label(self.blocktype(&b)?, LabelKind::Loop, None, None)?,
+            Block(b) => self.push_label(self.blocktype(&b)?, LabelKind::Block, None, false)?,
+            Loop(b) => self.push_label(self.blocktype(&b)?, LabelKind::Loop, None, false)?,
             If(b) => {
                 self.pop_check(ValType::I32)?;
                 self.push_label(
                     self.blocktype(&b)?,
                     LabelKind::If,
                     Some(self.side_table.len()),
-                    None,
+                    false,
                 )?;
                 self.side_table.push(SideTableEntryView {
                     delta_ip: -self.instr_idx,
@@ -531,7 +531,7 @@ impl<'a, 'm> Expr<'a, 'm> {
                 self.side_table[side_table_idx].delta_ip += self.instr_idx + 1;
 
                 let label = self.label();
-                label.is_block_under_else = Some(true);
+                label.is_block_under_else = true;
                 check(core::mem::replace(&mut label.kind, LabelKind::Block) == LabelKind::If)?;
                 let FuncType { params, results } = label.type_;
                 self.pops(results)?;
@@ -548,7 +548,7 @@ impl<'a, 'm> Expr<'a, 'm> {
                 });
             }
             End => {
-                if self.immutable_label().is_block_under_else.is_some_and(|x| x) {
+                if self.immutable_label().is_block_under_else {
                     let side_table_idx = self.immutable_label().side_table_idx.unwrap() + 1;
                     self.side_table[side_table_idx].delta_ip += self.instr_idx;
                 }
@@ -783,7 +783,7 @@ impl<'a, 'm> Expr<'a, 'm> {
 
     fn push_label(
         &mut self, type_: FuncType<'m>, kind: LabelKind, side_table_idx: Option<usize>,
-        is_block_under_else: Option<bool>,
+        is_block_under_else: bool,
     ) -> CheckResult {
         self.pops(type_.params)?;
         let stack = type_.params.iter().cloned().map(OpdType::from).collect();
