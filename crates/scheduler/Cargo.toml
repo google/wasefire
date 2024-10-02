@@ -25,7 +25,7 @@ typenum = { version = "1.17.0", default-features = false, optional = true }
 wasefire-applet-api = { version = "0.7.0-git", path = "../api", features = ["host"] }
 wasefire-board-api = { version = "0.8.0-git", path = "../board" }
 wasefire-error = { version = "0.1.2-git", path = "../error" }
-wasefire-logger = { version = "0.1.5", path = "../logger" }
+wasefire-logger = { version = "0.1.6-git", path = "../logger" }
 wasefire-one-of = { version = "0.1.0-git", path = "../one-of" }
 wasefire-protocol = { version = "0.2.0-git", path = "../protocol", features = ["device"] }
 wasefire-store = { version = "0.3.0-git", path = "../store", optional = true }
