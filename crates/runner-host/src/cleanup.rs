@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::io::Write;
 use std::sync::Mutex;
 
 pub type Cleanup = Box<dyn FnOnce() + Send>;
@@ -26,6 +27,9 @@ pub fn shutdown(status: i32) -> ! {
     for cleanup in cleanups {
         cleanup();
     }
+    wasefire_logger::flush();
+    _ = std::io::stdout().flush();
+    _ = std::io::stderr().flush();
     std::process::exit(status)
 }
 
