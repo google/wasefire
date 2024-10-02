@@ -31,17 +31,10 @@ pub fn validate(binary: &[u8]) -> Result<Vec<Vec<SideTableEntry>>, Error> {
 type Parser<'m> = parser::Parser<'m, Check>;
 type CheckResult = MResult<(), Check>;
 
-struct FuncMetadata {
-    type_idx: TypeIdx,
-    #[allow(dead_code)]
-    // TODO(dev/fast-interp): Change to `&'m [SideTableEntry]` when making it persistent in flash.
-    side_table: Vec<SideTableEntry>,
-}
-
 #[derive(Default)]
 struct Context<'m> {
     types: Vec<FuncType<'m>>,
-    funcs: Vec<FuncMetadata>,
+    funcs: Vec<TypeIdx>,
     tables: Vec<TableType>,
     mems: Vec<MemType>,
     globals: Vec<GlobalType>,
@@ -132,6 +125,7 @@ impl<'m> Context<'m> {
             self.datas = Some(parser.parse_u32()? as usize);
             check(parser.is_empty())?;
         }
+        let mut side_tables = vec![];
         if let Some(mut parser) = self.check_section(parser, SectionId::Code)? {
             check(self.funcs.len() == imported_funcs + parser.parse_vec()?)?;
             for x in imported_funcs .. self.funcs.len() {
@@ -140,7 +134,7 @@ impl<'m> Context<'m> {
                 let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
-                Expr::check_body(self, &mut parser, &refs, locals, t.results)?;
+                side_tables.push(Expr::check_body(self, &mut parser, &refs, locals, t.results)?);
                 check(parser.is_empty())?;
             }
             check(parser.is_empty())?;
@@ -157,7 +151,7 @@ impl<'m> Context<'m> {
         }
         self.check_section(parser, SectionId::Custom)?;
         check(parser.is_empty())?;
-        Ok(vec![]) // TODO(dev/fast-interp): implement.
+        Ok(side_tables)
     }
 
     fn check_section(
@@ -200,7 +194,7 @@ impl<'m> Context<'m> {
 
     fn add_functype(&mut self, x: TypeIdx) -> CheckResult {
         check((x as usize) < self.types.len())?;
-        self.funcs.push(FuncMetadata { type_idx: x, side_table: vec![] });
+        self.funcs.push(x);
         Ok(())
     }
 
@@ -236,7 +230,7 @@ impl<'m> Context<'m> {
     }
 
     fn functype(&self, x: FuncIdx) -> Result<FuncType<'m>, Error> {
-        self.type_(self.funcs.get(x as usize).ok_or_else(invalid)?.type_idx)
+        self.type_(*self.funcs.get(x as usize).ok_or_else(invalid)?)
     }
 
     fn table(&self, x: TableIdx) -> Result<&TableType, Error> {
@@ -412,6 +406,8 @@ struct Expr<'a, 'm> {
     is_body: bool,
     locals: Vec<ValType>,
     labels: Vec<Label<'m>>,
+    side_table: Vec<SideTableEntryView>,
+    instr_idx: i32,
 }
 
 #[derive(Debug, Default)]
@@ -422,6 +418,9 @@ struct Label<'m> {
     /// Whether the bottom of the stack is polymorphic.
     polymorphic: bool,
     stack: Vec<OpdType>,
+    side_table_idx: Option<usize>,
+    /// Whether the `block` is under `else`
+    is_block_under_else: Option<bool>,
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
@@ -445,6 +444,8 @@ impl<'a, 'm> Expr<'a, 'm> {
             is_body: false,
             locals: vec![],
             labels: vec![Label::default()],
+            side_table: vec![],
+            instr_idx: 0,
         }
     }
 
@@ -461,17 +462,20 @@ impl<'a, 'm> Expr<'a, 'm> {
     fn check_body(
         context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a [bool],
         locals: Vec<ValType>, results: ResultType<'m>,
-    ) -> CheckResult {
+    ) -> MResult<Vec<SideTableEntry>, Check> {
         let mut expr = Expr::new(context, parser, Err(refs));
         expr.is_body = true;
         expr.locals = locals;
         expr.label().type_.results = results;
-        expr.check()
+        expr.check()?;
+        expr.side_table.into_iter().map(SideTableEntry::new).collect()
     }
 
-    fn check(mut self) -> CheckResult {
+    fn check(&mut self) -> CheckResult {
+        self.instr_idx = 0;
         while !self.labels.is_empty() {
             self.instr()?;
+            self.instr_idx += 1;
         }
         Ok(())
     }
@@ -503,22 +507,53 @@ impl<'a, 'm> Expr<'a, 'm> {
         match instr {
             Unreachable => self.stack_polymorphic(),
             Nop => (),
-            Block(b) => self.push_label(self.blocktype(&b)?, LabelKind::Block)?,
-            Loop(b) => self.push_label(self.blocktype(&b)?, LabelKind::Loop)?,
+            Block(b) => self.push_label(self.blocktype(&b)?, LabelKind::Block, None, None)?,
+            Loop(b) => self.push_label(self.blocktype(&b)?, LabelKind::Loop, None, None)?,
             If(b) => {
                 self.pop_check(ValType::I32)?;
-                self.push_label(self.blocktype(&b)?, LabelKind::If)?;
+                self.push_label(
+                    self.blocktype(&b)?,
+                    LabelKind::If,
+                    Some(self.side_table.len()),
+                    None,
+                )?;
+                self.side_table.push(SideTableEntryView {
+                    delta_ip: -self.instr_idx,
+                    // TODO(dev/fast-interp): implement below.
+                    delta_stp: 0,
+                    val_cnt: 0,
+                    pop_cnt: 0,
+                });
             }
             Else => {
+                let side_table_idx = self.immutable_label().side_table_idx.unwrap();
+                let cur_instr_idx = self.instr_idx;
+                self.side_table[side_table_idx].delta_ip += self.instr_idx + 1;
+
                 let label = self.label();
+                label.is_block_under_else = Some(true);
                 check(core::mem::replace(&mut label.kind, LabelKind::Block) == LabelKind::If)?;
                 let FuncType { params, results } = label.type_;
                 self.pops(results)?;
                 check(self.stack().is_empty())?;
                 self.label().polymorphic = false;
                 self.pushs(params);
+
+                self.side_table.push(SideTableEntryView {
+                    delta_ip: -cur_instr_idx,
+                    // TODO(dev/fast-interp): implement below.
+                    delta_stp: 0,
+                    val_cnt: 0,
+                    pop_cnt: 0,
+                });
             }
-            End => unreachable!(),
+            End => {
+                if self.immutable_label().is_block_under_else.is_some_and(|x| x) {
+                    let side_table_idx = self.immutable_label().side_table_idx.unwrap() + 1;
+                    self.side_table[side_table_idx].delta_ip += self.instr_idx;
+                }
+                unreachable!()
+            }
             Br(l) => {
                 self.pops(self.br_label(l)?)?;
                 self.stack_polymorphic();
@@ -676,6 +711,10 @@ impl<'a, 'm> Expr<'a, 'm> {
         self.labels.last_mut().unwrap()
     }
 
+    fn immutable_label(&self) -> &Label<'m> {
+        self.labels.last().unwrap()
+    }
+
     fn stack(&mut self) -> &mut Vec<OpdType> {
         &mut self.label().stack
     }
@@ -742,10 +781,14 @@ impl<'a, 'm> Expr<'a, 'm> {
         self.for_each(expected, |x, y| check(x.matches(y)))
     }
 
-    fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind) -> CheckResult {
+    fn push_label(
+        &mut self, type_: FuncType<'m>, kind: LabelKind, side_table_idx: Option<usize>,
+        is_block_under_else: Option<bool>,
+    ) -> CheckResult {
         self.pops(type_.params)?;
         let stack = type_.params.iter().cloned().map(OpdType::from).collect();
-        let label = Label { type_, kind, polymorphic: false, stack };
+        let label =
+            Label { type_, kind, polymorphic: false, stack, side_table_idx, is_block_under_else };
         self.labels.push(label);
         Ok(())
     }
