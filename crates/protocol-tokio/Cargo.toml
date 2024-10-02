@@ -17,7 +17,7 @@ features = ["device"]
 [dependencies]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
 wasefire-error = { version = "0.1.2-git", path = "../error", optional = true }
-wasefire-logger = { version = "0.1.6-git", path = "../logger" }
+wasefire-logger = { version = "0.1.6-git", path = "../logger", optional = true }
 wasefire-one-of = { version = "0.1.0-git", path = "../one-of" }
 
 [dependencies.tokio]
@@ -38,9 +38,9 @@ features = ["host"]
 optional = true
 
 [features]
-log = ["wasefire-board-api?/log", "wasefire-logger/log"]
+log = ["wasefire-board-api?/log", "wasefire-logger?/log"]
 # Exactly one of host or device must be selected.
-device = ["dep:wasefire-board-api", "dep:wasefire-error"]
+device = ["dep:wasefire-board-api", "dep:wasefire-error", "dep:wasefire-logger"]
 host = ["dep:wasefire-protocol"]
 
 [lints]

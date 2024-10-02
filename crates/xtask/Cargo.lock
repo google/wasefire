@@ -1851,6 +1851,7 @@ dependencies = [
  "data-encoding",
  "humantime",
  "indicatif",
+ "log",
  "rusb",
  "serde",
  "tokio",

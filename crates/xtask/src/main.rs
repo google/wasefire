@@ -16,7 +16,6 @@
 
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use std::error::Error;
 use std::ffi::OsString;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -28,6 +27,7 @@ use probe_rs::{flashing, Permissions, Session};
 use rustc_demangle::demangle;
 use tokio::process::Command;
 use tokio::sync::OnceCell;
+use wasefire_cli_tools::error::root_cause_is;
 use wasefire_cli_tools::{action, cmd, fs};
 
 mod footprint;
@@ -706,12 +706,6 @@ impl Wait {
             }
         }
     }
-}
-
-fn root_cause_is<E: Error + Send + Sync + 'static>(
-    error: &anyhow::Error, predicate: impl FnOnce(&E) -> bool,
-) -> bool {
-    error.root_cause().downcast_ref::<E>().map_or(false, predicate)
 }
 
 async fn ensure_command(cmd: &[&str]) -> Result<()> {
