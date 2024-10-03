@@ -19,13 +19,12 @@ use wasefire_board_api::platform::Api;
 use wasefire_board_api::Error;
 use wasefire_error::Code;
 
+pub mod protocol;
+
 pub enum Impl {}
 
 impl Api for Impl {
-    #[cfg(any(feature = "tcp", feature = "unix"))]
-    type Protocol = wasefire_protocol_tokio::Impl<pipe::Impl>;
-    #[cfg(feature = "usb")]
-    type Protocol = crate::board::usb::ProtocolImpl;
+    type Protocol = protocol::Impl;
 
     type Update = UpdateImpl;
 
@@ -63,41 +62,4 @@ impl wasefire_board_api::platform::update::Api for UpdateImpl {
 
 fn from_hex(x: Option<&str>) -> Cow<'static, [u8]> {
     HEXLOWER_PERMISSIVE.decode(x.unwrap_or_default().as_bytes()).unwrap().into()
-}
-
-pub(crate) fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error> {
-    if let Some(request) = request.strip_prefix(b"echo ") {
-        let mut response = request.to_vec().into_boxed_slice();
-        for x in &mut response {
-            if x.is_ascii_alphabetic() {
-                *x ^= 0x20;
-            }
-            if matches!(*x, b'I' | b'O' | b'i' | b'o') {
-                *x ^= 0x6;
-            }
-        }
-        Ok(response)
-    } else {
-        Err(Error::user(Code::InvalidArgument))
-    }
-}
-
-#[cfg(any(feature = "tcp", feature = "unix"))]
-mod pipe {
-    use wasefire_error::Error;
-    use wasefire_protocol_tokio::{HasPipe, Pipe};
-
-    use crate::with_state;
-
-    pub enum Impl {}
-
-    impl HasPipe for Impl {
-        fn with_pipe<R>(f: impl FnOnce(&mut Pipe) -> R) -> R {
-            with_state(|state| f(&mut state.pipe))
-        }
-
-        fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error> {
-            super::vendor(request)
-        }
-    }
 }

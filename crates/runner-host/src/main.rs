@@ -19,7 +19,6 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use anyhow::Result;
-use board::Board;
 use clap::Parser;
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver};
@@ -27,13 +26,16 @@ use wasefire_board_api::Event;
 #[cfg(feature = "wasm")]
 use wasefire_interpreter as _;
 use wasefire_one_of::exactly_one_of;
+use wasefire_protocol_tokio::Pipe;
 use wasefire_scheduler::Scheduler;
 use wasefire_store::{FileOptions, FileStorage};
+
+use crate::board::platform::protocol::State as ProtocolState;
+use crate::board::Board;
 
 mod board;
 mod cleanup;
 
-exactly_one_of!["tcp", "unix", "usb"];
 exactly_one_of!["debug", "release"];
 exactly_one_of!["native", "wasm"];
 
@@ -47,20 +49,42 @@ fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
 #[derive(Parser)]
 struct Flags {
     /// Directory containing files representing the flash.
-    #[clap(long, default_value = "../../target/wasefire")]
+    #[arg(long, default_value = "../../target/wasefire")]
     flash_dir: PathBuf,
 
-    #[cfg(feature = "tcp")]
-    #[clap(long, default_value = "127.0.0.1:3457")]
+    /// Transport to listen to for the platform protocol.
+    #[arg(long, default_value = "usb")]
+    protocol: Protocol,
+
+    /// Address to bind to when --protocol=tcp (ignored otherwise).
+    #[arg(long, default_value = "127.0.0.1:3457")]
     tcp_addr: std::net::SocketAddr,
 
-    #[cfg(feature = "unix")]
-    #[clap(long, default_value = "/tmp/wasefire")]
+    /// Socket path to bind to when --protocol=unix (ignored otherwise).
+    #[arg(long, default_value = "/tmp/wasefire")]
     unix_path: std::path::PathBuf,
 
+    /// The VID:PID to use for the USB device.
+    ///
+    /// A USB device is used when --protocol=usb or --usb-serial (ignored otherwise). Note that USB
+    /// requires sudo.
+    #[arg(long, default_value = "16c0:27dd")]
+    usb_vid_pid: String,
+
+    /// Whether to enable USB serial.
+    #[arg(long)]
+    usb_serial: bool,
+
     #[cfg(feature = "web")]
-    #[clap(flatten)]
+    #[command(flatten)]
     web_options: WebOptions,
+}
+
+#[derive(Clone, clap::ValueEnum)]
+enum Protocol {
+    Tcp,
+    Unix,
+    Usb,
 }
 
 #[test]
@@ -82,7 +106,6 @@ struct WebOptions {
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
-    #[cfg_attr(feature = "usb", allow(unused_variables))]
     let flags = Flags::parse();
     std::panic::set_hook(Box::new(|info| {
         eprintln!("{info}");
@@ -124,38 +147,40 @@ async fn main() -> Result<()> {
         let url = format!("{}:{}", flags.web_options.web_host, flags.web_options.web_port);
         web_server::Client::new(&url, sender).await?
     };
-    #[cfg(any(feature = "tcp", feature = "unix"))]
     let push = {
         use wasefire_board_api::platform::protocol::Event;
         let sender = sender.clone();
         move |event: Event| drop(sender.try_send(event.into()))
     };
-    #[cfg(feature = "tcp")]
-    let pipe = wasefire_protocol_tokio::Pipe::new_tcp(flags.tcp_addr, push).await.unwrap();
-    #[cfg(feature = "unix")]
-    let pipe = {
-        let pipe = wasefire_protocol_tokio::Pipe::new_unix(&flags.unix_path, push).await.unwrap();
-        let unix_path = flags.unix_path.clone();
-        crate::cleanup::push(Box::new(move || drop(std::fs::remove_file(unix_path))));
-        pipe
+    let protocol = match flags.protocol {
+        Protocol::Tcp => ProtocolState::Pipe(Pipe::new_tcp(flags.tcp_addr, push).await.unwrap()),
+        Protocol::Unix => {
+            let pipe = Pipe::new_unix(&flags.unix_path, push).await.unwrap();
+            let unix_path = flags.unix_path.clone();
+            cleanup::push(Box::new(move || drop(std::fs::remove_file(unix_path))));
+            ProtocolState::Pipe(pipe)
+        }
+        Protocol::Usb => ProtocolState::Usb,
     };
+    let usb = board::usb::State::new(
+        &flags.usb_vid_pid,
+        matches!(protocol, ProtocolState::Usb),
+        flags.usb_serial,
+    );
     *STATE.lock().unwrap() = Some(board::State {
         sender,
         button: false,
         led: false,
         timers: board::timer::Timers::default(),
         uarts: board::uart::Uarts::new(),
-        #[cfg(any(feature = "tcp", feature = "unix"))]
-        pipe,
-        #[cfg(feature = "usb")]
-        usb: board::usb::Usb::default(),
+        protocol,
+        usb,
         storage,
         #[cfg(feature = "web")]
         web,
     });
     board::uart::Uarts::init();
-    #[cfg(feature = "usb")]
-    board::usb::Usb::init()?;
+    board::usb::init()?;
     #[cfg(not(feature = "web"))]
     tokio::task::spawn_blocking(|| {
         use std::io::BufRead;

@@ -195,6 +195,10 @@ struct RunnerOptions {
     #[clap(long)]
     features: Vec<String>,
 
+    /// Runner arguments.
+    #[clap(long)]
+    arg: Vec<String>,
+
     /// Optimization level (0, 1, 2, 3, s, z).
     #[clap(long, short = 'O')]
     opt_level: Option<action::OptLevel>,
@@ -475,9 +479,6 @@ impl RunnerOptions {
         }
         if self.no_default_features {
             cargo.arg("--no-default-features");
-        } else if std::env::var_os("CODESPACES").is_some() {
-            log::warn!("Assuming runner --no-default-features when running in a codespace.");
-            cargo.arg("--no-default-features");
         }
         if let Some(log) = &self.log {
             cargo.env(self.log_env(), log);
@@ -522,6 +523,11 @@ impl RunnerOptions {
             if let Some(port) = &self.web_port {
                 cargo.arg(format!("--web-port={port}"));
             }
+            if std::env::var_os("CODESPACES").is_some() {
+                log::warn!("Assuming runner --arg=--protocol=unix when running in a codespace.");
+                cargo.arg("--protocol=unix");
+            }
+            cargo.args(&self.arg);
             cmd::replace(cargo);
         } else {
             cmd::execute(&mut cargo).await?;
