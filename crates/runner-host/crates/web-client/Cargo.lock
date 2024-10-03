@@ -1165,6 +1165,7 @@ dependencies = [
 name = "web-client"
 version = "0.1.0"
 dependencies = [
+ "cfg-if",
  "gloo-utils 0.2.0",
  "log",
  "serde_json",
