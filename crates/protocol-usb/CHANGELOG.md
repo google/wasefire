@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `Rpc::enable()` with feature `device` to bypass `HasRpc`
 - Migrate to removal of `platform::protocol::Api::disable()`
 - Add error message when missing udev rule
 - Implement `Debug` for `Candidate<T>` and `Connection<T>`
