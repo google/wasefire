@@ -15,6 +15,7 @@
 
 ### Minor
 
+- Add `usb::serial::Serial::{read,write,flush,enable,disable}()` to bypass `HasSerial`
 - Implement `defmt::Format` for `Event` when `defmt` is enabled
 
 ### Patch
