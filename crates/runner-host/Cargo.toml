@@ -25,7 +25,7 @@ wasefire-one-of = { path = "../one-of" }
 wasefire-protocol-tokio = { path = "../protocol-tokio", features = ["device"] }
 wasefire-protocol-usb = { path = "../protocol-usb", features = ["device", "std"] }
 wasefire-store = { path = "../store", features = ["std"] }
-web-server = { path = "crates/web-server", optional = true }
+web-server = { path = "crates/web-server" }
 
 [dependencies.wasefire-scheduler]
 path = "../scheduler"
@@ -51,7 +51,6 @@ features = [
 ]
 
 [features]
-web = ["dep:web-server"]
 # Exactly one is enabled by xtask.
 debug = [
   "wasefire-logger/log",
