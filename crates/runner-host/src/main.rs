@@ -26,6 +26,7 @@ use wasefire_board_api::Event;
 #[cfg(feature = "wasm")]
 use wasefire_interpreter as _;
 use wasefire_one_of::exactly_one_of;
+use wasefire_protocol_tokio::Pipe;
 use wasefire_scheduler::Scheduler;
 use wasefire_store::{FileOptions, FileStorage};
 
@@ -152,12 +153,9 @@ async fn main() -> Result<()> {
         move |event: Event| drop(sender.try_send(event.into()))
     };
     let protocol = match flags.protocol {
-        Protocol::Tcp => ProtocolState::Pipe(
-            wasefire_protocol_tokio::Pipe::new_tcp(flags.tcp_addr, push).await.unwrap(),
-        ),
+        Protocol::Tcp => ProtocolState::Pipe(Pipe::new_tcp(flags.tcp_addr, push).await.unwrap()),
         Protocol::Unix => {
-            let pipe =
-                wasefire_protocol_tokio::Pipe::new_unix(&flags.unix_path, push).await.unwrap();
+            let pipe = Pipe::new_unix(&flags.unix_path, push).await.unwrap();
             let unix_path = flags.unix_path.clone();
             cleanup::push(Box::new(move || drop(std::fs::remove_file(unix_path))));
             ProtocolState::Pipe(pipe)
