@@ -17,7 +17,6 @@ use std::sync::Mutex;
 
 pub type Cleanup = Box<dyn FnOnce() + Send>;
 
-#[cfg(feature = "unix")]
 pub fn push(cleanup: Cleanup) {
     CLEANUP.lock().unwrap().push(cleanup);
 }

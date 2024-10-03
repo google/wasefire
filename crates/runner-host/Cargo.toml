@@ -13,20 +13,18 @@ data-encoding = "2.6.0"
 env_logger = "0.11.3"
 rand = "0.8.5"
 tokio = { version = "1.40.0", features = ["full"] }
-usb-device = { version = "0.3.2", optional = true }
-usbd-serial = { version = "0.2.2", optional = true }
-usbip-device = { version = "0.2.0", optional = true }
+usb-device = { version = "0.3.2" }
+usbd-serial = { version = "0.2.2" }
+usbip-device = { version = "0.2.0" }
 wasefire-board-api = { path = "../board", features = ["std"] }
 wasefire-cli-tools = { path = "../cli-tools" }
 wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
 wasefire-one-of = { version = "0.1.0-git", path = "../one-of" }
-wasefire-protocol = { path = "../protocol", features = ["device"], optional = true }
-wasefire-protocol-tokio = { path = "../protocol-tokio", features = ["device"], optional = true }
-wasefire-protocol-usb = { path = "../protocol-usb", features = ["device", "std"], optional = true }
+wasefire-protocol-tokio = { path = "../protocol-tokio", features = ["device"] }
+wasefire-protocol-usb = { path = "../protocol-usb", features = ["device", "std"] }
 wasefire-store = { path = "../store", features = ["std"] }
-wasefire-wire = { path = "../wire", optional = true }
 web-server = { path = "crates/web-server", optional = true }
 
 [dependencies.wasefire-scheduler]
@@ -40,6 +38,7 @@ features = [
   "board-api-storage",
   "board-api-timer",
   "board-api-uart",
+  "board-api-usb-serial",
   "software-crypto-aes128-ccm",
   "software-crypto-aes256-gcm",
   "software-crypto-hmac-sha256",
@@ -52,23 +51,12 @@ features = [
 ]
 
 [features]
-default = ["usb"]
 web = ["dep:web-server"]
-# Exactly one must be enabled.
-tcp = ["dep:wasefire-protocol-tokio"]
-unix = ["dep:wasefire-protocol-tokio"]
-usb = [
-  "dep:usb-device",
-  "dep:usbd-serial",
-  "dep:usbip-device",
-  "dep:wasefire-protocol-usb",
-  "wasefire-scheduler/board-api-usb-serial",
-]
 # Exactly one is enabled by xtask.
 debug = [
   "wasefire-logger/log",
-  "wasefire-protocol-tokio?/log",
-  "wasefire-protocol-usb?/log",
+  "wasefire-protocol-tokio/log",
+  "wasefire-protocol-usb/log",
   "wasefire-scheduler/log",
 ]
 release = []

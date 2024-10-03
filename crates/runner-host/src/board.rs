@@ -22,7 +22,6 @@ mod rng;
 mod storage;
 pub mod timer;
 pub mod uart;
-#[cfg(feature = "usb")]
 pub mod usb;
 
 use tokio::sync::mpsc::Sender;
@@ -38,10 +37,8 @@ pub struct State {
     pub led: bool,
     pub timers: timer::Timers,
     pub uarts: uart::Uarts,
-    #[cfg(any(feature = "tcp", feature = "unix"))]
-    pub pipe: wasefire_protocol_tokio::Pipe,
-    #[cfg(feature = "usb")]
-    pub usb: usb::Usb,
+    pub protocol: platform::protocol::State,
+    pub usb: usb::State,
     pub storage: Option<FileStorage>,
     #[cfg(feature = "web")]
     pub web: web_server::Client,
@@ -76,6 +73,5 @@ impl Api for Board {
     type Storage = storage::Impl;
     type Timer = timer::Impl;
     type Uart = uart::Impl;
-    #[cfg(feature = "usb")]
     type Usb = usb::Impl;
 }
