@@ -50,7 +50,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let api::insert::Params { key, ptr, len } = call.read();
     let scheduler = call.scheduler();
-    let memory = scheduler.applet.as_mut().unwrap().memory();
+    let memory = scheduler.applet.get().unwrap().memory();
     let result = try {
         let value = memory.get(*ptr, *len)?;
         scheduler.store.insert(*key as usize, value)?
@@ -69,7 +69,7 @@ fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
 fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let api::find::Params { key, ptr: ptr_ptr, len: len_ptr } = call.read();
     let scheduler = call.scheduler();
-    let mut memory = scheduler.applet.as_mut().unwrap().memory();
+    let mut memory = scheduler.applet.get().unwrap().memory();
     let result = try {
         match scheduler.store.find(*key as usize)? {
             None => false,
@@ -86,7 +86,7 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
 fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
     let api::keys::Params { ptr: ptr_ptr } = call.read();
     let scheduler = call.scheduler();
-    let mut memory = scheduler.applet.as_mut().unwrap().memory();
+    let mut memory = scheduler.applet.get().unwrap().memory();
     let result = try {
         let mut keys = Vec::new();
         for handle in scheduler.store.iter()? {

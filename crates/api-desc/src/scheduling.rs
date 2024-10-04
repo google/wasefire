@@ -32,6 +32,10 @@ pub(crate) fn new() -> Item {
             /// Aborts the applet.
             fn abort "sa" {} -> !
         },
+        item! {
+            /// Exits the applet.
+            fn exit "se" {} -> !
+        },
     ];
     Item::Mod(Mod { docs, name, items })
 }

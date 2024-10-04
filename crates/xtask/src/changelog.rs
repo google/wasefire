@@ -16,10 +16,10 @@ use core::str;
 use std::collections::BTreeMap;
 use std::fmt::Write;
 use std::io::BufRead;
-use std::process::Command;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use semver::Version;
+use tokio::process::Command;
 use wasefire_cli_tools::{cmd, fs};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
@@ -43,8 +43,8 @@ struct Changelog {
 }
 
 impl Changelog {
-    fn read_file(path: &str) -> Result<Changelog> {
-        Self::parse(String::from_utf8(fs::read(path)?)?.as_str())
+    async fn read_file(path: &str) -> Result<Changelog> {
+        Self::parse(String::from_utf8(fs::read(path).await?)?.as_str())
     }
 
     /// Converts raw file contents into a Changelog data structure.
@@ -172,25 +172,24 @@ impl Release {
 }
 
 /// Validates all changelog files.
-pub fn execute_ci() -> Result<()> {
-    let paths = cmd::output(Command::new("git").args(["ls-files", "*/CHANGELOG.md"]))?;
+pub async fn execute_ci() -> Result<()> {
+    let paths = cmd::output(Command::new("git").args(["ls-files", "*/CHANGELOG.md"])).await?;
 
     for path in paths.stdout.lines() {
         let path = path?;
 
         // Validation done during parsing.
-        Changelog::read_file(&path)
-            .with_context(|| format!("validating changelog file: {path}"))?;
+        Changelog::read_file(&path).await?;
     }
 
     Ok(())
 }
 
 /// Updates the changelog of a crate and its dependents.
-pub fn execute_change(path: &str, _scope: &ReleaseType, _description: &str) -> Result<()> {
-    ensure!(fs::exists(path), "Crate does not exist: {path}");
+pub async fn execute_change(path: &str, _scope: &ReleaseType, _description: &str) -> Result<()> {
+    ensure!(fs::exists(path).await, "Crate does not exist: {path}");
 
-    let _changelog = Changelog::read_file(format!("{path}/CHANGELOG.md").as_str())?;
+    let _changelog = Changelog::read_file(&format!("{path}/CHANGELOG.md")).await?;
 
     todo!("Implement changelog updates");
 }

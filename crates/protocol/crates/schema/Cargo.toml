@@ -8,6 +8,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
+tokio = { version = "1.40.0", features = ["full"] }
 wasefire-cli-tools = { path = "../../../cli-tools" }
 wasefire-error = { path = "../../../error" }
 wasefire-protocol = { path = "../..", features = ["_descriptor"] }

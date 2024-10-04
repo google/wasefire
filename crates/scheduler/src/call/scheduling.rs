@@ -22,6 +22,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::WaitForCallback(call) => wait_for_callback(call),
         Api::NumPendingCallbacks(call) => num_pending_callbacks(call),
         Api::Abort(call) => abort(call),
+        Api::Exit(call) => exit(call),
     }
 }
 
@@ -40,5 +41,10 @@ fn num_pending_callbacks<B: Board>(mut call: SchedulerCall<B, api::num_pending_c
 
 fn abort<B: Board>(call: SchedulerCall<B, api::abort::Sig>) {
     let api::abort::Params {} = call.read();
+    call.reply_(Err(crate::Trap.into()));
+}
+
+fn exit<B: Board>(call: SchedulerCall<B, api::exit::Sig>) {
+    let api::exit::Params {} = call.read();
     call.reply_(Err(crate::Trap.into()));
 }

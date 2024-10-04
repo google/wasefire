@@ -19,7 +19,7 @@ wasefire::applet!();
 
 fn main() {
     test_non_constant();
-    debug::exit(true);
+    scheduling::exit();
 }
 
 fn test_non_constant() {
@@ -31,7 +31,7 @@ fn test_non_constant() {
     }
     for i in 1 .. buffers.len() {
         for j in 0 .. i {
-            debug::assert(buffers[j] != buffers[i]);
+            assert!(buffers[j] != buffers[i]);
         }
     }
 }

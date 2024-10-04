@@ -19,8 +19,13 @@ path = "src/main.rs"
 anyhow = { version = "1.0.86", default-features = false }
 clap = { version = "4.5.4", default-features = false, features = ["default", "derive", "env"] }
 clap_complete = { version = "4.5.2", default-features = false }
-data-encoding = { version = "2.6.0", default-features = false, features = ["std"] }
-wasefire-cli-tools = { version = "0.1.1-git", path = "../cli-tools" }
+env_logger = { version = "0.11.3", default-features = false, features = ["default"] }
+wasefire-cli-tools = { version = "0.2.0-git", path = "../cli-tools", features = ["action"] }
+
+[dependencies.tokio]
+version = "1.40.0"
+default-features = false
+features = ["macros", "parking_lot", "rt", "rt-multi-thread"]
 
 [lints]
 clippy.unit-arg = "allow"

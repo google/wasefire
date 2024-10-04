@@ -15,6 +15,7 @@
 use derive_where::derive_where;
 use wasefire_board_api::timer::Event;
 use wasefire_board_api::{self as board, Api as Board, Id};
+use wasefire_error::Error;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive_where(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -31,6 +32,13 @@ impl<B: Board> From<Key<B>> for crate::event::Key<B> {
 impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
     fn from(event: &'a Event<B>) -> Self {
         Key { timer: event.timer }
+    }
+}
+
+impl<B: Board> Key<B> {
+    pub fn disable(self) -> Result<(), Error> {
+        use wasefire_board_api::timer::Api as _;
+        board::Timer::<B>::disarm(self.timer)
     }
 }
 

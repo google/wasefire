@@ -4,10 +4,20 @@
 
 ### Major
 
+- Rename `--serial` to `--protocol` with more support
 - Move `--serial` and `--timeout` to commands that need them
+
+### Minor
+
+- Support `RUST_LOG` to control logging
+- Add `platform-lock` to lock a platform protocol
+- Add `applet-exit-status` to get an applet exit status
+- Implement `applet-{install,uninstall}` for applet management
+- Add `platform-update-{metadata,transfer}` for platform update
 
 ### Patch
 
+- Print `wasefire` instead of `wasefire-cli` with `--version`
 - Check for bad command-line configuration
 - Update dependencies
 - Restore release builds to the default
@@ -35,4 +45,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 4 -->
+<!-- Increment to skip CHANGELOG.md test: 9 -->

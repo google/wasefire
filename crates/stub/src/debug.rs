@@ -21,9 +21,3 @@ unsafe extern "C" fn env_dp(params: api::println::Params) {
     let msg = std::str::from_utf8(msg).unwrap();
     eprintln!("{msg}");
 }
-
-#[no_mangle]
-unsafe extern "C" fn env_de(params: api::exit::Params) {
-    let api::exit::Params { code } = params;
-    std::process::exit(code as i32)
-}

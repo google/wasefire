@@ -20,13 +20,12 @@ SELF="$0"
 
 ensure_applet() {
   ( cd "$GIT_ROOT"
-    if [ ! -e target/wasefire/applet.wasm ]; then
-      mkdir -p target/wasefire
-      x touch target/wasefire/applet.wasm
-    fi
-    if [ ! -e target/wasefire/libapplet.a ]; then
-      x cargo xtask --native-target=thumbv7em-none-eabi applet rust hello
-    fi
+    for file in applet.wasm libapplet.a; do
+      if [ ! -e target/wasefire/$file ]; then
+        mkdir -p target/wasefire
+        x touch target/wasefire/$file
+      fi
+    done
   )
 }
 
@@ -187,9 +186,6 @@ crypto-sha256
 crypto-sha384
 gpio
 led
-platform
-platform-protocol
-platform-update
 radio-ble
 rng
 storage

@@ -30,6 +30,7 @@ use derive_where::derive_where;
 use wasefire_error::Code;
 pub use wasefire_error::Error;
 
+pub mod applet;
 #[cfg(feature = "api-button")]
 pub mod button;
 #[cfg(feature = "internal-api-crypto")]
@@ -39,7 +40,6 @@ pub mod debug;
 pub mod gpio;
 #[cfg(feature = "api-led")]
 pub mod led;
-#[cfg(feature = "internal-api-platform")]
 pub mod platform;
 #[cfg(feature = "internal-api-radio")]
 pub mod radio;
@@ -78,6 +78,9 @@ pub trait Api: Send + 'static {
         None
     }
 
+    /// Applet interface.
+    type Applet: applet::Api;
+
     /// Button interface.
     #[cfg(feature = "api-button")]
     type Button: button::Api;
@@ -98,7 +101,6 @@ pub trait Api: Send + 'static {
     type Led: led::Api;
 
     /// Platform interface.
-    #[cfg(feature = "internal-api-platform")]
     type Platform: platform::Api;
 
     /// Radio interface.
@@ -158,7 +160,6 @@ pub enum Event<B: Api + ?Sized> {
     Button(button::Event<B>),
 
     /// Platform event.
-    #[cfg(feature = "internal-api-platform")]
     Platform(platform::Event),
 
     /// Radio event.
@@ -202,6 +203,9 @@ impl<B: Api + ?Sized> Impossible<B> {
     }
 }
 
+/// Applet interface.
+pub type Applet<B> = <B as Api>::Applet;
+
 /// Button interface.
 #[cfg(feature = "api-button")]
 pub type Button<B> = <B as Api>::Button;
@@ -222,7 +226,6 @@ pub type Gpio<B> = <B as Api>::Gpio;
 pub type Led<B> = <B as Api>::Led;
 
 /// Platform interface.
-#[cfg(feature = "internal-api-platform")]
 pub type Platform<B> = <B as Api>::Platform;
 
 /// Radio interface.

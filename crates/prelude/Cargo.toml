@@ -1,6 +1,6 @@
 [package]
 name = "wasefire"
-version = "0.6.1-git"
+version = "0.7.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -24,8 +24,9 @@ digest = { version = "0.10.7", default-features = false, features = ["mac"], opt
 rlsf = { version = "0.2.1", default-features = false, optional = true }
 sealed = { version = "0.5.0", default-features = false, optional = true }
 typenum = { version = "1.17.0", default-features = false, optional = true }
-wasefire-applet-api = { version = "0.6.2-git", path = "../api", features = ["wasm"] }
+wasefire-applet-api = { version = "0.7.0-git", path = "../api", features = ["wasm"] }
 wasefire-error = { version = "0.1.2-git", path = "../error" }
+wasefire-one-of = { version = "0.1.0-git", path = "../one-of" }
 wasefire-sync = { version = "0.1.1", path = "../sync" }
 zeroize = { version = "1.7.0", default-features = false, features = ["derive"], optional = true }
 

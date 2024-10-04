@@ -72,16 +72,6 @@ pub(crate) fn new() -> Item {
                 ptr: *mut u8,
             } -> ()
         },
-        item! {
-            /// Exits the platform with an error code.
-            ///
-            /// This is used by test applets to terminate the platform and propagate the test
-            /// result.
-            fn exit "de" {
-                /// 0 for success, 1 for failure.
-                code: usize,
-            } -> !
-        },
     ];
     Item::Mod(Mod { docs, name, items })
 }

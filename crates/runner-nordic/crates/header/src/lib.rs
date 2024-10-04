@@ -111,4 +111,4 @@ unsafe fn read(addr: u32) -> u32 {
 // Keep those values in sync with the memory.x linker script.
 const HEADER_LEN: u32 = 0x00000100;
 const FIRMWARE_A: u32 = 0x00010000;
-const FIRMWARE_B: u32 = 0x00080000;
+const FIRMWARE_B: u32 = 0x00060000;

@@ -14,6 +14,7 @@
 
 use wasefire_board_api::platform::protocol::Event;
 use wasefire_board_api::Api as Board;
+use wasefire_error::Error;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -32,6 +33,13 @@ impl<'a> From<&'a Event> for Key {
         match event {
             Event => Key::Request,
         }
+    }
+}
+
+impl Key {
+    pub fn disable(self) -> Result<(), Error> {
+        // We need to process non-applet requests.
+        Ok(())
     }
 }
 

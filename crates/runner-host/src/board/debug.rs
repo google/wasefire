@@ -35,8 +35,4 @@ impl board::debug::Api for Impl {
         let origin = ORIGIN.get_or_init(|| now);
         now.duration_since(*origin).as_micros() as u64
     }
-
-    fn exit(success: bool) -> ! {
-        std::process::exit(if success { 0 } else { 1 })
-    }
 }

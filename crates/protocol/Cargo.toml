@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-protocol"
-version = "0.1.1-git"
+version = "0.2.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -15,6 +15,7 @@ categories = ["embedded", "no-std"]
 features = ["device", "host"]
 
 [dependencies]
+anyhow = { version = "1.0.86", default-features = false, features = ["std"], optional = true }
 wasefire-error = { version = "0.1.2-git", path = "../error" }
 wasefire-wire = { version = "0.1.1-git", path = "../wire" }
 
@@ -22,7 +23,7 @@ wasefire-wire = { version = "0.1.1-git", path = "../wire" }
 _descriptor = []
 _exhaustive = []
 device = []
-host = []
+host = ["dep:anyhow", "wasefire-error/std"]
 
 [lints]
 clippy.unit-arg = "allow"

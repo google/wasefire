@@ -14,87 +14,137 @@
 
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
-use std::process::Command;
-use std::str::FromStr;
+use std::time::Duration;
 
 use anyhow::{bail, ensure, Result};
 use cargo_metadata::{Metadata, MetadataCommand};
 use clap::{ValueEnum, ValueHint};
-use data_encoding::HEXLOWER_PERMISSIVE as HEX;
-use rusb::{GlobalContext, UsbContext};
-use wasefire_protocol::{self as service, applet, Api};
-use wasefire_protocol_usb::Connection;
+use rusb::GlobalContext;
+use tokio::process::Command;
+use wasefire_protocol::{self as service, applet, Connection, ConnectionExt};
+use wasefire_wire::{self as wire, Yoke};
 
+use crate::error::root_cause_is;
 use crate::{cmd, fs};
 
-/// Platform information.
-pub type PlatformInfo = wasefire_wire::Yoke<service::platform::Info<'static>>;
+mod protocol;
 
 /// Options to connect to a platform.
 #[derive(Clone, clap::Args)]
 pub struct ConnectionOptions {
-    /// Serial of the platform to connect to (in hexadecimal).
-    #[arg(long, env = "WASEFIRE_SERIAL")]
-    serial: Option<Hex>,
+    /// How to connect to the platform.
+    ///
+    /// Possible values are:
+    /// - usb (there must be exactly one connected platform on USB)
+    /// - usb:SERIAL (the serial must be in hexadecimal)
+    /// - usb:BUS:DEV
+    /// - unix[:PATH] (defaults to /tmp/wasefire)
+    /// - tcp[:HOST:PORT] (defaults to 127.0.0.1:3457)
+    #[arg(long, default_value = "usb", env = "WASEFIRE_PROTOCOL", verbatim_doc_comment)]
+    protocol: protocol::Protocol,
 
-    /// Timeout to send or receive on the platform protocol.
-    #[arg(long, default_value = "1s")]
+    /// Timeout to send or receive with the USB protocol.
+    #[arg(long, default_value = "0s")]
     timeout: humantime::Duration,
-}
-
-#[derive(Clone)]
-struct Hex(Vec<u8>);
-
-impl Display for Hex {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        HEX.encode(&self.0).fmt(f)
-    }
-}
-
-impl FromStr for Hex {
-    type Err = data_encoding::DecodeError;
-    fn from_str(input: &str) -> std::result::Result<Self, Self::Err> {
-        Ok(Hex(HEX.decode(input.as_bytes())?))
-    }
 }
 
 impl ConnectionOptions {
     /// Establishes a connection.
-    pub fn connect(&self) -> Result<Connection<GlobalContext>> {
-        let context = GlobalContext::default();
-        let mut matches = Vec::new();
-        let serial = self.serial.as_ref();
-        for candidate in wasefire_protocol_usb::list(&context)? {
-            let connection = candidate.connect(*self.timeout)?;
-            let info = connection.call::<service::PlatformInfo>(())?;
-            if serial.map_or(false, |x| x.0 != info.get().serial) {
-                continue;
-            }
-            matches.push((connection, info));
+    pub async fn connect(&self) -> Result<Box<dyn Connection>> {
+        self.protocol.connect(*self.timeout).await
+    }
+}
+
+/// Returns the API version of a platform.
+#[derive(clap::Args)]
+pub struct PlatformApiVersion {}
+
+impl PlatformApiVersion {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<u32> {
+        let PlatformApiVersion {} = self;
+        connection.call::<service::ApiVersion>(()).await.map(|x| *x.get())
+    }
+}
+
+/// Installs an applet on a platform.
+#[derive(clap::Args)]
+pub struct AppletInstall {
+    /// Path to the applet to install.
+    #[arg(value_hint = ValueHint::FilePath)]
+    pub applet: PathBuf,
+
+    #[clap(flatten)]
+    pub transfer: Transfer,
+}
+
+impl AppletInstall {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let AppletInstall { applet, transfer } = self;
+        transfer
+            .run::<service::AppletInstall>(connection, applet, "Installed", None::<fn(_) -> _>)
+            .await
+    }
+}
+
+/// Uninstalls an applet from a platform.
+#[derive(clap::Args)]
+pub struct AppletUninstall {}
+
+impl AppletUninstall {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let AppletUninstall {} = self;
+        connection.call::<service::AppletUninstall>(()).await.map(|x| *x.get())
+    }
+}
+
+/// Prints the exit status of an applet from a platform.
+#[derive(clap::Parser)]
+#[non_exhaustive]
+pub struct AppletExitStatus {
+    #[clap(flatten)]
+    pub wait: Wait,
+
+    /// Also exits with the applet exit code.
+    #[arg(long)]
+    exit_code: bool,
+}
+
+impl AppletExitStatus {
+    fn print(status: Option<applet::ExitStatus>) {
+        match status {
+            Some(applet::ExitStatus::Exit) => println!("The applet exited."),
+            Some(applet::ExitStatus::Abort) => println!("The applet aborted."),
+            Some(applet::ExitStatus::Trap) => println!("The applet trapped."),
+            Some(applet::ExitStatus::Kill) => println!("The applet was killed."),
+            None => println!("The applet is still running."),
         }
-        match matches.len() {
-            1 => Ok(matches.pop().unwrap().0),
-            0 => match serial {
-                None => bail!("no connected platforms"),
-                Some(serial) => bail!("no connected platforms with serial={serial}"),
-            },
-            _ => match serial {
-                None => {
-                    eprintln!("Choose one of the connected platforms using its serial:");
-                    for (_, info) in matches {
-                        eprintln!("--serial={}", HEX.encode(info.get().serial));
-                    }
-                    bail!("more than one connected platform");
-                }
-                Some(serial) => {
-                    eprintln!("Multiple connected platforms with serial={serial}:");
-                    for (connection, _) in matches {
-                        eprintln!("- {connection}");
-                    }
-                    bail!("more than one connected platform with serial={serial}");
-                }
-            },
+    }
+
+    fn code(status: Option<applet::ExitStatus>) -> i32 {
+        match status {
+            Some(applet::ExitStatus::Exit) => 0,
+            Some(applet::ExitStatus::Abort) => 1,
+            Some(applet::ExitStatus::Trap) => 2,
+            Some(applet::ExitStatus::Kill) => 62,
+            None => 63,
         }
+    }
+
+    pub fn ensure_exit(&mut self) {
+        self.exit_code = true;
+    }
+
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let AppletExitStatus { wait, exit_code } = self;
+        let status = wait
+            .run::<service::AppletExitStatus, applet::ExitStatus>(connection, applet::AppletId)
+            .await?
+            .map(|x| *x.get());
+        Self::print(status);
+        if exit_code {
+            std::process::exit(Self::code(status))
+        }
+        Ok(())
     }
 }
 
@@ -111,17 +161,17 @@ pub struct Rpc {
 }
 
 impl Rpc {
-    fn read(&self) -> Result<Vec<u8>> {
+    async fn read(&self) -> Result<Vec<u8>> {
         match &self.input {
-            Some(path) => fs::read(path),
-            None => fs::read_stdin(),
+            Some(path) => fs::read(path).await,
+            None => fs::read_stdin().await,
         }
     }
 
-    fn write(&self, response: &[u8]) -> Result<()> {
+    async fn write(&self, response: &[u8]) -> Result<()> {
         match &self.output {
-            Some(path) => fs::write(path, response),
-            None => fs::write_stdout(response),
+            Some(path) => fs::write(path, response).await,
+            None => fs::write_stdout(response).await,
         }
     }
 }
@@ -135,31 +185,81 @@ pub struct AppletRpc {
     #[clap(flatten)]
     rpc: Rpc,
 
-    /// Number of retries to receive a response.
-    #[arg(long, default_value = "3")]
-    retries: usize,
+    #[clap(flatten)]
+    wait: Wait,
 }
 
 impl AppletRpc {
-    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
-        let AppletRpc { applet, rpc, retries } = self;
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let AppletRpc { applet, rpc, mut wait } = self;
         let applet_id = match applet {
             Some(_) => bail!("applet identifiers are not supported yet"),
             None => applet::AppletId,
         };
-        let request = applet::Request { applet_id, request: &rpc.read()? };
-        connection.call::<service::AppletRequest>(request)?.get();
-        for _ in 0 .. retries {
-            let response = connection.call::<service::AppletResponse>(applet_id)?;
-            if let Some(response) = response.get().response {
-                return rpc.write(response);
-            }
+        let request = applet::Request { applet_id, request: &rpc.read().await? };
+        connection.call::<service::AppletRequest>(request).await?.get();
+        wait.ensure_wait();
+        match wait.run::<service::AppletResponse, &[u8]>(connection, applet_id).await? {
+            None => bail!("did not receive a response"),
+            Some(response) => rpc.write(response.get()).await,
         }
-        bail!("did not receive a response after {retries} retries");
     }
 }
 
-/// Lists the connected platforms.
+/// Options to repeatedly call a command with an optional response.
+#[derive(clap::Parser)]
+pub struct Wait {
+    /// Waits until there is a response.
+    ///
+    /// This is equivalent to --period=100ms.
+    #[arg(long)]
+    wait: bool,
+
+    /// Retries every so often until there is a response.
+    ///
+    /// The command doesn't return `None` in that case.
+    #[arg(long, conflicts_with = "wait")]
+    period: Option<humantime::Duration>,
+}
+
+impl Wait {
+    pub fn ensure_wait(&mut self) {
+        if self.wait || self.period.is_some() {
+            return;
+        }
+        self.wait = true;
+    }
+
+    pub fn set_period(&mut self, period: Duration) {
+        self.wait = false;
+        self.period = Some(period.into());
+    }
+
+    pub async fn run<S, T: wire::Wire<'static>>(
+        self, connection: &mut dyn Connection, request: S::Request<'_>,
+    ) -> Result<Option<Yoke<T::Type<'static>>>>
+    where S: for<'a> service::Service<Response<'a> = Option<T::Type<'a>>> {
+        let Wait { wait, period } = self;
+        let period = match (wait, period) {
+            (true, None) => Some(Duration::from_millis(100)),
+            (true, Some(_)) => unreachable!(),
+            (false, None) => None,
+            (false, Some(x)) => Some(*x),
+        };
+        let request = S::request(request);
+        loop {
+            match connection.call_ref::<S>(&request).await?.try_map(|x| x.ok_or(())) {
+                Ok(x) => break Ok(Some(x)),
+                Err(()) => match period {
+                    Some(period) => tokio::time::sleep(period).await,
+                    None => break Ok(None),
+                },
+            }
+        }
+    }
+}
+
+/// Lists the platforms connected on USB.
 #[derive(clap::Args)]
 pub struct PlatformList {
     /// Timeout to send or receive on the platform protocol.
@@ -168,17 +268,124 @@ pub struct PlatformList {
 }
 
 impl PlatformList {
-    pub fn run(self) -> Result<Vec<PlatformInfo>> {
+    pub async fn run(self) -> Result<()> {
         let PlatformList { timeout } = self;
         let context = GlobalContext::default();
         let candidates = wasefire_protocol_usb::list(&context)?;
-        println!("There are {} connected platforms:", candidates.len());
-        let mut platforms = Vec::new();
+        println!("There are {} connected platforms on USB:", candidates.len());
         for candidate in candidates {
-            let connection = candidate.connect(*timeout)?;
-            platforms.push(connection.call::<service::PlatformInfo>(())?);
+            let mut connection = candidate.connect(*timeout)?;
+            let info = connection.call::<service::PlatformInfo>(()).await?;
+            let serial = protocol::ProtocolUsb::Serial(protocol::Hex(info.get().serial.to_vec()));
+            let bus = connection.device().bus_number();
+            let dev = connection.device().address();
+            let busdev = protocol::ProtocolUsb::BusDev { bus, dev };
+            println!("- {serial} or {busdev}");
         }
-        Ok(platforms)
+        Ok(())
+    }
+}
+
+/// Updates a platform.
+#[derive(clap::Args)]
+pub struct PlatformUpdate {
+    /// Path to the new platform.
+    #[arg(value_hint = ValueHint::FilePath)]
+    platform: PathBuf,
+
+    #[clap(flatten)]
+    transfer: Transfer,
+}
+
+impl PlatformUpdate {
+    pub async fn metadata(connection: &mut dyn Connection) -> Result<Yoke<&'static [u8]>> {
+        connection.call::<service::PlatformUpdateMetadata>(()).await
+    }
+
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let PlatformUpdate { platform, transfer } = self;
+        transfer
+            .run::<service::PlatformUpdateTransfer>(
+                connection,
+                platform,
+                "Updated",
+                Some(|_| bail!("device responded to a transfer finish")),
+            )
+            .await
+    }
+}
+
+/// Parameters for a transfer from the host to the device.
+#[derive(clap::Args)]
+pub struct Transfer {
+    /// Whether the transfer is a dry-run.
+    #[arg(long)]
+    dry_run: bool,
+
+    /// How to chunk the payload.
+    #[arg(long, default_value_t = 1024)]
+    chunk_size: usize,
+}
+
+impl Transfer {
+    async fn run<S>(
+        &self, connection: &mut dyn Connection, payload: impl AsRef<Path>, message: &'static str,
+        finish: Option<impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>>,
+    ) -> Result<()>
+    where
+        S: for<'a> service::Service<
+            Request<'a> = service::transfer::Request<'a>,
+            Response<'a> = (),
+        >,
+    {
+        use wasefire_protocol::transfer::Request;
+        let Transfer { dry_run, chunk_size } = self;
+        let payload = fs::read(payload).await?;
+        let progress = indicatif::ProgressBar::new(payload.len() as u64)
+            .with_style(
+                indicatif::ProgressStyle::with_template(
+                    "{msg:9} {elapsed:>3} {spinner} [{wide_bar}] {bytes:>10} / {total_bytes:<10}",
+                )?
+                .tick_chars("-\\|/ ")
+                .progress_chars("##-"),
+            )
+            .with_message("Starting");
+        progress.enable_steady_tick(Duration::from_millis(200));
+        connection.call::<S>(Request::Start { dry_run: *dry_run }).await?.get();
+        progress.set_message("Writing");
+        for chunk in payload.chunks(*chunk_size) {
+            progress.inc(chunk.len() as u64);
+            connection.call::<S>(Request::Write { chunk }).await?.get();
+        }
+        progress.set_message("Finishing");
+        match (*dry_run, finish) {
+            (false, Some(finish)) => final_call::<S>(connection, Request::Finish, finish).await?,
+            _ => *connection.call::<S>(Request::Finish).await?.get(),
+        }
+        progress.finish_with_message(message);
+        Ok(())
+    }
+}
+
+async fn final_call<S: service::Service>(
+    connection: &mut dyn Connection, request: S::Request<'_>,
+    proof: impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>,
+) -> Result<()> {
+    connection.send(&S::request(request)).await?;
+    match connection.receive::<S>().await {
+        Ok(x) => proof(x)?,
+        Err(e) => {
+            if root_cause_is::<rusb::Error>(&e, |x| matches!(x, rusb::Error::NoDevice)) {
+                return Ok(());
+            }
+            if root_cause_is::<std::io::Error>(&e, |x| {
+                use std::io::ErrorKind::*;
+                matches!(x.kind(), NotConnected | BrokenPipe | UnexpectedEof)
+            }) {
+                return Ok(());
+            }
+            Err(e)
+        }
     }
 }
 
@@ -187,16 +394,20 @@ impl PlatformList {
 pub struct PlatformReboot {}
 
 impl PlatformReboot {
-    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let PlatformReboot {} = self;
-        connection.send(&Api::PlatformReboot(()))?;
-        match connection.receive::<service::PlatformReboot>() {
-            Ok(x) => *x.get(),
-            Err(e) => match e.downcast_ref::<rusb::Error>() {
-                Some(rusb::Error::Timeout | rusb::Error::NoDevice) => Ok(()),
-                _ => Err(e),
-            },
-        }
+        final_call::<service::PlatformReboot>(connection, (), |x| match *x.get() {}).await
+    }
+}
+
+/// Locks a platform.
+#[derive(clap::Args)]
+pub struct PlatformLock {}
+
+impl PlatformLock {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let PlatformLock {} = self;
+        connection.call::<service::PlatformLock>(()).await.map(|x| *x.get())
     }
 }
 
@@ -208,9 +419,11 @@ pub struct PlatformRpc {
 }
 
 impl PlatformRpc {
-    pub fn run<T: UsbContext>(self, connection: &Connection<T>) -> Result<()> {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let PlatformRpc { rpc } = self;
-        rpc.write(connection.call::<service::PlatformVendor>(&rpc.read()?)?.get())
+        let request = rpc.read().await?;
+        let response = connection.call::<service::PlatformVendor>(&request).await?;
+        rpc.write(response.get()).await
     }
 }
 
@@ -227,31 +440,31 @@ pub struct RustAppletNew {
 }
 
 impl RustAppletNew {
-    pub fn run(&self) -> Result<()> {
+    pub async fn run(&self) -> Result<()> {
         let RustAppletNew { path, name } = self;
         let mut cargo = Command::new("cargo");
         cargo.args(["new", "--lib"]).arg(path);
         if let Some(name) = name {
             cargo.arg(format!("--name={name}"));
         }
-        cmd::execute(&mut cargo)?;
-        cmd::execute(Command::new("cargo").args(["add", "wasefire"]).current_dir(path))?;
+        cmd::execute(&mut cargo).await?;
+        cmd::execute(Command::new("cargo").args(["add", "wasefire"]).current_dir(path)).await?;
         let mut cargo = Command::new("cargo");
         cargo.args(["add", "wasefire-stub", "--optional"]);
-        cmd::execute(cargo.current_dir(path))?;
+        cmd::execute(cargo.current_dir(path)).await?;
         let mut sed = Command::new("sed");
         sed.arg("-i");
         sed.arg("s#^wasefire-stub\\( = .\"dep:wasefire-stub\"\\)#test\\1, \"wasefire/test\"#");
         sed.arg("Cargo.toml");
-        cmd::execute(sed.current_dir(path))?;
-        std::fs::remove_file(path.join("src/lib.rs"))?;
-        fs::write(path.join("src/lib.rs"), include_str!("data/lib.rs"))?;
+        cmd::execute(sed.current_dir(path)).await?;
+        tokio::fs::remove_file(path.join("src/lib.rs")).await?;
+        fs::write(path.join("src/lib.rs"), include_str!("data/lib.rs")).await?;
         Ok(())
     }
 }
 
 /// Builds a Rust applet from its project.
-#[derive(Default, clap::Args)]
+#[derive(clap::Parser)]
 pub struct RustAppletBuild {
     /// Builds for production, disabling debugging facilities.
     #[arg(long)]
@@ -283,10 +496,11 @@ pub struct RustAppletBuild {
 }
 
 impl RustAppletBuild {
-    pub fn run(&self, dir: impl AsRef<Path>) -> Result<()> {
-        let metadata = metadata(dir.as_ref())?;
+    pub async fn run(&self, dir: impl AsRef<Path>) -> Result<()> {
+        let metadata = metadata(dir.as_ref()).await?;
         let package = &metadata.packages[0];
-        let target_dir = fs::try_relative(std::env::current_dir()?, &metadata.target_directory)?;
+        let target_dir =
+            fs::try_relative(std::env::current_dir()?, &metadata.target_directory).await?;
         let name = package.name.replace('-', "_");
         let mut cargo = Command::new("cargo");
         let mut rustflags = Vec::new();
@@ -326,7 +540,7 @@ impl RustAppletBuild {
         }
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(dir);
-        cmd::execute(&mut cargo)?;
+        cmd::execute(&mut cargo).await?;
         let out_dir = match &self.output {
             Some(x) => x.clone(),
             None => "target/wasefire".into(),
@@ -336,8 +550,8 @@ impl RustAppletBuild {
             Some(target) => (format!("{target}/{profile}/lib{name}.a"), "libapplet.a"),
         };
         let applet = out_dir.join(dst);
-        if fs::copy_if_changed(target_dir.join(src), &applet)? && dst.ends_with(".wasm") {
-            optimize_wasm(&applet, self.opt_level)?;
+        if fs::copy_if_changed(target_dir.join(src), &applet).await? && dst.ends_with(".wasm") {
+            optimize_wasm(&applet, self.opt_level).await?;
         }
         Ok(())
     }
@@ -352,8 +566,8 @@ pub struct RustAppletTest {
 }
 
 impl RustAppletTest {
-    pub fn run(&self, dir: impl AsRef<Path>) -> Result<()> {
-        let metadata = metadata(dir.as_ref())?;
+    pub async fn run(&self, dir: impl AsRef<Path>) -> Result<()> {
+        let metadata = metadata(dir.as_ref()).await?;
         let package = &metadata.packages[0];
         ensure!(package.features.contains_key("test"), "missing test feature");
         let mut cargo = Command::new("cargo");
@@ -399,10 +613,10 @@ impl Display for OptLevel {
 }
 
 /// Strips and optimizes a WASM applet.
-pub fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> Result<()> {
+pub async fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> Result<()> {
     let mut strip = Command::new("wasm-strip");
     strip.arg(applet.as_ref());
-    cmd::execute(&mut strip)?;
+    cmd::execute(&mut strip).await?;
     let mut opt = Command::new("wasm-opt");
     opt.args(["--enable-bulk-memory", "--enable-sign-ext", "--enable-mutable-globals"]);
     match opt_level {
@@ -412,12 +626,15 @@ pub fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> R
     opt.arg(applet.as_ref());
     opt.arg("-o");
     opt.arg(applet.as_ref());
-    cmd::execute(&mut opt)?;
+    cmd::execute(&mut opt).await?;
     Ok(())
 }
 
-fn metadata(dir: impl Into<PathBuf>) -> Result<Metadata> {
-    let metadata = MetadataCommand::new().current_dir(dir).no_deps().exec()?;
+async fn metadata(dir: impl Into<PathBuf>) -> Result<Metadata> {
+    let dir = dir.into();
+    let metadata =
+        tokio::task::spawn_blocking(|| MetadataCommand::new().current_dir(dir).no_deps().exec())
+            .await??;
     ensure!(metadata.packages.len() == 1, "not exactly one package");
     Ok(metadata)
 }
