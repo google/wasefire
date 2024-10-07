@@ -40,8 +40,7 @@ pub struct State {
     pub protocol: platform::protocol::State,
     pub usb: usb::State,
     pub storage: Option<FileStorage>,
-    #[cfg(feature = "web")]
-    pub web: web_server::Client,
+    pub web: Option<web_server::Client>,
 }
 
 pub enum Board {}

@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::net::IpAddr;
+use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::{mpsc, oneshot};
 use warp::ws::{Message, WebSocket};
@@ -35,11 +35,7 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn new(url: &str, events: mpsc::Sender<Event>) -> Result<Self> {
-        let (addr, port) = url.split_once(':').context("URL is not <addr>:<port>")?;
-        let addr: IpAddr = addr.parse().context("parsing <addr> in URL")?;
-        let port: u16 = port.parse().context("parsing <port> in URL")?;
-
+    pub async fn new(addr: SocketAddr, events: mpsc::Sender<Event>) -> Result<Self> {
         let (sender, mut receiver) = oneshot::channel();
         let client = Arc::new(Mutex::new(Some((sender, events))));
 
@@ -50,8 +46,8 @@ impl Client {
             .map(|ws: warp::ws::Ws, client| ws.on_upgrade(|socket| handle(socket, client)));
         let routes = warp::get().and(static_files.or(ws));
 
-        tokio::spawn(async move { warp::serve(routes).run((addr, port)).await });
-        let url = format!("http://{addr}:{port}/");
+        tokio::spawn(async move { warp::serve(routes).run(addr).await });
+        let url = format!("http://{addr}/");
 
         // Wait 2 seconds for a client to connect, otherwise open a browser. The client is supposed
         // to connect every second. This should ensure that at most one client is open.
