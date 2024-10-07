@@ -362,7 +362,10 @@ impl<B: Board> Scheduler<B> {
         while let Some(call) = self.applet.get().unwrap().store_mut().last_call() {
             match self.host_funcs[call.index()].descriptor().name {
                 "dp" => (),
-                x => log::panic!("init called {} into host", log::Debug2Format(&x)),
+                x => {
+                    log::warn!("init called {} into host", log::Debug2Format(&x));
+                    return Ok(applet_trapped(self, Some(x)));
+                }
             }
             self.process_applet();
         }
@@ -493,10 +496,10 @@ impl<B: Board> Scheduler<B> {
 
 fn applet_trapped<B: Board>(scheduler: &mut Scheduler<B>, reason: Option<&'static str>) {
     match reason {
-        None => log::error!("Applet trapped in wasm (think segfault)."),
-        Some("sa") => log::error!("Applet aborted (probably a panic)."),
-        Some("se") => log::warn!("Applet exited."),
-        Some(name) => log::error!("Applet trapped calling host {:?}.", name),
+        None => log::warn!("Applet trapped in wasm (think segfault)."),
+        Some("sa") => log::warn!("Applet aborted (probably a panic)."),
+        Some("se") => log::info!("Applet exited."),
+        Some(name) => log::warn!("Applet trapped calling host {:?}.", name),
     }
     scheduler.stop_applet(match reason {
         Some("se") => ExitStatus::Exit,

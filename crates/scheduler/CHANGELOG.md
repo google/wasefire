@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Trap applets calling into host during init (except for debug printing)
 - Support `PlatformLock` protocol call
 - Support `AppletExitStatus` protocol call (the platform keeps running when the applet exits)
 - Support `Applet{Install,Uninstall}` protocol calls
@@ -16,6 +17,7 @@
 
 ### Patch
 
+- Reduce logging level of applet trapping (those are not errors)
 - Make sure at compile-time that exactly one `native` or `wasm` feature is enabled
 - Use `derive-where` instead of `derivative`
 - Implement `defmt::Format` for `Key` when `defmt` is enabled
