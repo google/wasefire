@@ -14,7 +14,7 @@
 
 use core::str;
 use std::collections::BTreeMap;
-use std::fmt::Write;
+use std::fmt::{Display, Write};
 use std::io::BufRead;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
@@ -23,10 +23,20 @@ use tokio::process::Command;
 use wasefire_cli_tools::{cmd, fs};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
-pub enum ReleaseType {
+pub enum Severity {
     Major,
     Minor,
     Patch,
+}
+
+impl Display for Severity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Major => write!(f, "Major"),
+            Self::Minor => write!(f, "Minor"),
+            Self::Patch => write!(f, "Patch"),
+        }
+    }
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -78,20 +88,20 @@ impl Changelog {
                 None => bail!("Failed to find release starting with '## ': {current_line}"),
             };
 
-            // Parse each release type (major, minor, patch)
+            // Parse each severity (major, minor, patch)
             while next_line.is_some_and(|line| line.starts_with("### ")) {
                 // Advance
                 current_line = lines.next().unwrap();
                 next_line = lines.peek();
 
-                let release_type_string = match current_line.strip_prefix("### ") {
+                let severity_string = match current_line.strip_prefix("### ") {
                     Some(l) => l,
                     _ => bail!("Failed to parse version header {current_line}"),
                 };
-                let release_type = match release_type_string {
-                    "Major" => ReleaseType::Major,
-                    "Minor" => ReleaseType::Minor,
-                    "Patch" => ReleaseType::Patch,
+                let severity = match severity_string {
+                    "Major" => Severity::Major,
+                    "Minor" => Severity::Minor,
+                    "Patch" => Severity::Patch,
                     _ => bail!("Failed to parse version header {current_line}"),
                 };
 
@@ -124,8 +134,8 @@ impl Changelog {
                 }
 
                 ensure!(
-                    release.contents.insert(release_type, release_descriptions).is_none(),
-                    "Duplicate release type detected for {release_type:?}"
+                    release.contents.insert(severity, release_descriptions).is_none(),
+                    "Duplicate severity detected for {severity:?}"
                 );
             }
 
@@ -154,7 +164,28 @@ impl Changelog {
         );
         ensure!(last_release.contents.is_empty(), "The last release must contain no changes");
 
-        Ok(Changelog { releases, skip_counter })
+        let changelog = Changelog { releases, skip_counter };
+        let output_string = format!("{changelog}");
+
+        ensure!(
+            output_string == contents,
+            "Input string does not equal rendered changelog.\n\nIn: {contents}\n\nOut: \
+             {output_string}"
+        );
+
+        Ok(changelog)
+    }
+}
+
+impl Display for Changelog {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "# Changelog\n")?;
+
+        for release in &self.releases {
+            writeln!(f, "{release}\n")?;
+        }
+
+        writeln!(f, "<!-- Increment to skip CHANGELOG.md test: {} -->", self.skip_counter)
     }
 }
 
@@ -162,7 +193,7 @@ impl Changelog {
 struct Release {
     version: Version,
 
-    contents: BTreeMap<ReleaseType, Vec<String>>,
+    contents: BTreeMap<Severity, Vec<String>>,
 }
 
 impl Release {
@@ -171,7 +202,27 @@ impl Release {
     }
 }
 
-/// Validates all changelog files.
+impl Display for Release {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "## {}", self.version)?;
+
+        for (severity, descriptions) in &self.contents {
+            writeln!(f, "\n\n### {severity}\n")?;
+
+            for (index, description) in descriptions.iter().enumerate() {
+                write!(f, "- {description}")?;
+
+                if index != descriptions.len() - 1 {
+                    writeln!(f)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+/// Validates CHANGELOG.md files for all Wasefire crates.
 pub async fn execute_ci() -> Result<()> {
     let paths = cmd::output(Command::new("git").args(["ls-files", "*/CHANGELOG.md"])).await?;
 
@@ -185,8 +236,8 @@ pub async fn execute_ci() -> Result<()> {
     Ok(())
 }
 
-/// Updates the changelog of a crate and its dependents.
-pub async fn execute_change(path: &str, _scope: &ReleaseType, _description: &str) -> Result<()> {
+/// Updates a CHANGELOG.md file and CHANGELOG.md files of dependencies.
+pub async fn execute_change(path: &str, _severity: &Severity, _description: &str) -> Result<()> {
     ensure!(fs::exists(path).await, "Crate does not exist: {path}");
 
     let _changelog = Changelog::read_file(&format!("{path}/CHANGELOG.md")).await?;
@@ -238,7 +289,8 @@ mod tests {
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->";
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
 
         assert_eq!(
             Changelog::parse(changelog).expect("Failed to parse changelog."),
@@ -248,15 +300,15 @@ mod tests {
                         version: Version::parse("0.3.0").unwrap(),
                         contents: BTreeMap::from([
                             (
-                                ReleaseType::Major,
+                                Severity::Major,
                                 vec!["major update 1".to_string(), "major update 2".to_string()]
                             ),
                             (
-                                ReleaseType::Minor,
+                                Severity::Minor,
                                 vec!["minor update 1".to_string(), "minor update 2".to_string()]
                             ),
                             (
-                                ReleaseType::Patch,
+                                Severity::Patch,
                                 vec!["patch update 1".to_string(), "patch update 2".to_string()]
                             )
                         ]),
@@ -265,15 +317,15 @@ mod tests {
                         version: Version::parse("0.2.0").unwrap(),
                         contents: BTreeMap::from([
                             (
-                                ReleaseType::Major,
+                                Severity::Major,
                                 vec!["major update 1".to_string(), "major update 2".to_string()]
                             ),
                             (
-                                ReleaseType::Minor,
+                                Severity::Minor,
                                 vec!["minor update 1".to_string(), "minor update 2".to_string()]
                             ),
                             (
-                                ReleaseType::Patch,
+                                Severity::Patch,
                                 vec!["patch update 1".to_string(), "patch update 2".to_string()]
                             )
                         ]),
@@ -289,7 +341,56 @@ mod tests {
     }
 
     #[test]
-    fn parse_changelog_with_missing_release_type_success() {
+    fn write_changelog_success() {
+        let changelog = r"# Changelog
+
+## 0.3.0
+
+### Major
+
+- major update 1
+- major update 2
+
+### Minor
+
+- minor update 1
+- minor update 2
+
+### Patch
+
+- patch update 1
+- patch update 2
+
+## 0.2.0
+
+### Major
+
+- major update 1
+- major update 2
+
+### Minor
+
+- minor update 1
+- minor update 2
+
+### Patch
+
+- patch update 1
+- patch update 2
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
+
+        assert_eq!(
+            format!("{}", Changelog::parse(changelog).expect("Failed to parse changelog.")),
+            changelog
+        );
+    }
+
+    #[test]
+    fn parse_changelog_with_missing_severity_success() {
         let changelog = r"# Changelog
 
 ## 0.4.0
@@ -315,7 +416,8 @@ mod tests {
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->";
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
 
         assert_eq!(
             Changelog::parse(changelog).expect("Failed to parse changelog."),
@@ -324,21 +426,21 @@ mod tests {
                     Release {
                         version: Version::parse("0.4.0").unwrap(),
                         contents: BTreeMap::from([(
-                            ReleaseType::Major,
+                            Severity::Major,
                             vec!["major update 1".to_string(), "major update 2".to_string()]
                         )]),
                     },
                     Release {
                         version: Version::parse("0.3.0").unwrap(),
                         contents: BTreeMap::from([(
-                            ReleaseType::Minor,
+                            Severity::Minor,
                             vec!["minor update 1".to_string(), "minor update 2".to_string()]
                         )]),
                     },
                     Release {
                         version: Version::parse("0.2.0").unwrap(),
                         contents: BTreeMap::from([(
-                            ReleaseType::Patch,
+                            Severity::Patch,
                             vec!["patch update 1".to_string(), "patch update 2".to_string()]
                         )]),
                     },
@@ -367,7 +469,8 @@ mod tests {
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->";
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
 
         assert_eq!(
             Changelog::parse(changelog).expect("Failed to parse changelog."),
@@ -376,7 +479,7 @@ mod tests {
                     Release {
                         version: Version::parse("0.2.0").unwrap(),
                         contents: BTreeMap::from([(
-                            ReleaseType::Major,
+                            Severity::Major,
                             vec![
                                 "short 1".to_string(),
                                 "my long description\n  that spans many lines".to_string(),
@@ -406,7 +509,8 @@ mod tests {
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->";
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
 
         assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
@@ -420,7 +524,8 @@ mod tests {
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->";
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
 
         assert_eq!(
             Changelog::parse(changelog).expect("Failed to parse changelog."),
@@ -437,9 +542,11 @@ mod tests {
     #[test]
     fn parse_changelog_handles_skip_counter_at_end() {
         let changelog = r"# Changelog
+
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 5 -->";
+<!-- Increment to skip CHANGELOG.md test: 5 -->
+";
 
         assert_eq!(
             Changelog::parse(changelog).expect("Failed to parse changelog."),
@@ -491,7 +598,8 @@ mod tests {
 
 - A change
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->";
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
 
         assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
@@ -503,7 +611,8 @@ mod tests {
     fn parse_changelog_versions_requires_at_least_one_release() {
         let changelog = r"# Changelog
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->";
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
 
         assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
@@ -521,7 +630,8 @@ mod tests {
 
 - A change
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->";
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
 
         assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
@@ -539,7 +649,8 @@ mod tests {
 
 - A change
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->";
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
 
         assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
@@ -563,7 +674,8 @@ mod tests {
 
 - A change
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->";
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
 
         assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
