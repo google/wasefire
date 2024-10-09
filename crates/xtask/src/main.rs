@@ -287,7 +287,7 @@ enum ChangelogCommand {
         path: String,
 
         /// Semver scope of the change.
-        scope: changelog::ReleaseType,
+        scope: changelog::Severity,
 
         /// One-line description of the change.
         description: String,
