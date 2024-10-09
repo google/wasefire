@@ -38,7 +38,7 @@ impl SideTableEntry {
     const VAL_CNT_MASK: u32 = 0x07c00000;
     const POP_CNT_MASK: u32 = 0xf8000000;
 
-    fn new(view: SideTableEntryView) -> Result<Self, Error> {
+    pub fn new(view: SideTableEntryView) -> Result<Self, Error> {
         let mut fields = 0;
         fields |= into_signed_field(Self::DELTA_IP_MASK, view.delta_ip)?;
         fields |= into_signed_field(Self::DELTA_STP_MASK, view.delta_stp)?;
