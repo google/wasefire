@@ -406,27 +406,32 @@ struct Expr<'a, 'm> {
     is_body: bool,
     locals: Vec<ValType>,
     labels: Vec<Label<'m>>,
-    side_table: Vec<SideTableEntryView>,
+    side_table: Vec<Option<SideTableEntryView>>,
+}
+
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+struct SideTableBranch<'m> {
+    parser: &'m [u8],
+    side_table_len: usize,
 }
 
 #[derive(Debug, Default)]
 struct Label<'m> {
     type_: FuncType<'m>,
     /// Whether an `else` is possible before `end`.
-    kind: LabelKind,
+    kind: LabelKind<'m>,
     /// Whether the bottom of the stack is polymorphic.
     polymorphic: bool,
     stack: Vec<OpdType>,
-    /// Each side table entry is a pair of parser position and side table index.
-    side_table_log_entries: Vec<(&'m [u8], usize)>,
+    branches: Vec<SideTableBranch<'m>>,
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
-enum LabelKind {
+enum LabelKind<'m> {
     #[default]
     Block,
     Loop,
-    If,
+    If(SideTableBranch<'m>),
 }
 
 impl<'a, 'm> Expr<'a, 'm> {
@@ -465,7 +470,11 @@ impl<'a, 'm> Expr<'a, 'm> {
         expr.locals = locals;
         expr.label().type_.results = results;
         expr.check()?;
-        expr.side_table.into_iter().map(SideTableEntry::new).collect()
+        expr.side_table
+            .into_iter()
+            .filter(|entry| entry.is_some())
+            .map(|entry| SideTableEntry::new(entry.unwrap()))
+            .collect()
     }
 
     fn check(&mut self) -> CheckResult {
@@ -503,12 +512,8 @@ impl<'a, 'm> Expr<'a, 'm> {
             Unreachable => self.stack_polymorphic(),
             Nop => (),
             Block(b) => {
-                self.push_label(
-                    self.blocktype(&b)?,
-                    LabelKind::Block,
-                    vec![self.side_table_log_entry()],
-                )?;
-                self.push_default_side_table_entry();
+                self.push_label(self.blocktype(&b)?, LabelKind::Block, vec![])?;
+                self.side_table.push(None);
             }
             Loop(b) => {
                 self.push_label(
@@ -516,59 +521,54 @@ impl<'a, 'm> Expr<'a, 'm> {
                     // TODO(dev/fast-interp): Store the parser position in the LabelKind (as done
                     // in exec.rs).
                     LabelKind::Loop,
-                    vec![self.side_table_log_entry()],
+                    vec![],
                 )?;
-                self.push_default_side_table_entry();
+                self.side_table.push(None);
             }
             If(b) => {
                 self.pop_check(ValType::I32)?;
-                self.push_label(
-                    self.blocktype(&b)?,
-                    LabelKind::If,
-                    vec![self.side_table_log_entry()],
-                )?;
-                self.push_default_side_table_entry();
+                self.push_label(self.blocktype(&b)?, LabelKind::If(self.branch()), vec![])?;
+                self.push_entry_only();
             }
             Else => {
-                self.side_table.last_mut().unwrap().delta_ip = self.parser.save().as_ptr() as i32
-                    - self.label().side_table_log_entries.last().unwrap().0.as_ptr() as i32;
+                let LabelKind::If(SideTableBranch { parser, side_table_len }) = self.label().kind
+                else {
+                    unreachable!()
+                };
+                self.stitch(&SideTableBranch { parser, side_table_len });
 
                 let label = self.label();
-                check(core::mem::replace(&mut label.kind, LabelKind::Block) == LabelKind::If)?;
+                check(
+                    core::mem::replace(&mut label.kind, LabelKind::Block)
+                        == LabelKind::If(SideTableBranch { parser, side_table_len }),
+                )?;
                 let FuncType { params, results } = label.type_;
                 self.pops(results)?;
                 check(self.stack().is_empty())?;
                 self.label().polymorphic = false;
                 self.pushs(params);
 
-                let parser_pos = self.parser.save();
+                let parser = self.parser.save();
                 let side_table_len = self.side_table.len();
-                self.label().side_table_log_entries.push((parser_pos, side_table_len));
-                self.push_default_side_table_entry();
+                self.label().branches.push(SideTableBranch { parser, side_table_len });
+                self.push_entry_only();
             }
             End => unreachable!(),
             Br(l) => {
-                let parser_pos = self.parser.save();
-                let side_table_len = self.side_table.len();
-                self.br_label_side_table_log_entries(l)?.push((parser_pos, side_table_len));
-                self.pops(self.br_label(l)?)?;
+                let res = self.br_label(l)?;
+                self.pops(res)?;
                 self.stack_polymorphic();
             }
             BrIf(l) => {
-                let parser_pos = self.parser.save();
-                let side_table_len = self.side_table.len();
-                self.br_label_side_table_log_entries(l)?.push((parser_pos, side_table_len));
                 self.pop_check(ValType::I32)?;
-                self.swaps(self.br_label(l)?)?;
+                let res = self.br_label(l)?;
+                self.swaps(res)?;
             }
             BrTable(ls, ln) => {
                 self.pop_check(ValType::I32)?;
                 let tn = self.br_label(ln)?;
                 self.peeks(tn)?;
                 for l in ls {
-                    let parser_pos = self.parser.save();
-                    let side_table_len = self.side_table.len();
-                    self.br_label_side_table_log_entries(l)?.push((parser_pos, side_table_len));
                     let t = self.br_label(l)?;
                     check(tn.len() == t.len())?;
                     self.peeks(t)?;
@@ -780,24 +780,25 @@ impl<'a, 'm> Expr<'a, 'm> {
     }
 
     fn push_label(
-        &mut self, type_: FuncType<'m>, kind: LabelKind,
-        side_table_log_entries: Vec<(&'m [u8], usize)>,
+        &mut self, type_: FuncType<'m>, kind: LabelKind<'m>, branches: Vec<SideTableBranch<'m>>,
     ) -> CheckResult {
         self.pops(type_.params)?;
         let stack = type_.params.iter().cloned().map(OpdType::from).collect();
-        let label = Label { type_, kind, polymorphic: false, stack, side_table_log_entries };
+        let label = Label { type_, kind, polymorphic: false, stack, branches };
         self.labels.push(label);
         Ok(())
     }
 
     fn end_label(&mut self) -> CheckResult {
-        for (label_parser_pos, idx) in &self.labels.last().unwrap().side_table_log_entries {
-            let parser_pos = self.parser.save().as_ptr() as i32;
-            self.side_table[*idx].delta_ip = parser_pos - label_parser_pos.as_ptr() as i32;
+        let branches = core::mem::take(&mut self.label().branches);
+        for branch in branches {
+            self.stitch(&branch);
         }
 
         let label = self.label();
-        if label.kind == LabelKind::If {
+        if let LabelKind::If(SideTableBranch { parser: _parser, side_table_len: _side_table_len }) =
+            label.kind
+        {
             check(label.type_.params == label.type_.results)?;
         }
         let results = label.type_.results;
@@ -809,44 +810,58 @@ impl<'a, 'm> Expr<'a, 'm> {
         Ok(())
     }
 
-    fn br_label(&self, l: LabelIdx) -> Result<ResultType<'m>, Error> {
+    fn stitch(&mut self, branch: &SideTableBranch) {
+        let current_parser = self.parser.save().as_ptr() as isize;
+        let SideTableBranch { parser, side_table_len } = branch;
+        let entry = &mut self.side_table[*side_table_len];
+        if entry.is_none() {
+            *entry = Some(SideTableEntryView {
+                delta_ip: (current_parser - parser.as_ptr() as isize) as i32,
+                delta_stp: 0,
+                val_cnt: 0,
+                pop_cnt: 0,
+            });
+        }
+    }
+
+    fn br_label(&mut self, l: LabelIdx) -> Result<ResultType<'m>, Error> {
+        self.push_entry(l)?;
         let l = l as usize;
         let n = self.labels.len();
-        check(l < n)?;
         let label = &self.labels[n - l - 1];
         Ok(match label.kind {
-            LabelKind::Block | LabelKind::If => label.type_.results,
+            LabelKind::Block | LabelKind::If(_) => label.type_.results,
             LabelKind::Loop => label.type_.params,
         })
     }
 
-    fn br_label_side_table_log_entries(
-        &mut self, l: LabelIdx,
-    ) -> Result<&mut Vec<(&'m [u8], usize)>, Error> {
+    fn push_entry(&mut self, l: LabelIdx) -> CheckResult {
         let l = l as usize;
         let n = self.labels.len();
         check(l < n)?;
+        let branch = self.branch();
         let label = &mut self.labels[n - l - 1];
-        self.side_table.push(SideTableEntryView {
+        label.branches.push(branch);
+        self.side_table.push(Some(SideTableEntryView {
             delta_ip: 0,
             delta_stp: 0,
             val_cnt: 0,
             pop_cnt: 0,
-        });
-        Ok(&mut label.side_table_log_entries)
+        }));
+        Ok(())
     }
 
-    fn push_default_side_table_entry(&mut self) {
-        self.side_table.push(SideTableEntryView {
+    fn push_entry_only(&mut self) {
+        self.side_table.push(Some(SideTableEntryView {
             delta_ip: 0,
             delta_stp: 0,
             val_cnt: 0,
             pop_cnt: 0,
-        });
+        }));
     }
 
-    fn side_table_log_entry(&self) -> (&'m [u8], usize) {
-        (self.parser.save(), self.side_table.len())
+    fn branch(&self) -> SideTableBranch<'m> {
+        SideTableBranch { parser: self.parser.save(), side_table_len: self.side_table.len() }
     }
 
     fn call(&mut self, t: FuncType) -> CheckResult {
