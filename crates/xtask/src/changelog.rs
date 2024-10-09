@@ -94,15 +94,11 @@ impl Changelog {
                 current_line = lines.next().unwrap();
                 next_line = lines.peek();
 
-                let severity_string = match current_line.strip_prefix("### ") {
-                    Some(l) => l,
-                    _ => bail!("Failed to parse version header {current_line}"),
-                };
-                let severity = match severity_string {
-                    "Major" => Severity::Major,
-                    "Minor" => Severity::Minor,
-                    "Patch" => Severity::Patch,
-                    _ => bail!("Failed to parse version header {current_line}"),
+                let severity = match current_line.strip_prefix("### ") {
+                    Some("Major") => Severity::Major,
+                    Some("Minor") => Severity::Minor,
+                    Some("Patch") => Severity::Patch,
+                    _ => bail!("Failed to parse serevity: {current_line}"),
                 };
 
                 let mut release_descriptions = Vec::new();
