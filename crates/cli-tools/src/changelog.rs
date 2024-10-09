@@ -16,13 +16,14 @@ use core::str;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Write};
 use std::io::BufRead;
+use std::str::FromStr;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use semver::Version;
 use tokio::process::Command;
-use wasefire_cli_tools::{cmd, fs};
+use crate::{cmd, fs};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Severity {
     Major,
     Minor,
@@ -35,6 +36,19 @@ impl Display for Severity {
             Self::Major => write!(f, "Major"),
             Self::Minor => write!(f, "Minor"),
             Self::Patch => write!(f, "Patch"),
+        }
+    }
+}
+
+impl FromStr for Severity {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "major" => Ok(Self::Major),
+            "minor" => Ok(Self::Minor),
+            "patch" => Ok(Self::Patch),
+            _ => Err(format!("Invalid severity: {}", s)),
         }
     }
 }
