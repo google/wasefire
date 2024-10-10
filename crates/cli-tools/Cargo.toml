@@ -70,11 +70,7 @@ action = [
   "dep:wasefire-wire",
   "tokio/time",
 ]
-changelog = [
-  "dep:clap",
-  "dep:semver",
-  "dep:cargo_metadata",
-]
+changelog = ["dep:cargo_metadata", "dep:clap", "dep:semver"]
 
 [lints]
 clippy.unit-arg = "allow"
