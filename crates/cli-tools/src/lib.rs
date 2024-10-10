@@ -34,6 +34,7 @@ macro_rules! debug {
 
 #[cfg(feature = "action")]
 pub mod action;
+#[cfg(feature = "changelog")]
 pub mod changelog;
 pub mod cmd;
 pub mod error;

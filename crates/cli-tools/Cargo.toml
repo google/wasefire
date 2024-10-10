@@ -22,7 +22,7 @@ humantime = { version = "2.1.0", default-features = false, optional = true }
 indicatif = { version = "0.17.8", default-features = false, optional = true }
 log = { version = "0.4.21", default-features = false }
 rusb = { version = "0.9.4", default-features = false, optional = true }
-semver = "1.0.23"
+semver = { version = "1.0.23", default-features = false, optional = true }
 serde = { version = "1.0.202", default-features = false, features = ["derive"] }
 toml = { version = "0.8.13", default-features = false, features = ["display", "parse"] }
 wasefire-wire = { version = "0.1.1-git", path = "../wire", optional = true }
@@ -69,6 +69,11 @@ action = [
   "dep:wasefire-protocol-usb",
   "dep:wasefire-wire",
   "tokio/time",
+]
+changelog = [
+  "dep:clap",
+  "dep:semver",
+  "dep:cargo_metadata",
 ]
 
 [lints]
