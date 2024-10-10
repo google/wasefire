@@ -18,9 +18,11 @@ use std::fmt::{Display, Write};
 use std::io::BufRead;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
+use cargo_metadata as _;
 use semver::Version;
 use tokio::process::Command;
-use wasefire_cli_tools::{cmd, fs};
+
+use crate::{cmd, fs};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
 pub enum Severity {

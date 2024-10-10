@@ -585,6 +585,7 @@ dependencies = [
  "indicatif",
  "log",
  "rusb",
+ "semver",
  "serde",
  "tokio",
  "toml",
