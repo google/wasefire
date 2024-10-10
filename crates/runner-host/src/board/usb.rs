@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::process::{Child, Command};
+use std::process::{Child, Command, Stdio};
 use std::time::Duration;
 
 use anyhow::{ensure, Result};
@@ -126,5 +126,5 @@ impl State {
 
 fn spawn(cmd: &[&str]) -> Child {
     println!("Executing: {}", cmd.join(" "));
-    Command::new(cmd[0]).args(&cmd[1 ..]).spawn().unwrap()
+    Command::new(cmd[0]).args(&cmd[1 ..]).stdin(Stdio::null()).spawn().unwrap()
 }
