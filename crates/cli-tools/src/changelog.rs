@@ -158,7 +158,7 @@ impl Changelog {
 
         ensure!(
             matches!(last_release.version.to_string().as_str(), "0.1.0" | "0.1.0-git"),
-            "The first release must be version 0.1.0-*"
+            "The first release must be version 0.1.0 or 0.1.0-git"
         );
         ensure!(last_release.contents.is_empty(), "The last release must contain no changes");
 
@@ -634,7 +634,7 @@ mod tests {
         assert!(Changelog::parse(changelog)
             .expect_err("Parse changelog was successful.")
             .to_string()
-            .contains("The first release must be version 0.1.0-*"))
+            .contains("The first release must be version 0.1.0 or 0.1.0-git"))
     }
 
     #[test]
