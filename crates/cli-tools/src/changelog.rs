@@ -175,8 +175,7 @@ impl Changelog {
     }
 
     fn validate_cargo_toml(&self, path: &str) -> Result<()> {
-        let most_recent_release =
-            self.releases.first().context("At least 1 release is required")?;
+        let most_recent_release = self.releases.first().unwrap();
         let metadata = MetadataCommand::new().current_dir(path).no_deps().exec()?;
         let cargo_toml_version =
             &metadata.root_package().context("Cargo.toml version not found")?.version;
@@ -245,7 +244,7 @@ pub async fn execute_ci() -> Result<()> {
         // Validation done during parsing.
         let changelog = Changelog::read_file(&path).await?;
 
-        let crate_dir = path.strip_suffix("/CHANGELOG.md").context("Malformed file path")?;
+        let crate_dir = path.strip_suffix("/CHANGELOG.md").unwrap();
 
         changelog.validate_cargo_toml(crate_dir)?;
     }
