@@ -28,9 +28,8 @@ use rustc_demangle::demangle;
 use tokio::process::Command;
 use tokio::sync::OnceCell;
 use wasefire_cli_tools::error::root_cause_is;
-use wasefire_cli_tools::{action, cmd, fs};
+use wasefire_cli_tools::{action, changelog, cmd, fs};
 
-mod changelog;
 mod footprint;
 mod lazy;
 mod textreview;
@@ -286,8 +285,8 @@ enum ChangelogCommand {
         /// Path to the crate that changed (e.g. `crates/board`).
         path: String,
 
-        /// Semver scope of the change.
-        scope: changelog::Severity,
+        /// Semver severity of the change.
+        severity: changelog::Severity,
 
         /// One-line description of the change.
         description: String,
@@ -305,8 +304,8 @@ impl Flags {
             MainCommand::Textreview => textreview::execute().await,
             MainCommand::Changelog(subcommand) => match subcommand.command {
                 ChangelogCommand::Ci => changelog::execute_ci().await,
-                ChangelogCommand::Change { path, scope, description } => {
-                    changelog::execute_change(&path, &scope, &description).await
+                ChangelogCommand::Change { path, severity, description } => {
+                    changelog::execute_change(&path, &severity, &description).await
                 }
             },
         }
