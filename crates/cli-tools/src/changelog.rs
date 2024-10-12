@@ -18,7 +18,7 @@ use std::fmt::{Display, Write};
 use std::io::BufRead;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
-use cargo_metadata as _;
+use cargo_metadata::MetadataCommand;
 use semver::Version;
 use tokio::process::Command;
 
@@ -154,13 +154,13 @@ impl Changelog {
             releases.push(release);
         }
 
-        let last_release = releases.last().context("At least 1 release is required")?;
+        let initial_release = releases.last().context("At least 1 release is required")?;
 
         ensure!(
-            matches!(last_release.version.to_string().as_str(), "0.1.0" | "0.1.0-git"),
+            matches!(initial_release.version.to_string().as_str(), "0.1.0" | "0.1.0-git"),
             "The first release must be version 0.1.0 or 0.1.0-git"
         );
-        ensure!(last_release.contents.is_empty(), "The last release must contain no changes");
+        ensure!(initial_release.contents.is_empty(), "The last release must contain no changes");
 
         let changelog = Changelog { releases, skip_counter };
         let output_string = format!("{changelog}");
@@ -172,6 +172,20 @@ impl Changelog {
         );
 
         Ok(changelog)
+    }
+
+    fn validate_cargo_toml(&self, path: &str) -> Result<()> {
+        let most_recent_release = self.releases.first().unwrap();
+        let metadata = MetadataCommand::new().current_dir(path).no_deps().exec()?;
+        let cargo_toml_version =
+            &metadata.root_package().context("Cargo.toml version not found")?.version;
+
+        ensure!(
+            most_recent_release.version.to_string() == cargo_toml_version.to_string(),
+            "The most recent version must match Cargo.toml's version"
+        );
+
+        Ok(())
     }
 }
 
@@ -228,7 +242,11 @@ pub async fn execute_ci() -> Result<()> {
         let path = path?;
 
         // Validation done during parsing.
-        Changelog::read_file(&path).await?;
+        let changelog = Changelog::read_file(&path).await?;
+
+        let crate_dir = path.strip_suffix("/CHANGELOG.md").unwrap();
+
+        changelog.validate_cargo_toml(crate_dir)?;
     }
 
     Ok(())
