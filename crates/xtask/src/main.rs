@@ -214,18 +214,6 @@ struct RunnerOptions {
     #[clap(long)]
     log: Option<String>,
 
-    /// Creates a web interface for the host runner.
-    #[clap(long)]
-    web: bool,
-
-    /// Host to start the webserver.
-    #[clap(long)]
-    web_host: Option<String>,
-
-    /// Port to start the webserver.
-    #[clap(long)]
-    web_port: Option<u16>,
-
     /// Measures bloat after building.
     // TODO: Make this a subcommand taking additional options for cargo bloat.
     #[clap(long)]
@@ -516,10 +504,6 @@ impl RunnerOptions {
         if let Some(log) = &self.log {
             cargo.env(self.log_env(), log);
         }
-        let web = self.web || self.web_host.is_some() || self.web_port.is_some();
-        if self.name == "host" && web {
-            features.push("web".to_string());
-        }
         if self.stack_sizes.is_some() {
             rustflags.push("-Z emit-stack-sizes".to_string());
             rustflags.push("-C link-arg=-Tstack-sizes.x".to_string());
@@ -550,12 +534,6 @@ impl RunnerOptions {
                 }
             }
             cargo.arg("--");
-            if let Some(host) = &self.web_host {
-                cargo.arg(format!("--web-host={host}"));
-            }
-            if let Some(port) = &self.web_port {
-                cargo.arg(format!("--web-port={port}"));
-            }
             if std::env::var_os("CODESPACES").is_some() {
                 log::warn!("Assuming runner --arg=--protocol=unix when running in a codespace.");
                 cargo.arg("--protocol=unix");
