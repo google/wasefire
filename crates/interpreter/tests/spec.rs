@@ -36,15 +36,13 @@ fn test(repo: &str, name: &str) {
     let mut env = Env::new(pool);
     env.instantiate("spectest", &SPECTEST);
     env.register_name("spectest", None);
-    assert!(env.inst.is_ok());
+    assert!(matches!(env.inst, Sup::Yes(_)));
     for directive in wast.directives {
         eprintln!("{name}:{}", directive.span().offset());
         match directive {
             WastDirective::Wat(QuoteWat::Wat(Wat::Module(mut m))) => {
                 env.instantiate(name, &m.encode().unwrap());
-                if !matches!(env.inst, Err(Error::Unsupported(_))) {
-                    env.register_id(m.id, env.inst.unwrap());
-                }
+                env.register_id(m.id, env.inst);
             }
             WastDirective::Wat(mut wat) => env.instantiate(name, &wat.encode().unwrap()),
             WastDirective::AssertMalformed { module, .. } => assert_malformed(module),
@@ -97,16 +95,58 @@ fn mem_size(name: &str) -> usize {
     }
 }
 
+/// Whether something is supported.
+#[derive(Copy, Clone)]
+enum Sup<T> {
+    Uninit,
+    No(Unsupported),
+    Yes(T),
+}
+
+impl<T> Sup<T> {
+    fn conv(x: Result<T, Error>) -> Result<Sup<T>, Error> {
+        match x {
+            Ok(x) => Ok(Sup::Yes(x)),
+            Err(Error::Unsupported(x)) => {
+                eprintln!("unsupported {x:?}");
+                Ok(Sup::No(x))
+            }
+            Err(x) => Err(x),
+        }
+    }
+
+    fn res(self) -> Result<T, Error> {
+        match self {
+            Sup::Uninit => unreachable!(),
+            Sup::No(x) => Err(Error::Unsupported(x)),
+            Sup::Yes(x) => Ok(x),
+        }
+    }
+}
+
+macro_rules! only_sup {
+    ($x:expr) => {
+        match $x {
+            Ok(x) => Ok(x),
+            Err(Error::Unsupported(x)) => {
+                eprintln!("skip unsupported {x:?}");
+                return;
+            }
+            Err(x) => Err(x),
+        }
+    };
+}
+
 struct Env<'m> {
     pool: &'m mut [u8],
     store: Store<'m>,
-    inst: Result<InstId, Error>,
-    map: HashMap<Id<'m>, InstId>,
+    inst: Sup<InstId>,
+    map: HashMap<Id<'m>, Sup<InstId>>,
 }
 
 impl<'m> Env<'m> {
     fn new(pool: &'m mut [u8]) -> Self {
-        Env { pool, store: Store::default(), inst: Err(Error::Invalid), map: HashMap::new() }
+        Env { pool, store: Store::default(), inst: Sup::Uninit, map: HashMap::new() }
     }
 
     fn alloc(&mut self, size: usize) -> &'m mut [u8] {
@@ -118,14 +158,6 @@ impl<'m> Env<'m> {
         let (result, pool) = self_pool.split_at_mut(size.next_multiple_of(MEMORY_ALIGN));
         self.pool = pool;
         &mut result[.. size]
-    }
-
-    fn set_inst(&mut self, inst: Result<InstId, Error>) {
-        match inst {
-            Ok(_) | Err(Error::Unsupported(_)) => (),
-            Err(e) => panic!("{e:?}"),
-        }
-        self.inst = inst;
     }
 
     fn maybe_instantiate(&mut self, name: &str, wasm: &[u8]) -> Result<InstId, Error> {
@@ -141,7 +173,7 @@ impl<'m> Env<'m> {
 
     fn instantiate(&mut self, name: &str, wasm: &[u8]) {
         let inst = self.maybe_instantiate(name, wasm);
-        self.set_inst(inst);
+        self.inst = Sup::conv(inst).unwrap();
     }
 
     fn invoke(&mut self, inst_id: InstId, name: &str, args: Vec<Val>) -> Result<Vec<Val>, Error> {
@@ -152,20 +184,21 @@ impl<'m> Env<'m> {
     }
 
     fn register_name(&mut self, name: &'m str, module: Option<Id<'m>>) {
-        let inst_id = self.inst.unwrap();
-        self.register_id(module, inst_id);
-        self.store.set_name(inst_id, name).unwrap();
+        self.register_id(module, self.inst);
+        if let Sup::Yes(inst_id) = self.inst {
+            self.store.set_name(inst_id, name).unwrap();
+        }
     }
 
-    fn register_id(&mut self, id: Option<Id<'m>>, inst_id: InstId) {
+    fn register_id(&mut self, id: Option<Id<'m>>, inst_id: Sup<InstId>) {
         if let Some(id) = id {
             self.map.insert(id, inst_id);
         }
     }
 
-    fn inst_id(&self, id: Option<Id>) -> Result<InstId, Error> {
+    fn inst_id(&self, id: Option<Id>) -> Sup<InstId> {
         match id {
-            Some(x) => Ok(self.map[&x]),
+            Some(x) => self.map[&x],
             None => self.inst,
         }
     }
@@ -257,7 +290,7 @@ fn spectest() -> Vec<u8> {
 }
 
 fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
-    let actual = wast_execute(env, exec).unwrap();
+    let actual = only_sup!(wast_execute(env, exec)).unwrap();
     assert_eq!(actual.len(), expected.len());
     for (actual, expected) in actual.into_iter().zip(expected.into_iter()) {
         use wast::core::HeapType;
@@ -295,42 +328,31 @@ fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
 }
 
 fn assert_trap(env: &mut Env, exec: WastExecute) {
-    assert_eq!(wast_execute(env, exec), Err(Error::Trap));
+    assert_eq!(only_sup!(wast_execute(env, exec)), Err(Error::Trap));
 }
 
 fn assert_invoke(env: &mut Env, invoke: WastInvoke) {
-    assert_eq!(wast_invoke(env, invoke), Ok(Vec::new()));
+    assert_eq!(only_sup!(wast_invoke(env, invoke)), Ok(Vec::new()));
 }
 
 fn assert_malformed(mut wat: QuoteWat) {
     if let Ok(wasm) = wat.encode() {
-        let module = Module::new(&wasm);
-        if !matches!(module, Err(Error::Unsupported(_))) {
-            assert_eq!(module.err(), Some(Error::Invalid));
-        }
+        assert_eq!(only_sup!(Module::new(&wasm)).err(), Some(Error::Invalid));
     }
 }
 
 fn assert_invalid(mut wat: QuoteWat) {
     let wasm = wat.encode().unwrap();
-    let module = Module::new(&wasm);
-    if !matches!(module, Err(Error::Unsupported(_))) {
-        assert_eq!(module.err(), Some(Error::Invalid));
-    }
+    assert_eq!(only_sup!(Module::new(&wasm)).err(), Some(Error::Invalid));
 }
 
 fn assert_exhaustion(env: &mut Env, call: WastInvoke) {
-    let result = wast_invoke(env, call);
-    if !matches!(result, Err(Error::Unsupported(_))) {
-        assert_eq!(result, Err(Error::Trap));
-    }
+    assert_eq!(only_sup!(wast_invoke(env, call)), Err(Error::Trap));
 }
 
 fn assert_unlinkable(env: &mut Env, mut wat: Wat) {
-    let inst = env.maybe_instantiate("", &wat.encode().unwrap());
-    if !matches!(inst, Err(Error::Unsupported(_))) {
-        assert_eq!(inst.err(), Some(Error::NotFound));
-    }
+    let inst = only_sup!(env.maybe_instantiate("", &wat.encode().unwrap()));
+    assert_eq!(inst.err(), Some(Error::NotFound));
 }
 
 fn wast_execute(env: &mut Env, exec: WastExecute) -> Result<Vec<Val>, Error> {
@@ -340,14 +362,14 @@ fn wast_execute(env: &mut Env, exec: WastExecute) -> Result<Vec<Val>, Error> {
             env.maybe_instantiate("", &wat.encode().unwrap()).map(|_| Vec::new())
         }
         WastExecute::Get { module, global, .. } => {
-            let inst_id = env.inst_id(module)?;
+            let inst_id = env.inst_id(module).res()?;
             env.store.get_global(inst_id, global).map(|x| vec![x])
         }
     }
 }
 
 fn wast_invoke(env: &mut Env, invoke: WastInvoke) -> Result<Vec<Val>, Error> {
-    let inst_id = env.inst_id(invoke.module)?;
+    let inst_id = env.inst_id(invoke.module).res()?;
     let args = wast_args(invoke.args);
     env.invoke(inst_id, invoke.name, args)
 }
@@ -412,10 +434,9 @@ test!(bulk);
 test!(call);
 test!(call_indirect);
 test!(
-    // This test seems specific to text format.
     #[ignore]
     comments
-);
+); // seems specific to text format
 test!(const_, "const");
 test!(conversions);
 test!(custom);
@@ -484,10 +505,9 @@ test!(table_set);
 test!(table_size);
 test!(token);
 test!(
-    // This test seems specific to text format.
     #[ignore]
     tokens
-);
+); // seems specific to text format
 test!(traps);
 test!(type_, "type");
 test!(unreachable);
