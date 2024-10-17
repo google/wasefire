@@ -433,10 +433,7 @@ test!(br_table);
 test!(bulk);
 test!(call);
 test!(call_indirect);
-test!(
-    #[ignore]
-    comments
-); // seems specific to text format
+test!(comments);
 test!(const_, "const");
 test!(conversions);
 test!(custom);
@@ -484,6 +481,7 @@ test!(memory_size);
 test!(memory_trap);
 test!(names);
 test!(nop);
+test!(obsolete_keywords, "obsolete-keywords");
 test!(ref_func);
 test!(ref_is_null);
 test!(ref_null);
@@ -504,10 +502,6 @@ test!(table_init);
 test!(table_set);
 test!(table_size);
 test!(token);
-test!(
-    #[ignore]
-    tokens
-); // seems specific to text format
 test!(traps);
 test!(type_, "type");
 test!(unreachable);
