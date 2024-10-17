@@ -1,9 +1,24 @@
 # Changelog
 
-## 0.3.2-git
+## 0.4.0-git
+
+### Major
+
+- Remove `board-api-platform{,-protocol,-update}` features
+
+### Minor
+
+- Trap applets calling into host during init (except for debug printing)
+- Support `PlatformLock` protocol call
+- Support `AppletExitStatus` protocol call (the platform keeps running when the applet exits)
+- Support `Applet{Install,Uninstall}` protocol calls
+- Migrate from `debug::exit()` to `scheduling::exit()`
+- Support `PlatformUpdate{Metadata,Transfer}` protocol calls
 
 ### Patch
 
+- Reduce logging level of applet trapping (those are not errors)
+- Make sure at compile-time that exactly one `native` or `wasm` feature is enabled
 - Use `derive-where` instead of `derivative`
 - Implement `defmt::Format` for `Key` when `defmt` is enabled
 - Stop using `log::Debug2Format()` when logging events
@@ -152,4 +167,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 4 -->
+<!-- Increment to skip CHANGELOG.md test: 9 -->

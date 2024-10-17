@@ -7,22 +7,30 @@ RAM:
 
 Flash:
 - 0x00000000 bootloader (64KiB)
-- 0x00010000 platform A (448KiB)
-- 0x00080000 platform B (448KiB)
+- 0x00010000 platform A (320KiB)
+- 0x00060000 platform B (320KiB)
+- 0x000b0000 applet (256KiB)
 - 0x000f0000 persistent storage (64KiB)
 - 0x00100000
 
 */
 
-/* Keep those values in sync with the bootloader. */
-__header_origin = 0x00010000 + RUNNER_SIDE * 0x00070000;
+/* Keep those values in sync with the header crate used by the bootloader. */
+__bootloader_size = 0x00010000;
+__platform_size = 0x00050000;
+__applet_size = 0x00040000;
+ASSERT(__bootloader_size + __platform_size == 0x00060000, "bad layout");
+ASSERT(__bootloader_size + 2 * __platform_size + __applet_size == 0x000f0000, "bad layout");
+__header_origin = __bootloader_size + RUNNER_SIDE * __platform_size;
 __header_length = 0x00000100;
 __flash_origin = __header_origin + __header_length;
-__flash_length = 0x00070000 - __header_length;
-__sother = 0x00010000 + (1 - RUNNER_SIDE) * 0x00070000;
-__eother = __sother + 0x00070000;
-/* Keep those values in sync with --reset-storage in xtask */
-__sstore = 0x000f0000;
+__flash_length = __platform_size - __header_length;
+__sother = __bootloader_size + (1 - RUNNER_SIDE) * __platform_size;
+__eother = __sother + __platform_size;
+/* Keep those values in sync with --reset-flash in xtask */
+__sapplet = __bootloader_size + 2 * __platform_size;
+__eapplet = __sapplet + __applet_size;
+__sstore = __eapplet;
 __estore = 0x00100000;
 
 __stack_origin = 0x20000000;

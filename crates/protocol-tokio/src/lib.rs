@@ -21,9 +21,12 @@
 pub use device::*;
 #[cfg(feature = "host")]
 pub use host::*;
+use wasefire_one_of::exactly_one_of;
 
 mod common;
 #[cfg(feature = "device")]
 mod device;
 #[cfg(feature = "host")]
 mod host;
+
+exactly_one_of!["device", "host"];

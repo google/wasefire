@@ -4,6 +4,10 @@
 
 ### Major
 
+- Remove `platform::protocol::Api::disable()` in favor of locking
+- Add `Api::Applet` as a required API for simple applet management
+- Remove `debug::Api::exit()`
+- Remove `api-platform{,-protocol,-update}` features making those APIs required
 - (Only when `api-platform-protocol` is used) Change `platform::protocol::Api::{enable,disable}()`
   to also control whether requests are accepted
 - (Only when `api-storage` is used) The reexported `wasefire-store::Storage` now uses
@@ -11,10 +15,12 @@
 
 ### Minor
 
+- Add `usb::serial::Serial::{read,write,flush,enable,disable}()` to bypass `HasSerial`
 - Implement `defmt::Format` for `Event` when `defmt` is enabled
 
 ### Patch
 
+- Fix documentation of `crypto::aead::Api`
 - Use `derive-where` instead of `derivative`
 - Update dependencies
 - Remove workaround lint false positive
@@ -155,4 +161,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 2 -->

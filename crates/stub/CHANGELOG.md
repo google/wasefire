@@ -2,6 +2,10 @@
 
 ## 0.1.5-git
 
+### Minor
+
+- Migrate from `debug::exit()` to `scheduling::{abort,exit}()`
+
 ### Patch
 
 - Update dependencies
@@ -40,4 +44,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 1 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->

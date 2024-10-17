@@ -2,6 +2,10 @@
 
 ## 0.2.1-git
 
+### Minor
+
+- Remove `debug::exit()` and add `scheduling::exit()` instead
+
 ### Patch
 
 - Update dependencies

@@ -292,15 +292,19 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.5"
+version = "0.1.6-git"
 dependencies = [
  "defmt",
  "log",
 ]
 
 [[package]]
+name = "wasefire-one-of"
+version = "0.1.0-git"
+
+[[package]]
 name = "wasefire-protocol"
-version = "0.1.1-git"
+version = "0.2.0-git"
 dependencies = [
  "anyhow",
  "wasefire-error",
@@ -318,6 +322,7 @@ dependencies = [
  "wasefire-board-api",
  "wasefire-error",
  "wasefire-logger",
+ "wasefire-one-of",
  "wasefire-protocol",
 ]
 

@@ -19,7 +19,7 @@ wasefire::applet!();
 
 fn main() {
     test_error();
-    debug::exit(true);
+    scheduling::exit();
 }
 
 fn test_error() {
@@ -32,6 +32,6 @@ fn test_error() {
         (0xffffffff, Err(Error::default())),
     ] {
         debug!("- {x:08x} -> {r:?}");
-        debug::assert_eq(&syscall(0, 0, 0, x), &r);
+        assert_eq!(syscall(0, 0, 0, x), r);
     }
 }

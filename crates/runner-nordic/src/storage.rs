@@ -70,16 +70,20 @@ impl Storage {
         Storage::new(take_storage!(__sother .. __eother))
     }
 
+    pub fn new_applet() -> Self {
+        Storage::new(take_storage!(__sapplet .. __eapplet))
+    }
+
     /// Returns an exclusive reference to the storage.
     ///
     /// This object is locked until the reference is released with `put()`.
-    pub fn take(&self) -> &'static mut [u8] {
+    fn take(&self) -> &'static mut [u8] {
         assert!(!self.used.swap(true, Ordering::Acquire));
         unsafe { &mut *self.ptr }
     }
 
-    pub fn put(&self, data: &'static mut [u8]) {
-        assert_eq!(data as *mut [u8], self.ptr);
+    fn put(&self, data: &'static mut [u8]) {
+        assert_eq!(core::ptr::from_mut(data), self.ptr);
         assert!(self.used.swap(false, Ordering::Release));
     }
 
@@ -88,16 +92,12 @@ impl Storage {
     /// # Safety
     ///
     /// The returned reference is invalidated when `take()` is called.
-    pub unsafe fn get(&self) -> &'static [u8] {
+    unsafe fn get(&self) -> &'static [u8] {
         assert!(!self.used.load(Ordering::Acquire));
         unsafe { &*self.ptr }
     }
 
-    pub fn ptr(&self) -> *const u8 {
-        self.ptr as *const u8
-    }
-
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.ptr.len()
     }
 }
@@ -115,6 +115,26 @@ pub struct StorageWriter {
 impl StorageWriter {
     pub fn new(storage: Storage) -> Self {
         StorageWriter { storage, dry_run: None, offset: 0, buffer: Vec::with_capacity(WORD_SIZE) }
+    }
+
+    pub fn storage(&self) -> &Storage {
+        &self.storage
+    }
+
+    pub fn storage_mut(&mut self) -> &mut Storage {
+        &mut self.storage
+    }
+
+    /// Returns a shared reference to the storage.
+    ///
+    /// # Safety
+    ///
+    /// The returned reference is invalidated when `start()` is called.
+    pub unsafe fn get(&self) -> Result<&'static [u8], Error> {
+        if self.dry_run.is_some() {
+            return Err(Error::user(Code::InvalidState));
+        }
+        Ok(unsafe { self.storage.get() })
     }
 
     pub fn dry_run(&self) -> Result<bool, Error> {
@@ -181,7 +201,7 @@ impl StorageWriter {
         Ok(())
     }
 
-    pub fn flush(&mut self) -> Result<(), Error> {
+    pub fn finish(&mut self) -> Result<(), Error> {
         if !self.buffer.is_empty() {
             assert!(self.buffer.len() < WORD_SIZE);
             self.buffer.resize(WORD_SIZE, 0xff);

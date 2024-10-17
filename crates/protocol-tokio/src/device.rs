@@ -69,6 +69,45 @@ impl Pipe {
         Self::new::<TcpListener, P>(addr, push).await
     }
 
+    pub fn read(&mut self) -> Result<Option<Box<[u8]>>, Error> {
+        let mut state = self.shared.state.lock().unwrap();
+        match &mut *state {
+            State::Disabled | State::Process => Err(Error::user(Code::InvalidState)),
+            State::Accept | State::Ready | State::Response { .. } => Ok(None),
+            State::Request { request } => {
+                let request = std::mem::take(request);
+                *state = State::Process;
+                self.shared.notify.notify_one();
+                Ok(Some(request))
+            }
+        }
+    }
+
+    pub fn write(&mut self, response: &[u8]) -> Result<(), Error> {
+        let mut state = self.shared.state.lock().unwrap();
+        match &mut *state {
+            State::Process => {
+                let response = response.to_vec().into_boxed_slice();
+                *state = State::Response { response };
+                self.shared.notify.notify_one();
+                Ok(())
+            }
+            _ => Err(Error::user(Code::InvalidState)),
+        }
+    }
+
+    pub fn enable(&mut self) -> Result<(), Error> {
+        let mut state = self.shared.state.lock().unwrap();
+        match &mut *state {
+            State::Disabled => {
+                *state = State::Accept;
+                self.shared.notify.notify_one();
+                Ok(())
+            }
+            _ => Err(Error::user(Code::InvalidState)),
+        }
+    }
+
     async fn new<L: Listener, P: Push>(bind: L::Name<'_>, push: P) -> Result<Self> {
         let shared = Shared {
             notify: Arc::new(Notify::new()),
@@ -101,7 +140,7 @@ impl Pipe {
                 }
                 match Self::manage_stream::<L, P>(&mut stream, &shared, &push).await {
                     Ok(()) => (),
-                    Err(()) => match &mut *shared.state.lock().unwrap() {
+                    Err(_) => match &mut *shared.state.lock().unwrap() {
                         State::Disabled => (),
                         x => *x = State::Accept,
                     },
@@ -116,7 +155,7 @@ impl Pipe {
 
     async fn manage_stream<L: Listener, P: Push>(
         stream: &mut L::Stream, shared: &Shared, push: &P,
-    ) -> Result<(), ()> {
+    ) -> std::io::Result<()> {
         loop {
             enum Action {
                 Receive,
@@ -157,62 +196,15 @@ impl Pipe {
 
 impl<T: HasPipe> Api for Impl<T> {
     fn read() -> Result<Option<Box<[u8]>>, Error> {
-        T::with_pipe(|x| {
-            let mut state = x.shared.state.lock().unwrap();
-            match &mut *state {
-                State::Disabled | State::Process => Err(Error::user(Code::InvalidState)),
-                State::Accept | State::Ready | State::Response { .. } => Ok(None),
-                State::Request { request } => {
-                    let request = std::mem::take(request);
-                    *state = State::Process;
-                    x.shared.notify.notify_one();
-                    Ok(Some(request))
-                }
-            }
-        })
+        T::with_pipe(Pipe::read)
     }
 
     fn write(response: &[u8]) -> Result<(), Error> {
-        T::with_pipe(|x| {
-            let mut state = x.shared.state.lock().unwrap();
-            match &mut *state {
-                State::Process => {
-                    let response = response.to_vec().into_boxed_slice();
-                    *state = State::Response { response };
-                    x.shared.notify.notify_one();
-                    Ok(())
-                }
-                _ => Err(Error::user(Code::InvalidState)),
-            }
-        })
+        T::with_pipe(|x| x.write(response))
     }
 
     fn enable() -> Result<(), Error> {
-        T::with_pipe(|x| {
-            let mut state = x.shared.state.lock().unwrap();
-            match &mut *state {
-                State::Disabled => {
-                    *state = State::Accept;
-                    x.shared.notify.notify_one();
-                    Ok(())
-                }
-                _ => Err(Error::user(Code::InvalidState)),
-            }
-        })
-    }
-
-    fn disable() -> Result<(), Error> {
-        T::with_pipe(|x| {
-            let mut state = x.shared.state.lock().unwrap();
-            match &mut *state {
-                State::Disabled => Err(Error::user(Code::InvalidState)),
-                _ => {
-                    *state = State::Disabled;
-                    x.shared.notify.notify_one();
-                    Ok(())
-                }
-            }
-        })
+        T::with_pipe(Pipe::enable)
     }
 
     fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error> {

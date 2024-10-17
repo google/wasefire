@@ -22,6 +22,7 @@ set -e
 [ -z "$(git status -s)" ] || e "Repository is not clean"
 
 TOPOLOGICAL_ORDER=(
+  one-of
   logger
   wire-derive
   error

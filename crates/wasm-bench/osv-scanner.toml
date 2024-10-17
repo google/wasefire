@@ -1,12 +1,4 @@
-# TODO(https://github.com/google/osv-scanner/issues/1155): Simplify this file.
-
-# This crate (wasm-bench) is used for benchmarks only. Those alerts can't be fixed because one of
-# the comparison point (wasm3) is dead. We can't remove it because it is the best benchmark
-# reference so far.
-IgnoredVulns = [
-  { id = "GHSA-crf8-h2wq-2h9x" },
-  { id = "GHSA-g98v-hv3f-hcfr" },
-  { id = "GHSA-gq4p-4hxv-5rg9" },
-  { id = "GHSA-r7qv-8r2h-pg27" },
-  { id = "RUSTSEC-2021-0139" },
-]
+[[PackageOverrides]]
+ecosystem = "crates.io"
+ignore = true
+reason = "benchmarks only"

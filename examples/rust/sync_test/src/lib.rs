@@ -23,42 +23,42 @@ use core::cell::Cell;
 fn main() {
     test_mutex();
     test_atomic();
-    debug::exit(true);
+    scheduling::exit();
 }
 
 fn test_mutex() {
     debug!("test_mutex(): Mutex operations should work.");
     static GLOBAL: sync::Mutex<i32> = sync::Mutex::new(0);
     debug!("- read initial value");
-    debug::assert_eq(&*GLOBAL.lock(), &0);
+    assert_eq!(*GLOBAL.lock(), 0);
     debug!("- write new value");
     *GLOBAL.lock() = 1;
     debug!("- read updated value");
-    debug::assert_eq(&*GLOBAL.lock(), &1);
+    assert_eq!(*GLOBAL.lock(), 1);
     let _lock = GLOBAL.lock();
     debug!("- try to double lock from the same thread");
-    debug::assert(GLOBAL.try_lock().is_none());
+    assert!(GLOBAL.try_lock().is_none());
     debug!("- try to double lock from a callback");
     let has_run = Rc::new(Cell::new(false));
     let timer = timer::Timer::new({
         let has_run = has_run.clone();
         move || {
             has_run.set(true);
-            debug::assert(GLOBAL.try_lock().is_none());
+            assert!(GLOBAL.try_lock().is_none());
         }
     });
     timer.start_ms(timer::Oneshot, 100);
     scheduling::wait_for_callback();
-    debug::assert(has_run.get());
+    assert!(has_run.get());
 }
 
 fn test_atomic() {
     debug!("test_atomic(): Atomic operations should work.");
     static GLOBAL: sync::AtomicI32 = sync::AtomicI32::new(0);
     debug!("- read initial value");
-    debug::assert_eq(&GLOBAL.load(sync::Ordering::SeqCst), &0);
+    assert_eq!(GLOBAL.load(sync::Ordering::SeqCst), 0);
     debug!("- write new value");
     GLOBAL.store(1, sync::Ordering::SeqCst);
     debug!("- read updated value");
-    debug::assert_eq(&GLOBAL.load(sync::Ordering::SeqCst), &1);
+    assert_eq!(GLOBAL.load(sync::Ordering::SeqCst), 1);
 }

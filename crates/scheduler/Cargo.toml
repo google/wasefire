@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-scheduler"
-version = "0.3.2-git"
+version = "0.4.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -22,10 +22,12 @@ derive-where = { version = "1.2.7", default-features = false, features = ["night
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
 generic-array = { version = "=0.14.7", default-features = false, optional = true }
 typenum = { version = "1.17.0", default-features = false, optional = true }
-wasefire-applet-api = { version = "0.6.2-git", path = "../api", features = ["host"] }
+wasefire-applet-api = { version = "0.7.0-git", path = "../api", features = ["host"] }
 wasefire-board-api = { version = "0.8.0-git", path = "../board" }
 wasefire-error = { version = "0.1.2-git", path = "../error" }
-wasefire-logger = { version = "0.1.5", path = "../logger" }
+wasefire-logger = { version = "0.1.6-git", path = "../logger" }
+wasefire-one-of = { version = "0.1.0-git", path = "../one-of" }
+wasefire-protocol = { version = "0.2.0-git", path = "../protocol", features = ["device"] }
 wasefire-store = { version = "0.3.0-git", path = "../store", optional = true }
 wasefire-sync = { version = "0.1.1", path = "../sync", optional = true }
 
@@ -33,12 +35,6 @@ wasefire-sync = { version = "0.1.1", path = "../sync", optional = true }
 version = "0.3.1-git"
 path = "../interpreter"
 features = ["toctou"]
-optional = true
-
-[dependencies.wasefire-protocol]
-version = "0.1.1-git"
-path = "../protocol"
-features = ["device"]
 optional = true
 
 [features]
@@ -124,22 +120,6 @@ board-api-crypto-sha256 = ["applet-api-crypto-hash", "wasefire-board-api/api-cry
 board-api-crypto-sha384 = ["applet-api-crypto-hash", "wasefire-board-api/api-crypto-sha384"]
 board-api-gpio = ["applet-api-gpio", "wasefire-board-api/api-gpio"]
 board-api-led = ["applet-api-led", "wasefire-board-api/api-led"]
-board-api-platform = [
-  "applet-api-platform",
-  "internal-board-api-platform",
-  "wasefire-board-api/api-platform",
-]
-board-api-platform-protocol = [
-  "applet-api-platform-protocol",
-  "dep:wasefire-protocol",
-  "internal-board-api-platform",
-  "wasefire-board-api/api-platform-protocol",
-]
-board-api-platform-update = [
-  "applet-api-platform-update",
-  "internal-board-api-platform",
-  "wasefire-board-api/api-platform-update",
-]
 board-api-radio-ble = [
   "applet-api-radio-ble",
   "internal-board-api-radio",
@@ -196,9 +176,6 @@ full-board-api = [
   "board-api-crypto-sha384",
   "board-api-gpio",
   "board-api-led",
-  "board-api-platform",
-  "board-api-platform-protocol",
-  "board-api-platform-update",
   "board-api-radio-ble",
   "board-api-rng",
   "board-api-storage",
@@ -235,7 +212,7 @@ wasm = ["dep:wasefire-interpreter"]
 # safety invariant.
 unsafe-skip-validation = []
 # Internal features.
-_test = ["wasefire-protocol?/_exhaustive"]
+_test = ["wasefire-protocol/_exhaustive"]
 internal-applet-api-crypto = []
 internal-applet-api-crypto-hash = ["dep:digest", "dep:generic-array", "internal-applet-api-crypto"]
 internal-applet-api-platform = []
@@ -243,7 +220,6 @@ internal-applet-api-radio = []
 internal-applet-api-store = []
 internal-applet-api-usb = []
 internal-board-api-crypto-ecc = []
-internal-board-api-platform = []
 internal-board-api-radio = []
 internal-board-api-usb = []
 internal-debug = []

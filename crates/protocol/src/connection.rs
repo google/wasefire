@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use alloc::boxed::Box;
+use alloc::format;
 use core::future::Future;
 use core::pin::Pin;
 
@@ -46,9 +47,15 @@ pub trait ConnectionExt: Connection {
     fn call<S: Service>(
         &mut self, request: S::Request<'_>,
     ) -> impl Future<Output = anyhow::Result<Yoke<S::Response<'static>>>> {
+        async { self.call_ref::<S>(&S::request(request)).await }
+    }
+
+    fn call_ref<S: Service>(
+        &mut self, request: &Api<Request>,
+    ) -> impl Future<Output = anyhow::Result<Yoke<S::Response<'static>>>> {
         async {
-            self.send(&S::request(request)).await.context("sending request")?;
-            self.receive::<S>().await.context("receiving response")
+            self.send(request).await.with_context(|| format!("sending {}", S::NAME))?;
+            self.receive::<S>().await.with_context(|| format!("receiving {}", S::NAME))
         }
     }
 
@@ -69,7 +76,7 @@ pub trait ConnectionExt: Connection {
             let response = ApiResult::<S>::decode_yoke(response).context("decoding response")?;
             response.try_map(|x| match x {
                 ApiResult::Ok(x) => Ok(x),
-                ApiResult::Err(error) => anyhow::bail!("error response: {error}"),
+                ApiResult::Err(error) => Err(anyhow::Error::new(error)),
             })
         }
     }

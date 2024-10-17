@@ -18,6 +18,7 @@ use wasefire_scheduler as scheduler;
 
 use crate::{with_state, Board};
 
+pub mod applet;
 pub mod button;
 mod crypto;
 mod debug;
@@ -53,6 +54,7 @@ impl board::Api for Board {
         }
     }
 
+    type Applet = applet::Impl;
     type Button = button::Impl;
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;

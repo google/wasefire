@@ -47,7 +47,7 @@ impl Api for Impl {
     fn finalize() -> Result<(), Error> {
         STATE.with(|state| {
             let dry_run = state.dry_run()?;
-            state.flush()?;
+            state.finish()?;
             match dry_run {
                 true => Ok(()),
                 false => super::reboot(),

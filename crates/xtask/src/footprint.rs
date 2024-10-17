@@ -78,7 +78,7 @@ pub async fn compare(output: &str) -> Result<()> {
         None => write!(output, " |"),
     };
     for config in configs {
-        for key in ["total", "applet", "runner"] {
+        for key in ["applet", "runner"] {
             let base = base.get(config).map(|x| x[key]);
             let head = head.get(config).map(|x| x[key]);
             let diff = base.and_then(|base| head.map(|head| head - base));
@@ -136,8 +136,7 @@ impl Footprint {
                 }
                 let mut value = HashMap::new();
                 value.insert("applet", applet as i64);
-                value.insert("total", runner as i64);
-                value.insert("runner", runner as i64 - applet as i64);
+                value.insert("runner", runner as i64);
                 value
             };
             let value = match value {

@@ -35,11 +35,11 @@ typenum = { version = "1.17.0", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false, optional = true }
 usbd-serial = { version = "0.2.2", default-features = false, optional = true }
 wasefire-error = { version = "0.1.2-git", path = "../error" }
-wasefire-logger = { version = "0.1.5", path = "../logger" }
+wasefire-logger = { version = "0.1.6-git", path = "../logger" }
 wasefire-store = { version = "0.3.0-git", path = "../store", optional = true }
 
 [dependencies.wasefire-applet-api]
-version = "0.6.2-git"
+version = "0.7.0-git"
 path = "../api"
 features = ["host"]
 optional = true
@@ -62,9 +62,6 @@ api-crypto-sha256 = ["internal-api-crypto-hash"]
 api-crypto-sha384 = ["internal-api-crypto-hash"]
 api-gpio = ["bytemuck/derive"]
 api-led = []
-api-platform = ["internal-api-platform"]
-api-platform-protocol = ["internal-api-platform"]
-api-platform-update = ["internal-api-platform"]
 api-radio-ble = ["internal-api-radio", "wasefire-applet-api/api-radio-ble"]
 api-rng = []
 api-storage = ["dep:wasefire-store"]
@@ -84,9 +81,6 @@ full-api = [
   "api-crypto-sha384",
   "api-gpio",
   "api-led",
-  "api-platform",
-  "api-platform-protocol",
-  "api-platform-update",
   "api-radio-ble",
   "api-rng",
   "api-storage",
@@ -132,7 +126,6 @@ internal-api-crypto-aead = ["dep:crypto-common", "dep:typenum", "internal-api-cr
 internal-api-crypto-ecc = ["dep:crypto-common", "dep:typenum", "internal-api-crypto"]
 internal-api-crypto-hash = ["dep:crypto-common", "dep:digest", "dep:typenum", "internal-api-crypto"]
 internal-api-crypto-hmac = ["dep:crypto-common", "dep:typenum", "digest/mac", "internal-api-crypto"]
-internal-api-platform = []
 internal-api-radio = []
 internal-api-usb = []
 internal-software-crypto = [

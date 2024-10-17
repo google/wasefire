@@ -13,7 +13,8 @@
 // limitations under the License.
 
 use wasefire_board_api::usb::serial::Event;
-use wasefire_board_api::Api as Board;
+use wasefire_board_api::{self as board, Api as Board};
+use wasefire_error::Error;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -34,6 +35,17 @@ impl<'a> From<&'a Event> for Key {
             Event::Read => Key::Read,
             Event::Write => Key::Write,
         }
+    }
+}
+
+impl Key {
+    pub fn disable<B: Board>(self) -> Result<(), Error> {
+        use wasefire_board_api::usb::serial::Api as _;
+        let event = match self {
+            Key::Read => Event::Read,
+            Key::Write => Event::Write,
+        };
+        board::usb::Serial::<B>::disable(&event)
     }
 }
 

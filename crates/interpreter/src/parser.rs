@@ -469,15 +469,20 @@ impl<'m, M: Mode> Parser<'m, M> {
     }
 
     pub fn parse_locals(&mut self, locals: &mut Vec<ValType>) -> MResult<(), M> {
+        let mut total = locals.len() as u32;
         for _ in 0 .. self.parse_vec()? {
-            let len = self.parse_u32()? as usize;
-            if locals.len().checked_add(len).map_or(true, |x| x > MAX_LOCALS) {
-                return M::unsupported(if_debug!(Unsupported::MaxLocals));
-            }
+            let len = self.parse_u32()?;
+            total = M::open(|| total.checked_add(len))?;
             let val = self.parse_valtype()?;
-            locals.extend(core::iter::repeat(val).take(len));
+            if total <= MAX_LOCALS {
+                locals.extend(core::iter::repeat(val).take(len as usize));
+            }
         }
-        Ok(())
+        if total <= MAX_LOCALS {
+            Ok(())
+        } else {
+            M::unsupported(if_debug!(Unsupported::MaxLocals))
+        }
     }
 
     pub fn parse_elem(&mut self, user: &mut impl ParseElem<'m, M>) -> MResult<(), M> {
@@ -650,7 +655,7 @@ impl<'m, M: Mode> Parser<'m, M> {
 
 /// Maximum number of locals (must be less than 2^32).
 // NOTE: This should be configurable.
-const MAX_LOCALS: usize = 100;
+const MAX_LOCALS: u32 = 100;
 
 fn check_eq<M: Mode, T: Eq>(x: T, y: T) -> MResult<(), M> {
     M::check(|| x == y)

@@ -14,49 +14,22 @@
 
 //! Message format between device and host.
 
-use std::io::ErrorKind;
+use std::io::Result;
 
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
-use wasefire_logger as log;
 
-pub(crate) async fn read<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Box<[u8]>, ()> {
+pub(crate) async fn read<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Box<[u8]>> {
     let mut length = [0; 4];
-    read_exact(stream, &mut length).await?;
+    stream.read_exact(&mut length).await?;
     let length = u32::from_be_bytes(length);
     let mut message = vec![0; length as usize];
-    read_exact(stream, &mut message).await?;
+    stream.read_exact(&mut message).await?;
     Ok(message.into_boxed_slice())
 }
 
-pub(crate) async fn write<S: AsyncWrite + Unpin>(stream: &mut S, message: &[u8]) -> Result<(), ()> {
+pub(crate) async fn write<S: AsyncWrite + Unpin>(stream: &mut S, message: &[u8]) -> Result<()> {
     let length = message.len() as u32;
-    write_all(stream, &length.to_be_bytes()).await?;
-    write_all(stream, message).await?;
+    stream.write_all(&length.to_be_bytes()).await?;
+    stream.write_all(message).await?;
     Ok(())
-}
-
-async fn read_exact<S: AsyncRead + Unpin>(stream: &mut S, buffer: &mut [u8]) -> Result<(), ()> {
-    match stream.read_exact(buffer).await {
-        Ok(_) => Ok(()),
-        Err(x) => match x.kind() {
-            ErrorKind::NotConnected | ErrorKind::BrokenPipe | ErrorKind::UnexpectedEof => {
-                log::debug!("read_exact {:?}", x.kind());
-                Err(())
-            }
-            _ => panic!("{x}"),
-        },
-    }
-}
-
-async fn write_all<S: AsyncWrite + Unpin>(stream: &mut S, buffer: &[u8]) -> Result<(), ()> {
-    match stream.write_all(buffer).await {
-        Ok(_) => Ok(()),
-        Err(x) => match x.kind() {
-            ErrorKind::NotConnected | ErrorKind::BrokenPipe => {
-                log::debug!("write_all {:?}", x.kind());
-                Err(())
-            }
-            _ => panic!("{x}"),
-        },
-    }
 }

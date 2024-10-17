@@ -12,20 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::io::Write;
 use std::sync::Mutex;
 
 pub type Cleanup = Box<dyn FnOnce() + Send>;
 
-#[cfg(feature = "unix")]
 pub fn push(cleanup: Cleanup) {
     CLEANUP.lock().unwrap().push(cleanup);
 }
 
-pub fn flush() {
+pub fn shutdown(status: i32) -> ! {
     let cleanups = std::mem::take(&mut *CLEANUP.lock().unwrap());
     for cleanup in cleanups {
         cleanup();
     }
+    wasefire_logger::flush();
+    _ = std::io::stdout().flush();
+    _ = std::io::stderr().flush();
+    std::process::exit(status)
 }
 
 static CLEANUP: Mutex<Vec<Cleanup>> = Mutex::new(Vec::new());

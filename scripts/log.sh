@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-x() { ( set -x; "$@"; ); }
+x() { ( set -x; "$@" ) }
+y() { ( set -x; exec "$@" ) & echo pid=$!; }
 i() { _log '1;36' Info "$*"; }
 w() { _log '1;33' Warn "$*"; }
 t() { _log '1;33' Todo "$*"; }
