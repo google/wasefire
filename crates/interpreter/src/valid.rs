@@ -437,7 +437,7 @@ struct Label<'m> {
 enum LabelKind<'m> {
     #[default]
     Block,
-    Loop(&'m [u8]),
+    Loop(SideTableBranch<'m>),
     If,
 }
 
@@ -518,7 +518,13 @@ impl<'a, 'm> Expr<'a, 'm> {
                 self.push_label(self.blocktype(&b)?, LabelKind::Block)?;
             }
             Loop(b) => {
-                self.push_label(self.blocktype(&b)?, LabelKind::Loop(self.parser.save()))?;
+                self.push_label(
+                    self.blocktype(&b)?,
+                    LabelKind::Loop(SideTableBranch {
+                        parser: self.parser.save(),
+                        side_table: self.side_table.len(),
+                    }),
+                )?;
             }
             If(b) => {
                 self.pop_check(ValType::I32)?;
@@ -821,7 +827,7 @@ impl<'a, 'm> Expr<'a, 'm> {
                 label.type_.results
             }
             LabelKind::If => label.type_.results,
-            LabelKind::Loop(parser) => {
+            LabelKind::Loop(SideTableBranch { parser, side_table }) => {
                 self.side_table.push(Some(SideTableEntryView {
                     delta_ip: SideTableBranch::delta_ip(branch.parser, parser),
                     // TODO(dev/fast-interp): Compute the fields below.
