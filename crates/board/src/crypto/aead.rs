@@ -34,7 +34,7 @@ impl From<AeadSupport> for bool {
     }
 }
 
-/// Elliptic-curve cryptography interface.
+/// AEAD interface.
 pub trait Api<Key, Iv>: Support<AeadSupport> + Send
 where
     Key: ArrayLength<u8>,
