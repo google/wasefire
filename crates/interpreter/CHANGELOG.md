@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Return an error instead of unsupported when too many locals
 - Only take the initial frame in `Thread::new()`
 - Fix and test the `cache` feature in continuous integration
 
