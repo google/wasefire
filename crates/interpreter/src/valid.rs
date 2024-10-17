@@ -420,6 +420,10 @@ impl SideTableBranch<'_> {
     fn delta_ip(end: &[u8], start: &[u8]) -> i32 {
         (end.as_ptr() as isize - start.as_ptr() as isize) as i32
     }
+
+    fn delta_stp(end: usize, start: usize) -> i32 {
+        (end - start) as i32
+    }
 }
 
 #[derive(Debug, Default)]
@@ -808,7 +812,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         *entry = Some(SideTableEntryView {
             delta_ip: SideTableBranch::delta_ip(current_branch.parser, parser),
             // TODO(dev/fast-interp): Compute the fields below.
-            delta_stp: 0,
+            delta_stp: SideTableBranch::delta_stp(current_branch.side_table, *side_table),
             val_cnt: 0,
             pop_cnt: 0,
         });
@@ -831,7 +835,7 @@ impl<'a, 'm> Expr<'a, 'm> {
                 self.side_table.push(Some(SideTableEntryView {
                     delta_ip: SideTableBranch::delta_ip(branch.parser, parser),
                     // TODO(dev/fast-interp): Compute the fields below.
-                    delta_stp: 0,
+                    delta_stp: SideTableBranch::delta_stp(branch.side_table, side_table),
                     val_cnt: 0,
                     pop_cnt: 0,
                 }));
