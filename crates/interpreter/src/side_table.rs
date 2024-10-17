@@ -33,10 +33,10 @@ pub struct SideTableEntryView {
 
 #[allow(dead_code)] // TODO(dev/fast-interp)
 impl SideTableEntry {
-    const DELTA_IP_MASK: u32 = 0xFFFF;
-    const DELTA_STP_MASK: u32 = 0x7FFF << 16;
-    const VAL_CNT_MASK: u32 = 0x1 << 31;
-    const POP_CNT_MASK: u32 = 0x1 << 31;
+    const DELTA_IP_MASK: u32 = 0x0000ffff;
+    const DELTA_STP_MASK: u32 = 0x7fff0000; // 0x7FFF << 16;
+    const VAL_CNT_MASK: u32 = 80000000; // 0x1 << 31
+    const POP_CNT_MASK: u32 = 80000000; // 0x1 << 31
 
     pub fn new(view: SideTableEntryView) -> Result<Self, Error> {
         let mut fields = 0;
