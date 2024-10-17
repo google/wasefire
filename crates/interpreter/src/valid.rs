@@ -812,7 +812,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         *entry = Some(SideTableEntryView {
             delta_ip: SideTableBranch::delta_ip(current_branch.parser, parser),
             // TODO(dev/fast-interp): Compute the fields below.
-            delta_stp: SideTableBranch::delta_stp(current_branch.side_table, *side_table),
+            delta_stp: 0,
             val_cnt: 0,
             pop_cnt: 0,
         });
@@ -831,11 +831,11 @@ impl<'a, 'm> Expr<'a, 'm> {
                 label.type_.results
             }
             LabelKind::If => label.type_.results,
-            LabelKind::Loop(SideTableBranch { parser, side_table }) => {
+            LabelKind::Loop(SideTableBranch { parser, side_table: _ }) => {
                 self.side_table.push(Some(SideTableEntryView {
                     delta_ip: SideTableBranch::delta_ip(branch.parser, parser),
                     // TODO(dev/fast-interp): Compute the fields below.
-                    delta_stp: SideTableBranch::delta_stp(branch.side_table, side_table),
+                    delta_stp: 0,
                     val_cnt: 0,
                     pop_cnt: 0,
                 }));
