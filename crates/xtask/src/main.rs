@@ -265,15 +265,15 @@ struct Changelog {
 
 #[derive(clap::Subcommand)]
 enum ChangelogCommand {
-    /// Validates all CHANGELOG.md files.
+    /// Validates all changelogs.
     Ci,
 
-    /// Records a change to a crate.
+    /// Logs a crate change.
     Change {
-        /// Path to the crate that changed (e.g. `crates/board`).
+        /// Path to the changed crate.
         path: String,
 
-        /// Semver severity of the change.
+        /// Severity of the change.
         severity: changelog::Severity,
 
         /// One-line description of the change.
