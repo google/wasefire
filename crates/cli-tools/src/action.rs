@@ -375,7 +375,10 @@ async fn final_call<S: service::Service>(
     match connection.receive::<S>().await {
         Ok(x) => proof(x)?,
         Err(e) => {
-            if root_cause_is::<rusb::Error>(&e, |x| matches!(x, rusb::Error::NoDevice)) {
+            if root_cause_is::<rusb::Error>(&e, |x| {
+                use rusb::Error::*;
+                matches!(x, NoDevice | Pipe)
+            }) {
                 return Ok(());
             }
             if root_cause_is::<std::io::Error>(&e, |x| {
