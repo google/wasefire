@@ -10,6 +10,7 @@
 
 ### Minor
 
+- Handle more errors during platform discovery and `action::PlatformReboot`
 - Extend `fs::write()` first parameter to set the `OpenOptions` too
 - Add `error::root_cause_is()` to check the `anyhow::Error` root cause
 - Add `action::PlatformLock` for locking a platform protocol
