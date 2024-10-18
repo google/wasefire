@@ -22,7 +22,7 @@ use std::path::{Component, Path, PathBuf};
 use anyhow::{Context, Result};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use tokio::fs::{File, OpenOptions};
+use tokio::fs::{File, OpenOptions, ReadDir};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub async fn canonicalize(path: impl AsRef<Path>) -> Result<PathBuf> {
@@ -118,6 +118,12 @@ pub async fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
     let name = path.as_ref().display();
     debug!("read < {name:?}");
     tokio::fs::read(path.as_ref()).await.with_context(|| format!("reading {name}"))
+}
+
+pub async fn read_dir(path: impl AsRef<Path>) -> Result<ReadDir> {
+    let dir = path.as_ref().display();
+    debug!("walk {dir:?}");
+    tokio::fs::read_dir(path.as_ref()).await.with_context(|| format!("walking {dir}"))
 }
 
 pub async fn read_toml<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {

@@ -28,7 +28,7 @@ use rustc_demangle::demangle;
 use tokio::process::Command;
 use tokio::sync::OnceCell;
 use wasefire_cli_tools::error::root_cause_is;
-use wasefire_cli_tools::{action, cmd, fs};
+use wasefire_cli_tools::{action, changelog, cmd, fs};
 
 mod footprint;
 mod lazy;
@@ -104,6 +104,9 @@ enum MainCommand {
 
     /// Ensures review can be done in printed form.
     Textreview,
+
+    /// Performs a changelog operation.
+    Changelog(Changelog),
 }
 
 #[derive(clap::Args)]
@@ -254,6 +257,30 @@ struct Wait {
     options: action::ConnectionOptions,
 }
 
+#[derive(clap::Args)]
+struct Changelog {
+    #[clap(subcommand)]
+    command: ChangelogCommand,
+}
+
+#[derive(clap::Subcommand)]
+enum ChangelogCommand {
+    /// Validates all CHANGELOG.md files.
+    Ci,
+
+    /// Records a change to a crate.
+    Change {
+        /// Path to the crate that changed (e.g. `crates/board`).
+        path: String,
+
+        /// Semver severity of the change.
+        severity: changelog::Severity,
+
+        /// One-line description of the change.
+        description: String,
+    },
+}
+
 impl Flags {
     async fn execute(self) -> Result<()> {
         match self.command {
@@ -263,6 +290,12 @@ impl Flags {
             MainCommand::WaitPlatform(wait) => wait.execute(false).await,
             MainCommand::Footprint { output } => footprint::compare(&output).await,
             MainCommand::Textreview => textreview::execute().await,
+            MainCommand::Changelog(subcommand) => match subcommand.command {
+                ChangelogCommand::Ci => changelog::execute_ci().await,
+                ChangelogCommand::Change { path, severity, description } => {
+                    changelog::execute_change(&path, &severity, &description).await
+                }
+            },
         }
     }
 }
