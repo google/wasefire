@@ -19,7 +19,7 @@ use std::io::BufRead;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use cargo_metadata::MetadataCommand;
-use semver::Version;
+use semver::{Prerelease, Version};
 use tokio::process::Command;
 
 use crate::{cmd, fs};
@@ -57,6 +57,37 @@ struct Changelog {
 impl Changelog {
     async fn read_file(path: &str) -> Result<Changelog> {
         Self::parse(String::from_utf8(fs::read(path).await?)?.as_str())
+    }
+
+    async fn write_file(&self, path: &str) -> Result<()> {
+        fs::write(path, self.to_string().as_bytes()).await
+    }
+
+    fn push_description(&mut self, severity: &Severity, content: &str) -> Result<()> {
+        let current_release = self.get_or_create_release_mut();
+        current_release.push_content(*severity, content)
+    }
+
+    // Gets newest (first) release. Creates a new one if newest release is not prerelease.
+    fn get_or_create_release_mut(&mut self) -> &mut Release {
+        let current_release = self.releases.first().unwrap();
+
+        // Current version is released, insert a new one.
+        if current_release.version.pre.is_empty() {
+            let mut next_version = Version::new(
+                current_release.version.major,
+                current_release.version.minor,
+                current_release.version.patch + 1,
+            );
+
+            next_version.pre = Prerelease::new("git").unwrap();
+
+            let new_release = Release::from(next_version);
+
+            self.releases.insert(0, new_release);
+        }
+
+        self.releases.first_mut().unwrap()
     }
 
     /// Converts raw file contents into a Changelog data structure.
@@ -187,6 +218,24 @@ impl Changelog {
 
         Ok(())
     }
+
+    async fn sync_cargo_toml(&self, path: &str) -> Result<()> {
+        let expected_version = &self.releases.first().unwrap().version;
+        let cargo_toml_path = format!("{path}/Cargo.toml");
+        let mut cargo_toml: toml::Table = fs::read_toml(&cargo_toml_path).await?;
+
+        cargo_toml["package"]["version"] = expected_version.to_string().into();
+
+        fs::write_toml(&cargo_toml_path, &cargo_toml).await?;
+
+        Ok(())
+    }
+
+    async fn sync_dependencies(&self, _path: &str) -> Result<()> {
+        // TODO
+
+        Ok(())
+    }
 }
 
 impl Display for Changelog {
@@ -211,6 +260,20 @@ struct Release {
 impl Release {
     fn new(version: &str) -> Result<Self> {
         Ok(Release { version: Version::parse(version)?, contents: BTreeMap::new() })
+    }
+
+    fn push_content(&mut self, severity: Severity, content: &str) -> Result<()> {
+        let entry = self.contents.entry(severity).or_default();
+
+        entry.push(content.to_string());
+
+        Ok(())
+    }
+}
+
+impl From<Version> for Release {
+    fn from(value: Version) -> Self {
+        Release { version: value, contents: BTreeMap::new() }
     }
 }
 
@@ -253,12 +316,19 @@ pub async fn execute_ci() -> Result<()> {
 }
 
 /// Updates a CHANGELOG.md file and CHANGELOG.md files of dependencies.
-pub async fn execute_change(path: &str, _severity: &Severity, _description: &str) -> Result<()> {
-    ensure!(fs::exists(path).await, "Crate does not exist: {path}");
+pub async fn execute_change(path: &str, severity: &Severity, description: &str) -> Result<()> {
+    let changelog_file_path = format!("{path}/CHANGELOG.md");
 
-    let _changelog = Changelog::read_file(&format!("{path}/CHANGELOG.md")).await?;
+    ensure!(fs::exists(&changelog_file_path).await, "Crate does not exist: {changelog_file_path}");
 
-    todo!("Implement changelog updates");
+    let mut changelog = Changelog::read_file(&changelog_file_path).await?;
+
+    changelog.push_description(severity, description)?;
+    changelog.write_file(&changelog_file_path).await?;
+    changelog.sync_cargo_toml(path).await?;
+    changelog.sync_dependencies(path).await?;
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -697,5 +767,51 @@ mod tests {
             .expect_err("Parse changelog was successful.")
             .to_string()
             .contains("Only the first version can be pre-release"))
+    }
+
+    #[test]
+    fn get_or_create_release_mut_uses_first_when_prerelease() {
+        let changelog_str = r"# Changelog
+
+## 0.6.0-git
+
+### Major
+
+- A change
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
+
+        let mut changelog = Changelog::parse(&changelog_str).expect("Failed to parse changelog.");
+
+        let current_release = changelog.get_or_create_release_mut();
+
+        assert_eq!(current_release.version, Version::parse("0.6.0-git").unwrap());
+    }
+
+    #[test]
+    fn get_or_create_release_mut_creates_new_when_current_is_released() {
+        let changelog_str = r"# Changelog
+
+## 0.6.0
+
+### Major
+
+- A change
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
+
+        let mut changelog = Changelog::parse(&changelog_str).expect("Failed to parse changelog.");
+
+        let current_release = changelog.get_or_create_release_mut();
+
+        assert_eq!(current_release.version, Version::parse("0.6.1-git").unwrap());
+        // Assert the new release already inserted
+        assert_eq!(changelog.releases.len(), 3);
     }
 }
