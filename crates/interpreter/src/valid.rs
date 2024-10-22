@@ -519,9 +519,7 @@ impl<'a, 'm> Expr<'a, 'm> {
             Unreachable => self.stack_polymorphic(),
             Nop => (),
             Block(b) => self.push_label(self.blocktype(&b)?, LabelKind::Block)?,
-            Loop(b) => {
-                self.push_label(self.blocktype(&b)?, LabelKind::Loop(self.branch()))?;
-            }
+            Loop(b) => self.push_label(self.blocktype(&b)?, LabelKind::Loop(self.branch()))?,
             If(b) => {
                 self.pop_check(ValType::I32)?;
                 self.push_label(self.blocktype(&b)?, LabelKind::If(self.branch()))?;
@@ -809,18 +807,18 @@ impl<'a, 'm> Expr<'a, 'm> {
         let l = l as usize;
         let n = self.labels.len();
         check(l < n)?;
-        let target = self.branch();
+        let source = self.branch();
         let label = &mut self.labels[n - l - 1];
         Ok(match label.kind {
             LabelKind::Block | LabelKind::If(_) => {
-                label.branches.push(target);
+                label.branches.push(source);
                 self.side_table.push(None);
                 label.type_.results
             }
             LabelKind::Loop(SideTableBranch { parser, side_table }) => {
                 self.side_table.push(Some(SideTableEntryView {
-                    delta_ip: target.delta_ip(parser),
-                    delta_stp: target.delta_stp(side_table),
+                    delta_ip: source.delta_ip(parser),
+                    delta_stp: source.delta_stp(side_table),
                     // TODO(dev/fast-interp): Compute the fields below.
                     val_cnt: 0,
                     pop_cnt: 0,
