@@ -18,7 +18,7 @@ use crate::error::*;
 #[allow(dead_code)] // TODO(dev/fast-interp)
 #[derive(Default, Copy, Clone, Debug)]
 #[repr(transparent)]
-pub struct SideTableEntry(u32);
+pub struct SideTableEntry(u64);
 
 pub struct SideTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
@@ -26,17 +26,17 @@ pub struct SideTableEntryView {
     /// The amount to adjust the side-table pointer by if the branch is taken.
     pub delta_stp: i32,
     /// The number of values that will be copied if the branch is taken.
-    pub val_cnt: u32,
+    pub val_cnt: u64,
     /// The number of values that will be popped if the branch is taken.
-    pub pop_cnt: u32,
+    pub pop_cnt: u64,
 }
 
 #[allow(dead_code)] // TODO(dev/fast-interp)
 impl SideTableEntry {
-    const DELTA_IP_MASK: u32 = 0x0000ffff;
-    const DELTA_STP_MASK: u32 = 0x003f0000;
-    const VAL_CNT_MASK: u32 = 0x07c00000;
-    const POP_CNT_MASK: u32 = 0xf8000000;
+    const DELTA_IP_MASK: u64 = 0xffff;
+    const DELTA_STP_MASK: u64 = 0xffff << 16;
+    const VAL_CNT_MASK: u64 = 0xffff << 32;
+    const POP_CNT_MASK: u64 = 0xffff << 48;
 
     pub fn new(view: SideTableEntryView) -> Result<Self, Error> {
         let mut fields = 0;
