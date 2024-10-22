@@ -61,8 +61,8 @@ impl ProtocolUsb {
         let context = GlobalContext::default();
         let mut matches = Vec::new();
         for candidate in wasefire_protocol_usb::list(&context)? {
-            let mut connection = candidate.connect(timeout)?;
-            let info = connection.call::<service::PlatformInfo>(()).await?;
+            let Ok(mut connection) = candidate.connect(timeout) else { continue };
+            let Ok(info) = connection.call::<service::PlatformInfo>(()).await else { continue };
             if !self.matches(connection.device(), &info) {
                 continue;
             }

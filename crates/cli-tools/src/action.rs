@@ -17,13 +17,13 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use anyhow::{bail, ensure, Result};
-use cargo_metadata::{Metadata, MetadataCommand};
 use clap::{ValueEnum, ValueHint};
 use rusb::GlobalContext;
 use tokio::process::Command;
 use wasefire_protocol::{self as service, applet, Connection, ConnectionExt};
 use wasefire_wire::{self as wire, Yoke};
 
+use crate::cargo::metadata;
 use crate::error::root_cause_is;
 use crate::{cmd, fs};
 
@@ -375,7 +375,10 @@ async fn final_call<S: service::Service>(
     match connection.receive::<S>().await {
         Ok(x) => proof(x)?,
         Err(e) => {
-            if root_cause_is::<rusb::Error>(&e, |x| matches!(x, rusb::Error::NoDevice)) {
+            if root_cause_is::<rusb::Error>(&e, |x| {
+                use rusb::Error::*;
+                matches!(x, NoDevice | Pipe)
+            }) {
                 return Ok(());
             }
             if root_cause_is::<std::io::Error>(&e, |x| {
@@ -628,15 +631,6 @@ pub async fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>
     opt.arg(applet.as_ref());
     cmd::execute(&mut opt).await?;
     Ok(())
-}
-
-async fn metadata(dir: impl Into<PathBuf>) -> Result<Metadata> {
-    let dir = dir.into();
-    let metadata =
-        tokio::task::spawn_blocking(|| MetadataCommand::new().current_dir(dir).no_deps().exec())
-            .await??;
-    ensure!(metadata.packages.len() == 1, "not exactly one package");
-    Ok(metadata)
 }
 
 fn wasefire_feature(

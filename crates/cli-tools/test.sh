@@ -19,5 +19,8 @@ set -e
 
 test_helper
 
+cargo test --lib --all-features
 cargo test --lib --features=action
+cargo test --lib --features=cargo
+cargo test --lib --features=changelog
 cargo test --lib
