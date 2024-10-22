@@ -68,36 +68,35 @@ impl Changelog {
         loop {
             let version = (parser.buffer.strip_prefix("## "))
                 .with_context(|| anyhow!("Expected release {parser}"))?;
-            let mut release =
-                Release::new(version).with_context(|| anyhow!("Parsing version {parser}"))?;
-            ensure!(release.version.build.is_empty(), "Unexpected build metadata line {parser}");
+            let version =
+                Version::parse(version).with_context(|| anyhow!("Parsing version {parser}"))?;
+            ensure!(version.build.is_empty(), "Unexpected build metadata {parser}");
             match releases.last() {
                 Some(prev) => {
-                    ensure!(release.version.pre.is_empty(), "Unexpected prerelease {parser}");
+                    ensure!(version.pre.is_empty(), "Unexpected prerelease {parser}");
                     let severity = *prev.contents.first_key_value().unwrap().0;
-                    ensure_conform(&release.version, severity, &prev.version)?;
+                    ensure_conform(&version, severity, &prev.version)?;
                 }
                 None => {
-                    let pre = release.version.pre.as_str();
+                    let pre = version.pre.as_str();
                     ensure!(matches!(pre, "" | "git"), "Invalid prerelease {pre:?} {parser}");
                 }
             }
             parser.read_empty()?;
-            if matches!(release.version, Version { major: 0, minor: 1, patch: 0, .. }) {
-                releases.push(release);
-                parser.advance()?;
+            parser.advance()?;
+            let mut contents = BTreeMap::new();
+            if matches!(version, Version { major: 0, minor: 1, patch: 0, .. }) {
+                releases.push(Release { version, contents });
                 break;
             }
-            loop {
-                parser.advance()?;
-                let Some(severity) = parser.buffer.strip_prefix("### ") else { break };
+            while let Some(severity) = parser.buffer.strip_prefix("### ") {
                 let severity = match severity {
                     "Major" => Severity::Major,
                     "Minor" => Severity::Minor,
                     "Patch" => Severity::Patch,
                     _ => bail!("Invalid severity {severity:?} {parser}"),
                 };
-                if let Some(&prev) = release.contents.last_key_value().map(|(x, _)| x) {
+                if let Some(&prev) = contents.last_key_value().map(|(x, _)| x) {
                     ensure!(prev < severity, "Out of order severity {parser}");
                 }
                 parser.read_empty()?;
@@ -106,24 +105,24 @@ impl Changelog {
                     if parser.buffer.starts_with("- ") {
                         descriptions.push(parser.buffer.to_string());
                     } else if parser.buffer.starts_with("  ") {
-                        let description = descriptions.last_mut().with_context(|| {
-                            anyhow!("Invalid continuation line {}", parser.count)
-                        })?;
+                        let description = descriptions
+                            .last_mut()
+                            .with_context(|| anyhow!("Invalid continuation {parser}"))?;
                         description.push('\n');
                         description.push_str(parser.buffer);
                     } else {
-                        bail!("Invalid description line {}", parser.count);
+                        bail!("Invalid description {parser}");
                     }
                     ensure!(
                         !descriptions.last_mut().unwrap().ends_with("."),
-                        "Description ends with dot line {}",
-                        parser.count
+                        "Description ends with dot {parser}"
                     );
                 }
-                assert!(release.contents.insert(severity, descriptions).is_none());
+                assert!(contents.insert(severity, descriptions).is_none());
+                parser.advance()?;
             }
-            ensure!(!release.contents.is_empty(), "Release {} is empty", release.version);
-            releases.push(release);
+            ensure!(!contents.is_empty(), "Release {version} is empty");
+            releases.push(Release { version, contents });
         }
         ensure!(!releases.is_empty(), "Changelog has no releases");
         let skip_counter = parser
@@ -208,12 +207,6 @@ impl<'a, I: Iterator<Item = &'a str>> Parser<'a, I> {
 struct Release {
     version: Version,
     contents: BTreeMap<Severity, Vec<String>>,
-}
-
-impl Release {
-    fn new(version: &str) -> Result<Self> {
-        Ok(Release { version: Version::parse(version)?, contents: BTreeMap::new() })
-    }
 }
 
 impl Display for Release {
