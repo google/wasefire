@@ -29,6 +29,8 @@ fn offset(mask: u64) -> i32 {
 pub fn into_field(mask: u64, value: u64) -> Result<u64, Error> {
     let field = (value << mask.trailing_zeros()) & mask;
     if from_field(mask, field) != value {
+        #[cfg(feature = "debug")]
+        eprintln!("Bit field value {value:08x} doesn't fit in mask {mask:08x}.");
         return Err(unsupported(if_debug!(Unsupported::SideTable)));
     }
     Ok(field)
