@@ -14,28 +14,30 @@
 
 use crate::error::*;
 
-pub fn into_signed_field(mask: u32, value: i32) -> Result<u32, Error> {
+pub fn into_signed_field(mask: u64, value: i32) -> Result<u64, Error> {
     into_field(mask, value.wrapping_add(offset(mask)) as u32)
 }
 
-pub fn from_signed_field(mask: u32, field: u32) -> i32 {
+pub fn from_signed_field(mask: u64, field: u64) -> i32 {
     from_field(mask, field) as i32 - offset(mask)
 }
 
-fn offset(mask: u32) -> i32 {
+fn offset(mask: u64) -> i32 {
     1 << (mask.count_ones() - 1)
 }
 
-pub fn into_field(mask: u32, value: u32) -> Result<u32, Error> {
-    let field = (value << mask.trailing_zeros()) & mask;
+pub fn into_field(mask: u64, value: u32) -> Result<u64, Error> {
+    let field = ((value as u64) << mask.trailing_zeros()) & mask;
     if from_field(mask, field) != value {
+        #[cfg(feature = "debug")]
+        eprintln!("Bit field value {value:08x} doesn't fit in mask {mask:016x}.");
         return Err(unsupported(if_debug!(Unsupported::SideTable)));
     }
     Ok(field)
 }
 
-pub fn from_field(mask: u32, field: u32) -> u32 {
-    (field & mask) >> mask.trailing_zeros()
+pub fn from_field(mask: u64, field: u64) -> u32 {
+    ((field & mask) >> mask.trailing_zeros()) as u32
 }
 
 #[cfg(test)]
