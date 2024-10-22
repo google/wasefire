@@ -26,9 +26,9 @@ pub struct SideTableEntryView {
     /// The amount to adjust the side-table pointer by if the branch is taken.
     pub delta_stp: i32,
     /// The number of values that will be copied if the branch is taken.
-    pub val_cnt: u64,
+    pub val_cnt: u32,
     /// The number of values that will be popped if the branch is taken.
-    pub pop_cnt: u64,
+    pub pop_cnt: u32,
 }
 
 #[allow(dead_code)] // TODO(dev/fast-interp)
