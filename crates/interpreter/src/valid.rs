@@ -406,24 +406,62 @@ struct Expr<'a, 'm> {
     is_body: bool,
     locals: Vec<ValType>,
     labels: Vec<Label<'m>>,
-    // TODO(dev/fast-interp): Remove `Option` after `side_table` is verified.
-    side_table: Vec<Option<SideTableEntryView>>,
+    side_table: SideTable,
+}
+
+#[derive(Default)]
+struct SideTable {
+    // TODO(dev/fast-interp): Consider removing `Option` if confident.
+    entries: Vec<Option<SideTableEntryView>>,
+}
+
+impl SideTable {
+    fn save(&self) -> usize {
+        self.entries.len()
+    }
+
+    fn branch(&mut self) {
+        self.entries.push(None);
+    }
+
+    fn stitch(&mut self, source: SideTableBranch, target: SideTableBranch) -> CheckResult {
+        let delta_ip = Self::delta(source, target, |x| x.parser.as_ptr() as isize)?;
+        let delta_stp = Self::delta(source, target, |x| x.side_table as isize)?;
+        // TODO(dev/fast-interp): Compute the fields below.
+        let val_cnt = 0;
+        let pop_cnt = 0;
+        let entry = &mut self.entries[source.side_table];
+        assert!(entry.is_none());
+        *entry = Some(SideTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt });
+        Ok(())
+    }
+
+    fn delta(
+        source: SideTableBranch, target: SideTableBranch, field: fn(SideTableBranch) -> isize,
+    ) -> MResult<i32, Check> {
+        let source = field(source);
+        let target = field(target);
+        let Some(delta) = target.checked_sub(source) else {
+            #[cfg(feature = "debug")]
+            eprintln!("side-table subtraction overflow {target} - {source}");
+            return Err(unsupported(if_debug!(Unsupported::SideTable)));
+        };
+        i32::try_from(delta).map_err(|_| {
+            #[cfg(feature = "debug")]
+            eprintln!("side-table conversion overflow {delta}");
+            unsupported(if_debug!(Unsupported::SideTable))
+        })
+    }
+
+    fn persist(self) -> MResult<Vec<SideTableEntry>, Check> {
+        self.entries.into_iter().map(|entry| SideTableEntry::new(entry.unwrap())).collect()
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
 struct SideTableBranch<'m> {
     parser: &'m [u8],
     side_table: usize,
-}
-
-impl SideTableBranch<'_> {
-    fn delta_ip(&self, source: &[u8]) -> i32 {
-        (self.parser.as_ptr() as isize - source.as_ptr() as isize) as i32
-    }
-
-    fn delta_stp(&self, source: usize) -> i32 {
-        (self.side_table - source) as i32
-    }
 }
 
 #[derive(Debug, Default)]
@@ -458,7 +496,7 @@ impl<'a, 'm> Expr<'a, 'm> {
             is_body: false,
             locals: vec![],
             labels: vec![Label::default()],
-            side_table: vec![],
+            side_table: SideTable::default(),
         }
     }
 
@@ -481,7 +519,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         expr.locals = locals;
         expr.label().type_.results = results;
         expr.check()?;
-        expr.side_table.into_iter().map(|entry| SideTableEntry::new(entry.unwrap())).collect()
+        expr.side_table.persist()
     }
 
     fn check(&mut self) -> CheckResult {
@@ -519,15 +557,19 @@ impl<'a, 'm> Expr<'a, 'm> {
             Unreachable => self.stack_polymorphic(),
             Nop => (),
             Block(b) => self.push_label(self.blocktype(&b)?, LabelKind::Block)?,
-            Loop(b) => self.push_label(self.blocktype(&b)?, LabelKind::Loop(self.branch()))?,
+            Loop(b) => {
+                self.push_label(self.blocktype(&b)?, LabelKind::Loop(self.branch_target()))?
+            }
             If(b) => {
                 self.pop_check(ValType::I32)?;
-                self.push_label(self.blocktype(&b)?, LabelKind::If(self.branch()))?;
-                self.side_table.push(None);
+                let branch = self.branch_source();
+                self.push_label(self.blocktype(&b)?, LabelKind::If(branch))?;
             }
             Else => {
                 match core::mem::replace(&mut self.label().kind, LabelKind::Block) {
-                    LabelKind::If(source) => self.stitch(source, self.branch()),
+                    LabelKind::If(source) => {
+                        self.side_table.stitch(source, self.branch_target())?
+                    }
                     _ => Err(invalid())?,
                 }
                 let FuncType { params, results } = self.label().type_;
@@ -772,14 +814,14 @@ impl<'a, 'm> Expr<'a, 'm> {
     }
 
     fn end_label(&mut self) -> CheckResult {
-        let target = self.branch();
+        let target = self.branch_target();
         for source in core::mem::take(&mut self.label().branches) {
-            self.stitch(source, target);
+            self.side_table.stitch(source, target)?;
         }
         let label = self.label();
         if let LabelKind::If(source) = label.kind {
             check(label.type_.params == label.type_.results)?;
-            self.stitch(source, target);
+            self.side_table.stitch(source, target)?;
         }
         let results = self.label().type_.results;
         self.pops(results)?;
@@ -790,46 +832,32 @@ impl<'a, 'm> Expr<'a, 'm> {
         Ok(())
     }
 
-    fn stitch(&mut self, source: SideTableBranch, target: SideTableBranch) {
-        let SideTableBranch { parser, side_table } = source;
-        let entry = &mut self.side_table[side_table];
-        assert!(entry.is_none());
-        *entry = Some(SideTableEntryView {
-            delta_ip: target.delta_ip(parser),
-            delta_stp: target.delta_stp(side_table),
-            // TODO(dev/fast-interp): Compute the fields below.
-            val_cnt: 0,
-            pop_cnt: 0,
-        });
-    }
-
     fn br_label(&mut self, l: LabelIdx) -> Result<ResultType<'m>, Error> {
         let l = l as usize;
         let n = self.labels.len();
         check(l < n)?;
-        let source = self.branch();
+        let source = self.branch_source();
         let label = &mut self.labels[n - l - 1];
         Ok(match label.kind {
             LabelKind::Block | LabelKind::If(_) => {
                 label.branches.push(source);
-                self.side_table.push(None);
                 label.type_.results
             }
-            LabelKind::Loop(SideTableBranch { parser, side_table }) => {
-                self.side_table.push(Some(SideTableEntryView {
-                    delta_ip: source.delta_ip(parser),
-                    delta_stp: source.delta_stp(side_table),
-                    // TODO(dev/fast-interp): Compute the fields below.
-                    val_cnt: 0,
-                    pop_cnt: 0,
-                }));
+            LabelKind::Loop(target) => {
+                self.side_table.stitch(source, target)?;
                 label.type_.params
             }
         })
     }
 
-    fn branch(&self) -> SideTableBranch<'m> {
-        SideTableBranch { parser: self.parser.save(), side_table: self.side_table.len() }
+    fn branch_source(&mut self) -> SideTableBranch<'m> {
+        let branch = self.branch_target();
+        self.side_table.branch();
+        branch
+    }
+
+    fn branch_target(&self) -> SideTableBranch<'m> {
+        SideTableBranch { parser: self.parser.save(), side_table: self.side_table.save() }
     }
 
     fn call(&mut self, t: FuncType) -> CheckResult {
