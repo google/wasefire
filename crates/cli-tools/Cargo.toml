@@ -58,7 +58,7 @@ optional = true
 
 [features]
 action = [
-  "dep:cargo_metadata",
+  "cargo",
   "dep:clap",
   "dep:data-encoding",
   "dep:humantime",
@@ -70,7 +70,8 @@ action = [
   "dep:wasefire-wire",
   "tokio/time",
 ]
-changelog = ["dep:cargo_metadata", "dep:clap", "dep:semver"]
+cargo = ["dep:cargo_metadata"]
+changelog = ["cargo", "dep:clap", "dep:semver"]
 
 [lints]
 clippy.unit-arg = "allow"

@@ -12,19 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Helpers for changelog files.
+//!
+//! See <https://github.com/google/wasefire/blob/main/docs/contributing/changelog.md> for a
+//! description of the changelog format.
+
 use core::str;
 use std::collections::BTreeMap;
-use std::fmt::{Display, Write};
+use std::fmt::Display;
 use std::io::BufRead;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
-use cargo_metadata::MetadataCommand;
+use clap::ValueEnum;
 use semver::Version;
 use tokio::process::Command;
 
+use crate::cargo::metadata;
 use crate::{cmd, fs};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
 pub enum Severity {
     Major,
     Minor,
@@ -44,215 +50,216 @@ impl Display for Severity {
 #[derive(Debug, Default, PartialEq, Eq)]
 struct Changelog {
     releases: Vec<Release>,
-
-    /// Incremented to acknowledge the changelog is already up-to-date.
-    ///
-    /// There is a CI test to make sure the changelog is updated when the crate is modified. Some
-    /// modifications are already documented in the changelog, so the test will have a false
-    /// positive. This counter is used to artificially modify the changelog and explicitly
-    /// acknowledge that it's already up-to-date.
     skip_counter: u32,
 }
 
 impl Changelog {
     async fn read_file(path: &str) -> Result<Changelog> {
-        Self::parse(String::from_utf8(fs::read(path).await?)?.as_str())
+        Self::parse(&String::from_utf8(fs::read(path).await?)?)
     }
 
-    /// Converts raw file contents into a Changelog data structure.
-    ///
-    /// Validates requirements in docs/contributing/changelog.md.
-    fn parse(contents: &str) -> Result<Changelog> {
-        let mut skip_counter: u32 = 0;
+    /// Parses and validates a changelog.
+    fn parse(input: &str) -> Result<Changelog> {
         let mut releases: Vec<Release> = Vec::new();
-
-        let mut lines = contents.lines().filter(|line| !line.is_empty()).peekable();
-
-        // First line is H1.
-        ensure!(lines.next() == Some("# Changelog"), "H1 with 'Changelog' is required");
-
-        while let Some(mut current_line) = lines.next() {
-            let mut next_line = lines.peek();
-
-            // Hit last line. Done parsing releases. Look for skip counter.
-            if next_line.is_none() {
-                skip_counter = current_line
-                    .strip_prefix("<!-- Increment to skip CHANGELOG.md test: ")
-                    .ok_or_else(|| anyhow!("Malformed or missing skip counter: {current_line}"))?
-                    .strip_suffix(" -->")
-                    .ok_or_else(|| anyhow!("Malformed or missing skip counter: {current_line}"))?
-                    .parse::<u32>()?;
+        let mut parser = Parser::new(input.lines());
+        parser.read_exact("# Changelog")?;
+        parser.read_empty()?;
+        parser.advance()?;
+        loop {
+            let version = (parser.buffer.strip_prefix("## "))
+                .with_context(|| anyhow!("Expected release {parser}"))?;
+            let version =
+                Version::parse(version).with_context(|| anyhow!("Parsing version {parser}"))?;
+            ensure!(version.build.is_empty(), "Unexpected build metadata {parser}");
+            match releases.last() {
+                Some(prev) => {
+                    ensure!(version.pre.is_empty(), "Unexpected prerelease {parser}");
+                    let severity = *prev.contents.first_key_value().unwrap().0;
+                    ensure_conform(&version, severity, &prev.version)?;
+                }
+                None => {
+                    let pre = version.pre.as_str();
+                    ensure!(matches!(pre, "" | "git"), "Invalid prerelease {pre:?} {parser}");
+                }
+            }
+            parser.read_empty()?;
+            parser.advance()?;
+            let mut contents = BTreeMap::new();
+            if matches!(version, Version { major: 0, minor: 1, patch: 0, .. }) {
+                releases.push(Release { version, contents });
                 break;
             }
-
-            let mut release = match current_line.strip_prefix("## ") {
-                Some(version_string) => Release::new(version_string)?,
-                None => bail!("Failed to find release starting with '## ': {current_line}"),
-            };
-
-            // Parse each severity (major, minor, patch)
-            while next_line.is_some_and(|line| line.starts_with("### ")) {
-                // Advance
-                current_line = lines.next().unwrap();
-                next_line = lines.peek();
-
-                let severity = match current_line.strip_prefix("### ") {
-                    Some("Major") => Severity::Major,
-                    Some("Minor") => Severity::Minor,
-                    Some("Patch") => Severity::Patch,
-                    _ => bail!("Failed to parse serevity: {current_line}"),
+            while let Some(severity) = parser.buffer.strip_prefix("### ") {
+                let severity = match severity {
+                    "Major" => Severity::Major,
+                    "Minor" => Severity::Minor,
+                    "Patch" => Severity::Patch,
+                    _ => bail!("Invalid severity {severity:?} {parser}"),
                 };
-
-                let mut release_descriptions = Vec::new();
-
-                // Parse the release descriptions
-                // Some lines may be a new description. Some lines may be continuation of
-                // previous descriptions.
-                while next_line.is_some_and(|line| line.starts_with("- ") || line.starts_with("  "))
-                {
-                    // Advance
-                    current_line = lines.next().unwrap();
-                    next_line = lines.peek();
-
-                    ensure!(
-                        !current_line.ends_with("."),
-                        "Each description must not end in a '.' ({current_line})"
-                    );
-
-                    // New description
-                    if let Some(l) = current_line.strip_prefix("- ") {
-                        release_descriptions.push(l.to_string());
-                    } else if current_line.starts_with("  ") {
-                        // Append to previous description
-                        write!(
-                            release_descriptions.last_mut().context("Invalid continuation")?,
-                            "\n{current_line}"
-                        )?;
-                    }
+                if let Some(&prev) = contents.last_key_value().map(|(x, _)| x) {
+                    ensure!(prev < severity, "Out of order severity {parser}");
                 }
-
-                ensure!(
-                    release.contents.insert(severity, release_descriptions).is_none(),
-                    "Duplicate severity detected for {severity:?}"
-                );
+                parser.read_empty()?;
+                let mut descriptions = Vec::new();
+                while parser.read_empty().is_err() {
+                    if parser.buffer.starts_with("- ") {
+                        descriptions.push(parser.buffer.to_string());
+                    } else if parser.buffer.starts_with("  ") {
+                        let description = descriptions
+                            .last_mut()
+                            .with_context(|| anyhow!("Invalid continuation {parser}"))?;
+                        description.push('\n');
+                        description.push_str(parser.buffer);
+                    } else {
+                        bail!("Invalid description {parser}");
+                    }
+                    ensure!(
+                        !descriptions.last_mut().unwrap().ends_with("."),
+                        "Description ends with dot {parser}"
+                    );
+                }
+                assert!(contents.insert(severity, descriptions).is_none());
+                parser.advance()?;
             }
-
-            // Validate descending versions.
-            if let Some(previous_version) = releases.last() {
-                ensure!(
-                    release.version < previous_version.version,
-                    "Versions should be order by decreasing precedence"
-                );
-            }
-
-            // Validate pre-release.
-            ensure!(
-                releases.is_empty() || release.version.pre.is_empty(),
-                "Only the first version can be pre-release"
-            );
-
-            releases.push(release);
+            ensure!(!contents.is_empty(), "Release {version} is empty");
+            releases.push(Release { version, contents });
         }
-
-        let initial_release = releases.last().context("At least 1 release is required")?;
-
-        ensure!(
-            matches!(initial_release.version.to_string().as_str(), "0.1.0" | "0.1.0-git"),
-            "The first release must be version 0.1.0 or 0.1.0-git"
-        );
-        ensure!(initial_release.contents.is_empty(), "The last release must contain no changes");
-
-        let changelog = Changelog { releases, skip_counter };
-        let output_string = format!("{changelog}");
-
-        ensure!(
-            output_string == contents,
-            "Input string does not equal rendered changelog.\n\nIn: {contents}\n\nOut: \
-             {output_string}"
-        );
-
-        Ok(changelog)
+        ensure!(!releases.is_empty(), "Changelog has no releases");
+        let skip_counter = parser
+            .buffer
+            .strip_prefix("<!-- Increment to skip CHANGELOG.md test: ")
+            .with_context(|| anyhow!("Invalid skip counter prefix {parser}"))?
+            .strip_suffix(" -->")
+            .with_context(|| anyhow!("Invalid skip counter suffix {parser}"))?
+            .parse()
+            .with_context(|| anyhow!("Invalid skip counter {parser}"))?;
+        parser.done()?;
+        let result = Changelog { releases, skip_counter };
+        assert_eq!(format!("{result}"), input);
+        Ok(result)
     }
 
-    fn validate_cargo_toml(&self, path: &str) -> Result<()> {
-        let most_recent_release = self.releases.first().unwrap();
-        let metadata = MetadataCommand::new().current_dir(path).no_deps().exec()?;
-        let cargo_toml_version =
-            &metadata.root_package().context("Cargo.toml version not found")?.version;
-
+    async fn validate_cargo_toml(&self, path: &str) -> Result<()> {
+        let metadata = metadata(path).await?;
         ensure!(
-            most_recent_release.version.to_string() == cargo_toml_version.to_string(),
-            "The most recent version must match Cargo.toml's version"
+            self.releases.first().unwrap().version == metadata.packages[0].version,
+            "Version mismatch between Cargo.toml and CHANGELOG.md for {path}"
         );
-
         Ok(())
     }
 }
 
 impl Display for Changelog {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let Changelog { releases, skip_counter } = self;
         writeln!(f, "# Changelog\n")?;
-
-        for release in &self.releases {
-            writeln!(f, "{release}\n")?;
+        for release in releases {
+            write!(f, "{release}")?;
         }
+        writeln!(f, "<!-- Increment to skip CHANGELOG.md test: {skip_counter} -->")
+    }
+}
 
-        writeln!(f, "<!-- Increment to skip CHANGELOG.md test: {} -->", self.skip_counter)
+struct Parser<'a, I: Iterator<Item = &'a str>> {
+    count: usize,
+    buffer: &'a str,
+    lines: I,
+}
+
+impl<'a, I: Iterator<Item = &'a str>> Display for Parser<'a, I> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let line = if f.alternate() { "Line" } else { "line" };
+        let count = self.count;
+        write!(f, "{line} {count}")
+    }
+}
+
+impl<'a, I: Iterator<Item = &'a str>> Parser<'a, I> {
+    fn new(lines: I) -> Self {
+        Parser { count: 0, buffer: "", lines }
+    }
+
+    fn done(mut self) -> Result<()> {
+        Ok(ensure!(self.lines.next().is_none(), "Expected end of file after {self}"))
+    }
+
+    fn advance(&mut self) -> Result<&'a str> {
+        self.buffer =
+            self.lines.next().with_context(|| anyhow!("Unexpected end of file after {self}"))?;
+        self.count += 1;
+        Ok(self.buffer)
+    }
+
+    fn read_exact(&mut self, line: &str) -> Result<()> {
+        self.advance()?;
+        ensure!(self.buffer == line, "{self:#} should be {line:?}");
+        Ok(())
+    }
+
+    fn read_empty(&mut self) -> Result<()> {
+        self.advance()?;
+        ensure!(self.buffer.is_empty(), "{self:#} should be empty");
+        Ok(())
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 struct Release {
     version: Version,
-
     contents: BTreeMap<Severity, Vec<String>>,
-}
-
-impl Release {
-    fn new(version: &str) -> Result<Self> {
-        Ok(Release { version: Version::parse(version)?, contents: BTreeMap::new() })
-    }
 }
 
 impl Display for Release {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "## {}", self.version)?;
-
+        writeln!(f, "## {}\n", self.version)?;
         for (severity, descriptions) in &self.contents {
-            writeln!(f, "\n\n### {severity}\n")?;
-
-            for (index, description) in descriptions.iter().enumerate() {
-                write!(f, "- {description}")?;
-
-                if index != descriptions.len() - 1 {
-                    writeln!(f)?;
-                }
+            writeln!(f, "### {severity}\n")?;
+            for description in descriptions {
+                writeln!(f, "{description}")?;
             }
+            writeln!(f)?;
         }
-
         Ok(())
     }
 }
 
-/// Validates CHANGELOG.md files for all Wasefire crates.
-pub async fn execute_ci() -> Result<()> {
-    let paths = cmd::output(Command::new("git").args(["ls-files", "*/CHANGELOG.md"])).await?;
-
-    for path in paths.stdout.lines() {
-        let path = path?;
-
-        // Validation done during parsing.
-        let changelog = Changelog::read_file(&path).await?;
-
-        let crate_dir = path.strip_suffix("/CHANGELOG.md").unwrap();
-
-        changelog.validate_cargo_toml(crate_dir)?;
+fn ensure_conform(old: &Version, severity: Severity, new: &Version) -> Result<()> {
+    let effective = match (new.major, severity) {
+        (0, Severity::Major) => Severity::Minor,
+        (0, _) => Severity::Patch,
+        (_, x) => x,
+    };
+    fn aux(threshold: Severity, actual: Severity, old: u64) -> u64 {
+        match actual.cmp(&threshold) {
+            std::cmp::Ordering::Less => 0,
+            std::cmp::Ordering::Equal => old + 1,
+            std::cmp::Ordering::Greater => old,
+        }
     }
-
+    let mut expected = new.clone();
+    expected.major = aux(Severity::Major, effective, old.major);
+    expected.minor = aux(Severity::Minor, effective, old.minor);
+    expected.patch = aux(Severity::Patch, effective, old.patch);
+    ensure!(
+        *new == expected,
+        "Release {new} should be {expected} due to {} bump from {old}",
+        severity.to_possible_value().unwrap().get_name()
+    );
     Ok(())
 }
 
-/// Updates a CHANGELOG.md file and CHANGELOG.md files of dependencies.
+/// Validates changelog files for all crates.
+pub async fn execute_ci() -> Result<()> {
+    let paths = cmd::output(Command::new("git").args(["ls-files", "*/CHANGELOG.md"])).await?;
+    for path in paths.stdout.lines() {
+        let path = path?;
+        let changelog = Changelog::read_file(&path).await?;
+        changelog.validate_cargo_toml(path.strip_suffix("/CHANGELOG.md").unwrap()).await?;
+    }
+    Ok(())
+}
+
+/// Updates a changelog file and changelog files of dependencies.
 pub async fn execute_change(path: &str, _severity: &Severity, _description: &str) -> Result<()> {
     ensure!(fs::exists(path).await, "Crate does not exist: {path}");
 
@@ -309,7 +316,7 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).expect("Failed to parse changelog."),
+            Changelog::parse(changelog).unwrap(),
             Changelog {
                 releases: vec![
                     Release {
@@ -317,15 +324,24 @@ mod tests {
                         contents: BTreeMap::from([
                             (
                                 Severity::Major,
-                                vec!["major update 1".to_string(), "major update 2".to_string()]
+                                vec![
+                                    "- major update 1".to_string(),
+                                    "- major update 2".to_string()
+                                ]
                             ),
                             (
                                 Severity::Minor,
-                                vec!["minor update 1".to_string(), "minor update 2".to_string()]
+                                vec![
+                                    "- minor update 1".to_string(),
+                                    "- minor update 2".to_string()
+                                ]
                             ),
                             (
                                 Severity::Patch,
-                                vec!["patch update 1".to_string(), "patch update 2".to_string()]
+                                vec![
+                                    "- patch update 1".to_string(),
+                                    "- patch update 2".to_string()
+                                ]
                             )
                         ]),
                     },
@@ -334,15 +350,24 @@ mod tests {
                         contents: BTreeMap::from([
                             (
                                 Severity::Major,
-                                vec!["major update 1".to_string(), "major update 2".to_string()]
+                                vec![
+                                    "- major update 1".to_string(),
+                                    "- major update 2".to_string()
+                                ]
                             ),
                             (
                                 Severity::Minor,
-                                vec!["minor update 1".to_string(), "minor update 2".to_string()]
+                                vec![
+                                    "- minor update 1".to_string(),
+                                    "- minor update 2".to_string()
+                                ]
                             ),
                             (
                                 Severity::Patch,
-                                vec!["patch update 1".to_string(), "patch update 2".to_string()]
+                                vec![
+                                    "- patch update 1".to_string(),
+                                    "- patch update 2".to_string()
+                                ]
                             )
                         ]),
                     },
@@ -399,31 +424,28 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        assert_eq!(
-            format!("{}", Changelog::parse(changelog).expect("Failed to parse changelog.")),
-            changelog
-        );
+        assert_eq!(format!("{}", Changelog::parse(changelog).unwrap()), changelog);
     }
 
     #[test]
     fn parse_changelog_with_missing_severity_success() {
         let changelog = r"# Changelog
 
-## 0.4.0
+## 0.2.0
 
 ### Major
 
 - major update 1
 - major update 2
 
-## 0.3.0
+## 0.1.2
 
 ### Minor
 
 - minor update 1
 - minor update 2
 
-## 0.2.0
+## 0.1.1
 
 ### Patch
 
@@ -436,28 +458,28 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).expect("Failed to parse changelog."),
+            Changelog::parse(changelog).unwrap(),
             Changelog {
                 releases: vec![
                     Release {
-                        version: Version::parse("0.4.0").unwrap(),
-                        contents: BTreeMap::from([(
-                            Severity::Major,
-                            vec!["major update 1".to_string(), "major update 2".to_string()]
-                        )]),
-                    },
-                    Release {
-                        version: Version::parse("0.3.0").unwrap(),
-                        contents: BTreeMap::from([(
-                            Severity::Minor,
-                            vec!["minor update 1".to_string(), "minor update 2".to_string()]
-                        )]),
-                    },
-                    Release {
                         version: Version::parse("0.2.0").unwrap(),
                         contents: BTreeMap::from([(
+                            Severity::Major,
+                            vec!["- major update 1".to_string(), "- major update 2".to_string()]
+                        )]),
+                    },
+                    Release {
+                        version: Version::parse("0.1.2").unwrap(),
+                        contents: BTreeMap::from([(
+                            Severity::Minor,
+                            vec!["- minor update 1".to_string(), "- minor update 2".to_string()]
+                        )]),
+                    },
+                    Release {
+                        version: Version::parse("0.1.1").unwrap(),
+                        contents: BTreeMap::from([(
                             Severity::Patch,
-                            vec!["patch update 1".to_string(), "patch update 2".to_string()]
+                            vec!["- patch update 1".to_string(), "- patch update 2".to_string()]
                         )]),
                     },
                     Release {
@@ -489,7 +511,7 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).expect("Failed to parse changelog."),
+            Changelog::parse(changelog).unwrap(),
             Changelog {
                 releases: vec![
                     Release {
@@ -497,9 +519,9 @@ mod tests {
                         contents: BTreeMap::from([(
                             Severity::Major,
                             vec![
-                                "short 1".to_string(),
-                                "my long description\n  that spans many lines".to_string(),
-                                "short 2".to_string()
+                                "- short 1".to_string(),
+                                "- my long description\n  that spans many lines".to_string(),
+                                "- short 2".to_string()
                             ]
                         )]),
                     },
@@ -528,10 +550,10 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        assert!(Changelog::parse(changelog)
-            .expect_err("Parse changelog was successful.")
-            .to_string()
-            .contains("Each description must not end in a '.' (- short 1.)"))
+        assert_eq!(
+            Changelog::parse(changelog).unwrap_err().to_string(),
+            "Description ends with dot line 7"
+        );
     }
 
     #[test]
@@ -544,7 +566,7 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).expect("Failed to parse changelog."),
+            Changelog::parse(changelog).unwrap(),
             Changelog {
                 releases: vec![Release {
                     version: Version::parse("0.1.0").unwrap(),
@@ -565,7 +587,7 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).expect("Failed to parse changelog."),
+            Changelog::parse(changelog).unwrap(),
             Changelog {
                 releases: vec![Release {
                     version: Version::parse("0.1.0").unwrap(),
@@ -579,12 +601,15 @@ mod tests {
     #[test]
     fn parse_changelog_requires_skip_counter_at_end() {
         let changelog = r"# Changelog
-## 0.1.0";
 
-        assert!(Changelog::parse(changelog)
-            .expect_err("Parse changelog was successful.")
-            .to_string()
-            .contains("Malformed or missing skip counter"))
+## 0.1.0
+
+";
+
+        assert_eq!(
+            Changelog::parse(changelog).unwrap_err().to_string(),
+            "Unexpected end of file after line 4"
+        );
     }
 
     #[test]
@@ -592,17 +617,17 @@ mod tests {
         let changelog = r"
 ## 0.1.0";
 
-        assert!(Changelog::parse(changelog)
-            .expect_err("Parse changelog was successful.")
-            .to_string()
-            .contains("H1 with 'Changelog' is required"))
+        assert_eq!(
+            Changelog::parse(changelog).unwrap_err().to_string(),
+            "Line 1 should be \"# Changelog\""
+        );
     }
 
     #[test]
     fn parse_changelog_versions_must_be_in_order() {
         let changelog = r"# Changelog
 
-## 0.1.0
+## 0.1.1
 
 ### Major
 
@@ -617,10 +642,10 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        assert!(Changelog::parse(changelog)
-            .expect_err("Parse changelog was successful.")
-            .to_string()
-            .contains("Versions should be order by decreasing precedence"))
+        assert_eq!(
+            Changelog::parse(changelog).unwrap_err().to_string(),
+            "Release 0.1.1 should be 0.3.0 due to major bump from 0.2.0"
+        );
     }
 
     #[test]
@@ -630,10 +655,7 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        assert!(Changelog::parse(changelog)
-            .expect_err("Parse changelog was successful.")
-            .to_string()
-            .contains("At least 1 release is required"))
+        assert_eq!(Changelog::parse(changelog).unwrap_err().to_string(), "Expected release line 3");
     }
 
     #[test]
@@ -649,10 +671,7 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        assert!(Changelog::parse(changelog)
-            .expect_err("Parse changelog was successful.")
-            .to_string()
-            .contains("The first release must be version 0.1.0 or 0.1.0-git"))
+        assert_eq!(Changelog::parse(changelog).unwrap_err().to_string(), "Expected release line 9");
     }
 
     #[test]
@@ -668,10 +687,10 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        assert!(Changelog::parse(changelog)
-            .expect_err("Parse changelog was successful.")
-            .to_string()
-            .contains("The last release must contain no changes"))
+        assert_eq!(
+            Changelog::parse(changelog).unwrap_err().to_string(),
+            "Invalid skip counter prefix line 5"
+        );
     }
 
     #[test]
@@ -693,9 +712,9 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        assert!(Changelog::parse(changelog)
-            .expect_err("Parse changelog was successful.")
-            .to_string()
-            .contains("Only the first version can be pre-release"))
+        assert_eq!(
+            Changelog::parse(changelog).unwrap_err().to_string(),
+            "Unexpected prerelease line 9"
+        );
     }
 }
