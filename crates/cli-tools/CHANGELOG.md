@@ -10,6 +10,7 @@
 
 ### Minor
 
+- Add `cargo` and `changelog` modules and features
 - Handle more errors during platform discovery and `action::PlatformReboot`
 - Extend `fs::write()` first parameter to set the `OpenOptions` too
 - Add `error::root_cause_is()` to check the `anyhow::Error` root cause
@@ -34,4 +35,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 6 -->
+<!-- Increment to skip CHANGELOG.md test: 7 -->

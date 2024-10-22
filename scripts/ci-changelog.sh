@@ -19,6 +19,8 @@ set -e
 
 # This script checks that Cargo.toml and CHANGELOG.md files are correct.
 
+x cargo xtask changelog ci
+
 # All source files should be under /src/. In praticular, /build.rs should be under /src/build.rs and
 # package.build set to point to that path.
 INCLUDE='["/LICENSE", "/src/"]'
