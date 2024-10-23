@@ -466,10 +466,8 @@ impl RunnerOptions {
             if let Some(version) = &self.version {
                 cargo.env("WASEFIRE_HOST_VERSION", version);
             }
-            cmd::execute(
-                &mut Command::new("make").current_dir("crates/runner-host/crates/web-client"),
-            )
-            .await?;
+            cmd::execute(Command::new("make").current_dir("crates/runner-host/crates/web-client"))
+                .await?;
         }
         if self.name == "nordic" {
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
