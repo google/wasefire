@@ -476,7 +476,7 @@ struct Label<'m> {
     polymorphic: bool,
     stack: Vec<OpdType>,
     branches: Vec<SideTableBranch<'m>>,
-    all_labels_values_cnt: u32,
+    labels_values_cnt_so_far: u32,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -753,22 +753,22 @@ impl<'a, 'm> Expr<'a, 'm> {
 
     fn push(&mut self, t: OpdType) {
         self.stack().push(t);
-        self.label().all_labels_values_cnt += 1;
+        self.label().labels_values_cnt_so_far += 1;
     }
 
     fn pushs(&mut self, values: ResultType) {
         self.stack().extend(values.iter().cloned().map(OpdType::from));
-        self.label().all_labels_values_cnt += values.len() as u32;
+        self.label().labels_values_cnt_so_far += values.len() as u32;
     }
 
     fn pop(&mut self) -> Result<OpdType, Error> {
         let label = self.label();
-        let Some(values_cnt) = label.all_labels_values_cnt.checked_sub(1) else {
+        let Some(values_cnt) = label.labels_values_cnt_so_far.checked_sub(1) else {
             #[cfg(feature = "debug")]
-            eprintln!("side-table subtraction overflow {0} - 1", label.all_labels_values_cnt);
+            eprintln!("side-table subtraction overflow {0} - 1", label.labels_values_cnt_so_far);
             return Err(unsupported(if_debug!(Unsupported::SideTable)));
         };
-        label.all_labels_values_cnt = values_cnt;
+        label.labels_values_cnt_so_far = values_cnt;
         Ok(match label.stack.pop() {
             Some(x) => x,
             None => {
@@ -830,7 +830,7 @@ impl<'a, 'm> Expr<'a, 'm> {
             polymorphic: false,
             stack,
             branches: vec![],
-            all_labels_values_cnt: self.labels.last().unwrap().all_labels_values_cnt,
+            labels_values_cnt_so_far: self.labels.last().unwrap().labels_values_cnt_so_far,
         };
         self.labels.push(label);
         Ok(())
@@ -889,7 +889,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         SideTableBranch {
             parser: self.parser.save(),
             side_table: self.side_table.save(),
-            stack: self.label().all_labels_values_cnt,
+            stack: self.label().labels_values_cnt_so_far,
         }
     }
 
