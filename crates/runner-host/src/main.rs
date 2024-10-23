@@ -84,6 +84,14 @@ struct Flags {
     /// Socket address to bind to when --interface=web (ignored otherwise).
     #[arg(long, default_value = "127.0.0.1:5000")]
     web_addr: SocketAddr,
+
+    /// Platform version (in hexadecimal).
+    #[arg(long, default_value = option_env!("WASEFIRE_HOST_VERSION").unwrap_or_default())]
+    version: Option<String>,
+
+    /// Platform serial (in hexadecimal).
+    #[arg(long, default_value = option_env!("WASEFIRE_HOST_SERIAL").unwrap_or_default())]
+    serial: Option<String>,
 }
 
 #[test]

@@ -190,6 +190,12 @@ struct RunnerOptions {
     #[clap(long)]
     version: Option<String>,
 
+    /// Host platform serial.
+    ///
+    /// This is only used for the host runner. It must be an hexadecimal byte sequence.
+    #[clap(long)]
+    serial: Option<String>,
+
     /// Cargo no-default-features.
     #[clap(long)]
     no_default_features: bool,
@@ -465,6 +471,9 @@ impl RunnerOptions {
         if self.name == "host" {
             if let Some(version) = &self.version {
                 cargo.env("WASEFIRE_HOST_VERSION", version);
+            }
+            if let Some(serial) = &self.serial {
+                cargo.env("WASEFIRE_HOST_SERIAL", serial);
             }
             cmd::execute(Command::new("make").current_dir("crates/runner-host/crates/web-client"))
                 .await?;
