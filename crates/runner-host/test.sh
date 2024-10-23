@@ -18,6 +18,7 @@ set -e
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
 ensure_applet
+( cd crates/web-client && make )
 
 test_helper
 
