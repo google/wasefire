@@ -9,6 +9,7 @@
 
 ### Minor
 
+- Add `platform-info` to print platform serial and version
 - Add `host` to start a host platform
 - Support `RUST_LOG` to control logging
 - Add `platform-lock` to lock a platform protocol
