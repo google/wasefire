@@ -9,6 +9,7 @@
 
 ### Minor
 
+- Add `host` to start a host platform
 - Support `RUST_LOG` to control logging
 - Add `platform-lock` to lock a platform protocol
 - Add `applet-exit-status` to get an applet exit status

@@ -10,6 +10,9 @@
 
 ### Minor
 
+- Add `cmd::spawn()` for more control on command execution
+- Add `fs::remove_dir_all()` to remove a directory recursively
+- Add `fs::rename()` to rename a file
 - Add `cargo` and `changelog` modules and features
 - Handle more errors during platform discovery and `action::PlatformReboot`
 - Extend `fs::write()` first parameter to set the `OpenOptions` too
