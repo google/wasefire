@@ -14,6 +14,8 @@
 
 //! Applet interface.
 
+use wasefire_protocol::applet::ExitStatus;
+
 use crate::Error;
 
 /// Applet interface.
@@ -45,4 +47,12 @@ pub trait Api: Send {
     /// Implementations should make sure that if the platform reboots before this call, the
     /// persisted applet is empty.
     fn finish() -> Result<(), Error>;
+
+    /// Notifies an applet start.
+    fn notify_start() {}
+
+    /// Notifies an applet exit.
+    fn notify_exit(status: ExitStatus) {
+        let _ = status;
+    }
 }

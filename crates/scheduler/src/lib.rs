@@ -313,6 +313,7 @@ impl<B: Board> Scheduler<B> {
             None => return,
         };
         log::info!("Stopping applet.");
+        <board::Applet<B> as board::applet::Api>::notify_exit(status);
         applet.free();
         self.applet = applet::Slot::Exited(status);
         #[cfg(feature = "native")]
@@ -341,6 +342,7 @@ impl<B: Board> Scheduler<B> {
             return Ok(());
         }
         log::info!("Starting applet.");
+        <board::Applet<B> as board::applet::Api>::notify_start();
         self.applet = applet::Slot::Running(Applet::default());
         #[cfg(not(feature = "unsafe-skip-validation"))]
         let module = Module::new(wasm)?;

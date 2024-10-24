@@ -33,6 +33,7 @@
 
 extern crate alloc;
 
+#[cfg(any(feature = "device", feature = "host"))]
 use alloc::boxed::Box;
 
 #[cfg(feature = "host")]

@@ -20,6 +20,7 @@ use wasefire_board_api::applet::Api;
 use wasefire_board_api::Error;
 use wasefire_cli_tools::fs;
 use wasefire_error::Code;
+use wasefire_protocol::applet::ExitStatus;
 
 pub enum Impl {}
 
@@ -38,6 +39,22 @@ impl Api for Impl {
 
     fn finish() -> Result<(), Error> {
         with_state(|x| Handle::current().block_on(x.finish()))
+    }
+
+    fn notify_start() {
+        crate::with_state(|state| {
+            if let Some(web) = &mut state.web {
+                web.start();
+            }
+        })
+    }
+
+    fn notify_exit(status: ExitStatus) {
+        crate::with_state(|state| {
+            if let Some(web) = &mut state.web {
+                web.exit(status);
+            }
+        })
     }
 }
 

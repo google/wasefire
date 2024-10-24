@@ -112,10 +112,7 @@ pub struct AppletExitStatus {
 impl AppletExitStatus {
     fn print(status: Option<applet::ExitStatus>) {
         match status {
-            Some(applet::ExitStatus::Exit) => println!("The applet exited."),
-            Some(applet::ExitStatus::Abort) => println!("The applet aborted."),
-            Some(applet::ExitStatus::Trap) => println!("The applet trapped."),
-            Some(applet::ExitStatus::Kill) => println!("The applet was killed."),
+            Some(status) => println!("{status}."),
             None => println!("The applet is still running."),
         }
     }

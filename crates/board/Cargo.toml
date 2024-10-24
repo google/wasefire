@@ -36,6 +36,7 @@ usb-device = { version = "0.3.2", default-features = false, optional = true }
 usbd-serial = { version = "0.2.2", default-features = false, optional = true }
 wasefire-error = { version = "0.1.2-git", path = "../error" }
 wasefire-logger = { version = "0.1.6-git", path = "../logger" }
+wasefire-protocol = { version = "0.2.0-git", path = "../protocol" }
 wasefire-store = { version = "0.3.0-git", path = "../store", optional = true }
 
 [dependencies.wasefire-applet-api]

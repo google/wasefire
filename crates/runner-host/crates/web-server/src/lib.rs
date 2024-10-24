@@ -23,6 +23,7 @@ use tokio::sync::{mpsc, oneshot};
 use warp::ws::{Message, WebSocket};
 use warp::Filter;
 use wasefire_logger as log;
+use wasefire_protocol::applet::ExitStatus;
 use web_common::{ButtonState, Command, Component};
 
 #[derive(Debug, Copy, Clone)]
@@ -72,6 +73,14 @@ impl Client {
 
     pub fn set_led(&self, state: bool) {
         self.send(Command::Set { component_id: LED_ID, state });
+    }
+
+    pub fn start(&self) {
+        self.send(Command::Start);
+    }
+
+    pub fn exit(&self, status: ExitStatus) {
+        self.send(Command::Exit { status });
     }
 
     fn send(&self, command: Command) {
