@@ -8,6 +8,7 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1.0.202", features = ["derive"] }
+wasefire-protocol = { path = "../../../protocol", features = ["serde"] }
 
 [dev-dependencies]
 serde_json = "1.0.117"

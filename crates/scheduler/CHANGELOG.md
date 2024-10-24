@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Call the `applet::notify_{start,exit}()` hooks
 - Trap applets calling into host during init (except for debug printing)
 - Support `PlatformLock` protocol call
 - Support `AppletExitStatus` protocol call (the platform keeps running when the applet exits)

@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `serde` feature
 - Add `PlatformLock` to lock a platform protocol
 - Add `AppletExitStatus` and `applet::ExitStatus` to get an applet exit status
 - Add `Applet{Install,Uninstall}` for applet management

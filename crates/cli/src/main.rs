@@ -18,7 +18,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use clap::{CommandFactory, Parser, ValueHint};
 use clap_complete::Shell;
 use tokio::process::Command;
@@ -209,7 +209,10 @@ impl Host {
             let mut host = Command::new(&bin);
             host.arg(&self.dir);
             host.args(&self.args);
-            cmd::execute(&mut host).await?;
+            let code = cmd::spawn(&mut host)?.wait().await?.code().context("no error code")?;
+            if code != 0 {
+                std::process::exit(code);
+            }
         }
     }
 }
