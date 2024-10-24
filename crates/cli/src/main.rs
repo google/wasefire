@@ -89,6 +89,14 @@ enum Action {
     /// Starts a host platform.
     Host(Host),
 
+    #[group(id = "Action::PlatformInfo")]
+    PlatformInfo {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        action: action::PlatformInfo,
+    },
+
     PlatformList(action::PlatformList),
 
     /// Prints the platform update metadata (possibly binary output).
@@ -252,6 +260,7 @@ async fn main() -> Result<()> {
         }
         Action::AppletRpc { options, action } => action.run(&mut options.connect().await?).await,
         Action::Host(x) => x.run().await?,
+        Action::PlatformInfo { options, action } => action.run(&mut options.connect().await?).await,
         Action::PlatformList(x) => x.run().await,
         Action::PlatformUpdateMetadata { options } => {
             let metadata = action::PlatformUpdate::metadata(&mut options.connect().await?).await?;

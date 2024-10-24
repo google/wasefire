@@ -10,6 +10,7 @@
 
 ### Minor
 
+- Add `action::PlatformInfo` to print platform serial and version
 - Add `cmd::spawn()` for more control on command execution
 - Add `fs::remove_dir_all()` to remove a directory recursively
 - Add `fs::rename()` to rename a file

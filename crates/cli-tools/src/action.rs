@@ -286,6 +286,22 @@ impl PlatformList {
     }
 }
 
+/// Prints the informations of a platform.
+#[derive(clap::Args)]
+pub struct PlatformInfo {}
+
+impl PlatformInfo {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let PlatformInfo {} = self;
+        let info = connection.call::<service::PlatformInfo>(()).await?;
+        let serial = protocol::Hex(info.get().serial.to_vec());
+        let version = protocol::Hex(info.get().version.to_vec());
+        println!(" serial: {serial}");
+        println!("version: {version}");
+        Ok(())
+    }
+}
+
 /// Updates a platform.
 #[derive(clap::Args)]
 pub struct PlatformUpdate {
