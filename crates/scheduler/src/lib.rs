@@ -436,8 +436,13 @@ impl<B: Board> Scheduler<B> {
         let call = match applet.store_mut().last_call() {
             Some(x) => x,
             None => {
-                // When main exits, we continue processing events.
-                let _ = self.process_event();
+                if applet.has_handlers() {
+                    // Continue processing events when main exits and at least one callback is
+                    // registered.
+                    let _ = self.process_event();
+                } else {
+                    self.stop_applet(ExitStatus::Exit);
+                }
                 return;
             }
         };
