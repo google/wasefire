@@ -459,14 +459,18 @@ impl SideTable {
     }
 
     fn pop_cnt(source: SideTableBranch, target: SideTableBranch) -> MResult<u32, Check> {
-        let source = source.stack as u32;
-        let target = target.stack as u32;
+        let source = source.stack as i32;
+        let target = target.stack as i32;
         let Some(delta) = target.checked_sub(source) else {
             #[cfg(feature = "debug")]
             eprintln!("side-table subtraction overflow {target} - {source}");
             return Err(unsupported(if_debug!(Unsupported::SideTable)));
         };
-        Ok(delta)
+        u32::try_from(delta).map_err(|_| {
+            #[cfg(feature = "debug")]
+            eprintln!("side-table conversion overflow {delta}");
+            unsupported(if_debug!(Unsupported::SideTable))
+        })
     }
 
     fn persist(self) -> MResult<Vec<SideTableEntry>, Check> {
