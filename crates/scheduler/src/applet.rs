@@ -208,6 +208,10 @@ impl<B: Board> Applet<B> {
         self.handlers.get(&key)
     }
 
+    pub fn has_handlers(&self) -> bool {
+        !self.handlers.is_empty()
+    }
+
     pub fn len(&self) -> usize {
         self.events.len()
     }
