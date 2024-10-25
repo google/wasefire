@@ -62,9 +62,10 @@ impl Changelog {
         fs::write(path, self.to_string().as_bytes()).await
     }
 
-    fn push_description(&mut self, severity: &Severity, content: &str) -> Result<()> {
+    fn push_description(&mut self, severity: Severity, content: &str) -> Result<()> {
+        let content = if content.starts_with("- ") { content } else { &format!("- {content}") };
         let current_release = self.get_or_create_release_mut();
-        current_release.push_content(*severity, content)
+        current_release.push_content(severity, content)
     }
 
     // Gets newest (first) release. Creates a new one if newest release is not prerelease.
@@ -181,12 +182,12 @@ impl Changelog {
 
     async fn sync_cargo_toml(&self, path: &str) -> Result<()> {
         let expected_version = &self.releases.first().unwrap().version;
-        let cargo_toml_path = format!("{path}/Cargo.toml");
-        let mut cargo_toml: toml::Table = fs::read_toml(&cargo_toml_path).await?;
 
-        cargo_toml["package"]["version"] = expected_version.to_string().into();
-
-        fs::write_toml(&cargo_toml_path, &cargo_toml).await?;
+        let mut sed = Command::new("sed");
+        sed.arg("-i");
+        sed.arg(format!("s#^version = .*#version = \"{expected_version}\"#"));
+        sed.arg("Cargo.toml");
+        cmd::execute(sed.current_dir(path)).await?;
 
         Ok(())
     }
@@ -264,17 +265,14 @@ impl Release {
     }
 
     fn push_content(&mut self, severity: Severity, content: &str) -> Result<()> {
-        let entry = self.contents.entry(severity).or_default();
-
-        entry.push(content.to_string());
-
+        self.contents.entry(severity).or_default().push(content.to_string());
         Ok(())
     }
 }
 
 impl From<Version> for Release {
-    fn from(value: Version) -> Self {
-        Release { version: value, contents: BTreeMap::new() }
+    fn from(version: Version) -> Self {
+        Release { version, contents: BTreeMap::new() }
     }
 }
 
@@ -329,10 +327,8 @@ pub async fn execute_ci() -> Result<()> {
 }
 
 /// Updates a changelog file and changelog files of dependencies.
-pub async fn execute_change(path: &str, severity: &Severity, description: &str) -> Result<()> {
+pub async fn execute_change(path: &str, severity: Severity, description: &str) -> Result<()> {
     let changelog_file_path = format!("{path}/CHANGELOG.md");
-
-    ensure!(fs::exists(&changelog_file_path).await, "Crate does not exist: {changelog_file_path}");
 
     let mut changelog = Changelog::read_file(&changelog_file_path).await?;
 
@@ -795,10 +791,40 @@ mod tests {
     }
 
     #[test]
+    fn push_description_prepends_dash_only_when_needed() {
+        let changelog_str = r"# Changelog
+
+## 0.2.0-git
+
+### Major
+
+- A change
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
+
+        let mut changelog = Changelog::parse(&changelog_str).expect("Failed to parse changelog.");
+
+        changelog.push_description(Severity::Major, "testing no dash").unwrap();
+        changelog.push_description(Severity::Major, "- testing with dash").unwrap();
+
+        assert_eq!(
+            changelog.get_or_create_release_mut().contents.get(&Severity::Major).unwrap(),
+            &vec![
+                "- A change".to_string(),
+                "- testing no dash".to_string(),
+                "- testing with dash".to_string(),
+            ]
+        );
+    }
+
+    #[test]
     fn get_or_create_release_mut_uses_first_when_prerelease() {
         let changelog_str = r"# Changelog
 
-## 0.6.0-git
+## 0.2.0-git
 
 ### Major
 
@@ -813,14 +839,14 @@ mod tests {
 
         let current_release = changelog.get_or_create_release_mut();
 
-        assert_eq!(current_release.version, Version::parse("0.6.0-git").unwrap());
+        assert_eq!(current_release.version, Version::parse("0.2.0-git").unwrap());
     }
 
     #[test]
     fn get_or_create_release_mut_creates_new_when_current_is_released() {
         let changelog_str = r"# Changelog
 
-## 0.6.0
+## 0.2.0
 
 ### Major
 
@@ -835,7 +861,7 @@ mod tests {
 
         let current_release = changelog.get_or_create_release_mut();
 
-        assert_eq!(current_release.version, Version::parse("0.6.1-git").unwrap());
+        assert_eq!(current_release.version, Version::parse("0.2.1-git").unwrap());
         // Assert the new release already inserted
         assert_eq!(changelog.releases.len(), 3);
     }
