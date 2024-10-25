@@ -16,6 +16,7 @@ features = ["device", "host"]
 
 [dependencies]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"], optional = true }
+serde = { version = "1.0.202", default-features = false, features = ["derive"], optional = true }
 wasefire-error = { version = "0.1.2-git", path = "../error" }
 wasefire-wire = { version = "0.1.1-git", path = "../wire" }
 
@@ -24,6 +25,7 @@ _descriptor = []
 _exhaustive = []
 device = []
 host = ["dep:anyhow", "wasefire-error/std"]
+serde = ["dep:serde"]
 
 [lints]
 clippy.unit-arg = "allow"

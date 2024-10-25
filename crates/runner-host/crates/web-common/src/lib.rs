@@ -17,6 +17,7 @@
 //! The web client plays the role of the hardware. The web server is the host runner.
 
 use serde::{Deserialize, Serialize};
+use wasefire_protocol::applet::ExitStatus;
 
 /// Events from the hardware.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -51,6 +52,12 @@ pub enum Command {
 
     /// Prints a debug message.
     Log { message: String },
+
+    /// Indicates that the applet started.
+    Start,
+
+    /// Indicates that the applet exited.
+    Exit { status: ExitStatus },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

@@ -58,6 +58,12 @@ pub fn console(Props { id, command_state, on_new_console_msg }: &Props) -> Html 
                     Command::Log { message } => {
                         history.push(format!("[recv]: {message}"));
                     }
+                    Command::Start => {
+                        history.push("Applet running".to_string());
+                    }
+                    Command::Exit { status } => {
+                        history.push(format!("{status}"));
+                    }
                     Command::Disconnected => {
                         history.push("Disconnected from runner".to_string());
                         button_enabled.set(false);

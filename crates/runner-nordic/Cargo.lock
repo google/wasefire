@@ -1138,6 +1138,7 @@ dependencies = [
  "wasefire-applet-api",
  "wasefire-error",
  "wasefire-logger",
+ "wasefire-protocol",
  "wasefire-store",
 ]
 

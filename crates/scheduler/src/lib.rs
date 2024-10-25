@@ -313,6 +313,7 @@ impl<B: Board> Scheduler<B> {
             None => return,
         };
         log::info!("Stopping applet.");
+        <board::Applet<B> as board::applet::Api>::notify_exit(status);
         applet.free();
         self.applet = applet::Slot::Exited(status);
         #[cfg(feature = "native")]
@@ -341,6 +342,7 @@ impl<B: Board> Scheduler<B> {
             return Ok(());
         }
         log::info!("Starting applet.");
+        <board::Applet<B> as board::applet::Api>::notify_start();
         self.applet = applet::Slot::Running(Applet::default());
         #[cfg(not(feature = "unsafe-skip-validation"))]
         let module = Module::new(wasm)?;
@@ -434,8 +436,13 @@ impl<B: Board> Scheduler<B> {
         let call = match applet.store_mut().last_call() {
             Some(x) => x,
             None => {
-                // When main exits, we continue processing events.
-                let _ = self.process_event();
+                if applet.has_handlers() {
+                    // Continue processing events when main exits and at least one callback is
+                    // registered.
+                    let _ = self.process_event();
+                } else {
+                    self.stop_applet(ExitStatus::Exit);
+                }
                 return;
             }
         };

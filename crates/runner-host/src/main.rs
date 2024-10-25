@@ -17,7 +17,7 @@
 
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 
 use anyhow::Result;
 use clap::Parser;
@@ -36,12 +36,14 @@ use crate::board::Board;
 
 mod board;
 mod cleanup;
+mod web;
 
 exactly_one_of!["debug", "release"];
 exactly_one_of!["native", "wasm"];
 
 static STATE: Mutex<Option<board::State>> = Mutex::new(None);
 static RECEIVER: Mutex<Option<Receiver<Event<Board>>>> = Mutex::new(None);
+static FLAGS: LazyLock<Flags> = LazyLock::new(Flags::parse);
 
 fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
     f(STATE.lock().unwrap().as_mut().unwrap())
@@ -49,9 +51,8 @@ fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
 
 #[derive(Parser)]
 struct Flags {
-    /// Directory containing files representing the flash.
-    #[arg(long, default_value = "../../target/wasefire")]
-    flash_dir: PathBuf,
+    /// Path of the directory containing the platform files.
+    dir: PathBuf,
 
     /// Transport to listen to for the platform protocol.
     #[arg(long, default_value = "usb")]
@@ -83,6 +84,14 @@ struct Flags {
     /// Socket address to bind to when --interface=web (ignored otherwise).
     #[arg(long, default_value = "127.0.0.1:5000")]
     web_addr: SocketAddr,
+
+    /// Platform version (in hexadecimal).
+    #[arg(long, default_value = option_env!("WASEFIRE_HOST_VERSION").unwrap_or_default())]
+    version: Option<String>,
+
+    /// Platform serial (in hexadecimal).
+    #[arg(long, default_value = option_env!("WASEFIRE_HOST_SERIAL").unwrap_or_default())]
+    serial: Option<String>,
 }
 
 #[test]
@@ -106,7 +115,7 @@ enum Interface {
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
-    let flags = Flags::parse();
+    LazyLock::force(&FLAGS);
     std::panic::set_hook(Box::new(|info| {
         eprintln!("{info}");
         cleanup::shutdown(1)
@@ -121,52 +130,34 @@ async fn main() -> Result<()> {
         };
         cleanup::shutdown(128 + signal.as_raw_value());
     });
-    wasefire_cli_tools::fs::create_dir_all(&flags.flash_dir).await?;
-    let storage = flags.flash_dir.join("storage.bin");
+    wasefire_cli_tools::fs::create_dir_all(&FLAGS.dir).await?;
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
-    let storage = Some(FileStorage::new(&storage, options)?);
-    board::applet::init(flags.flash_dir.join("applet.bin")).await;
+    let storage = Some(FileStorage::new(&FLAGS.dir.join("storage.bin"), options)?);
+    board::applet::init().await;
     let (sender, receiver) = channel(10);
     *RECEIVER.lock().unwrap() = Some(receiver);
-    let web = match flags.interface {
+    let web = match FLAGS.interface {
         Interface::Stdio => None,
-        Interface::Web => {
-            let (sender, mut receiver) = channel(10);
-            tokio::spawn(async move {
-                while let Some(event) = receiver.recv().await {
-                    match event {
-                        web_server::Event::Exit => cleanup::shutdown(0),
-                        web_server::Event::Button { pressed } => {
-                            with_state(|state| board::button::event(state, Some(pressed)));
-                        }
-                    }
-                }
-            });
-            let mut trunk = tokio::process::Command::new("../../scripts/wrapper.sh");
-            trunk.args(["trunk", "build", "--release", "crates/web-client/index.html"]);
-            wasefire_cli_tools::cmd::execute(&mut trunk).await?;
-            Some(web_server::Client::new(flags.web_addr, sender).await?)
-        }
+        Interface::Web => Some(web::init().await?),
     };
     let push = {
         use wasefire_board_api::platform::protocol::Event;
         let sender = sender.clone();
         move |event: Event| drop(sender.try_send(event.into()))
     };
-    let protocol = match flags.protocol {
-        Protocol::Tcp => ProtocolState::Pipe(Pipe::new_tcp(flags.tcp_addr, push).await.unwrap()),
+    let protocol = match FLAGS.protocol {
+        Protocol::Tcp => ProtocolState::Pipe(Pipe::new_tcp(FLAGS.tcp_addr, push).await.unwrap()),
         Protocol::Unix => {
-            let pipe = Pipe::new_unix(&flags.unix_path, push).await.unwrap();
-            let unix_path = flags.unix_path.clone();
-            cleanup::push(Box::new(move || drop(std::fs::remove_file(unix_path))));
+            let pipe = Pipe::new_unix(&FLAGS.unix_path, push).await.unwrap();
+            cleanup::push(Box::new(move || drop(std::fs::remove_file(&FLAGS.unix_path))));
             ProtocolState::Pipe(pipe)
         }
         Protocol::Usb => ProtocolState::Usb,
     };
     let usb = board::usb::State::new(
-        &flags.usb_vid_pid,
+        &FLAGS.usb_vid_pid,
         matches!(protocol, ProtocolState::Usb),
-        flags.usb_serial,
+        FLAGS.usb_serial,
     );
     *STATE.lock().unwrap() = Some(board::State {
         sender,
@@ -181,7 +172,7 @@ async fn main() -> Result<()> {
     });
     board::uart::Uarts::init();
     board::usb::init()?;
-    if matches!(flags.interface, Interface::Stdio) {
+    if matches!(FLAGS.interface, Interface::Stdio) {
         tokio::task::spawn_blocking(|| {
             use std::io::BufRead;
             // The tokio::io::Stdin documentation recommends to use blocking IO in a dedicated
@@ -201,7 +192,7 @@ async fn main() -> Result<()> {
             }
         });
     }
-    println!("Board initialized. Starting scheduler.");
+    println!("Host platform running.");
     // Not sure why Rust doesn't figure out this can't return (maybe async).
     let _: ! = tokio::task::spawn_blocking(|| Scheduler::<board::Board>::run()).await?;
 }

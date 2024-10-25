@@ -139,10 +139,26 @@ pub async fn read_stdin() -> Result<Vec<u8>> {
     Ok(data)
 }
 
+pub async fn remove_dir_all(path: impl AsRef<Path>) -> Result<()> {
+    let name = path.as_ref().display();
+    debug!("rm -r {name:?}");
+    tokio::fs::remove_dir_all(path.as_ref()).await.with_context(|| format!("removing {name}"))
+}
+
 pub async fn remove_file(path: impl AsRef<Path>) -> Result<()> {
     let name = path.as_ref().display();
     debug!("rm {name:?}");
     tokio::fs::remove_file(path.as_ref()).await.with_context(|| format!("removing {name}"))
+}
+
+pub async fn rename(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<()> {
+    let src = from.as_ref().display();
+    let dst = to.as_ref().display();
+    create_parent(to.as_ref()).await?;
+    debug!("mv {src:?} {dst:?}");
+    tokio::fs::rename(from.as_ref(), to.as_ref())
+        .await
+        .with_context(|| format!("renaming {src} to {dst}"))
 }
 
 pub async fn touch(path: impl AsRef<Path>) -> Result<()> {

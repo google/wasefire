@@ -112,10 +112,7 @@ pub struct AppletExitStatus {
 impl AppletExitStatus {
     fn print(status: Option<applet::ExitStatus>) {
         match status {
-            Some(applet::ExitStatus::Exit) => println!("The applet exited."),
-            Some(applet::ExitStatus::Abort) => println!("The applet aborted."),
-            Some(applet::ExitStatus::Trap) => println!("The applet trapped."),
-            Some(applet::ExitStatus::Kill) => println!("The applet was killed."),
+            Some(status) => println!("{status}."),
             None => println!("The applet is still running."),
         }
     }
@@ -282,6 +279,22 @@ impl PlatformList {
             let busdev = protocol::ProtocolUsb::BusDev { bus, dev };
             println!("- {serial} or {busdev}");
         }
+        Ok(())
+    }
+}
+
+/// Prints the informations of a platform.
+#[derive(clap::Args)]
+pub struct PlatformInfo {}
+
+impl PlatformInfo {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let PlatformInfo {} = self;
+        let info = connection.call::<service::PlatformInfo>(()).await?;
+        let serial = protocol::Hex(info.get().serial.to_vec());
+        let version = protocol::Hex(info.get().version.to_vec());
+        println!(" serial: {serial}");
+        println!("version: {version}");
         Ok(())
     }
 }

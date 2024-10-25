@@ -18,12 +18,17 @@ use std::os::unix::process::CommandExt;
 use std::process::Output;
 
 use anyhow::{ensure, Context, Result};
-use tokio::process::Command;
+use tokio::process::{Child, Command};
+
+/// Spawns a command.
+pub fn spawn(command: &mut Command) -> Result<Child> {
+    debug!("{:?}", command.as_std());
+    Ok(command.spawn()?)
+}
 
 /// Executes a command making sure it's successful.
 pub async fn execute(command: &mut Command) -> Result<()> {
-    debug!("{:?}", command.as_std());
-    let code = command.spawn()?.wait().await?.code().context("no error code")?;
+    let code = spawn(command)?.wait().await?.code().context("no error code")?;
     ensure!(code == 0, "failed with code {code}");
     Ok(())
 }

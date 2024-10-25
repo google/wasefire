@@ -24,7 +24,7 @@ use wast::lexer::Lexer;
 use wast::token::Id;
 use wast::{parser, QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, WastRet, Wat};
 
-fn test(repo: &str, name: &str) {
+fn test(repo: &str, name: &str, skip: usize) {
     let path = format!("../../third_party/WebAssembly/{repo}/test/core/{name}.wast");
     let content = std::fs::read_to_string(path).unwrap();
     let mut lexer = Lexer::new(&content);
@@ -45,8 +45,8 @@ fn test(repo: &str, name: &str) {
                 env.register_id(m.id, env.inst);
             }
             WastDirective::Wat(mut wat) => env.instantiate(name, &wat.encode().unwrap()),
-            WastDirective::AssertMalformed { module, .. } => assert_malformed(module),
-            WastDirective::AssertInvalid { module, .. } => assert_invalid(module),
+            WastDirective::AssertMalformed { module, .. } => assert_malformed(&mut env, module),
+            WastDirective::AssertInvalid { module, .. } => assert_invalid(&mut env, module),
             WastDirective::AssertReturn { exec, results, .. } => {
                 assert_return(&mut env, exec, results)
             }
@@ -58,6 +58,7 @@ fn test(repo: &str, name: &str) {
             _ => unimplemented!("{:?}", directive),
         }
     }
+    assert_eq!(env.skip, skip);
 }
 
 fn pool_size(name: &str) -> usize {
@@ -125,11 +126,12 @@ impl<T> Sup<T> {
 }
 
 macro_rules! only_sup {
-    ($x:expr) => {
+    ($e:expr, $x:expr) => {
         match $x {
             Ok(x) => Ok(x),
             Err(Error::Unsupported(x)) => {
                 eprintln!("skip unsupported {x:?}");
+                $e.skip += 1;
                 return;
             }
             Err(x) => Err(x),
@@ -142,11 +144,12 @@ struct Env<'m> {
     store: Store<'m>,
     inst: Sup<InstId>,
     map: HashMap<Id<'m>, Sup<InstId>>,
+    skip: usize,
 }
 
 impl<'m> Env<'m> {
     fn new(pool: &'m mut [u8]) -> Self {
-        Env { pool, store: Store::default(), inst: Sup::Uninit, map: HashMap::new() }
+        Env { pool, store: Store::default(), inst: Sup::Uninit, map: HashMap::new(), skip: 0 }
     }
 
     fn alloc(&mut self, size: usize) -> &'m mut [u8] {
@@ -290,7 +293,7 @@ fn spectest() -> Vec<u8> {
 }
 
 fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
-    let actual = only_sup!(wast_execute(env, exec)).unwrap();
+    let actual = only_sup!(env, wast_execute(env, exec)).unwrap();
     assert_eq!(actual.len(), expected.len());
     for (actual, expected) in actual.into_iter().zip(expected.into_iter()) {
         use wast::core::HeapType;
@@ -328,30 +331,30 @@ fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
 }
 
 fn assert_trap(env: &mut Env, exec: WastExecute) {
-    assert_eq!(only_sup!(wast_execute(env, exec)), Err(Error::Trap));
+    assert_eq!(only_sup!(env, wast_execute(env, exec)), Err(Error::Trap));
 }
 
 fn assert_invoke(env: &mut Env, invoke: WastInvoke) {
-    assert_eq!(only_sup!(wast_invoke(env, invoke)), Ok(Vec::new()));
+    assert_eq!(only_sup!(env, wast_invoke(env, invoke)), Ok(Vec::new()));
 }
 
-fn assert_malformed(mut wat: QuoteWat) {
+fn assert_malformed(env: &mut Env, mut wat: QuoteWat) {
     if let Ok(wasm) = wat.encode() {
-        assert_eq!(only_sup!(Module::new(&wasm)).err(), Some(Error::Invalid));
+        assert_eq!(only_sup!(env, Module::new(&wasm)).err(), Some(Error::Invalid));
     }
 }
 
-fn assert_invalid(mut wat: QuoteWat) {
+fn assert_invalid(env: &mut Env, mut wat: QuoteWat) {
     let wasm = wat.encode().unwrap();
-    assert_eq!(only_sup!(Module::new(&wasm)).err(), Some(Error::Invalid));
+    assert_eq!(only_sup!(env, Module::new(&wasm)).err(), Some(Error::Invalid));
 }
 
 fn assert_exhaustion(env: &mut Env, call: WastInvoke) {
-    assert_eq!(only_sup!(wast_invoke(env, call)), Err(Error::Trap));
+    assert_eq!(only_sup!(env, wast_invoke(env, call)), Err(Error::Trap));
 }
 
 fn assert_unlinkable(env: &mut Env, mut wat: Wat) {
-    let inst = only_sup!(env.maybe_instantiate("", &wat.encode().unwrap()));
+    let inst = only_sup!(env, env.maybe_instantiate("", &wat.encode().unwrap()));
     assert_eq!(inst.err(), Some(Error::NotFound));
 }
 
@@ -406,20 +409,32 @@ fn wast_arg_core(core: WastArgCore) -> Val {
 }
 
 macro_rules! test {
-    ($(#[$m:meta])* $name: ident$(, $file: literal)?) => {
-        test!($(#[$m])* "spec", $name$(, $file)?);
+    ($(#[$m:meta])* $($repo:literal,)? $name:ident$(, $file:literal)?$(; $skip:literal)?) => {
+        test!(=1 {$(#[$m])*} [$($repo)?] $name [$($file)?] [$($skip)?]);
     };
-    ($(#[$m:meta])* $repo: literal, $name: ident) => {
-        test!([1] $(#[$m])* $name [$repo $name]);
+    (=1 $meta:tt [] $name:ident $file:tt $skip:tt) => {
+        test!(=2 $meta "spec" $name $file $skip);
     };
-    ($(#[$m:meta])* $repo: literal, $name: ident, $file: literal) => {
-        test!([1] $(#[$m])* $name [$repo $file]);
+    (=1 $meta:tt [$repo:literal] $name:ident $file:tt $skip:tt) => {
+        test!(=2 $meta $repo $name $file $skip);
     };
-    ([1] $(#[$m:meta])* $name: ident [$repo: literal $($file: tt)*]) => {
-        #[test] $(#[$m])* fn $name() { test($repo, test!([2] $($file)*)); }
+    (=2 $meta:tt $repo:literal $name:ident [] $skip:tt) => {
+        test!(=3 $meta $repo $name $name $skip);
     };
-    ([2] $file: ident) => { stringify!($file) };
-    ([2] $file: literal) => { $file };
+    (=2 $meta:tt $repo:literal $name:ident [$file:literal] $skip:tt) => {
+        test!(=3 $meta $repo $name $file $skip);
+    };
+    (=3 $meta:tt $repo:literal $name:ident $file:tt []) => {
+        test!(=4 $meta $repo $name $file 0);
+    };
+    (=3 $meta:tt $repo:literal $name:ident $file:tt [$skip:literal]) => {
+        test!(=4 $meta $repo $name $file $skip);
+    };
+    (=4 {$(#[$m:meta])*} $repo:literal $name:ident $file:tt $skip:literal) => {
+        #[test] $(#[$m])* fn $name() { test($repo, test!(=5 $file), $skip); }
+    };
+    (=5 $name:ident) => { stringify!($name) };
+    (=5 $file:literal) => { $file };
 }
 
 test!(address);
@@ -487,7 +502,7 @@ test!(ref_is_null);
 test!(ref_null);
 test!(return_, "return");
 test!(select);
-test!(skip_stack_guard_page, "skip-stack-guard-page");
+test!(skip_stack_guard_page, "skip-stack-guard-page"; 10);
 test!(stack);
 test!(start);
 test!(store);
