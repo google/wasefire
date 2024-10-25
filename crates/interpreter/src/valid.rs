@@ -427,15 +427,15 @@ impl SideTable {
     fn stitch(&mut self, source: SideTableBranch, target: SideTableBranch) -> CheckResult {
         let delta_ip = Self::delta(source, target, |x| x.parser.as_ptr() as isize)?;
         let delta_stp = Self::delta(source, target, |x| x.side_table as isize)?;
+        let val_cnt = u32::try_from(source.result).map_err(|_| {
+            #[cfg(feature = "debug")]
+            eprintln!("side-table conversion overflow {0}", source.result);
+            unsupported(if_debug!(Unsupported::SideTable))
+        })?;
         let pop_cnt = Self::pop_cnt(source, target)?;
         let entry = &mut self.entries[source.side_table];
         assert!(entry.is_none());
-        *entry = Some(SideTableEntryView {
-            delta_ip,
-            delta_stp,
-            val_cnt: source.result as u32,
-            pop_cnt,
-        });
+        *entry = Some(SideTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt });
         Ok(())
     }
 
@@ -457,11 +457,11 @@ impl SideTable {
     }
 
     fn pop_cnt(source: SideTableBranch, target: SideTableBranch) -> MResult<u32, Check> {
-        let source = source.stack as i32;
-        let target = target.stack as i32;
-        let Some(delta) = target.checked_sub(source) else {
+        let source = source.stack;
+        let target = target.stack;
+        let Some(delta) = source.checked_sub(target) else {
             #[cfg(feature = "debug")]
-            eprintln!("side-table subtraction overflow {target} - {source}");
+            eprintln!("side-table negative stack delta {source} < {target}");
             return Err(unsupported(if_debug!(Unsupported::SideTable)));
         };
         u32::try_from(delta).map_err(|_| {
@@ -481,7 +481,7 @@ struct SideTableBranch<'m> {
     parser: &'m [u8],
     side_table: usize,
     stack: usize,
-    result: usize,
+    result: usize, // unused (zero) for target branches
 }
 
 #[derive(Debug, Default)]
@@ -494,7 +494,7 @@ struct Label<'m> {
     stack: Vec<OpdType>,
     branches: Vec<SideTableBranch<'m>>,
     /// Total stack length of the labels in this function up to this label.
-    prev_stack: u32,
+    prev_stack: usize,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -580,8 +580,7 @@ impl<'a, 'm> Expr<'a, 'm> {
             Nop => (),
             Block(b) => self.push_label(self.blocktype(&b)?, LabelKind::Block)?,
             Loop(b) => {
-                let branch = self.branch_target();
-                self.push_label(self.blocktype(&b)?, LabelKind::Loop(branch))?
+                self.push_label(self.blocktype(&b)?, LabelKind::Loop(self.branch_target()))?
             }
             If(b) => {
                 self.pop_check(ValType::I32)?;
@@ -589,9 +588,10 @@ impl<'a, 'm> Expr<'a, 'm> {
                 self.push_label(self.blocktype(&b)?, LabelKind::If(branch))?;
             }
             Else => {
-                let target = self.branch_target();
                 match core::mem::replace(&mut self.label().kind, LabelKind::Block) {
-                    LabelKind::If(source) => self.side_table.stitch(source, target)?,
+                    LabelKind::If(source) => {
+                        self.side_table.stitch(source, self.branch_target())?
+                    }
                     _ => Err(invalid())?,
                 }
                 let FuncType { params, results } = self.label().type_;
@@ -761,6 +761,10 @@ impl<'a, 'm> Expr<'a, 'm> {
         self.labels.last_mut().unwrap()
     }
 
+    fn immutable_label(&self) -> &Label<'m> {
+        self.labels.last().unwrap()
+    }
+
     fn stack(&mut self) -> &mut Vec<OpdType> {
         &mut self.label().stack
     }
@@ -830,15 +834,9 @@ impl<'a, 'm> Expr<'a, 'm> {
     fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind<'m>) -> CheckResult {
         self.pops(type_.params)?;
         let stack = type_.params.iter().cloned().map(OpdType::from).collect();
-        let prev_label = self.labels.last().unwrap();
-        let label = Label {
-            type_,
-            kind,
-            polymorphic: false,
-            stack,
-            branches: vec![],
-            prev_stack: prev_label.prev_stack + prev_label.stack.len() as u32,
-        };
+        let prev_label = self.immutable_label();
+        let prev_stack = prev_label.prev_stack + prev_label.stack.len();
+        let label = Label { type_, kind, polymorphic: false, stack, branches: vec![], prev_stack };
         self.labels.push(label);
         Ok(())
     }
@@ -850,8 +848,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         }
         let label = self.label();
         if let LabelKind::If(source) = label.kind {
-            let results = label.type_.results;
-            check(label.type_.params == results)?;
+            check(label.type_.params == label.type_.results)?;
             self.side_table.stitch(source, target)?;
         }
         let results = self.label().type_.results;
@@ -868,16 +865,16 @@ impl<'a, 'm> Expr<'a, 'm> {
         let n = self.labels.len();
         check(l < n)?;
         let label = &mut self.labels[n - l - 1];
-        let (result_type, optional_target) = match label.kind {
+        let (result, target) = match label.kind {
             LabelKind::Block | LabelKind::If(_) => (label.type_.results, None),
             LabelKind::Loop(target) => (label.type_.params, Some(target)),
         };
-        let source = self.branch_source(result_type.len());
-        match optional_target {
+        let source = self.branch_source(result.len());
+        match target {
             None => self.label().branches.push(source),
-            Some(target) => self.side_table.stitch(source, target)?,
+            Some(branch) => self.side_table.stitch(source, branch)?,
         };
-        Ok(result_type)
+        Ok(result)
     }
 
     fn branch_source(&mut self, result: usize) -> SideTableBranch<'m> {
@@ -887,11 +884,11 @@ impl<'a, 'm> Expr<'a, 'm> {
         branch
     }
 
-    fn branch_target(&mut self) -> SideTableBranch<'m> {
+    fn branch_target(&self) -> SideTableBranch<'m> {
         SideTableBranch {
             parser: self.parser.save(),
             side_table: self.side_table.save(),
-            stack: self.label().prev_stack as usize,
+            stack: self.immutable_label().prev_stack,
             result: 0,
         }
     }
