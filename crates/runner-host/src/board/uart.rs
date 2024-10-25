@@ -35,9 +35,9 @@ impl Uarts {
     }
 
     pub fn init() {
-        const UART: &str = "../../target/wasefire/uart0";
-        let _ = std::fs::remove_file(UART);
-        let listener = UnixListener::bind(UART).unwrap();
+        let uart = crate::FLAGS.dir.join("uart0");
+        let _ = std::fs::remove_file(&uart);
+        let listener = UnixListener::bind(&uart).unwrap();
         tokio::spawn(async move {
             loop {
                 match listener.accept().await {

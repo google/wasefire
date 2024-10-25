@@ -12,14 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![feature(never_type)]
+
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use clap::{CommandFactory, Parser, ValueHint};
 use clap_complete::Shell;
-use wasefire_cli_tools::{action, fs};
+use tokio::process::Command;
+use wasefire_cli_tools::{action, cmd, fs};
 
 #[derive(Parser)]
 #[command(name = "wasefire", version, about)]
@@ -83,6 +86,17 @@ enum Action {
         action: action::AppletRpc,
     },
 
+    /// Starts a host platform.
+    Host(Host),
+
+    #[group(id = "Action::PlatformInfo")]
+    PlatformInfo {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        action: action::PlatformInfo,
+    },
+
     PlatformList(action::PlatformList),
 
     /// Prints the platform update metadata (possibly binary output).
@@ -141,6 +155,27 @@ enum AppletInstallCommand {
 }
 
 #[derive(clap::Args)]
+struct Host {
+    /// Path of the directory containing the host platform files.
+    ///
+    /// Such a directory may contain:
+    /// - `applet.bin` the persistent applet
+    /// - `platform.bin` the platform code
+    /// - `storage.bin` the persistent storage
+    /// - `uart0` the UNIX socket for the UART
+    /// - `web` the web interface assets
+    ///
+    /// If the platform code is missing (including if the directory does not exist), a default
+    /// platform code is created and started.
+    #[arg(long, default_value = "wasefire/host", value_hint = ValueHint::DirPath)]
+    dir: PathBuf,
+
+    /// Arguments to forward to the runner.
+    #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+    args: Vec<String>,
+}
+
+#[derive(clap::Args)]
 struct Completion {
     /// Generates a completion file for this shell (tries to guess by default).
     shell: Option<Shell>,
@@ -148,6 +183,38 @@ struct Completion {
     /// Where to generate the completion file.
     #[arg(long, default_value = "-", value_hint = ValueHint::FilePath)]
     output: PathBuf,
+}
+
+impl Host {
+    async fn run(&self) -> Result<!> {
+        let bin = self.dir.join("platform.bin");
+        #[cfg(feature = "_dev")]
+        if !fs::exists(&bin).await {
+            let bundle = "target/wasefire/platform.bin";
+            anyhow::ensure!(
+                fs::exists(&bundle).await,
+                "Run `cargo xtask runner host bundle` first"
+            );
+            fs::copy(bundle, &bin).await?;
+        }
+        #[cfg(not(feature = "_dev"))]
+        if !fs::exists(&bin).await {
+            fs::create_dir_all(&self.dir).await?;
+            static HOST_PLATFORM: &[u8] = include_bytes!(env!("WASEFIRE_HOST_PLATFORM"));
+            let mut params = fs::WriteParams::new(&bin);
+            params.options().write(true).create_new(true).mode(0o777);
+            fs::write(params, HOST_PLATFORM).await?;
+        }
+        loop {
+            let mut host = Command::new(&bin);
+            host.arg(&self.dir);
+            host.args(&self.args);
+            let code = cmd::spawn(&mut host)?.wait().await?.code().context("no error code")?;
+            if code != 0 {
+                std::process::exit(code);
+            }
+        }
+    }
 }
 
 impl Completion {
@@ -195,6 +262,8 @@ async fn main() -> Result<()> {
             action.run(&mut options.connect().await?).await
         }
         Action::AppletRpc { options, action } => action.run(&mut options.connect().await?).await,
+        Action::Host(x) => x.run().await?,
+        Action::PlatformInfo { options, action } => action.run(&mut options.connect().await?).await,
         Action::PlatformList(x) => x.run().await,
         Action::PlatformUpdateMetadata { options } => {
             let metadata = action::PlatformUpdate::metadata(&mut options.connect().await?).await?;

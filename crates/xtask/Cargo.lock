@@ -1838,6 +1838,7 @@ dependencies = [
  "derive-where",
  "wasefire-error",
  "wasefire-logger",
+ "wasefire-protocol",
  "wasefire-store",
 ]
 

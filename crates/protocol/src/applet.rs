@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use core::fmt::Display;
+
 use wasefire_wire::Wire;
 
 #[derive(Debug, Wire)]
@@ -29,7 +31,8 @@ pub struct Tunnel<'a> {
     pub delimiter: &'a [u8],
 }
 
-#[derive(Debug, Copy, Clone, Wire)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Wire)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ExitStatus {
     /// The applet exited successfully.
     Exit,
@@ -42,4 +45,15 @@ pub enum ExitStatus {
 
     /// The applet was killed (e.g. it was uninstalled).
     Kill,
+}
+
+impl Display for ExitStatus {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            ExitStatus::Exit => write!(f, "The applet exited"),
+            ExitStatus::Abort => write!(f, "The applet aborted"),
+            ExitStatus::Trap => write!(f, "The applet trapped"),
+            ExitStatus::Kill => write!(f, "The applet was killed"),
+        }
+    }
 }

@@ -9,6 +9,8 @@
 
 ### Minor
 
+- Add `platform-info` to print platform serial and version
+- Add `host` to start a host platform
 - Support `RUST_LOG` to control logging
 - Add `platform-lock` to lock a platform protocol
 - Add `applet-exit-status` to get an applet exit status
@@ -45,4 +47,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 9 -->
+<!-- Increment to skip CHANGELOG.md test: 10 -->

@@ -1248,6 +1248,7 @@ dependencies = [
  "wasefire-interpreter",
  "wasefire-logger",
  "wasefire-one-of",
+ "wasefire-protocol",
  "wasefire-protocol-tokio",
  "wasefire-protocol-usb",
  "wasefire-scheduler",
@@ -1849,6 +1850,7 @@ dependencies = [
  "usbd-serial",
  "wasefire-error",
  "wasefire-logger",
+ "wasefire-protocol",
  "wasefire-store",
 ]
 
@@ -1895,6 +1897,7 @@ version = "0.1.0-git"
 name = "wasefire-protocol"
 version = "0.2.0-git"
 dependencies = [
+ "serde",
  "wasefire-error",
  "wasefire-wire",
 ]
@@ -1985,6 +1988,7 @@ name = "web-common"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "wasefire-protocol",
 ]
 
 [[package]]
@@ -1998,6 +2002,7 @@ dependencies = [
  "tokio",
  "warp",
  "wasefire-logger",
+ "wasefire-protocol",
  "web-common",
 ]
 

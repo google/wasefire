@@ -23,3 +23,4 @@ cargo test --lib --features=_descriptor,host
 cargo test --lib --features=_descriptor,device
 cargo check --lib --features=host
 cargo check --lib --target=thumbv7em-none-eabi --features=device
+cargo check --lib --features=serde
