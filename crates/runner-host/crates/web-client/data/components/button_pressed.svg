@@ -1,0 +1,21 @@
+<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="button" clip-path="url(#clip0_7_19)">
+<rect id="Rectangle 58" x="-1" y="4" width="30" height="2" fill="#D9D9D9"/>
+<rect id="Rectangle 59" x="-1" y="24" width="30" height="2" fill="#D9D9D9"/>
+<rect id="Rectangle 57" x="1" y="1" width="27" height="27" rx="2" fill="#8F8E8E"/>
+<path id="Rectangle 60" d="M2 5C2 3.34315 3.34315 2 5 2H24C25.6569 2 27 3.34315 27 5V24C27 25.6569 25.6569 27 24 27H5C3.34315 27 2 25.6569 2 24V5Z" fill="#D9D9D9"/>
+<circle id="Ellipse 21" cx="4.5" cy="5.5" r="1.5" fill="#D9D9D9"/>
+<circle id="Ellipse 22" cx="24.5" cy="4.5" r="1.5" fill="#868686"/>
+<circle id="Ellipse 23" cx="24.5" cy="24.5" r="1.5" fill="#868686"/>
+<circle id="Ellipse 24" cx="4.5" cy="24.5" r="1.5" fill="#868686"/>
+<circle id="Ellipse 25" cx="4.5" cy="4.5" r="1.5" fill="#868686"/>
+<circle id="Ellipse 26" cx="14.5" cy="14.5" r="8.5" fill="#0F0E0E"/>
+<circle id="Ellipse 27" cx="12.5" cy="13.5" r="8.5" fill="#6C6767"/>
+</g>
+<defs>
+<clipPath id="clip0_7_19">
+<rect width="30" height="30" fill="white"/>
+</clipPath>
+</defs>
+</svg>
+

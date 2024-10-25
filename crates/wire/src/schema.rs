@@ -386,7 +386,7 @@ impl ViewFrame {
 impl ViewFrameLock {
     fn new(rec: Option<usize>, view: &View) -> Self {
         // TODO(https://github.com/rust-lang/rust-clippy/issues/12860): Remove when fixed.
-        #[allow(clippy::unnecessary_cast)]
+        #[expect(clippy::unnecessary_cast)]
         // SAFETY: This function is only called when drop is called before the lifetime ends.
         let view = unsafe { &*(view as *const _ as *const View<'static>) };
         let frame = ViewFrame { rec, view };

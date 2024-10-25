@@ -34,7 +34,7 @@ x ./scripts/ci-taplo.sh
 x ./scripts/ci-applets.sh
 x ./scripts/ci-runners.sh
 x ./scripts/ci-tests.sh
-x ./scripts/hwci.sh host --no-default-features
+x ./scripts/hwci.sh host
 x ./scripts/ci-book.sh
 x ./scripts/footprint.sh
 x rm footprint.toml

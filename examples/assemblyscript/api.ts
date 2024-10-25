@@ -534,16 +534,6 @@
     // Pointer to the output [`super::Perf`] struct.
     ptr: usize,
   ): i32
-
-  // Exits the platform with an error code.
-  //
-  // This is used by test applets to terminate the platform and propagate the test
-  // result.
-  @external("env", "de")
-  export declare function debug_exit(
-    // 0 for success, 1 for failure.
-    code: usize,
-  ): i32
 // END OF MODULE debug
 
 // START OF MODULE gpio
@@ -897,6 +887,11 @@
   // Aborts the applet.
   @external("env", "sa")
   export declare function scheduling_abort(
+  ): i32
+
+  // Exits the applet.
+  @external("env", "se")
+  export declare function scheduling_exit(
   ): i32
 // END OF MODULE scheduling
 

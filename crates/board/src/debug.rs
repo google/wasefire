@@ -32,9 +32,6 @@ pub trait Api: Send {
     /// This wraps once [`Self::MAX_TIME`] is reached. In particular, a maximum value of zero
     /// equivalent to not supporting this API.
     fn time() -> u64;
-
-    /// Exits the platform with a success/failure result.
-    fn exit(success: bool) -> !;
 }
 
 /// Default implementation.
@@ -45,9 +42,5 @@ impl Api for Impl {
 
     fn time() -> u64 {
         0
-    }
-
-    fn exit(success: bool) -> ! {
-        log::panic!("exit({}) called", success)
     }
 }

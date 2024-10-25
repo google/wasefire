@@ -53,7 +53,6 @@ impl Api for Impl {
 }
 
 pub fn reboot() -> ! {
-    #[cfg(feature = "debug")]
-    defmt::flush();
+    wasefire_logger::flush();
     nrf52840_hal::pac::SCB::sys_reset()
 }

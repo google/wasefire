@@ -13,8 +13,10 @@
 // limitations under the License.
 
 use wasefire_board_api::radio::ble::Event;
-use wasefire_board_api::Api as Board;
+use wasefire_board_api::{self as board, Api as Board};
+use wasefire_error::Error;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
     Advertisement,
@@ -31,6 +33,13 @@ impl<'a> From<&'a Event> for Key {
         match event {
             Event::Advertisement => Key::Advertisement,
         }
+    }
+}
+
+impl Key {
+    pub fn disable<B: Board>(self) -> Result<(), Error> {
+        use wasefire_board_api::radio::ble::Api as _;
+        board::radio::Ble::<B>::disable(&Event::Advertisement)
     }
 }
 

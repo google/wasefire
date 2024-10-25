@@ -227,14 +227,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "derivative"
-version = "2.2.0"
+name = "derive-where"
+version = "1.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
+checksum = "62d671cc41a825ebabc75757b62d3d168c577f9149b2d49ece1dad1f72119d25"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.66",
 ]
 
 [[package]]
@@ -701,17 +701,18 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.6.1"
+version = "0.7.0-git"
 dependencies = [
  "bytemuck",
  "sealed",
  "wasefire-applet-api-macro",
  "wasefire-error",
+ "wasefire-one-of",
 ]
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.2.0"
+version = "0.2.1-git"
 dependencies = [
  "data-encoding",
  "data-encoding-macro",
@@ -722,14 +723,14 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.6.1"
+version = "0.7.0-git"
 dependencies = [
  "wasefire-applet-api-desc",
 ]
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.7.0"
+version = "0.8.0-git"
 dependencies = [
  "aead",
  "aes",
@@ -738,7 +739,7 @@ dependencies = [
  "ccm",
  "crypto-common",
  "defmt",
- "derivative",
+ "derive-where",
  "digest",
  "ecdsa",
  "elliptic-curve",
@@ -753,12 +754,13 @@ dependencies = [
  "wasefire-applet-api",
  "wasefire-error",
  "wasefire-logger",
+ "wasefire-protocol",
  "wasefire-store",
 ]
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "defmt",
  "num_enum",
@@ -766,15 +768,47 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.5"
+version = "0.1.6-git"
 dependencies = [
  "defmt",
  "log",
 ]
 
 [[package]]
+name = "wasefire-one-of"
+version = "0.1.0-git"
+
+[[package]]
+name = "wasefire-protocol"
+version = "0.2.0-git"
+dependencies = [
+ "wasefire-error",
+ "wasefire-wire",
+]
+
+[[package]]
 name = "wasefire-store"
-version = "0.2.4"
+version = "0.3.0-git"
+dependencies = [
+ "wasefire-error",
+]
+
+[[package]]
+name = "wasefire-wire"
+version = "0.1.1-git"
+dependencies = [
+ "wasefire-error",
+ "wasefire-wire-derive",
+]
+
+[[package]]
+name = "wasefire-wire-derive"
+version = "0.1.1-git"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.66",
+]
 
 [[package]]
 name = "zeroize"

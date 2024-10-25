@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.0-git
+
+### Major
+
+- Update `wasefire-applet-api-macro` version
+
+### Patch
+
+- Make sure at compile-time that exactly one `host` or `wasm` feature is enabled
+- Update dependencies
+
 ## 0.6.1
 
 ### Minor
@@ -87,4 +98,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 2 -->

@@ -33,18 +33,26 @@
 
 extern crate alloc;
 
+#[cfg(any(feature = "device", feature = "host"))]
 use alloc::boxed::Box;
 
+#[cfg(feature = "host")]
+pub use connection::*;
 use wasefire_error::Error;
 use wasefire_wire::Wire;
 #[cfg(feature = "host")]
 use wasefire_wire::Yoke;
 
 pub mod applet;
+#[cfg(feature = "host")]
+mod connection;
 pub mod platform;
+pub mod transfer;
 
 /// Service description.
 pub trait Service: 'static {
+    #[cfg(feature = "host")]
+    const NAME: &str;
     /// Range of versions implementing this service.
     #[cfg(feature = "host")]
     const VERSIONS: Versions;
@@ -155,10 +163,10 @@ impl core::fmt::Display for Descriptor {
 }
 
 macro_rules! api {
-    ($(#![$api:meta])* version = $version:literal; next = $next:literal; $(
+    ($(#![$api:meta])* $(
         $(#[doc = $doc:literal])*
-        $tag:literal [$min:literal - $($max:literal)?] $Name:ident: $request:ty => $response:ty
-    ),*$(,)?) => {
+        $tag:literal [$min:literal - $($max:literal)?] $Name:ident: $request:ty => $response:ty,
+    )* next $next:literal [$version:literal - ]) => {
         $(#[$api])* #[derive(Debug, Wire)]
         #[wire(static = T)]
         #[cfg_attr(feature = "host", wire(range = $next))]
@@ -175,6 +183,8 @@ macro_rules! api {
             $(#[cfg(feature = "host")] ${ignore($max)})?
             impl Service for $Name {
                 #[cfg(feature = "host")]
+                const NAME: &str = stringify!($Name);
+                #[cfg(feature = "host")]
                 const VERSIONS: Versions = api!(versions $min $($max)?);
                 type Request<'a> = $request;
                 type Response<'a> = $response;
@@ -183,7 +193,7 @@ macro_rules! api {
             }
         )*
         /// Device API version (or maximum supported device API version for host).
-        pub const VERSION: u32 = $version;
+        pub const VERSION: u32 = $version - 1;
         #[cfg(feature = "_descriptor")]
         pub const DESCRIPTORS: &'static [Descriptor] = &[
             $(
@@ -202,10 +212,7 @@ macro_rules! api {
 api! {
     //! Protocol API parametric over the message direction.
     //!
-    //! Variants gated by the `full` feature are deprecated. They won't be used by new devices.
-    //! However, to support older devices, the host must be able to use them.
-    version = 2;
-    next = 7;
+    //! Deprecated variants are only available to the host (to support older devices).
 
     /// Returns the device API version.
     0 [0 -] ApiVersion: () => u32,
@@ -214,7 +221,7 @@ api! {
     1 [0 -] AppletRequest: applet::Request<'a> => (),
 
     /// Reads a response from an applet.
-    2 [0 -] AppletResponse: applet::AppletId => applet::Response<'a>,
+    2 [0 -] AppletResponse: applet::AppletId => Option<&'a [u8]>,
 
     /// Reboots the platform.
     3 [0 -] PlatformReboot: () => !,
@@ -227,4 +234,26 @@ api! {
 
     /// Calls a vendor-specific platform command.
     6 [2 -] PlatformVendor: &'a [u8] => &'a [u8],
+
+    /// Returns the metadata for platform update.
+    7 [3 -] PlatformUpdateMetadata: () => &'a [u8],
+
+    /// Updates the platform.
+    8 [3 -] PlatformUpdateTransfer: transfer::Request<'a> => (),
+
+    /// Installs an applet.
+    9 [4 -] AppletInstall: transfer::Request<'a> => (),
+
+    /// Uninstalls an applet.
+    10 [4 -] AppletUninstall: () => (),
+
+    /// Returns the exit status of an applet, if not running.
+    11 [4 -] AppletExitStatus: applet::AppletId => Option<applet::ExitStatus>,
+
+    /// Locks a platform until reboot.
+    ///
+    /// This is useful for testing purposes by locking a platform before flashing a new one.
+    12 [4 -] PlatformLock: () => (),
+
+    next 13 [5 -]
 }

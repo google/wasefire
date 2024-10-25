@@ -14,10 +14,12 @@
 
 use wasefire_board_api::radio::Event;
 use wasefire_board_api::Api as Board;
+use wasefire_error::Error;
 
 #[cfg(feature = "board-api-radio-ble")]
 pub mod ble;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
     #[cfg(feature = "board-api-radio-ble")]
@@ -35,6 +37,14 @@ impl<'a> From<&'a Event> for Key {
         match event {
             #[cfg(feature = "board-api-radio-ble")]
             Event::Ble(event) => Key::Ble(event.into()),
+        }
+    }
+}
+
+impl Key {
+    pub fn disable<B: Board>(self) -> Result<(), Error> {
+        match self {
+            Key::Ble(x) => x.disable::<B>(),
         }
     }
 }

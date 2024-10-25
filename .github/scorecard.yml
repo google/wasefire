@@ -1,0 +1,5 @@
+annotations:
+  - checks:
+      - sast
+    reasons:
+      - reason: not-supported # we use cargo clippy

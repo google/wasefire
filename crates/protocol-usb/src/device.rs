@@ -15,7 +15,6 @@
 use alloc::boxed::Box;
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
-use core::convert::Infallible;
 use core::marker::PhantomData;
 
 use usb_device::class_prelude::{
@@ -31,10 +30,8 @@ use wasefire_logger as log;
 
 use crate::common::{Decoder, Encoder};
 
-// TODO(https://github.com/rust-lang/rust/issues/128053): Remove dead-code.
-#[allow(dead_code)]
 pub struct Impl<'a, B: UsbBus, T: HasRpc<'a, B>> {
-    _never: Infallible,
+    _never: !,
     _phantom: PhantomData<(&'a (), B, T)>,
 }
 
@@ -45,31 +42,15 @@ pub trait HasRpc<'a, B: UsbBus> {
 
 impl<'a, B: UsbBus, T: HasRpc<'a, B>> Api for Impl<'a, B, T> {
     fn read() -> Result<Option<Box<[u8]>>, Error> {
-        T::with_rpc(|rpc| rpc.read())
+        T::with_rpc(|x| x.read())
     }
 
     fn write(response: &[u8]) -> Result<(), Error> {
-        T::with_rpc(|rpc| rpc.write(response))
+        T::with_rpc(|x| x.write(response))
     }
 
     fn enable() -> Result<(), Error> {
-        T::with_rpc(|rpc| match rpc.state {
-            State::Disabled => {
-                rpc.state = WaitRequest;
-                Ok(())
-            }
-            _ => Err(Error::user(Code::InvalidState)),
-        })
-    }
-
-    fn disable() -> Result<(), Error> {
-        T::with_rpc(|rpc| match rpc.state {
-            State::Disabled => Err(Error::user(Code::InvalidState)),
-            _ => {
-                rpc.state = Disabled;
-                Ok(())
-            }
-        })
+        T::with_rpc(|x| x.enable())
     }
 
     fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error> {
@@ -110,6 +91,16 @@ impl<'a, B: UsbBus> Rpc<'a, B> {
         #[cfg(feature = "defmt")]
         log::debug!("Writing {=[u8]:02x}", response);
         self.state.write(response, &self.write_ep)
+    }
+
+    pub fn enable(&mut self) -> Result<(), Error> {
+        match self.state {
+            State::Disabled => {
+                self.state = WaitRequest;
+                Ok(())
+            }
+            _ => Err(Error::user(Code::InvalidState)),
+        }
     }
 
     pub fn tick(&mut self, push: impl FnOnce(Event)) {

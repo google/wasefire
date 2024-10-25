@@ -19,6 +19,7 @@ use alloc::boxed::Box;
 use crate::Error;
 
 /// Request received.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, PartialEq, Eq)]
 pub struct Event;
 
@@ -36,11 +37,10 @@ pub trait Api {
     /// Writes a response for the last request.
     fn write(response: &[u8]) -> Result<(), Error>;
 
-    /// Enables an event to be triggered when a request is received.
+    /// Starts accepting requests.
+    ///
+    /// Also triggers an event each time a request is received.
     fn enable() -> Result<(), Error>;
-
-    /// Disables events from being triggered.
-    fn disable() -> Result<(), Error>;
 
     /// Handles vendor-specific requests.
     fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error>;

@@ -32,6 +32,7 @@ use wasefire_error::Error;
 mod crypto;
 mod debug;
 mod rng;
+mod scheduling;
 
 fn convert(x: Result<u32, Error>) -> isize {
     Error::encode(x) as isize

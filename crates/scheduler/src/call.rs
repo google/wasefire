@@ -17,16 +17,6 @@ use wasefire_board_api::Api as Board;
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
-#[cfg_attr(not(feature = "applet-api-button"), allow(unused_macros))]
-macro_rules! or_trap {
-    ($feature:literal, $name:ident($call:ident)) => {{
-        #[cfg(feature = $feature)]
-        $name($call);
-        #[cfg(not(feature = $feature))]
-        $call.reply_(Err(crate::Trap.into()));
-    }};
-}
-
 #[cfg_attr(not(feature = "applet-api-store"), allow(unused_macros))]
 macro_rules! or_fail {
     ($feature:literal, $name:ident($call:ident)) => {{

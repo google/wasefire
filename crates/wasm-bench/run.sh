@@ -38,5 +38,6 @@ case $1-$2 in
 esac
 
 FEATURES=--features=target-$1,runtime-$2
+shift 2
 
-x cargo run --release $TARGET $FEATURES
+x cargo run --release $TARGET $FEATURES "$@"

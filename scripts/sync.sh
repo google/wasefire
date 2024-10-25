@@ -20,7 +20,11 @@ set -e
 
 [ "$1" = --force ] && FORCE=y
 
-cargo xtask update-apis
+update_api() {
+  cargo update-api --features=wasefire-applet-api-desc/full-api -- \
+    --lang=$1 --output=examples/$1/api.$2
+}
+update_api assemblyscript ts
 
 add_lint() { echo "$3 = \"$2\"" >> $1; }
 for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
@@ -31,10 +35,9 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   [ "$(tail -n1 $file)" = '[lints]' ] || printf '\n[lints]\n' >> $file
   add_lint $file allow clippy.unit-arg
   # add_lint $file warn rust.elided-lifetimes-in-paths
-  # add_lint $file warn rust.missing-debug-implementations
-  # TODO: Use the same [ -e src/lib.rs -a "$(package_publish)" = true ] test is test-helper.
+  # TODO: Use the same [ -e src/lib.rs -a "$(package_publish)" = true ] test as in test-helper.
   case $crate in
-    board|prelude) add_lint $file warn rust.missing-docs ;;
+    board|one-of|prelude) add_lint $file warn rust.missing-docs ;;
   esac
   # TODO: Enable for all crates.
   case $crate in
@@ -49,10 +52,12 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   # add_lint $file warn rust.unused-results
 done
 
-( cd crates/protocol/crates/schema
-  cargo run --features=host
-  cargo run --features=device
-)
+for dir in $(git ls-files '*/sync.sh'); do
+  dir=$(dirname $dir)
+  [ $dir = scripts ] && continue
+  i "Sync $dir"
+  ( cd $dir && ./sync.sh )
+done
 
 book_example() {
   local src=book/src/applet/prelude/$1.rs

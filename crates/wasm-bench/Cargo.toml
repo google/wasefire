@@ -31,7 +31,7 @@ features = ["build-bindgen", "use-32bit-slots"]
 optional = true
 
 [dependencies.wasmtime]
-version = "22.0.0"
+version = "22.0.1"
 default-features = false
 features = ["cranelift", "runtime"]
 optional = true

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0-git
+
+### Major
+
+- Update `wasefire-applet-api-desc` version
+
+### Patch
+
+- Update dependencies
+
 ## 0.6.1
 
 ### Minor

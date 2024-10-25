@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.0-git
+
+### Major
+
+- Remove `debug::{assert,assert_eq}()` in favor of `core::{assert,assert_eq}!`
+- Remove `debug::exit()` in favor of `scheduling::{abort,exit}()`
+
+### Minor
+
+- Add `scheduling::exit()` for successful applet exit
+
+### Patch
+
+- Make sure at compile-time that at most one `native`, `test`, or `wasm` feature is enabled
+- Update dependencies
+
 ## 0.6.0
 
 ### Major
@@ -156,4 +172,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 2 -->

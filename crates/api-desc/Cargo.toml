@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-applet-api-desc"
-version = "0.2.0"
+version = "0.2.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -14,9 +14,9 @@ categories = ["embedded", "no-std", "wasm"]
 [dependencies]
 data-encoding = { version = "2.6.0", default-features = false }
 data-encoding-macro = { version = "0.1.15", default-features = false }
-proc-macro2 = { version = "1.0.83", default-features = false }
-quote = { version = "1.0.36", default-features = false }
-syn = { version = "2.0.66", default-features = false, features = ["printing"] }
+proc-macro2 = { version = "1.0.0", default-features = false }
+quote = { version = "1.0.0", default-features = false }
+syn = { version = "2.0.0", default-features = false, features = ["printing"] }
 
 [features]
 # API features.

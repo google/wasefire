@@ -22,6 +22,7 @@ set -e
 [ -z "$(git status -s)" ] || e "Repository is not clean"
 
 TOPOLOGICAL_ORDER=(
+  one-of
   logger
   wire-derive
   error
@@ -37,6 +38,7 @@ TOPOLOGICAL_ORDER=(
   prelude
   board
   scheduler
+  protocol-tokio
   protocol-usb
   cli-tools
   cli

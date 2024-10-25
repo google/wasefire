@@ -33,7 +33,7 @@ pub fn main() -> ! {
     test_ecdsa::<P384>("p384", P384_ECDSA_VECTORS);
     test_ecdsa_random::<P256>("p256");
     test_ecdsa_random::<P384>("p384");
-    debug::exit(true);
+    scheduling::exit();
 }
 
 fn test_ecdh<C: Curve>(name: &str, vectors: &[EcdhVector]) {
@@ -52,7 +52,7 @@ fn test_ecdh<C: Curve>(name: &str, vectors: &[EcdhVector]) {
         )
         .unwrap();
         let shared_ = private.diffie_hellman(&public);
-        debug::assert_eq(shared_.raw_bytes().as_slice(), shared);
+        assert_eq!(shared_.raw_bytes().as_slice(), shared);
     }
 }
 
@@ -67,7 +67,7 @@ fn test_ecdh_random<C: Curve>(name: &str) {
         let k2 = EcdhPrivate::<C>::random().unwrap();
         let s1 = k1.diffie_hellman(&k2.public_key());
         let s2 = k2.diffie_hellman(&k1.public_key());
-        debug::assert_eq(s1.raw_bytes().as_slice(), s2.raw_bytes());
+        assert_eq!(s1.raw_bytes(), s2.raw_bytes());
         debug!("- {:02x?}", &s1.raw_bytes()[.. 8]);
     }
 }
@@ -90,7 +90,7 @@ fn test_ecdsa<C: Curve>(name: &str, vectors: &[EcdsaVector]) {
             Int::<C>::clone_from_slice(s),
         );
         let v_ = public.verify(m, &signature).unwrap();
-        debug::assert_eq(&v_, &v);
+        assert_eq!(v_, v);
     }
 }
 
@@ -110,12 +110,12 @@ fn test_ecdsa_random<C: Curve>(name: &str) {
         debug!("- {:02x?}{:02x?} ({} bytes message)", &s.r()[.. 4], &s.s()[.. 4], m.len());
         rs.push(s.r().clone());
         let p = d.public_key();
-        debug::assert(p.verify(&m, &s).unwrap());
+        assert!(p.verify(&m, &s).unwrap());
     }
     // Make sure all r components are different.
     for i in 1 .. rs.len() {
         for j in 0 .. i {
-            debug::assert(rs[j] != rs[i]);
+            assert!(rs[j] != rs[i]);
         }
     }
 }

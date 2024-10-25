@@ -20,7 +20,7 @@ dependencies = [
 
 [[package]]
 name = "fuzz"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "libfuzzer-sys",
  "wasefire-error",
@@ -116,14 +116,14 @@ checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "num_enum",
 ]
 
 [[package]]
 name = "wasefire-wire"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "wasefire-error",
  "wasefire-wire-derive",
@@ -131,7 +131,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire-derive"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -258,7 +258,7 @@ impl Api for Impl {
         if EASY_DMA_SIZE < input.len() || !in_ram(input) {
             return Err(Error::user(Code::InvalidArgument));
         }
-        with_state(|state| {
+        with_state::<Result<_, Error>>(|state| {
             let Uart { regs, state } = state.uarts.get(uart);
             Error::user(Code::InvalidState).check(state.running)?;
             regs.txd.ptr.write(|w| unsafe { w.ptr().bits(input.as_ptr() as u32) });

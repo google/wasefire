@@ -35,18 +35,18 @@ struct Row {
     value: HashMap<String, usize>,
 }
 
-pub fn update_applet(config: &str, value: usize) -> Result<()> {
-    update("applet", config, value)
+pub async fn update_applet(config: &str, value: usize) -> Result<()> {
+    update("applet", config, value).await
 }
 
-pub fn update_runner(config: &str, value: usize) -> Result<()> {
-    update("runner", config, value)
+pub async fn update_runner(config: &str, value: usize) -> Result<()> {
+    update("runner", config, value).await
 }
 
-fn update(key: &str, config: &str, value: usize) -> Result<()> {
+async fn update(key: &str, config: &str, value: usize) -> Result<()> {
     const PATH: &str = "footprint.toml";
-    let mut footprint = match fs::exists(PATH) {
-        true => fs::read_toml(PATH)?,
+    let mut footprint = match fs::exists(PATH).await {
+        true => fs::read_toml(PATH).await?,
         false => Footprint::default(),
     };
     let idx = match footprint.row.binary_search_by_key(&config, |x| &x.config) {
@@ -61,14 +61,14 @@ fn update(key: &str, config: &str, value: usize) -> Result<()> {
         footprint.row[idx].value.insert(key.to_string(), value).is_none(),
         "{key} is already defined for {config:?}"
     );
-    fs::write_toml(PATH, &footprint)?;
+    fs::write_toml(PATH, &footprint).await?;
     Ok(())
 }
 
-pub fn compare(output: &str) -> Result<()> {
+pub async fn compare(output: &str) -> Result<()> {
     let mut output = OpenOptions::new().create(true).append(true).open(output)?;
-    let base = Footprint::read("footprint-push.toml");
-    let head = Footprint::read("footprint-pull_request.toml");
+    let base = Footprint::read("footprint-push.toml").await;
+    let head = Footprint::read("footprint-pull_request.toml").await;
     let configs: BTreeSet<&String> = base.keys().chain(head.keys()).collect();
     writeln!(output, "### Footprint impact\n")?;
     writeln!(output, "| Config | Key | Base | Head | Diff | Ratio |")?;
@@ -78,7 +78,7 @@ pub fn compare(output: &str) -> Result<()> {
         None => write!(output, " |"),
     };
     for config in configs {
-        for key in ["total", "applet", "runner"] {
+        for key in ["applet", "runner"] {
             let base = base.get(config).map(|x| x[key]);
             let head = head.get(config).map(|x| x[key]);
             let diff = base.and_then(|base| head.map(|head| head - base));
@@ -109,10 +109,10 @@ pub fn compare(output: &str) -> Result<()> {
 }
 
 /// Returns the sum of the .text and .data size.
-pub fn rust_size(elf: &str) -> Result<usize> {
-    let mut size = wrap_command()?;
+pub async fn rust_size(elf: &str) -> Result<usize> {
+    let mut size = wrap_command().await?;
     size.args(["rust-size", elf]);
-    let output = String::from_utf8(cmd::output(&mut size)?.stdout)?;
+    let output = String::from_utf8(cmd::output(&mut size).await?.stdout)?;
     let line = output.lines().nth(1).context("parsing rust-size output")?;
     let words =
         line.split_whitespace().take(2).map(|x| Ok(x.parse()?)).collect::<Result<Vec<_>>>()?;
@@ -120,9 +120,9 @@ pub fn rust_size(elf: &str) -> Result<usize> {
 }
 
 impl Footprint {
-    fn read(path: &str) -> HashMap<String, HashMap<&'static str, i64>> {
+    async fn read(path: &str) -> HashMap<String, HashMap<&'static str, i64>> {
         let mut result = HashMap::new();
-        let footprint = fs::read_toml(path).unwrap_or_else(|err| {
+        let footprint = fs::read_toml(path).await.unwrap_or_else(|err| {
             println!("::warning::{err}");
             Footprint::default()
         });
@@ -136,8 +136,7 @@ impl Footprint {
                 }
                 let mut value = HashMap::new();
                 value.insert("applet", applet as i64);
-                value.insert("total", runner as i64);
-                value.insert("runner", runner as i64 - applet as i64);
+                value.insert("runner", runner as i64);
                 value
             };
             let value = match value {

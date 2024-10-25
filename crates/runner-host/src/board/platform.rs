@@ -17,24 +17,29 @@ use std::borrow::Cow;
 use data_encoding::HEXLOWER_PERMISSIVE;
 use wasefire_board_api::platform::Api;
 use wasefire_board_api::Error;
-use wasefire_error::Code;
+
+use crate::FLAGS;
+
+pub mod protocol;
+mod update;
 
 pub enum Impl {}
 
 impl Api for Impl {
-    #[cfg(feature = "usb")]
-    type Protocol = crate::board::usb::ProtocolImpl;
+    type Protocol = protocol::Impl;
+
+    type Update = update::Impl;
 
     fn serial() -> Cow<'static, [u8]> {
-        from_hex(option_env!("WASEFIRE_HOST_SERIAL"))
+        from_hex(FLAGS.serial.as_deref())
     }
 
     fn version() -> Cow<'static, [u8]> {
-        from_hex(option_env!("WASEFIRE_HOST_VERSION"))
+        from_hex(FLAGS.version.as_deref())
     }
 
     fn reboot() -> Result<!, Error> {
-        Err(Error::world(Code::NotImplemented))
+        crate::cleanup::shutdown(0)
     }
 }
 

@@ -20,8 +20,6 @@ use wasefire_board_api::Api as Board;
 use wasefire_store::fragment;
 
 #[cfg(feature = "board-api-storage")]
-use super::convert;
-#[cfg(feature = "board-api-storage")]
 use crate::applet::store::MemoryApi;
 use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-storage")]
@@ -39,11 +37,11 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let api::insert::Params { keys, ptr, len } = call.read();
     let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let memory = scheduler.applet.get().unwrap().memory();
     let result = try {
         let keys = decode_keys(keys)?;
         let value = memory.get(*ptr, *len)?;
-        fragment::write(&mut scheduler.store, &keys, value).map_err(convert)?
+        fragment::write(&mut scheduler.store, &keys, value)?
     };
     call.reply(result);
 }
@@ -51,9 +49,7 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
 #[cfg(feature = "board-api-storage")]
 fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
     let api::remove::Params { keys } = call.read();
-    let result = try {
-        fragment::delete(&mut call.scheduler().store, &decode_keys(keys)?).map_err(convert)?
-    };
+    let result = try { fragment::delete(&mut call.scheduler().store, &decode_keys(keys)?)? };
     call.reply(result);
 }
 
@@ -61,9 +57,9 @@ fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
 fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let api::find::Params { keys, ptr: ptr_ptr, len: len_ptr } = call.read();
     let scheduler = call.scheduler();
-    let mut memory = scheduler.applet.memory();
+    let mut memory = scheduler.applet.get().unwrap().memory();
     let result = try {
-        match fragment::read(&scheduler.store, &decode_keys(keys)?).map_err(convert)? {
+        match fragment::read(&scheduler.store, &decode_keys(keys)?)? {
             None => false,
             Some(value) => {
                 memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &value)?;

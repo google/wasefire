@@ -22,7 +22,9 @@
 use alloc::vec::Vec;
 use core::ops::Range;
 
-use crate::{Storage, Store, StoreError, StoreHandle, StoreResult, StoreUpdate};
+use wasefire_error::Error;
+
+use crate::{Storage, Store, StoreHandle, StoreUpdate};
 
 /// Represents a sequence of keys.
 #[allow(clippy::len_without_is_empty)]
@@ -61,7 +63,7 @@ impl Keys for Range<usize> {
 }
 
 /// Reads the concatenated value of a sequence of keys.
-pub fn read(store: &Store<impl Storage>, keys: &impl Keys) -> StoreResult<Option<Vec<u8>>> {
+pub fn read(store: &Store<impl Storage>, keys: &impl Keys) -> Result<Option<Vec<u8>>, Error> {
     let handles = get_handles(store, keys)?;
     if handles.is_empty() {
         return Ok(None);
@@ -80,9 +82,9 @@ pub fn read(store: &Store<impl Storage>, keys: &impl Keys) -> StoreResult<Option
 /// - The range is truncated to fit in the value.
 pub fn read_range(
     store: &Store<impl Storage>, keys: &impl Keys, range: Range<usize>,
-) -> StoreResult<Option<Vec<u8>>> {
+) -> Result<Option<Vec<u8>>, Error> {
     let range_len = match range.end.checked_sub(range.start) {
-        None => return Err(StoreError::InvalidArgument),
+        None => return Err(crate::INVALID_ARGUMENT),
         Some(x) => x,
     };
     let handles = get_handles(store, keys)?;
@@ -104,7 +106,7 @@ pub fn read_range(
 }
 
 /// Writes a value to a sequence of keys as chunks.
-pub fn write(store: &mut Store<impl Storage>, keys: &impl Keys, value: &[u8]) -> StoreResult<()> {
+pub fn write(store: &mut Store<impl Storage>, keys: &impl Keys, value: &[u8]) -> Result<(), Error> {
     let handles = get_handles(store, keys)?;
     let keys_len = keys.len();
     let mut updates = Vec::with_capacity(keys_len);
@@ -124,13 +126,13 @@ pub fn write(store: &mut Store<impl Storage>, keys: &impl Keys, value: &[u8]) ->
     }
     if chunks.next().is_some() {
         // The value is too long.
-        return Err(StoreError::InvalidArgument);
+        return Err(crate::INVALID_ARGUMENT);
     }
     store.transaction(&updates)
 }
 
 /// Deletes the value of a sequence of keys.
-pub fn delete(store: &mut Store<impl Storage>, keys: &impl Keys) -> StoreResult<()> {
+pub fn delete(store: &mut Store<impl Storage>, keys: &impl Keys) -> Result<(), Error> {
     let updates: Vec<StoreUpdate<Vec<u8>>> = get_handles(store, keys)?
         .iter()
         .map(|handle| StoreUpdate::Remove { key: handle.get_key() })
@@ -141,7 +143,7 @@ pub fn delete(store: &mut Store<impl Storage>, keys: &impl Keys) -> StoreResult<
 /// Returns the handles of a sequence of keys.
 ///
 /// The handles are truncated to the keys that are present.
-fn get_handles(store: &Store<impl Storage>, keys: &impl Keys) -> StoreResult<Vec<StoreHandle>> {
+fn get_handles(store: &Store<impl Storage>, keys: &impl Keys) -> Result<Vec<StoreHandle>, Error> {
     let keys_len = keys.len();
     let mut handles: Vec<Option<StoreHandle>> = vec![None; keys_len];
     for handle in store.iter()? {
@@ -151,14 +153,14 @@ fn get_handles(store: &Store<impl Storage>, keys: &impl Keys) -> StoreResult<Vec
             None => continue,
         };
         if pos >= keys_len {
-            return Err(StoreError::InvalidArgument);
+            return Err(crate::INVALID_ARGUMENT);
         }
         if let Some(old_handle) = &handles[pos] {
             if old_handle.get_key() != handle.get_key() {
                 // The user provided a non-injective `pos` function.
-                return Err(StoreError::InvalidArgument);
+                return Err(crate::INVALID_ARGUMENT);
             } else {
-                return Err(StoreError::InvalidStorage);
+                return Err(crate::INVALID_STORAGE);
             }
         }
         handles[pos] = Some(handle);
@@ -170,7 +172,7 @@ fn get_handles(store: &Store<impl Storage>, keys: &impl Keys) -> StoreResult<Vec
             (true, Some(handle)) => result.push(handle),
             (false, None) => (),
             // We should have `num_handles` Somes followed by Nones.
-            _ => return Err(StoreError::InvalidStorage),
+            _ => return Err(crate::INVALID_STORAGE),
         }
     }
     Ok(result)

@@ -24,9 +24,11 @@ test_helper
 
 cargo test --lib --features=toctou
 cargo check --lib --target=thumbv7em-none-eabi
+cargo check --lib --target=thumbv7em-none-eabi --features=cache
 cargo check --lib --target=riscv32imc-unknown-none-elf \
   --features=portable-atomic/critical-section
 RUSTFLAGS=--cfg=portable_atomic_unsafe_assume_single_core \
   cargo check --lib --target=riscv32imc-unknown-none-elf
-cargo test --test=spec --features=debug,toctou,float-types,vector-types,threads
 cargo check --example=hello
+# Run with `-- --test-threads=1 --nocapture` to see unsupported tests.
+cargo test --test=spec --features=debug,toctou,float-types,vector-types,threads

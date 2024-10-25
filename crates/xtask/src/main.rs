@@ -16,15 +16,19 @@
 
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use std::process::Command;
+use std::ffi::OsString;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use anyhow::{bail, ensure, Context, Result};
 use clap::Parser;
-use lazy_static::lazy_static;
 use probe_rs::config::TargetSelector;
 use probe_rs::{flashing, Permissions, Session};
 use rustc_demangle::demangle;
-use wasefire_cli_tools::{action, cmd, fs};
+use tokio::process::Command;
+use tokio::sync::OnceCell;
+use wasefire_cli_tools::error::root_cause_is;
+use wasefire_cli_tools::{action, changelog, cmd, fs};
 
 mod footprint;
 mod lazy;
@@ -37,6 +41,11 @@ struct Flags {
 
     #[clap(subcommand)]
     command: MainCommand,
+}
+
+#[test]
+fn flags() {
+    <Flags as clap::CommandFactory>::command().debug_assert();
 }
 
 #[derive(clap::Args)]
@@ -79,12 +88,11 @@ enum MainCommand {
     /// Compiles a runner.
     Runner(Runner),
 
-    /// Updates the applet API for all languages.
-    UpdateApis {
-        /// Cargo features.
-        #[clap(long, default_values_t = ["full-api".to_string()])]
-        features: Vec<String>,
-    },
+    /// Waits for an applet to exit.
+    WaitApplet(Wait),
+
+    /// Waits for a platform to be ready.
+    WaitPlatform(Wait),
 
     /// Appends a comparison between footprint-base.toml and footprint-pull_request.toml.
     ///
@@ -96,6 +104,9 @@ enum MainCommand {
 
     /// Ensures review can be done in printed form.
     Textreview,
+
+    /// Performs a changelog operation.
+    Changelog(Changelog),
 }
 
 #[derive(clap::Args)]
@@ -135,13 +146,36 @@ struct AppletOptions {
 #[derive(clap::Subcommand)]
 enum AppletCommand {
     /// Compiles a runner with the applet.
-    Runner(RunnerOptions),
+    Runner(Runner),
+
+    /// Installs the applet on a platform.
+    Install {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        action: action::Transfer,
+        #[command(subcommand)]
+        command: Option<AppletInstallCommand>,
+    },
+}
+
+#[derive(clap::Subcommand)]
+enum AppletInstallCommand {
+    /// Waits until the applet exits.
+    #[group(id = "AppletInstallCommand::Wait")]
+    Wait {
+        #[command(flatten)]
+        action: action::AppletExitStatus,
+    },
 }
 
 #[derive(clap::Args)]
 struct Runner {
     #[clap(flatten)]
     options: RunnerOptions,
+
+    #[clap(subcommand)]
+    command: Option<RunnerCommand>,
 }
 
 #[derive(Default, clap::Args)]
@@ -156,6 +190,12 @@ struct RunnerOptions {
     #[clap(long)]
     version: Option<String>,
 
+    /// Host platform serial.
+    ///
+    /// This is only used for the host runner. It must be an hexadecimal byte sequence.
+    #[clap(long)]
+    serial: Option<String>,
+
     /// Cargo no-default-features.
     #[clap(long)]
     no_default_features: bool,
@@ -164,17 +204,13 @@ struct RunnerOptions {
     #[clap(long)]
     features: Vec<String>,
 
+    /// Runner arguments.
+    #[clap(long)]
+    arg: Vec<String>,
+
     /// Optimization level (0, 1, 2, 3, s, z).
     #[clap(long, short = 'O')]
     opt_level: Option<action::OptLevel>,
-
-    /// Produces target/wasefire/platform_{side}.bin files instead of flashing.
-    #[clap(long)]
-    bundle: bool,
-
-    /// Resets the persistent storage before running.
-    #[clap(long)]
-    reset_storage: bool,
 
     /// Prints the command lines to use GDB.
     #[clap(long)]
@@ -183,22 +219,6 @@ struct RunnerOptions {
     /// Defmt log filter.
     #[clap(long)]
     log: Option<String>,
-
-    /// Additional flags for `probe-rs run`.
-    #[clap(long)]
-    probe_rs: Vec<String>,
-
-    /// Creates a web interface for the host runner.
-    #[clap(long)]
-    web: bool,
-
-    /// Host to start the webserver.
-    #[clap(long)]
-    web_host: Option<String>,
-
-    /// Port to start the webserver.
-    #[clap(long)]
-    web_port: Option<u16>,
 
     /// Measures bloat after building.
     // TODO: Make this a subcommand taking additional options for cargo bloat.
@@ -217,27 +237,72 @@ struct RunnerOptions {
     memory_page_count: Option<usize>,
 }
 
+#[derive(clap::Subcommand)]
+enum RunnerCommand {
+    /// Flashes the runner.
+    Flash(Flash),
+
+    /// Produces target/wasefire/platform_{side}.bin files instead of flashing.
+    Bundle,
+}
+
+#[derive(clap::Args)]
+struct Flash {
+    /// Resets the flash before running.
+    #[clap(long)]
+    reset_flash: bool,
+
+    /// Additional flags for `probe-rs run`.
+    #[clap(long)]
+    probe_rs: Vec<String>,
+}
+
+#[derive(clap::Args)]
+struct Wait {
+    #[command(flatten)]
+    options: action::ConnectionOptions,
+}
+
+#[derive(clap::Args)]
+struct Changelog {
+    #[clap(subcommand)]
+    command: ChangelogCommand,
+}
+
+#[derive(clap::Subcommand)]
+enum ChangelogCommand {
+    /// Validates all changelogs.
+    Ci,
+
+    /// Logs a crate change.
+    Change {
+        /// Path to the changed crate.
+        path: String,
+
+        /// Severity of the change.
+        severity: changelog::Severity,
+
+        /// One-line description of the change.
+        description: String,
+    },
+}
+
 impl Flags {
-    fn execute(self) -> Result<()> {
+    async fn execute(self) -> Result<()> {
         match self.command {
-            MainCommand::Applet(applet) => applet.execute(&self.options)?,
-            MainCommand::Runner(runner) => runner.execute(&self.options)?,
-            MainCommand::UpdateApis { features } => {
-                let (lang, ext) = ("assemblyscript", "ts");
-                let mut cargo = Command::new("cargo");
-                cargo.args(["run", "--manifest-path=crates/xtask/crates/update-api/Cargo.toml"]);
-                for features in features {
-                    cargo.arg(format!("--features=wasefire-applet-api-desc/{features}"));
+            MainCommand::Applet(applet) => applet.execute(&self.options).await,
+            MainCommand::Runner(runner) => runner.execute(&self.options).await,
+            MainCommand::WaitApplet(wait) => wait.execute(true).await,
+            MainCommand::WaitPlatform(wait) => wait.execute(false).await,
+            MainCommand::Footprint { output } => footprint::compare(&output).await,
+            MainCommand::Textreview => textreview::execute().await,
+            MainCommand::Changelog(subcommand) => match subcommand.command {
+                ChangelogCommand::Ci => changelog::execute_ci().await,
+                ChangelogCommand::Change { path, severity, description } => {
+                    changelog::execute_change(&path, &severity, &description).await
                 }
-                cargo.arg("--");
-                cargo.arg(format!("--lang={lang}"));
-                cargo.arg(format!("--output=examples/{lang}/api.{ext}"));
-                cmd::execute(&mut cargo)?;
-            }
-            MainCommand::Footprint { output } => footprint::compare(&output)?,
-            MainCommand::Textreview => textreview::execute()?,
+            },
         }
-        Ok(())
     }
 }
 
@@ -248,43 +313,46 @@ impl MainOptions {
 }
 
 impl Applet {
-    fn execute(self, main: &MainOptions) -> Result<()> {
-        self.options.execute(main, &self.command)?;
-        if let Some(command) = &self.command {
-            command.execute(main)?;
+    async fn execute(self, main: &MainOptions) -> Result<()> {
+        self.options.execute(main, &self.command).await?;
+        if let Some(command) = self.command {
+            command.execute(main).await?;
         }
         Ok(())
     }
 }
 
 impl AppletOptions {
-    fn execute(self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
+    async fn execute(self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
         if !main.is_native() {
-            ensure_command(&["wasm-strip"])?;
-            ensure_command(&["wasm-opt"])?;
+            ensure_command(&["wasm-strip"]).await?;
+            ensure_command(&["wasm-opt"]).await?;
         }
         match self.lang.as_str() {
-            "rust" => self.execute_rust(main, command),
-            "assemblyscript" => self.execute_assemblyscript(main),
+            "rust" => self.execute_rust(main, command).await,
+            "assemblyscript" => self.execute_assemblyscript(main).await,
             x => bail!("unsupported language {x}"),
         }
     }
 
-    fn execute_rust(self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
+    async fn execute_rust(self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
         let dir = if self.name.starts_with(['.', '/']) {
             self.name.clone()
         } else {
             format!("examples/{}/{}", self.lang, self.name)
         };
-        ensure!(fs::exists(&dir), "{dir} does not exist");
+        ensure!(fs::exists(&dir).await, "{dir} does not exist");
         let native = match (main.native, &main.native_target, command) {
             (_, Some(target), command) => {
                 if let Some(AppletCommand::Runner(x)) = command {
-                    ensure!(target == x.target(), "--native-target must match runner");
+                    ensure!(
+                        target == x.options.target().await,
+                        "--native-target must match runner"
+                    );
                 }
                 Some(target.as_str())
             }
-            (true, None, Some(AppletCommand::Runner(x))) => Some(x.target()),
+            (true, None, Some(AppletCommand::Runner(x))) => Some(x.options.target().await),
             (true, None, _) => bail!("--native requires runner"),
             (false, _, _) => None,
         };
@@ -294,32 +362,32 @@ impl AppletOptions {
             profile: self.profile.clone(),
             opt_level: self.opt_level,
             stack_size: self.stack_size,
-            ..Default::default()
+            ..action::RustAppletBuild::parse_from::<_, OsString>([])
         };
         for features in &self.features {
             action.cargo.push(format!("--features={features}"));
         }
-        action.run(dir)?;
+        action.run(dir).await?;
         if !main.size && main.footprint.is_none() {
             return Ok(());
         }
         let size = match native {
-            Some(_) => footprint::rust_size("target/wasefire/libapplet.a")?,
-            None => fs::metadata("target/wasefire/applet.wasm")?.len() as usize,
+            Some(_) => footprint::rust_size("target/wasefire/libapplet.a").await?,
+            None => fs::metadata("target/wasefire/applet.wasm").await?.len() as usize,
         };
         if main.size {
             println!("Size: {size}");
         }
         if let Some(key) = &main.footprint {
-            footprint::update_applet(key, size)?;
+            footprint::update_applet(key, size).await?;
         }
         Ok(())
     }
 
-    fn execute_assemblyscript(&self, main: &MainOptions) -> Result<()> {
+    async fn execute_assemblyscript(&self, main: &MainOptions) -> Result<()> {
         ensure!(!main.is_native(), "native applets are not supported for assemblyscript");
         let dir = format!("examples/{}", self.lang);
-        ensure_assemblyscript()?;
+        ensure_assemblyscript().await?;
         let mut asc = Command::new("./node_modules/.bin/asc");
         asc.args(["-o", "../../target/wasefire/applet.wasm"]);
         match self.opt_level {
@@ -335,39 +403,60 @@ impl AppletOptions {
         }
         asc.arg(format!("{}/main.ts", self.name));
         asc.current_dir(dir);
-        cmd::execute(&mut asc)?;
-        action::optimize_wasm("target/wasefire/applet.wasm", self.opt_level, false)?;
+        cmd::execute(&mut asc).await?;
+        action::optimize_wasm("target/wasefire/applet.wasm", self.opt_level, false).await?;
         Ok(())
     }
 }
 
 impl AppletCommand {
-    fn execute(&self, main: &MainOptions) -> Result<()> {
+    async fn execute(self, main: &MainOptions) -> Result<()> {
         match self {
-            AppletCommand::Runner(runner) => runner.execute(main, 0, true),
+            AppletCommand::Runner(runner) => runner.execute(main).await,
+            AppletCommand::Install { options, action, command } => {
+                let applet = "target/wasefire/applet.wasm".into();
+                let action = action::AppletInstall { applet, transfer: action };
+                let mut connection = options.connect().await?;
+                action.run(&mut connection).await?;
+                match command {
+                    None => Ok(()),
+                    Some(AppletInstallCommand::Wait { mut action }) => {
+                        action.wait.ensure_wait();
+                        action.ensure_exit();
+                        action.run(&mut connection).await
+                    }
+                }
+            }
         }
     }
 }
 
 impl Runner {
-    fn execute(&self, main: &MainOptions) -> Result<()> {
-        self.options.execute(main, 0, false)?;
+    async fn execute(&self, main: &MainOptions) -> Result<()> {
+        self.options.execute(main, 0, &self.command).await?;
         Ok(())
     }
 }
 
 impl RunnerOptions {
-    fn execute(&self, main: &MainOptions, step: usize, run: bool) -> Result<()> {
+    async fn execute(
+        &self, main: &MainOptions, step: usize, cmd: &Option<RunnerCommand>,
+    ) -> Result<()> {
+        let flash = match cmd {
+            Some(RunnerCommand::Flash(x)) => Some(x),
+            Some(RunnerCommand::Bundle) => None,
+            None => None,
+        };
         let mut cargo = Command::new("cargo");
         let mut rustflags = Vec::new();
         let mut features = self.features.clone();
-        if run && self.name == "host" {
+        if flash.is_some() && self.name == "host" {
             cargo.arg("run");
         } else {
             cargo.arg("build");
         }
         cargo.arg("--release");
-        cargo.arg(format!("--target={}", self.target()));
+        cargo.arg(format!("--target={}", self.target().await));
         let (side, max_step) = match self.name.as_str() {
             "nordic" => (Some(step), 1),
             "host" => (None, 0),
@@ -382,7 +471,12 @@ impl RunnerOptions {
         if self.name == "host" {
             if let Some(version) = &self.version {
                 cargo.env("WASEFIRE_HOST_VERSION", version);
-            };
+            }
+            if let Some(serial) = &self.serial {
+                cargo.env("WASEFIRE_HOST_SERIAL", serial);
+            }
+            cmd::execute(Command::new("make").current_dir("crates/runner-host/crates/web-client"))
+                .await?;
         }
         if self.name == "nordic" {
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
@@ -417,16 +511,9 @@ impl RunnerOptions {
         }
         if self.no_default_features {
             cargo.arg("--no-default-features");
-        } else if std::env::var_os("CODESPACES").is_some() {
-            log::warn!("Assuming runner --no-default-features when running in a codespace.");
-            cargo.arg("--no-default-features");
         }
         if let Some(log) = &self.log {
             cargo.env(self.log_env(), log);
-        }
-        let web = self.web || self.web_host.is_some() || self.web_port.is_some();
-        if self.name == "host" && web {
-            features.push("web".to_string());
         }
         if self.stack_sizes.is_some() {
             rustflags.push("-Z emit-stack-sizes".to_string());
@@ -448,39 +535,39 @@ impl RunnerOptions {
             cargo.env("RUSTFLAGS", rustflags.join(" "));
         }
         cargo.current_dir(format!("crates/runner-{}", self.name));
-        if !main.native {
-            fs::touch("target/wasefire/applet.wasm")?;
-        }
-        if run && self.name == "host" {
-            let path = "target/wasefire/storage.bin";
-            if self.reset_storage && fs::exists(path) {
-                fs::remove_file(path)?;
+        if flash.is_some() && self.name == "host" {
+            if flash.unwrap().reset_flash {
+                for file in ["applet.bin", "storage.bin"] {
+                    let path = format!("target/wasefire/{file}");
+                    if fs::exists(&path).await {
+                        fs::remove_file(&path).await?;
+                    }
+                }
             }
-            cargo.arg("--");
-            if let Some(host) = &self.web_host {
-                cargo.arg(format!("--web-host={host}"));
+            cargo.args(["--", "../../target/wasefire"]);
+            if std::env::var_os("CODESPACES").is_some() {
+                log::warn!("Assuming runner --arg=--protocol=unix when running in a codespace.");
+                cargo.arg("--protocol=unix");
             }
-            if let Some(port) = &self.web_port {
-                cargo.arg(format!("--web-port={port}"));
-            }
+            cargo.args(&self.arg);
             cmd::replace(cargo);
         } else {
-            cmd::execute(&mut cargo)?;
+            cmd::execute(&mut cargo).await?;
         }
         if self.measure_bloat {
-            ensure_command(&["cargo", "bloat"])?;
-            let mut bloat = wrap_command()?;
-            bloat.arg(cargo.get_program());
-            if let Some(dir) = cargo.get_current_dir() {
+            ensure_command(&["cargo", "bloat"]).await?;
+            let mut bloat = wrap_command().await?;
+            bloat.arg(cargo.as_std().get_program());
+            if let Some(dir) = cargo.as_std().get_current_dir() {
                 bloat.current_dir(dir);
             }
-            for (key, val) in cargo.get_envs() {
+            for (key, val) in cargo.as_std().get_envs() {
                 match val {
                     None => bloat.env_remove(key),
                     Some(val) => bloat.env(key, val),
                 };
             }
-            for arg in cargo.get_args() {
+            for arg in cargo.as_std().get_args() {
                 if arg == "build" {
                     bloat.arg("bloat");
                 } else {
@@ -488,20 +575,20 @@ impl RunnerOptions {
                 }
             }
             bloat.args(["--crates", "--split-std"]);
-            cmd::execute(&mut bloat)?;
+            cmd::execute(&mut bloat).await?;
         }
-        let elf = self.board_target();
+        let elf = self.board_target().await;
         if main.size {
-            let mut size = wrap_command()?;
+            let mut size = wrap_command().await?;
             size.arg("rust-size");
             size.arg(&elf);
-            cmd::execute(&mut size)?;
+            cmd::execute(&mut size).await?;
         }
         if let Some(key) = &main.footprint {
-            footprint::update_runner(key, footprint::rust_size(&elf)?)?;
+            footprint::update_runner(key, footprint::rust_size(&elf).await?).await?;
         }
         if let Some(stack_sizes) = self.stack_sizes {
-            let elf = fs::read(&elf)?;
+            let elf = fs::read(&elf).await?;
             let symbols = stack_sizes::analyze_executable(&elf)?;
             assert!(symbols.have_32_bit_addresses);
             assert!(symbols.undefined.is_empty());
@@ -523,76 +610,93 @@ impl RunnerOptions {
                 println!("{:#010x}\t{}\t{}", address, stack, demangle(name));
             }
         }
-        if self.bundle {
-            let mut objcopy = wrap_command()?;
-            objcopy.args(["rust-objcopy", "-O", "binary", &elf]);
-            objcopy.arg(format!("target/wasefire/platform{side}.bin"));
-            cmd::execute(&mut objcopy)?;
+        if matches!(cmd, Some(RunnerCommand::Bundle)) {
+            let bundle = format!("target/wasefire/platform{side}.bin");
+            if self.name == "host" {
+                fs::copy(elf, bundle).await?;
+            } else {
+                let mut objcopy = wrap_command().await?;
+                objcopy.args(["rust-objcopy", "-O", "binary", &elf, &bundle]);
+                cmd::execute(&mut objcopy).await?;
+            }
             if step < max_step {
-                return self.execute(main, step + 1, run);
+                return Box::pin(self.execute(main, step + 1, cmd)).await;
             }
             return Ok(());
         }
-        if !run {
-            return Ok(());
-        }
+        let flash = match flash {
+            Some(x) => x,
+            None => return Ok(()),
+        };
         let chip = match self.name.as_str() {
             "nordic" => "nRF52840_xxAA",
             "host" => unreachable!(),
             _ => unimplemented!(),
         };
-        let mut session = lazy::Lazy::new(|| {
+        let session = Arc::new(Mutex::new(lazy::Lazy::new(|| {
             Ok(Session::auto_attach(
                 TargetSelector::Unspecified(chip.to_string()),
                 Permissions::default(),
             )?)
-        });
-        if self.reset_storage {
-            println!("Erasing the persistent storage.");
+        })));
+        if flash.reset_flash {
+            println!("Erasing the flash.");
             // Keep those values in sync with crates/runner-nordic/memory.x.
-            flashing::erase_sectors(session.get()?, None, 240, 16)?;
+            tokio::task::spawn_blocking({
+                let session = session.clone();
+                move || {
+                    let mut session = session.lock().unwrap();
+                    anyhow::Ok(flashing::erase_all(session.get()?, None)?)
+                }
+            })
+            .await??;
         }
         if self.name == "nordic" {
             let mut cargo = Command::new("cargo");
             cargo.current_dir("crates/runner-nordic/crates/bootloader");
             cargo.args(["build", "--release", "--target=thumbv7em-none-eabi"]);
             cargo.args(["-Zbuild-std=core", "-Zbuild-std-features=panic_immediate_abort"]);
-            cmd::execute(&mut cargo)?;
-            flashing::download_file(
-                session.get()?,
-                "target/thumbv7em-none-eabi/release/bootloader",
-                flashing::Format::Elf,
-            )?;
+            cmd::execute(&mut cargo).await?;
+            tokio::task::spawn_blocking(move || {
+                anyhow::Ok(flashing::download_file(
+                    session.lock().unwrap().get()?,
+                    "target/thumbv7em-none-eabi/release/bootloader",
+                    flashing::Format::Elf,
+                )?)
+            })
+            .await??;
         }
         if self.gdb {
             println!("Use the following 2 commands in different terminals:");
             println!("JLinkGDBServer -device {chip} -if swd -speed 4000 -port 2331");
             println!("gdb-multiarch -ex 'file {elf}' -ex 'target remote localhost:2331'");
         }
-        let mut probe_rs = wrap_command()?;
+        let mut probe_rs = wrap_command().await?;
         probe_rs.args(["probe-rs", "run"]);
         probe_rs.arg(format!("--chip={chip}"));
-        probe_rs.args(&self.probe_rs);
+        probe_rs.args(&flash.probe_rs);
         probe_rs.arg(elf);
         println!("Replace `run` with `attach` in the following command to rerun:");
         cmd::replace(probe_rs);
     }
 
-    fn target(&self) -> &'static str {
-        lazy_static! {
-            // Each time we specify RUSTFLAGS, we want to specify --target. This is because if
-            // --target is not specified then RUSTFLAGS applies to all compiler invocations
-            // (including build scripts and proc macros). This leads to recompilation when RUSTFLAGS
-            // changes. See https://github.com/rust-lang/cargo/issues/8716.
-            static ref HOST_TARGET: String = {
-                let mut sh = Command::new("sh");
-                sh.args(["-c", "rustc -vV | sed -n 's/^host: //p'"]);
-                cmd::output_line(&mut sh).unwrap()
-            };
-        }
+    async fn target(&self) -> &'static str {
+        // Each time we specify RUSTFLAGS, we want to specify --target. This is because if --target
+        // is not specified then RUSTFLAGS applies to all compiler invocations (including build
+        // scripts and proc macros). This leads to recompilation when RUSTFLAGS changes. See
+        // https://github.com/rust-lang/cargo/issues/8716.
+        static HOST_TARGET: OnceCell<String> = OnceCell::const_new();
         match self.name.as_str() {
             "nordic" => "thumbv7em-none-eabi",
-            "host" => &HOST_TARGET,
+            "host" => {
+                HOST_TARGET
+                    .get_or_init(|| async {
+                        let mut sh = Command::new("sh");
+                        sh.args(["-c", "rustc -vV | sed -n 's/^host: //p'"]);
+                        cmd::output_line(&mut sh).await.unwrap()
+                    })
+                    .await
+            }
             _ => unimplemented!(),
         }
     }
@@ -605,43 +709,70 @@ impl RunnerOptions {
         }
     }
 
-    fn board_target(&self) -> String {
-        format!("target/{}/release/runner-{}", self.target(), self.name)
+    async fn board_target(&self) -> String {
+        format!("target/{}/release/runner-{}", self.target().await, self.name)
     }
 }
 
-fn ensure_command(cmd: &[&str]) -> Result<()> {
+impl Wait {
+    async fn execute(&self, applet: bool) -> Result<()> {
+        let period = Duration::from_millis(300);
+        loop {
+            tokio::time::sleep(period).await;
+            let mut action = action::AppletExitStatus::parse_from::<_, OsString>([]);
+            action.wait.set_period(period);
+            if applet {
+                action.ensure_exit();
+            }
+            let mut connection = match self.options.connect().await {
+                Ok(x) => x,
+                Err(_) => continue,
+            };
+            let error = match action.run(&mut connection).await {
+                Err(x) => x,
+                Ok(_) => continue,
+            };
+            use wasefire_error::{Code, Error};
+            if root_cause_is::<Error>(&error, |&x| x == Error::user(Code::NotFound)) {
+                break Ok(());
+            }
+        }
+    }
+}
+
+async fn ensure_command(cmd: &[&str]) -> Result<()> {
     let mut wrapper = Command::new("./scripts/wrapper.sh");
     wrapper.args(cmd);
     wrapper.env("WASEFIRE_WRAPPER_EXEC", "n");
-    cmd::execute(&mut wrapper)
+    cmd::execute(&mut wrapper).await
 }
 
-fn wrap_command() -> Result<Command> {
-    Ok(Command::new(fs::canonicalize("./scripts/wrapper.sh")?))
+async fn wrap_command() -> Result<Command> {
+    Ok(Command::new(fs::canonicalize("./scripts/wrapper.sh").await?))
 }
 
-fn ensure_assemblyscript() -> Result<()> {
+async fn ensure_assemblyscript() -> Result<()> {
     const ASC_VERSION: &str = "0.27.29"; // scripts/upgrade.sh relies on this name
     const BIN: &str = "examples/assemblyscript/node_modules/.bin/asc";
     const JSON: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
-    if fs::exists(BIN) && fs::exists(JSON) {
+    if fs::exists(BIN).await && fs::exists(JSON).await {
         let mut sed = Command::new("sed");
         sed.args(["-n", r#"s/^  "version": "\(.*\)",$/\1/p"#, JSON]);
-        if cmd::output_line(&mut sed)? == ASC_VERSION {
+        if cmd::output_line(&mut sed).await? == ASC_VERSION {
             return Ok(());
         }
     }
-    ensure_command(&["npm"])?;
-    let mut npm = wrap_command()?;
+    ensure_command(&["npm"]).await?;
+    let mut npm = wrap_command().await?;
     npm.args(["npm", "install", "--no-save"]);
     npm.arg(format!("assemblyscript@{ASC_VERSION}"));
     npm.current_dir("examples/assemblyscript");
-    cmd::execute(&mut npm)
+    cmd::execute(&mut npm).await
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("warn"));
-    Flags::parse().execute()?;
+    Flags::parse().execute().await?;
     Ok(())
 }
