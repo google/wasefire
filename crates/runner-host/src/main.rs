@@ -114,6 +114,7 @@ enum Interface {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    #[cfg(feature = "debug")]
     env_logger::init();
     LazyLock::force(&FLAGS);
     std::panic::set_hook(Box::new(|info| {

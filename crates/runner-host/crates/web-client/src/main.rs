@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![feature(try_blocks)]
+
+use wasm_bindgen::JsValue;
+use web_sys::console::{info_1, warn_1};
+
 mod app;
 mod board;
 mod board_components;
@@ -19,6 +24,13 @@ mod console;
 mod hooks;
 
 fn main() {
-    wasm_logger::init(wasm_logger::Config::default());
+    match gloo_utils::window().location().search() {
+        Ok(x) if x.is_empty() => info_1(&JsValue::from_str("logging disabled")),
+        Ok(x) => match try { x.strip_prefix("?log=")?.parse().ok()? } {
+            None => warn_1(&JsValue::from_str("failed to parse location search for log")),
+            Some(level) => wasm_logger::init(wasm_logger::Config::new(level)),
+        },
+        Err(x) => warn_1(&x),
+    }
     yew::Renderer::<app::App>::new().render();
 }
