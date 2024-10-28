@@ -137,7 +137,7 @@ fn spawn(cmd: &[&str]) -> Result<Child> {
 async fn has_mod(name: &str) -> Result<bool> {
     for line in cmd::output(&mut Command::new("lsmod")).await?.stdout.split(|&x| x == b'\n') {
         if let Some(suffix) = line.strip_prefix(name.as_bytes()) {
-            if suffix.get(0) == Some(&b' ') {
+            if suffix.first() == Some(&b' ') {
                 return Ok(true);
             }
         }
