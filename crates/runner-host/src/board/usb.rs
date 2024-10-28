@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::process::{Child, Command, Stdio};
+use std::process::Stdio;
 use std::time::Duration;
 
 use anyhow::{ensure, Result};
+use tokio::process::{Child, Command};
 use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::StringDescriptors;
@@ -25,6 +26,7 @@ use usbd_serial::SerialPort;
 use usbip_device::UsbIpBus;
 use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::usb::Api;
+use wasefire_cli_tools::cmd;
 use wasefire_error::{Code, Error};
 use wasefire_protocol_usb::Rpc;
 
@@ -45,21 +47,24 @@ pub struct State {
     usb_dev: Option<UsbDevice<'static, UsbIpBus>>,
 }
 
-pub fn init() -> Result<()> {
+pub async fn init() -> Result<()> {
     if with_state(|x| x.usb.usb_dev.is_none()) {
         return Ok(());
     }
-    ensure!(
-        spawn(&["sudo", "modprobe", "vhci-hcd"]).wait().unwrap().code() == Some(0),
-        "failed to load kernel module for USB/IP"
-    );
-    let mut usbip = spawn(&["sudo", "usbip", "attach", "-r", "localhost", "-b", "1-1"]);
+    if !has_mod("vhci_hcd").await? {
+        ensure!(
+            spawn(&["sudo", "modprobe", "vhci-hcd"])?.wait().await?.code() == Some(0),
+            "failed to load kernel module for USB/IP"
+        );
+    }
+    let mut usbip = spawn(&["sudo", "usbip", "attach", "-r", "localhost", "-b", "1-1"])?;
     loop {
-        with_state(|state| state.usb.poll());
-        match usbip.try_wait().unwrap() {
-            None => continue,
-            Some(e) => ensure!(e.code() == Some(0), "failed to attach remote USB/IP device"),
-        }
+        let fast = with_state(|state| state.usb.poll());
+        let Some(status) = usbip.try_wait()? else {
+            tokio::time::sleep(Duration::from_millis(if fast { 1 } else { 500 })).await;
+            continue;
+        };
+        ensure!(status.code() == Some(0), "failed to attach remote USB/IP device");
         break;
     }
     tokio::spawn(async move {
@@ -124,7 +129,18 @@ impl State {
     }
 }
 
-fn spawn(cmd: &[&str]) -> Child {
+fn spawn(cmd: &[&str]) -> Result<Child> {
     println!("Executing: {}", cmd.join(" "));
-    Command::new(cmd[0]).args(&cmd[1 ..]).stdin(Stdio::null()).spawn().unwrap()
+    Ok(Command::new(cmd[0]).args(&cmd[1 ..]).stdin(Stdio::null()).spawn()?)
+}
+
+async fn has_mod(name: &str) -> Result<bool> {
+    for line in cmd::output(&mut Command::new("lsmod")).await?.stdout.split(|&x| x == b'\n') {
+        if let Some(suffix) = line.strip_prefix(name.as_bytes()) {
+            if suffix.first() == Some(&b' ') {
+                return Ok(true);
+            }
+        }
+    }
+    Ok(false)
 }
