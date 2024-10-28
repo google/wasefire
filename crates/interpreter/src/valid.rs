@@ -461,9 +461,9 @@ impl SideTable {
     fn pop_cnt(source: SideTableBranch, target: SideTableBranch) -> MResult<u32, Check> {
         let source = source.stack;
         let target = target.stack;
-        let Some(delta) = target.checked_sub(source) else {
+        let Some(delta) = source.checked_sub(target) else {
             #[cfg(feature = "debug")]
-            eprintln!("side-table negative stack delta {target} < {source}");
+            eprintln!("side-table negative stack delta {source} < {target}");
             return Err(unsupported(if_debug!(Unsupported::SideTable)));
         };
         u32::try_from(delta).map_err(|_| {
@@ -882,6 +882,7 @@ impl<'a, 'm> Expr<'a, 'm> {
     fn branch_source(&mut self, result: usize) -> SideTableBranch<'m> {
         let mut branch = self.branch_target();
         branch.result = result;
+        branch.stack += self.stack().len();
         self.side_table.branch();
         branch
     }
