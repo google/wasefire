@@ -172,7 +172,7 @@ async fn main() -> Result<()> {
         web,
     });
     board::uart::Uarts::init();
-    board::usb::init()?;
+    board::usb::init().await?;
     if matches!(FLAGS.interface, Interface::Stdio) {
         tokio::task::spawn_blocking(|| {
             use std::io::BufRead;
