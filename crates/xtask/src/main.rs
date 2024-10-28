@@ -475,6 +475,7 @@ impl RunnerOptions {
             if let Some(serial) = &self.serial {
                 cargo.env("WASEFIRE_HOST_SERIAL", serial);
             }
+            fs::remove_dir_all("target/wasefire/web").await?;
             cmd::execute(Command::new("make").current_dir("crates/runner-host/crates/web-client"))
                 .await?;
         }
