@@ -11,9 +11,6 @@ include = ["/LICENSE", "/src/"]
 keywords = ["cli", "embedded", "framework", "wasm"]
 categories = ["command-line-utilities", "embedded", "wasm"]
 
-[package.metadata.docs.rs]
-features = ["_dev"]
-
 [[bin]]
 name = "wasefire"
 path = "src/main.rs"
@@ -24,6 +21,7 @@ clap = { version = "4.5.4", default-features = false, features = ["default", "de
 clap_complete = { version = "4.5.2", default-features = false }
 env_logger = { version = "0.11.3", default-features = false, features = ["default"] }
 wasefire-cli-tools = { version = "0.2.0-git", path = "../cli-tools", features = ["action"] }
+wasefire-one-of = { version = "0.1.0-git", path = "../one-of" }
 
 [dependencies.tokio]
 version = "1.40.0"
@@ -32,6 +30,7 @@ features = ["macros", "parking_lot", "rt", "rt-multi-thread"]
 
 [features]
 _dev = []
+_prod = []
 
 [lints]
 clippy.unit-arg = "allow"

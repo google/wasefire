@@ -23,6 +23,9 @@ use clap::{CommandFactory, Parser, ValueHint};
 use clap_complete::Shell;
 use tokio::process::Command;
 use wasefire_cli_tools::{action, cmd, fs};
+use wasefire_one_of::at_most_one_of;
+
+at_most_one_of!["_dev", "_prod"];
 
 #[derive(Parser)]
 #[command(name = "wasefire", version, about)]
@@ -197,7 +200,7 @@ impl Host {
             );
             fs::copy(bundle, &bin).await?;
         }
-        #[cfg(not(feature = "_dev"))]
+        #[cfg(feature = "_prod")]
         if !fs::exists(&bin).await {
             fs::create_dir_all(&self.dir).await?;
             static HOST_PLATFORM: &[u8] = include_bytes!(env!("WASEFIRE_HOST_PLATFORM"));
@@ -205,6 +208,8 @@ impl Host {
             params.options().write(true).create_new(true).mode(0o777);
             fs::write(params, HOST_PLATFORM).await?;
         }
+        #[cfg(all(not(feature = "_dev"), not(feature = "_prod")))]
+        anyhow::ensure!(fs::exists(&bin).await, "no host platform found");
         loop {
             let mut host = Command::new(&bin);
             host.arg(&self.dir);

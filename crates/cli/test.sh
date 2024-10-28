@@ -19,4 +19,5 @@ set -e
 
 test_helper
 
-cargo test --bin=wasefire --features=_dev
+cargo test --bin=wasefire
+cargo check --bin=wasefire --features=_dev
