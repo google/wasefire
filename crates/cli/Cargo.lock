@@ -791,6 +791,7 @@ dependencies = [
  "env_logger",
  "tokio",
  "wasefire-cli-tools",
+ "wasefire-one-of",
 ]
 
 [[package]]

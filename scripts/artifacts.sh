@@ -48,7 +48,7 @@ for target in $TARGETS; do
     cargo build --manifest-path=crates/runner-host/Cargo.toml --release --target=$target \
       --features=debug,wasm
     export WASEFIRE_HOST_PLATFORM=$PWD/target/$target/release/runner-host
-    cargo build --manifest-path=crates/cli/Cargo.toml --release --target=$target
+    cargo build --manifest-path=crates/cli/Cargo.toml --release --target=$target --features=_prod
   )
   artifact=artifacts/wasefire-$target
   cp target/$target/release/wasefire $artifact
