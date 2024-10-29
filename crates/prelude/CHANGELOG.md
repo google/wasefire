@@ -9,6 +9,7 @@
 
 ### Minor
 
+- Initialize heap for wasm applets
 - Add `scheduling::exit()` for successful applet exit
 
 ### Patch
