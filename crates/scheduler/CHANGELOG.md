@@ -20,6 +20,7 @@
 
 ### Patch
 
+- Fix rust and clippy lints
 - Reduce logging level of applet trapping (those are not errors)
 - Make sure at compile-time that exactly one `native` or `wasm` feature is enabled
 - Use `derive-where` instead of `derivative`

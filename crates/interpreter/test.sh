@@ -19,6 +19,8 @@ set -e
 
 ensure_submodule third_party/WebAssembly/spec
 
+# TODO(cleanup): Make sure we cover all spec/test/core tests using _test_diff.
+
 test_helper
 
 cargo test --lib --features=toctou

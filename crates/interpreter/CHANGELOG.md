@@ -8,6 +8,8 @@
 
 ### Patch
 
+- Fix missing check when module has no data but data count
+- Fix rust and clippy lints
 - Update dependencies
 - Return an error instead of unsupported when too many locals
 - Only take the initial frame in `Thread::new()`

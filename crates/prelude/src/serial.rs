@@ -162,7 +162,7 @@ impl<'a, T: Serial> Listener<'a, T> {
     }
 }
 
-impl<'a, T: Serial> Drop for Listener<'a, T> {
+impl<T: Serial> Drop for Listener<'_, T> {
     fn drop(&mut self) {
         self.serial.unregister(self.event).unwrap();
         drop(unsafe { Box::from_raw(self.notified.as_ptr()) });
@@ -345,7 +345,7 @@ enum Kind<'a> {
     Writer { buffer: &'a [u8] },
 }
 
-impl<'a> Kind<'a> {
+impl Kind<'_> {
     fn event(&self) -> Event {
         match self {
             Kind::Reader { .. } => Event::Read,

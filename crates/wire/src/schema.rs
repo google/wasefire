@@ -128,7 +128,7 @@ impl core::fmt::Display for Builtin {
     }
 }
 
-impl<'a> core::fmt::Display for View<'a> {
+impl core::fmt::Display for View<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             View::Builtin(x) => write!(f, "{x}"),
@@ -145,7 +145,7 @@ impl<'a> core::fmt::Display for View<'a> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ViewFields<'a>(pub &'a ViewStruct<'a>);
 
-impl<'a> core::fmt::Display for ViewFields<'a> {
+impl core::fmt::Display for ViewFields<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write_fields(f, self.0)
     }
@@ -208,7 +208,7 @@ fn write_list<T: List>(f: &mut core::fmt::Formatter, xs: &[T]) -> core::fmt::Res
     write!(f, "{}", T::END)
 }
 
-impl<'a> View<'a> {
+impl View<'_> {
     /// Simplifies a view preserving wire compatibility.
     ///
     /// Performs the following simplifications:

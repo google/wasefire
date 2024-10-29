@@ -58,7 +58,8 @@ impl Store {
 }
 
 impl StoreApi for Store {
-    type Memory<'a> = Memory<'a>
+    type Memory<'a>
+        = Memory<'a>
     where Self: 'a;
 
     fn memory(&mut self) -> Memory<'_> {
@@ -121,7 +122,7 @@ impl<'a> Memory<'a> {
     }
 }
 
-impl<'a> MemoryApi for Memory<'a> {
+impl MemoryApi for Memory<'_> {
     fn get(&self, ptr: u32, len: u32) -> Result<&[u8], Trap> {
         let ptr = ptr as usize;
         let len = len as usize;

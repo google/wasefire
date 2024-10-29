@@ -396,7 +396,7 @@ type OwnedBufferOperation = BufferOperation<Box<[u8]>>;
 /// Represents a storage operation sharing its byte slices.
 type SharedBufferOperation<'a> = BufferOperation<&'a [u8]>;
 
-impl<'a> SharedBufferOperation<'a> {
+impl SharedBufferOperation<'_> {
     fn to_owned(&self) -> OwnedBufferOperation {
         match *self {
             BufferOperation::Write { index, value } => {

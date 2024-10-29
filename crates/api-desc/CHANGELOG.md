@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Fix rust and clippy lints
 - Update dependencies
 
 ## 0.2.0

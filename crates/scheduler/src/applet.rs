@@ -213,6 +213,7 @@ impl<B: Board> Applet<B> {
         self.handlers.get(&key)
     }
 
+    #[cfg(feature = "wasm")]
     pub fn has_handlers(&self) -> bool {
         !self.handlers.is_empty()
     }

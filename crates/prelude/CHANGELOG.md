@@ -13,6 +13,7 @@
 
 ### Patch
 
+- Fix rust and clippy lints
 - Make sure at compile-time that at most one `native`, `test`, or `wasm` feature is enabled
 - Update dependencies
 
