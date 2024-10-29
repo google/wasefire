@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(feature = "applet-api-platform-protocol")]
 use alloc::boxed::Box;
 use alloc::collections::{BTreeSet, VecDeque};
 
 #[cfg(feature = "internal-hash-context")]
 use wasefire_board_api as board;
 use wasefire_board_api::{Api as Board, Event};
+#[cfg(feature = "applet-api-platform-protocol")]
 use wasefire_error::{Code, Error};
 use wasefire_logger as log;
 
@@ -50,6 +52,7 @@ pub struct Applet<B: Board> {
     events: VecDeque<Event<B>>,
 
     /// Protocol request or response, if any.
+    #[cfg(feature = "applet-api-platform-protocol")]
     protocol: Protocol,
 
     /// Whether we returned from a callback.
@@ -68,6 +71,7 @@ impl<B: Board> Default for Applet<B> {
         Self {
             store: Default::default(),
             events: Default::default(),
+            #[cfg(feature = "applet-api-platform-protocol")]
             protocol: Default::default(),
             #[cfg(feature = "wasm")]
             done: Default::default(),
@@ -79,6 +83,7 @@ impl<B: Board> Default for Applet<B> {
 }
 
 #[derive(Debug, Default)]
+#[cfg(feature = "applet-api-platform-protocol")]
 enum Protocol {
     #[default]
     Empty,
@@ -216,6 +221,7 @@ impl<B: Board> Applet<B> {
         self.events.len()
     }
 
+    #[cfg(feature = "applet-api-platform-protocol")]
     pub fn put_request(&mut self, event: Event<B>, request: &[u8]) -> Result<(), Error> {
         self.get(Key::from(&event)).ok_or(Error::world(Code::InvalidState))?;
         // If the applet is processing a request, we'll send the event when they respond.
@@ -227,6 +233,7 @@ impl<B: Board> Applet<B> {
         Ok(())
     }
 
+    #[cfg(feature = "applet-api-platform-protocol")]
     pub fn get_request(&mut self) -> Result<Option<Box<[u8]>>, Error> {
         let (update, result) = match core::mem::take(&mut self.protocol) {
             x @ (Protocol::Empty | Protocol::Response(_)) => (x, Ok(None)),
@@ -237,6 +244,7 @@ impl<B: Board> Applet<B> {
         result
     }
 
+    #[cfg(feature = "applet-api-platform-protocol")]
     pub fn put_response(&mut self, response: Box<[u8]>) -> Result<(), Error> {
         match &self.protocol {
             Protocol::Processing => self.protocol = Protocol::Response(response),
@@ -247,6 +255,7 @@ impl<B: Board> Applet<B> {
         Ok(())
     }
 
+    #[cfg(feature = "applet-api-platform-protocol")]
     pub fn get_response(&mut self) -> Result<Option<Box<[u8]>>, Error> {
         let (update, result) = match core::mem::take(&mut self.protocol) {
             x @ (Protocol::Processing | Protocol::Request(_)) => (x, Ok(None)),
