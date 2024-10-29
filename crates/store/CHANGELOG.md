@@ -6,6 +6,10 @@
 
 - Use `wasefire-error` for errors
 
+### Patch
+
+- Fix rust and clippy lints
+
 ## 0.2.4
 
 ### Patch

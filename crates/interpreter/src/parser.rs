@@ -621,7 +621,7 @@ pub enum ElemMode<'a, 'm, M: Mode> {
 
 pub struct SkipElem;
 
-impl<'m, M: Mode> ParseElem<'m, M> for SkipElem {}
+impl<M: Mode> ParseElem<'_, M> for SkipElem {}
 
 pub trait ParseData<'m, M: Mode> {
     // Must read an expr from the parser.
@@ -645,7 +645,7 @@ pub enum DataMode<'a, 'm, M: Mode> {
 
 pub struct SkipData;
 
-impl<'m, M: Mode> ParseData<'m, M> for SkipData {}
+impl<M: Mode> ParseData<'_, M> for SkipData {}
 
 impl<'m, M: Mode> Parser<'m, M> {
     fn internal_new(data: &'m [u8]) -> Self {

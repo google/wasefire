@@ -14,7 +14,7 @@
 
 use core::ptr::addr_of_mut;
 
-use embedded_alloc::Heap;
+use embedded_alloc::TlsfHeap as Heap;
 
 #[global_allocator]
 static ALLOCATOR: Heap = Heap::empty();

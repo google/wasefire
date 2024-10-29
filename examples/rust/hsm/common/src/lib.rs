@@ -331,7 +331,7 @@ mod tests {
         }
     }
 
-    impl<'a> Deserializer for &'a [u8] {
+    impl Deserializer for &[u8] {
         fn read_exact(&mut self, data: &mut [u8]) -> Result<(), Error> {
             if self.len() < data.len() {
                 return Err(Error::UsbError);

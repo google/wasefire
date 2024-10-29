@@ -230,7 +230,7 @@ impl State {
     }
 }
 
-impl<'a, B: UsbBus> UsbClass<B> for Rpc<'a, B> {
+impl<B: UsbBus> UsbClass<B> for Rpc<'_, B> {
     fn get_configuration_descriptors(
         &self, writer: &mut DescriptorWriter,
     ) -> usb_device::Result<()> {

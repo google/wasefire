@@ -13,6 +13,7 @@
 
 ### Patch
 
+- Fix rust and clippy lints
 - Make sure at compile-time that at most one `native`, `test`, or `wasm` feature is enabled
 - Update dependencies
 
@@ -172,4 +173,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 2 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->
