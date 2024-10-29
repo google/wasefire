@@ -12,7 +12,7 @@ cortex-m-rt = { version = "0.7.3", features = ["set-vtor"] }
 critical-section = "1.1.2"
 defmt = { version = "0.3.8", features = ["avoid-default-panic"], optional = true }
 defmt-rtt = { version = "0.4.1", optional = true }
-embedded-alloc = "0.5.1"
+embedded-alloc = "0.6.0"
 embedded-hal = "1.0.0"
 embedded-hal-02 = { version = "0.2.7", package = "embedded-hal" }
 embedded-storage = "0.3.1"
