@@ -51,6 +51,14 @@ check_software_crypto() {
   fi
 }
 
+# diff_sorted <name> <left> <right>..
+# <name> is the name of the <right> list
+# <left> is a sorted list after word expansion
+# <right>.. is a sorted list
+diff_sorted() {
+  _test_diff "$@"
+}
+
 test_helper() {
   _test_desc | grep -Ev 'cargo (check|(miri )?test) --(lib|(bin|test|example)=[^ ]*)( |$)' \
     && e 'Invalid description (invalid commands are listed above).'
