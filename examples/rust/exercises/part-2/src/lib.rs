@@ -15,11 +15,15 @@
 //! This exercise uses the `interface` crate to deserialize requests and serialize responses. Read
 //! the documentation of that crate in its `src/lib.rs` file.
 //!
-//! If you are running the host runner, you can test your applet with the client:
+//! If you are running the applet on a host platform, you can test your applet with the client (you
+//! first need to build it and copy it to the host platform directory):
 //!
 //! ```shell
-//! cd ../client
-//! cargo run -- register foo
+//! cd $WASEFIRE_REPO/examples/rust/exercises/client
+//! cargo build --release
+//! cd $HOST_PLATFORM
+//! cp $WASEFIRE_REPO/target/release/client .
+//! ./client register foo
 //! ```
 
 #![no_std]

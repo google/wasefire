@@ -137,7 +137,7 @@ fn connect() -> Serial {
 
 #[cfg(not(feature = "usb"))]
 fn connect() -> Serial {
-    let serial = Serial::connect("../../../../target/wasefire/uart0").unwrap();
+    let serial = Serial::connect("wasefire/host/uart0").unwrap();
     serial.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
     serial
 }

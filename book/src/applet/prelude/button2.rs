@@ -24,7 +24,6 @@
 #![no_std]
 wasefire::applet!();
 
-use alloc::boxed::Box;
 use core::cell::Cell;
 
 fn main() -> Result<(), Error> {
@@ -42,7 +41,7 @@ fn main() -> Result<(), Error> {
     //} ANCHOR_END: setup
         //{ ANCHOR: state
         // We create the state containing the LED to which this button maps to.
-        let led_pointer = Box::new(Cell::new(0));
+        let led_state = Cell::new(0);
         //} ANCHOR_END: state
 
         //{ ANCHOR: handler
@@ -51,14 +50,14 @@ fn main() -> Result<(), Error> {
         //} ANCHOR_END: handler
             //{ ANCHOR: toggle
             // We toggle the LED.
-            let led_index = led_pointer.get();
+            let led_index = led_state.get();
             led::set(led_index, !led::get(led_index));
             //} ANCHOR_END: toggle
 
             //{ ANCHOR: update
             // If the button is released, we point it to the next LED.
             if matches!(button_state, button::Released) {
-                led_pointer.set((led_index + 1) % num_leds);
+                led_state.set((led_index + 1) % num_leds);
             }
             //} ANCHOR_END: update
         };

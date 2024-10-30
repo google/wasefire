@@ -19,6 +19,7 @@
       - [Timers](applet/prelude/timer.md)
       - [USB](applet/prelude/usb.md)
       - [UART](applet/prelude/uart.md)
+      - [RPC](applet/prelude/rpc.md)
       - [Storage](applet/prelude/store.md)
    - [Exercises](applet/exercises/README.md)
    - [Examples](applet/examples.md)

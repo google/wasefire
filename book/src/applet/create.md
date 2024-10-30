@@ -1,60 +1,31 @@
 # Create a new applet
 
-This step will [eventually](https://github.com/google/wasefire/issues/38) be a
-simple `wasefire new <applet-name>` command out of tree. But for now we will
-build the applet within the project repository as an example applet. We'll use
-`tutorial` as the applet name throughout this tutorial.
-
-You have 2 options to create and populate the applet directory. We'll go over
-both for pedagogical reasons.
-
-## Copy the `hello` applet
-
-The first step is to copy the `hello` directory to the `tutorial` directory:
+You can create a Rust applet called `tutorial` with the following command:
 
 ```shell
-cp -r examples/rust/hello examples/rust/tutorial
+wasefire rust-applet-new tutorial
 ```
 
-The second step is to update the applet name in the `Cargo.toml`:
+This creates a `tutorial` directory with an example Rust applet. Let's look at `Cargo.toml`:
+
+- The `wasefire` dependency provides a Rust interface for the applet API.
+- The `wasefire-stub` optional dependency provides support for testing.
+- The `test` feature enables testing support.
+
+And now let's look at `src/lib.rs`:
+
+- The `#![no_std]` attribute is needed for building WASM modules without WASI. As a consequence, you
+  cannot use `std`. Instead, you need to use `core` and `alloc`.
+- The `wasefire::applet!();` macro does a few things:
+    - It makes sure the `main()` function is executed when the applet starts.
+    - It imports the `alloc` crate.
+    - It imports all the items of the `wasefire` crate.
+- In the `tests` module, the `use wasefire_stub as _;` makes sure the `wasefire-stub` crate is
+  linked since it provides symbol definitions for the applet API.
+
+Since most commands assume they are running from the root directory of the Rust applet (unless
+`--crate-dir` is provided), you can change the working directory to the crate:
 
 ```shell
-sed -i 's/hello/tutorial/' examples/rust/tutorial/Cargo.toml
+cd tutorial
 ```
-
-## Create the applet from scratch
-
-Create the `tutorial` directory:
-
-```shell
-mkdir examples/rust/tutorial
-```
-
-Create the `Cargo.toml` file in the created directory with the following
-content:
-
-```toml
-[package]
-name = "tutorial"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-wasefire = "*" # use the latest version
-```
-
-The `wasefire` dependency provides a high-level interface to the Applet API.
-
-Then create the `src/lib.rs` file in the created directory with the following
-content:
-
-```rust,no_run
-#![no_std] // needed for building wasm (without wasi)
-wasefire::applet!(); // imports the prelude and defines main as entry point
-
-fn main() {
-    debug!("hello world");
-}
-```
-
-Note that because you need to use `core` or `alloc` instead of `std`.
