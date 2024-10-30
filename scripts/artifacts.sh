@@ -23,12 +23,13 @@ i "Generate notes.txt"
 cat <<EOF > notes.txt
 See the [changelog] for the list of changes in this release.
 
-You can use the following command to verify a downloaded asset:
+You can use the following command to check your downloaded assets:
+
+    sha256sum --ignore-missing --check sha256sum.txt
+
+You can use one of the following commands to verify a downloaded asset:
 
     gh attestation verify --repo=google/wasefire <asset-path>
-
-You may also download the provenance attestation and use the \`--bundle\` flag:
-
     gh attestation verify --owner=google --bundle=attestation.intoto.jsonl <asset-path>
 
 [changelog]: https://github.com/google/wasefire/blob/main/docs/releases/$DATE.md
@@ -37,7 +38,7 @@ EOF
 x mkdir artifacts
 
 i "Build web-client once for all supported targets"
-( cd crates/runner-host/crates/web-client && make )
+# ( cd crates/runner-host/crates/web-client && make )
 
 i "Build the CLI for each supported target"
 TARGETS='
@@ -45,12 +46,15 @@ x86_64-unknown-linux-gnu
 '
 for target in $TARGETS; do
   ( set -x
-    cargo build --manifest-path=crates/runner-host/Cargo.toml --release --target=$target \
-      --features=debug,wasm
-    export WASEFIRE_HOST_PLATFORM=$PWD/target/$target/release/runner-host
-    cargo build --manifest-path=crates/cli/Cargo.toml --release --target=$target --features=_prod
+    # cargo build --manifest-path=crates/runner-host/Cargo.toml --release --target=$target \
+    #   --features=debug,wasm
+    # export WASEFIRE_HOST_PLATFORM=$PWD/target/$target/release/runner-host
+    # cargo build --manifest-path=crates/cli/Cargo.toml --release --target=$target --features=_prod
+    # cp target/$target/release/wasefire artifacts/wasefire-$target
+    touch artifacts/wasefire-$target # DO NOT MERGE
+    cd artifacts
+    tar czf wasefire-$target.tar.gz wasefire-$target
+    rm wasefire-$target
   )
-  artifact=artifacts/wasefire-$target
-  cp target/$target/release/wasefire $artifact
-  echo "$artifact#Wasefire CLI ($target)" >> artifacts.txt
+  echo "artifacts/wasefire-$target.tar.gz#Wasefire CLI ($target)" >> artifacts.txt
 done
