@@ -113,6 +113,8 @@ jobs:
       - run: |
           mv ${{ steps.attest.outputs.bundle-path }} attestation.intoto.jsonl
           echo 'attestation.intoto.jsonl#Provenance attestation' >> artifacts.txt
+          ( cd artifacts && sha256sum * > ../sha256sum.txt )
+          echo 'sha256sum.txt#Checksums' >> artifacts.txt
           COMMIT=$(git rev-parse -q --verify HEAD)
           DATE=$(git log -1 --pretty=%cs)
           xargs --arg-file=artifacts.txt --delimiter='\n' \
