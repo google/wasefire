@@ -323,7 +323,7 @@ pub async fn execute_ci() -> Result<()> {
     let paths = cmd::output(Command::new("git").args(["ls-files", "*/CHANGELOG.md"])).await?;
     for path in paths.stdout.lines() {
         let path = path?;
-        let changelog = Changelog::read(&path.strip_suffix("/CHANGELOG.md").unwrap()).await?;
+        let changelog = Changelog::read(path.strip_suffix("/CHANGELOG.md").unwrap()).await?;
         changelog.validate_cargo_toml().await?;
     }
     Ok(())
@@ -331,7 +331,7 @@ pub async fn execute_ci() -> Result<()> {
 
 /// Updates a changelog file and changelog files of dependencies.
 pub async fn execute_change(path: &str, severity: Severity, description: &str) -> Result<()> {
-    let mut changelog = Changelog::read(&path).await?;
+    let mut changelog = Changelog::read(path).await?;
 
     changelog.push_description(severity, description)?;
     changelog.write().await?;
