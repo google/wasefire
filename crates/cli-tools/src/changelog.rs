@@ -49,17 +49,23 @@ impl Display for Severity {
 
 #[derive(Debug, Default, PartialEq, Eq)]
 struct Changelog {
+    crate_path: String,
     releases: Vec<Release>,
     skip_counter: u32,
 }
 
 impl Changelog {
-    async fn read_file(path: &str) -> Result<Changelog> {
-        Self::parse(&String::from_utf8(fs::read(path).await?)?)
+    fn changelog_path(&self) -> String {
+        format!("{}/CHANGELOG.md", self.crate_path)
     }
 
-    async fn write_file(&self, path: &str) -> Result<()> {
-        fs::write(path, self.to_string().as_bytes()).await
+    async fn read(path: &str) -> Result<Changelog> {
+        let changelog_path = format!("{path}/CHANGELOG.md");
+        Self::parse(path, &String::from_utf8(fs::read(changelog_path).await?)?)
+    }
+
+    async fn write(&self) -> Result<()> {
+        fs::write(self.changelog_path(), self.to_string().as_bytes()).await
     }
 
     fn push_description(&mut self, severity: Severity, content: &str) -> Result<()> {
@@ -91,7 +97,7 @@ impl Changelog {
     }
 
     /// Parses and validates a changelog.
-    fn parse(input: &str) -> Result<Changelog> {
+    fn parse(crate_path: &str, input: &str) -> Result<Changelog> {
         let mut releases: Vec<Release> = Vec::new();
         let mut parser = Parser::new(input.lines());
         parser.read_exact("# Changelog")?;
@@ -166,12 +172,13 @@ impl Changelog {
             .parse()
             .with_context(|| anyhow!("Invalid skip counter {parser}"))?;
         parser.done()?;
-        let result = Changelog { releases, skip_counter };
+        let result = Changelog { crate_path: crate_path.to_string(), releases, skip_counter };
         assert_eq!(format!("{result}"), input);
         Ok(result)
     }
 
-    async fn validate_cargo_toml(&self, path: &str) -> Result<()> {
+    async fn validate_cargo_toml(&self) -> Result<()> {
+        let path = &self.crate_path;
         let metadata = metadata(path).await?;
         ensure!(
             self.releases.first().unwrap().version == metadata.packages[0].version,
@@ -180,19 +187,19 @@ impl Changelog {
         Ok(())
     }
 
-    async fn sync_cargo_toml(&self, path: &str) -> Result<()> {
+    async fn sync_cargo_toml(&self) -> Result<()> {
         let expected_version = &self.releases.first().unwrap().version;
 
         let mut sed = Command::new("sed");
         sed.arg("-i");
         sed.arg(format!("s#^version = .*#version = \"{expected_version}\"#"));
         sed.arg("Cargo.toml");
-        cmd::execute(sed.current_dir(path)).await?;
+        cmd::execute(sed.current_dir(&self.crate_path)).await?;
 
         Ok(())
     }
 
-    async fn sync_dependencies(&self, _path: &str) -> Result<()> {
+    async fn sync_dependencies(&self) -> Result<()> {
         // TODO
 
         Ok(())
@@ -201,7 +208,7 @@ impl Changelog {
 
 impl Display for Changelog {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Changelog { releases, skip_counter } = self;
+        let Changelog { crate_path: _, releases, skip_counter } = self;
         writeln!(f, "# Changelog\n")?;
         for release in releases {
             write!(f, "{release}")?;
@@ -316,22 +323,20 @@ pub async fn execute_ci() -> Result<()> {
     let paths = cmd::output(Command::new("git").args(["ls-files", "*/CHANGELOG.md"])).await?;
     for path in paths.stdout.lines() {
         let path = path?;
-        let changelog = Changelog::read_file(&path).await?;
-        changelog.validate_cargo_toml(path.strip_suffix("/CHANGELOG.md").unwrap()).await?;
+        let changelog = Changelog::read(&path.strip_suffix("/CHANGELOG.md").unwrap()).await?;
+        changelog.validate_cargo_toml().await?;
     }
     Ok(())
 }
 
 /// Updates a changelog file and changelog files of dependencies.
 pub async fn execute_change(path: &str, severity: Severity, description: &str) -> Result<()> {
-    let changelog_file_path = format!("{path}/CHANGELOG.md");
-
-    let mut changelog = Changelog::read_file(&changelog_file_path).await?;
+    let mut changelog = Changelog::read(&path).await?;
 
     changelog.push_description(severity, description)?;
-    changelog.write_file(&changelog_file_path).await?;
-    changelog.sync_cargo_toml(path).await?;
-    changelog.sync_dependencies(path).await?;
+    changelog.write().await?;
+    changelog.sync_cargo_toml().await?;
+    changelog.sync_dependencies().await?;
 
     Ok(())
 }
@@ -384,8 +389,9 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).unwrap(),
+            Changelog::parse("path", changelog).unwrap(),
             Changelog {
+                crate_path: "path".to_string(),
                 releases: vec![
                     Release {
                         version: Version::parse("0.3.0").unwrap(),
@@ -492,7 +498,7 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        assert_eq!(format!("{}", Changelog::parse(changelog).unwrap()), changelog);
+        assert_eq!(format!("{}", Changelog::parse("", changelog).unwrap()), changelog);
     }
 
     #[test]
@@ -526,8 +532,9 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).unwrap(),
+            Changelog::parse("path", changelog).unwrap(),
             Changelog {
+                crate_path: "path".to_string(),
                 releases: vec![
                     Release {
                         version: Version::parse("0.2.0").unwrap(),
@@ -579,8 +586,9 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).unwrap(),
+            Changelog::parse("path", changelog).unwrap(),
             Changelog {
+                crate_path: "path".to_string(),
                 releases: vec![
                     Release {
                         version: Version::parse("0.2.0").unwrap(),
@@ -619,7 +627,7 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).unwrap_err().to_string(),
+            Changelog::parse("", changelog).unwrap_err().to_string(),
             "Description ends with dot line 7"
         );
     }
@@ -634,8 +642,9 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).unwrap(),
+            Changelog::parse("path", changelog).unwrap(),
             Changelog {
+                crate_path: "path".to_string(),
                 releases: vec![Release {
                     version: Version::parse("0.1.0").unwrap(),
                     contents: BTreeMap::new(),
@@ -655,8 +664,9 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).unwrap(),
+            Changelog::parse("path", changelog).unwrap(),
             Changelog {
+                crate_path: "path".to_string(),
                 releases: vec![Release {
                     version: Version::parse("0.1.0").unwrap(),
                     contents: BTreeMap::new(),
@@ -675,7 +685,7 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).unwrap_err().to_string(),
+            Changelog::parse("", changelog).unwrap_err().to_string(),
             "Unexpected end of file after line 4"
         );
     }
@@ -686,7 +696,7 @@ mod tests {
 ## 0.1.0";
 
         assert_eq!(
-            Changelog::parse(changelog).unwrap_err().to_string(),
+            Changelog::parse("", changelog).unwrap_err().to_string(),
             "Line 1 should be \"# Changelog\""
         );
     }
@@ -711,7 +721,7 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).unwrap_err().to_string(),
+            Changelog::parse("", changelog).unwrap_err().to_string(),
             "Release 0.1.1 should be 0.3.0 due to major bump from 0.2.0"
         );
     }
@@ -723,7 +733,10 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        assert_eq!(Changelog::parse(changelog).unwrap_err().to_string(), "Expected release line 3");
+        assert_eq!(
+            Changelog::parse("", changelog).unwrap_err().to_string(),
+            "Expected release line 3"
+        );
     }
 
     #[test]
@@ -739,7 +752,10 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        assert_eq!(Changelog::parse(changelog).unwrap_err().to_string(), "Expected release line 9");
+        assert_eq!(
+            Changelog::parse("", changelog).unwrap_err().to_string(),
+            "Expected release line 9"
+        );
     }
 
     #[test]
@@ -756,7 +772,7 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).unwrap_err().to_string(),
+            Changelog::parse("", changelog).unwrap_err().to_string(),
             "Invalid skip counter prefix line 5"
         );
     }
@@ -781,7 +797,7 @@ mod tests {
 ";
 
         assert_eq!(
-            Changelog::parse(changelog).unwrap_err().to_string(),
+            Changelog::parse("", changelog).unwrap_err().to_string(),
             "Unexpected prerelease line 9"
         );
     }
@@ -801,7 +817,8 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        let mut changelog = Changelog::parse(changelog_str).expect("Failed to parse changelog.");
+        let mut changelog =
+            Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
 
         changelog.push_description(Severity::Major, "testing no dash").unwrap();
         changelog.push_description(Severity::Major, "- testing with dash").unwrap();
@@ -831,7 +848,8 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        let mut changelog = Changelog::parse(changelog_str).expect("Failed to parse changelog.");
+        let mut changelog =
+            Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
 
         let current_release = changelog.get_or_create_release_mut();
 
@@ -853,7 +871,8 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        let mut changelog = Changelog::parse(changelog_str).expect("Failed to parse changelog.");
+        let mut changelog =
+            Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
 
         let current_release = changelog.get_or_create_release_mut();
 
