@@ -260,10 +260,6 @@ struct Release {
 }
 
 impl Release {
-    fn new(version: &str) -> Result<Self> {
-        Ok(Release { version: Version::parse(version)?, contents: BTreeMap::new() })
-    }
-
     fn push_content(&mut self, severity: Severity, content: &str) -> Result<()> {
         self.contents.entry(severity).or_default().push(content.to_string());
         Ok(())
@@ -805,7 +801,7 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        let mut changelog = Changelog::parse(&changelog_str).expect("Failed to parse changelog.");
+        let mut changelog = Changelog::parse(changelog_str).expect("Failed to parse changelog.");
 
         changelog.push_description(Severity::Major, "testing no dash").unwrap();
         changelog.push_description(Severity::Major, "- testing with dash").unwrap();
@@ -835,7 +831,7 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        let mut changelog = Changelog::parse(&changelog_str).expect("Failed to parse changelog.");
+        let mut changelog = Changelog::parse(changelog_str).expect("Failed to parse changelog.");
 
         let current_release = changelog.get_or_create_release_mut();
 
@@ -857,7 +853,7 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
-        let mut changelog = Changelog::parse(&changelog_str).expect("Failed to parse changelog.");
+        let mut changelog = Changelog::parse(changelog_str).expect("Failed to parse changelog.");
 
         let current_release = changelog.get_or_create_release_mut();
 
