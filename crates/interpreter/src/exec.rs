@@ -16,6 +16,9 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
+#[cfg(feature = "pause")]
+use portable_atomic::AtomicBool;
+
 use crate::error::*;
 use crate::module::*;
 use crate::syntax::*;
@@ -116,6 +119,7 @@ impl<'m> Store<'m> {
     /// access part of the memory that does not exist.
     pub fn instantiate(
         &mut self, module: Module<'m>, memory: &'m mut [u8],
+        #[cfg(feature = "pause")] interrupt: Option<&'m AtomicBool>,
     ) -> Result<InstId, Error> {
         let inst_id = self.insts.len();
         self.insts.push(Instance::default());
@@ -195,8 +199,17 @@ impl<'m> Store<'m> {
             let mut parser = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals));
+            let thread = Thread::new(
+                parser,
+                Frame::new(inst_id, 0, &[], locals),
+                #[cfg(feature = "pause")]
+                interrupt,
+            );
             let result = thread.run(self)?;
+            #[cfg(feature = "pause")]
+            if matches!(result, RunResult::Interrupt()) {
+                return Err(Error::Trap);
+            }
             assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
         }
         Ok(InstId { store_id: self.id, inst_id })
@@ -209,6 +222,7 @@ impl<'m> Store<'m> {
     /// may be corrupted.
     pub fn invoke<'a>(
         &'a mut self, inst: InstId, name: &str, args: Vec<Val>,
+        #[cfg(feature = "pause")] interrupt: &'m AtomicBool,
     ) -> Result<RunResult<'a, 'm>, Error> {
         let inst_id = self.inst_id(inst)?;
         let inst = &self.insts[inst_id];
@@ -225,7 +239,13 @@ impl<'m> Store<'m> {
         let mut locals = args;
         append_locals(&mut parser, &mut locals);
         let frame = Frame::new(inst_id, t.results.len(), &[], locals);
-        Thread::new(parser, frame).run(self)
+        Thread::new(
+            parser,
+            frame,
+            #[cfg(feature = "pause")]
+            Some(interrupt),
+        )
+        .run(self)
     }
 
     /// Returns the value of a global of an instance.
@@ -460,6 +480,8 @@ struct Instance<'m> {
 struct Thread<'m> {
     parser: Parser<'m>,
     frames: Vec<Frame<'m>>,
+    #[cfg(feature = "pause")]
+    interrupt: Option<&'m AtomicBool>,
 }
 
 /// Runtime result.
@@ -470,6 +492,10 @@ pub enum RunResult<'a, 'm> {
 
     /// Execution is calling into the host.
     Host(Call<'a, 'm>),
+
+    #[cfg(feature = "pause")]
+    // Execution pre-empted / interrupted.
+    Interrupt(),
 }
 
 /// Runtime result without host call information.
@@ -484,6 +510,8 @@ impl RunResult<'_, '_> {
         match self {
             RunResult::Done(result) => RunAnswer::Done(result),
             RunResult::Host(_) => RunAnswer::Host,
+            #[cfg(feature = "pause")]
+            RunResult::Interrupt() => RunAnswer::Host,
         }
     }
 }
@@ -724,21 +752,38 @@ enum ThreadResult<'m> {
     Continue(Thread<'m>),
     Done(Vec<Val>),
     Host,
+    #[cfg(feature = "pause")]
+    Interrupt,
 }
 
 impl<'m> Thread<'m> {
-    fn new(parser: Parser<'m>, frame: Frame<'m>) -> Thread<'m> {
-        Thread { parser, frames: vec![frame] }
+    fn new(
+        parser: Parser<'m>, frame: Frame<'m>,
+        #[cfg(feature = "pause")] interrupt: Option<&'m AtomicBool>,
+    ) -> Thread<'m> {
+        Thread {
+            parser,
+            frames: vec![frame],
+            #[cfg(feature = "pause")]
+            interrupt,
+        }
     }
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
         let parser = mut_parser.clone();
-        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new()));
+        let mut thread = Thread::new(
+            parser,
+            Frame::new(inst_id, 1, &[], Vec::new()),
+            #[cfg(feature = "pause")]
+            None,
+        );
         let (parser, results) = loop {
             let p = thread.parser.save();
             match thread.step(store).unwrap() {
                 ThreadResult::Continue(x) => thread = x,
                 ThreadResult::Done(x) => break (p, x),
+                #[cfg(feature = "pause")]
+                ThreadResult::Interrupt => unreachable!(),
                 ThreadResult::Host => unreachable!(),
             }
         };
@@ -757,6 +802,8 @@ impl<'m> Thread<'m> {
                 ThreadResult::Continue(x) => self = x,
                 ThreadResult::Done(x) => return Ok(RunResult::Done(x)),
                 ThreadResult::Host => return Ok(RunResult::Host(Call { store })),
+                #[cfg(feature = "pause")]
+                ThreadResult::Interrupt => return Ok(RunResult::Interrupt()),
             }
         }
     }
@@ -1034,6 +1081,17 @@ impl<'m> Thread<'m> {
         let label = Label { arity, kind, values };
         self.labels().push(label);
     }
+    #[cfg(feature = "pause")]
+    fn check_interrupt_or_continue(self) -> ThreadResult<'m> {
+        if self
+            .interrupt
+            .is_some_and(|interrupt| interrupt.load(core::sync::atomic::Ordering::Relaxed))
+        {
+            return ThreadResult::Interrupt;
+        }
+
+        ThreadResult::Continue(self)
+    }
 
     fn pop_label(mut self, inst: &mut Instance<'m>, l: LabelIdx) -> ThreadResult<'m> {
         let i = self.labels().len() - l as usize - 1;
@@ -1048,6 +1106,9 @@ impl<'m> Thread<'m> {
             LabelKind::Loop(pos) => unsafe { self.parser.restore(pos) },
             LabelKind::Block | LabelKind::If => self.skip_to_end(inst, l),
         }
+        #[cfg(feature = "pause")]
+        return self.check_interrupt_or_continue();
+        #[cfg(not(feature = "pause"))]
         ThreadResult::Continue(self)
     }
 
@@ -1366,6 +1427,9 @@ impl<'m> Thread<'m> {
         let ret = self.parser.save();
         self.parser = parser;
         self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals));
+        #[cfg(feature = "pause")]
+        return Ok(self.check_interrupt_or_continue());
+        #[cfg(not(feature = "pause"))]
         Ok(ThreadResult::Continue(self))
     }
 }

@@ -18,6 +18,8 @@
 use std::collections::HashMap;
 
 use lazy_static::lazy_static;
+#[cfg(feature = "pause")]
+use portable_atomic::AtomicBool;
 use wasefire_interpreter::*;
 use wast::core::{AbstractHeapType, WastArgCore, WastRetCore};
 use wast::lexer::Lexer;
@@ -33,32 +35,68 @@ fn test(repo: &str, name: &str, skip: usize) {
     let wast: Wast = parser::parse(&buffer).unwrap();
     let layout = std::alloc::Layout::from_size_align(pool_size(name), MEMORY_ALIGN).unwrap();
     let pool = unsafe { std::slice::from_raw_parts_mut(std::alloc::alloc(layout), layout.size()) };
-    let mut env = Env::new(pool);
-    env.instantiate("spectest", &SPECTEST);
-    env.register_name("spectest", None);
-    assert!(matches!(env.inst, Sup::Yes(_)));
-    for directive in wast.directives {
-        eprintln!("{name}:{}", directive.span().offset());
-        match directive {
-            WastDirective::Module(QuoteWat::Wat(Wat::Module(mut m))) => {
-                env.instantiate(name, &m.encode().unwrap());
-                env.register_id(m.id, env.inst);
+    #[cfg(feature = "pause")]
+    let interrupt = AtomicBool::new(false);
+    std::thread::scope(|s| {
+        #[cfg(feature = "pause")]
+        s.spawn(|| {
+            if name == "infinite_loop" {
+                interrupt.store(true, std::sync::atomic::Ordering::SeqCst);
             }
-            WastDirective::Module(mut wat) => env.instantiate(name, &wat.encode().unwrap()),
-            WastDirective::AssertMalformed { module, .. } => assert_malformed(&mut env, module),
-            WastDirective::AssertInvalid { module, .. } => assert_invalid(&mut env, module),
-            WastDirective::AssertReturn { exec, results, .. } => {
-                assert_return(&mut env, exec, results)
+        });
+        let mut env = Env::new(
+            pool,
+            #[cfg(feature = "pause")]
+            &interrupt,
+        );
+        env.instantiate(
+            "spectest",
+            &SPECTEST,
+            #[cfg(feature = "pause")]
+            Some(&interrupt),
+        );
+        env.register_name("spectest", None);
+        assert!(matches!(env.inst, Sup::Yes(_)));
+        for directive in wast.directives {
+            eprintln!("{name}:{}", directive.span().offset());
+            match directive {
+                WastDirective::Module(QuoteWat::Wat(Wat::Module(mut m))) => {
+                    env.instantiate(
+                        name,
+                        &m.encode().unwrap(),
+                        #[cfg(feature = "pause")]
+                        Some(&interrupt),
+                    );
+                    env.register_id(m.id, env.inst);
+                }
+                WastDirective::Module(mut wat) => env.instantiate(
+                    name,
+                    &wat.encode().unwrap(),
+                    #[cfg(feature = "pause")]
+                    Some(&interrupt),
+                ),
+                WastDirective::AssertMalformed { module, .. } => assert_malformed(&mut env, module),
+                WastDirective::AssertInvalid { module, .. } => assert_invalid(&mut env, module),
+                WastDirective::AssertReturn { exec, results, .. } => {
+                    assert_return(&mut env, exec, results)
+                }
+                WastDirective::AssertTrap { exec, .. } => assert_trap(
+                    &mut env,
+                    exec,
+                    #[cfg(feature = "pause")]
+                    Some(&interrupt),
+                ),
+                WastDirective::Invoke(invoke) => assert_invoke(&mut env, invoke),
+                WastDirective::AssertExhaustion { call, .. } => assert_exhaustion(&mut env, call),
+                WastDirective::Register { name, module, .. } => env.register_name(name, module),
+                WastDirective::AssertUnlinkable { module, .. } => {
+                    assert_unlinkable(&mut env, module)
+                }
+                _ => unimplemented!("{:?}", directive),
             }
-            WastDirective::AssertTrap { exec, .. } => assert_trap(&mut env, exec),
-            WastDirective::Invoke(invoke) => assert_invoke(&mut env, invoke),
-            WastDirective::AssertExhaustion { call, .. } => assert_exhaustion(&mut env, call),
-            WastDirective::Register { name, module, .. } => env.register_name(name, module),
-            WastDirective::AssertUnlinkable { module, .. } => assert_unlinkable(&mut env, module),
-            _ => unimplemented!("{:?}", directive),
         }
-    }
-    assert_eq!(env.skip, skip);
+        assert_eq!(env.skip, skip);
+    });
 }
 
 fn pool_size(name: &str) -> usize {
@@ -144,12 +182,22 @@ struct Env<'m> {
     store: Store<'m>,
     inst: Sup<InstId>,
     map: HashMap<Id<'m>, Sup<InstId>>,
+    #[cfg(feature = "pause")]
+    interrupt: &'m AtomicBool,
     skip: usize,
 }
 
 impl<'m> Env<'m> {
-    fn new(pool: &'m mut [u8]) -> Self {
-        Env { pool, store: Store::default(), inst: Sup::Uninit, map: HashMap::new(), skip: 0 }
+    fn new(pool: &'m mut [u8], #[cfg(feature = "pause")] interrupt: &'m AtomicBool) -> Self {
+        Env {
+            pool,
+            store: Store::default(),
+            inst: Sup::Uninit,
+            map: HashMap::new(),
+            #[cfg(feature = "pause")]
+            interrupt,
+            skip: 0,
+        }
     }
 
     fn alloc(&mut self, size: usize) -> &'m mut [u8] {
@@ -163,7 +211,10 @@ impl<'m> Env<'m> {
         &mut result[.. size]
     }
 
-    fn maybe_instantiate(&mut self, name: &str, wasm: &[u8]) -> Result<InstId, Error> {
+    fn maybe_instantiate(
+        &mut self, name: &str, wasm: &[u8],
+        #[cfg(feature = "pause")] interrupt: Option<&'m AtomicBool>,
+    ) -> Result<InstId, Error> {
         let module = self.alloc(wasm.len());
         module.copy_from_slice(wasm);
         let module = match Module::new(module) {
@@ -171,19 +222,40 @@ impl<'m> Env<'m> {
             Err(e) => return Err(e),
         };
         let memory = self.alloc(mem_size(name));
-        self.store.instantiate(module, memory)
+        self.store.instantiate(
+            module,
+            memory,
+            #[cfg(feature = "pause")]
+            interrupt,
+        )
     }
 
-    fn instantiate(&mut self, name: &str, wasm: &[u8]) {
-        let inst = self.maybe_instantiate(name, wasm);
+    fn instantiate(
+        &mut self, name: &str, wasm: &[u8],
+        #[cfg(feature = "pause")] interrupt: Option<&'m AtomicBool>,
+    ) {
+        let inst = self.maybe_instantiate(
+            name,
+            wasm,
+            #[cfg(feature = "pause")]
+            interrupt,
+        );
         self.inst = Sup::conv(inst).unwrap();
     }
 
     fn invoke(&mut self, inst_id: InstId, name: &str, args: Vec<Val>) -> Result<Vec<Val>, Error> {
-        Ok(match self.store.invoke(inst_id, name, args)? {
-            RunResult::Done(x) => x,
+        match self.store.invoke(
+            inst_id,
+            name,
+            args,
+            #[cfg(feature = "pause")]
+            self.interrupt,
+        )? {
+            RunResult::Done(x) => Ok(x),
+            #[cfg(feature = "pause")]
+            RunResult::Interrupt() => Ok(vec![Val::I64(1111)]),
             RunResult::Host { .. } => unreachable!(),
-        })
+        }
     }
 
     fn register_name(&mut self, name: &'m str, module: Option<Id<'m>>) {
@@ -293,7 +365,16 @@ fn spectest() -> Vec<u8> {
 }
 
 fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
-    let actual = only_sup!(env, wast_execute(env, exec)).unwrap();
+    let actual = only_sup!(
+        env,
+        wast_execute(
+            env,
+            exec,
+            #[cfg(feature = "pause")]
+            None
+        )
+    )
+    .unwrap();
     assert_eq!(actual.len(), expected.len());
     for (actual, expected) in actual.into_iter().zip(expected.into_iter()) {
         use wast::core::HeapType;
@@ -330,8 +411,22 @@ fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
     }
 }
 
-fn assert_trap(env: &mut Env, exec: WastExecute) {
-    assert_eq!(only_sup!(env, wast_execute(env, exec)), Err(Error::Trap));
+fn assert_trap<'m>(
+    env: &mut Env<'m>, exec: WastExecute,
+    #[cfg(feature = "pause")] interrupt: Option<&'m AtomicBool>,
+) {
+    assert_eq!(
+        only_sup!(
+            env,
+            wast_execute(
+                env,
+                exec,
+                #[cfg(feature = "pause")]
+                interrupt
+            )
+        ),
+        Err(Error::Trap)
+    );
 }
 
 fn assert_invoke(env: &mut Env, invoke: WastInvoke) {
@@ -354,16 +449,32 @@ fn assert_exhaustion(env: &mut Env, call: WastInvoke) {
 }
 
 fn assert_unlinkable(env: &mut Env, mut wat: Wat) {
-    let inst = only_sup!(env, env.maybe_instantiate("", &wat.encode().unwrap()));
+    let inst = only_sup!(
+        env,
+        env.maybe_instantiate(
+            "",
+            &wat.encode().unwrap(),
+            #[cfg(feature = "pause")]
+            None
+        )
+    );
     assert_eq!(inst.err(), Some(Error::NotFound));
 }
 
-fn wast_execute(env: &mut Env, exec: WastExecute) -> Result<Vec<Val>, Error> {
+fn wast_execute<'m>(
+    env: &mut Env<'m>, exec: WastExecute,
+    #[cfg(feature = "pause")] interrupt: Option<&'m AtomicBool>,
+) -> Result<Vec<Val>, Error> {
     match exec {
         WastExecute::Invoke(invoke) => wast_invoke(env, invoke),
-        WastExecute::Wat(mut wat) => {
-            env.maybe_instantiate("", &wat.encode().unwrap()).map(|_| Vec::new())
-        }
+        WastExecute::Wat(mut wat) => env
+            .maybe_instantiate(
+                "",
+                &wat.encode().unwrap(),
+                #[cfg(feature = "pause")]
+                interrupt,
+            )
+            .map(|_| Vec::new()),
         WastExecute::Get { module, global, .. } => {
             let inst_id = env.inst_id(module).res()?;
             env.store.get_global(inst_id, global).map(|x| vec![x])
@@ -436,7 +547,6 @@ macro_rules! test {
     (=5 $name:ident) => { stringify!($name) };
     (=5 $file:literal) => { $file };
 }
-
 test!(address);
 test!(align);
 test!(binary);
@@ -527,3 +637,5 @@ test!(utf8_custom_section_id, "utf8-custom-section-id");
 test!(utf8_import_field, "utf8-import-field");
 test!(utf8_import_module, "utf8-import-module");
 test!(utf8_invalid_encoding, "utf8-invalid-encoding");
+#[cfg(feature = "pause")]
+test!("pause", pause, "infinite_loop");

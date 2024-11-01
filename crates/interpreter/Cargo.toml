@@ -33,6 +33,8 @@ float-types = ["dep:libm"]
 vector-types = []
 # Enable caching for execution.
 cache = ["dep:lru"]
+# Enable pausing / preemption.
+pause = []
 
 [lints]
 clippy.unit-arg = "allow"
