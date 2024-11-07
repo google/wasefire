@@ -567,7 +567,6 @@ impl RustAppletBuild {
             None => (format!("wasm32-unknown-unknown/{profile}/{name}.wasm"), "applet.wasm"),
             Some(target) => (format!("{target}/{profile}/lib{name}.a"), "libapplet.a"),
         };
-        fs::create_dir_all(&self.output_dir).await?;
         let applet = self.output_dir.join(dst);
         if fs::copy_if_changed(target_dir.join(src), &applet).await? && dst.ends_with(".wasm") {
             optimize_wasm(&applet, self.opt_level).await?;
