@@ -4,6 +4,11 @@
 
 ### Major
 
+- Remove `Option` from `action::RustAppletBuild::profile`
+- Remove `dir` argument from `action::RustApplet{Build,Test}::run()` (replaced with the `crate_dir`
+  field)
+- Rename `action::RustAppletBuild::output` to `output_dir`, remove `Option`, and change default
+  value from `target/wasefire` to `wasefire`
 - Change `action::{Transfer,RustApplet{New,Build,Test}}` to consume `self`
 - Remove `Default` for `action::RustAppletBuild` (implement `clap::Parser` instead)
 - Add `action` feature to gate the `action` module
@@ -11,6 +16,7 @@
 
 ### Minor
 
+- Add `action::RustApplet{Build,Test}::crate_dir`
 - Add `action::PlatformInfo` to print platform serial and version
 - Add `cmd::spawn()` for more control on command execution
 - Add `fs::remove_dir_all()` to remove a directory recursively
@@ -40,4 +46,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 8 -->
+<!-- Increment to skip CHANGELOG.md test: 9 -->

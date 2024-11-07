@@ -17,6 +17,7 @@
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::ffi::OsString;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -336,12 +337,12 @@ impl AppletOptions {
     }
 
     async fn execute_rust(self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
-        let dir = if self.name.starts_with(['.', '/']) {
-            self.name.clone()
+        let dir: PathBuf = if self.name.starts_with(['.', '/']) {
+            self.name.into()
         } else {
-            format!("examples/{}/{}", self.lang, self.name)
+            ["examples", &self.lang, &self.name].into_iter().collect()
         };
-        ensure!(fs::exists(&dir).await, "{dir} does not exist");
+        ensure!(fs::exists(&dir).await, "{} does not exist", dir.display());
         let native = match (main.native, &main.native_target, command) {
             (_, Some(target), command) => {
                 if let Some(AppletCommand::Runner(x)) = command {
@@ -359,15 +360,19 @@ impl AppletOptions {
         let mut action = action::RustAppletBuild {
             prod: main.release,
             native: native.map(|x| x.to_string()),
-            profile: self.profile.clone(),
             opt_level: self.opt_level,
             stack_size: self.stack_size,
+            crate_dir: dir,
+            output_dir: "target/wasefire".into(),
             ..action::RustAppletBuild::parse_from::<_, OsString>([])
         };
+        if let Some(profile) = self.profile {
+            action.profile = profile;
+        }
         for features in &self.features {
             action.cargo.push(format!("--features={features}"));
         }
-        action.run(dir).await?;
+        action.run().await?;
         if !main.size && main.footprint.is_none() {
             return Ok(());
         }
