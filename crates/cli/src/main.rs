@@ -56,8 +56,6 @@ enum Action {
         options: action::ConnectionOptions,
         #[command(flatten)]
         action: action::AppletInstall,
-        #[command(subcommand)]
-        command: Option<AppletInstallCommand>,
     },
 
     /// Updates an applet on a platform.
@@ -145,16 +143,6 @@ enum Action {
 
     /// Generates a shell completion file.
     Completion(Completion),
-}
-
-#[derive(clap::Subcommand)]
-enum AppletInstallCommand {
-    /// Waits until the applet exits.
-    #[group(id = "AppletInstallCommand::Wait")]
-    Wait {
-        #[command(flatten)]
-        action: action::AppletExitStatus,
-    },
 }
 
 #[derive(clap::Args)]
@@ -247,16 +235,8 @@ async fn main() -> Result<()> {
     let flags = Flags::parse();
     match flags.action {
         Action::AppletList => bail!("not implemented yet"),
-        Action::AppletInstall { options, action, command } => {
-            let mut connection = options.connect().await?;
-            action.run(&mut connection).await?;
-            match command {
-                None => Ok(()),
-                Some(AppletInstallCommand::Wait { mut action }) => {
-                    action.wait.ensure_wait();
-                    action.run(&mut connection).await
-                }
-            }
+        Action::AppletInstall { options, action } => {
+            action.run(&mut options.connect().await?).await
         }
         Action::AppletUpdate => bail!("not implemented yet"),
         Action::AppletUninstall { options, action } => {
