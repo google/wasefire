@@ -7,7 +7,8 @@
 - Remove `Option` from `action::RustAppletBuild::profile`
 - Remove `dir` argument from `action::RustApplet{Build,Test}::run()` (replaced with the `crate_dir`
   field)
-- Rename `action::RustAppletBuild::output` to `output_dir` and remove `Option`
+- Rename `action::RustAppletBuild::output` to `output_dir`, remove `Option`, and change default
+  value from `target/wasefire` to `wasefire`
 - Change `action::{Transfer,RustApplet{New,Build,Test}}` to consume `self`
 - Remove `Default` for `action::RustAppletBuild` (implement `clap::Parser` instead)
 - Add `action` feature to gate the `action` module

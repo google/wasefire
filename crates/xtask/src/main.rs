@@ -363,6 +363,7 @@ impl AppletOptions {
             opt_level: self.opt_level,
             stack_size: self.stack_size,
             crate_dir: dir,
+            output_dir: "target/wasefire".into(),
             ..action::RustAppletBuild::parse_from::<_, OsString>([])
         };
         if let Some(profile) = self.profile {

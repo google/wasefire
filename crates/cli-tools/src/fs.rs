@@ -81,8 +81,11 @@ pub async fn copy_if_changed(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Re
         changed = src_data != dst_data;
     }
     if changed {
-        copy(&src, dst).await?;
-        tokio::fs::copy(src, dst_orig).await?;
+        if exists(&dst_orig).await {
+            tokio::fs::remove_file(&dst_orig).await?;
+        }
+        copy(&src, &dst).await?;
+        tokio::fs::copy(&src, &dst_orig).await?;
     }
     Ok(changed)
 }
