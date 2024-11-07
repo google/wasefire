@@ -96,38 +96,6 @@ impl Changelog {
         self.releases.first_mut().unwrap()
     }
 
-    async fn write_file(&self, path: &str) -> Result<()> {
-        fs::write(path, self.to_string().as_bytes()).await
-    }
-
-    fn push_description(&mut self, severity: Severity, content: &str) -> Result<()> {
-        let content = if content.starts_with("- ") { content } else { &format!("- {content}") };
-        let current_release = self.get_or_create_release_mut();
-        current_release.push_content(severity, content)
-    }
-
-    // Gets newest (first) release. Creates a new one if newest release is not prerelease.
-    fn get_or_create_release_mut(&mut self) -> &mut Release {
-        let current_release = self.releases.first().unwrap();
-
-        // Current version is released, insert a new one.
-        if current_release.version.pre.is_empty() {
-            let mut next_version = Version::new(
-                current_release.version.major,
-                current_release.version.minor,
-                current_release.version.patch + 1,
-            );
-
-            next_version.pre = Prerelease::new("git").unwrap();
-
-            let new_release = Release::from(next_version);
-
-            self.releases.insert(0, new_release);
-        }
-
-        self.releases.first_mut().unwrap()
-    }
-
     /// Parses and validates a changelog.
     fn parse(crate_path: &str, input: &str) -> Result<Changelog> {
         let mut releases: Vec<Release> = Vec::new();
@@ -362,40 +330,13 @@ pub async fn execute_ci() -> Result<()> {
 }
 
 /// Updates a changelog file and changelog files of dependencies.
-<<<<<<< HEAD
 pub async fn execute_change(path: &str, severity: Severity, description: &str) -> Result<()> {
     let mut changelog = Changelog::read(path).await?;
-||||||| 64ef8cb
-pub async fn execute_change(path: &str, _severity: &Severity, _description: &str) -> Result<()> {
-    ensure!(fs::exists(path).await, "Crate does not exist: {path}");
-=======
-pub async fn execute_change(path: &str, severity: Severity, description: &str) -> Result<()> {
-    let changelog_file_path = format!("{path}/CHANGELOG.md");
->>>>>>> dev/changelog
-
-<<<<<<< HEAD
     changelog.push_description(severity, description)?;
     changelog.write().await?;
     changelog.sync_cargo_toml().await?;
     changelog.sync_dependencies().await?;
-||||||| 64ef8cb
-    let _changelog = Changelog::read_file(&format!("{path}/CHANGELOG.md")).await?;
-=======
-    let mut changelog = Changelog::read_file(&changelog_file_path).await?;
->>>>>>> dev/changelog
-
-<<<<<<< HEAD
     Ok(())
-||||||| 64ef8cb
-    todo!("Implement changelog updates");
-=======
-    changelog.push_description(severity, description)?;
-    changelog.write_file(&changelog_file_path).await?;
-    changelog.sync_cargo_toml(path).await?;
-    changelog.sync_dependencies(path).await?;
-
-    Ok(())
->>>>>>> dev/changelog
 }
 
 #[cfg(test)]
@@ -858,7 +799,6 @@ mod tests {
             "Unexpected prerelease line 9"
         );
     }
-<<<<<<< HEAD
 
     #[test]
     fn push_description_prepends_dash_only_when_needed() {
@@ -938,83 +878,4 @@ mod tests {
         // Assert the new release already inserted
         assert_eq!(changelog.releases.len(), 3);
     }
-||||||| 64ef8cb
-=======
-
-    #[test]
-    fn push_description_prepends_dash_only_when_needed() {
-        let changelog_str = r"# Changelog
-
-## 0.2.0-git
-
-### Major
-
-- A change
-
-## 0.1.0
-
-<!-- Increment to skip CHANGELOG.md test: 0 -->
-";
-
-        let mut changelog = Changelog::parse(changelog_str).expect("Failed to parse changelog.");
-
-        changelog.push_description(Severity::Major, "testing no dash").unwrap();
-        changelog.push_description(Severity::Major, "- testing with dash").unwrap();
-
-        assert_eq!(
-            changelog.get_or_create_release_mut().contents.get(&Severity::Major).unwrap(),
-            &vec![
-                "- A change".to_string(),
-                "- testing no dash".to_string(),
-                "- testing with dash".to_string(),
-            ]
-        );
-    }
-
-    #[test]
-    fn get_or_create_release_mut_uses_first_when_prerelease() {
-        let changelog_str = r"# Changelog
-
-## 0.2.0-git
-
-### Major
-
-- A change
-
-## 0.1.0
-
-<!-- Increment to skip CHANGELOG.md test: 0 -->
-";
-
-        let mut changelog = Changelog::parse(changelog_str).expect("Failed to parse changelog.");
-
-        let current_release = changelog.get_or_create_release_mut();
-
-        assert_eq!(current_release.version, Version::parse("0.2.0-git").unwrap());
-    }
-
-    #[test]
-    fn get_or_create_release_mut_creates_new_when_current_is_released() {
-        let changelog_str = r"# Changelog
-
-## 0.2.0
-
-### Major
-
-- A change
-
-## 0.1.0
-
-<!-- Increment to skip CHANGELOG.md test: 0 -->
-";
-
-        let mut changelog = Changelog::parse(changelog_str).expect("Failed to parse changelog.");
-
-        let current_release = changelog.get_or_create_release_mut();
-
-        assert_eq!(current_release.version, Version::parse("0.2.1-git").unwrap());
-        // Assert the new release already inserted
-        assert_eq!(changelog.releases.len(), 3);
-    }
->>>>>>> dev/changelog
 }
