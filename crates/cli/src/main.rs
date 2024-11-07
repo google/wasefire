@@ -141,6 +141,14 @@ enum Action {
     RustAppletBuild(action::RustAppletBuild),
     RustAppletTest(action::RustAppletTest),
 
+    #[group(id = "Action::RustAppletInstall")]
+    RustAppletInstall {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        action: action::RustAppletInstall,
+    },
+
     /// Generates a shell completion file.
     Completion(Completion),
 }
@@ -264,6 +272,9 @@ async fn main() -> Result<()> {
         Action::RustAppletNew(x) => x.run().await,
         Action::RustAppletBuild(x) => x.run().await,
         Action::RustAppletTest(x) => x.run().await,
+        Action::RustAppletInstall { options, action } => {
+            action.run(&mut options.connect().await?).await
+        }
         Action::Completion(x) => x.run().await,
     }
 }

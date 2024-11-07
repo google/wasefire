@@ -10,6 +10,7 @@
 
 ### Minor
 
+- Add `rust-applet-install` to build and install an applet
 - Add `--crate-dir` for `rust-applet-{build,test}`
 - Add `platform-info` to print platform serial and version
 - Add `host` to start a host platform

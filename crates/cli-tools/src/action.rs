@@ -621,6 +621,29 @@ impl RustAppletTest {
     }
 }
 
+/// Builds and installs a Rust applet from its project.
+#[derive(clap::Parser)]
+pub struct RustAppletInstall {
+    #[clap(flatten)]
+    build: RustAppletBuild,
+
+    #[clap(flatten)]
+    transfer: Transfer,
+
+    #[command(subcommand)]
+    wait: Option<AppletInstallWait>,
+}
+
+impl RustAppletInstall {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let RustAppletInstall { build, transfer, wait } = self;
+        let output = build.output_dir.clone();
+        build.run().await?;
+        let install = AppletInstall { applet: output.join("applet.wasm"), transfer, wait };
+        install.run(connection).await
+    }
+}
+
 #[derive(Copy, Clone, ValueEnum)]
 pub enum OptLevel {
     #[value(name = "0")]
