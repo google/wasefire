@@ -299,7 +299,7 @@ impl Flags {
             MainCommand::Changelog(subcommand) => match subcommand.command {
                 ChangelogCommand::Ci => changelog::execute_ci().await,
                 ChangelogCommand::Change { path, severity, description } => {
-                    changelog::execute_change(&path, &severity, &description).await
+                    changelog::execute_change(&path, severity, &description).await
                 }
             },
         }
