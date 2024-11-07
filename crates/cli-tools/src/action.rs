@@ -342,7 +342,7 @@ pub struct Transfer {
 
 impl Transfer {
     async fn run<S>(
-        &self, connection: &mut dyn Connection, payload: impl AsRef<Path>, message: &'static str,
+        self, connection: &mut dyn Connection, payload: impl AsRef<Path>, message: &'static str,
         finish: Option<impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>>,
     ) -> Result<()>
     where
@@ -364,14 +364,14 @@ impl Transfer {
             )
             .with_message("Starting");
         progress.enable_steady_tick(Duration::from_millis(200));
-        connection.call::<S>(Request::Start { dry_run: *dry_run }).await?.get();
+        connection.call::<S>(Request::Start { dry_run }).await?.get();
         progress.set_message("Writing");
-        for chunk in payload.chunks(*chunk_size) {
+        for chunk in payload.chunks(chunk_size) {
             progress.inc(chunk.len() as u64);
             connection.call::<S>(Request::Write { chunk }).await?.get();
         }
         progress.set_message("Finishing");
-        match (*dry_run, finish) {
+        match (dry_run, finish) {
             (false, Some(finish)) => final_call::<S>(connection, Request::Finish, finish).await?,
             _ => *connection.call::<S>(Request::Finish).await?.get(),
         }
@@ -456,23 +456,23 @@ pub struct RustAppletNew {
 }
 
 impl RustAppletNew {
-    pub async fn run(&self) -> Result<()> {
+    pub async fn run(self) -> Result<()> {
         let RustAppletNew { path, name } = self;
         let mut cargo = Command::new("cargo");
-        cargo.args(["new", "--lib"]).arg(path);
+        cargo.args(["new", "--lib"]).arg(&path);
         if let Some(name) = name {
             cargo.arg(format!("--name={name}"));
         }
         cmd::execute(&mut cargo).await?;
-        cmd::execute(Command::new("cargo").args(["add", "wasefire"]).current_dir(path)).await?;
+        cmd::execute(Command::new("cargo").args(["add", "wasefire"]).current_dir(&path)).await?;
         let mut cargo = Command::new("cargo");
         cargo.args(["add", "wasefire-stub", "--optional"]);
-        cmd::execute(cargo.current_dir(path)).await?;
+        cmd::execute(cargo.current_dir(&path)).await?;
         let mut sed = Command::new("sed");
         sed.arg("-i");
         sed.arg("s#^wasefire-stub\\( = .\"dep:wasefire-stub\"\\)#test\\1, \"wasefire/test\"#");
         sed.arg("Cargo.toml");
-        cmd::execute(sed.current_dir(path)).await?;
+        cmd::execute(sed.current_dir(&path)).await?;
         tokio::fs::remove_file(path.join("src/lib.rs")).await?;
         fs::write(path.join("src/lib.rs"), include_str!("data/lib.rs")).await?;
         Ok(())
@@ -512,7 +512,7 @@ pub struct RustAppletBuild {
 }
 
 impl RustAppletBuild {
-    pub async fn run(&self, dir: impl AsRef<Path>) -> Result<()> {
+    pub async fn run(self, dir: impl AsRef<Path>) -> Result<()> {
         let metadata = metadata(dir.as_ref()).await?;
         let package = &metadata.packages[0];
         let target_dir =
@@ -582,7 +582,7 @@ pub struct RustAppletTest {
 }
 
 impl RustAppletTest {
-    pub async fn run(&self, dir: impl AsRef<Path>) -> Result<()> {
+    pub async fn run(self, dir: impl AsRef<Path>) -> Result<()> {
         let metadata = metadata(dir.as_ref()).await?;
         let package = &metadata.packages[0];
         ensure!(package.features.contains_key("test"), "missing test feature");
