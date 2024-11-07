@@ -490,13 +490,19 @@ pub struct RustAppletBuild {
     #[arg(long, value_name = "TARGET")]
     pub native: Option<String>,
 
-    /// Copies the final artifacts to this directory instead of target/wasefire.
-    #[arg(long, value_name = "DIR", value_hint = ValueHint::DirPath)]
-    pub output: Option<PathBuf>,
+    /// Root directory of the crate.
+    #[arg(long, value_name = "DIRECTORY", default_value = ".")]
+    #[arg(value_hint = ValueHint::DirPath)]
+    pub crate_dir: PathBuf,
 
-    /// Cargo profile, defaults to release.
-    #[arg(long)]
-    pub profile: Option<String>,
+    /// Copies the final artifacts to this directory.
+    #[arg(long, value_name = "DIRECTORY", default_value = "target/wasefire")]
+    #[arg(value_hint = ValueHint::DirPath)]
+    pub output_dir: PathBuf,
+
+    /// Cargo profile.
+    #[arg(long, default_value = "release")]
+    pub profile: String,
 
     /// Optimization level.
     #[clap(long, short = 'O')]
@@ -512,8 +518,8 @@ pub struct RustAppletBuild {
 }
 
 impl RustAppletBuild {
-    pub async fn run(self, dir: impl AsRef<Path>) -> Result<()> {
-        let metadata = metadata(dir.as_ref()).await?;
+    pub async fn run(self) -> Result<()> {
+        let metadata = metadata(&self.crate_dir).await?;
         let package = &metadata.packages[0];
         let target_dir =
             fs::try_relative(std::env::current_dir()?, &metadata.target_directory).await?;
@@ -538,7 +544,7 @@ impl RustAppletBuild {
                 wasefire_feature(package, "native", &mut cargo)?;
             }
         }
-        let profile = self.profile.as_deref().unwrap_or("release");
+        let profile = &self.profile;
         cargo.arg(format!("--profile={profile}"));
         if let Some(level) = self.opt_level {
             cargo.arg(format!("--config=profile.{profile}.opt-level={level}"));
@@ -555,17 +561,13 @@ impl RustAppletBuild {
             cargo.env("WASEFIRE_DEBUG", "");
         }
         cargo.env("RUSTFLAGS", rustflags.join(" "));
-        cargo.current_dir(dir);
+        cargo.current_dir(&self.crate_dir);
         cmd::execute(&mut cargo).await?;
-        let out_dir = match &self.output {
-            Some(x) => x.clone(),
-            None => "target/wasefire".into(),
-        };
         let (src, dst) = match &self.native {
             None => (format!("wasm32-unknown-unknown/{profile}/{name}.wasm"), "applet.wasm"),
             Some(target) => (format!("{target}/{profile}/lib{name}.a"), "libapplet.a"),
         };
-        let applet = out_dir.join(dst);
+        let applet = self.output_dir.join(dst);
         if fs::copy_if_changed(target_dir.join(src), &applet).await? && dst.ends_with(".wasm") {
             optimize_wasm(&applet, self.opt_level).await?;
         }
@@ -576,14 +578,19 @@ impl RustAppletBuild {
 /// Runs the unit-tests of a Rust applet project.
 #[derive(clap::Args)]
 pub struct RustAppletTest {
+    /// Root directory of the crate.
+    #[arg(long, value_name = "DIRECTORY", default_value = ".")]
+    #[arg(value_hint = ValueHint::DirPath)]
+    crate_dir: PathBuf,
+
     /// Extra arguments to cargo, e.g. --features=foo.
     #[clap(last = true)]
     cargo: Vec<String>,
 }
 
 impl RustAppletTest {
-    pub async fn run(self, dir: impl AsRef<Path>) -> Result<()> {
-        let metadata = metadata(dir.as_ref()).await?;
+    pub async fn run(self) -> Result<()> {
+        let metadata = metadata(&self.crate_dir).await?;
         let package = &metadata.packages[0];
         ensure!(package.features.contains_key("test"), "missing test feature");
         let mut cargo = Command::new("cargo");

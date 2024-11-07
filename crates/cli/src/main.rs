@@ -245,7 +245,6 @@ impl Completion {
 async fn main() -> Result<()> {
     env_logger::init();
     let flags = Flags::parse();
-    let dir = std::env::current_dir()?;
     match flags.action {
         Action::AppletList => bail!("not implemented yet"),
         Action::AppletInstall { options, action, command } => {
@@ -283,8 +282,8 @@ async fn main() -> Result<()> {
         Action::PlatformLock { options, action } => action.run(&mut options.connect().await?).await,
         Action::PlatformRpc { options, action } => action.run(&mut options.connect().await?).await,
         Action::RustAppletNew(x) => x.run().await,
-        Action::RustAppletBuild(x) => x.run(dir).await,
-        Action::RustAppletTest(x) => x.run(dir).await,
+        Action::RustAppletBuild(x) => x.run().await,
+        Action::RustAppletTest(x) => x.run().await,
         Action::Completion(x) => x.run().await,
     }
 }
