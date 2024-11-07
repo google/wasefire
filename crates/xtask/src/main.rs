@@ -154,19 +154,9 @@ enum AppletCommand {
         #[command(flatten)]
         options: action::ConnectionOptions,
         #[command(flatten)]
-        action: action::Transfer,
+        transfer: action::Transfer,
         #[command(subcommand)]
-        command: Option<AppletInstallCommand>,
-    },
-}
-
-#[derive(clap::Subcommand)]
-enum AppletInstallCommand {
-    /// Waits until the applet exits.
-    #[group(id = "AppletInstallCommand::Wait")]
-    Wait {
-        #[command(flatten)]
-        action: action::AppletExitStatus,
+        wait: Option<action::AppletInstallWait>,
     },
 }
 
@@ -418,19 +408,13 @@ impl AppletCommand {
     async fn execute(self, main: &MainOptions) -> Result<()> {
         match self {
             AppletCommand::Runner(runner) => runner.execute(main).await,
-            AppletCommand::Install { options, action, command } => {
+            AppletCommand::Install { options, transfer, mut wait } => {
                 let applet = "target/wasefire/applet.wasm".into();
-                let action = action::AppletInstall { applet, transfer: action };
-                let mut connection = options.connect().await?;
-                action.run(&mut connection).await?;
-                match command {
-                    None => Ok(()),
-                    Some(AppletInstallCommand::Wait { mut action }) => {
-                        action.wait.ensure_wait();
-                        action.ensure_exit();
-                        action.run(&mut connection).await
-                    }
+                if let Some(action::AppletInstallWait::Wait { action }) = &mut wait {
+                    action.ensure_exit();
                 }
+                let action = action::AppletInstall { applet, transfer, wait };
+                action.run(&mut options.connect().await?).await
             }
         }
     }

@@ -75,14 +75,34 @@ pub struct AppletInstall {
 
     #[clap(flatten)]
     pub transfer: Transfer,
+
+    #[command(subcommand)]
+    pub wait: Option<AppletInstallWait>,
+}
+
+#[derive(clap::Subcommand)]
+pub enum AppletInstallWait {
+    /// Waits until the applet exits.
+    #[group(id = "AppletInstallWait::Wait")]
+    Wait {
+        #[command(flatten)]
+        action: AppletExitStatus,
+    },
 }
 
 impl AppletInstall {
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
-        let AppletInstall { applet, transfer } = self;
+        let AppletInstall { applet, transfer, wait } = self;
         transfer
             .run::<service::AppletInstall>(connection, applet, "Installed", None::<fn(_) -> _>)
-            .await
+            .await?;
+        match wait {
+            Some(AppletInstallWait::Wait { mut action }) => {
+                action.wait.ensure_wait();
+                action.run(connection).await
+            }
+            None => Ok(()),
+        }
     }
 }
 

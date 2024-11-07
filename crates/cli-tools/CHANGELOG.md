@@ -16,6 +16,7 @@
 
 ### Minor
 
+- Add `action::AppletInstall::wait` to wait for exit status
 - Add `action::RustApplet{Build,Test}::crate_dir`
 - Add `action::PlatformInfo` to print platform serial and version
 - Add `cmd::spawn()` for more control on command execution
