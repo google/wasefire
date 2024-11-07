@@ -97,7 +97,7 @@ impl Changelog {
     }
 
     /// Parses and validates a changelog.
-    fn parse(crate_path: &str, input: &str) -> Result<Changelog> {
+    fn parse(crate_path: impl Into<String>, input: &str) -> Result<Changelog> {
         let mut releases: Vec<Release> = Vec::new();
         let mut parser = Parser::new(input.lines());
         parser.read_exact("# Changelog")?;
@@ -172,7 +172,7 @@ impl Changelog {
             .parse()
             .with_context(|| anyhow!("Invalid skip counter {parser}"))?;
         parser.done()?;
-        let result = Changelog { crate_path: crate_path.to_string(), releases, skip_counter };
+        let result = Changelog { crate_path: crate_path.into(), releases, skip_counter };
         assert_eq!(format!("{result}"), input);
         Ok(result)
     }
@@ -208,7 +208,7 @@ impl Changelog {
 
 impl Display for Changelog {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Changelog { crate_path: _, releases, skip_counter } = self;
+        let Changelog { releases, skip_counter, .. } = self;
         writeln!(f, "# Changelog\n")?;
         for release in releases {
             write!(f, "{release}")?;
