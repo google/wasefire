@@ -68,15 +68,18 @@ impl Changelog {
         fs::write(self.changelog_path(), self.to_string().as_bytes()).await
     }
 
-    fn push_description(&mut self, severity: Severity, content: &str) -> Result<()> {
-        let content = if content.starts_with("- ") { content } else { &format!("- {content}") };
-        let current_release = self.get_or_create_release_mut();
-        current_release.push_content(severity, content)
+    fn get_current_release(&self) -> &Release {
+        self.releases.first().unwrap()
     }
 
-    // Gets newest (first) release. Creates a new one if newest release is not prerelease.
-    fn get_or_create_release_mut(&mut self) -> &mut Release {
-        let current_release = self.releases.first().unwrap();
+    fn get_current_release_mut(&mut self) -> &mut Release {
+        self.releases.first_mut().unwrap()
+    }
+
+    fn push_description(&mut self, severity: Severity, content: &str) -> Result<()> {
+        let content = if content.starts_with("- ") { content } else { &format!("- {content}") };
+
+        let current_release = self.get_current_release();
 
         // Current version is released, insert a new one.
         if current_release.version.pre.is_empty() {
@@ -93,7 +96,12 @@ impl Changelog {
             self.releases.insert(0, new_release);
         }
 
-        self.releases.first_mut().unwrap()
+        let current_release = self.get_current_release_mut();
+
+        // Push content onto release
+        current_release.contents.entry(severity).or_default().push(content.to_string());
+
+        Ok(())
     }
 
     /// Parses and validates a changelog.
@@ -181,14 +189,14 @@ impl Changelog {
         let path = &self.crate_path;
         let metadata = metadata(path).await?;
         ensure!(
-            self.releases.first().unwrap().version == metadata.packages[0].version,
+            self.get_current_release().version == metadata.packages[0].version,
             "Version mismatch between Cargo.toml and CHANGELOG.md for {path}"
         );
         Ok(())
     }
 
     async fn sync_cargo_toml(&self) -> Result<()> {
-        let expected_version = &self.releases.first().unwrap().version;
+        let expected_version = &self.get_current_release().version;
 
         let mut sed = Command::new("sed");
         sed.arg("-i");
@@ -264,13 +272,6 @@ impl<'a, I: Iterator<Item = &'a str>> Parser<'a, I> {
 struct Release {
     version: Version,
     contents: BTreeMap<Severity, Vec<String>>,
-}
-
-impl Release {
-    fn push_content(&mut self, severity: Severity, content: &str) -> Result<()> {
-        self.contents.entry(severity).or_default().push(content.to_string());
-        Ok(())
-    }
 }
 
 impl From<Version> for Release {
@@ -822,7 +823,7 @@ mod tests {
         changelog.push_description(Severity::Major, "- testing with dash").unwrap();
 
         assert_eq!(
-            changelog.get_or_create_release_mut().contents.get(&Severity::Major).unwrap(),
+            changelog.get_current_release().contents.get(&Severity::Major).unwrap(),
             &vec![
                 "- A change".to_string(),
                 "- testing no dash".to_string(),
@@ -832,7 +833,7 @@ mod tests {
     }
 
     #[test]
-    fn get_or_create_release_mut_uses_first_when_prerelease() {
+    fn push_description_uses_first_release_when_prerelease() {
         let changelog_str = r"# Changelog
 
 ## 0.2.0-git
@@ -849,13 +850,13 @@ mod tests {
         let mut changelog =
             Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
 
-        let current_release = changelog.get_or_create_release_mut();
+        changelog.push_description(Severity::Major, "asdf").expect("Failed to push description.");
 
-        assert_eq!(current_release.version, Version::parse("0.2.0-git").unwrap());
+        assert_eq!(changelog.get_current_release().version, Version::parse("0.2.0-git").unwrap());
     }
 
     #[test]
-    fn get_or_create_release_mut_creates_new_when_current_is_released() {
+    fn push_description_creates_new_release_when_current_is_released() {
         let changelog_str = r"# Changelog
 
 ## 0.2.0
@@ -872,9 +873,9 @@ mod tests {
         let mut changelog =
             Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
 
-        let current_release = changelog.get_or_create_release_mut();
+        changelog.push_description(Severity::Major, "asdf").expect("Failed to push description.");
 
-        assert_eq!(current_release.version, Version::parse("0.2.1-git").unwrap());
+        assert_eq!(changelog.get_current_release().version, Version::parse("0.2.1-git").unwrap());
         // Assert the new release already inserted
         assert_eq!(changelog.releases.len(), 3);
     }
