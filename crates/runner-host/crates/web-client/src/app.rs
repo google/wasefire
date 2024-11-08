@@ -26,7 +26,8 @@ use crate::hooks::use_runner_connection;
 pub fn app() -> Html {
     let runner_connection = {
         let host = window().location().host().unwrap_throw();
-        let web_socket_url = format!("ws://{host}/board");
+        let scheme = window().location().protocol().unwrap_throw().replace("http", "ws");
+        let web_socket_url = format!("{scheme}//{host}/board");
         info!("Connecting to runner at {web_socket_url}");
         use_runner_connection(web_socket_url)
     };
