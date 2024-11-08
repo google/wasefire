@@ -23,12 +23,13 @@ use tokio::process::{Child, Command};
 /// Spawns a command.
 pub fn spawn(command: &mut Command) -> Result<Child> {
     debug!("{:?}", command.as_std());
-    Ok(command.spawn()?)
+    command.spawn().with_context(|| context(command))
 }
 
 /// Executes a command making sure it's successful.
 pub async fn execute(command: &mut Command) -> Result<()> {
-    let code = spawn(command)?.wait().await?.code().context("no error code")?;
+    let status = spawn(command)?.wait().await.with_context(|| context(command))?;
+    let code = status.code().context("no error code")?;
     ensure!(code == 0, "failed with code {code}");
     Ok(())
 }
@@ -42,7 +43,7 @@ pub fn replace(mut command: Command) -> ! {
 /// Executes the command making sure it's successful and returns its output.
 pub async fn output(command: &mut Command) -> Result<Output> {
     debug!("{:?}", command.as_std());
-    let output = command.output().await?;
+    let output = command.output().await.with_context(|| context(command))?;
     ensure!(output.status.success(), "failed with status {}", output.status);
     Ok(output)
 }
@@ -53,4 +54,8 @@ pub async fn output_line(command: &mut Command) -> Result<String> {
     assert!(output.stderr.is_empty());
     assert_eq!(output.stdout.pop(), Some(b'\n'));
     Ok(String::from_utf8(output.stdout)?)
+}
+
+fn context(command: &Command) -> String {
+    format!("executing {:?}", command.as_std())
 }

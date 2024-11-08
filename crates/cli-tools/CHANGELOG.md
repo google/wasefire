@@ -42,6 +42,7 @@
 
 ### Patch
 
+- Improve error reporting when executing commands
 - Fix incorrect error with UNIX and TCP platform protocols
 - Only print commands and file system operations when warnings are logged
 - Update dependencies
