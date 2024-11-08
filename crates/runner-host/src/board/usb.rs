@@ -131,7 +131,7 @@ impl State {
 
 fn spawn(cmd: &[&str]) -> Result<Child> {
     println!("Executing: {}", cmd.join(" "));
-    Ok(Command::new(cmd[0]).args(&cmd[1 ..]).stdin(Stdio::null()).spawn()?)
+    cmd::spawn(Command::new(cmd[0]).args(&cmd[1 ..]).stdin(Stdio::null()))
 }
 
 async fn has_mod(name: &str) -> Result<bool> {
