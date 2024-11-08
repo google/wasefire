@@ -55,7 +55,7 @@ struct Flags {
     dir: PathBuf,
 
     /// Transport to listen to for the platform protocol.
-    #[arg(long, default_value = "usb")]
+    #[arg(long, default_value = "usb", env = "WASEFIRE_PROTOCOL")]
     protocol: Protocol,
 
     /// Socket address to bind to when --protocol=tcp (ignored otherwise).
