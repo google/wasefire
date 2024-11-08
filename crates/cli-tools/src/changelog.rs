@@ -68,32 +68,37 @@ impl Changelog {
         fs::write(self.changelog_path(), self.to_string().as_bytes()).await
     }
 
-    fn push_description(&mut self, severity: Severity, content: &str) -> Result<()> {
-        let content = if content.starts_with("- ") { content } else { &format!("- {content}") };
-        let current_release = self.get_or_create_release_mut();
-        current_release.push_content(severity, content)
+    fn get_current_release(&self) -> &Release {
+        self.releases.first().unwrap()
     }
 
-    // Gets newest (first) release. Creates a new one if newest release is not prerelease.
-    fn get_or_create_release_mut(&mut self) -> &mut Release {
-        let current_release = self.releases.first().unwrap();
+    fn get_current_release_mut(&mut self) -> &mut Release {
+        self.releases.first_mut().unwrap()
+    }
 
-        // Current version is released, insert a new one.
-        if current_release.version.pre.is_empty() {
-            let mut next_version = Version::new(
-                current_release.version.major,
-                current_release.version.minor,
-                current_release.version.patch + 1,
-            );
+    fn push_description(&mut self, severity: Severity, content: &str) -> Result<()> {
+        let content = if content.starts_with("- ") { content } else { &format!("- {content}") };
 
-            next_version.pre = Prerelease::new("git").unwrap();
+        let current_release = self.get_current_release();
+        let is_new_release_needed =
+            current_release.version.pre.is_empty() || current_release.get_max_severity() > severity;
 
-            let new_release = Release::from(next_version);
+        if is_new_release_needed {
+            let mut new_release = Release::from(current_release.version.clone());
+
+            new_release.increment_version(severity);
 
             self.releases.insert(0, new_release);
         }
 
-        self.releases.first_mut().unwrap()
+        // Push content onto release
+        self.get_current_release_mut()
+            .contents
+            .entry(severity)
+            .or_default()
+            .push(content.to_string());
+
+        Ok(())
     }
 
     /// Parses and validates a changelog.
@@ -181,14 +186,14 @@ impl Changelog {
         let path = &self.crate_path;
         let metadata = metadata(path).await?;
         ensure!(
-            self.releases.first().unwrap().version == metadata.packages[0].version,
+            self.get_current_release().version == metadata.packages[0].version,
             "Version mismatch between Cargo.toml and CHANGELOG.md for {path}"
         );
         Ok(())
     }
 
     async fn sync_cargo_toml(&self) -> Result<()> {
-        let expected_version = &self.releases.first().unwrap().version;
+        let expected_version = &self.get_current_release().version;
 
         let mut sed = Command::new("sed");
         sed.arg("-i");
@@ -266,16 +271,53 @@ struct Release {
     contents: BTreeMap<Severity, Vec<String>>,
 }
 
-impl Release {
-    fn push_content(&mut self, severity: Severity, content: &str) -> Result<()> {
-        self.contents.entry(severity).or_default().push(content.to_string());
-        Ok(())
-    }
-}
-
 impl From<Version> for Release {
     fn from(version: Version) -> Self {
         Release { version, contents: BTreeMap::new() }
+    }
+}
+
+impl Release {
+    fn get_max_severity(&self) -> Severity {
+        for severity in [Severity::Major, Severity::Minor, Severity::Patch] {
+            if self.contents.contains_key(&severity) {
+                return severity;
+            }
+        }
+
+        Severity::Patch
+    }
+
+    fn increment_version(&mut self, severity: Severity) {
+        let mut next_version = self.version.clone();
+
+        next_version.pre = Prerelease::new("git").unwrap();
+
+        match severity {
+            Severity::Patch => {
+                next_version.patch += 1;
+            }
+            Severity::Minor => {
+                if next_version.major == 0 {
+                    next_version.patch += 1;
+                } else {
+                    next_version.minor += 1;
+                    next_version.patch = 0;
+                }
+            }
+            Severity::Major => {
+                if next_version.major == 0 {
+                    next_version.minor += 1;
+                    next_version.patch = 0;
+                } else {
+                    next_version.major += 1;
+                    next_version.minor = 0;
+                    next_version.patch = 0;
+                }
+            }
+        }
+
+        self.version = next_version;
     }
 }
 
@@ -822,7 +864,7 @@ mod tests {
         changelog.push_description(Severity::Major, "- testing with dash").unwrap();
 
         assert_eq!(
-            changelog.get_or_create_release_mut().contents.get(&Severity::Major).unwrap(),
+            changelog.get_current_release().contents.get(&Severity::Major).unwrap(),
             &vec![
                 "- A change".to_string(),
                 "- testing no dash".to_string(),
@@ -832,7 +874,7 @@ mod tests {
     }
 
     #[test]
-    fn get_or_create_release_mut_uses_first_when_prerelease() {
+    fn push_description_uses_first_release_when_prerelease() {
         let changelog_str = r"# Changelog
 
 ## 0.2.0-git
@@ -849,13 +891,13 @@ mod tests {
         let mut changelog =
             Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
 
-        let current_release = changelog.get_or_create_release_mut();
+        changelog.push_description(Severity::Major, "asdf").expect("Failed to push description.");
 
-        assert_eq!(current_release.version, Version::parse("0.2.0-git").unwrap());
+        assert_eq!(changelog.get_current_release().version, Version::parse("0.2.0-git").unwrap());
     }
 
     #[test]
-    fn get_or_create_release_mut_creates_new_when_current_is_released() {
+    fn push_description_creates_new_release_when_current_is_released() {
         let changelog_str = r"# Changelog
 
 ## 0.2.0
@@ -872,10 +914,146 @@ mod tests {
         let mut changelog =
             Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
 
-        let current_release = changelog.get_or_create_release_mut();
+        changelog.push_description(Severity::Patch, "asdf").expect("Failed to push description.");
 
-        assert_eq!(current_release.version, Version::parse("0.2.1-git").unwrap());
-        // Assert the new release already inserted
-        assert_eq!(changelog.releases.len(), 3);
+        assert_eq!(changelog.get_current_release().version, Version::parse("0.2.1-git").unwrap());
+    }
+
+    #[test]
+    fn push_description_creates_new_release_when_pushed_severity_is_first_of_higher() {
+        let changelog_str = r"# Changelog
+
+## 0.1.1-git
+
+### Minor
+
+- A change
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
+
+        let mut changelog =
+            Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
+
+        changelog.push_description(Severity::Major, "asdf").expect("Failed to push description.");
+
+        assert_eq!(changelog.get_current_release().version, Version::parse("0.2.0-git").unwrap());
+    }
+
+    #[test]
+    fn push_description_major_increments_stable() {
+        let changelog_str = r"# Changelog
+
+## 1.0.0
+
+### Major
+
+- A change
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
+
+        let mut changelog =
+            Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
+
+        changelog.push_description(Severity::Major, "asdf").expect("Failed to push description.");
+
+        assert_eq!(changelog.get_current_release().version, Version::parse("2.0.0-git").unwrap());
+    }
+
+    #[test]
+    fn push_description_major_increments_unstable() {
+        let changelog_str = r"# Changelog
+
+## 0.1.1
+
+### Minor
+
+- A change
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
+
+        let mut changelog =
+            Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
+
+        changelog.push_description(Severity::Major, "asdf").expect("Failed to push description.");
+
+        assert_eq!(changelog.get_current_release().version, Version::parse("0.2.0-git").unwrap());
+    }
+
+    #[test]
+    fn push_description_minor_increments_stable() {
+        let changelog_str = r"# Changelog
+
+## 1.0.0
+
+### Major
+
+- A change
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
+
+        let mut changelog =
+            Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
+
+        changelog.push_description(Severity::Minor, "asdf").expect("Failed to push description.");
+
+        assert_eq!(changelog.get_current_release().version, Version::parse("1.1.0-git").unwrap());
+    }
+
+    #[test]
+    fn push_description_minor_increments_unstable() {
+        let changelog_str = r"# Changelog
+
+## 0.1.1
+
+### Minor
+
+- A change
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
+
+        let mut changelog =
+            Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
+
+        changelog.push_description(Severity::Minor, "asdf").expect("Failed to push description.");
+
+        assert_eq!(changelog.get_current_release().version, Version::parse("0.1.2-git").unwrap());
+    }
+
+    #[test]
+    fn push_description_patch_increments() {
+        let changelog_str = r"# Changelog
+
+## 0.1.1
+
+### Minor
+
+- A change
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 0 -->
+";
+
+        let mut changelog =
+            Changelog::parse("", changelog_str).expect("Failed to parse changelog.");
+
+        changelog.push_description(Severity::Patch, "asdf").expect("Failed to push description.");
+
+        assert_eq!(changelog.get_current_release().version, Version::parse("0.1.2-git").unwrap());
     }
 }
