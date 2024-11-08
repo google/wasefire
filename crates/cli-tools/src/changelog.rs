@@ -80,10 +80,10 @@ impl Changelog {
         let content = if content.starts_with("- ") { content } else { &format!("- {content}") };
 
         let current_release = self.get_current_release();
-        let new_release_needed =
+        let is_new_release_needed =
             current_release.version.pre.is_empty() || current_release.get_max_severity() > severity;
 
-        if new_release_needed {
+        if is_new_release_needed {
             let mut new_release = Release::from(current_release.version.clone());
 
             new_release.increment_version(severity);
@@ -91,10 +91,12 @@ impl Changelog {
             self.releases.insert(0, new_release);
         }
 
-        let current_release = self.get_current_release_mut();
-
         // Push content onto release
-        current_release.contents.entry(severity).or_default().push(content.to_string());
+        self.get_current_release_mut()
+            .contents
+            .entry(severity)
+            .or_default()
+            .push(content.to_string());
 
         Ok(())
     }
