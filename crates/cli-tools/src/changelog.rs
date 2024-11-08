@@ -21,6 +21,7 @@ use core::str;
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::io::BufRead;
+use std::path::PathBuf;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use clap::ValueEnum;
@@ -49,19 +50,21 @@ impl Display for Severity {
 
 #[derive(Debug, Default, PartialEq, Eq)]
 struct Changelog {
-    crate_path: String,
+    crate_path: PathBuf,
     releases: Vec<Release>,
     skip_counter: u32,
 }
 
 impl Changelog {
-    fn changelog_path(&self) -> String {
-        format!("{}/CHANGELOG.md", self.crate_path)
+    fn changelog_path(&self) -> PathBuf {
+        self.crate_path.join("CHANGELOG.md")
     }
 
     async fn read(path: &str) -> Result<Changelog> {
-        let changelog_path = format!("{path}/CHANGELOG.md");
-        Self::parse(path, &String::from_utf8(fs::read(changelog_path).await?)?)
+        Self::parse(
+            path,
+            &String::from_utf8(fs::read(PathBuf::from(path).join("CHANGELOG.md")).await?)?,
+        )
     }
 
     async fn write(&self) -> Result<()> {
@@ -97,7 +100,7 @@ impl Changelog {
     }
 
     /// Parses and validates a changelog.
-    fn parse(crate_path: impl Into<String>, input: &str) -> Result<Changelog> {
+    fn parse(crate_path: impl Into<PathBuf>, input: &str) -> Result<Changelog> {
         let mut releases: Vec<Release> = Vec::new();
         let mut parser = Parser::new(input.lines());
         parser.read_exact("# Changelog")?;
@@ -182,7 +185,7 @@ impl Changelog {
         let metadata = metadata(path).await?;
         ensure!(
             self.releases.first().unwrap().version == metadata.packages[0].version,
-            "Version mismatch between Cargo.toml and CHANGELOG.md for {path}"
+            "Version mismatch between Cargo.toml and CHANGELOG.md for {path:?}"
         );
         Ok(())
     }
@@ -389,7 +392,7 @@ mod tests {
         assert_eq!(
             Changelog::parse("path", changelog).unwrap(),
             Changelog {
-                crate_path: "path".to_string(),
+                crate_path: "path".into(),
                 releases: vec![
                     Release {
                         version: Version::parse("0.3.0").unwrap(),
@@ -532,7 +535,7 @@ mod tests {
         assert_eq!(
             Changelog::parse("path", changelog).unwrap(),
             Changelog {
-                crate_path: "path".to_string(),
+                crate_path: "path".into(),
                 releases: vec![
                     Release {
                         version: Version::parse("0.2.0").unwrap(),
@@ -586,7 +589,7 @@ mod tests {
         assert_eq!(
             Changelog::parse("path", changelog).unwrap(),
             Changelog {
-                crate_path: "path".to_string(),
+                crate_path: "path".into(),
                 releases: vec![
                     Release {
                         version: Version::parse("0.2.0").unwrap(),
@@ -642,7 +645,7 @@ mod tests {
         assert_eq!(
             Changelog::parse("path", changelog).unwrap(),
             Changelog {
-                crate_path: "path".to_string(),
+                crate_path: "path".into(),
                 releases: vec![Release {
                     version: Version::parse("0.1.0").unwrap(),
                     contents: BTreeMap::new(),
@@ -664,7 +667,7 @@ mod tests {
         assert_eq!(
             Changelog::parse("path", changelog).unwrap(),
             Changelog {
-                crate_path: "path".to_string(),
+                crate_path: "path".into(),
                 releases: vec![Release {
                     version: Version::parse("0.1.0").unwrap(),
                     contents: BTreeMap::new(),
