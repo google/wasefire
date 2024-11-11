@@ -40,11 +40,11 @@ fn test(repo: &str, name: &str, skip: usize) {
     for directive in wast.directives {
         eprintln!("{name}:{}", directive.span().offset());
         match directive {
-            WastDirective::Wat(QuoteWat::Wat(Wat::Module(mut m))) => {
+            WastDirective::Module(QuoteWat::Wat(Wat::Module(mut m))) => {
                 env.instantiate(name, &m.encode().unwrap());
                 env.register_id(m.id, env.inst);
             }
-            WastDirective::Wat(mut wat) => env.instantiate(name, &wat.encode().unwrap()),
+            WastDirective::Module(mut wat) => env.instantiate(name, &wat.encode().unwrap()),
             WastDirective::AssertMalformed { module, .. } => assert_malformed(&mut env, module),
             WastDirective::AssertInvalid { module, .. } => assert_invalid(&mut env, module),
             WastDirective::AssertReturn { exec, results, .. } => {
@@ -71,7 +71,7 @@ fn pool_size(name: &str) -> usize {
         "linking" => 0x1000000,
         "memory_copy" => 0x400000,
         "memory_fill" => 0x200000,
-        "memory_grow" => 0x400000,
+        "memory_grow" => 0x800000,
         "memory_init" => 0x400000,
         "memory_trap" => 0x200000,
         _ => 0x100000,

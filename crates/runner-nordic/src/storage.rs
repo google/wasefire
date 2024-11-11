@@ -229,7 +229,7 @@ impl<'a> Helper<'a> {
     }
 }
 
-impl<'a> Drop for Helper<'a> {
+impl Drop for Helper<'_> {
     fn drop(&mut self) {
         let (driver, storage) = self.nvmc.take().unwrap().free();
         DRIVER.put(driver);

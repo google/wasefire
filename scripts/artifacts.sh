@@ -23,13 +23,14 @@ i "Generate notes.txt"
 cat <<EOF > notes.txt
 See the [changelog] for the list of changes in this release.
 
-You can use the following command to verify a downloaded asset:
+You can use the following command to check your downloaded assets:
 
-    gh attestation verify --repo=google/wasefire <asset-path>
+    sha256sum --ignore-missing --check sha256sum.txt
 
-You may also download the provenance attestation and use the \`--bundle\` flag:
+You can use one of the following commands to verify a downloaded asset:
 
-    gh attestation verify --owner=google --bundle=attestation.intoto.jsonl <asset-path>
+    gh attestation verify --repo=google/wasefire ASSET_PATH
+    gh attestation verify --owner=google --bundle=attestation.intoto.jsonl ASSET_PATH
 
 [changelog]: https://github.com/google/wasefire/blob/main/docs/releases/$DATE.md
 EOF
@@ -48,9 +49,11 @@ for target in $TARGETS; do
     cargo build --manifest-path=crates/runner-host/Cargo.toml --release --target=$target \
       --features=debug,wasm
     export WASEFIRE_HOST_PLATFORM=$PWD/target/$target/release/runner-host
-    cargo build --manifest-path=crates/cli/Cargo.toml --release --target=$target
+    cargo build --manifest-path=crates/cli/Cargo.toml --release --target=$target --features=_prod
+    cp target/$target/release/wasefire artifacts/wasefire-$target
+    cd artifacts
+    tar czf wasefire-$target.tar.gz wasefire-$target
+    rm wasefire-$target
   )
-  artifact=artifacts/wasefire-$target
-  cp target/$target/release/wasefire $artifact
-  echo "$artifact#Wasefire CLI ($target)" >> artifacts.txt
+  echo "artifacts/wasefire-$target.tar.gz#Wasefire CLI ($target)" >> artifacts.txt
 done

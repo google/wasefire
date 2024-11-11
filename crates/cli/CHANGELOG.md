@@ -4,11 +4,14 @@
 
 ### Major
 
+- Rename `--output` to `--output-dir` for `rust-applet-build`
 - Rename `--serial` to `--protocol` with more support
 - Move `--serial` and `--timeout` to commands that need them
 
 ### Minor
 
+- Add `rust-applet-install` to build and install an applet
+- Add `--crate-dir` for `rust-applet-{build,test}`
 - Add `platform-info` to print platform serial and version
 - Add `host` to start a host platform
 - Support `RUST_LOG` to control logging
@@ -47,4 +50,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 10 -->
+<!-- Increment to skip CHANGELOG.md test: 12 -->

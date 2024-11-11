@@ -4,12 +4,21 @@
 
 ### Major
 
+- Remove `Option` from `action::RustAppletBuild::profile`
+- Remove `dir` argument from `action::RustApplet{Build,Test}::run()` (replaced with the `crate_dir`
+  field)
+- Rename `action::RustAppletBuild::output` to `output_dir`, remove `Option`, and change default
+  value from `target/wasefire` to `wasefire`
+- Change `action::{Transfer,RustApplet{New,Build,Test}}` to consume `self`
 - Remove `Default` for `action::RustAppletBuild` (implement `clap::Parser` instead)
 - Add `action` feature to gate the `action` module
 - Change API to be async using tokio
 
 ### Minor
 
+- Add `action::RustAppletInstall` as a shorthand for `RustAppletBuild` and `AppletInstall`
+- Add `action::AppletInstall::wait` to wait for exit status
+- Add `action::RustApplet{Build,Test}::crate_dir`
 - Add `action::PlatformInfo` to print platform serial and version
 - Add `cmd::spawn()` for more control on command execution
 - Add `fs::remove_dir_all()` to remove a directory recursively
@@ -33,10 +42,11 @@
 
 ### Patch
 
+- Improve error reporting when executing commands
 - Fix incorrect error with UNIX and TCP platform protocols
 - Only print commands and file system operations when warnings are logged
 - Update dependencies
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 8 -->
+<!-- Increment to skip CHANGELOG.md test: 9 -->

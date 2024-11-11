@@ -75,14 +75,34 @@ pub struct AppletInstall {
 
     #[clap(flatten)]
     pub transfer: Transfer,
+
+    #[command(subcommand)]
+    pub wait: Option<AppletInstallWait>,
+}
+
+#[derive(clap::Subcommand)]
+pub enum AppletInstallWait {
+    /// Waits until the applet exits.
+    #[group(id = "AppletInstallWait::Wait")]
+    Wait {
+        #[command(flatten)]
+        action: AppletExitStatus,
+    },
 }
 
 impl AppletInstall {
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
-        let AppletInstall { applet, transfer } = self;
+        let AppletInstall { applet, transfer, wait } = self;
         transfer
             .run::<service::AppletInstall>(connection, applet, "Installed", None::<fn(_) -> _>)
-            .await
+            .await?;
+        match wait {
+            Some(AppletInstallWait::Wait { mut action }) => {
+                action.wait.ensure_wait();
+                action.run(connection).await
+            }
+            None => Ok(()),
+        }
     }
 }
 
@@ -342,7 +362,7 @@ pub struct Transfer {
 
 impl Transfer {
     async fn run<S>(
-        &self, connection: &mut dyn Connection, payload: impl AsRef<Path>, message: &'static str,
+        self, connection: &mut dyn Connection, payload: impl AsRef<Path>, message: &'static str,
         finish: Option<impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>>,
     ) -> Result<()>
     where
@@ -364,14 +384,14 @@ impl Transfer {
             )
             .with_message("Starting");
         progress.enable_steady_tick(Duration::from_millis(200));
-        connection.call::<S>(Request::Start { dry_run: *dry_run }).await?.get();
+        connection.call::<S>(Request::Start { dry_run }).await?.get();
         progress.set_message("Writing");
-        for chunk in payload.chunks(*chunk_size) {
+        for chunk in payload.chunks(chunk_size) {
             progress.inc(chunk.len() as u64);
             connection.call::<S>(Request::Write { chunk }).await?.get();
         }
         progress.set_message("Finishing");
-        match (*dry_run, finish) {
+        match (dry_run, finish) {
             (false, Some(finish)) => final_call::<S>(connection, Request::Finish, finish).await?,
             _ => *connection.call::<S>(Request::Finish).await?.get(),
         }
@@ -456,23 +476,23 @@ pub struct RustAppletNew {
 }
 
 impl RustAppletNew {
-    pub async fn run(&self) -> Result<()> {
+    pub async fn run(self) -> Result<()> {
         let RustAppletNew { path, name } = self;
         let mut cargo = Command::new("cargo");
-        cargo.args(["new", "--lib"]).arg(path);
+        cargo.args(["new", "--lib"]).arg(&path);
         if let Some(name) = name {
             cargo.arg(format!("--name={name}"));
         }
         cmd::execute(&mut cargo).await?;
-        cmd::execute(Command::new("cargo").args(["add", "wasefire"]).current_dir(path)).await?;
+        cmd::execute(Command::new("cargo").args(["add", "wasefire"]).current_dir(&path)).await?;
         let mut cargo = Command::new("cargo");
         cargo.args(["add", "wasefire-stub", "--optional"]);
-        cmd::execute(cargo.current_dir(path)).await?;
+        cmd::execute(cargo.current_dir(&path)).await?;
         let mut sed = Command::new("sed");
         sed.arg("-i");
         sed.arg("s#^wasefire-stub\\( = .\"dep:wasefire-stub\"\\)#test\\1, \"wasefire/test\"#");
         sed.arg("Cargo.toml");
-        cmd::execute(sed.current_dir(path)).await?;
+        cmd::execute(sed.current_dir(&path)).await?;
         tokio::fs::remove_file(path.join("src/lib.rs")).await?;
         fs::write(path.join("src/lib.rs"), include_str!("data/lib.rs")).await?;
         Ok(())
@@ -490,13 +510,19 @@ pub struct RustAppletBuild {
     #[arg(long, value_name = "TARGET")]
     pub native: Option<String>,
 
-    /// Copies the final artifacts to this directory instead of target/wasefire.
-    #[arg(long, value_name = "DIR", value_hint = ValueHint::DirPath)]
-    pub output: Option<PathBuf>,
+    /// Root directory of the crate.
+    #[arg(long, value_name = "DIRECTORY", default_value = ".")]
+    #[arg(value_hint = ValueHint::DirPath)]
+    pub crate_dir: PathBuf,
 
-    /// Cargo profile, defaults to release.
-    #[arg(long)]
-    pub profile: Option<String>,
+    /// Copies the final artifacts to this directory.
+    #[arg(long, value_name = "DIRECTORY", default_value = "wasefire")]
+    #[arg(value_hint = ValueHint::DirPath)]
+    pub output_dir: PathBuf,
+
+    /// Cargo profile.
+    #[arg(long, default_value = "release")]
+    pub profile: String,
 
     /// Optimization level.
     #[clap(long, short = 'O')]
@@ -512,8 +538,8 @@ pub struct RustAppletBuild {
 }
 
 impl RustAppletBuild {
-    pub async fn run(&self, dir: impl AsRef<Path>) -> Result<()> {
-        let metadata = metadata(dir.as_ref()).await?;
+    pub async fn run(self) -> Result<()> {
+        let metadata = metadata(&self.crate_dir).await?;
         let package = &metadata.packages[0];
         let target_dir =
             fs::try_relative(std::env::current_dir()?, &metadata.target_directory).await?;
@@ -538,7 +564,7 @@ impl RustAppletBuild {
                 wasefire_feature(package, "native", &mut cargo)?;
             }
         }
-        let profile = self.profile.as_deref().unwrap_or("release");
+        let profile = &self.profile;
         cargo.arg(format!("--profile={profile}"));
         if let Some(level) = self.opt_level {
             cargo.arg(format!("--config=profile.{profile}.opt-level={level}"));
@@ -555,17 +581,13 @@ impl RustAppletBuild {
             cargo.env("WASEFIRE_DEBUG", "");
         }
         cargo.env("RUSTFLAGS", rustflags.join(" "));
-        cargo.current_dir(dir);
+        cargo.current_dir(&self.crate_dir);
         cmd::execute(&mut cargo).await?;
-        let out_dir = match &self.output {
-            Some(x) => x.clone(),
-            None => "target/wasefire".into(),
-        };
         let (src, dst) = match &self.native {
             None => (format!("wasm32-unknown-unknown/{profile}/{name}.wasm"), "applet.wasm"),
             Some(target) => (format!("{target}/{profile}/lib{name}.a"), "libapplet.a"),
         };
-        let applet = out_dir.join(dst);
+        let applet = self.output_dir.join(dst);
         if fs::copy_if_changed(target_dir.join(src), &applet).await? && dst.ends_with(".wasm") {
             optimize_wasm(&applet, self.opt_level).await?;
         }
@@ -576,20 +598,49 @@ impl RustAppletBuild {
 /// Runs the unit-tests of a Rust applet project.
 #[derive(clap::Args)]
 pub struct RustAppletTest {
+    /// Root directory of the crate.
+    #[arg(long, value_name = "DIRECTORY", default_value = ".")]
+    #[arg(value_hint = ValueHint::DirPath)]
+    crate_dir: PathBuf,
+
     /// Extra arguments to cargo, e.g. --features=foo.
     #[clap(last = true)]
     cargo: Vec<String>,
 }
 
 impl RustAppletTest {
-    pub async fn run(&self, dir: impl AsRef<Path>) -> Result<()> {
-        let metadata = metadata(dir.as_ref()).await?;
+    pub async fn run(self) -> Result<()> {
+        let metadata = metadata(&self.crate_dir).await?;
         let package = &metadata.packages[0];
         ensure!(package.features.contains_key("test"), "missing test feature");
         let mut cargo = Command::new("cargo");
         cargo.args(["test", "--features=test"]);
         cargo.args(&self.cargo);
+        cargo.current_dir(&self.crate_dir);
         cmd::replace(cargo)
+    }
+}
+
+/// Builds and installs a Rust applet from its project.
+#[derive(clap::Parser)]
+pub struct RustAppletInstall {
+    #[clap(flatten)]
+    build: RustAppletBuild,
+
+    #[clap(flatten)]
+    transfer: Transfer,
+
+    #[command(subcommand)]
+    wait: Option<AppletInstallWait>,
+}
+
+impl RustAppletInstall {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let RustAppletInstall { build, transfer, wait } = self;
+        let output = build.output_dir.clone();
+        build.run().await?;
+        let install = AppletInstall { applet: output.join("applet.wasm"), transfer, wait };
+        install.run(connection).await
     }
 }
 

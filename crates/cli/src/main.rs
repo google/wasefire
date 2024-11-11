@@ -23,6 +23,9 @@ use clap::{CommandFactory, Parser, ValueHint};
 use clap_complete::Shell;
 use tokio::process::Command;
 use wasefire_cli_tools::{action, cmd, fs};
+use wasefire_one_of::at_most_one_of;
+
+at_most_one_of!["_dev", "_prod"];
 
 #[derive(Parser)]
 #[command(name = "wasefire", version, about)]
@@ -53,8 +56,6 @@ enum Action {
         options: action::ConnectionOptions,
         #[command(flatten)]
         action: action::AppletInstall,
-        #[command(subcommand)]
-        command: Option<AppletInstallCommand>,
     },
 
     /// Updates an applet on a platform.
@@ -140,18 +141,16 @@ enum Action {
     RustAppletBuild(action::RustAppletBuild),
     RustAppletTest(action::RustAppletTest),
 
+    #[group(id = "Action::RustAppletInstall")]
+    RustAppletInstall {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        action: action::RustAppletInstall,
+    },
+
     /// Generates a shell completion file.
     Completion(Completion),
-}
-
-#[derive(clap::Subcommand)]
-enum AppletInstallCommand {
-    /// Waits until the applet exits.
-    #[group(id = "AppletInstallCommand::Wait")]
-    Wait {
-        #[command(flatten)]
-        action: action::AppletExitStatus,
-    },
 }
 
 #[derive(clap::Args)]
@@ -197,7 +196,7 @@ impl Host {
             );
             fs::copy(bundle, &bin).await?;
         }
-        #[cfg(not(feature = "_dev"))]
+        #[cfg(feature = "_prod")]
         if !fs::exists(&bin).await {
             fs::create_dir_all(&self.dir).await?;
             static HOST_PLATFORM: &[u8] = include_bytes!(env!("WASEFIRE_HOST_PLATFORM"));
@@ -205,6 +204,8 @@ impl Host {
             params.options().write(true).create_new(true).mode(0o777);
             fs::write(params, HOST_PLATFORM).await?;
         }
+        #[cfg(all(not(feature = "_dev"), not(feature = "_prod")))]
+        anyhow::ensure!(fs::exists(&bin).await, "no host platform found");
         loop {
             let mut host = Command::new(&bin);
             host.arg(&self.dir);
@@ -240,19 +241,10 @@ impl Completion {
 async fn main() -> Result<()> {
     env_logger::init();
     let flags = Flags::parse();
-    let dir = std::env::current_dir()?;
     match flags.action {
         Action::AppletList => bail!("not implemented yet"),
-        Action::AppletInstall { options, action, command } => {
-            let mut connection = options.connect().await?;
-            action.run(&mut connection).await?;
-            match command {
-                None => Ok(()),
-                Some(AppletInstallCommand::Wait { mut action }) => {
-                    action.wait.ensure_wait();
-                    action.run(&mut connection).await
-                }
-            }
+        Action::AppletInstall { options, action } => {
+            action.run(&mut options.connect().await?).await
         }
         Action::AppletUpdate => bail!("not implemented yet"),
         Action::AppletUninstall { options, action } => {
@@ -278,8 +270,11 @@ async fn main() -> Result<()> {
         Action::PlatformLock { options, action } => action.run(&mut options.connect().await?).await,
         Action::PlatformRpc { options, action } => action.run(&mut options.connect().await?).await,
         Action::RustAppletNew(x) => x.run().await,
-        Action::RustAppletBuild(x) => x.run(dir).await,
-        Action::RustAppletTest(x) => x.run(dir).await,
+        Action::RustAppletBuild(x) => x.run().await,
+        Action::RustAppletTest(x) => x.run().await,
+        Action::RustAppletInstall { options, action } => {
+            action.run(&mut options.connect().await?).await
+        }
         Action::Completion(x) => x.run().await,
     }
 }

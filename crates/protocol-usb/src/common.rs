@@ -103,7 +103,7 @@ impl<'a> Encoder<'a> {
     }
 }
 
-impl<'a> Iterator for Encoder<'a> {
+impl Iterator for Encoder<'_> {
     type Item = [u8; 64];
 
     fn next(&mut self) -> Option<[u8; 64]> {

@@ -120,7 +120,7 @@ fn combine(low: bool, high: bool) -> Option<Option<bool>> {
 
 struct Pretty<'a>(&'a Config);
 
-impl<'a> core::fmt::Display for Pretty<'a> {
+impl core::fmt::Display for Pretty<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let Config { input, output, initial } = &self.0;
         match (input, output) {

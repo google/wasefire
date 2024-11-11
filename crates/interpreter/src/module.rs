@@ -30,7 +30,7 @@ pub struct Module<'m> {
     cache: Cache<CacheKey, CacheValue>,
 }
 
-impl<'m> Default for Module<'m> {
+impl Default for Module<'_> {
     fn default() -> Self {
         Self { binary: &[], types: Vec::new(), cache: Cache::unbounded() }
     }

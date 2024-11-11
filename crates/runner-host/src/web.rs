@@ -19,6 +19,7 @@ use tokio::io::AsyncWriteExt as _;
 use tokio::process::Command;
 use tokio::sync::mpsc::channel;
 use wasefire_cli_tools::{cmd, fs};
+use wasefire_logger as log;
 
 use crate::{board, cleanup, with_state, FLAGS};
 
@@ -36,6 +37,7 @@ pub async fn init() -> Result<web_server::Client> {
     });
     let web_dir = FLAGS.dir.join("web");
     if !fs::exists(&web_dir).await {
+        log::info!("Extracting web assets to {}", web_dir.display());
         let mut tar = Command::new("tar");
         tar.current_dir(&FLAGS.dir);
         tar.arg("xz");
