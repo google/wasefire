@@ -60,11 +60,10 @@ impl Changelog {
         self.crate_path.join("CHANGELOG.md")
     }
 
-    async fn read(path: &str) -> Result<Changelog> {
-        Self::parse(
-            path,
-            &String::from_utf8(fs::read(PathBuf::from(path).join("CHANGELOG.md")).await?)?,
-        )
+    async fn read(path: impl Into<PathBuf>) -> Result<Changelog> {
+        let crate_path = path.into();
+        let changelog_path = crate_path.join("CHANGELOG.md");
+        Self::parse(crate_path, &String::from_utf8(fs::read(changelog_path).await?)?)
     }
 
     async fn write(&self) -> Result<()> {
@@ -185,7 +184,8 @@ impl Changelog {
         let metadata = metadata(path).await?;
         ensure!(
             self.releases.first().unwrap().version == metadata.packages[0].version,
-            "Version mismatch between Cargo.toml and CHANGELOG.md for {path:?}"
+            "Version mismatch between Cargo.toml and CHANGELOG.md for {}",
+            path.display(),
         );
         Ok(())
     }
