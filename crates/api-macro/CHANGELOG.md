@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.0-git
+## 0.7.0
 
 ### Major
 

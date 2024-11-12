@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-protocol-tokio"
-version = "0.1.0-git"
+version = "0.1.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -16,9 +16,9 @@ features = ["device"]
 
 [dependencies]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
-wasefire-error = { version = "0.1.2-git", path = "../error", optional = true }
-wasefire-logger = { version = "0.1.6-git", path = "../logger", optional = true }
-wasefire-one-of = { version = "0.1.0-git", path = "../one-of" }
+wasefire-error = { version = "0.1.2", path = "../error", optional = true }
+wasefire-logger = { version = "0.1.6", path = "../logger", optional = true }
+wasefire-one-of = { version = "0.1.0", path = "../one-of" }
 
 [dependencies.tokio]
 version = "1.40.0"
@@ -26,13 +26,13 @@ default-features = false
 features = ["io-util", "macros", "net", "rt", "sync"]
 
 [dependencies.wasefire-board-api]
-version = "0.8.0-git"
+version = "0.8.0"
 path = "../board"
 features = ["std"]
 optional = true
 
 [dependencies.wasefire-protocol]
-version = "0.2.0-git"
+version = "0.2.0"
 path = "../protocol"
 features = ["host"]
 optional = true
