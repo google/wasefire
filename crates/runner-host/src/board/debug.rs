@@ -24,10 +24,10 @@ impl board::debug::Api for Impl {
 
     fn println(line: &str) {
         let time = Self::time();
-        let micros = format!("{}.{:06}", time / 1000000, time % 1000000);
+        let timestamp = format!("{}.{:06}", time / 1000000, time % 1000000);
         crate::with_state(|state| match &state.web {
-            Some(x) => x.println(micros, line.to_string()),
-            None => log::println!("{micros}: {line}"),
+            Some(x) => x.println(timestamp, line.to_string()),
+            None => log::println!("{timestamp}: {line}"),
         })
     }
 
