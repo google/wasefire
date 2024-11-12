@@ -34,5 +34,4 @@ _package_doc_raw() {
   sed -n '/^\[package\.metadata\.docs\.rs]$/,/^$/{s/^'"$1"' = //p}' Cargo.toml
 }
 _package_bin_string() { sed -n '/^\[\[bin\]\]$/,/^$/{s/^'"$1"' = "\(.*\)"$/\1/p}' Cargo.toml; }
-# TODO(https://github.com/rust-lang/cargo/issues/14810): Remove --registry=crates-io
 _cargo_info() { cargo info --registry=crates-io -q "$1" | sed -n 's/^'"$2"': //p'; }

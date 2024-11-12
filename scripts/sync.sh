@@ -87,6 +87,7 @@ book_example button1 button
 book_example button2 led
 book_example timer button_abort
 book_example usb memory_game
+book_example rpc protocol
 book_example store store
 
 GIT_MODULES='
