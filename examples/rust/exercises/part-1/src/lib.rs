@@ -21,6 +21,8 @@
 //! ```shell
 //! socat -,cfmakeraw UNIX-CONNECT:wasefire/host/uart0
 //! ```
+//!
+//! You can install `socat` with `sudo apt-get install socat`.
 
 #![no_std]
 wasefire::applet!();

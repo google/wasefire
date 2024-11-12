@@ -25,3 +25,5 @@ running, you can run:
 ```shell
 socat -,cfmakeraw UNIX-CONNECT:wasefire/host/uart0
 ```
+
+You can install `socat` with `sudo apt-get install socat`.

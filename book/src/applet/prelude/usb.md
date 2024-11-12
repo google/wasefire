@@ -155,3 +155,5 @@ Once the applet is running, you can connect to the USB serial with the following
 ```shell
 picocom -q /dev/ttyACM0
 ```
+
+You can install `picocom` with `sudo apt-get install picocom`.
