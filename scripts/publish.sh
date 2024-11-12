@@ -102,3 +102,5 @@ for crate in "${TOPOLOGICAL_ORDER[@]}"; do
     eval "$(sed -En 's/^cargo (check|test) --(lib|bin=[^ ]*)/cargo publish/p;T;q' test.sh)"
   )
 done
+
+d "You can now run ./scripts/announce.sh"
