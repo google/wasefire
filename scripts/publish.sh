@@ -90,15 +90,10 @@ git log -1 --pretty=%s | grep -q '^Release all crates (#[0-9]*)$' \
   || e "This is not a merged release commit"
 [ "$1" = --no-dry-run ] || d "Run with --no-dry-run to actually publish"
 
-get_latest() {
-  name="$(package_name)"
-  cargo search "$name" | sed -n '1s/^'"$name"' = "\([0-9.]*\)".*$/\1/p'
-}
-
 for crate in "${TOPOLOGICAL_ORDER[@]}"; do
   ( cd crates/$crate
     current="$(package_version)"
-    latest="$(get_latest)"
+    latest="$(cargo_info_version "$(package_name)")"
     if [ "$current" = "$latest" ]; then
       i "Skipping $crate already published at $latest"
       exit
