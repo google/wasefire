@@ -14,10 +14,10 @@
 
 //! This exercise adds user presence check for all operations.
 //!
-//! If you are using the host runner, it is recommended to use the web UI:
+//! If you are using a host platform, it is recommended to use the web UI:
 //!
 //! ```shell
-//! cargo xtask applet rust exercises/part-5 runner host --web
+//! wasefire host --interface=web
 //! ```
 
 #![no_std]

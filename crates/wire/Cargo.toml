@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-wire"
-version = "0.1.1-git"
+version = "0.1.1"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -15,8 +15,8 @@ categories = ["embedded", "no-std"]
 all-features = true
 
 [dependencies]
-wasefire-error = { version = "0.1.2-git", path = "../error" }
-wasefire-wire-derive = { version = "0.1.1-git", path = "../wire-derive" }
+wasefire-error = { version = "0.1.2", path = "../error" }
+wasefire-wire-derive = { version = "0.1.1", path = "../wire-derive" }
 
 [features]
 schema = ["std", "wasefire-wire-derive/schema"]

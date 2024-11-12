@@ -15,12 +15,14 @@
 //! This exercise is essentially some "echo" applet on a UART. It writes back to the UART whatever
 //! it receives.
 //!
-//! If you are running the applet on the host runner, you can connect to the UART (from the root
-//! directory of the repository) with:
+//! If you are running the applet on a host platform, you can connect to the UART (from the
+//! directory of the host platform) with:
 //!
 //! ```shell
-//! ./scripts/wrapper.sh socat -,cfmakeraw UNIX-CONNECT:target/wasefire/uart0
+//! socat -,cfmakeraw UNIX-CONNECT:wasefire/host/uart0
 //! ```
+//!
+//! You can install `socat` with `sudo apt-get install socat`.
 
 #![no_std]
 wasefire::applet!();

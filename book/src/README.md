@@ -13,9 +13,10 @@ with developing secure firmware:
 
 - No embedded expertise required: Regular software engineers can develop firmware.
 - No security expertise required: The ecosystem provides secure-by-default options.
-- No enforced programming language: Developers may use the language of their choice, as long as it
-  compiles to WebAssembly or the target architecture.
+- No enforced programming language: Developers may use the language of their choice[^pl-choice].
 - No enforced development environment or build system: Developers may use their usual setup.
+
+[^pl-choice]: As long as it compiles to WebAssembly (or the target architecture for native applets).
 
 ### Secure-by-default
 
@@ -27,13 +28,12 @@ mechanisms are (or are planned to be) in place:
 - Secure implementation within the platform boundaries (e.g. side-channel resistance, fault
   injection protection, etc).
 - Security reviews for the supported boards (e.g. side-channel attacks, fault injection, etc).
-- User documentation when the security must rely on user behavior, for example when a configuration
-  is insecure.
+- User documentation (and warnings) when the security must rely on user behavior, for example when a
+  configuration is insecure.
 
 Even though the default is to be secure, the ecosystem will provide options to opt-out from some of
 the security features for performance or footprint reasons. In other words, the developer is able to
-choose the trade-off between security and performance, defaulting to security without explicit
-action.
+make the trade-off between security and performance, defaulting to security without explicit action.
 
 ### Symbiosis
 
