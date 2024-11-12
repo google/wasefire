@@ -71,8 +71,8 @@ impl Client {
         Ok(receiver.await?)
     }
 
-    pub fn println(&self, message: String) {
-        self.send(Command::Log { message });
+    pub fn println(&self, timestamp: String, message: String) {
+        self.send(Command::Log { timestamp, message });
     }
 
     pub fn set_led(&self, state: bool) {
