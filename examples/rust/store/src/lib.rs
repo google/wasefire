@@ -27,7 +27,7 @@ wasefire::applet!();
 
 use alloc::boxed::Box;
 use alloc::format;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::num::ParseIntError;
 use core::ops::Range;
@@ -69,18 +69,17 @@ impl<'a> Command<'a> {
 
     fn process(&self) -> Result<String, String> {
         match self {
-            Command::Help => Ok(format!(
-                "\
+            Command::Help => Ok("\
 Usage: insert <key>[..<key>] <value>
 Usage: find <key>[..<key>]
 Usage: remove <key>[..<key>]"
-            )),
+                .to_string()),
             Command::Insert { key, value } => match insert(key, value.as_bytes()) {
-                Ok(()) => Ok(format!("Done")),
+                Ok(()) => Ok("Done".to_string()),
                 Err(error) => Err(format!("{error}")),
             },
             Command::Find { key } => match find(key) {
-                Ok(None) => Ok(format!("Not found")),
+                Ok(None) => Ok("Not found".to_string()),
                 Ok(Some(value)) => match core::str::from_utf8(&value) {
                     Ok(value) => Ok(format!("Found: {value}")),
                     Err(_) => Ok(format!("Found (not UTF-8): {value:02x?}")),
@@ -88,7 +87,7 @@ Usage: remove <key>[..<key>]"
                 Err(error) => Err(format!("{error}")),
             },
             Command::Remove { key } => match remove(key) {
-                Ok(()) => Ok(format!("Done")),
+                Ok(()) => Ok("Done".to_string()),
                 Err(error) => Err(format!("{error}")),
             },
         }
@@ -119,7 +118,7 @@ impl Key {
             Key::Range(keys) => !keys.is_empty() && keys.end < 4096,
         };
         if !valid {
-            return Err(format!("Invalid key"));
+            return Err("Invalid key".to_string());
         }
         Ok(key)
     }

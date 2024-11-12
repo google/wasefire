@@ -17,9 +17,9 @@ And now let's look at `src/lib.rs`:
 - The `#![no_std]` attribute is needed for building WASM modules without WASI. As a consequence, you
   cannot use `std`. Instead, you need to use `core` and `alloc`.
 - The `wasefire::applet!();` macro does a few things:
-    - It makes sure the `main()` function is executed when the applet starts.
-    - It imports the `alloc` crate.
-    - It imports all the items of the `wasefire` crate.
+   - It makes sure the `main()` function is executed when the applet starts.
+   - It imports the `alloc` crate.
+   - It imports all the items of the `wasefire` crate.
 - In the `tests` module, the `use wasefire_stub as _;` makes sure the `wasefire-stub` crate is
   linked since it provides symbol definitions for the applet API.
 
