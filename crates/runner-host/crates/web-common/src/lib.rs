@@ -51,7 +51,7 @@ pub enum Command {
     Set { component_id: usize, state: bool },
 
     /// Prints a debug message.
-    Log { message: String },
+    Log { timestamp: String, message: String },
 
     /// Indicates that the applet started.
     Start,
