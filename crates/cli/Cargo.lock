@@ -772,7 +772,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.8.0-git"
+version = "0.8.0"
 dependencies = [
  "derive-where",
  "wasefire-error",
@@ -783,7 +783,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-cli"
-version = "0.2.0-git"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -796,7 +796,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-cli-tools"
-version = "0.2.0-git"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -817,25 +817,25 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.2-git"
+version = "0.1.2"
 dependencies = [
  "num_enum",
 ]
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.6-git"
+version = "0.1.6"
 dependencies = [
  "log",
 ]
 
 [[package]]
 name = "wasefire-one-of"
-version = "0.1.0-git"
+version = "0.1.0"
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.2.0-git"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "wasefire-error",
@@ -844,7 +844,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol-tokio"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "tokio",
@@ -856,7 +856,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol-usb"
-version = "0.2.0-git"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "rusb",
@@ -868,14 +868,14 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.3.0-git"
+version = "0.3.0"
 dependencies = [
  "wasefire-error",
 ]
 
 [[package]]
 name = "wasefire-wire"
-version = "0.1.1-git"
+version = "0.1.1"
 dependencies = [
  "wasefire-error",
  "wasefire-wire-derive",
@@ -883,7 +883,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire-derive"
-version = "0.1.1-git"
+version = "0.1.1"
 dependencies = [
  "proc-macro2",
  "quote",
