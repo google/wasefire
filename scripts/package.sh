@@ -25,6 +25,8 @@ package_doc_default_target() { _package_doc_raw default-target | tr -d '"'; }
 package_bin_name() { _package_bin_string name; }
 package_bin_path() { _package_bin_string path; }
 
+cargo_info_version() { _cargo_info "$1" version; }
+
 # Internal helpers
 _package_raw() { sed -n '/^\[package]$/,/^$/{s/^'"$1"' = //p}' Cargo.toml; }
 _package_string() { _package_raw "$1" | sed 's/^"\(.*\)"$/\1/'; }
@@ -32,3 +34,5 @@ _package_doc_raw() {
   sed -n '/^\[package\.metadata\.docs\.rs]$/,/^$/{s/^'"$1"' = //p}' Cargo.toml
 }
 _package_bin_string() { sed -n '/^\[\[bin\]\]$/,/^$/{s/^'"$1"' = "\(.*\)"$/\1/p}' Cargo.toml; }
+# TODO(https://github.com/rust-lang/cargo/issues/14810): Remove --registry=crates-io
+_cargo_info() { cargo info --registry=crates-io -q "$1" | sed -n 's/^'"$2"': //p'; }
