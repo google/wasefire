@@ -9,6 +9,7 @@
 
 ### Minor
 
+- Export `wasefire-error` as `error` module
 - Initialize heap for wasm applets
 - Add `scheduling::exit()` for successful applet exit
 
