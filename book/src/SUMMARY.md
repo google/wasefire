@@ -7,7 +7,7 @@
    - [Features](overview/features.md)
 
 - [Quick start](quick/README.md)
-   - [Github codespace tips](quick/codespace.md)
+   - [GitHub Codespace tips](quick/codespace.md)
 
 - [Applet user guide](applet/README.md)
    - [Create a new applet](applet/create.md)
@@ -19,6 +19,7 @@
       - [Timers](applet/prelude/timer.md)
       - [USB](applet/prelude/usb.md)
       - [UART](applet/prelude/uart.md)
+      - [RPC](applet/prelude/rpc.md)
       - [Storage](applet/prelude/store.md)
    - [Exercises](applet/exercises/README.md)
    - [Examples](applet/examples.md)

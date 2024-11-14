@@ -1,47 +1,97 @@
 # Quick start
 
-Please open an [issue](https://github.com/google/wasefire/issues/new) if a step
-doesn't work.
+Please open an [issue](https://github.com/google/wasefire/issues/new) if a step doesn't work.
 
-## Repository setup
+## Download the Wasefire CLI
 
 ### Local machine
 
-Clone the repository and run the setup script[^1]:
+Download the [latest release](https://github.com/google/wasefire/releases/latest) of the Wasefire
+CLI for your platform. The code sample below assumes that your platform is
+`x86_64-unknown-linux-gnu` and that your `PATH` contains `~/.local/bin`. You may need to adapt the
+commands for a different platform or environment.
 
 ```shell
-git clone https://github.com/google/wasefire
-cd wasefire
-./scripts/setup.sh
+tar xf wasefire-x86_64-unknown-linux-gnu.tar.gz
+rm wasefire-x86_64-unknown-linux-gnu.tar.gz
+mkdir -p ~/.local/bin
+mv wasefire-x86_64-unknown-linux-gnu ~/.local/bin/wasefire
 ```
 
-### Github codespace
+You can test that the CLI is correctly installed by running `wasefire help`.
+
+You can also add shell completion with `wasefire completion`. You need to place the generated script
+where you shell will interpret it, which depends on your shell and configuration. If you use bash
+and have root access, you can copy it to `/usr/share/bash-completion/completions/wasefire`.
+
+### GitHub Codespace
 
 - Open <https://codespaces.new/google/wasefire?quickstart=1>
 - Click the green `Create new codespace` (or `Resume this codespace`) button
-- Wait 2 minutes for the codespace to be created (or a 10 seconds to be resumed)
+- Wait a couple minutes for the codespace to be created
 
-## Run an applet
+## Start a host platform
 
-Depending on your hardware, you can run the hello applet with:
+You can start a host platform for development with the following command (it will run until
+interrupted or killed, so you will need a dedicated terminal):
 
-- `cargo xtask applet rust hello runner nordic` to run on an nRF52840 dev-kit.
-- `cargo xtask applet rust hello runner host` to run on your desktop.
-- `cargo xtask applet rust hello runner host --web` to run on your desktop with
-  a web UI.
+```shell
+wasefire host --interface=web
+```
 
-The general format is `cargo xtask applet LANGUAGE NAME runner BOARD`. Example
-applets are listed in the `examples` directory by _language_ then _name_.
-_Boards_ are listed under the `crates` directory and are prefixed by `runner-`.
-You can find more details using `cargo xtask help`.
+You may omit `--interface=web` if you don't need to interact with buttons and LEDs.
 
-Feel free to stop and play around by directly editing the examples. Or continue
-reading for a deeper tutorial on how to write applets in Rust.
+This will create a `wasefire/host` directory in the current directory to store the state of the host
+platform.
 
-[^1]: The setup script is best effort and is only meant for Unix systems so far.
-    On Debian-based Linux systems, the script will directly invoke installation
-    commands, possibly asking for sudo password. On other systems, the script
-    will return an error and print a message each time a binary or library must
-    be installed. Once the package is installed, the script must be run again.
-    The script will eventually print nothing and return a success code
-    indicating that no manual step is required and everything seems in order.
+This will also ask for sudo permissions when using the USB platform protocol, which is the default
+(except in GitHub Codespace where `export WASEFIRE_PROTOCOL=unix` is added to the `.bashrc` file).
+If you don't want to use sudo, you can use the `unix` or `tcp` platform protocol. You'll have to
+pass `--protocol=unix` or `--protocol=tcp` to most `wasefire` commands or set the
+`WASEFIRE_PROTOCOL` environment variable in your shells.
+
+## Hello world in Rust
+
+You can create a new Rust applet with:
+
+```shell
+wasefire rust-applet-new hello
+cd hello
+```
+
+This will create a directory called `hello` with an example "hello world" applet.
+
+You can build this applet (from the `hello` directory) with:
+
+```shell
+wasefire rust-applet-build
+```
+
+You can also run the unit tests with:
+
+```shell
+wasefire rust-applet-test
+```
+
+And you can install it (building it if needed) on a connected platform (for example the host
+platform started earlier) with:
+
+```shell
+wasefire rust-applet-install
+```
+
+Regardless of the programming language, if you already built an applet (by default under
+`wasefire/applet.wasm`), you can install it with:
+
+```shell
+wasefire applet-install wasefire/applet.wasm
+```
+
+And you can uninstall an applet (regardless of programming language) with:
+
+```shell
+wasefire applet-uninstall
+```
+
+Wasefire supports only one applet at a time for now. Once multiple applets can be installed
+simultaneously, the `applet-uninstall` command will take an applet ID as argument.

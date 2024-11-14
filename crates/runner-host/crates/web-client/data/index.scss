@@ -50,14 +50,6 @@ svg {
   flex-direction: column;
 }
 
-.console-form {
-  display: flex;
-}
-
-input#consolein {
-  flex-grow: 1;
-}
-
 .console-display {
   flex-grow: 1;
   color: white;
@@ -65,6 +57,16 @@ input#consolein {
   flex-direction: column-reverse;
   display: flex;
   font-family: "Fira Code", monospace;
+}
+
+.console-timestamp {
+  color: rgb(120, 120, 120);
+}
+
+.console-output {}
+
+.console-status {
+  color: rgb(60, 120, 240);
 }
 
 body {

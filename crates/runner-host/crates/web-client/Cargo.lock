@@ -1100,14 +1100,14 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.2-git"
+version = "0.1.2"
 dependencies = [
  "num_enum",
 ]
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.2.0-git"
+version = "0.2.0"
 dependencies = [
  "serde",
  "wasefire-error",
@@ -1116,7 +1116,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire"
-version = "0.1.1-git"
+version = "0.1.1"
 dependencies = [
  "wasefire-error",
  "wasefire-wire-derive",
@@ -1124,7 +1124,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire-derive"
-version = "0.1.1-git"
+version = "0.1.1"
 dependencies = [
  "proc-macro2",
  "quote",

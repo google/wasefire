@@ -1346,14 +1346,14 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.2-git"
+version = "0.1.2"
 dependencies = [
  "num_enum",
 ]
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.3.1-git"
+version = "0.3.1"
 dependencies = [
  "libm",
  "num_enum",

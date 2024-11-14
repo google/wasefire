@@ -37,7 +37,7 @@
 extern crate alloc;
 
 use wasefire_applet_api as api;
-pub use wasefire_error::Error;
+pub use wasefire_error::{self as error, Error};
 use wasefire_one_of::at_most_one_of;
 #[cfg(feature = "rust-crypto")]
 use {aead as _, crypto_common as _, digest as _, typenum as _, zeroize as _};
