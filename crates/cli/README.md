@@ -8,7 +8,10 @@ You can install the CLI from crates.io with cargo:
 cargo install wasefire-cli
 ```
 
-There will eventually be binary releases on Github too.
+The first time the CLI will execute, it will first update itself with the [latest version from
+GitHub](https://github.com/google/wasefire/releases/latest), as if `wasefire self-update` was used.
+The reason is that for `wasefire host` to work, the CLI must embed a host platform, which is not
+published and must be built separately.
 
 ## Usage
 
