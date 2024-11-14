@@ -139,12 +139,14 @@ macro_rules! support_if {
     }};
 }
 
+mod bit_field;
 mod cache;
 mod error;
 mod exec;
 mod id;
 mod module;
 mod parser;
+mod side_table;
 mod syntax;
 mod toctou;
 mod valid;
