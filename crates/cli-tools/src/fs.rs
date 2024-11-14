@@ -112,8 +112,8 @@ pub async fn create_parent(path: impl AsRef<Path>) -> Result<()> {
 
 pub async fn download(url: &str) -> Result<Vec<u8>> {
     debug!("download {url:?}");
-    let response = reqwest::get(url).await.with_context(|| format!("downloading {url}"))?;
-    Ok(response.bytes().await?.to_vec())
+    let content: reqwest::Result<_> = try { reqwest::get(url).await?.bytes().await?.to_vec() };
+    content.with_context(|| format!("downloading {url}"))
 }
 
 pub async fn exists(path: impl AsRef<Path>) -> bool {
