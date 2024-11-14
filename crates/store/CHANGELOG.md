@@ -1,10 +1,14 @@
 # Changelog
 
-## 0.3.0-git
+## 0.3.0
 
 ### Major
 
 - Use `wasefire-error` for errors
+
+### Patch
+
+- Fix rust and clippy lints
 
 ## 0.2.4
 
@@ -60,4 +64,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 2 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

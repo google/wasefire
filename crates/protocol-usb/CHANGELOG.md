@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0-git
+## 0.2.0
 
 ### Major
 
@@ -16,10 +16,11 @@
 
 ### Patch
 
+- Fix rust and clippy lints
 - Fail to compile if `device` and `host` features are used together
 - Update dependencies
 - Remove workaround lint false positive
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 6 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

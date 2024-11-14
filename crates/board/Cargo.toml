@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-board-api"
-version = "0.8.0-git"
+version = "0.8.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -34,13 +34,13 @@ signature = { version = "2.2.0", default-features = false, optional = true }
 typenum = { version = "1.17.0", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false, optional = true }
 usbd-serial = { version = "0.2.2", default-features = false, optional = true }
-wasefire-error = { version = "0.1.2-git", path = "../error" }
-wasefire-logger = { version = "0.1.6-git", path = "../logger" }
-wasefire-protocol = { version = "0.2.0-git", path = "../protocol" }
-wasefire-store = { version = "0.3.0-git", path = "../store", optional = true }
+wasefire-error = { version = "0.1.2", path = "../error" }
+wasefire-logger = { version = "0.1.6", path = "../logger" }
+wasefire-protocol = { version = "0.2.0", path = "../protocol" }
+wasefire-store = { version = "0.3.0", path = "../store", optional = true }
 
 [dependencies.wasefire-applet-api]
-version = "0.7.0-git"
+version = "0.7.0"
 path = "../api"
 features = ["host"]
 optional = true

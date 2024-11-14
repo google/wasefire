@@ -55,7 +55,7 @@ struct Flags {
     dir: PathBuf,
 
     /// Transport to listen to for the platform protocol.
-    #[arg(long, default_value = "usb")]
+    #[arg(long, default_value = "usb", env = "WASEFIRE_PROTOCOL")]
     protocol: Protocol,
 
     /// Socket address to bind to when --protocol=tcp (ignored otherwise).
@@ -114,6 +114,7 @@ enum Interface {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    #[cfg(feature = "debug")]
     env_logger::init();
     LazyLock::force(&FLAGS);
     std::panic::set_hook(Box::new(|info| {
@@ -171,7 +172,7 @@ async fn main() -> Result<()> {
         web,
     });
     board::uart::Uarts::init();
-    board::usb::init()?;
+    board::usb::init().await?;
     if matches!(FLAGS.interface, Interface::Stdio) {
         tokio::task::spawn_blocking(|| {
             use std::io::BufRead;

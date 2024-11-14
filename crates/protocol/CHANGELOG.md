@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0-git
+## 0.2.0
 
 ### Major
 
@@ -19,8 +19,9 @@
 
 ### Patch
 
+- Fix rust and clippy lints
 - Update dependencies
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 4 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

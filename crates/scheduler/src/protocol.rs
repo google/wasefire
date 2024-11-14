@@ -20,12 +20,13 @@ use wasefire_board_api::platform::protocol::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
 use wasefire_error::{Code, Error};
 use wasefire_logger as log;
+#[cfg(feature = "applet-api-platform-protocol")]
 use wasefire_protocol::applet::AppletId;
 #[cfg(feature = "wasm")]
 use wasefire_protocol::applet::ExitStatus;
 use wasefire_protocol::{self as service, Api, ApiResult, Request, Service, VERSION};
 
-use crate::{Applet, Scheduler};
+use crate::Scheduler;
 
 #[derive(Debug, Default)]
 pub struct State(StateImpl);
@@ -55,9 +56,12 @@ pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event
 fn process_event_<B: Board>(
     scheduler: &mut Scheduler<B>, event: board::Event<B>, request: Box<[u8]>,
 ) -> Result<(), Error> {
+    #[cfg(not(feature = "applet-api-platform-protocol"))]
+    let _ = event;
     match &scheduler.protocol.0 {
         Normal { .. } => (),
         Locked => return Err(Error::user(Code::InvalidState)),
+        #[cfg(feature = "applet-api-platform-protocol")]
         Tunnel { applet_id, delimiter } => {
             if request == *delimiter {
                 scheduler.protocol = State::default();
@@ -69,10 +73,16 @@ fn process_event_<B: Board>(
     let request = Api::<Request>::decode(&request)?;
     match request {
         Api::ApiVersion(()) => reply::<B, service::ApiVersion>(VERSION),
+        #[cfg(not(feature = "applet-api-platform-protocol"))]
+        Api::AppletRequest(_) => return Err(Error::world(Code::NotImplemented)),
+        #[cfg(feature = "applet-api-platform-protocol")]
         Api::AppletRequest(service::applet::Request { applet_id, request }) => {
             applet::<B>(scheduler, applet_id)?.put_request(event, request)?;
             reply::<B, service::AppletRequest>(());
         }
+        #[cfg(not(feature = "applet-api-platform-protocol"))]
+        Api::AppletResponse(_) => return Err(Error::world(Code::NotImplemented)),
+        #[cfg(feature = "applet-api-platform-protocol")]
         Api::AppletResponse(applet_id) => {
             let response = applet::<B>(scheduler, applet_id)?.get_response()?;
             reply::<B, service::AppletResponse>(response.as_deref());
@@ -81,6 +91,9 @@ fn process_event_<B: Board>(
             use wasefire_board_api::platform::Api as _;
             board::Platform::<B>::reboot()?;
         }
+        #[cfg(not(feature = "applet-api-platform-protocol"))]
+        Api::AppletTunnel(_) => return Err(Error::world(Code::NotImplemented)),
+        #[cfg(feature = "applet-api-platform-protocol")]
         Api::AppletTunnel(service::applet::Tunnel { applet_id, delimiter }) => {
             let delimiter = delimiter.to_vec().into_boxed_slice();
             scheduler.protocol.0 = Tunnel { applet_id, delimiter };
@@ -244,6 +257,7 @@ enum StateImpl {
         install: TransferState,
     },
     Locked,
+    #[cfg(feature = "applet-api-platform-protocol")]
     Tunnel {
         applet_id: service::applet::AppletId,
         delimiter: Box<[u8]>,
@@ -278,9 +292,10 @@ impl StateImpl {
     }
 }
 
+#[cfg(feature = "applet-api-platform-protocol")]
 fn applet<B: Board>(
     scheduler: &mut Scheduler<B>, applet_id: AppletId,
-) -> Result<&mut Applet<B>, Error> {
+) -> Result<&mut crate::Applet<B>, Error> {
     let AppletId = applet_id;
     scheduler.applet.get().ok_or_else(|| {
         log::warn!("Failed to find applet");

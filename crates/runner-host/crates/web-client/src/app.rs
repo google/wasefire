@@ -26,14 +26,11 @@ use crate::hooks::use_runner_connection;
 pub fn app() -> Html {
     let runner_connection = {
         let host = window().location().host().unwrap_throw();
-        let web_socket_url = format!("ws://{host}/board");
+        let scheme = window().location().protocol().unwrap_throw().replace("http", "ws");
+        let web_socket_url = format!("{scheme}//{host}/board");
         info!("Connecting to runner at {web_socket_url}");
         use_runner_connection(web_socket_url)
     };
-    let on_new_console_msg = Callback::from({
-        let runner_connection = runner_connection.clone();
-        move |msg| runner_connection.send_console_event(msg)
-    });
     let on_board_ready = Callback::from({
         let runner_connection = runner_connection.clone();
         move |()| runner_connection.send_board_ready()
@@ -61,7 +58,6 @@ pub fn app() -> Html {
             <Console
                 id={0}
                 command_state={runner_connection.command_state.clone()}
-                on_new_console_msg={on_new_console_msg}
             />
             <Board
                 command_state={runner_connection.command_state}

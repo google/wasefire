@@ -23,7 +23,8 @@ pub struct Store(());
 pub struct Memory;
 
 impl StoreApi for Store {
-    type Memory<'a> = Memory
+    type Memory<'a>
+        = Memory
     where Self: 'a;
 
     fn memory(&mut self) -> Memory {

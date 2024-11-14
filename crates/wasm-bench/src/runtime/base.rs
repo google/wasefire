@@ -31,6 +31,7 @@ pub(crate) fn run(wasm: &[u8]) -> f32 {
         )
         .unwrap();
     let module = Module::new(wasm).unwrap();
+    #[allow(static_mut_refs)]
     let inst = store.instantiate(module, unsafe { &mut MEMORY.0 }).unwrap();
     let mut state = store.invoke(inst, "run", vec![]).unwrap();
     let results = loop {

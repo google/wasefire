@@ -91,19 +91,21 @@ pub enum ApiResult<'a, T: Service> {
     Err(Error),
 }
 
-impl<'a> Api<'a, Request> {
-    #[cfg(feature = "host")]
+#[cfg(feature = "host")]
+impl Api<'_, Request> {
     pub fn encode(&self) -> Result<Box<[u8]>, Error> {
         wasefire_wire::encode(self)
     }
+}
 
-    #[cfg(feature = "device")]
+#[cfg(feature = "device")]
+impl<'a> Api<'a, Request> {
     pub fn decode(data: &'a [u8]) -> Result<Self, Error> {
         wasefire_wire::decode(data)
     }
 }
 
-impl<'a, T: Service> ApiResult<'a, T> {
+impl<T: Service> ApiResult<'_, T> {
     #[cfg(feature = "device")]
     pub fn encode(&self) -> Result<Box<[u8]>, Error> {
         wasefire_wire::encode(self)

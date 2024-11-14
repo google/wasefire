@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-cli"
-version = "0.2.0-git"
+version = "0.2.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -11,9 +11,6 @@ include = ["/LICENSE", "/src/"]
 keywords = ["cli", "embedded", "framework", "wasm"]
 categories = ["command-line-utilities", "embedded", "wasm"]
 
-[package.metadata.docs.rs]
-features = ["_dev"]
-
 [[bin]]
 name = "wasefire"
 path = "src/main.rs"
@@ -23,7 +20,8 @@ anyhow = { version = "1.0.86", default-features = false }
 clap = { version = "4.5.4", default-features = false, features = ["default", "derive", "env"] }
 clap_complete = { version = "4.5.2", default-features = false }
 env_logger = { version = "0.11.3", default-features = false, features = ["default"] }
-wasefire-cli-tools = { version = "0.2.0-git", path = "../cli-tools", features = ["action"] }
+wasefire-cli-tools = { version = "0.2.0", path = "../cli-tools", features = ["action"] }
+wasefire-one-of = { version = "0.1.0", path = "../one-of" }
 
 [dependencies.tokio]
 version = "1.40.0"
@@ -32,6 +30,7 @@ features = ["macros", "parking_lot", "rt", "rt-multi-thread"]
 
 [features]
 _dev = []
+_prod = []
 
 [lints]
 clippy.unit-arg = "allow"

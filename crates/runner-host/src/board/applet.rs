@@ -42,18 +42,16 @@ impl Api for Impl {
     }
 
     fn notify_start() {
-        crate::with_state(|state| {
-            if let Some(web) = &mut state.web {
-                web.start();
-            }
+        crate::with_state(|state| match &mut state.web {
+            None => println!("Applet running."),
+            Some(web) => web.start(),
         })
     }
 
     fn notify_exit(status: ExitStatus) {
-        crate::with_state(|state| {
-            if let Some(web) = &mut state.web {
-                web.exit(status);
-            }
+        crate::with_state(|state| match &mut state.web {
+            None => println!("{status}."),
+            Some(web) => web.exit(status),
         })
     }
 }

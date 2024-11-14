@@ -15,6 +15,7 @@
 
 set -e
 . scripts/log.sh
+. scripts/package.sh
 
 # This script upgrades all dependencies.
 
@@ -32,10 +33,9 @@ x sed -i 's/^\(channel = "nightly-\)[^"]*"$/\1'$(date +%F)'"/' \
   rust-toolchain.toml
 
 get_crates() { sed -n 's/^.*ensure_cargo \([^ ]\+\) .*$/\1/p' scripts/wrapper.sh; }
-get_latest() { cargo search "$1" | sed -n '1s/^'"$1"' = "\([0-9.]*\)".*$/\1/p'; }
 update_crate() { x sed -i 's/\(ensure_cargo '"$1"'\) [0-9.]*/\1 '"$2"'/' scripts/wrapper.sh; }
 for crate in $(get_crates); do
-  update_crate "$crate" "$(get_latest "$crate")"
+  update_crate "$crate" "$(cargo_info_version "$crate")"
 done
 
 for path in $(git ls-files '*/Cargo.toml'); do

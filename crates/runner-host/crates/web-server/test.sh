@@ -20,4 +20,4 @@ set -e
 test_helper
 
 cargo test --lib
-cargo check --lib --features=wasefire-logger/log
+cargo check --lib --features=log

@@ -24,6 +24,9 @@ set -e
 # summarizing the changes with links to the release file, relevant PRs, and
 # relevant documentation on docs.rs.
 
+git log -1 --pretty=%s | grep -q '^Release all crates (#[0-9]*)$' \
+  || e "This is not a merged release commit"
+
 DATE=$(git log -1 --pretty=%cs)
 OUTPUT=docs/releases/$DATE.md
 mkdir -p $(dirname $OUTPUT)
@@ -108,7 +111,9 @@ ins api-desc
 ins api-macro
 ins cli-tools
 ins interpreter
+ins one-of
 ins protocol
+ins protocol-tokio
 ins protocol-usb
 ins store
 ins stub

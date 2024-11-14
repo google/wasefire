@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-applet-api-macro"
-version = "0.7.0-git"
+version = "0.7.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -15,7 +15,7 @@ categories = ["embedded", "no-std", "wasm"]
 proc-macro = true
 
 [dependencies]
-wasefire-applet-api-desc = { version = "=0.2.1-git", path = "../api-desc" }
+wasefire-applet-api-desc = { version = "=0.2.1", path = "../api-desc" }
 
 [features]
 api-button = ["wasefire-applet-api-desc/api-button"]

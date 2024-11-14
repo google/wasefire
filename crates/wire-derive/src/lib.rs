@@ -250,7 +250,7 @@ struct MakeType<'a> {
     statics: &'a [syn::Type],
 }
 
-impl<'a> syn::visit_mut::VisitMut for MakeType<'a> {
+impl syn::visit_mut::VisitMut for MakeType<'_> {
     fn visit_generic_argument_mut(&mut self, x: &mut syn::GenericArgument) {
         match x {
             syn::GenericArgument::Lifetime(a) if a == self.src => *a = self.dst.clone(),

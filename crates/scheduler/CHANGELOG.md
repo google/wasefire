@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0-git
+## 0.4.0
 
 ### Major
 
@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Gate dead-code when `applet-api-platform-protocol` is disabled
 - Exit applets when main exits with no registered callbacks
 - Call the `applet::notify_{start,exit}()` hooks
 - Trap applets calling into host during init (except for debug printing)
@@ -19,6 +20,7 @@
 
 ### Patch
 
+- Fix rust and clippy lints
 - Reduce logging level of applet trapping (those are not errors)
 - Make sure at compile-time that exactly one `native` or `wasm` feature is enabled
 - Use `derive-where` instead of `derivative`
@@ -169,4 +171,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 9 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

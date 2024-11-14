@@ -49,7 +49,11 @@ impl Client {
         let routes = warp::get().and(static_files.or(ws));
 
         tokio::spawn(async move { warp::serve(routes).run(addr).await });
-        let url = format!("http://{addr}/");
+        #[cfg(feature = "log")]
+        let search = format!("?log={}", ::log::max_level());
+        #[cfg(not(feature = "log"))]
+        let search = "";
+        let url = format!("http://{addr}/{search}");
 
         // Wait 2 seconds for a client to connect, otherwise open a browser. The client is supposed
         // to connect every second. This should ensure that at most one client is open.
@@ -67,8 +71,8 @@ impl Client {
         Ok(receiver.await?)
     }
 
-    pub fn println(&self, message: String) {
-        self.send(Command::Log { message });
+    pub fn println(&self, timestamp: String, message: String) {
+        self.send(Command::Log { timestamp, message });
     }
 
     pub fn set_led(&self, state: bool) {

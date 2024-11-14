@@ -57,16 +57,16 @@ pub fn Button(Props { id, on_event }: &Props) -> Html {
             onmouseup={unpress.clone()}
             // Fixes a bug when holding and dragging the mouse over the button.
             onmouseleave={unpress.clone()}
-            class={"button"}
+            class="button"
         >
             <img
-                draggable={"false"}
+                draggable="false"
                 type="image/svg+xml"
                 src="components/button_pressed.svg"
                 style={if *pressed { "" } else { "display: none;" }}
             />
             <img
-                draggable={"false"}
+                draggable="false"
                 type="image/svg+xml"
                 src="components/button_unpressed.svg"
                 style={if !*pressed { "" } else { "display: none;" }}

@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use core::alloc::{GlobalAlloc, Layout};
-use core::mem::MaybeUninit;
 use core::num::NonZeroUsize;
 use core::ptr::{null_mut, NonNull};
 
@@ -27,10 +26,10 @@ extern "C" fn init() {
     assert!(!wasefire_sync::executed!());
     const SIZE: usize = 32768;
     #[repr(align(16))]
-    struct Pool(MaybeUninit<[u8; SIZE]>);
-    static mut POOL: Pool = Pool(MaybeUninit::uninit());
+    struct Pool([u8; SIZE]);
+    static mut POOL: Pool = Pool([0; SIZE]);
     // SAFETY: This function is called at most once and POOL is only accessed here.
-    let pool_ptr = NonNull::new(unsafe { POOL.0.as_mut_ptr() }).unwrap();
+    let pool_ptr = NonNull::new(unsafe { &raw mut POOL.0 }).unwrap();
     let mut allocator = ALLOCATOR.0.lock();
     // SAFETY: POOL is static and won't be used again.
     let size = unsafe { allocator.insert_free_block_ptr(pool_ptr) };

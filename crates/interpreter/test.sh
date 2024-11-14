@@ -19,6 +19,15 @@ set -e
 
 ensure_submodule third_party/WebAssembly/spec
 
+list_files() {
+  find ../../third_party/WebAssembly/spec/test/core \
+    -maxdepth 1 -name '*.wast' -execdir basename -s .wast {} \;
+}
+list_tests() {
+  sed -n 's/^test!(.*, "\([^"]*\)".*);$/\1/p;s/^test!(\([^,]*\).*);$/\1/p' tests/spec.rs
+}
+diff_sorted tests/spec.rs "$(list_files | sort)" $(list_tests)
+
 test_helper
 
 cargo test --lib --features=debug,toctou

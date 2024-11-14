@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.0-git
+## 0.7.0
 
 ### Major
 
@@ -9,10 +9,13 @@
 
 ### Minor
 
+- Export `wasefire-error` as `error` module
+- Initialize heap for wasm applets
 - Add `scheduling::exit()` for successful applet exit
 
 ### Patch
 
+- Fix rust and clippy lints
 - Make sure at compile-time that at most one `native`, `test`, or `wasm` feature is enabled
 - Update dependencies
 
@@ -172,4 +175,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 2 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

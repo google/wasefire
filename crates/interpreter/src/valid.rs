@@ -148,6 +148,8 @@ impl<'m> Context<'m> {
                 parser.parse_data(&mut ParseData::new(self, &mut refs, globals_len))?;
             }
             check(parser.is_empty())?;
+        } else {
+            check(self.datas.map_or(true, |m| m == 0))?;
         }
         self.check_section(parser, SectionId::Custom)?;
         check(parser.is_empty())?;
@@ -274,7 +276,7 @@ impl<'a, 'm> ParseElem<'a, 'm> {
     }
 }
 
-impl<'a, 'm> parser::ParseElem<'m, Check> for ParseElem<'a, 'm> {
+impl<'m> parser::ParseElem<'m, Check> for ParseElem<'_, 'm> {
     fn mode(&mut self, mode: parser::ElemMode<'_, 'm, Check>) -> MResult<(), Check> {
         if let parser::ElemMode::Active { table, offset } = mode {
             Expr::check_const(
@@ -325,7 +327,7 @@ impl<'a, 'm> ParseData<'a, 'm> {
     }
 }
 
-impl<'a, 'm> parser::ParseData<'m, Check> for ParseData<'a, 'm> {
+impl<'m> parser::ParseData<'m, Check> for ParseData<'_, 'm> {
     fn mode(&mut self, mode: parser::DataMode<'_, 'm, Check>) -> MResult<(), Check> {
         if let parser::DataMode::Active { memory, offset } = mode {
             self.context.mem(memory)?;

@@ -17,6 +17,7 @@
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::ffi::OsString;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -153,19 +154,9 @@ enum AppletCommand {
         #[command(flatten)]
         options: action::ConnectionOptions,
         #[command(flatten)]
-        action: action::Transfer,
+        transfer: action::Transfer,
         #[command(subcommand)]
-        command: Option<AppletInstallCommand>,
-    },
-}
-
-#[derive(clap::Subcommand)]
-enum AppletInstallCommand {
-    /// Waits until the applet exits.
-    #[group(id = "AppletInstallCommand::Wait")]
-    Wait {
-        #[command(flatten)]
-        action: action::AppletExitStatus,
+        wait: Option<action::AppletInstallWait>,
     },
 }
 
@@ -336,12 +327,12 @@ impl AppletOptions {
     }
 
     async fn execute_rust(self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
-        let dir = if self.name.starts_with(['.', '/']) {
-            self.name.clone()
+        let dir: PathBuf = if self.name.starts_with(['.', '/']) {
+            self.name.into()
         } else {
-            format!("examples/{}/{}", self.lang, self.name)
+            ["examples", &self.lang, &self.name].into_iter().collect()
         };
-        ensure!(fs::exists(&dir).await, "{dir} does not exist");
+        ensure!(fs::exists(&dir).await, "{} does not exist", dir.display());
         let native = match (main.native, &main.native_target, command) {
             (_, Some(target), command) => {
                 if let Some(AppletCommand::Runner(x)) = command {
@@ -359,15 +350,19 @@ impl AppletOptions {
         let mut action = action::RustAppletBuild {
             prod: main.release,
             native: native.map(|x| x.to_string()),
-            profile: self.profile.clone(),
             opt_level: self.opt_level,
             stack_size: self.stack_size,
+            crate_dir: dir,
+            output_dir: "target/wasefire".into(),
             ..action::RustAppletBuild::parse_from::<_, OsString>([])
         };
+        if let Some(profile) = self.profile {
+            action.profile = profile;
+        }
         for features in &self.features {
             action.cargo.push(format!("--features={features}"));
         }
-        action.run(dir).await?;
+        action.run().await?;
         if !main.size && main.footprint.is_none() {
             return Ok(());
         }
@@ -413,19 +408,13 @@ impl AppletCommand {
     async fn execute(self, main: &MainOptions) -> Result<()> {
         match self {
             AppletCommand::Runner(runner) => runner.execute(main).await,
-            AppletCommand::Install { options, action, command } => {
+            AppletCommand::Install { options, transfer, mut wait } => {
                 let applet = "target/wasefire/applet.wasm".into();
-                let action = action::AppletInstall { applet, transfer: action };
-                let mut connection = options.connect().await?;
-                action.run(&mut connection).await?;
-                match command {
-                    None => Ok(()),
-                    Some(AppletInstallCommand::Wait { mut action }) => {
-                        action.wait.ensure_wait();
-                        action.ensure_exit();
-                        action.run(&mut connection).await
-                    }
+                if let Some(action::AppletInstallWait::Wait { action }) = &mut wait {
+                    action.ensure_exit();
                 }
+                let action = action::AppletInstall { applet, transfer, wait };
+                action.run(&mut options.connect().await?).await
             }
         }
     }
@@ -474,6 +463,9 @@ impl RunnerOptions {
             }
             if let Some(serial) = &self.serial {
                 cargo.env("WASEFIRE_HOST_SERIAL", serial);
+            }
+            if fs::exists("target/wasefire/web").await {
+                fs::remove_dir_all("target/wasefire/web").await?;
             }
             cmd::execute(Command::new("make").current_dir("crates/runner-host/crates/web-client"))
                 .await?;
@@ -752,7 +744,7 @@ async fn wrap_command() -> Result<Command> {
 }
 
 async fn ensure_assemblyscript() -> Result<()> {
-    const ASC_VERSION: &str = "0.27.29"; // scripts/upgrade.sh relies on this name
+    const ASC_VERSION: &str = "0.27.30"; // scripts/upgrade.sh relies on this name
     const BIN: &str = "examples/assemblyscript/node_modules/.bin/asc";
     const JSON: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
     if fs::exists(BIN).await && fs::exists(JSON).await {

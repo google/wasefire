@@ -91,7 +91,7 @@ pub struct Call<'a, 'm> {
     store: &'a mut Store<'m>,
 }
 
-impl<'m> Default for Store<'m> {
+impl Default for Store<'_> {
     fn default() -> Self {
         Self {
             id: STORE_ID.next(),
@@ -482,7 +482,7 @@ pub enum RunAnswer {
     Host,
 }
 
-impl<'a, 'm> RunResult<'a, 'm> {
+impl RunResult<'_, '_> {
     pub fn forget(self) -> RunAnswer {
         match self {
             RunResult::Done(result) => RunAnswer::Done(result),
@@ -649,7 +649,7 @@ impl<'a, 'm> ComputeElem<'a, 'm> {
     }
 }
 
-impl<'a, 'm> parser::ParseElem<'m, Use> for ComputeElem<'a, 'm> {
+impl<'m> parser::ParseElem<'m, Use> for ComputeElem<'_, 'm> {
     fn mode(&mut self, mode: parser::ElemMode<'_, 'm, Use>) -> MResult<(), Use> {
         let mode = match mode {
             parser::ElemMode::Passive => ElemMode::Passive,
@@ -693,7 +693,7 @@ impl<'a, 'm> ComputeData<'a, 'm> {
     }
 }
 
-impl<'a, 'm> parser::ParseData<'m, Use> for ComputeData<'a, 'm> {
+impl<'m> parser::ParseData<'m, Use> for ComputeData<'_, 'm> {
     fn mode(&mut self, mode: parser::DataMode<'_, 'm, Use>) -> MResult<(), Use> {
         let mode = match mode {
             parser::DataMode::Passive => DataMode::Passive,
@@ -1498,7 +1498,7 @@ trait Growable {
     fn grow(&mut self, n: u32, x: Self::Item);
 }
 
-impl<'m> Growable for Memory<'m> {
+impl Growable for Memory<'_> {
     type Item = ();
     fn size(&self) -> u32 {
         self.size

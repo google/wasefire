@@ -690,7 +690,7 @@ enum Path<'a> {
     Mod { name: &'a str, prev: &'a Path<'a> },
 }
 
-impl<'a> std::fmt::Display for Path<'a> {
+impl std::fmt::Display for Path<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (name, prev) = match self {
             Path::Empty => return Ok(()),

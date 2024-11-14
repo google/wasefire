@@ -124,7 +124,7 @@ struct SchedulerCallT<'a, B: Board> {
     result: &'a mut i32,
 }
 
-impl<'a, B: Board> core::fmt::Debug for SchedulerCallT<'a, B> {
+impl<B: Board> core::fmt::Debug for SchedulerCallT<'_, B> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("SchedulerCallT").finish()
     }
@@ -135,7 +135,7 @@ struct SchedulerCall<'a, B: Board, T> {
     phantom: PhantomData<T>,
 }
 
-impl<'a, B: Board, T> core::fmt::Debug for SchedulerCall<'a, B, T> {
+impl<B: Board, T> core::fmt::Debug for SchedulerCall<'_, B, T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("SchedulerCall").finish()
     }
@@ -158,7 +158,7 @@ impl<'a, B: Board> Dispatch for DispatchSchedulerCall<'a, B> {
     }
 }
 
-impl<'a, B: Board, T: Signature> SchedulerCall<'a, B, T> {
+impl<B: Board, T: Signature> SchedulerCall<'_, B, T> {
     fn read(&self) -> T::Params {
         #[cfg(feature = "wasm")]
         let params = &self.erased.args;
@@ -356,7 +356,9 @@ impl<B: Board> Scheduler<B> {
             store.link_func("env", d.name, d.params, 1)?;
         }
         store.link_func_default("env")?;
-        // SAFETY: This function is called once in `run()`.
+        // SAFETY: We support only one applet at the moment, and the previous one is dropped when
+        // assigning to self.applet above.
+        #[allow(static_mut_refs)]
         let inst = store.instantiate(module, unsafe { &mut MEMORY.0 })?;
         #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Platform);

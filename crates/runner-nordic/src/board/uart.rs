@@ -147,7 +147,7 @@ struct Uart<'a> {
     state: &'a mut State,
 }
 
-impl<'a> Uart<'a> {
+impl Uart<'_> {
     fn stoptx(regs: &RegisterBlock) {
         regs.tasks_stoptx.write(|w| w.tasks_stoptx().set_bit());
         while regs.events_txstopped.read().events_txstopped().bit_is_clear() {}
@@ -326,7 +326,7 @@ fn set_high(psel_bits: u32) {
 struct PrettyError<'a>(&'a errorsrc::R);
 
 #[cfg(feature = "debug")]
-impl<'a> defmt::Format for PrettyError<'a> {
+impl defmt::Format for PrettyError<'_> {
     fn format(&self, fmt: defmt::Formatter) {
         defmt::write!(fmt, "UART error:");
         if self.0.overrun().is_present() {

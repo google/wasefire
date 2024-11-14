@@ -368,7 +368,7 @@ pub enum SectionId {
     DataCount = 12,
 }
 
-impl<'m> Deref for ResultType<'m> {
+impl Deref for ResultType<'_> {
     type Target = [ValType];
 
     fn deref(&self) -> &Self::Target {
@@ -382,7 +382,7 @@ impl<'m> From<&'m [ValType]> for ResultType<'m> {
     }
 }
 
-impl<'m> From<ValType> for ResultType<'m> {
+impl From<ValType> for ResultType<'_> {
     fn from(x: ValType) -> Self {
         macro_rules! make {
             ($($x:ident),*) => {{
@@ -401,7 +401,7 @@ impl<'m> From<ValType> for ResultType<'m> {
     }
 }
 
-impl<'m> From<()> for ResultType<'m> {
+impl From<()> for ResultType<'_> {
     fn from(_: ()) -> Self {
         Self(&[])
     }
