@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1-git
+
+### Minor
+
+- Add `fs::targz_{list,extract}()` to manipulate tarballs
+- Add `fs::download()` for download files
+
 ## 0.2.0
 
 ### Major
