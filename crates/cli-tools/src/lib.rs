@@ -20,6 +20,7 @@
 #![feature(doc_auto_cfg)]
 #![feature(never_type)]
 #![feature(path_add_extension)]
+#![feature(try_blocks)]
 #![feature(try_find)]
 
 macro_rules! debug {
