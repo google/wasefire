@@ -466,7 +466,10 @@ impl SideTable {
             eprintln!("side-table negative stack delta {source} - {target_without_result}");
             return Err(unsupported(if_debug!(Unsupported::SideTable)));
         };
-        u32::try_from((delta - target.result).max(0)).map_err(|_| {
+        if delta < target.result {
+            return Ok(0);
+        }
+        u32::try_from(delta - target.result).map_err(|_| {
             #[cfg(feature = "debug")]
             eprintln!("side-table pop_cnt overflow {delta}");
             unsupported(if_debug!(Unsupported::SideTable))
