@@ -429,9 +429,9 @@ impl SideTable {
     fn stitch(&mut self, source: SideTableBranch, target: SideTableBranch) -> CheckResult {
         let delta_ip = Self::delta(source, target, |x| x.parser.as_ptr() as isize)?;
         let delta_stp = Self::delta(source, target, |x| x.side_table as isize)?;
-        let val_cnt = u32::try_from(source.result).map_err(|_| {
+        let val_cnt = u32::try_from(target.result).map_err(|_| {
             #[cfg(feature = "debug")]
-            eprintln!("side-table conversion overflow {0}", source.result);
+            eprintln!("side-table val_cnt overflow {0}", source.result);
             unsupported(if_debug!(Unsupported::SideTable))
         })?;
         let pop_cnt = Self::pop_cnt(source, target)?;
@@ -463,12 +463,12 @@ impl SideTable {
         let target = target.stack;
         let Some(delta) = source.checked_sub(target) else {
             #[cfg(feature = "debug")]
-            eprintln!("side-table negative stack delta {source} < {target}");
+            eprintln!("side-table negative stack delta {source} - {target}");
             return Err(unsupported(if_debug!(Unsupported::SideTable)));
         };
         u32::try_from(delta).map_err(|_| {
             #[cfg(feature = "debug")]
-            eprintln!("side-table conversion overflow {delta}");
+            eprintln!("side-table pop_cnt overflow {delta}");
             unsupported(if_debug!(Unsupported::SideTable))
         })
     }
@@ -582,17 +582,18 @@ impl<'a, 'm> Expr<'a, 'm> {
             Nop => (),
             Block(b) => self.push_label(self.blocktype(&b)?, LabelKind::Block)?,
             Loop(b) => {
-                self.push_label(self.blocktype(&b)?, LabelKind::Loop(self.branch_target()))?
+                let type_ = self.blocktype(&b)?;
+                self.push_label(type_, LabelKind::Loop(self.branch_target(type_.results.len())))?
             }
             If(b) => {
                 self.pop_check(ValType::I32)?;
-                let branch = self.branch_source(0);
+                let branch = self.branch_source();
                 self.push_label(self.blocktype(&b)?, LabelKind::If(branch))?;
             }
             Else => {
                 match core::mem::replace(&mut self.label().kind, LabelKind::Block) {
                     LabelKind::If(source) => {
-                        self.side_table.stitch(source, self.branch_target())?
+                        self.side_table.stitch(source, self.branch_target(source.result))?
                     }
                     _ => Err(invalid())?,
                 }
@@ -844,7 +845,8 @@ impl<'a, 'm> Expr<'a, 'm> {
     }
 
     fn end_label(&mut self) -> CheckResult {
-        let target = self.branch_target();
+        let results_len = self.label().type_.results.len();
+        let target = self.branch_target(results_len);
         for source in core::mem::take(&mut self.label().branches) {
             self.side_table.stitch(source, target)?;
         }
@@ -866,28 +868,35 @@ impl<'a, 'm> Expr<'a, 'm> {
         let l = l as usize;
         let n = self.labels.len();
         check(l < n)?;
+        let source = self.branch_source();
         let label = &mut self.labels[n - l - 1];
-        let (result, target) = match label.kind {
-            LabelKind::Block | LabelKind::If(_) => (label.type_.results, None),
-            LabelKind::Loop(target) => (label.type_.params, Some(target)),
-        };
-        let source = self.branch_source(result.len());
-        match target {
-            None => self.label().branches.push(source),
-            Some(branch) => self.side_table.stitch(source, branch)?,
-        };
-        Ok(result)
+        Ok(match label.kind {
+            LabelKind::Block | LabelKind::If(_) => {
+                label.branches.push(source);
+                label.type_.results
+            }
+            LabelKind::Loop(target) => {
+                self.side_table.stitch(source, target)?;
+                label.type_.params
+            }
+        })
     }
 
-    fn branch_source(&mut self, result: usize) -> SideTableBranch<'m> {
-        let mut branch = self.branch_target();
-        branch.result = result;
+    fn branch_source(&mut self) -> SideTableBranch<'m> {
+        let mut branch = self.branch();
         branch.stack += self.stack().len();
         self.side_table.branch();
         branch
     }
 
-    fn branch_target(&self) -> SideTableBranch<'m> {
+    fn branch_target(&self, result: usize) -> SideTableBranch<'m> {
+        let mut branch = self.branch();
+        branch.result = result;
+        branch.stack += result;
+        branch
+    }
+
+    fn branch(&self) -> SideTableBranch<'m> {
         SideTableBranch {
             parser: self.parser.save(),
             side_table: self.side_table.save(),

@@ -47,7 +47,7 @@ impl SideTableEntry {
         Ok(SideTableEntry(fields))
     }
 
-    fn view(self) -> SideTableEntryView {
+    pub fn view(self) -> SideTableEntryView {
         let delta_ip = from_signed_field(Self::DELTA_IP_MASK, self.0);
         let delta_stp = from_signed_field(Self::DELTA_STP_MASK, self.0);
         let val_cnt = from_field(Self::VAL_CNT_MASK, self.0);
