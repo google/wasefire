@@ -460,13 +460,13 @@ impl SideTable {
 
     fn pop_cnt(source: SideTableBranch, target: SideTableBranch) -> MResult<u32, Check> {
         let source = source.stack;
-        let target = target.stack;
-        let Some(delta) = source.checked_sub(target) else {
+        let target_without_result = target.stack - target.result;
+        let Some(delta) = source.checked_sub(target_without_result) else {
             #[cfg(feature = "debug")]
-            eprintln!("side-table negative stack delta {source} - {target}");
+            eprintln!("side-table negative stack delta {source} - {target_without_result}");
             return Err(unsupported(if_debug!(Unsupported::SideTable)));
         };
-        u32::try_from(delta).map_err(|_| {
+        u32::try_from(delta - target.result).map_err(|_| {
             #[cfg(feature = "debug")]
             eprintln!("side-table pop_cnt overflow {delta}");
             unsupported(if_debug!(Unsupported::SideTable))
