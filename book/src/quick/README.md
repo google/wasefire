@@ -22,7 +22,8 @@ You can test that the CLI is correctly installed by running `wasefire help`.
 
 You can also add shell completion with `wasefire completion`. You need to place the generated script
 where you shell will interpret it, which depends on your shell and configuration. If you use bash
-and have root access, you can copy it to `/usr/share/bash-completion/completions/wasefire`.
+and have root access, you can copy it to `/etc/bash_completion.d/wasefire` or
+`/usr/share/bash-completion/completions/wasefire`.
 
 ### GitHub Codespace
 

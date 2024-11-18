@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1-git
+
+### Minor
+
+- Add `self-update` to download and install the latest CLI
+
 ## 0.2.0
 
 ### Major
