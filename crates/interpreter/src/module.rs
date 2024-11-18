@@ -31,12 +31,19 @@ pub struct Module<'m> {
     // TODO(dev/fast-interp): Flatten it to 1D array when making it persistent in
     // flash.
     side_tables: Vec<Vec<SideTableEntry>>,
+    side_table_entry_indices: (usize, usize),
     cache: Cache<CacheKey, CacheValue>,
 }
 
 impl Default for Module<'_> {
     fn default() -> Self {
-        Self { binary: &[], types: Vec::new(), side_tables: Vec::new(), cache: Cache::unbounded() }
+        Self {
+            binary: &[],
+            types: Vec::new(),
+            side_tables: Vec::new(),
+            side_table_entry_indices: (0, 0),
+            cache: Cache::unbounded(),
+        }
     }
 }
 
@@ -244,5 +251,12 @@ impl<'m> Module<'m> {
 
     pub(crate) fn skip_to_end(&mut self, parser: &mut Parser<'m>, l: LabelIdx) {
         self.skip(parser, l, |p, l| p.skip_to_end(l).into_ok());
+    }
+
+    pub(crate) fn skip_to(&mut self, parser: &mut Parser<'m>) {
+        let (i, mut j) = self.side_table_entry_indices;
+        let entry = (&self.side_tables[i][j]).view();
+        parser.skip_to(entry.delta_ip).into_ok();
+        j = (j as i32 + entry.delta_stp) as usize;
     }
 }
