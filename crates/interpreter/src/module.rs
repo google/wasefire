@@ -257,6 +257,6 @@ impl<'m> Module<'m> {
         let (i, mut j) = self.side_table_entry_indices;
         let entry = (&self.side_tables[i][j]).view();
         parser.skip_to(entry.delta_ip).into_ok();
-        j = (j as i32 + entry.delta_stp) as usize;
+        self.side_table_entry_indices.1 = (j as i32 + entry.delta_stp) as usize;
     }
 }
