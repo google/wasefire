@@ -586,7 +586,7 @@ impl<'a, 'm> Expr<'a, 'm> {
             Block(b) => self.push_label(self.blocktype(&b)?, LabelKind::Block)?,
             Loop(b) => {
                 let type_ = self.blocktype(&b)?;
-                self.push_label(type_, LabelKind::Loop(self.branch_target(type_.results.len())))?
+                self.push_label(type_, LabelKind::Loop(self.branch_target(type_.params.len())))?
             }
             If(b) => {
                 self.pop_check(ValType::I32)?;
