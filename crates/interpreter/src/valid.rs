@@ -429,9 +429,12 @@ impl SideTable {
     fn stitch(&mut self, source: SideTableBranch, target: SideTableBranch) -> CheckResult {
         let delta_ip = Self::delta(source, target, |x| x.parser.as_ptr() as isize)?;
         let delta_stp = Self::delta(source, target, |x| x.side_table as isize)?;
-        // TODO(dev/fast-interp): Compute the fields below.
-        let val_cnt = 0;
-        let pop_cnt = 0;
+        let val_cnt = u32::try_from(target.result).map_err(|_| {
+            #[cfg(feature = "debug")]
+            eprintln!("side-table val_cnt overflow {0}", source.result);
+            unsupported(if_debug!(Unsupported::SideTable))
+        })?;
+        let pop_cnt = Self::pop_cnt(source, target)?;
         let entry = &mut self.entries[source.side_table];
         assert!(entry.is_none());
         *entry = Some(SideTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt });
@@ -455,6 +458,24 @@ impl SideTable {
         })
     }
 
+    fn pop_cnt(source: SideTableBranch, target: SideTableBranch) -> MResult<u32, Check> {
+        let source = source.stack;
+        let target_without_result = target.stack - target.result;
+        let Some(delta) = source.checked_sub(target_without_result) else {
+            #[cfg(feature = "debug")]
+            eprintln!("side-table negative stack delta {source} - {target_without_result}");
+            return Err(unsupported(if_debug!(Unsupported::SideTable)));
+        };
+        if delta < target.result {
+            return Ok(0);
+        }
+        u32::try_from(delta - target.result).map_err(|_| {
+            #[cfg(feature = "debug")]
+            eprintln!("side-table pop_cnt overflow {delta}");
+            unsupported(if_debug!(Unsupported::SideTable))
+        })
+    }
+
     fn persist(self) -> MResult<Vec<SideTableEntry>, Check> {
         self.entries.into_iter().map(|entry| SideTableEntry::new(entry.unwrap())).collect()
     }
@@ -464,6 +485,8 @@ impl SideTable {
 struct SideTableBranch<'m> {
     parser: &'m [u8],
     side_table: usize,
+    stack: usize,
+    result: usize, // unused (zero) for target branches
 }
 
 #[derive(Debug, Default)]
@@ -475,6 +498,8 @@ struct Label<'m> {
     polymorphic: bool,
     stack: Vec<OpdType>,
     branches: Vec<SideTableBranch<'m>>,
+    /// Total stack length of the labels in this function up to this label.
+    prev_stack: usize,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -560,7 +585,8 @@ impl<'a, 'm> Expr<'a, 'm> {
             Nop => (),
             Block(b) => self.push_label(self.blocktype(&b)?, LabelKind::Block)?,
             Loop(b) => {
-                self.push_label(self.blocktype(&b)?, LabelKind::Loop(self.branch_target()))?
+                let type_ = self.blocktype(&b)?;
+                self.push_label(type_, LabelKind::Loop(self.branch_target(type_.params.len())))?
             }
             If(b) => {
                 self.pop_check(ValType::I32)?;
@@ -570,7 +596,7 @@ impl<'a, 'm> Expr<'a, 'm> {
             Else => {
                 match core::mem::replace(&mut self.label().kind, LabelKind::Block) {
                     LabelKind::If(source) => {
-                        self.side_table.stitch(source, self.branch_target())?
+                        self.side_table.stitch(source, self.branch_target(source.result))?
                     }
                     _ => Err(invalid())?,
                 }
@@ -741,6 +767,10 @@ impl<'a, 'm> Expr<'a, 'm> {
         self.labels.last_mut().unwrap()
     }
 
+    fn immutable_label(&self) -> &Label<'m> {
+        self.labels.last().unwrap()
+    }
+
     fn stack(&mut self) -> &mut Vec<OpdType> {
         &mut self.label().stack
     }
@@ -810,13 +840,16 @@ impl<'a, 'm> Expr<'a, 'm> {
     fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind<'m>) -> CheckResult {
         self.pops(type_.params)?;
         let stack = type_.params.iter().cloned().map(OpdType::from).collect();
-        let label = Label { type_, kind, polymorphic: false, stack, branches: vec![] };
+        let prev_label = self.immutable_label();
+        let prev_stack = prev_label.prev_stack + prev_label.stack.len();
+        let label = Label { type_, kind, polymorphic: false, stack, branches: vec![], prev_stack };
         self.labels.push(label);
         Ok(())
     }
 
     fn end_label(&mut self) -> CheckResult {
-        let target = self.branch_target();
+        let results_len = self.label().type_.results.len();
+        let target = self.branch_target(results_len);
         for source in core::mem::take(&mut self.label().branches) {
             self.side_table.stitch(source, target)?;
         }
@@ -853,13 +886,26 @@ impl<'a, 'm> Expr<'a, 'm> {
     }
 
     fn branch_source(&mut self) -> SideTableBranch<'m> {
-        let branch = self.branch_target();
+        let mut branch = self.branch();
+        branch.stack += self.stack().len();
         self.side_table.branch();
         branch
     }
 
-    fn branch_target(&self) -> SideTableBranch<'m> {
-        SideTableBranch { parser: self.parser.save(), side_table: self.side_table.save() }
+    fn branch_target(&self, result: usize) -> SideTableBranch<'m> {
+        let mut branch = self.branch();
+        branch.result = result;
+        branch.stack += result;
+        branch
+    }
+
+    fn branch(&self) -> SideTableBranch<'m> {
+        SideTableBranch {
+            parser: self.parser.save(),
+            side_table: self.side_table.save(),
+            stack: self.immutable_label().prev_stack,
+            result: 0,
+        }
     }
 
     fn call(&mut self, t: FuncType) -> CheckResult {
