@@ -22,8 +22,6 @@ ensure_submodule third_party/WebAssembly/spec
 list_files() {
   find ../../third_party/WebAssembly/spec/test/core \
     -maxdepth 1 -name '*.wast' -execdir basename -s .wast {} \;
-      find ../../third_party/WebAssembly/pause/test/core \
-    -maxdepth 1 -name '*.wast' -execdir basename -s .wast {} \;
 }
 list_tests() {
   sed -n 's/^test!(.*, "\([^"]*\)".*);$/\1/p;s/^test!(\([^,]*\).*);$/\1/p;s/^test!("[^"]*",[^,]+,"\([^"]*\)");$/\1/p' tests/spec.rs | sort
@@ -41,4 +39,6 @@ RUSTFLAGS=--cfg=portable_atomic_unsafe_assume_single_core \
   cargo check --lib --target=riscv32imc-unknown-none-elf
 cargo check --example=hello
 # Run with `-- --test-threads=1 --nocapture` to see unsupported tests.
-cargo test --test=spec --features=debug,toctou,float-types,vector-types,pause
+cargo test --test=spec --features=debug,toctou,float-types,vector-types
+cargo test --test=spec --features=debug,toctou,float-types,vector-types,interrupt
+cargo test --test=interrupt --all-features

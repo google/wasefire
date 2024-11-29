@@ -13,8 +13,7 @@
 // limitations under the License.
 
 #![allow(unused_crate_dependencies)]
-#[cfg(feature = "pause")]
-use portable_atomic::AtomicBool;
+
 use wasefire_interpreter::*;
 
 fn main() {
@@ -53,29 +52,11 @@ fn main() {
     // the host does neither have enough memory nor virtual memory.
     let mut memory = [0; 5];
 
-    #[cfg(feature = "pause")]
-    let interrupt = AtomicBool::new(false);
-
     // Instantiate the module in the store.
-    let inst = store
-        .instantiate(
-            module,
-            &mut memory,
-            #[cfg(feature = "pause")]
-            Some(&interrupt),
-        )
-        .unwrap();
+    let inst = store.instantiate(module, &mut memory).unwrap();
 
     // Call the "main" function exported by the instance.
-    let mut result = store
-        .invoke(
-            inst,
-            "main",
-            vec![],
-            #[cfg(feature = "pause")]
-            &interrupt,
-        )
-        .unwrap();
+    let mut result = store.invoke(inst, "main", vec![]).unwrap();
 
     // Process calls from the module to the host until "main" terminates.
     loop {
@@ -86,8 +67,6 @@ fn main() {
                 assert!(results.is_empty());
                 break;
             }
-            #[cfg(feature = "pause")]
-            RunResult::Interrupt() => unreachable!(),
         };
 
         // We only linked one function, which has thus index zero.
