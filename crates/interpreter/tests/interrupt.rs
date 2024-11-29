@@ -21,12 +21,6 @@ fn test_interrupt() {
 
             const WASM: &[u8] = include_bytes!("infinite_loop.wasm");
             let module = Module::new(WASM).unwrap();
-
-            // Allocate memory for the module. The module needs one 64kB page, but we know it
-            // doesn't use more than 5 bytes. The interpreter supports smaller memory
-            // and traps the module if it accesses outside the actual memory size. This
-            // behavior is not compliant but necessary when the host does neither have
-            // enough memory nor virtual memory.
             let mut memory = [0; 16];
 
             // Instantiate the module in the store.
