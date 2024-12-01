@@ -140,7 +140,6 @@ macro_rules! support_if {
 }
 
 mod bit_field;
-mod cache;
 mod error;
 mod exec;
 mod id;

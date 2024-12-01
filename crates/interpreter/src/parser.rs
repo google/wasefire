@@ -64,10 +64,6 @@ impl<'m, M: Mode> Parser<'m, M> {
         Ok(result)
     }
 
-    pub fn parse_bytes_reversely(&mut self, delta: i32) -> MResult<&'m [u8], M> {
-        unimplemented!()
-    }
-
     pub fn split_at(&mut self, len: usize) -> MResult<Parser<'m, M>, M> {
         Ok(Self::internal_new(self.parse_bytes(len)?))
     }
@@ -555,25 +551,6 @@ impl<'m, M: Mode> Parser<'m, M> {
         user.init(self.parse_bytes(len)?)
     }
 
-    pub fn skip_to_else(&mut self) -> MResult<(), M> {
-        let mut depth = 0;
-        loop {
-            let saved = self.save();
-            match self.parse_instr()? {
-                Instr::Block(_) => depth += 1,
-                Instr::Loop(_) => depth += 1,
-                Instr::If(_) => depth += 1,
-                Instr::End if depth == 0 => {
-                    unsafe { self.restore(saved) };
-                    return Ok(());
-                }
-                Instr::End => depth -= 1,
-                Instr::Else if depth == 0 => return Ok(()),
-                _ => (),
-            }
-        }
-    }
-
     pub fn skip_to_end(&mut self, l: LabelIdx) -> MResult<(), M> {
         let mut depth = l as usize + 1;
         while depth > 0 {
@@ -584,15 +561,6 @@ impl<'m, M: Mode> Parser<'m, M> {
                 Instr::End => depth -= 1,
                 _ => (),
             }
-        }
-        Ok(())
-    }
-
-    pub fn skip_to(&mut self, delta: i32) -> MResult<(), M> {
-        if delta >= 0 {
-            self.parse_bytes(delta as usize)?;
-        } else {
-            self.parse_bytes_reversely(delta)?;
         }
         Ok(())
     }

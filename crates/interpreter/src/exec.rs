@@ -217,7 +217,7 @@ impl<'m> Store<'m> {
             _ => return Err(Error::Invalid),
         };
         let inst_id = ptr.instance().unwrap_wasm();
-        let inst = &self.insts[inst_id];
+        let inst = &mut self.insts[inst_id];
         let x = ptr.index();
         let t = inst.module.func_type(x);
         let mut parser = inst.module.func(x);
@@ -765,28 +765,47 @@ impl<'m> Thread<'m> {
             Unreachable => return Err(trap()),
             Nop => (),
             Block(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Block),
-            Loop(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Loop(saved)),
+            Loop(b) => self.push_label(
+                self.blocktype(inst, &b),
+                LabelKind::Loop(LoopState {
+                    parser_data: saved,
+                    side_table_idx: *inst.module.index_in_side_table(),
+                }),
+            ),
             If(b) => match self.pop_value().unwrap_i32() {
-                0 => {
-                    self.skip_to_else(inst);
+                0 => unsafe {
+                    self.jump_from_if(inst);
                     self.push_label(self.blocktype(inst, &b), LabelKind::Block);
+                },
+                _ => {
+                    *inst.module.index_in_side_table() += 1;
+                    self.push_label(self.blocktype(inst, &b), LabelKind::If);
                 }
-                _ => self.push_label(self.blocktype(inst, &b), LabelKind::If),
             },
-            Else => {
-                self.skip_to_end(inst, 0);
+            Else => unsafe {
+                self.jump_to_end(inst, None);
                 return Ok(self.exit_label());
-            }
+            },
             End => return Ok(self.exit_label()),
-            Br(l) => return Ok(self.pop_label(inst, l)),
+            Br(l) => return Ok(self.pop_label(inst, l, None)),
             BrIf(l) => {
                 if self.pop_value().unwrap_i32() != 0 {
-                    return Ok(self.pop_label(inst, l));
+                    return Ok(self.pop_label(inst, l, None));
                 }
+                *inst.module.index_in_side_table() += 1;
             }
             BrTable(ls, ln) => {
                 let i = self.pop_value().unwrap_i32() as usize;
-                return Ok(self.pop_label(inst, ls.get(i).cloned().unwrap_or(ln)));
+                let ls_idx = i;
+                let mut is_last = false;
+                if i >= ls.len() {
+                    is_last = true;
+                }
+                return Ok(self.pop_label(
+                    inst,
+                    ls.get(i).cloned().unwrap_or(ln),
+                    Option::from((ls_idx, is_last)),
+                ));
             }
             Return => return Ok(self.exit_frame()),
             Call(x) => return self.invoke(store, store.func_ptr(inst_id, x)),
@@ -1038,7 +1057,9 @@ impl<'m> Thread<'m> {
         self.labels().push(label);
     }
 
-    fn pop_label(mut self, inst: &mut Instance<'m>, l: LabelIdx) -> ThreadResult<'m> {
+    fn pop_label(
+        mut self, inst: &mut Instance<'m>, l: LabelIdx, ls_idx: Option<(usize, bool)>,
+    ) -> ThreadResult<'m> {
         let i = self.labels().len() - l as usize - 1;
         if i == 0 {
             return self.exit_frame();
@@ -1050,8 +1071,11 @@ impl<'m> Thread<'m> {
         self.values().drain(values_len - values_cnt .. values_len - arity);
         self.label().values_cnt += arity;
         match kind {
-            LabelKind::Loop(pos) => unsafe { self.parser.restore(pos) },
-            LabelKind::Block | LabelKind::If => self.skip_to_end(inst, l),
+            LabelKind::Loop(state) => unsafe {
+                *inst.module.index_in_side_table() = state.side_table_idx;
+                self.parser.restore(state.parser_data)
+            },
+            LabelKind::Block | LabelKind::If => unsafe { self.jump_to_end(inst, ls_idx) },
         }
         ThreadResult::Continue(self)
     }
@@ -1088,12 +1112,16 @@ impl<'m> Thread<'m> {
         ThreadResult::Continue(self)
     }
 
-    fn skip_to_else(&mut self, inst: &mut Instance<'m>) {
-        inst.module.skip_to_else(&mut self.parser);
+    unsafe fn jump_to_end(&mut self, inst: &mut Instance<'m>, ls_idx: Option<(usize, bool)>) {
+        unsafe {
+            inst.module.jump_to_end(&mut self.parser, ls_idx);
+        }
     }
 
-    fn skip_to_end(&mut self, inst: &mut Instance<'m>, l: LabelIdx) {
-        inst.module.skip_to_end(&mut self.parser, l);
+    unsafe fn jump_from_if(&mut self, inst: &mut Instance<'m>) {
+        unsafe {
+            inst.module.jump_from_if(&mut self.parser);
+        }
     }
 
     fn blocktype(&self, inst: &Instance<'m>, b: &BlockType) -> FuncType<'m> {
@@ -1426,13 +1454,19 @@ struct Label<'m> {
 }
 
 #[derive(Debug)]
+struct LoopState<'m> {
+    parser_data: &'m [u8],
+    side_table_idx: usize,
+}
+
+#[derive(Debug)]
 enum LabelKind<'m> {
     // TODO: If and Block can be merged and then we just have Option<NonNull<u8>> which is
     // optimized.
     Block,
     // TODO: Could be just NonNull<u8> since we can reuse the end of current parser since it
     // never changes.
-    Loop(&'m [u8]),
+    Loop(LoopState<'m>),
     If,
 }
 
