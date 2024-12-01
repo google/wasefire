@@ -18,7 +18,6 @@ use alloc::vec::Vec;
 
 use crate::error::*;
 use crate::module::*;
-use crate::side_table::SideTableEntry;
 use crate::syntax::*;
 use crate::toctou::*;
 use crate::*;
@@ -729,8 +728,7 @@ impl<'m> Thread<'m> {
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
         let parser = mut_parser.clone();
-        static EMPTY_VEC: Vec<SideTableEntry> = Vec::new();
-        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new(), &EMPTY_VEC));
+        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new()));
         let (parser, results) = loop {
             let p = thread.parser.save();
             match thread.step(store).unwrap() {
