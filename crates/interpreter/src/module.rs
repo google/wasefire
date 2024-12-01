@@ -214,7 +214,7 @@ impl<'m> Module<'m> {
         unreachable!()
     }
 
-    pub(crate) unsafe fn jump_from_if(&mut self, parser: &mut Parser<'m>) {
+    pub(crate) fn jump_from_if(&mut self, parser: &mut Parser<'m>) {
         let (i, j) = self.side_table_indices;
         let entry = self.side_tables[i][j].view();
         let delta = entry.delta_ip as isize - 1;
@@ -230,9 +230,7 @@ impl<'m> Module<'m> {
         }
     }
 
-    pub(crate) unsafe fn jump_to_end(
-        &mut self, parser: &mut Parser<'m>, ls_idx: Option<(usize, bool)>,
-    ) {
+    pub(crate) fn jump_to_end(&mut self, parser: &mut Parser<'m>, ls_idx: Option<(usize, bool)>) {
         let (i, mut j) = self.side_table_indices;
         // In validation for BrTable, the side table entry for the last label index is created at
         // first.

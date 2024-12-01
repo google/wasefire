@@ -773,19 +773,19 @@ impl<'m> Thread<'m> {
                 }),
             ),
             If(b) => match self.pop_value().unwrap_i32() {
-                0 => unsafe {
+                0 => {
                     self.jump_from_if(inst);
                     self.push_label(self.blocktype(inst, &b), LabelKind::Block);
-                },
+                }
                 _ => {
                     *inst.module.index_in_side_table() += 1;
                     self.push_label(self.blocktype(inst, &b), LabelKind::If);
                 }
             },
-            Else => unsafe {
+            Else => {
                 self.jump_to_end(inst, None);
                 return Ok(self.exit_label());
-            },
+            }
             End => return Ok(self.exit_label()),
             Br(l) => return Ok(self.pop_label(inst, l, None)),
             BrIf(l) => {
@@ -1075,7 +1075,7 @@ impl<'m> Thread<'m> {
                 *inst.module.index_in_side_table() = state.side_table_idx;
                 self.parser.restore(state.parser_data)
             },
-            LabelKind::Block | LabelKind::If => unsafe { self.jump_to_end(inst, ls_idx) },
+            LabelKind::Block | LabelKind::If => self.jump_to_end(inst, ls_idx),
         }
         ThreadResult::Continue(self)
     }
@@ -1112,16 +1112,12 @@ impl<'m> Thread<'m> {
         ThreadResult::Continue(self)
     }
 
-    unsafe fn jump_to_end(&mut self, inst: &mut Instance<'m>, ls_idx: Option<(usize, bool)>) {
-        unsafe {
-            inst.module.jump_to_end(&mut self.parser, ls_idx);
-        }
+    fn jump_to_end(&mut self, inst: &mut Instance<'m>, ls_idx: Option<(usize, bool)>) {
+        inst.module.jump_to_end(&mut self.parser, ls_idx);
     }
 
-    unsafe fn jump_from_if(&mut self, inst: &mut Instance<'m>) {
-        unsafe {
-            inst.module.jump_from_if(&mut self.parser);
-        }
+    fn jump_from_if(&mut self, inst: &mut Instance<'m>) {
+        inst.module.jump_from_if(&mut self.parser);
     }
 
     fn blocktype(&self, inst: &Instance<'m>, b: &BlockType) -> FuncType<'m> {
