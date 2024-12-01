@@ -64,10 +64,6 @@ impl<'m, M: Mode> Parser<'m, M> {
         Ok(result)
     }
 
-    pub fn parse_bytes_reversely(&mut self, delta: i32) -> MResult<&'m [u8], M> {
-        unimplemented!()
-    }
-
     pub fn split_at(&mut self, len: usize) -> MResult<Parser<'m, M>, M> {
         Ok(Self::internal_new(self.parse_bytes(len)?))
     }
@@ -565,15 +561,6 @@ impl<'m, M: Mode> Parser<'m, M> {
                 Instr::End => depth -= 1,
                 _ => (),
             }
-        }
-        Ok(())
-    }
-
-    pub fn skip_to(&mut self, delta: i32) -> MResult<(), M> {
-        if delta >= 0 {
-            self.parse_bytes(delta as usize)?;
-        } else {
-            self.parse_bytes_reversely(delta)?;
         }
         Ok(())
     }
