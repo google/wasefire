@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.1-git
+
+### Minor
+
+- Provide `bytemuck::Pod` for `ArrayU32`
+- Implement `bytemuck::Pod` for `U32<T>`
+
 ## 0.7.0
 
 ### Major
