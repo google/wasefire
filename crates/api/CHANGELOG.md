@@ -4,7 +4,7 @@
 
 ### Minor
 
-- Require `bytemuck::Pod` for `ArrayU32`
+- Provide `bytemuck::Pod` for `ArrayU32`
 - Implement `bytemuck::Pod` for `U32<T>`
 
 ## 0.7.0
