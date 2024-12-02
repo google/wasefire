@@ -183,6 +183,8 @@ impl<'m> Env<'m> {
         Ok(match self.store.invoke(inst_id, name, args)? {
             RunResult::Done(x) => x,
             RunResult::Host { .. } => unreachable!(),
+            #[cfg(feature = "interrupt")]
+            RunResult::Interrupt { .. } => unreachable!(),
         })
     }
 

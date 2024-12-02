@@ -15,6 +15,11 @@
 // TODO: Some toctou could be used instead of panic.
 use alloc::vec;
 use alloc::vec::Vec;
+#[cfg(feature = "interrupt")]
+use core::sync::atomic::Ordering::Relaxed;
+
+#[cfg(feature = "interrupt")]
+use portable_atomic::AtomicBool;
 
 use crate::error::*;
 use crate::module::*;
@@ -58,6 +63,8 @@ pub struct Store<'m> {
     // functions in `funcs` is stored to limit normal linking to that part.
     func_default: Option<(&'m str, usize)>,
     threads: Vec<Continuation<'m>>,
+    #[cfg(feature = "interrupt")]
+    interrupt: Option<&'m AtomicBool>,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -99,6 +106,8 @@ impl Default for Store<'_> {
             funcs: vec![],
             func_default: None,
             threads: vec![],
+            #[cfg(feature = "interrupt")]
+            interrupt: None,
         }
     }
 }
@@ -195,13 +204,18 @@ impl<'m> Store<'m> {
             let mut parser = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals));
+            let thread = Thread::new(
+                parser,
+                Frame::new(inst_id, 0, &[], locals),
+                #[cfg(feature = "interrupt")]
+                None,
+            );
+
             let result = thread.run(self)?;
-            assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
+            assert!(matches!(result, RunResult::Done(x) if x.is_empty()))
         }
         Ok(InstId { store_id: self.id, inst_id })
     }
-
     /// Invokes a function in an instance provided its name.
     ///
     /// If a function was already running, it will resume once the function being called terminates.
@@ -225,7 +239,13 @@ impl<'m> Store<'m> {
         let mut locals = args;
         append_locals(&mut parser, &mut locals);
         let frame = Frame::new(inst_id, t.results.len(), &[], locals);
-        Thread::new(parser, frame).run(self)
+        Thread::new(
+            parser,
+            frame,
+            #[cfg(feature = "interrupt")]
+            self.interrupt,
+        )
+        .run(self)
     }
 
     /// Returns the value of a global of an instance.
@@ -303,6 +323,11 @@ impl<'m> Store<'m> {
             Some(Call { store: self })
         }
     }
+
+    #[cfg(feature = "interrupt")]
+    pub fn set_interrupt(&mut self, interrupt: Option<&'m AtomicBool>) {
+        self.interrupt = interrupt;
+    }
 }
 
 impl<'a, 'm> Call<'a, 'm> {
@@ -337,6 +362,12 @@ impl<'a, 'm> Call<'a, 'm> {
         check(results.len() == arity)?;
         thread.push_values(results);
         thread.run(self.store)
+    }
+
+    // Returns if this call is due to an interrupt.
+    #[cfg(feature = "interrupt")]
+    pub fn is_interrupt(&self) -> bool {
+        self.cont().interrupted
     }
 
     fn cont(&self) -> &Continuation {
@@ -460,6 +491,8 @@ struct Instance<'m> {
 struct Thread<'m> {
     parser: Parser<'m>,
     frames: Vec<Frame<'m>>,
+    #[cfg(feature = "interrupt")]
+    interrupt: Option<&'m AtomicBool>,
 }
 
 /// Runtime result.
@@ -470,6 +503,10 @@ pub enum RunResult<'a, 'm> {
 
     /// Execution is calling into the host.
     Host(Call<'a, 'm>),
+
+    /// Execution was interrupted by the host.
+    #[cfg(feature = "interrupt")]
+    Interrupt(Call<'a, 'm>),
 }
 
 /// Runtime result without host call information.
@@ -484,6 +521,8 @@ impl RunResult<'_, '_> {
         match self {
             RunResult::Done(result) => RunAnswer::Done(result),
             RunResult::Host(_) => RunAnswer::Host,
+            #[cfg(feature = "interrupt")]
+            RunResult::Interrupt(_) => RunAnswer::Host,
         }
     }
 }
@@ -494,6 +533,8 @@ struct Continuation<'m> {
     index: usize,
     args: Vec<Val>,
     arity: usize,
+    #[cfg(feature = "interrupt")]
+    interrupted: bool,
 }
 
 impl<'m> Store<'m> {
@@ -724,21 +765,40 @@ enum ThreadResult<'m> {
     Continue(Thread<'m>),
     Done(Vec<Val>),
     Host,
+    #[cfg(feature = "interrupt")]
+    Interrupt,
 }
 
 impl<'m> Thread<'m> {
-    fn new(parser: Parser<'m>, frame: Frame<'m>) -> Thread<'m> {
-        Thread { parser, frames: vec![frame] }
+    fn new(
+        parser: Parser<'m>, frame: Frame<'m>,
+        #[cfg(feature = "interrupt")] interrupt: Option<&'m AtomicBool>,
+    ) -> Thread<'m> {
+        Thread {
+            parser,
+            frames: vec![frame],
+
+            #[cfg(feature = "interrupt")]
+            interrupt,
+        }
     }
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
         let parser = mut_parser.clone();
-        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new()));
+        let mut thread = Thread::new(
+            parser,
+            Frame::new(inst_id, 1, &[], Vec::new()),
+            #[cfg(feature = "interrupt")]
+            None,
+        );
+
         let (parser, results) = loop {
             let p = thread.parser.save();
             match thread.step(store).unwrap() {
                 ThreadResult::Continue(x) => thread = x,
                 ThreadResult::Done(x) => break (p, x),
+                #[cfg(feature = "interrupt")]
+                ThreadResult::Interrupt => unreachable!(),
                 ThreadResult::Host => unreachable!(),
             }
         };
@@ -757,6 +817,8 @@ impl<'m> Thread<'m> {
                 ThreadResult::Continue(x) => self = x,
                 ThreadResult::Done(x) => return Ok(RunResult::Done(x)),
                 ThreadResult::Host => return Ok(RunResult::Host(Call { store })),
+                #[cfg(feature = "interrupt")]
+                ThreadResult::Interrupt => return Ok(RunResult::Interrupt(Call { store })),
             }
         }
     }
@@ -765,7 +827,7 @@ impl<'m> Thread<'m> {
         use Instr::*;
         let saved = self.parser.save();
         let inst_id = self.frame().inst_id;
-        let inst = &mut store.insts[inst_id];
+        let inst: &mut Instance<'m> = &mut store.insts[inst_id];
         match self.parser.parse_instr().into_ok() {
             Unreachable => return Err(trap()),
             Nop => (),
@@ -783,15 +845,15 @@ impl<'m> Thread<'m> {
                 return Ok(self.exit_label());
             }
             End => return Ok(self.exit_label()),
-            Br(l) => return Ok(self.pop_label(inst, l)),
+            Br(l) => return self.pop_label(inst, l, &mut store.threads),
             BrIf(l) => {
                 if self.pop_value().unwrap_i32() != 0 {
-                    return Ok(self.pop_label(inst, l));
+                    return self.pop_label(inst, l, &mut store.threads);
                 }
             }
             BrTable(ls, ln) => {
                 let i = self.pop_value().unwrap_i32() as usize;
-                return Ok(self.pop_label(inst, ls.get(i).cloned().unwrap_or(ln)));
+                return self.pop_label(inst, ls.get(i).cloned().unwrap_or(ln), &mut store.threads);
             }
             Return => return Ok(self.exit_frame()),
             Call(x) => return self.invoke(store, store.func_ptr(inst_id, x)),
@@ -1035,20 +1097,48 @@ impl<'m> Thread<'m> {
         self.labels().push(label);
     }
 
-    fn pop_label(mut self, inst: &mut Instance<'m>, l: LabelIdx) -> ThreadResult<'m> {
+    #[allow(clippy::ptr_arg)]
+    fn unbounded_continue(self, _threads: &mut Vec<Continuation<'m>>) -> ThreadResult<'m> {
+        #[cfg(feature = "interrupt")]
+        if self.interrupt.is_some_and(|interrupt| interrupt.swap(false, Relaxed)) {
+            _threads.push(Continuation {
+                thread: self,
+                index: 0,
+                args: vec![],
+                arity: 0,
+                #[cfg(feature = "interrupt")]
+                interrupted: true,
+            });
+            return ThreadResult::Interrupt;
+        }
+
+        ThreadResult::Continue(self)
+    }
+
+    fn pop_label(
+        mut self, inst: &mut Instance<'m>, l: LabelIdx, threads: &mut Vec<Continuation<'m>>,
+    ) -> Result<ThreadResult<'m>, Error> {
         let i = self.labels().len() - l as usize - 1;
         if i == 0 {
-            return self.exit_frame();
+            return Ok(self.exit_frame());
         }
         let values = core::mem::take(self.values());
         let frame = self.frame();
         let Label { arity, kind, .. } = frame.labels.drain(i ..).next().unwrap();
         self.values().extend_from_slice(&values[values.len() - arity ..]);
+
         match kind {
-            LabelKind::Loop(pos) => unsafe { self.parser.restore(pos) },
-            LabelKind::Block | LabelKind::If => self.skip_to_end(inst, l),
+            LabelKind::Loop(pos) => {
+                unsafe {
+                    self.parser.restore(pos);
+                }
+                Ok(self.unbounded_continue(threads))
+            }
+            LabelKind::Block | LabelKind::If => {
+                self.skip_to_end(inst, l);
+                Ok(ThreadResult::Continue(self))
+            }
         }
-        ThreadResult::Continue(self)
     }
 
     fn exit_label(mut self) -> ThreadResult<'m> {
@@ -1355,7 +1445,14 @@ impl<'m> Thread<'m> {
                 let t = store.funcs[index].1;
                 let arity = t.results.len();
                 let args = self.pop_values(t.params.len());
-                store.threads.push(Continuation { thread: self, arity, index, args });
+                store.threads.push(Continuation {
+                    thread: self,
+                    arity,
+                    index,
+                    args,
+                    #[cfg(feature = "interrupt")]
+                    interrupted: false,
+                });
                 return Ok(ThreadResult::Host);
             }
             Side::Wasm(x) => x,
@@ -1366,7 +1463,7 @@ impl<'m> Thread<'m> {
         let ret = self.parser.save();
         self.parser = parser;
         self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals));
-        Ok(ThreadResult::Continue(self))
+        Ok(self.unbounded_continue(&mut store.threads))
     }
 }
 

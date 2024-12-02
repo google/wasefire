@@ -40,3 +40,5 @@ RUSTFLAGS=--cfg=portable_atomic_unsafe_assume_single_core \
 cargo check --example=hello
 # Run with `-- --test-threads=1 --nocapture` to see unsupported tests.
 cargo test --test=spec --features=debug,toctou,float-types,vector-types
+cargo test --test=spec --features=debug,toctou,float-types,vector-types,interrupt
+cargo test --test=interrupt --all-features
