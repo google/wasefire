@@ -48,13 +48,13 @@ features = ["host"]
 optional = true
 
 [dependencies.wasefire-protocol-tokio]
-version = "0.1.0"
+version = "0.1.1-git"
 path = "../protocol-tokio"
 features = ["host", "log"]
 optional = true
 
 [dependencies.wasefire-protocol-usb]
-version = "0.2.0"
+version = "0.2.1-git"
 path = "../protocol-usb"
 features = ["host", "log"]
 optional = true

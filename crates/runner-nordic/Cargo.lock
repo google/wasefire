@@ -1127,9 +1127,10 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.7.0"
+version = "0.7.1-git"
 dependencies = [
  "bytemuck",
+ "derive-where",
  "sealed",
  "wasefire-applet-api-macro",
  "wasefire-error",
@@ -1138,7 +1139,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.2.1"
+version = "0.2.2-git"
 dependencies = [
  "data-encoding",
  "data-encoding-macro",
@@ -1149,14 +1150,14 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.7.0"
+version = "0.8.0-git"
 dependencies = [
  "wasefire-applet-api-desc",
 ]
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.8.0"
+version = "0.8.1-git"
 dependencies = [
  "aead",
  "aes-gcm",
@@ -1219,7 +1220,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol-usb"
-version = "0.2.0"
+version = "0.2.1-git"
 dependencies = [
  "defmt",
  "usb-device",
@@ -1231,7 +1232,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-scheduler"
-version = "0.4.0"
+version = "0.4.1-git"
 dependencies = [
  "bytemuck",
  "defmt",

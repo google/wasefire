@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1-git
+
+### Patch
+
+- Update dependencies
+
 ## 0.4.0
 
 ### Major
