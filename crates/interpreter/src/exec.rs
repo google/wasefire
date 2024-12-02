@@ -63,7 +63,6 @@ pub struct Store<'m> {
     // functions in `funcs` is stored to limit normal linking to that part.
     func_default: Option<(&'m str, usize)>,
     threads: Vec<Continuation<'m>>,
-
     #[cfg(feature = "interrupt")]
     interrupt: Option<&'m AtomicBool>,
 }
@@ -209,24 +208,14 @@ impl<'m> Store<'m> {
                 parser,
                 Frame::new(inst_id, 0, &[], locals),
                 #[cfg(feature = "interrupt")]
-                self.interrupt,
+                None,
             );
 
-            // Disable interrupts for the start section.
-            #[cfg(feature = "interrupt")]
-            let interrupt = self.interrupt;
-            #[cfg(feature = "interrupt")]
-            self.set_interrupt(None);
-
             let result = thread.run(self)?;
-            assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
-
-            #[cfg(feature = "interrupt")]
-            self.set_interrupt(interrupt);
+            assert!(matches!(result, RunResult::Done(x) if x.is_empty()))
         }
         Ok(InstId { store_id: self.id, inst_id })
     }
-
     /// Invokes a function in an instance provided its name.
     ///
     /// If a function was already running, it will resume once the function being called terminates.
@@ -515,7 +504,7 @@ pub enum RunResult<'a, 'm> {
     /// Execution is calling into the host.
     Host(Call<'a, 'm>),
 
-    // Execution was interrupted by the host.
+    /// Execution was interrupted by the host.
     #[cfg(feature = "interrupt")]
     Interrupt(Call<'a, 'm>),
 }
@@ -800,8 +789,9 @@ impl<'m> Thread<'m> {
             parser,
             Frame::new(inst_id, 1, &[], Vec::new()),
             #[cfg(feature = "interrupt")]
-            store.interrupt,
+            None,
         );
+
         let (parser, results) = loop {
             let p = thread.parser.save();
             match thread.step(store).unwrap() {
@@ -1108,11 +1098,9 @@ impl<'m> Thread<'m> {
     }
 
     #[allow(clippy::ptr_arg)]
-    fn check_interrupt_or_continue(self, _threads: &mut Vec<Continuation<'m>>) -> ThreadResult<'m> {
+    fn unbounded_continue(self, _threads: &mut Vec<Continuation<'m>>) -> ThreadResult<'m> {
         #[cfg(feature = "interrupt")]
-        if self.interrupt.is_some_and(|interrupt| {
-            interrupt.compare_exchange_weak(true, false, Relaxed, Relaxed).is_ok()
-        }) {
+        if self.interrupt.is_some_and(|interrupt| interrupt.swap(false, Relaxed)) {
             _threads.push(Continuation {
                 thread: self,
                 index: 0,
@@ -1144,7 +1132,7 @@ impl<'m> Thread<'m> {
                 unsafe {
                     self.parser.restore(pos);
                 }
-                Ok(self.check_interrupt_or_continue(threads))
+                Ok(self.unbounded_continue(threads))
             }
             LabelKind::Block | LabelKind::If => {
                 self.skip_to_end(inst, l);
@@ -1475,7 +1463,7 @@ impl<'m> Thread<'m> {
         let ret = self.parser.save();
         self.parser = parser;
         self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals));
-        Ok(self.check_interrupt_or_continue(&mut store.threads))
+        Ok(self.unbounded_continue(&mut store.threads))
     }
 }
 
