@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1-git
+
+### Patch
+
+- Update dependencies
+
 ## 0.7.0
 
 ### Major

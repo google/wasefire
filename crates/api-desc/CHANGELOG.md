@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2-git
+
+### Minor
+
+- Implement `bytemuck::Pod` for generated `Params`
+
 ## 0.2.1
 
 ### Minor
