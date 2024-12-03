@@ -19,41 +19,20 @@ set -e
 
 # This script publishes all crates.
 
-[ -z "$(git status -s)" ] || e "Repository is not clean"
-
-TOPOLOGICAL_ORDER=(
-  one-of
-  logger
-  wire-derive
-  error
-  wire
-  sync
-  protocol
-  interpreter
-  store
-  api-desc
-  api-macro
-  api
-  stub
-  prelude
-  board
-  scheduler
-  protocol-tokio
-  protocol-usb
-  cli-tools
-  cli
-)
-
 listed_crates() {
   echo "${TOPOLOGICAL_ORDER[@]}" | sed 's/ /\n/g' | sort
 }
 
-published_crates() {
-  find crates -name CHANGELOG.md -printf '%h\n' | sed 's#^crates/##' | sort
+all_crates() {
+  git ls-files '*/Cargo.toml' | sed -n 's#^crates/\(.*\)/Cargo.toml$#\1#p' | sort
 }
 
 dependencies() {
-  sed -n 's#^wasefire-.*path = "../\([a-z-]*\)".*$#\1#p' crates/$1/Cargo.toml
+  sed -n 's#^.*path = "\([^"]*\)".*$#\1#p' crates/$1/Cargo.toml | \
+    while read i; do
+      [ ${i%.rs} = $i ] || continue
+      realpath --relative-base=crates -m crates/$1/$i
+    done
 }
 
 occurs_before() {
@@ -64,16 +43,17 @@ occurs_before() {
   return 2
 }
 
-diff <(listed_crates) <(published_crates) \
-  || e 'Listed and published crates do not match (see diff above)'
+diff <(listed_crates) <(all_crates) || e 'Listed crates out of sync (see diff above)'
 
 for crate in "${TOPOLOGICAL_ORDER[@]}"; do
-  for name in $(dependencies $crate); do
-    occurs_before $name $crate || e "$crate depends on $name but occurs before"
+  for dep in $(dependencies $crate); do
+    occurs_before $dep $crate || e "$crate depends on $dep but occurs before"
   done
 done
 
 [ "$1" = --dry-run ] && d "Nothing more to do with --dry-run"
+
+[ -z "$(git status -s)" ] || e "Repository is not clean"
 
 i "Remove all -git suffixes (if any) and reset CHANGELOG tests"
 sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})
@@ -92,6 +72,7 @@ git log -1 --pretty=%s | grep -q '^Release all crates (#[0-9]*)$' \
 
 for crate in "${TOPOLOGICAL_ORDER[@]}"; do
   ( cd crates/$crate
+    $(package_publish) || continue
     current="$(package_version)"
     latest="$(cargo_info_version "$(package_name)")"
     if [ "$current" = "$latest" ]; then
