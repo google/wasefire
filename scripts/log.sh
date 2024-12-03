@@ -20,6 +20,9 @@ t() { _log '1;33' Todo "$*"; }
 d() { _log '1;32' Done "$*"; exit 0; }
 e() { _log '1;31' Error "$*"; exit 1; }
 
+# Most (if not all) scripts depend on log.sh, so we make sure they sort correctly.
+export LC_COLLATE=C
+
 # We put the escape character in a variable because bash doesn't interpret escaped characters and
 # some scripts use bash instead of sh.
 _LOG=$(printf '\e')
