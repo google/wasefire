@@ -37,7 +37,13 @@ impl Uarts {
     pub fn init() {
         let uart = crate::FLAGS.dir.join("uart0");
         let _ = std::fs::remove_file(&uart);
-        let listener = UnixListener::bind(&uart).unwrap();
+        let listener = match UnixListener::bind(&uart) {
+            Ok(x) => x,
+            Err(e) => {
+                log::error!("Failed to bind UART unix socket: {e}");
+                return;
+            }
+        };
         tokio::spawn(async move {
             loop {
                 match listener.accept().await {
