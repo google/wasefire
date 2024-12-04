@@ -6,7 +6,7 @@ license = "Apache-2.0"
 edition = "2021"
 
 [dependencies]
-thiserror = { version = "1.0.61", optional = true }
+thiserror = { version = "2.0.4", optional = true }
 wasefire = { path = "../../../../crates/prelude", optional = true }
 
 [features]

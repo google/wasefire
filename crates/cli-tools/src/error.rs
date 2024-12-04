@@ -20,5 +20,5 @@ use std::error::Error;
 pub fn root_cause_is<E: Error + Send + Sync + 'static>(
     error: &anyhow::Error, predicate: impl FnOnce(&E) -> bool,
 ) -> bool {
-    error.root_cause().downcast_ref::<E>().map_or(false, predicate)
+    error.root_cause().downcast_ref::<E>().is_some_and(predicate)
 }

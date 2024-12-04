@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2-git
+
+### Patch
+
+- Fix clippy lints
+- Update dependencies
+
 ## 0.3.1
 
 ### Minor

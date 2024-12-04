@@ -287,7 +287,7 @@ impl<'m> Store<'m> {
         let name = HostName { module, name };
         check(self.func_default.is_none())?;
         check(self.insts.is_empty())?;
-        check(self.funcs.last().map_or(true, |x| x.0 < name))?;
+        check(self.funcs.last().is_none_or(|x| x.0 < name))?;
         self.funcs.push((name, type_));
         Ok(())
     }
@@ -903,7 +903,7 @@ impl<'m> Thread<'m> {
                 let s = self.pop_value().unwrap_i32() as usize;
                 let d = self.pop_value().unwrap_i32() as usize;
                 let mem = store.mem(inst_id, 0);
-                if core::cmp::max(s, d).checked_add(n).map_or(true, |x| x > mem.len() as usize) {
+                if core::cmp::max(s, d).checked_add(n).is_none_or(|x| x > mem.len() as usize) {
                     return Err(trap());
                 }
                 mem.data.copy_within(s .. s + n, d);
@@ -913,7 +913,7 @@ impl<'m> Thread<'m> {
                 let val = self.pop_value().unwrap_i32() as u8;
                 let d = self.pop_value().unwrap_i32() as usize;
                 let mem = store.mem(inst_id, 0);
-                if d.checked_add(n).map_or(true, |x| x > mem.len() as usize) {
+                if d.checked_add(n).is_none_or(|x| x > mem.len() as usize) {
                     memory_too_small(d, n, mem);
                     return Err(trap());
                 }
@@ -958,7 +958,7 @@ impl<'m> Thread<'m> {
                 let val = self.pop_value();
                 let i = self.pop_value().unwrap_i32() as usize;
                 let table = store.table(inst_id, x);
-                if i.checked_add(n).map_or(true, |x| x > table.elems.len()) {
+                if i.checked_add(n).is_none_or(|x| x > table.elems.len()) {
                     return Err(trap());
                 }
                 table.elems[i ..][.. n].fill(val);
@@ -1371,8 +1371,8 @@ impl<'m> Thread<'m> {
 }
 
 fn table_init(d: usize, s: usize, n: usize, table: &mut Table, elems: &[Val]) -> Result<(), Error> {
-    if s.checked_add(n).map_or(true, |x| x > elems.len())
-        || d.checked_add(n).map_or(true, |x| x > table.elems.len())
+    if s.checked_add(n).is_none_or(|x| x > elems.len())
+        || d.checked_add(n).is_none_or(|x| x > table.elems.len())
     {
         Err(trap())
     } else {
@@ -1382,8 +1382,8 @@ fn table_init(d: usize, s: usize, n: usize, table: &mut Table, elems: &[Val]) ->
 }
 
 fn memory_init(d: usize, s: usize, n: usize, mem: &mut Memory, data: &[u8]) -> Result<(), Error> {
-    if s.checked_add(n).map_or(true, |x| x > data.len())
-        || d.checked_add(n).map_or(true, |x| x > mem.len() as usize)
+    if s.checked_add(n).is_none_or(|x| x > data.len())
+        || d.checked_add(n).is_none_or(|x| x > mem.len() as usize)
     {
         memory_too_small(d, n, mem);
         Err(trap())

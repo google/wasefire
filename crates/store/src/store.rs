@@ -870,7 +870,7 @@ impl<S: Storage> Store<S> {
                 _ => continue,
             };
             let pos = self.format.page_head(init, page);
-            if best.map_or(true, |x| pos.cmp(&x) == ordering) {
+            if best.is_none_or(|x| pos.cmp(&x) == ordering) {
                 best = Some(pos);
             }
         }
@@ -955,7 +955,7 @@ impl<S: Storage> Store<S> {
                     }
                     *pos += 1 + length;
                     ParsedEntry::User(header)
-                } else if footer.map_or(true, |x| is_erased(&x)) {
+                } else if footer.is_none_or(|x| is_erased(&x)) {
                     self.parse_partial(pos)
                 } else {
                     *pos += 1 + length;
