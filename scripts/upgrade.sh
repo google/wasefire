@@ -45,7 +45,7 @@ update_breaking() {
     read garbage
   done
 }
-for crate in "${TOPOLOGICAL_ORDER[@]}"; do
+for crate in $TOPOLOGICAL_ORDER; do
   update_breaking crates/$crate/Cargo.toml
 done
 for path in $(git ls-files '*/Cargo.toml'); do

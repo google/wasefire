@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,7 @@ set -e
 # This script publishes all crates.
 
 listed_crates() {
-  echo "${TOPOLOGICAL_ORDER[@]}" | sed 's/ /\n/g' | sort
+  echo $TOPOLOGICAL_ORDER | sed 's/ /\n/g' | sort
 }
 
 all_crates() {
@@ -36,7 +36,7 @@ dependencies() {
 }
 
 occurs_before() {
-  for x in "${TOPOLOGICAL_ORDER[@]}"; do
+  for x in $TOPOLOGICAL_ORDER; do
     [ $x = $1 ] && return
     [ $x = $2 ] && return 1
   done
@@ -45,7 +45,7 @@ occurs_before() {
 
 diff <(listed_crates) <(all_crates) || e 'Listed crates out of sync (see diff above)'
 
-for crate in "${TOPOLOGICAL_ORDER[@]}"; do
+for crate in $TOPOLOGICAL_ORDER; do
   for dep in $(dependencies $crate); do
     occurs_before $dep $crate || e "$crate depends on $dep but occurs before"
   done
@@ -70,7 +70,7 @@ git log -1 --pretty=%s | grep -q '^Release all crates (#[0-9]*)$' \
   || e "This is not a merged release commit"
 [ "$1" = --no-dry-run ] || d "Run with --no-dry-run to actually publish"
 
-for crate in "${TOPOLOGICAL_ORDER[@]}"; do
+for crate in $TOPOLOGICAL_ORDER; do
   ( cd crates/$crate
     $(package_publish) || continue
     current="$(package_version)"
