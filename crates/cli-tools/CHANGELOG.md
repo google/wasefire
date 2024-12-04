@@ -9,6 +9,7 @@
 
 ### Patch
 
+- Fix clippy lints
 - Update dependencies
 
 ## 0.2.0
