@@ -27,6 +27,43 @@ package_bin_path() { _package_bin_string path; }
 
 cargo_info_version() { _cargo_info "$1" version; }
 
+# Tested by ./scripts/publish.sh --dry-run
+TOPOLOGICAL_ORDER='
+one-of
+logger
+wire-derive
+error
+wire
+wire/fuzz
+sync
+protocol
+interpreter
+store
+store/fuzz
+api-desc
+api-desc/crates/update
+api-macro
+api
+stub
+prelude
+board
+scheduler
+protocol-tokio
+protocol-usb
+cli-tools
+cli
+xtask
+protocol/crates/schema
+runner-host/crates/web-common
+runner-host/crates/web-client
+runner-host/crates/web-server
+runner-host
+runner-nordic/crates/header
+runner-nordic
+runner-nordic/crates/bootloader
+wasm-bench
+'
+
 # Internal helpers
 _package_raw() { sed -n '/^\[package]$/,/^$/{s/^'"$1"' = //p}' Cargo.toml; }
 _package_string() { _package_raw "$1" | sed 's/^"\(.*\)"$/\1/'; }
