@@ -40,7 +40,7 @@ impl Uarts {
         let listener = match UnixListener::bind(&uart) {
             Ok(x) => x,
             Err(e) => {
-                log::error!("Failed to bind UART unix socket: {e}");
+                log::error!("Failed to bind UART unix socket: {}", e);
                 return;
             }
         };
