@@ -16,16 +16,13 @@
 set -e
 . scripts/log.sh
 . scripts/package.sh
+. scripts/test-helper.sh
 
 # This script publishes all crates.
 
-listed_crates() {
-  echo $TOPOLOGICAL_ORDER | sed 's/ /\n/g' | sort
-}
-
-all_crates() {
-  git ls-files '*/Cargo.toml' | sed -n 's#^crates/\(.*\)/Cargo.toml$#\1#p' | sort
-}
+diff_sorted TOPOLOGICAL_ORDER \
+  "$(git ls-files '*/Cargo.toml' | sed -n 's#^crates/\(.*\)/Cargo.toml$#\1#p' | sort)" \
+  $(echo $TOPOLOGICAL_ORDER | sed 's/ /\n/g' | sort)
 
 dependencies() {
   sed -n 's#^.*path = "\([^"]*\)".*$#\1#p' crates/$1/Cargo.toml | \
@@ -42,8 +39,6 @@ occurs_before() {
   done
   return 2
 }
-
-diff <(listed_crates) <(all_crates) || e 'Listed crates out of sync (see diff above)'
 
 for crate in $TOPOLOGICAL_ORDER; do
   for dep in $(dependencies $crate); do
