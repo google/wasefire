@@ -573,7 +573,7 @@ impl RustAppletBuild {
         if self.prod {
             cargo.arg("-Zbuild-std=core,alloc");
             let mut features = "-Zbuild-std-features=panic_immediate_abort".to_string();
-            if self.opt_level.map_or(false, OptLevel::optimize_for_size) {
+            if self.opt_level.is_some_and(OptLevel::optimize_for_size) {
                 features.push_str(",optimize_for_size");
             }
             cargo.arg(features);
