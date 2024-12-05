@@ -329,7 +329,7 @@ impl Fn {
                 pub struct Sig;
 
                 /// Parameters of [Sig].
-                #[derive(Debug, Default, Copy, Clone)]
+                #[derive(Debug, Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
                 #[repr(C)]
                 pub struct Params { #(#params,)* }
 

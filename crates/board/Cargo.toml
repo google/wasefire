@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-board-api"
-version = "0.8.0"
+version = "0.8.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -37,10 +37,10 @@ usbd-serial = { version = "0.2.2", default-features = false, optional = true }
 wasefire-error = { version = "0.1.2", path = "../error" }
 wasefire-logger = { version = "0.1.6", path = "../logger" }
 wasefire-protocol = { version = "0.2.0", path = "../protocol" }
-wasefire-store = { version = "0.3.0", path = "../store", optional = true }
+wasefire-store = { version = "0.3.1-git", path = "../store", optional = true }
 
 [dependencies.wasefire-applet-api]
-version = "0.7.0"
+version = "0.7.1-git"
 path = "../api"
 features = ["host"]
 optional = true
@@ -155,6 +155,7 @@ internal-software-crypto-hmac = ["dep:hmac"]
 [lints]
 clippy.unit-arg = "allow"
 rust.missing-docs = "warn"
+rust.unexpected_cfgs = { level = "allow", check-cfg = ["cfg(target_arch, values(\"spirv\"))"] }
 rust.unreachable-pub = "warn"
 rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

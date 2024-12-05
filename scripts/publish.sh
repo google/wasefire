@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,64 +16,39 @@
 set -e
 . scripts/log.sh
 . scripts/package.sh
+. scripts/test-helper.sh
 
 # This script publishes all crates.
 
-[ -z "$(git status -s)" ] || e "Repository is not clean"
-
-TOPOLOGICAL_ORDER=(
-  one-of
-  logger
-  wire-derive
-  error
-  wire
-  sync
-  protocol
-  interpreter
-  store
-  api-desc
-  api-macro
-  api
-  stub
-  prelude
-  board
-  scheduler
-  protocol-tokio
-  protocol-usb
-  cli-tools
-  cli
-)
-
-listed_crates() {
-  echo "${TOPOLOGICAL_ORDER[@]}" | sed 's/ /\n/g' | sort
-}
-
-published_crates() {
-  find crates -name CHANGELOG.md -printf '%h\n' | sed 's#^crates/##' | sort
-}
+diff_sorted TOPOLOGICAL_ORDER \
+  "$(git ls-files '*/Cargo.toml' | sed -n 's#^crates/\(.*\)/Cargo.toml$#\1#p' | sort)" \
+  $(echo $TOPOLOGICAL_ORDER | sed 's/ /\n/g' | sort)
 
 dependencies() {
-  sed -n 's#^wasefire-.*path = "../\([a-z-]*\)".*$#\1#p' crates/$1/Cargo.toml
+  sed -n 's#^.*path = "\([^"]*\)".*$#\1#p' crates/$1/Cargo.toml | \
+    while read i; do
+      [ ${i%.rs} = $i ] || continue
+      realpath --relative-base=crates -m crates/$1/$i
+    done
 }
 
 occurs_before() {
-  for x in "${TOPOLOGICAL_ORDER[@]}"; do
+  for x in $TOPOLOGICAL_ORDER; do
     [ $x = $1 ] && return
     [ $x = $2 ] && return 1
   done
   return 2
 }
 
-diff <(listed_crates) <(published_crates) \
-  || e 'Listed and published crates do not match (see diff above)'
-
-for crate in "${TOPOLOGICAL_ORDER[@]}"; do
-  for name in $(dependencies $crate); do
-    occurs_before $name $crate || e "$crate depends on $name but occurs before"
+for crate in $TOPOLOGICAL_ORDER; do
+  for dep in $(dependencies $crate); do
+    occurs_before $dep $crate || e "$crate depends on $dep but occurs before"
   done
 done
 
 [ "$1" = --dry-run ] && d "Nothing more to do with --dry-run"
+
+[ -z "$(git status -s)" ] || e "Repository is not clean"
 
 i "Remove all -git suffixes (if any) and reset CHANGELOG tests"
 sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})
@@ -90,8 +65,9 @@ git log -1 --pretty=%s | grep -q '^Release all crates (#[0-9]*)$' \
   || e "This is not a merged release commit"
 [ "$1" = --no-dry-run ] || d "Run with --no-dry-run to actually publish"
 
-for crate in "${TOPOLOGICAL_ORDER[@]}"; do
+for crate in $TOPOLOGICAL_ORDER; do
   ( cd crates/$crate
+    $(package_publish) || continue
     current="$(package_version)"
     latest="$(cargo_info_version "$(package_name)")"
     if [ "$current" = "$latest" ]; then

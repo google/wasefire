@@ -143,13 +143,13 @@ impl<'m> Context<'m> {
         }
         if let Some(mut parser) = self.check_section(parser, SectionId::Data)? {
             let n = parser.parse_vec()?;
-            check(self.datas.map_or(true, |m| m == n))?;
+            check(self.datas.is_none_or(|m| m == n))?;
             for _ in 0 .. n {
                 parser.parse_data(&mut ParseData::new(self, &mut refs, globals_len))?;
             }
             check(parser.is_empty())?;
         } else {
-            check(self.datas.map_or(true, |m| m == 0))?;
+            check(self.datas.is_none_or(|m| m == 0))?;
         }
         self.check_section(parser, SectionId::Custom)?;
         check(parser.is_empty())?;
@@ -252,7 +252,7 @@ impl<'m> Context<'m> {
     }
 
     fn data(&self, x: DataIdx) -> CheckResult {
-        check(self.datas.map_or(false, |n| (x as usize) < n))
+        check(self.datas.is_some_and(|n| (x as usize) < n))
     }
 }
 

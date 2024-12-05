@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.1-git
+
+### Patch
+
+- Update dependencies
+
 ## 0.8.0
 
 ### Major
@@ -161,4 +167,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 1 -->

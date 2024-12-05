@@ -16,7 +16,7 @@ all-features = true
 
 [dependencies]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
-cargo_metadata = { version = "0.18.1", default-features = false, optional = true }
+cargo_metadata = { version = "0.19.1", default-features = false, optional = true }
 data-encoding = { version = "2.6.0", default-features = false, features = ["std"], optional = true }
 flate2 = { version = "1.0.34", default-features = false, features = ["rust_backend"] }
 humantime = { version = "2.1.0", default-features = false, optional = true }
@@ -48,13 +48,13 @@ features = ["host"]
 optional = true
 
 [dependencies.wasefire-protocol-tokio]
-version = "0.1.0"
+version = "0.1.1-git"
 path = "../protocol-tokio"
 features = ["host", "log"]
 optional = true
 
 [dependencies.wasefire-protocol-usb]
-version = "0.2.0"
+version = "0.2.1-git"
 path = "../protocol-usb"
 features = ["host", "log"]
 optional = true

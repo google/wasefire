@@ -1645,9 +1645,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.16"
+version = "0.23.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eee87ff5d9b36712a58574e12e9f0ea80f915a5b0ac518d322b24a465617925e"
+checksum = "9c9cc1d47e243d655ace55ed38201c19ae02c148ae56412ab8750e8f0166ab7f"
 dependencies = [
  "once_cell",
  "rustls-pki-types",
@@ -1778,9 +1778,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.117"
+version = "1.0.118"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "455182ea6142b14f93f4bc5320a2b31c1f266b66a4a5c858b013302a5d8cbfc3"
+checksum = "d947f6b3163d8857ea16c4fa0dd4840d52f3041039a85decd46867eb1abef2e4"
 dependencies = [
  "itoa",
  "ryu",
@@ -2316,9 +2316,10 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.7.0"
+version = "0.7.1-git"
 dependencies = [
  "bytemuck",
+ "derive-where",
  "sealed",
  "wasefire-applet-api-macro",
  "wasefire-error",
@@ -2327,7 +2328,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.2.1"
+version = "0.2.2-git"
 dependencies = [
  "data-encoding",
  "data-encoding-macro",
@@ -2338,14 +2339,14 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.7.0"
+version = "0.8.0-git"
 dependencies = [
  "wasefire-applet-api-desc",
 ]
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.8.0"
+version = "0.8.1-git"
 dependencies = [
  "aead",
  "aes",
@@ -2393,7 +2394,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.3.1"
+version = "0.3.2-git"
 dependencies = [
  "num_enum",
  "paste",
@@ -2423,7 +2424,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol-tokio"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "anyhow",
  "tokio",
@@ -2435,7 +2436,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol-usb"
-version = "0.2.0"
+version = "0.2.1-git"
 dependencies = [
  "usb-device",
  "wasefire-board-api",
@@ -2446,7 +2447,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-scheduler"
-version = "0.4.0"
+version = "0.4.1-git"
 dependencies = [
  "bytemuck",
  "derive-where",
@@ -2466,7 +2467,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.3.0"
+version = "0.3.1-git"
 dependencies = [
  "wasefire-error",
 ]

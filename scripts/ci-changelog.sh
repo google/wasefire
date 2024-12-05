@@ -42,7 +42,9 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
     [ -z "$(package_exclude)" ] || e "Cargo.toml should not exclude anything"
     ref=$(git log -n1 --pretty=format:%H origin/main.. -- CHANGELOG.md)
     [ -n "$ref" ] || ref=origin/main
-    git diff --quiet $ref -- Cargo.toml src || e "CHANGELOG.md for $dir is not up-to-date"
+    lock=Cargo.lock
+    [ -e src/main.rs ] || lock=
+    git diff --quiet $ref -- Cargo.toml $lock src || e "CHANGELOG.md for $dir is not up-to-date"
     ver="$(sed -n '3s/^## //p' CHANGELOG.md)"
     [ -n "$ver" ] || e "CHANGELOG.md for $dir does not start with version"
     [ "$(package_version)" = "$ver" ] \

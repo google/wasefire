@@ -7,6 +7,11 @@
 - Add `fs::targz_{list,extract}()` to manipulate tarballs
 - Add `fs::download()` for download files
 
+### Patch
+
+- Fix clippy lints
+- Update dependencies
+
 ## 0.2.0
 
 ### Major
