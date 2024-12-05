@@ -426,18 +426,8 @@ impl SideTable {
         self.entries.push(None);
     }
 
-    fn stitch(
-        &mut self, source: SideTableBranch, target: SideTableBranch, is_if_without_else: bool,
-    ) -> CheckResult {
-        let mut delta_ip = Self::delta(source, target, |x| x.parser.as_ptr() as isize)?;
-        if is_if_without_else {
-            let Some(reduced_delta_ip) = delta_ip.checked_sub(1) else {
-                #[cfg(feature = "debug")]
-                eprintln!("side-table subtraction overflow {delta_ip} - 1");
-                return Err(unsupported(if_debug!(Unsupported::SideTable)));
-            };
-            delta_ip = reduced_delta_ip;
-        }
+    fn stitch(&mut self, source: SideTableBranch, target: SideTableBranch) -> CheckResult {
+        let delta_ip = Self::delta(source, target, |x| x.parser.as_ptr() as isize)?;
         let delta_stp = Self::delta(source, target, |x| x.side_table as isize)?;
         let val_cnt = u32::try_from(target.result).map_err(|_| {
             #[cfg(feature = "debug")]
@@ -606,7 +596,7 @@ impl<'a, 'm> Expr<'a, 'm> {
             Else => {
                 match core::mem::replace(&mut self.label().kind, LabelKind::Block) {
                     LabelKind::If(source) => {
-                        self.side_table.stitch(source, self.branch_target(source.result), false)?
+                        self.side_table.stitch(source, self.branch_target(source.result))?
                     }
                     _ => Err(invalid())?,
                 }
@@ -861,12 +851,12 @@ impl<'a, 'm> Expr<'a, 'm> {
         let results_len = self.label().type_.results.len();
         let target = self.branch_target(results_len);
         for source in core::mem::take(&mut self.label().branches) {
-            self.side_table.stitch(source, target, false)?;
+            self.side_table.stitch(source, target)?;
         }
         let label = self.label();
         if let LabelKind::If(source) = label.kind {
             check(label.type_.params == label.type_.results)?;
-            self.side_table.stitch(source, target, true)?;
+            self.side_table.stitch(source, target)?;
         }
         let results = self.label().type_.results;
         self.pops(results)?;
@@ -889,7 +879,7 @@ impl<'a, 'm> Expr<'a, 'm> {
                 label.type_.results
             }
             LabelKind::Loop(target) => {
-                self.side_table.stitch(source, target, false)?;
+                self.side_table.stitch(source, target)?;
                 label.type_.params
             }
         })
