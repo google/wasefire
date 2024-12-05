@@ -849,13 +849,20 @@ impl<'a, 'm> Expr<'a, 'm> {
 
     fn end_label(&mut self) -> CheckResult {
         let results_len = self.label().type_.results.len();
-        let target = self.branch_target(results_len);
+        let mut target = self.branch_target(results_len);
         for source in core::mem::take(&mut self.label().branches) {
             self.side_table.stitch(source, target)?;
         }
         let label = self.label();
         if let LabelKind::If(source) = label.kind {
             check(label.type_.params == label.type_.results)?;
+            // SAFETY: This function is only called after parsing an End instruction.
+            target.parser = unsafe {
+                core::slice::from_raw_parts(
+                    target.parser.as_ptr().offset(-1),
+                    target.parser.len() + 1,
+                )
+            };
             self.side_table.stitch(source, target)?;
         }
         let results = self.label().type_.results;
