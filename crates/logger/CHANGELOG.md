@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.7-git
+
+### Patch
+
+- Add clippy lint
+
 ## 0.1.6
 
 ### Minor

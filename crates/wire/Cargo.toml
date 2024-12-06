@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-wire"
-version = "0.1.1"
+version = "0.1.2-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -15,14 +15,15 @@ categories = ["embedded", "no-std"]
 all-features = true
 
 [dependencies]
-wasefire-error = { version = "0.1.2", path = "../error" }
-wasefire-wire-derive = { version = "0.1.1", path = "../wire-derive" }
+wasefire-error = { version = "0.1.3-git", path = "../error" }
+wasefire-wire-derive = { version = "0.1.2-git", path = "../wire-derive" }
 
 [features]
 schema = ["std", "wasefire-wire-derive/schema"]
 std = []
 
 [lints]
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
 rust.unsafe-op-in-unsafe-fn = "warn"

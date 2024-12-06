@@ -21,5 +21,6 @@ name = "store"
 path = "fuzz_targets/store.rs"
 
 [lints]
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unsafe-op-in-unsafe-fn = "warn"

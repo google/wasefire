@@ -11,6 +11,7 @@ serde = { version = "1.0.202", features = ["derive"] }
 wasefire-protocol = { path = "../../../protocol", features = ["serde"] }
 
 [lints]
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

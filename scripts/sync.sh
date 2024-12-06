@@ -33,6 +33,7 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   grep -q '^\[lints\.' $file && e "unexpected [lints.*] section in $file"
   sed -i '/^\[lints\]$/q' $file
   [ "$(tail -n1 $file)" = '[lints]' ] || printf '\n[lints]\n' >> $file
+  add_lint $file warn clippy.mod-module-files
   add_lint $file allow clippy.unit-arg
   # add_lint $file warn rust.elided-lifetimes-in-paths
   # TODO: Use the same [ -e src/lib.rs -a "$(package_publish)" = true ] test as in test-helper.
