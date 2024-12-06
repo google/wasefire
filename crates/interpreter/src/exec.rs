@@ -196,13 +196,16 @@ impl<'m> Store<'m> {
             let mut parser = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            let side_table =
-                if self.insts[inst_id].module.side_table(ptr.index() as usize).is_empty() {
-                    None
-                } else {
-                    Some(ptr.index() as usize)
-                };
-            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals, side_table));
+            let thread = Thread::new(
+                parser,
+                Frame::new(
+                    inst_id,
+                    0,
+                    &[],
+                    locals,
+                    index_in_side_tables(&self.insts[inst_id].module, ptr.index()),
+                ),
+            );
             let result = thread.run(self)?;
             assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
         }
@@ -231,12 +234,13 @@ impl<'m> Store<'m> {
         check_types(&t.params, &args)?;
         let mut locals = args;
         append_locals(&mut parser, &mut locals);
-        let side_table = if self.insts[inst_id].module.side_table(ptr.index() as usize).is_empty() {
-            None
-        } else {
-            Some(ptr.index() as usize)
-        };
-        let frame = Frame::new(inst_id, t.results.len(), &[], locals, side_table);
+        let frame = Frame::new(
+            inst_id,
+            t.results.len(),
+            &[],
+            locals,
+            index_in_side_tables(&self.insts[inst_id].module, ptr.index()),
+        );
         Thread::new(parser, frame).run(self)
     }
 
@@ -1411,13 +1415,13 @@ impl<'m> Thread<'m> {
         append_locals(&mut parser, &mut locals);
         let ret = self.parser.save();
         self.parser = parser;
-        let side_table = if store.insts[inst_id].module.side_table(ptr.index() as usize).is_empty()
-        {
-            None
-        } else {
-            Some(ptr.index() as usize)
-        };
-        self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals, side_table));
+        self.frames.push(Frame::new(
+            inst_id,
+            t.results.len(),
+            ret,
+            locals,
+            index_in_side_tables(&store.insts[inst_id].module, ptr.index()),
+        ));
         Ok(ThreadResult::Continue(self))
     }
 }
@@ -1703,4 +1707,12 @@ fn memory_too_small(x: usize, n: usize, mem: &Memory) {
     let _ = (x, n, mem);
     #[cfg(feature = "debug")]
     eprintln!("Memory too small: {x} + {n} > {}", mem.len());
+}
+
+fn index_in_side_tables(module: &Module, index: u32) -> Option<usize> {
+    if module.side_table(index as usize).is_empty() {
+        None
+    } else {
+        Some(index as usize)
+    }
 }
