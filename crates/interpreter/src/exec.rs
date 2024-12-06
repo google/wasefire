@@ -818,15 +818,10 @@ impl<'m> Thread<'m> {
             }
             BrTable(ls, ln) => {
                 let i = self.pop_value().unwrap_i32() as usize;
-                let ls_idx = i;
-                let mut is_last = false;
-                if i >= ls.len() {
-                    is_last = true;
-                }
                 return Ok(self.pop_label(
                     inst,
                     ls.get(i).cloned().unwrap_or(ln),
-                    Option::from((ls_idx, is_last)),
+                    if i >= ls.len() { None } else { Some(i) },
                 ));
             }
             Return => return Ok(self.exit_frame()),
@@ -1080,7 +1075,7 @@ impl<'m> Thread<'m> {
     }
 
     fn pop_label(
-        mut self, inst: &mut Instance<'m>, l: LabelIdx, ls_idx: Option<(usize, bool)>,
+        mut self, inst: &mut Instance<'m>, l: LabelIdx, non_default_label_idx: Option<usize>,
     ) -> ThreadResult<'m> {
         let i = self.labels().len() - l as usize - 1;
         if i == 0 {
@@ -1097,7 +1092,9 @@ impl<'m> Thread<'m> {
                 *self.frame().side_table_index() = state.side_table_idx;
                 self.parser.restore(state.parser_data)
             },
-            LabelKind::Block | LabelKind::If => self.take_jump(ls_idx, inst.module.side_tables()),
+            LabelKind::Block | LabelKind::If => {
+                self.take_jump(non_default_label_idx, inst.module.side_tables())
+            }
         }
         ThreadResult::Continue(self)
     }
@@ -1134,9 +1131,14 @@ impl<'m> Thread<'m> {
         ThreadResult::Continue(self)
     }
 
-    fn take_jump(&mut self, ls_idx: Option<(usize, bool)>, side_tables: &[Vec<SideTableEntry>]) {
-        let parser = &mut self.parser;
-        self.frames.last_mut().unwrap().take_jump(parser, ls_idx, side_tables);
+    fn take_jump(
+        &mut self, non_default_label_index: Option<usize>, side_tables: &[Vec<SideTableEntry>],
+    ) {
+        self.frames.last_mut().unwrap().take_jump(
+            &mut self.parser,
+            non_default_label_index,
+            side_tables,
+        );
     }
 
     fn blocktype(&self, inst: &Instance<'m>, b: &BlockType) -> FuncType<'m> {
@@ -1485,17 +1487,14 @@ impl<'m> Frame<'m> {
     }
 
     fn take_jump(
-        &mut self, parser: &mut Parser<'m>, ls_idx: Option<(usize, bool)>,
+        &mut self, parser: &mut Parser<'m>, non_default_label_index: Option<usize>,
         side_tables: &[Vec<SideTableEntry>],
     ) {
         let (i, mut j) = self.side_table_indices;
         // In validation for BrTable, the side table entry for the last label index is created at
         // first.
-        if ls_idx.is_some() {
-            let (ls_idx, is_last) = ls_idx.unwrap();
-            if !is_last {
-                j += ls_idx + 1;
-            }
+        if let Some(non_default_label_index) = non_default_label_index {
+            j += non_default_label_index + 1;
         }
         let entry = side_tables[i][j].view();
         unsafe {
@@ -1504,6 +1503,8 @@ impl<'m> Frame<'m> {
         self.side_table_indices.1 = (j as i32 + entry.delta_stp) as usize;
     }
 
+    // TODO(dev/fast-interp): Add debug asserts when off is positive and negative, and `toctou`
+    // support.
     fn jump(cur: &'m [u8], off: isize) -> &'m [u8] {
         unsafe {
             core::slice::from_raw_parts(
