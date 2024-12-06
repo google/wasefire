@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-sync"
-version = "0.1.1"
+version = "0.1.2-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -23,6 +23,7 @@ features = ["lazy", "portable_atomic", "spin_mutex"]
 unsafe-assume-single-core = ["portable-atomic/unsafe-assume-single-core"]
 
 [lints]
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
 rust.unsafe-op-in-unsafe-fn = "warn"

@@ -28,7 +28,7 @@ wasefire-board-api = { path = "../board" }
 wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
-wasefire-one-of = { version = "0.1.0", path = "../one-of" }
+wasefire-one-of = { version = "0.1.1-git", path = "../one-of" }
 wasefire-protocol-usb = { path = "../protocol-usb", features = ["device"] }
 wasefire-store = { path = "../store" }
 wasefire-sync = { path = "../sync" }
@@ -84,6 +84,7 @@ wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
 _software-crypto = ["software-crypto-aes256-gcm", "software-crypto-p256", "software-crypto-sha256"]
 
 [lints]
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

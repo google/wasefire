@@ -22,6 +22,7 @@ web-common = { path = "../web-common" }
 log = ["dep:log", "wasefire-logger/log"]
 
 [lints]
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

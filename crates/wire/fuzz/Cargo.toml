@@ -19,5 +19,6 @@ name = "correct"
 path = "fuzz_targets/correct.rs"
 
 [lints]
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unsafe-op-in-unsafe-fn = "warn"
