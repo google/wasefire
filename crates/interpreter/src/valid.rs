@@ -596,7 +596,9 @@ impl<'a, 'm> Expr<'a, 'm> {
             Else => {
                 match core::mem::replace(&mut self.label().kind, LabelKind::Block) {
                     LabelKind::If(source) => {
-                        self.side_table.stitch(source, self.branch_target(source.result))?
+                        let mut target = self.branch_target(source.result);
+                        target.side_table += 1;
+                        self.side_table.stitch(source, target)?
                     }
                     _ => Err(invalid())?,
                 }
