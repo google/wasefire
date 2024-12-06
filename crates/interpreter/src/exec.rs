@@ -18,6 +18,7 @@ use alloc::vec::Vec;
 
 use crate::error::*;
 use crate::module::*;
+use crate::side_table::SideTableEntry;
 use crate::syntax::*;
 use crate::toctou::*;
 use crate::*;
@@ -195,7 +196,13 @@ impl<'m> Store<'m> {
             let mut parser = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals));
+            let side_table =
+                if self.insts[inst_id].module.side_table(ptr.index() as usize).is_empty() {
+                    None
+                } else {
+                    Some(ptr.index() as usize)
+                };
+            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals, side_table));
             let result = thread.run(self)?;
             assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
         }
@@ -224,7 +231,12 @@ impl<'m> Store<'m> {
         check_types(&t.params, &args)?;
         let mut locals = args;
         append_locals(&mut parser, &mut locals);
-        let frame = Frame::new(inst_id, t.results.len(), &[], locals);
+        let side_table = if self.insts[inst_id].module.side_table(ptr.index() as usize).is_empty() {
+            None
+        } else {
+            Some(ptr.index() as usize)
+        };
+        let frame = Frame::new(inst_id, t.results.len(), &[], locals, side_table);
         Thread::new(parser, frame).run(self)
     }
 
@@ -728,7 +740,7 @@ impl<'m> Thread<'m> {
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
         let parser = mut_parser.clone();
-        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new()));
+        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new(), None));
         let (parser, results) = loop {
             let p = thread.parser.save();
             match thread.step(store).unwrap() {
@@ -765,34 +777,36 @@ impl<'m> Thread<'m> {
             Unreachable => return Err(trap()),
             Nop => (),
             Block(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Block),
-            Loop(b) => self.push_label(
-                self.blocktype(inst, &b),
-                LabelKind::Loop(LoopState {
-                    parser_data: saved,
-                    side_table_idx: *inst.module.index_in_side_table(),
-                }),
-            ),
+            Loop(b) => {
+                let side_table_idx = self.frame().side_table_indices.1;
+                self.push_label(
+                    self.blocktype(inst, &b),
+                    LabelKind::Loop(LoopState { parser_data: saved, side_table_idx }),
+                )
+            }
             If(b) => match self.pop_value().unwrap_i32() {
                 0 => {
-                    self.jump_from_if(inst);
+                    self.take_jump(None, inst.module.side_tables());
                     self.push_label(self.blocktype(inst, &b), LabelKind::Block);
                 }
                 _ => {
-                    *inst.module.index_in_side_table() += 1;
+                    self.frame().skip_jump();
                     self.push_label(self.blocktype(inst, &b), LabelKind::If);
                 }
             },
             Else => {
-                self.jump_to_end(inst, None);
+                self.take_jump(None, inst.module.side_tables());
                 return Ok(self.exit_label());
             }
-            End => return Ok(self.exit_label()),
+            End => {
+                return Ok(self.exit_label());
+            }
             Br(l) => return Ok(self.pop_label(inst, l, None)),
             BrIf(l) => {
                 if self.pop_value().unwrap_i32() != 0 {
                     return Ok(self.pop_label(inst, l, None));
                 }
-                *inst.module.index_in_side_table() += 1;
+                self.frame().skip_jump();
             }
             BrTable(ls, ln) => {
                 let i = self.pop_value().unwrap_i32() as usize;
@@ -1072,10 +1086,10 @@ impl<'m> Thread<'m> {
         self.label().values_cnt += arity;
         match kind {
             LabelKind::Loop(state) => unsafe {
-                *inst.module.index_in_side_table() = state.side_table_idx;
+                *self.frame().side_table_index() = state.side_table_idx;
                 self.parser.restore(state.parser_data)
             },
-            LabelKind::Block | LabelKind::If => self.jump_to_end(inst, ls_idx),
+            LabelKind::Block | LabelKind::If => self.take_jump(ls_idx, inst.module.side_tables()),
         }
         ThreadResult::Continue(self)
     }
@@ -1112,12 +1126,9 @@ impl<'m> Thread<'m> {
         ThreadResult::Continue(self)
     }
 
-    fn jump_to_end(&mut self, inst: &mut Instance<'m>, ls_idx: Option<(usize, bool)>) {
-        inst.module.jump_to_end(&mut self.parser, ls_idx);
-    }
-
-    fn jump_from_if(&mut self, inst: &mut Instance<'m>) {
-        inst.module.jump_from_if(&mut self.parser);
+    fn take_jump(&mut self, ls_idx: Option<(usize, bool)>, side_tables: &[Vec<SideTableEntry>]) {
+        let parser = &mut self.parser;
+        self.frames.last_mut().unwrap().take_jump(parser, ls_idx, side_tables);
     }
 
     fn blocktype(&self, inst: &Instance<'m>, b: &BlockType) -> FuncType<'m> {
@@ -1398,7 +1409,13 @@ impl<'m> Thread<'m> {
         append_locals(&mut parser, &mut locals);
         let ret = self.parser.save();
         self.parser = parser;
-        self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals));
+        let side_table = if store.insts[inst_id].module.side_table(ptr.index() as usize).is_empty()
+        {
+            None
+        } else {
+            Some(ptr.index() as usize)
+        };
+        self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals, side_table));
         Ok(ThreadResult::Continue(self))
     }
 }
@@ -1433,12 +1450,59 @@ struct Frame<'m> {
     ret: &'m [u8],
     locals: Vec<Val>,
     labels: Vec<Label<'m>>,
+    side_table_indices: (usize, usize),
 }
 
 impl<'m> Frame<'m> {
-    fn new(inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>) -> Self {
+    fn new(
+        inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>, side_table: Option<usize>,
+    ) -> Self {
         let label = Label { arity, kind: LabelKind::Block, values_cnt: 0 };
-        Frame { inst_id, arity, ret, locals, labels: vec![label] }
+        Frame {
+            inst_id,
+            arity,
+            ret,
+            locals,
+            labels: vec![label],
+            side_table_indices: (side_table.unwrap_or_default(), 0),
+        }
+    }
+
+    fn side_table_index(&mut self) -> &mut usize {
+        &mut self.side_table_indices.1
+    }
+
+    fn skip_jump(&mut self) {
+        self.side_table_indices.1 += 1;
+    }
+
+    fn take_jump(
+        &mut self, parser: &mut Parser<'m>, ls_idx: Option<(usize, bool)>,
+        side_tables: &[Vec<SideTableEntry>],
+    ) {
+        let (i, mut j) = self.side_table_indices;
+        // In validation for BrTable, the side table entry for the last label index is created at
+        // first.
+        if ls_idx.is_some() {
+            let (ls_idx, is_last) = ls_idx.unwrap();
+            if !is_last {
+                j += ls_idx + 1;
+            }
+        }
+        let entry = side_tables[i][j].view();
+        unsafe {
+            parser.restore(Self::jump(parser.save(), entry.delta_ip as isize));
+        }
+        self.side_table_indices.1 = (j as i32 + entry.delta_stp) as usize;
+    }
+
+    fn jump(cur: &'m [u8], off: isize) -> &'m [u8] {
+        unsafe {
+            core::slice::from_raw_parts(
+                cur.as_ptr().offset(off),
+                (cur.len() as isize - off) as usize,
+            )
+        }
     }
 }
 

@@ -30,7 +30,6 @@ pub struct Module<'m> {
     // TODO(dev/fast-interp): Flatten it to 1D array when making it persistent in
     // flash.
     side_tables: Vec<Vec<SideTableEntry>>,
-    side_table_indices: (usize, usize),
 }
 
 impl<'m> Import<'m> {
@@ -75,9 +74,12 @@ impl<'m> Module<'m> {
         module
     }
 
-    /// Returns a mutable reference to the index in the current side table.
-    pub fn index_in_side_table(&mut self) -> &mut usize {
-        &mut self.side_table_indices.1
+    pub fn side_tables(&self) -> &[Vec<SideTableEntry>] {
+        &self.side_tables
+    }
+
+    pub fn side_table(&self, i: usize) -> &Vec<SideTableEntry> {
+        &self.side_tables[i]
     }
 
     pub(crate) fn types(&self) -> &[FuncType<'m>] {
@@ -194,9 +196,6 @@ impl<'m> Module<'m> {
             let size = parser.parse_u32().into_ok() as usize;
             let parser = parser.split_at(size).into_ok();
             if i == x as usize {
-                if !self.side_tables[i].is_empty() {
-                    self.side_table_indices = (x as usize, 0);
-                }
                 return parser;
             }
         }
@@ -212,47 +211,5 @@ impl<'m> Module<'m> {
             parser.parse_data(&mut SkipData).into_ok();
         }
         unreachable!()
-    }
-
-    pub(crate) fn jump_from_if(&mut self, parser: &mut Parser<'m>) {
-        let (i, j) = self.side_table_indices;
-        let entry = self.side_tables[i][j].view();
-        let delta = entry.delta_ip as isize - 1;
-        unsafe {
-            parser.restore(Self::jump(parser.save(), delta));
-            let saved = parser.save();
-            if parser.parse_instr().unwrap() == Instr::End {
-                parser.restore(saved);
-                self.side_table_indices.1 = (j as i32 + entry.delta_stp) as usize;
-            } else {
-                self.side_table_indices.1 = (j as i32 + entry.delta_stp) as usize + 1;
-            }
-        }
-    }
-
-    pub(crate) fn jump_to_end(&mut self, parser: &mut Parser<'m>, ls_idx: Option<(usize, bool)>) {
-        let (i, mut j) = self.side_table_indices;
-        // In validation for BrTable, the side table entry for the last label index is created at
-        // first.
-        if ls_idx.is_some() {
-            let (ls_idx, is_last) = ls_idx.unwrap();
-            if !is_last {
-                j += ls_idx + 1;
-            }
-        }
-        let entry = self.side_tables[i][j].view();
-        unsafe {
-            parser.restore(Self::jump(parser.save(), entry.delta_ip as isize));
-        }
-        self.side_table_indices.1 = (j as i32 + entry.delta_stp) as usize;
-    }
-
-    fn jump(cur: &'m [u8], off: isize) -> &'m [u8] {
-        unsafe {
-            core::slice::from_raw_parts(
-                cur.as_ptr().offset(off),
-                (cur.len() as isize - off) as usize,
-            )
-        }
     }
 }
