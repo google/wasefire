@@ -817,7 +817,7 @@ impl<'m> Thread<'m> {
                 return Ok(self.pop_label(
                     inst,
                     ls.get(i).cloned().unwrap_or(ln),
-                    if i >= ls.len() { None } else { Some(i) },
+                    ls.get(i).map(|_| i),
                 ));
             }
             Return => return Ok(self.exit_frame()),
