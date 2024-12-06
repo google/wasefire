@@ -1499,7 +1499,7 @@ impl<'m> Frame<'m> {
         self.side_table_indices.1 = (j as i32 + entry.delta_stp) as usize;
     }
 
-    // TODO(dev/fast-interp): Add debug asserts when off is positive and negative, and `toctou`
+    // TODO(dev/fast-interp): Add debug asserts when `off` is positive and negative, and `toctou`
     // support.
     fn jump(cur: &'m [u8], off: isize) -> &'m [u8] {
         unsafe {
