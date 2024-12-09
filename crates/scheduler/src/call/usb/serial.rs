@@ -17,15 +17,15 @@ use wasefire_applet_api::usb::serial as api;
 use wasefire_applet_api::usb::serial::Api;
 #[cfg(feature = "board-api-usb-serial")]
 use wasefire_board_api as board;
+use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-usb-serial")]
 use wasefire_board_api::usb::serial::{Api as _, Event};
-use wasefire_board_api::Api as Board;
 
+use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-usb-serial")]
 use crate::applet::store::MemoryApi;
 #[cfg(feature = "board-api-usb-serial")]
-use crate::event::{usb::serial::Key, Handler};
-use crate::DispatchSchedulerCall;
+use crate::event::{Handler, usb::serial::Key};
 #[cfg(feature = "board-api-usb-serial")]
 use crate::{SchedulerCall, Trap};
 

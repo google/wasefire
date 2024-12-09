@@ -20,9 +20,9 @@ use wasefire_applet_api::crypto::hash::{self as api, Algorithm, Api};
 use wasefire_board_api::{self as board, Api as Board, Support};
 use wasefire_error::{Code, Error};
 
-use crate::applet::store::{MemoryApi, StoreApi};
 #[cfg(feature = "internal-hash-context")]
 use crate::applet::HashContext;
+use crate::applet::store::{MemoryApi, StoreApi};
 use crate::{DispatchSchedulerCall, Failure, SchedulerCall, Trap};
 
 impl From<InvalidLength> for Failure {

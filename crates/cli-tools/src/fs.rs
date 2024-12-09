@@ -20,8 +20,8 @@ use std::io::ErrorKind;
 use std::path::{Component, Path, PathBuf};
 
 use anyhow::{Context, Result};
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use tokio::fs::{File, OpenOptions, ReadDir};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -110,6 +110,12 @@ pub async fn create_parent(path: impl AsRef<Path>) -> Result<()> {
     Ok(())
 }
 
+pub async fn download(url: &str) -> Result<Vec<u8>> {
+    debug!("download {url:?}");
+    let content: reqwest::Result<_> = try { reqwest::get(url).await?.bytes().await?.to_vec() };
+    content.with_context(|| format!("downloading {url}"))
+}
+
 pub async fn exists(path: impl AsRef<Path>) -> bool {
     tokio::fs::try_exists(path).await.ok() == Some(true)
 }
@@ -164,6 +170,23 @@ pub async fn rename(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<()> 
     tokio::fs::rename(from.as_ref(), to.as_ref())
         .await
         .with_context(|| format!("renaming {src} to {dst}"))
+}
+
+pub fn targz_list(targz: &[u8]) -> Result<Vec<PathBuf>> {
+    let tar = flate2::bufread::GzDecoder::new(targz);
+    tar::Archive::new(tar).entries()?.map(|x| Ok(x?.path()?.to_path_buf())).collect()
+}
+
+pub async fn targz_extract(
+    targz: impl AsRef<[u8]> + Send + 'static, dir: impl AsRef<Path> + Send + 'static,
+) -> Result<()> {
+    tokio::task::spawn_blocking(move || {
+        let name = dir.as_ref().display();
+        debug!("tar xz > {name:?}");
+        let tar = flate2::bufread::GzDecoder::new(targz.as_ref());
+        tar::Archive::new(tar).unpack(dir.as_ref()).with_context(|| format!("extracting {name}"))
+    })
+    .await?
 }
 
 pub async fn touch(path: impl AsRef<Path>) -> Result<()> {

@@ -16,6 +16,7 @@ use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ops::Deref;
 
+use derive_where::derive_where;
 use sealed::sealed;
 
 /// Describes an interface function at type-level.
@@ -46,12 +47,18 @@ pub struct Descriptor {
     pub params: usize,
 }
 
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive_where(Debug, Copy, Clone)]
+#[derive(bytemuck::Zeroable)]
+#[zeroable(bound = "")]
 #[repr(transparent)]
 pub struct U32<T> {
     value: u32,
     phantom: PhantomData<T>,
 }
+
+// TODO(https://github.com/Lokathor/bytemuck/issues/191): Use derive.
+// SAFETY: U32<T> is a repr(transparent) u32.
+unsafe impl<T: 'static> bytemuck::Pod for U32<T> {}
 
 unsafe impl<T> Send for U32<T> {}
 
@@ -93,16 +100,15 @@ impl From<!> for U32<!> {
 }
 
 #[sealed(pub(crate))]
-pub trait ArrayU32: Sized + Copy {
+pub trait ArrayU32: bytemuck::Pod {
     const LENGTH: usize = core::mem::size_of::<Self>() / core::mem::size_of::<u32>();
 
     fn from(values: &[u32]) -> &Self {
-        assert_eq!(values.len(), Self::LENGTH);
-        unsafe { &*(values.as_ptr() as *const Self) }
+        bytemuck::from_bytes(bytemuck::cast_slice(values))
     }
 
     fn into(&self) -> &[u32] {
-        unsafe { core::slice::from_raw_parts(self as *const Self as *const u32, Self::LENGTH) }
+        bytemuck::cast_slice(bytemuck::bytes_of(self))
     }
 }
 

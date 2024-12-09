@@ -14,7 +14,7 @@
 
 use std::path::PathBuf;
 
-use anyhow::{ensure, Result};
+use anyhow::{Result, ensure};
 use cargo_metadata::{Metadata, MetadataCommand};
 
 pub async fn metadata(dir: impl Into<PathBuf>) -> Result<Metadata> {

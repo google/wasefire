@@ -12,16 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::process::Stdio;
-
-use anyhow::{ensure, Result};
-use tokio::io::AsyncWriteExt as _;
-use tokio::process::Command;
+use anyhow::Result;
 use tokio::sync::mpsc::channel;
-use wasefire_cli_tools::{cmd, fs};
-use wasefire_logger as log;
+use wasefire_cli_tools::fs;
 
-use crate::{board, cleanup, with_state, FLAGS};
+use crate::{FLAGS, board, cleanup, with_state};
 
 pub async fn init() -> Result<web_server::Client> {
     let (sender, mut receiver) = channel(10);
@@ -37,16 +32,7 @@ pub async fn init() -> Result<web_server::Client> {
     });
     let web_dir = FLAGS.dir.join("web");
     if !fs::exists(&web_dir).await {
-        log::info!("Extracting web assets to {}", web_dir.display());
-        let mut tar = Command::new("tar");
-        tar.current_dir(&FLAGS.dir);
-        tar.arg("xz");
-        tar.stdin(Stdio::piped());
-        let mut tar = cmd::spawn(&mut tar)?;
-        let mut stdin = tar.stdin.take().unwrap();
-        stdin.write_all(TARBALL).await?;
-        drop(stdin);
-        ensure!(tar.wait().await?.success(), "Extracting web-client tarball failed.");
+        fs::targz_extract(TARBALL, &FLAGS.dir).await?;
     }
     web_server::Client::new(web_dir, FLAGS.web_addr, sender).await
 }

@@ -1,10 +1,10 @@
 [package]
 name = "wasefire-applet-api-desc"
-version = "0.2.1"
+version = "0.2.2-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
-edition = "2021"
+edition = "2024"
 description = "Description of the Wasefire applet API"
 repository = "https://github.com/google/wasefire"
 include = ["/LICENSE", "/src/"]
@@ -70,6 +70,7 @@ internal-api-store = []
 internal-api-usb = []
 
 [lints]
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
 rust.unsafe-op-in-unsafe-fn = "warn"

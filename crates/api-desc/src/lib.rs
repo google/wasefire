@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::ffi::CString;
 use std::io::Write;
 use std::ops;
 
@@ -329,7 +330,7 @@ impl Fn {
                 pub struct Sig;
 
                 /// Parameters of [Sig].
-                #[derive(Debug, Default, Copy, Clone)]
+                #[derive(Debug, Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
                 #[repr(C)]
                 pub struct Params { #(#params,)* }
 
@@ -348,7 +349,7 @@ impl Fn {
         let Fn { docs, name, link, params, result: _ } = self;
         let name = format_ident!("{name}");
         let env_link = format!("env_{link}");
-        let link0 = syn::LitByteStr::new(format!("{link}\0").as_bytes(), Span::call_site());
+        let ffi_link = syn::LitCStr::new(&CString::new(link.clone()).unwrap(), Span::call_site());
         let doc = format!("Module of [`{name}`]({name}()).");
         let params_doc = format!("Parameters of [`{name}`](super::{name}())");
         let params: Vec<_> = params.iter().map(|x| x.wasm_rust()).collect();
@@ -369,18 +370,17 @@ impl Fn {
                 pub struct Params { #(#params,)* }
             }
             #[cfg(not(feature = "native"))]
-            extern "C" {
+            unsafe extern "C" {
                 #(#[doc = #docs])*
                 #[link_name = #link]
-                pub fn #name(#fn_params) -> isize;
+                pub unsafe fn #name(#fn_params) -> isize;
             }
             #[cfg(feature = "native")]
-            #[export_name = #env_link]
+            #[unsafe(export_name = #env_link)]
             #[linkage = "weak"]
             pub unsafe extern "C" fn #name(#fn_params) -> isize {
                 #let_params
-                let ffi_link = core::ffi::CStr::from_bytes_with_nul(#link0).unwrap().as_ptr();
-                crate::wasm::native::env_dispatch(ffi_link, ffi_params)
+                crate::wasm::native::env_dispatch(#ffi_link.as_ptr(), ffi_params)
             }
         }
     }
@@ -696,11 +696,7 @@ impl std::fmt::Display for Path<'_> {
             Path::Empty => return Ok(()),
             Path::Mod { name, prev } => (name, prev),
         };
-        if f.alternate() {
-            write!(f, "{prev:#}  ")
-        } else {
-            write!(f, "{prev}{name}_")
-        }
+        if f.alternate() { write!(f, "{prev:#}  ") } else { write!(f, "{prev}{name}_") }
     }
 }
 

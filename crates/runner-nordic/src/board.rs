@@ -16,7 +16,7 @@ use wasefire_board_api::{self as board, Event, Singleton};
 use wasefire_error::Error;
 use wasefire_scheduler as scheduler;
 
-use crate::{with_state, Board};
+use crate::{Board, with_state};
 
 pub mod applet;
 pub mod button;

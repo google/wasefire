@@ -26,8 +26,8 @@ use wasefire_error::Error;
 
 #[cfg(test)]
 use self::bitfield::Length;
-use self::bitfield::{count_zeros, num_bits, Bit, Checksum, ConstField, Field};
-use crate::{usize_to_nat, Nat, Storage, StorageIndex, StoreUpdate};
+use self::bitfield::{Bit, Checksum, ConstField, Field, count_zeros, num_bits};
+use crate::{Nat, Storage, StorageIndex, StoreUpdate, usize_to_nat};
 
 /// Internal representation of a word in flash.
 ///

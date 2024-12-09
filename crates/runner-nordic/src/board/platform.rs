@@ -16,8 +16,8 @@ use alloc::borrow::Cow;
 use alloc::vec::Vec;
 
 use header::{Header, Side};
-use wasefire_board_api::platform::Api;
 use wasefire_board_api::Error;
+use wasefire_board_api::platform::Api;
 
 use crate::with_state;
 

@@ -18,7 +18,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail, ensure};
 use clap::{CommandFactory, Parser, ValueHint};
 use clap_complete::Shell;
 use tokio::process::Command;
@@ -149,6 +149,9 @@ enum Action {
         action: action::RustAppletInstall,
     },
 
+    /// Downloads and installs the latest CLI.
+    SelfUpdate,
+
     /// Generates a shell completion file.
     Completion(Completion),
 }
@@ -204,8 +207,6 @@ impl Host {
             params.options().write(true).create_new(true).mode(0o777);
             fs::write(params, HOST_PLATFORM).await?;
         }
-        #[cfg(all(not(feature = "_dev"), not(feature = "_prod")))]
-        anyhow::ensure!(fs::exists(&bin).await, "no host platform found");
         loop {
             let mut host = Command::new(&bin);
             host.arg(&self.dir);
@@ -237,9 +238,32 @@ impl Completion {
     }
 }
 
+async fn self_update() -> Result<PathBuf> {
+    const URL: &str = "https://github.com/google/wasefire/releases/latest/download\
+/wasefire-x86_64-unknown-linux-gnu.tar.gz";
+    let path = std::env::current_exe()?;
+    let dir = path.parent().expect("current exe should be a file");
+    let content = fs::download(URL).await?;
+    let names = fs::targz_list(&content)?;
+    ensure!(names.len() == 1, "CLI tarball is not a singleton");
+    fs::targz_extract(content, dir.to_owned()).await?;
+    fs::rename(dir.join(&names[0]), &path).await?;
+    Ok(path)
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
+    if !cfg!(any(feature = "_dev", feature = "_prod")) {
+        let path = self_update().await?;
+        let mut rerun = Command::new(path);
+        let mut args = std::env::args_os();
+        if let Some(arg0) = args.next() {
+            rerun.arg0(arg0);
+        }
+        rerun.args(args);
+        cmd::replace(rerun)
+    }
     let flags = Flags::parse();
     match flags.action {
         Action::AppletList => bail!("not implemented yet"),
@@ -275,6 +299,7 @@ async fn main() -> Result<()> {
         Action::RustAppletInstall { options, action } => {
             action.run(&mut options.connect().await?).await
         }
+        Action::SelfUpdate => self_update().await.map(|_| ()),
         Action::Completion(x) => x.run().await,
     }
 }

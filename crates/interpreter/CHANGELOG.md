@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.2-git
+
+### Minor
+
+- Use Rust edition 2024
+
+### Patch
+
+- Fix clippy lints
+- Update dependencies
+
 ## 0.3.1
 
 ### Minor
@@ -83,4 +94,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 1 -->

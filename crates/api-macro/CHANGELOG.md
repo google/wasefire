@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.0-git
+
+### Major
+
+- Update `wasefire-applet-api-desc` version
+
+### Minor
+
+- Use Rust edition 2024
+
 ## 0.7.0
 
 ### Major
@@ -75,4 +85,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 1 -->

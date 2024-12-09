@@ -15,8 +15,8 @@
 use std::borrow::Cow;
 
 use data_encoding::HEXLOWER_PERMISSIVE;
-use wasefire_board_api::platform::Api;
 use wasefire_board_api::Error;
+use wasefire_board_api::platform::Api;
 
 use crate::FLAGS;
 

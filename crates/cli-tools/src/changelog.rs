@@ -23,7 +23,7 @@ use std::fmt::Display;
 use std::io::BufRead;
 use std::path::PathBuf;
 
-use anyhow::{anyhow, bail, ensure, Context, Result};
+use anyhow::{Context, Result, anyhow, bail, ensure};
 use clap::ValueEnum;
 use semver::{Prerelease, Version};
 use tokio::process::Command;
@@ -389,6 +389,7 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
+<<<<<<< HEAD
         assert_eq!(
             Changelog::parse("path", changelog).unwrap(),
             Changelog {
@@ -418,10 +419,13 @@ mod tests {
                                     "- patch update 2".to_string()
                                 ]
                             )
-                        ]),
-                    },
+||||||| 7a4ba18e
+        assert_eq!(
+            Changelog::parse(changelog).unwrap(),
+            Changelog {
+                releases: vec![
                     Release {
-                        version: Version::parse("0.2.0").unwrap(),
+                        version: Version::parse("0.3.0").unwrap(),
                         contents: BTreeMap::from([
                             (
                                 Severity::Major,
@@ -444,16 +448,48 @@ mod tests {
                                     "- patch update 2".to_string()
                                 ]
                             )
+=======
+        assert_eq!(Changelog::parse(changelog).unwrap(), Changelog {
+            releases: vec![
+                Release {
+                    version: Version::parse("0.3.0").unwrap(),
+                    contents: BTreeMap::from([
+                        (Severity::Major, vec![
+                            "- major update 1".to_string(),
+                            "- major update 2".to_string()
+>>>>>>> main
                         ]),
-                    },
-                    Release {
-                        version: Version::parse("0.1.0").unwrap(),
-                        contents: BTreeMap::new(),
-                    }
-                ],
-                skip_counter: 0,
-            }
-        );
+                        (Severity::Minor, vec![
+                            "- minor update 1".to_string(),
+                            "- minor update 2".to_string()
+                        ]),
+                        (Severity::Patch, vec![
+                            "- patch update 1".to_string(),
+                            "- patch update 2".to_string()
+                        ])
+                    ]),
+                },
+                Release {
+                    version: Version::parse("0.2.0").unwrap(),
+                    contents: BTreeMap::from([
+                        (Severity::Major, vec![
+                            "- major update 1".to_string(),
+                            "- major update 2".to_string()
+                        ]),
+                        (Severity::Minor, vec![
+                            "- minor update 1".to_string(),
+                            "- minor update 2".to_string()
+                        ]),
+                        (Severity::Patch, vec![
+                            "- patch update 1".to_string(),
+                            "- patch update 2".to_string()
+                        ])
+                    ]),
+                },
+                Release { version: Version::parse("0.1.0").unwrap(), contents: BTreeMap::new() }
+            ],
+            skip_counter: 0,
+        });
     }
 
     #[test]
@@ -532,6 +568,7 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
+<<<<<<< HEAD
         assert_eq!(
             Changelog::parse("path", changelog).unwrap(),
             Changelog {
@@ -566,6 +603,69 @@ mod tests {
                 skip_counter: 0,
             }
         );
+||||||| 7a4ba18e
+        assert_eq!(
+            Changelog::parse(changelog).unwrap(),
+            Changelog {
+                releases: vec![
+                    Release {
+                        version: Version::parse("0.2.0").unwrap(),
+                        contents: BTreeMap::from([(
+                            Severity::Major,
+                            vec!["- major update 1".to_string(), "- major update 2".to_string()]
+                        )]),
+                    },
+                    Release {
+                        version: Version::parse("0.1.2").unwrap(),
+                        contents: BTreeMap::from([(
+                            Severity::Minor,
+                            vec!["- minor update 1".to_string(), "- minor update 2".to_string()]
+                        )]),
+                    },
+                    Release {
+                        version: Version::parse("0.1.1").unwrap(),
+                        contents: BTreeMap::from([(
+                            Severity::Patch,
+                            vec!["- patch update 1".to_string(), "- patch update 2".to_string()]
+                        )]),
+                    },
+                    Release {
+                        version: Version::parse("0.1.0").unwrap(),
+                        contents: BTreeMap::new(),
+                    }
+                ],
+                skip_counter: 0,
+            }
+        );
+=======
+        assert_eq!(Changelog::parse(changelog).unwrap(), Changelog {
+            releases: vec![
+                Release {
+                    version: Version::parse("0.2.0").unwrap(),
+                    contents: BTreeMap::from([(Severity::Major, vec![
+                        "- major update 1".to_string(),
+                        "- major update 2".to_string()
+                    ])]),
+                },
+                Release {
+                    version: Version::parse("0.1.2").unwrap(),
+                    contents: BTreeMap::from([(Severity::Minor, vec![
+                        "- minor update 1".to_string(),
+                        "- minor update 2".to_string()
+                    ])]),
+                },
+                Release {
+                    version: Version::parse("0.1.1").unwrap(),
+                    contents: BTreeMap::from([(Severity::Patch, vec![
+                        "- patch update 1".to_string(),
+                        "- patch update 2".to_string()
+                    ])]),
+                },
+                Release { version: Version::parse("0.1.0").unwrap(), contents: BTreeMap::new() }
+            ],
+            skip_counter: 0,
+        });
+>>>>>>> main
     }
 
     #[test]
@@ -586,6 +686,7 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
+<<<<<<< HEAD
         assert_eq!(
             Changelog::parse("path", changelog).unwrap(),
             Changelog {
@@ -610,6 +711,46 @@ mod tests {
                 skip_counter: 0,
             }
         );
+||||||| 7a4ba18e
+        assert_eq!(
+            Changelog::parse(changelog).unwrap(),
+            Changelog {
+                releases: vec![
+                    Release {
+                        version: Version::parse("0.2.0").unwrap(),
+                        contents: BTreeMap::from([(
+                            Severity::Major,
+                            vec![
+                                "- short 1".to_string(),
+                                "- my long description\n  that spans many lines".to_string(),
+                                "- short 2".to_string()
+                            ]
+                        )]),
+                    },
+                    Release {
+                        version: Version::parse("0.1.0").unwrap(),
+                        contents: BTreeMap::new(),
+                    }
+                ],
+                skip_counter: 0,
+            }
+        );
+=======
+        assert_eq!(Changelog::parse(changelog).unwrap(), Changelog {
+            releases: vec![
+                Release {
+                    version: Version::parse("0.2.0").unwrap(),
+                    contents: BTreeMap::from([(Severity::Major, vec![
+                        "- short 1".to_string(),
+                        "- my long description\n  that spans many lines".to_string(),
+                        "- short 2".to_string()
+                    ])]),
+                },
+                Release { version: Version::parse("0.1.0").unwrap(), contents: BTreeMap::new() }
+            ],
+            skip_counter: 0,
+        });
+>>>>>>> main
     }
 
     #[test]
@@ -642,6 +783,7 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 0 -->
 ";
 
+<<<<<<< HEAD
         assert_eq!(
             Changelog::parse("path", changelog).unwrap(),
             Changelog {
@@ -653,6 +795,26 @@ mod tests {
                 skip_counter: 0,
             }
         );
+||||||| 7a4ba18e
+        assert_eq!(
+            Changelog::parse(changelog).unwrap(),
+            Changelog {
+                releases: vec![Release {
+                    version: Version::parse("0.1.0").unwrap(),
+                    contents: BTreeMap::new(),
+                }],
+                skip_counter: 0,
+            }
+        );
+=======
+        assert_eq!(Changelog::parse(changelog).unwrap(), Changelog {
+            releases: vec![Release {
+                version: Version::parse("0.1.0").unwrap(),
+                contents: BTreeMap::new(),
+            }],
+            skip_counter: 0,
+        });
+>>>>>>> main
     }
 
     #[test]
@@ -664,6 +826,7 @@ mod tests {
 <!-- Increment to skip CHANGELOG.md test: 5 -->
 ";
 
+<<<<<<< HEAD
         assert_eq!(
             Changelog::parse("path", changelog).unwrap(),
             Changelog {
@@ -675,6 +838,26 @@ mod tests {
                 skip_counter: 5,
             }
         );
+||||||| 7a4ba18e
+        assert_eq!(
+            Changelog::parse(changelog).unwrap(),
+            Changelog {
+                releases: vec![Release {
+                    version: Version::parse("0.1.0").unwrap(),
+                    contents: BTreeMap::new(),
+                }],
+                skip_counter: 5,
+            }
+        );
+=======
+        assert_eq!(Changelog::parse(changelog).unwrap(), Changelog {
+            releases: vec![Release {
+                version: Version::parse("0.1.0").unwrap(),
+                contents: BTreeMap::new(),
+            }],
+            skip_counter: 5,
+        });
+>>>>>>> main
     }
 
     #[test]

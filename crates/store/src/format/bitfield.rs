@@ -18,8 +18,8 @@
 
 use wasefire_error::Error;
 
-use crate::format::Word;
 use crate::Nat;
+use crate::format::Word;
 
 /// Represents a bit field.
 ///

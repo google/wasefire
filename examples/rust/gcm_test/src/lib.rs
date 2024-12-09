@@ -22,10 +22,10 @@ use alloc::vec;
 #[cfg(feature = "rust-crypto")]
 use aead::{Aead, AeadInPlace, KeyInit, Payload};
 use wasefire::crypto::gcm::tag_length;
-#[cfg(not(feature = "rust-crypto"))]
-use wasefire::crypto::gcm::{decrypt, decrypt_in_place, encrypt, encrypt_in_place, Cipher};
 #[cfg(feature = "rust-crypto")]
 use wasefire::crypto::gcm::{Aes256Gcm, Aes256GcmInPlace};
+#[cfg(not(feature = "rust-crypto"))]
+use wasefire::crypto::gcm::{Cipher, decrypt, decrypt_in_place, encrypt, encrypt_in_place};
 
 fn main() {
     debug!("Use RustCrypto API: {}", cfg!(feature = "rust-crypto"));

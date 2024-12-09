@@ -24,8 +24,8 @@ use wasefire_error::{Code, Error};
 use wasefire_logger as log;
 
 use self::store::{Memory, Store, StoreApi};
-use crate::event::{Handler, Key};
 use crate::Trap;
+use crate::event::{Handler, Key};
 
 pub mod store;
 

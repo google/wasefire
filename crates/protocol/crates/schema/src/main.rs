@@ -17,11 +17,11 @@
 use std::collections::HashMap;
 use std::fmt::Write;
 
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{Context, Result, bail, ensure};
 use tokio::process::Command;
 use wasefire_cli_tools::{cmd, fs};
 use wasefire_error::Error;
-use wasefire_protocol::{Api, Descriptor, Request, Response, DESCRIPTORS, VERSION};
+use wasefire_protocol::{Api, DESCRIPTORS, Descriptor, Request, Response, VERSION};
 use wasefire_wire::schema::{View, ViewEnum, ViewFields};
 use wasefire_wire::{Wire, Yoke};
 
@@ -131,8 +131,8 @@ impl Schema<'static> {
     }
 
     fn base() -> Result<String> {
-        use std::env::var;
         use std::env::VarError::*;
+        use std::env::var;
         Ok(match var("GITHUB_EVENT_NAME").as_deref() {
             Ok("pull_request") => format!("origin/{}", var("GITHUB_BASE_REF")?),
             Ok("push" | "schedule") => format!("origin/{}", var("GITHUB_REF_NAME")?),

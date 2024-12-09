@@ -3,10 +3,10 @@ name = "common"
 version = "0.1.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-thiserror = { version = "1.0.61", optional = true }
+thiserror = { version = "2.0.4", optional = true }
 wasefire = { path = "../../../../crates/prelude", optional = true }
 
 [features]

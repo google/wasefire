@@ -22,7 +22,7 @@ use wasefire_interpreter::*;
 use wast::core::{AbstractHeapType, WastArgCore, WastRetCore};
 use wast::lexer::Lexer;
 use wast::token::Id;
-use wast::{parser, QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, WastRet, Wat};
+use wast::{QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, WastRet, Wat, parser};
 
 fn test(repo: &str, name: &str, skip: usize) {
     let path = format!("../../third_party/WebAssembly/{repo}/test/core/{name}.wast");
@@ -166,10 +166,7 @@ impl<'m> Env<'m> {
     fn maybe_instantiate(&mut self, name: &str, wasm: &[u8]) -> Result<InstId, Error> {
         let module = self.alloc(wasm.len());
         module.copy_from_slice(wasm);
-        let module = match Module::new(module) {
-            Ok(x) => x,
-            Err(e) => return Err(e),
-        };
+        let module = Module::new(module)?;
         let memory = self.alloc(mem_size(name));
         self.store.instantiate(module, memory)
     }
@@ -296,12 +293,12 @@ fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
     let actual = only_sup!(env, wast_execute(env, exec)).unwrap();
     assert_eq!(actual.len(), expected.len());
     for (actual, expected) in actual.into_iter().zip(expected.into_iter()) {
-        use wast::core::HeapType;
-        #[cfg(feature = "float-types")]
-        use wast::core::NanPattern as NP;
         use Val::*;
         use WastRet::Core as C;
         use WastRetCore as W;
+        use wast::core::HeapType;
+        #[cfg(feature = "float-types")]
+        use wast::core::NanPattern as NP;
         match (actual, expected) {
             (I32(x), C(W::I32(y))) => assert_eq!(x, y as u32),
             (I64(x), C(W::I64(y))) => assert_eq!(x, y as u64),

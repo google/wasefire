@@ -709,9 +709,10 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.7.0"
+version = "0.7.1-git"
 dependencies = [
  "bytemuck",
+ "derive-where",
  "sealed",
  "wasefire-applet-api-macro",
  "wasefire-error",
@@ -720,7 +721,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.2.1"
+version = "0.2.2-git"
 dependencies = [
  "data-encoding",
  "data-encoding-macro",
@@ -731,14 +732,14 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.7.0"
+version = "0.8.0-git"
 dependencies = [
  "wasefire-applet-api-desc",
 ]
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.8.0"
+version = "0.8.1-git"
 dependencies = [
  "aead",
  "aes",
@@ -768,7 +769,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.2"
+version = "0.1.3-git"
 dependencies = [
  "defmt",
  "num_enum",
@@ -776,7 +777,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.3.1"
+version = "0.3.2-git"
 dependencies = [
  "num_enum",
  "paste",
@@ -786,7 +787,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.6"
+version = "0.1.7-git"
 dependencies = [
  "defmt",
  "log",
@@ -794,11 +795,11 @@ dependencies = [
 
 [[package]]
 name = "wasefire-one-of"
-version = "0.1.0"
+version = "0.1.1-git"
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.2.0"
+version = "0.2.1-git"
 dependencies = [
  "wasefire-error",
  "wasefire-wire",
@@ -806,7 +807,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-scheduler"
-version = "0.4.0"
+version = "0.4.1-git"
 dependencies = [
  "bytemuck",
  "defmt",
@@ -827,14 +828,14 @@ dependencies = [
 
 [[package]]
 name = "wasefire-store"
-version = "0.3.0"
+version = "0.3.1-git"
 dependencies = [
  "wasefire-error",
 ]
 
 [[package]]
 name = "wasefire-sync"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "portable-atomic",
  "spin",
@@ -842,7 +843,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "wasefire-error",
  "wasefire-wire-derive",
@@ -850,7 +851,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire-derive"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "proc-macro2",
  "quote",

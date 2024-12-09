@@ -17,7 +17,7 @@
 use std::os::unix::process::CommandExt;
 use std::process::Output;
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{Context, Result, ensure};
 use tokio::process::{Child, Command};
 
 /// Spawns a command.

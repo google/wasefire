@@ -19,7 +19,7 @@ use core::ops::Range;
 
 use wasefire_applet_api::store::fragment as api;
 
-use crate::{convert_bool, convert_unit, Error};
+use crate::{Error, convert_bool, convert_unit};
 
 /// Inserts an entry in the store.
 ///

@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn env_sa() {
     std::process::exit(1)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn env_se() {
     std::process::exit(0)
 }

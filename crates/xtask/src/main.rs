@@ -21,10 +21,10 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{Context, Result, bail, ensure};
 use clap::Parser;
 use probe_rs::config::TargetSelector;
-use probe_rs::{flashing, Permissions, Session};
+use probe_rs::{Permissions, Session, flashing};
 use rustc_demangle::demangle;
 use tokio::process::Command;
 use tokio::sync::OnceCell;
@@ -482,7 +482,7 @@ impl RunnerOptions {
             if main.release {
                 cargo.arg("-Zbuild-std=core,alloc");
                 let mut features = "-Zbuild-std-features=panic_immediate_abort".to_string();
-                if self.opt_level.map_or(false, action::OptLevel::optimize_for_size) {
+                if self.opt_level.is_some_and(action::OptLevel::optimize_for_size) {
                     features.push_str(",optimize_for_size");
                 }
                 cargo.arg(features);
@@ -744,7 +744,7 @@ async fn wrap_command() -> Result<Command> {
 }
 
 async fn ensure_assemblyscript() -> Result<()> {
-    const ASC_VERSION: &str = "0.27.30"; // scripts/upgrade.sh relies on this name
+    const ASC_VERSION: &str = "0.27.31"; // scripts/upgrade.sh relies on this name
     const BIN: &str = "examples/assemblyscript/node_modules/.bin/asc";
     const JSON: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
     if fs::exists(BIN).await && fs::exists(JSON).await {

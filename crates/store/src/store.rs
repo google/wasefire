@@ -18,7 +18,7 @@ use alloc::borrow::Cow;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::borrow::Borrow;
-use core::cmp::{max, min, Ordering};
+use core::cmp::{Ordering, max, min};
 use core::convert::TryFrom;
 #[cfg(feature = "std")]
 use std::collections::HashSet;
@@ -26,12 +26,12 @@ use std::collections::HashSet;
 use wasefire_error::{Code, Error, Space};
 
 use crate::format::{
-    is_erased, CompactInfo, Format, Header, InitInfo, InternalEntry, Padding, ParsedWord, Position,
-    Word, WordState,
+    CompactInfo, Format, Header, InitInfo, InternalEntry, Padding, ParsedWord, Position, Word,
+    WordState, is_erased,
 };
-use crate::{usize_to_nat, Nat, Storage, StorageIndex};
 #[cfg(feature = "std")]
 use crate::{BufferStorage, StoreOperation};
+use crate::{Nat, Storage, StorageIndex, usize_to_nat};
 
 /// Invalid argument.
 ///
@@ -466,7 +466,7 @@ impl<S: Storage> Store<S> {
             let entry_pos = pos;
             match self.parse_entry(&mut pos)? {
                 ParsedEntry::Internal(InternalEntry::Erase { .. }) => {
-                    return self.compact_erase(entry_pos)
+                    return self.compact_erase(entry_pos);
                 }
                 ParsedEntry::Padding | ParsedEntry::User(_) => (),
                 _ => break,
@@ -627,11 +627,7 @@ impl<S: Storage> Store<S> {
     ///
     /// In particular, the handle has not been compacted.
     fn check_handle(&self, handle: &StoreHandle) -> Result<(), Error> {
-        if handle.pos < self.head.ok_or(INVALID_STORAGE)? {
-            Err(INVALID_ARGUMENT)
-        } else {
-            Ok(())
-        }
+        if handle.pos < self.head.ok_or(INVALID_STORAGE)? { Err(INVALID_ARGUMENT) } else { Ok(()) }
     }
 
     /// Compacts the store as needed.
@@ -870,7 +866,7 @@ impl<S: Storage> Store<S> {
                 _ => continue,
             };
             let pos = self.format.page_head(init, page);
-            if best.map_or(true, |x| pos.cmp(&x) == ordering) {
+            if best.is_none_or(|x| pos.cmp(&x) == ordering) {
                 best = Some(pos);
             }
         }
@@ -955,7 +951,7 @@ impl<S: Storage> Store<S> {
                     }
                     *pos += 1 + length;
                     ParsedEntry::User(header)
-                } else if footer.map_or(true, |x| is_erased(&x)) {
+                } else if footer.is_none_or(|x| is_erased(&x)) {
                     self.parse_partial(pos)
                 } else {
                     *pos += 1 + length;

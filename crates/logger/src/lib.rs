@@ -75,7 +75,7 @@ pub use std::println;
 
 #[cfg(feature = "defmt")]
 pub use defmt::{
-    debug, error, flush, info, panic, println, trace, warn, Debug2Format, Display2Format,
+    Debug2Format, Display2Format, debug, error, flush, info, panic, println, trace, warn,
 };
 #[cfg(feature = "log")]
 pub use log::{debug, error, info, trace, warn};

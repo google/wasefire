@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2-git
+
+### Minor
+
+- Use Rust edition 2024
+- Use C-string literals to implement dispatch for native applets
+- Implement `bytemuck::Pod` for generated `Params`
+
 ## 0.2.1
 
 ### Minor
@@ -129,4 +137,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 1 -->

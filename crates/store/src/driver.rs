@@ -18,9 +18,9 @@
 
 use wasefire_error::Error;
 
-use crate::format::{Format, Position};
 #[cfg(feature = "std")]
 use crate::StoreUpdate;
+use crate::format::{Format, Position};
 use crate::{
     BufferCorruptFunction, BufferOptions, BufferStorage, Nat, Store, StoreHandle, StoreModel,
     StoreOperation,
@@ -375,13 +375,10 @@ impl StoreDriverOn {
                 self.store.storage_mut().disarm_interruption();
                 let model_result = self.model.apply(operation);
                 if store_result != model_result {
-                    return Err((
-                        self.store,
-                        StoreInvariant::DifferentResult {
-                            store: store_result,
-                            model: model_result,
-                        },
-                    ));
+                    return Err((self.store, StoreInvariant::DifferentResult {
+                        store: store_result,
+                        model: model_result,
+                    }));
                 }
                 if store_result.is_ok() {
                     if let Err(invariant) = self.check_deleted(&deleted) {

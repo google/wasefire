@@ -13,8 +13,8 @@
 // limitations under the License.
 
 use rand::RngCore;
-use wasefire_board_api::rng::Api;
 use wasefire_board_api::Error;
+use wasefire_board_api::rng::Api;
 
 pub enum Impl {}
 

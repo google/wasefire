@@ -149,8 +149,8 @@ mod syntax;
 mod toctou;
 mod valid;
 
-pub use error::{Error, Unsupported, TRAP_CODE};
-pub use exec::{Call, InstId, RunAnswer, RunResult, Store, StoreId, Val, MEMORY_ALIGN};
+pub use error::{Error, TRAP_CODE, Unsupported};
+pub use exec::{Call, InstId, MEMORY_ALIGN, RunAnswer, RunResult, Store, StoreId, Val};
 pub use module::Module;
 pub use syntax::{
     FuncType, GlobalType, ImportDesc, Limits, Mut, RefType, ResultType, TableType, ValType,

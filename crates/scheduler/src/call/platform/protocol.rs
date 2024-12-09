@@ -17,8 +17,8 @@ use wasefire_applet_api::platform::protocol::Api;
 use wasefire_board_api::Api as Board;
 
 use crate::applet::store::MemoryApi;
-use crate::event::platform::protocol::Key;
 use crate::event::Handler;
+use crate::event::platform::protocol::Key;
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {

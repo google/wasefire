@@ -16,8 +16,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use tokio::runtime::Handle;
-use wasefire_board_api::applet::Api;
 use wasefire_board_api::Error;
+use wasefire_board_api::applet::Api;
 use wasefire_cli_tools::fs;
 use wasefire_error::Code;
 use wasefire_protocol::applet::ExitStatus;

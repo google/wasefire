@@ -47,8 +47,8 @@ pub fn decode_tag(reader: &mut Reader) -> Result<u32> {
 mod schema {
     use alloc::vec::Vec;
     use core::any::TypeId;
-    use std::collections::hash_map::Entry;
     use std::collections::HashMap;
+    use std::collections::hash_map::Entry;
 
     use crate::Wire;
 
