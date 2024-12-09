@@ -2,6 +2,10 @@
 
 ## 0.3.2-git
 
+### Minor
+
+- Use Rust edition 2024
+
 ### Patch
 
 - Fix clippy lints

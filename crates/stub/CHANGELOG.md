@@ -2,6 +2,10 @@
 
 ## 0.1.6-git
 
+### Minor
+
+- Use Rust edition 2024
+
 ### Patch
 
 - Update dependencies
