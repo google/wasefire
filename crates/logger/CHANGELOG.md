@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.7-git
+
+### Minor
+
+- Use Rust edition 2024
+
+### Patch
+
+- Add clippy lint
+
 ## 0.1.6
 
 ### Minor

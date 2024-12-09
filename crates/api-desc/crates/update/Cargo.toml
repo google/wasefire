@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = false
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
@@ -12,6 +12,7 @@ clap = { version = "4.5.4", default-features = false, features = ["derive", "std
 wasefire-applet-api-desc = { path = "../.." }
 
 [lints]
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
 rust.unsafe-op-in-unsafe-fn = "warn"

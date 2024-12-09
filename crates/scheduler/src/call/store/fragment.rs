@@ -19,11 +19,11 @@ use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-storage")]
 use wasefire_store::fragment;
 
-#[cfg(feature = "board-api-storage")]
-use crate::applet::store::MemoryApi;
 use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-storage")]
 use crate::SchedulerCall;
+#[cfg(feature = "board-api-storage")]
+use crate::applet::store::MemoryApi;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {

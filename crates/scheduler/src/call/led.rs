@@ -13,9 +13,9 @@
 // limitations under the License.
 
 use wasefire_applet_api::led::{self as api, Api};
+use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-led")]
 use wasefire_board_api::led::Api as _;
-use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-led")]
 use wasefire_board_api::{self as board, Id, Support};
 

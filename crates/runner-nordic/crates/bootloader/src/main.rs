@@ -20,7 +20,7 @@ use cortex_m_rt::entry;
 use embedded_storage::nor_flash::NorFlash;
 use header::{Header, Side};
 use nrf52840_hal::nvmc::Nvmc;
-use nrf52840_hal::pac::{Peripherals, NVMC};
+use nrf52840_hal::pac::{NVMC, Peripherals};
 use panic_abort as _;
 
 #[entry]

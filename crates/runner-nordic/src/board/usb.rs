@@ -15,8 +15,8 @@
 use alloc::boxed::Box;
 
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
-use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
 use wasefire_board_api::usb::Api;
+use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
 use wasefire_error::{Code, Error};
 use wasefire_protocol_usb::{HasRpc, Rpc};
 

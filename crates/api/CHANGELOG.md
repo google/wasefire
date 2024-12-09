@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Use Rust edition 2024
 - Provide `bytemuck::Pod` for `ArrayU32`
 - Implement `bytemuck::Pod` for `U32<T>`
 
@@ -105,4 +106,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 1 -->

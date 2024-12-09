@@ -4,7 +4,7 @@ version = "0.2.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
-edition = "2021"
+edition = "2024"
 description = "Command-line utilities for Wasefire"
 repository = "https://github.com/google/wasefire"
 include = ["/LICENSE", "/src/"]
@@ -28,7 +28,7 @@ semver = { version = "1.0.23", default-features = false, optional = true }
 serde = { version = "1.0.202", default-features = false, features = ["derive"] }
 tar = { version = "0.4.43", default-features = false }
 toml = { version = "0.8.13", default-features = false, features = ["display", "parse"] }
-wasefire-wire = { version = "0.1.1", path = "../wire", optional = true }
+wasefire-wire = { version = "0.1.2-git", path = "../wire", optional = true }
 
 [dependencies.clap]
 version = "4.5.4"
@@ -42,7 +42,7 @@ default-features = false
 features = ["fs", "io-std", "io-util", "macros", "process", "rt"]
 
 [dependencies.wasefire-protocol]
-version = "0.2.0"
+version = "0.2.1-git"
 path = "../protocol"
 features = ["host"]
 optional = true
@@ -77,6 +77,7 @@ cargo = ["dep:cargo_metadata"]
 changelog = ["cargo", "dep:clap", "dep:semver"]
 
 [lints]
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
 rust.unsafe-op-in-unsafe-fn = "warn"

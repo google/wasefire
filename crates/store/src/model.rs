@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use wasefire_error::Error;
 
 use crate::format::Format;
-use crate::{usize_to_nat, StoreRatio, StoreUpdate};
+use crate::{StoreRatio, StoreUpdate, usize_to_nat};
 
 /// Models the mutable operations of a store.
 ///

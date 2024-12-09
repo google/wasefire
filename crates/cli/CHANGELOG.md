@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Use Rust edition 2024
 - Add `self-update` to download and install the latest CLI
 
 ### Patch
@@ -60,4 +61,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 2 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->

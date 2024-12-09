@@ -15,7 +15,7 @@
 use alloc::boxed::Box;
 
 use embedded_hal::digital::OutputPin;
-use nrf52840_hal::pac::uarte0::{errorsrc, RegisterBlock};
+use nrf52840_hal::pac::uarte0::{RegisterBlock, errorsrc};
 use nrf52840_hal::pac::{UARTE0, UARTE1};
 use nrf52840_hal::target_constants::{EASY_DMA_SIZE, SRAM_LOWER, SRAM_UPPER};
 use nrf52840_hal::{gpio, uarte};
@@ -24,7 +24,7 @@ use wasefire_board_api::{Error, Id, Support};
 use wasefire_error::Code;
 use wasefire_logger as log;
 
-use crate::{with_state, Board};
+use crate::{Board, with_state};
 
 pub struct Uarts {
     uarte0: UARTE0,

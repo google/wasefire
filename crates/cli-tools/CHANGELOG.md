@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Use Rust edition 2024
 - Add `fs::targz_{list,extract}()` to manipulate tarballs
 - Add `fs::download()` for download files
 
@@ -61,4 +62,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 1 -->
+<!-- Increment to skip CHANGELOG.md test: 2 -->

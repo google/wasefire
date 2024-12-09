@@ -22,8 +22,8 @@ use wasefire_store::{
     StoreInterruption, StoreInvariant, StoreOperation, StoreUpdate,
 };
 
-use crate::stats::{StatKey, Stats};
 use crate::Entropy;
+use crate::stats::{StatKey, Stats};
 
 // NOTE: We should be able to improve coverage by only checking the last operation. Because
 // operations before the last could be checked with a shorter entropy.

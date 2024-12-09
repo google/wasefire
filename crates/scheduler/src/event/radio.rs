@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::radio::Event;
 use wasefire_board_api::Api as Board;
+use wasefire_board_api::radio::Event;
 use wasefire_error::Error;
 
 #[cfg(feature = "board-api-radio-ble")]

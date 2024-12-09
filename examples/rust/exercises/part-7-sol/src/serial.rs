@@ -14,7 +14,7 @@
 
 use alloc::string::String;
 
-use interface::{deserialize, serialize, Request, Response};
+use interface::{Request, Response, deserialize, serialize};
 use wasefire::{debug, scheduling, serial};
 
 pub struct Serial<'a, T: serial::Serial> {

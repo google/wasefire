@@ -18,7 +18,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
-use anyhow::{bail, ensure, Result};
+use anyhow::{Result, bail, ensure};
 use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use rusb::{Device, GlobalContext};
 use wasefire_protocol::{self as service, Connection, ConnectionExt};

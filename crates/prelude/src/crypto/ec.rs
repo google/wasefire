@@ -19,7 +19,7 @@ use wasefire_applet_api::crypto::ec as api;
 #[cfg(any(feature = "api-crypto-hash", feature = "api-crypto-hkdf"))]
 use wasefire_applet_api::crypto::hash::Algorithm;
 
-use crate::{convert_bool, convert_unit, Error};
+use crate::{Error, convert_bool, convert_unit};
 
 /// ECDSA private key.
 pub struct EcdsaPrivate<C: Curve>(Private<C>);
@@ -113,7 +113,7 @@ impl<C: Curve> EcdsaSignature<C> {
     pub fn new_prehash(private: &EcdsaPrivate<C>, prehash: &Int<C>) -> Result<Self, Error> {
         let mut r = Int::<C>::default();
         let mut s = Int::<C>::default();
-        C::ecdsa_sign(&private.0 .0, prehash, &mut r, &mut s)?;
+        C::ecdsa_sign(&private.0.0, prehash, &mut r, &mut s)?;
         Ok(Self { r, s })
     }
 
@@ -208,7 +208,7 @@ impl<C: Curve> EcdhShared<C> {
     pub fn new(private: &EcdhPrivate<C>, public: &EcdhPublic<C>) -> Self {
         let mut x = Int::<C>::default();
         let mut y = Int::<C>::default();
-        C::point_mul(&private.0 .0, public.x(), public.y(), &mut x, &mut y).unwrap();
+        C::point_mul(&private.0.0, public.x(), public.y(), &mut x, &mut y).unwrap();
         Self(x)
     }
 

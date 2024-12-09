@@ -242,9 +242,9 @@ impl<B: Board> Scheduler<B> {
     #[cfg(feature = "native")]
     pub fn run() -> ! {
         native::set_scheduler(Self::new());
-        extern "C" {
-            fn applet_init();
-            fn applet_main();
+        unsafe extern "C" {
+            unsafe fn applet_init();
+            unsafe fn applet_main();
         }
         #[cfg(feature = "internal-debug")]
         native::with_scheduler(|x| x.perf_record(perf::Slot::Platform));

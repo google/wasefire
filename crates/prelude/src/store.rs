@@ -23,7 +23,7 @@ use alloc::vec::Vec;
 use wasefire_applet_api::store as api;
 
 #[cfg(feature = "api-store")]
-use crate::{convert, convert_bool, convert_unit, Error};
+use crate::{Error, convert, convert_bool, convert_unit};
 
 #[cfg(feature = "api-store-fragment")]
 pub mod fragment;

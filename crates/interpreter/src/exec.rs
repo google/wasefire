@@ -297,11 +297,7 @@ impl<'m> Store<'m> {
     /// This function returns `None` if nothing is running.
     // NOTE: This is like poll. Could be called next.
     pub fn last_call(&mut self) -> Option<Call<'_, 'm>> {
-        if self.threads.is_empty() {
-            None
-        } else {
-            Some(Call { store: self })
-        }
+        if self.threads.is_empty() { None } else { Some(Call { store: self }) }
     }
 }
 
@@ -621,11 +617,7 @@ impl<'m> Store<'m> {
             }
         }
         let (ptr, ext_type_) = found.ok_or_else(not_found)?;
-        if ext_type_.matches(&imp_type_) {
-            Ok(ptr)
-        } else {
-            Err(not_found())
-        }
+        if ext_type_.matches(&imp_type_) { Ok(ptr) } else { Err(not_found()) }
     }
 }
 

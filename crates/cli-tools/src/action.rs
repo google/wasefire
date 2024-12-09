@@ -16,11 +16,11 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use anyhow::{bail, ensure, Result};
+use anyhow::{Result, bail, ensure};
 use clap::{ValueEnum, ValueHint};
 use rusb::GlobalContext;
 use tokio::process::Command;
-use wasefire_protocol::{self as service, applet, Connection, ConnectionExt};
+use wasefire_protocol::{self as service, Connection, ConnectionExt, applet};
 use wasefire_wire::{self as wire, Yoke};
 
 use crate::cargo::metadata;
@@ -367,9 +367,9 @@ impl Transfer {
     ) -> Result<()>
     where
         S: for<'a> service::Service<
-            Request<'a> = service::transfer::Request<'a>,
-            Response<'a> = (),
-        >,
+                Request<'a> = service::transfer::Request<'a>,
+                Response<'a> = (),
+            >,
     {
         use wasefire_protocol::transfer::Request;
         let Transfer { dry_run, chunk_size } = self;

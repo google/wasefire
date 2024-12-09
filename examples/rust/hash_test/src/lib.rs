@@ -21,7 +21,7 @@ use alloc::vec;
 
 #[cfg(feature = "rust-crypto")]
 use digest::{Digest, Mac};
-use wasefire::crypto::hash::{hkdf_expand, hkdf_extract, Algorithm};
+use wasefire::crypto::hash::{Algorithm, hkdf_expand, hkdf_extract};
 #[cfg(not(feature = "rust-crypto"))]
 use wasefire::crypto::hash::{Digest, Hmac};
 #[cfg(feature = "rust-crypto")]

@@ -384,8 +384,8 @@ pub use self::file::{FileOptions, FileStorage};
 pub use self::model::{StoreModel, StoreOperation};
 pub use self::storage::{Storage, StorageIndex};
 pub use self::store::{
-    Store, StoreHandle, StoreIter, StoreRatio, StoreUpdate, INVALID_ARGUMENT, INVALID_STORAGE,
-    NO_CAPACITY, NO_LIFETIME,
+    INVALID_ARGUMENT, INVALID_STORAGE, NO_CAPACITY, NO_LIFETIME, Store, StoreHandle, StoreIter,
+    StoreRatio, StoreUpdate,
 };
 
 /// Internal representation of natural numbers.

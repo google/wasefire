@@ -73,11 +73,7 @@ fn get_bucket(item: usize) -> usize {
 
 /// Returns the bucket of an item given its bit-width.
 pub fn bucket_from_width(width: usize) -> usize {
-    if width == 0 {
-        0
-    } else {
-        1 << (width - 1)
-    }
+    if width == 0 { 0 } else { 1 << (width - 1) }
 }
 
 #[test]

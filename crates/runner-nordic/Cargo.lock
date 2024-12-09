@@ -181,22 +181,22 @@ dependencies = [
 
 [[package]]
 name = "cortex-m-rt"
-version = "0.7.3"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee84e813d593101b1723e13ec38b6ab6abbdbaaa4546553f5395ed274079ddb1"
+checksum = "801d4dec46b34c299ccf6b036717ae0fce602faa4f4fe816d9013b9a7c9f5ba6"
 dependencies = [
  "cortex-m-rt-macros",
 ]
 
 [[package]]
 name = "cortex-m-rt-macros"
-version = "0.7.0"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0f6f3e36f203cfedbc78b357fb28730aa2c6dc1ab060ee5c2405e843988d3c7"
+checksum = "e37549a379a9e0e6e576fd208ee60394ccb8be963889eebba3ffe0980364f472"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.66",
 ]
 
 [[package]]
@@ -1183,7 +1183,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.2"
+version = "0.1.3-git"
 dependencies = [
  "defmt",
  "num_enum",
@@ -1201,18 +1201,18 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.6"
+version = "0.1.7-git"
 dependencies = [
  "defmt",
 ]
 
 [[package]]
 name = "wasefire-one-of"
-version = "0.1.0"
+version = "0.1.1-git"
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.2.0"
+version = "0.2.1-git"
 dependencies = [
  "wasefire-error",
  "wasefire-wire",
@@ -1260,7 +1260,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-sync"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "portable-atomic",
  "spin",
@@ -1268,7 +1268,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "wasefire-error",
  "wasefire-wire-derive",
@@ -1276,7 +1276,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire-derive"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -19,7 +19,7 @@ use alloc::vec::Vec;
 
 use wasefire_applet_api::crypto::ccm as api;
 
-use crate::{convert_bool, convert_unit, Error};
+use crate::{Error, convert_bool, convert_unit};
 
 /// Whether AES-CCM is supported.
 pub fn is_supported() -> bool {

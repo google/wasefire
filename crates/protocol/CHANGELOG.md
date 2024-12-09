@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.1-git
+
+### Minor
+
+- Use Rust edition 2024
+
+### Patch
+
+- Update dependencies
+
 ## 0.2.0
 
 ### Major

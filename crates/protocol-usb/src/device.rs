@@ -23,8 +23,8 @@ use usb_device::class_prelude::{
 use usb_device::descriptor::{BosWriter, DescriptorWriter};
 use usb_device::endpoint::{EndpointAddress, EndpointIn, EndpointOut};
 use usb_device::{LangID, UsbError};
-use wasefire_board_api::platform::protocol::{Api, Event};
 use wasefire_board_api::Error;
+use wasefire_board_api::platform::protocol::{Api, Event};
 use wasefire_error::Code;
 use wasefire_logger as log;
 
