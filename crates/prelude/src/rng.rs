@@ -16,7 +16,7 @@
 
 use wasefire_applet_api::rng as api;
 
-use crate::{convert_unit, Error};
+use crate::{Error, convert_unit};
 
 /// Fills a slice with random bytes.
 pub fn fill_bytes(buf: &mut [u8]) -> Result<(), Error> {

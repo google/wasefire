@@ -14,7 +14,7 @@
 
 use core::alloc::{GlobalAlloc, Layout};
 use core::num::NonZeroUsize;
-use core::ptr::{null_mut, NonNull};
+use core::ptr::{NonNull, null_mut};
 
 use const_default::ConstDefault;
 use rlsf::Tlsf;

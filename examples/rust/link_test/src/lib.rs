@@ -50,7 +50,7 @@ unsafe extern "C" {
 
 #[cfg(feature = "native")]
 mod native {
-    use core::ffi::{c_char, CStr};
+    use core::ffi::{CStr, c_char};
 
     unsafe extern "C" {
         unsafe fn env_dispatch(link: *const c_char, params: *const u32) -> isize;
@@ -77,12 +77,9 @@ mod native {
         x0: usize, x1: usize, x2: usize, x3: usize, x4: usize, x5: usize, x6: usize, x7: usize,
         x8: usize, x9: usize,
     ) -> isize {
-        test_only(
-            "test_only_10\0",
-            &[
-                x0 as u32, x1 as u32, x2 as u32, x3 as u32, x4 as u32, x5 as u32, x6 as u32,
-                x7 as u32, x8 as u32, x9 as u32,
-            ],
-        )
+        test_only("test_only_10\0", &[
+            x0 as u32, x1 as u32, x2 as u32, x3 as u32, x4 as u32, x5 as u32, x6 as u32, x7 as u32,
+            x8 as u32, x9 as u32,
+        ])
     }
 }

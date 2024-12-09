@@ -14,7 +14,7 @@
 
 use wasefire_error::{Code, Error};
 use wasefire_wire::schema::View;
-use wasefire_wire::{decode_prefix, encode, Wire};
+use wasefire_wire::{Wire, decode_prefix, encode};
 
 pub fn correct(mut data: &[u8], tag_: &mut Option<u8>) -> Result<usize, Error> {
     let initial_data = data;

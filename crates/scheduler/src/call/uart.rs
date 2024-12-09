@@ -13,18 +13,18 @@
 // limitations under the License.
 
 use wasefire_applet_api::uart::{self as api, Api};
+use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-uart")]
 use wasefire_board_api::uart::{Api as _, Direction, Event};
-use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-uart")]
 use wasefire_board_api::{self as board, Id, Support};
 
 #[cfg(feature = "board-api-uart")]
+use crate::Trap;
+#[cfg(feature = "board-api-uart")]
 use crate::applet::store::MemoryApi;
 #[cfg(feature = "board-api-uart")]
-use crate::event::{uart::Key, Handler};
-#[cfg(feature = "board-api-uart")]
-use crate::Trap;
+use crate::event::{Handler, uart::Key};
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {

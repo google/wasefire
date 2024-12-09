@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crypto_common::generic_array::{ArrayLength, GenericArray};
 use crypto_common::BlockSizeUser;
+use crypto_common::generic_array::{ArrayLength, GenericArray};
 use digest::{Digest, FixedOutput, FixedOutputReset};
 use ecdsa::hazmat::{SignPrimitive, VerifyPrimitive};
 use ecdsa::{Signature, SignatureSize, VerifyingKey};

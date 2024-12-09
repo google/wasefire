@@ -15,7 +15,7 @@
 use log::info;
 use web_common::{Command, Component, Event};
 use yew::prelude::*;
-use yew::{function_component, html, Html, Properties};
+use yew::{Html, Properties, function_component, html};
 
 use crate::board_components::button::Button;
 use crate::board_components::led::LED;

@@ -42,38 +42,35 @@ fn set_disconnected(command_state: UseStateHandle<Option<Command>>) {
 #[hook]
 pub fn use_runner_connection(backend_address: String) -> UseRunnerConnectionHandle {
     let command_state = use_state(|| None);
-    let ws = use_websocket_with_options(
-        backend_address,
-        UseWebSocketOptions {
-            reconnect_interval: Some(1000),
-            onmessage: Some(Box::new({
-                let command_state = command_state.clone();
-                move |message| {
-                    info!("Message: {message}");
-                    match serde_json::from_str::<Command>(&message) {
-                        Ok(command) => command_state.set(Some(command)),
-                        Err(err) => warn!("Error parsing message: {err}"),
-                    }
+    let ws = use_websocket_with_options(backend_address, UseWebSocketOptions {
+        reconnect_interval: Some(1000),
+        onmessage: Some(Box::new({
+            let command_state = command_state.clone();
+            move |message| {
+                info!("Message: {message}");
+                match serde_json::from_str::<Command>(&message) {
+                    Ok(command) => command_state.set(Some(command)),
+                    Err(err) => warn!("Error parsing message: {err}"),
                 }
-            })),
-            onclose: Some(Box::new({
-                let command_state = command_state.clone();
-                move |close_event| {
-                    let close_event_type = close_event.type_();
-                    warn!("Socket closed {close_event_type} setting disconnect event.");
-                    set_disconnected(command_state.clone());
-                }
-            })),
-            onerror: Some(Box::new({
-                let command_state = command_state.clone();
-                move |event| {
-                    let event_type = event.type_();
-                    warn!("Socket error: {event_type} setting disconnect event.");
-                    set_disconnected(command_state.clone());
-                }
-            })),
-            ..Default::default()
-        },
-    );
+            }
+        })),
+        onclose: Some(Box::new({
+            let command_state = command_state.clone();
+            move |close_event| {
+                let close_event_type = close_event.type_();
+                warn!("Socket closed {close_event_type} setting disconnect event.");
+                set_disconnected(command_state.clone());
+            }
+        })),
+        onerror: Some(Box::new({
+            let command_state = command_state.clone();
+            move |event| {
+                let event_type = event.type_();
+                warn!("Socket error: {event_type} setting disconnect event.");
+                set_disconnected(command_state.clone());
+            }
+        })),
+        ..Default::default()
+    });
     UseRunnerConnectionHandle { ws, command_state }
 }

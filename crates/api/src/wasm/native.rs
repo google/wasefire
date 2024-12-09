@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use core::ffi::{c_char, CStr};
+use core::ffi::{CStr, c_char};
 
 use wasefire_logger as log;
 

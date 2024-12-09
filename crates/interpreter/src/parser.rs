@@ -478,11 +478,7 @@ impl<'m, M: Mode> Parser<'m, M> {
                 locals.extend(core::iter::repeat(val).take(len as usize));
             }
         }
-        if total <= MAX_LOCALS {
-            Ok(())
-        } else {
-            M::unsupported(if_debug!(Unsupported::MaxLocals))
-        }
+        if total <= MAX_LOCALS { Ok(()) } else { M::unsupported(if_debug!(Unsupported::MaxLocals)) }
     }
 
     pub fn parse_elem(&mut self, user: &mut impl ParseElem<'m, M>) -> MResult<(), M> {

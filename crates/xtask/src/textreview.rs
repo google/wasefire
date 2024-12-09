@@ -14,7 +14,7 @@
 
 use std::io::BufRead;
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{Context, Result, ensure};
 use tokio::process::Command;
 use wasefire_cli_tools::cmd;
 

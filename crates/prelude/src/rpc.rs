@@ -44,7 +44,7 @@ pub trait Rpc {
     /// The function pointer and data must live until unregistered. The function must support
     /// concurrent calls.
     unsafe fn register(&self, func: extern "C" fn(*const u8), data: *const u8)
-        -> Result<(), Error>;
+    -> Result<(), Error>;
 
     /// Unregisters the callback.
     fn unregister(&self) -> Result<(), Error>;

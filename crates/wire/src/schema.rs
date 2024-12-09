@@ -187,11 +187,7 @@ impl<'a> List for (&'a str, u32, ViewStruct<'a>) {
 }
 
 fn write_fields(f: &mut core::fmt::Formatter, xs: &[(Option<&str>, View)]) -> core::fmt::Result {
-    if xs.len() == 1 && xs[0].0.is_none() {
-        xs[0].1.fmt(f)
-    } else {
-        write_list(f, xs)
-    }
+    if xs.len() == 1 && xs[0].0.is_none() { xs[0].1.fmt(f) } else { write_list(f, xs) }
 }
 
 fn write_list<T: List>(f: &mut core::fmt::Formatter, xs: &[T]) -> core::fmt::Result {

@@ -20,8 +20,8 @@ use std::time::Duration;
 use anyhow::Result;
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::{mpsc, oneshot};
-use warp::ws::{Message, WebSocket};
 use warp::Filter;
+use warp::ws::{Message, WebSocket};
 use wasefire_logger as log;
 use wasefire_protocol::applet::ExitStatus;
 use web_common::{ButtonState, Command, Component};
@@ -120,10 +120,9 @@ async fn handle(mut ws: WebSocket, client: ClientInput) {
     });
     cmd_sender.send(Command::Connected).await.unwrap();
     let board_config = Command::BoardConfig {
-        components: vec![
-            Component::Button { id: BUTTON_ID },
-            Component::MonochromeLed { id: LED_ID },
-        ],
+        components: vec![Component::Button { id: BUTTON_ID }, Component::MonochromeLed {
+            id: LED_ID,
+        }],
     };
     cmd_sender.send(board_config).await.unwrap();
     let board_ready = ws_receiver.next().await.unwrap().unwrap();

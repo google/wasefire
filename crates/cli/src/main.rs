@@ -18,7 +18,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{Context, Result, bail, ensure};
 use clap::{CommandFactory, Parser, ValueHint};
 use clap_complete::Shell;
 use tokio::process::Command;

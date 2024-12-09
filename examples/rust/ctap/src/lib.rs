@@ -260,16 +260,13 @@ impl Touch {
             touched: touched.clone(),
             blink: blink.clone(),
         }));
-        let _button = button::Listener::new(
-            0,
-            ButtonHandler {
-                console: console.clone(),
-                light: light.clone(),
-                touched: touched.clone(),
-                blink: blink.clone(),
-                timeout: timeout.clone(),
-            },
-        )
+        let _button = button::Listener::new(0, ButtonHandler {
+            console: console.clone(),
+            light: light.clone(),
+            touched: touched.clone(),
+            blink: blink.clone(),
+            timeout: timeout.clone(),
+        })
         .unwrap();
         Some(Self { console, light, touched, blink, timeout, _button })
     }

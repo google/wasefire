@@ -13,15 +13,15 @@
 // limitations under the License.
 
 use alloc::boxed::Box;
-use core::ffi::{c_char, CStr};
+use core::ffi::{CStr, c_char};
 
 use wasefire_board_api::Api as Board;
 use wasefire_logger as log;
 use wasefire_sync::Mutex;
 
+use crate::Scheduler;
 #[cfg(feature = "internal-debug")]
 use crate::perf::Slot;
-use crate::Scheduler;
 
 pub(crate) trait ErasedScheduler: Send {
     fn dispatch(&mut self, link: &CStr, params: *const u32) -> isize;

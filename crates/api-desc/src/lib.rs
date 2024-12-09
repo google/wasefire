@@ -696,11 +696,7 @@ impl std::fmt::Display for Path<'_> {
             Path::Empty => return Ok(()),
             Path::Mod { name, prev } => (name, prev),
         };
-        if f.alternate() {
-            write!(f, "{prev:#}  ")
-        } else {
-            write!(f, "{prev}{name}_")
-        }
+        if f.alternate() { write!(f, "{prev:#}  ") } else { write!(f, "{prev}{name}_") }
     }
 }
 

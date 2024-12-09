@@ -15,17 +15,17 @@
 use wasefire_applet_api::radio::ble::Api;
 #[cfg(feature = "board-api-radio-ble")]
 use wasefire_applet_api::radio::ble::{self as api, Advertisement};
+use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-radio-ble")]
 use wasefire_board_api::radio::ble::{Api as _, Event};
-use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-radio-ble")]
 use wasefire_board_api::{self as board};
 
+use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-radio-ble")]
 use crate::applet::store::MemoryApi;
 #[cfg(feature = "board-api-radio-ble")]
-use crate::event::{radio::ble::Key, Handler};
-use crate::DispatchSchedulerCall;
+use crate::event::{Handler, radio::ble::Key};
 #[cfg(feature = "board-api-radio-ble")]
 use crate::{SchedulerCall, Trap};
 

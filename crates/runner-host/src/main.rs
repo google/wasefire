@@ -22,7 +22,7 @@ use std::sync::{LazyLock, Mutex};
 use anyhow::Result;
 use clap::Parser;
 use tokio::select;
-use tokio::sync::mpsc::{channel, Receiver};
+use tokio::sync::mpsc::{Receiver, channel};
 use wasefire_board_api::Event;
 #[cfg(feature = "wasm")]
 use wasefire_interpreter as _;
@@ -31,8 +31,8 @@ use wasefire_protocol_tokio::Pipe;
 use wasefire_scheduler::Scheduler;
 use wasefire_store::{FileOptions, FileStorage};
 
-use crate::board::platform::protocol::State as ProtocolState;
 use crate::board::Board;
+use crate::board::platform::protocol::State as ProtocolState;
 
 mod board;
 mod cleanup;
@@ -125,7 +125,7 @@ async fn main() -> Result<()> {
         cleanup::shutdown(1)
     }));
     tokio::spawn(async {
-        use tokio::signal::unix::{signal, SignalKind};
+        use tokio::signal::unix::{SignalKind, signal};
         let mut sigint = signal(SignalKind::interrupt()).unwrap();
         let mut sigterm = signal(SignalKind::terminate()).unwrap();
         let signal = select! {
