@@ -21,7 +21,7 @@ use core::fmt::Debug;
 
 use sealed::sealed;
 
-use crate::{scheduling, Error};
+use crate::{Error, scheduling};
 
 /// Serial events to be notified.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

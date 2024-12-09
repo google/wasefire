@@ -2,6 +2,10 @@
 
 ## 0.1.7-git
 
+### Minor
+
+- Use Rust edition 2024
+
 ### Patch
 
 - Add clippy lint

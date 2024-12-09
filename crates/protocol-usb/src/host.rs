@@ -19,7 +19,7 @@ use core::fmt::{Debug, Display};
 use std::io::Write;
 use std::time::Duration;
 
-use anyhow::{anyhow, ensure, Context};
+use anyhow::{Context, anyhow, ensure};
 use rusb::{Device, DeviceHandle, Error, TransferType, UsbContext};
 use wasefire_logger as log;
 use wasefire_protocol::DynFuture;

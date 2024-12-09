@@ -45,7 +45,7 @@ unsafe impl Send for Storage {}
 macro_rules! take_storage {
     ($start:ident .. $end:ident) => {{
         assert!(!wasefire_sync::executed!());
-        extern "C" {
+        unsafe extern "C" {
             static mut $start: u32;
             static mut $end: u32;
         }

@@ -18,7 +18,7 @@ use sealed::sealed;
 use wasefire_applet_api::uart as api;
 
 use crate::serial::Event;
-use crate::{convert, convert_unit, Error};
+use crate::{Error, convert, convert_unit};
 
 /// Returns the number of available UARTs on the board.
 pub fn count() -> usize {

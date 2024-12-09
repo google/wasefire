@@ -20,11 +20,11 @@ use wasefire_applet_api::store::Api;
 use wasefire_applet_api::store::{self as api};
 use wasefire_board_api::Api as Board;
 
-#[cfg(feature = "board-api-storage")]
-use crate::applet::store::MemoryApi;
 use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-storage")]
 use crate::SchedulerCall;
+#[cfg(feature = "board-api-storage")]
+use crate::applet::store::MemoryApi;
 
 #[cfg(feature = "applet-api-store-fragment")]
 mod fragment;

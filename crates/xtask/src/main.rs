@@ -21,10 +21,10 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{Context, Result, bail, ensure};
 use clap::Parser;
 use probe_rs::config::TargetSelector;
-use probe_rs::{flashing, Permissions, Session};
+use probe_rs::{Permissions, Session, flashing};
 use rustc_demangle::demangle;
 use tokio::process::Command;
 use tokio::sync::OnceCell;

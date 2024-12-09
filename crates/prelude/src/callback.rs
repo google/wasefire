@@ -18,7 +18,7 @@ macro_rules! define {
         define!(#[cfg(feature = "native")] $an $(, $x)*);
     };
     (#[$m:meta] $n:ident $(, $x:ident)*) => {
-        #[$m] #[no_mangle]
+        #[$m] #[unsafe(no_mangle)]
         extern "C" fn $n (
             ptr: extern "C" fn(*const u8 $(, usize ${ignore($x)})*),
             this: *const u8 $(, $x: usize)*

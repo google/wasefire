@@ -88,9 +88,5 @@ pub fn trap() -> Error {
 }
 
 pub fn check(cond: bool) -> Result<(), Error> {
-    if cond {
-        Ok(())
-    } else {
-        Err(invalid())
-    }
+    if cond { Ok(()) } else { Err(invalid()) }
 }

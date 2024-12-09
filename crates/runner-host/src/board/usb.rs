@@ -15,17 +15,17 @@
 use std::process::Stdio;
 use std::time::Duration;
 
-use anyhow::{ensure, Result};
+use anyhow::{Result, ensure};
 use tokio::process::{Child, Command};
+use usb_device::UsbError;
 use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::StringDescriptors;
 use usb_device::prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
-use usb_device::UsbError;
 use usbd_serial::SerialPort;
 use usbip_device::UsbIpBus;
-use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::usb::Api;
+use wasefire_board_api::usb::serial::Serial;
 use wasefire_cli_tools::cmd;
 use wasefire_error::{Code, Error};
 use wasefire_protocol_usb::Rpc;

@@ -40,7 +40,7 @@ use nrf52840_hal::clocks::{self, ExternalOscillator, Internal, LfOscStopped};
 use nrf52840_hal::gpio;
 use nrf52840_hal::gpio::{Level, Output, Pin, PushPull};
 use nrf52840_hal::gpiote::Gpiote;
-use nrf52840_hal::pac::{interrupt, Interrupt, FICR};
+use nrf52840_hal::pac::{FICR, Interrupt, interrupt};
 use nrf52840_hal::rng::Rng;
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 #[cfg(feature = "release")]
@@ -60,13 +60,13 @@ use wasefire_logger as log;
 use wasefire_one_of::exactly_one_of;
 use wasefire_scheduler::Scheduler;
 
-use crate::board::button::{channel, Button};
+use crate::board::button::{Button, channel};
 use crate::board::gpio::Gpio;
 use crate::board::radio::ble::Ble;
 use crate::board::timer::Timers;
 use crate::board::uart::Uarts;
 use crate::board::usb::Usb;
-use crate::board::{button, led, Events};
+use crate::board::{Events, button, led};
 use crate::storage::Storage;
 
 exactly_one_of!["debug", "release"];

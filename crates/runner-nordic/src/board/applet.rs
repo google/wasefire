@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::applet::Api;
 use wasefire_board_api::Error;
+use wasefire_board_api::applet::Api;
 use wasefire_store::{Storage as _, StorageIndex};
 use wasefire_sync::TakeCell;
 

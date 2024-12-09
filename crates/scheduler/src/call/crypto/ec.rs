@@ -15,9 +15,9 @@
 #[cfg(feature = "board-api-crypto-p384")]
 use generic_array as _;
 use wasefire_applet_api::crypto::ec::{self as api, Api, Curve};
+use wasefire_board_api::Api as Board;
 #[cfg(feature = "internal-board-api-crypto-ecc")]
 use wasefire_board_api::crypto::ecc::Api as _;
-use wasefire_board_api::Api as Board;
 #[cfg(feature = "internal-board-api-crypto-ecc")]
 use wasefire_board_api::{self as board, Support};
 

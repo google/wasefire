@@ -16,7 +16,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::Parser;
 use common::{Deserialize, Deserializer, Error, Request, Response, Serialize, Serializer};
 use serialport::{SerialPort, SerialPortType};

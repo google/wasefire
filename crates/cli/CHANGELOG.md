@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Use Rust edition 2024
 - Add `self-update` to download and install the latest CLI
 
 ### Patch

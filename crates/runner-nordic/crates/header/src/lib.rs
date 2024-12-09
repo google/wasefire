@@ -65,7 +65,7 @@ pub enum Side {
 
 impl Side {
     pub fn current() -> Option<Self> {
-        extern "C" {
+        unsafe extern "C" {
             static mut __header_origin: u32;
         }
         Self::new(addr_of!(__header_origin) as u32)

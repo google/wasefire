@@ -6,6 +6,10 @@
 
 - Update `wasefire-applet-api-desc` version
 
+### Minor
+
+- Use Rust edition 2024
+
 ## 0.7.0
 
 ### Major

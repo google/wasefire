@@ -16,8 +16,8 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 use header::{Header, Side};
-use wasefire_board_api::platform::update::Api;
 use wasefire_board_api::Supported;
+use wasefire_board_api::platform::update::Api;
 use wasefire_error::{Code, Error};
 use wasefire_sync::TakeCell;
 

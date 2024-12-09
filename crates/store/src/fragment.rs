@@ -49,11 +49,7 @@ impl Keys for Range<usize> {
     }
 
     fn pos(&self, key: usize) -> Option<usize> {
-        if self.start <= key && key < self.end {
-            Some(key - self.start)
-        } else {
-            None
-        }
+        if self.start <= key && key < self.end { Some(key - self.start) } else { None }
     }
 
     fn key(&self, pos: usize) -> usize {

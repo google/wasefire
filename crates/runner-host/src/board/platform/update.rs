@@ -16,8 +16,8 @@ use std::sync::Mutex;
 
 use anyhow::Result;
 use tokio::runtime::Handle;
-use wasefire_board_api::platform::update::Api;
 use wasefire_board_api::Supported;
+use wasefire_board_api::platform::update::Api;
 use wasefire_cli_tools::fs;
 use wasefire_error::{Code, Error};
 

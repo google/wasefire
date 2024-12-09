@@ -16,7 +16,7 @@ use anyhow::Result;
 use tokio::sync::mpsc::channel;
 use wasefire_cli_tools::fs;
 
-use crate::{board, cleanup, with_state, FLAGS};
+use crate::{FLAGS, board, cleanup, with_state};
 
 pub async fn init() -> Result<web_server::Client> {
     let (sender, mut receiver) = channel(10);

@@ -18,7 +18,7 @@ use alloc::boxed::Box;
 
 use wasefire_applet_api::platform::update as api;
 
-use crate::{convert_bool, convert_unit, Error};
+use crate::{Error, convert_bool, convert_unit};
 
 /// Returns whether platform update is supported.
 pub fn is_supported() -> bool {

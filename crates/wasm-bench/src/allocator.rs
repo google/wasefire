@@ -21,7 +21,7 @@ static ALLOCATOR: Heap = Heap::empty();
 
 macro_rules! addr_of_sym {
     ($sym:ident) => {{
-        extern "C" {
+        unsafe extern "C" {
             static mut $sym: u32;
         }
         addr_of_mut!($sym) as usize

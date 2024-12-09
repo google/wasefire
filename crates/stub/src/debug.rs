@@ -14,7 +14,7 @@
 
 use wasefire_applet_api::debug as api;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn env_dp(params: api::println::Params) {
     let api::println::Params { ptr, len } = params;
     let msg = unsafe { std::slice::from_raw_parts(ptr, len) };

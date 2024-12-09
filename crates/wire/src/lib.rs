@@ -50,8 +50,8 @@ use core::convert::Infallible;
 use core::mem::{ManuallyDrop, MaybeUninit};
 
 use wasefire_error::{Code, Error};
-use wasefire_wire_derive::internal_wire;
 pub use wasefire_wire_derive::Wire;
+use wasefire_wire_derive::internal_wire;
 
 #[cfg(feature = "schema")]
 use crate::internal::{Builtin, Rules};

@@ -13,16 +13,16 @@
 // limitations under the License.
 
 use wasefire_applet_api::timer::{self as api, Api};
+use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-timer")]
 use wasefire_board_api::timer::{Api as _, Command};
-use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-timer")]
 use wasefire_board_api::{self as board, Id};
 
 #[cfg(feature = "board-api-timer")]
-use crate::event::{timer::Key, Handler};
-#[cfg(feature = "board-api-timer")]
 use crate::Trap;
+#[cfg(feature = "board-api-timer")]
+use crate::event::{Handler, timer::Key};
 use crate::{DispatchSchedulerCall, SchedulerCall};
 #[cfg(feature = "board-api-timer")]
 use crate::{Scheduler, Timer};

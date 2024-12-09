@@ -18,7 +18,7 @@ use sealed::sealed;
 use wasefire_applet_api::usb::serial as api;
 
 use crate::serial::Event;
-use crate::{convert, convert_unit, Error};
+use crate::{Error, convert, convert_unit};
 
 /// Implements the [`Serial`](crate::serial::Serial) interface for the USB serial.
 pub struct UsbSerial;

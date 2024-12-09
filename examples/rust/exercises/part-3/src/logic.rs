@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloc::collections::btree_map::Entry;
 use alloc::collections::BTreeMap;
+use alloc::collections::btree_map::Entry;
 use alloc::string::String;
 
 use interface::{Request, Response};

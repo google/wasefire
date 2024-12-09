@@ -21,7 +21,7 @@ use alloc::vec::Vec;
 pub use rust_crypto::*;
 use wasefire_applet_api::crypto::gcm as api;
 
-use crate::{convert, convert_unit, Error};
+use crate::{Error, convert, convert_unit};
 
 /// Describes AES-256-GCM support.
 pub struct Support {

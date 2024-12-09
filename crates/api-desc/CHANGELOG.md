@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Use Rust edition 2024
 - Use C-string literals to implement dispatch for native applets
 - Implement `bytemuck::Pod` for generated `Params`
 
