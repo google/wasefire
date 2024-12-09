@@ -370,13 +370,13 @@ impl Fn {
                 pub struct Params { #(#params,)* }
             }
             #[cfg(not(feature = "native"))]
-            extern "C" {
+            unsafe extern "C" {
                 #(#[doc = #docs])*
                 #[link_name = #link]
-                pub fn #name(#fn_params) -> isize;
+                pub unsafe fn #name(#fn_params) -> isize;
             }
             #[cfg(feature = "native")]
-            #[export_name = #env_link]
+            #[unsafe(export_name = #env_link)]
             #[linkage = "weak"]
             pub unsafe extern "C" fn #name(#fn_params) -> isize {
                 #let_params

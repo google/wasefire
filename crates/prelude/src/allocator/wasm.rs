@@ -21,7 +21,7 @@ use rlsf::Tlsf;
 
 use crate::sync::Mutex;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn init() {
     assert!(!wasefire_sync::executed!());
     const SIZE: usize = 32768;
@@ -36,7 +36,7 @@ extern "C" fn init() {
     assert!(size > NonZeroUsize::new(SIZE / 2));
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn alloc(size: u32, align: u32) -> u32 {
     let layout = match Layout::from_size_align(size as usize, align as usize) {
         Ok(x) => x,

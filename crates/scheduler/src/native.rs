@@ -79,7 +79,7 @@ pub(crate) fn execute_callback() {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn env_dispatch(link: *const c_char, params: *const u32) -> isize {
     let link = unsafe { CStr::from_ptr(link) };
     let result = with_scheduler(|scheduler| {

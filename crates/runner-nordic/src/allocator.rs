@@ -20,7 +20,7 @@ use embedded_alloc::TlsfHeap as Heap;
 static ALLOCATOR: Heap = Heap::empty();
 
 pub fn init() {
-    extern "C" {
+    unsafe extern "C" {
         static mut __sheap: u32;
         static mut __eheap: u32;
     }

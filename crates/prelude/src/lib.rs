@@ -113,7 +113,7 @@ macro_rules! applet {
 
         use wasefire::*;
 
-        #[export_name = "main"]
+        #[unsafe(export_name = "main")]
         #[allow(unreachable_code)]
         #[allow(clippy::diverging_sub_expression)]
         extern "C" fn _main() {
@@ -131,7 +131,7 @@ macro_rules! applet {
 
         use wasefire::*;
 
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         #[allow(unreachable_code)]
         #[allow(clippy::diverging_sub_expression)]
         extern "C" fn applet_main() {

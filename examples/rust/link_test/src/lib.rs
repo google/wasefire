@@ -38,11 +38,11 @@ fn test(f: impl FnOnce() -> isize) {
 }
 
 #[cfg(not(feature = "native"))]
-extern "C" {
-    fn test_only_0() -> isize;
-    fn test_only_1(_: usize) -> isize;
-    fn test_only_1b(_: usize) -> isize;
-    fn test_only_10(
+unsafe extern "C" {
+    unsafe fn test_only_0() -> isize;
+    unsafe fn test_only_1(_: usize) -> isize;
+    unsafe fn test_only_1b(_: usize) -> isize;
+    unsafe fn test_only_10(
         _: usize, _: usize, _: usize, _: usize, _: usize, _: usize, _: usize, _: usize, _: usize,
         _: usize,
     ) -> isize;
@@ -52,8 +52,8 @@ extern "C" {
 mod native {
     use core::ffi::{c_char, CStr};
 
-    extern "C" {
-        fn env_dispatch(link: *const c_char, params: *const u32) -> isize;
+    unsafe extern "C" {
+        unsafe fn env_dispatch(link: *const c_char, params: *const u32) -> isize;
     }
 
     fn test_only(link: &str, params: &[u32]) -> isize {

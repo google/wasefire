@@ -16,7 +16,7 @@ use core::ffi::{c_char, CStr};
 
 use wasefire_logger as log;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub(crate) unsafe extern "C" fn env_dispatch(link: *const c_char, _params: *const u32) -> isize {
     log::panic!("{:?} is not defined", unsafe { CStr::from_ptr(link) });

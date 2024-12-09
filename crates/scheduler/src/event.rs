@@ -200,8 +200,8 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
             (() $count:tt $args:tt $cb:ident) => { schedule!($args $cb) };
 
             ([$($x:ident: $t:ty = $i:expr,)*] $cb:ident) => {{
-                extern "C" {
-                    fn $cb(ptr: extern "C" fn(U8 $(, $t)*), this: U8 $(, $x: $t)*);
+                unsafe extern "C" {
+                    unsafe fn $cb(ptr: extern "C" fn(U8 $(, $t)*), this: U8 $(, $x: $t)*);
                 }
                 let ptr = unsafe {
                     core::mem::transmute::<*const u8, extern "C" fn(U8 $(, $t)*)>(params[0] as _)
