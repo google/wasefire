@@ -60,5 +60,6 @@ SECTIONS {
   } > HEADER
 }
 
-_stack_start = ORIGIN(RAM);
+_stack_end = __stack_origin;
+_stack_start = __heap_origin;
 __eheap = ORIGIN(RAM) + LENGTH(RAM);

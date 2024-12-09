@@ -106,9 +106,6 @@ fn with_state<R>(f: impl FnOnce(&mut State) -> R) -> R {
     critical_section::with(|cs| f(STATE.borrow_ref_mut(cs).as_mut().unwrap()))
 }
 
-// TODO(https://github.com/rust-embedded/cortex-m/issues/537): Remove when fixed.
-#[allow(unsafe_op_in_unsafe_fn)]
-#[allow(static_mut_refs)]
 #[entry]
 fn main() -> ! {
     static mut CLOCKS: MaybeUninit<Clocks> = MaybeUninit::uninit();
