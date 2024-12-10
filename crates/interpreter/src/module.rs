@@ -77,7 +77,7 @@ impl<'m> Module<'m> {
     }
 
     pub fn side_tables(&self) -> &[Vec<SideTableEntry>] {
-        &self.side_tables
+        self.side_tables
     }
 
     pub fn side_table(&self, i: usize) -> &[SideTableEntry] {

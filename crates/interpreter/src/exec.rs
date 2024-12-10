@@ -18,6 +18,7 @@ use alloc::vec::Vec;
 
 use crate::error::*;
 use crate::module::*;
+use crate::side_table::SideTableEntry;
 use crate::syntax::*;
 use crate::toctou::*;
 use crate::*;
@@ -728,7 +729,7 @@ impl<'m> Thread<'m> {
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
         let parser = mut_parser.clone();
-        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new()));
+        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new(), &[]));
         let (parser, results) = loop {
             let p = thread.parser.save();
             match thread.step(store).unwrap() {
@@ -789,20 +790,16 @@ impl<'m> Thread<'m> {
             End => {
                 return Ok(self.exit_label());
             }
-            Br(l) => return Ok(self.pop_label(inst, l, None)),
+            Br(l) => return Ok(self.pop_label(l, None)),
             BrIf(l) => {
                 if self.pop_value().unwrap_i32() != 0 {
-                    return Ok(self.pop_label(inst, l, None));
+                    return Ok(self.pop_label(l, None));
                 }
                 self.frame().skip_jump();
             }
             BrTable(ls, ln) => {
                 let i = self.pop_value().unwrap_i32() as usize;
-                return Ok(self.pop_label(
-                    inst,
-                    ls.get(i).cloned().unwrap_or(ln),
-                    ls.get(i).map(|_| i),
-                ));
+                return Ok(self.pop_label(ls.get(i).cloned().unwrap_or(ln), ls.get(i).map(|_| i)));
             }
             Return => return Ok(self.exit_frame()),
             Call(x) => return self.invoke(store, store.func_ptr(inst_id, x)),
@@ -1054,9 +1051,7 @@ impl<'m> Thread<'m> {
         self.labels().push(label);
     }
 
-    fn pop_label(
-        mut self, inst: &mut Instance<'m>, l: LabelIdx, non_default_label_idx: Option<usize>,
-    ) -> ThreadResult<'m> {
+    fn pop_label(mut self, l: LabelIdx, non_default_label_idx: Option<usize>) -> ThreadResult<'m> {
         let i = self.labels().len() - l as usize - 1;
         if i == 0 {
             return self.exit_frame();
@@ -1669,12 +1664,4 @@ fn memory_too_small(x: usize, n: usize, mem: &Memory) {
     let _ = (x, n, mem);
     #[cfg(feature = "debug")]
     eprintln!("Memory too small: {x} + {n} > {}", mem.len());
-}
-
-fn index_in_side_tables(module: &Module, index: u32) -> Option<usize> {
-    if module.side_table(index as usize).is_empty() {
-        None
-    } else {
-        Some(index as usize)
-    }
 }
