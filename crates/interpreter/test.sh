@@ -32,7 +32,6 @@ test_helper
 
 cargo test --lib --features=debug,toctou
 cargo check --lib --target=thumbv7em-none-eabi
-cargo check --lib --target=thumbv7em-none-eabi --features=cache
 cargo check --lib --target=riscv32imc-unknown-none-elf \
   --features=portable-atomic/critical-section
 RUSTFLAGS=--cfg=portable_atomic_unsafe_assume_single_core \

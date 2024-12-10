@@ -18,6 +18,7 @@ use alloc::vec::Vec;
 
 use crate::error::*;
 use crate::module::*;
+use crate::side_table::SideTableEntry;
 use crate::syntax::*;
 use crate::toctou::*;
 use crate::*;
@@ -114,9 +115,10 @@ impl<'m> Store<'m> {
     /// The memory is not dynamically allocated and must thus be provided. It is not necessary for
     /// the memory length to be a multiple of 64kB. Execution will trap if the module tries to
     /// access part of the memory that does not exist.
-    pub fn instantiate(
-        &mut self, module: Module<'m>, memory: &'m mut [u8],
-    ) -> Result<InstId, Error> {
+    pub fn instantiate<'a>(
+        &'a mut self, module: Module<'m>, memory: &'m mut [u8],
+    ) -> Result<InstId, Error>
+    where 'a: 'm {
         let inst_id = self.insts.len();
         self.insts.push(Instance::default());
         self.last_inst().module = module;
@@ -192,10 +194,10 @@ impl<'m> Store<'m> {
             let x = parser.parse_funcidx().into_ok();
             let ptr = self.func_ptr(inst_id, x);
             let inst_id = ptr.instance().unwrap_wasm();
-            let mut parser = self.insts[inst_id].module.func(ptr.index());
+            let (mut parser, side_table) = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals));
+            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals, side_table));
             let result = thread.run(self)?;
             assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
         }
@@ -209,7 +211,8 @@ impl<'m> Store<'m> {
     /// may be corrupted.
     pub fn invoke<'a>(
         &'a mut self, inst: InstId, name: &str, args: Vec<Val>,
-    ) -> Result<RunResult<'a, 'm>, Error> {
+    ) -> Result<RunResult<'a, 'm>, Error>
+    where 'a: 'm {
         let inst_id = self.inst_id(inst)?;
         let inst = &self.insts[inst_id];
         let ptr = match inst.module.export(name).ok_or_else(not_found)? {
@@ -220,11 +223,11 @@ impl<'m> Store<'m> {
         let inst = &self.insts[inst_id];
         let x = ptr.index();
         let t = inst.module.func_type(x);
-        let mut parser = inst.module.func(x);
+        let (mut parser, side_table) = inst.module.func(x);
         check_types(&t.params, &args)?;
         let mut locals = args;
         append_locals(&mut parser, &mut locals);
-        let frame = Frame::new(inst_id, t.results.len(), &[], locals);
+        let frame = Frame::new(inst_id, t.results.len(), &[], locals, side_table);
         Thread::new(parser, frame).run(self)
     }
 
@@ -728,7 +731,8 @@ impl<'m> Thread<'m> {
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
         let parser = mut_parser.clone();
-        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new()));
+        static EMPTY_VEC: Vec<SideTableEntry> = Vec::new();
+        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new(), &EMPTY_VEC));
         let (parser, results) = loop {
             let p = thread.parser.save();
             match thread.step(store).unwrap() {
@@ -765,28 +769,44 @@ impl<'m> Thread<'m> {
             Unreachable => return Err(trap()),
             Nop => (),
             Block(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Block),
-            Loop(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Loop(saved)),
+            Loop(b) => {
+                let side_table_idx = self.frame().side_table_index;
+                self.push_label(
+                    self.blocktype(inst, &b),
+                    LabelKind::Loop(LoopState { parser_data: saved, side_table_idx }),
+                )
+            }
             If(b) => match self.pop_value().unwrap_i32() {
                 0 => {
-                    self.skip_to_else(inst);
+                    self.take_jump(None);
                     self.push_label(self.blocktype(inst, &b), LabelKind::Block);
                 }
-                _ => self.push_label(self.blocktype(inst, &b), LabelKind::If),
+                _ => {
+                    self.frame().skip_jump();
+                    self.push_label(self.blocktype(inst, &b), LabelKind::If);
+                }
             },
             Else => {
-                self.skip_to_end(inst, 0);
+                self.take_jump(None);
                 return Ok(self.exit_label());
             }
-            End => return Ok(self.exit_label()),
-            Br(l) => return Ok(self.pop_label(inst, l)),
+            End => {
+                return Ok(self.exit_label());
+            }
+            Br(l) => return Ok(self.pop_label(inst, l, None)),
             BrIf(l) => {
                 if self.pop_value().unwrap_i32() != 0 {
-                    return Ok(self.pop_label(inst, l));
+                    return Ok(self.pop_label(inst, l, None));
                 }
+                self.frame().skip_jump();
             }
             BrTable(ls, ln) => {
                 let i = self.pop_value().unwrap_i32() as usize;
-                return Ok(self.pop_label(inst, ls.get(i).cloned().unwrap_or(ln)));
+                return Ok(self.pop_label(
+                    inst,
+                    ls.get(i).cloned().unwrap_or(ln),
+                    ls.get(i).map(|_| i),
+                ));
             }
             Return => return Ok(self.exit_frame()),
             Call(x) => return self.invoke(store, store.func_ptr(inst_id, x)),
@@ -1038,7 +1058,9 @@ impl<'m> Thread<'m> {
         self.labels().push(label);
     }
 
-    fn pop_label(mut self, inst: &mut Instance<'m>, l: LabelIdx) -> ThreadResult<'m> {
+    fn pop_label(
+        mut self, inst: &mut Instance<'m>, l: LabelIdx, non_default_label_idx: Option<usize>,
+    ) -> ThreadResult<'m> {
         let i = self.labels().len() - l as usize - 1;
         if i == 0 {
             return self.exit_frame();
@@ -1050,8 +1072,11 @@ impl<'m> Thread<'m> {
         self.values().drain(values_len - values_cnt .. values_len - arity);
         self.label().values_cnt += arity;
         match kind {
-            LabelKind::Loop(pos) => unsafe { self.parser.restore(pos) },
-            LabelKind::Block | LabelKind::If => self.skip_to_end(inst, l),
+            LabelKind::Loop(state) => unsafe {
+                *self.frame().side_table_index() = state.side_table_idx;
+                self.parser.restore(state.parser_data)
+            },
+            LabelKind::Block | LabelKind::If => self.take_jump(non_default_label_idx),
         }
         ThreadResult::Continue(self)
     }
@@ -1088,12 +1113,8 @@ impl<'m> Thread<'m> {
         ThreadResult::Continue(self)
     }
 
-    fn skip_to_else(&mut self, inst: &mut Instance<'m>) {
-        inst.module.skip_to_else(&mut self.parser);
-    }
-
-    fn skip_to_end(&mut self, inst: &mut Instance<'m>, l: LabelIdx) {
-        inst.module.skip_to_end(&mut self.parser, l);
+    fn take_jump(&mut self, non_default_label_index: Option<usize>) {
+        self.frames.last_mut().unwrap().take_jump(&mut self.parser, non_default_label_index);
     }
 
     fn blocktype(&self, inst: &Instance<'m>, b: &BlockType) -> FuncType<'m> {
@@ -1369,12 +1390,12 @@ impl<'m> Thread<'m> {
             }
             Side::Wasm(x) => x,
         };
-        let mut parser = store.insts[inst_id].module.func(ptr.index());
+        let (mut parser, side_table) = store.insts[inst_id].module.func(ptr.index());
         let mut locals = self.pop_values(t.params.len());
         append_locals(&mut parser, &mut locals);
         let ret = self.parser.save();
         self.parser = parser;
-        self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals));
+        self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals, side_table));
         Ok(ThreadResult::Continue(self))
     }
 }
@@ -1409,12 +1430,50 @@ struct Frame<'m> {
     ret: &'m [u8],
     locals: Vec<Val>,
     labels: Vec<Label<'m>>,
+    side_table: &'m [SideTableEntry],
+    side_table_index: usize,
 }
 
 impl<'m> Frame<'m> {
-    fn new(inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>) -> Self {
+    fn new(
+        inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>,
+        side_table: &'m [SideTableEntry],
+    ) -> Self {
         let label = Label { arity, kind: LabelKind::Block, values_cnt: 0 };
-        Frame { inst_id, arity, ret, locals, labels: vec![label] }
+        Frame { inst_id, arity, ret, locals, labels: vec![label], side_table, side_table_index: 0 }
+    }
+
+    fn side_table_index(&mut self) -> &mut usize {
+        &mut self.side_table_index
+    }
+
+    fn skip_jump(&mut self) {
+        self.side_table_index += 1;
+    }
+
+    fn take_jump(&mut self, parser: &mut Parser<'m>, non_default_label_index: Option<usize>) {
+        let mut j = self.side_table_index;
+        // In validation for BrTable, the side table entry for the last label index is created at
+        // first.
+        if let Some(non_default_label_index) = non_default_label_index {
+            j += non_default_label_index + 1;
+        }
+        let entry = self.side_table[j].view();
+        unsafe {
+            parser.restore(Self::jump(parser.save(), entry.delta_ip as isize));
+        }
+        self.side_table_index = (j as i32 + entry.delta_stp) as usize;
+    }
+
+    // TODO(dev/fast-interp): Add debug asserts when `off` is positive and negative, and `toctou`
+    // support.
+    fn jump(cur: &'m [u8], off: isize) -> &'m [u8] {
+        unsafe {
+            core::slice::from_raw_parts(
+                cur.as_ptr().offset(off),
+                (cur.len() as isize - off) as usize,
+            )
+        }
     }
 }
 
@@ -1426,13 +1485,19 @@ struct Label<'m> {
 }
 
 #[derive(Debug)]
+struct LoopState<'m> {
+    parser_data: &'m [u8],
+    side_table_idx: usize,
+}
+
+#[derive(Debug)]
 enum LabelKind<'m> {
     // TODO: If and Block can be merged and then we just have Option<NonNull<u8>> which is
     // optimized.
     Block,
     // TODO: Could be just NonNull<u8> since we can reuse the end of current parser since it
     // never changes.
-    Loop(&'m [u8]),
+    Loop(LoopState<'m>),
     If,
 }
 
@@ -1608,4 +1673,12 @@ fn memory_too_small(x: usize, n: usize, mem: &Memory) {
     let _ = (x, n, mem);
     #[cfg(feature = "debug")]
     eprintln!("Memory too small: {x} + {n} > {}", mem.len());
+}
+
+fn index_in_side_tables(module: &Module, index: u32) -> Option<usize> {
+    if module.side_table(index as usize).is_empty() {
+        None
+    } else {
+        Some(index as usize)
+    }
 }
