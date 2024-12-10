@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
@@ -29,7 +30,7 @@ pub struct Module<'m> {
     types: Vec<FuncType<'m>>,
     // TODO(dev/fast-interp): Flatten it to 1D array when making it persistent in
     // flash.
-    side_tables: Vec<Vec<SideTableEntry>>,
+    side_tables: &'m [Vec<SideTableEntry>],
 }
 
 impl<'m> Import<'m> {
@@ -54,7 +55,8 @@ impl<'m> Module<'m> {
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
         let side_tables = validate(binary)?;
         let mut module = unsafe { Self::new_unchecked(binary) };
-        module.side_tables = side_tables;
+        // TODO(dev/fast-interp): We should take a buffer as argument to write to.
+        module.side_tables = Box::leak(Box::new(side_tables));
         Ok(module)
     }
 
@@ -191,7 +193,7 @@ impl<'m> Module<'m> {
     }
 
     // TODO(dev/fast-interp): Improve the performance of such accessor functions from O(n) to O(1).
-    pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &[SideTableEntry]) {
+    pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [SideTableEntry]) {
         let mut parser = self.section(SectionId::Code).unwrap();
         for i in 0 .. parser.parse_vec().into_ok() {
             let size = parser.parse_u32().into_ok() as usize;

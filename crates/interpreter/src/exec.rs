@@ -117,8 +117,7 @@ impl<'m> Store<'m> {
     /// access part of the memory that does not exist.
     pub fn instantiate<'a>(
         &'a mut self, module: Module<'m>, memory: &'m mut [u8],
-    ) -> Result<InstId, Error>
-    where 'a: 'm {
+    ) -> Result<InstId, Error> {
         let inst_id = self.insts.len();
         self.insts.push(Instance::default());
         self.last_inst().module = module;
@@ -211,8 +210,7 @@ impl<'m> Store<'m> {
     /// may be corrupted.
     pub fn invoke<'a>(
         &'a mut self, inst: InstId, name: &str, args: Vec<Val>,
-    ) -> Result<RunResult<'a, 'm>, Error>
-    where 'a: 'm {
+    ) -> Result<RunResult<'a, 'm>, Error> {
         let inst_id = self.inst_id(inst)?;
         let inst = &self.insts[inst_id];
         let ptr = match inst.module.export(name).ok_or_else(not_found)? {
