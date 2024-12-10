@@ -78,7 +78,7 @@ impl<'m> Module<'m> {
         &self.side_tables
     }
 
-    pub fn side_table(&self, i: usize) -> &Vec<SideTableEntry> {
+    pub fn side_table(&self, i: usize) -> &[SideTableEntry] {
         &self.side_tables[i]
     }
 
@@ -190,13 +190,14 @@ impl<'m> Module<'m> {
         unreachable!()
     }
 
-    pub(crate) fn func(&mut self, x: FuncIdx) -> Parser<'m> {
+    // TODO(dev/fast-interp): Improve the performance of such accessor functions from O(n) to O(1).
+    pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &[SideTableEntry]) {
         let mut parser = self.section(SectionId::Code).unwrap();
         for i in 0 .. parser.parse_vec().into_ok() {
             let size = parser.parse_u32().into_ok() as usize;
             let parser = parser.split_at(size).into_ok();
             if i == x as usize {
-                return parser;
+                return (parser, &self.side_tables[i]);
             }
         }
         unreachable!()

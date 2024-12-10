@@ -115,9 +115,10 @@ impl<'m> Store<'m> {
     /// The memory is not dynamically allocated and must thus be provided. It is not necessary for
     /// the memory length to be a multiple of 64kB. Execution will trap if the module tries to
     /// access part of the memory that does not exist.
-    pub fn instantiate(
-        &mut self, module: Module<'m>, memory: &'m mut [u8],
-    ) -> Result<InstId, Error> {
+    pub fn instantiate<'a>(
+        &'a mut self, module: Module<'m>, memory: &'m mut [u8],
+    ) -> Result<InstId, Error>
+    where 'a: 'm {
         let inst_id = self.insts.len();
         self.insts.push(Instance::default());
         self.last_inst().module = module;
@@ -193,19 +194,10 @@ impl<'m> Store<'m> {
             let x = parser.parse_funcidx().into_ok();
             let ptr = self.func_ptr(inst_id, x);
             let inst_id = ptr.instance().unwrap_wasm();
-            let mut parser = self.insts[inst_id].module.func(ptr.index());
+            let (mut parser, side_table) = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            let thread = Thread::new(
-                parser,
-                Frame::new(
-                    inst_id,
-                    0,
-                    &[],
-                    locals,
-                    index_in_side_tables(&self.insts[inst_id].module, ptr.index()),
-                ),
-            );
+            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals, side_table));
             let result = thread.run(self)?;
             assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
         }
@@ -219,7 +211,8 @@ impl<'m> Store<'m> {
     /// may be corrupted.
     pub fn invoke<'a>(
         &'a mut self, inst: InstId, name: &str, args: Vec<Val>,
-    ) -> Result<RunResult<'a, 'm>, Error> {
+    ) -> Result<RunResult<'a, 'm>, Error>
+    where 'a: 'm {
         let inst_id = self.inst_id(inst)?;
         let inst = &self.insts[inst_id];
         let ptr = match inst.module.export(name).ok_or_else(not_found)? {
@@ -227,20 +220,14 @@ impl<'m> Store<'m> {
             _ => return Err(Error::Invalid),
         };
         let inst_id = ptr.instance().unwrap_wasm();
-        let inst = &mut self.insts[inst_id];
+        let inst = &self.insts[inst_id];
         let x = ptr.index();
         let t = inst.module.func_type(x);
-        let mut parser = inst.module.func(x);
+        let (mut parser, side_table) = inst.module.func(x);
         check_types(&t.params, &args)?;
         let mut locals = args;
         append_locals(&mut parser, &mut locals);
-        let frame = Frame::new(
-            inst_id,
-            t.results.len(),
-            &[],
-            locals,
-            index_in_side_tables(&self.insts[inst_id].module, ptr.index()),
-        );
+        let frame = Frame::new(inst_id, t.results.len(), &[], locals, side_table);
         Thread::new(parser, frame).run(self)
     }
 
@@ -744,7 +731,8 @@ impl<'m> Thread<'m> {
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
         let parser = mut_parser.clone();
-        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new(), None));
+        static EMPTY_VEC: Vec<SideTableEntry> = Vec::new();
+        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new(), &EMPTY_VEC));
         let (parser, results) = loop {
             let p = thread.parser.save();
             match thread.step(store).unwrap() {
@@ -782,7 +770,7 @@ impl<'m> Thread<'m> {
             Nop => (),
             Block(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Block),
             Loop(b) => {
-                let side_table_idx = self.frame().side_table_indices.1;
+                let side_table_idx = self.frame().side_table_index;
                 self.push_label(
                     self.blocktype(inst, &b),
                     LabelKind::Loop(LoopState { parser_data: saved, side_table_idx }),
@@ -790,7 +778,7 @@ impl<'m> Thread<'m> {
             }
             If(b) => match self.pop_value().unwrap_i32() {
                 0 => {
-                    self.take_jump(None, inst.module.side_tables());
+                    self.take_jump(None);
                     self.push_label(self.blocktype(inst, &b), LabelKind::Block);
                 }
                 _ => {
@@ -799,7 +787,7 @@ impl<'m> Thread<'m> {
                 }
             },
             Else => {
-                self.take_jump(None, inst.module.side_tables());
+                self.take_jump(None);
                 return Ok(self.exit_label());
             }
             End => {
@@ -1088,9 +1076,7 @@ impl<'m> Thread<'m> {
                 *self.frame().side_table_index() = state.side_table_idx;
                 self.parser.restore(state.parser_data)
             },
-            LabelKind::Block | LabelKind::If => {
-                self.take_jump(non_default_label_idx, inst.module.side_tables())
-            }
+            LabelKind::Block | LabelKind::If => self.take_jump(non_default_label_idx),
         }
         ThreadResult::Continue(self)
     }
@@ -1127,14 +1113,8 @@ impl<'m> Thread<'m> {
         ThreadResult::Continue(self)
     }
 
-    fn take_jump(
-        &mut self, non_default_label_index: Option<usize>, side_tables: &[Vec<SideTableEntry>],
-    ) {
-        self.frames.last_mut().unwrap().take_jump(
-            &mut self.parser,
-            non_default_label_index,
-            side_tables,
-        );
+    fn take_jump(&mut self, non_default_label_index: Option<usize>) {
+        self.frames.last_mut().unwrap().take_jump(&mut self.parser, non_default_label_index);
     }
 
     fn blocktype(&self, inst: &Instance<'m>, b: &BlockType) -> FuncType<'m> {
@@ -1410,18 +1390,12 @@ impl<'m> Thread<'m> {
             }
             Side::Wasm(x) => x,
         };
-        let mut parser = store.insts[inst_id].module.func(ptr.index());
+        let (mut parser, side_table) = store.insts[inst_id].module.func(ptr.index());
         let mut locals = self.pop_values(t.params.len());
         append_locals(&mut parser, &mut locals);
         let ret = self.parser.save();
         self.parser = parser;
-        self.frames.push(Frame::new(
-            inst_id,
-            t.results.len(),
-            ret,
-            locals,
-            index_in_side_tables(&store.insts[inst_id].module, ptr.index()),
-        ));
+        self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals, side_table));
         Ok(ThreadResult::Continue(self))
     }
 }
@@ -1456,47 +1430,39 @@ struct Frame<'m> {
     ret: &'m [u8],
     locals: Vec<Val>,
     labels: Vec<Label<'m>>,
-    side_table_indices: (usize, usize),
+    side_table: &'m [SideTableEntry],
+    side_table_index: usize,
 }
 
 impl<'m> Frame<'m> {
     fn new(
-        inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>, side_table: Option<usize>,
+        inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>,
+        side_table: &'m [SideTableEntry],
     ) -> Self {
         let label = Label { arity, kind: LabelKind::Block, values_cnt: 0 };
-        Frame {
-            inst_id,
-            arity,
-            ret,
-            locals,
-            labels: vec![label],
-            side_table_indices: (side_table.unwrap_or_default(), 0),
-        }
+        Frame { inst_id, arity, ret, locals, labels: vec![label], side_table, side_table_index: 0 }
     }
 
     fn side_table_index(&mut self) -> &mut usize {
-        &mut self.side_table_indices.1
+        &mut self.side_table_index
     }
 
     fn skip_jump(&mut self) {
-        self.side_table_indices.1 += 1;
+        self.side_table_index += 1;
     }
 
-    fn take_jump(
-        &mut self, parser: &mut Parser<'m>, non_default_label_index: Option<usize>,
-        side_tables: &[Vec<SideTableEntry>],
-    ) {
-        let (i, mut j) = self.side_table_indices;
+    fn take_jump(&mut self, parser: &mut Parser<'m>, non_default_label_index: Option<usize>) {
+        let mut j = self.side_table_index;
         // In validation for BrTable, the side table entry for the last label index is created at
         // first.
         if let Some(non_default_label_index) = non_default_label_index {
             j += non_default_label_index + 1;
         }
-        let entry = side_tables[i][j].view();
+        let entry = self.side_table[j].view();
         unsafe {
             parser.restore(Self::jump(parser.save(), entry.delta_ip as isize));
         }
-        self.side_table_indices.1 = (j as i32 + entry.delta_stp) as usize;
+        self.side_table_index = (j as i32 + entry.delta_stp) as usize;
     }
 
     // TODO(dev/fast-interp): Add debug asserts when `off` is positive and negative, and `toctou`
