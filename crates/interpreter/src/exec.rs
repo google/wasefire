@@ -15,7 +15,6 @@
 // TODO: Some toctou could be used instead of panic.
 use alloc::vec;
 use alloc::vec::Vec;
-use core::fmt::Debug;
 
 use crate::error::*;
 use crate::module::*;
