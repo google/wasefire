@@ -115,8 +115,8 @@ impl<'m> Store<'m> {
     /// The memory is not dynamically allocated and must thus be provided. It is not necessary for
     /// the memory length to be a multiple of 64kB. Execution will trap if the module tries to
     /// access part of the memory that does not exist.
-    pub fn instantiate<'a>(
-        &'a mut self, module: Module<'m>, memory: &'m mut [u8],
+    pub fn instantiate(
+        &mut self, module: Module<'m>, memory: &'m mut [u8],
     ) -> Result<InstId, Error> {
         let inst_id = self.insts.len();
         self.insts.push(Instance::default());
@@ -787,9 +787,7 @@ impl<'m> Thread<'m> {
                 self.take_jump(0);
                 return Ok(self.exit_label());
             }
-            End => {
-                return Ok(self.exit_label());
-            }
+            End => return Ok(self.exit_label()),
             Br(l) => return Ok(self.pop_label(l, 0)),
             BrIf(l) => {
                 if self.pop_value().unwrap_i32() != 0 {
@@ -1438,25 +1436,14 @@ impl<'m> Frame<'m> {
     }
 
     fn skip_jump(&mut self) {
-        self.side_table = Self::jump(self.side_table, 1);
+        self.side_table = offset_front(self.side_table, 1);
     }
 
     fn take_jump(&mut self, parser_pos: &'m [u8], offset: usize) -> Parser<'m> {
-        self.side_table = Self::jump(self.side_table, offset as isize);
+        self.side_table = offset_front(self.side_table, offset as isize);
         let entry = self.side_table[0].view();
-        self.side_table = Self::jump(self.side_table, entry.delta_stp as isize);
-        unsafe { Parser::new(Self::jump(parser_pos, entry.delta_ip as isize)) }
-    }
-
-    // TODO(dev/fast-interp): Add debug asserts when `off` is positive and negative, and `toctou`
-    // support.
-    fn jump<T>(cur: &'m [T], off: isize) -> &'m [T] {
-        unsafe {
-            core::slice::from_raw_parts(
-                cur.as_ptr().offset(off),
-                (cur.len() as isize - off) as usize,
-            )
-        }
+        self.side_table = offset_front(self.side_table, entry.delta_stp as isize);
+        unsafe { Parser::new(offset_front(parser_pos, entry.delta_ip as isize)) }
     }
 }
 
@@ -1656,4 +1643,12 @@ fn memory_too_small(x: usize, n: usize, mem: &Memory) {
     let _ = (x, n, mem);
     #[cfg(feature = "debug")]
     eprintln!("Memory too small: {x} + {n} > {}", mem.len());
+}
+
+// TODO(dev/fast-interp): Add debug asserts when `off` is positive and negative, and `toctou`
+// support.
+fn offset_front<T>(cur: &[T], off: isize) -> &[T] {
+    unsafe {
+        core::slice::from_raw_parts(cur.as_ptr().offset(off), (cur.len() as isize - off) as usize)
+    }
 }

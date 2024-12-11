@@ -76,14 +76,6 @@ impl<'m> Module<'m> {
         module
     }
 
-    pub fn side_tables(&self) -> &[Vec<SideTableEntry>] {
-        self.side_tables
-    }
-
-    pub fn side_table(&self, i: usize) -> &[SideTableEntry] {
-        &self.side_tables[i]
-    }
-
     pub(crate) fn types(&self) -> &[FuncType<'m>] {
         &self.types
     }
