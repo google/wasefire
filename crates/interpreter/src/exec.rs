@@ -766,13 +766,7 @@ impl<'m> Thread<'m> {
             Unreachable => return Err(trap()),
             Nop => (),
             Block(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Block),
-            Loop(b) => {
-                let side_table = self.frame().side_table;
-                self.push_label(
-                    self.blocktype(inst, &b),
-                    LabelKind::Loop(LoopState { parser_data: saved, side_table }),
-                )
-            }
+            Loop(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Loop(saved)),
             If(b) => match self.pop_value().unwrap_i32() {
                 0 => {
                     self.take_jump(0);
@@ -1064,9 +1058,9 @@ impl<'m> Thread<'m> {
         self.values().drain(values_len - values_cnt .. values_len - arity);
         self.label().values_cnt += arity;
         match kind {
-            LabelKind::Loop(state) => unsafe {
-                self.frame().side_table = state.side_table;
-                self.parser.restore(state.parser_data)
+            LabelKind::Loop(parser_data) => unsafe {
+                self.take_jump(offset);
+                self.parser.restore(parser_data)
             },
             LabelKind::Block | LabelKind::If => self.take_jump(offset),
         }
@@ -1455,19 +1449,13 @@ struct Label<'m> {
 }
 
 #[derive(Debug)]
-struct LoopState<'m> {
-    parser_data: &'m [u8],
-    side_table: &'m [SideTableEntry],
-}
-
-#[derive(Debug)]
 enum LabelKind<'m> {
     // TODO: If and Block can be merged and then we just have Option<NonNull<u8>> which is
     // optimized.
     Block,
     // TODO: Could be just NonNull<u8> since we can reuse the end of current parser since it
     // never changes.
-    Loop(LoopState<'m>),
+    Loop(&'m [u8]),
     If,
 }
 
