@@ -767,10 +767,10 @@ impl<'m> Thread<'m> {
             Nop => (),
             Block(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Block),
             Loop(b) => {
-                let side_table_idx = self.frame().side_table_index;
+                let side_table = self.frame().side_table;
                 self.push_label(
                     self.blocktype(inst, &b),
-                    LabelKind::Loop(LoopState { parser_data: saved, side_table_idx }),
+                    LabelKind::Loop(LoopState { parser_data: saved, side_table }),
                 )
             }
             If(b) => match self.pop_value().unwrap_i32() {
@@ -798,6 +798,8 @@ impl<'m> Thread<'m> {
                 self.frame().skip_jump();
             }
             BrTable(ls, ln) => {
+                // In validation for BrTable, the side table entry for the last label index is
+                // created at first.
                 let i = self.pop_value().unwrap_i32() as usize;
                 return Ok(self
                     .pop_label(ls.get(i).cloned().unwrap_or(ln), ls.get(i).map_or(0, |_| i + 1)));
@@ -1065,7 +1067,7 @@ impl<'m> Thread<'m> {
         self.label().values_cnt += arity;
         match kind {
             LabelKind::Loop(state) => unsafe {
-                *self.frame().side_table_index() = state.side_table_idx;
+                self.frame().side_table = state.side_table;
                 self.parser.restore(state.parser_data)
             },
             LabelKind::Block | LabelKind::If => self.take_jump(offset),
@@ -1424,7 +1426,6 @@ struct Frame<'m> {
     locals: Vec<Val>,
     labels: Vec<Label<'m>>,
     side_table: &'m [SideTableEntry],
-    side_table_index: usize,
 }
 
 impl<'m> Frame<'m> {
@@ -1433,30 +1434,23 @@ impl<'m> Frame<'m> {
         side_table: &'m [SideTableEntry],
     ) -> Self {
         let label = Label { arity, kind: LabelKind::Block, values_cnt: 0 };
-        Frame { inst_id, arity, ret, locals, labels: vec![label], side_table, side_table_index: 0 }
-    }
-
-    fn side_table_index(&mut self) -> &mut usize {
-        &mut self.side_table_index
+        Frame { inst_id, arity, ret, locals, labels: vec![label], side_table }
     }
 
     fn skip_jump(&mut self) {
-        self.side_table_index += 1;
+        self.side_table = Self::jump(self.side_table, 1);
     }
 
     fn take_jump(&mut self, parser_pos: &'m [u8], offset: usize) -> Parser<'m> {
-        let mut j = self.side_table_index;
-        // In validation for BrTable, the side table entry for the last label index is created at
-        // first.
-        j += offset;
-        let entry = self.side_table[j].view();
-        self.side_table_index = (j as i32 + entry.delta_stp) as usize;
+        self.side_table = Self::jump(self.side_table, offset as isize);
+        let entry = self.side_table[0].view();
+        self.side_table = Self::jump(self.side_table, entry.delta_stp as isize);
         unsafe { Parser::new(Self::jump(parser_pos, entry.delta_ip as isize)) }
     }
 
     // TODO(dev/fast-interp): Add debug asserts when `off` is positive and negative, and `toctou`
     // support.
-    fn jump(cur: &'m [u8], off: isize) -> &'m [u8] {
+    fn jump<T>(cur: &'m [T], off: isize) -> &'m [T] {
         unsafe {
             core::slice::from_raw_parts(
                 cur.as_ptr().offset(off),
@@ -1476,7 +1470,7 @@ struct Label<'m> {
 #[derive(Debug)]
 struct LoopState<'m> {
     parser_data: &'m [u8],
-    side_table_idx: usize,
+    side_table: &'m [SideTableEntry],
 }
 
 #[derive(Debug)]
