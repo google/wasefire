@@ -586,7 +586,9 @@ impl<'a, 'm> Expr<'a, 'm> {
             Block(b) => self.push_label(self.blocktype(&b)?, LabelKind::Block)?,
             Loop(b) => {
                 let type_ = self.blocktype(&b)?;
-                self.push_label(type_, LabelKind::Loop(self.branch_target(type_.params.len())))?
+                let mut target = self.branch_target(type_.params.len());
+                target.parser = offset_parser(target, -2);
+                self.push_label(type_, LabelKind::Loop(target))?
             }
             If(b) => {
                 self.pop_check(ValType::I32)?;
@@ -859,12 +861,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         if let LabelKind::If(source) = label.kind {
             check(label.type_.params == label.type_.results)?;
             // SAFETY: This function is only called after parsing an End instruction.
-            target.parser = unsafe {
-                core::slice::from_raw_parts(
-                    target.parser.as_ptr().offset(-1),
-                    target.parser.len() + 1,
-                )
-            };
+            target.parser = offset_parser(target, -1);
             self.side_table.stitch(source, target)?;
         }
         let results = self.label().type_.results;
@@ -977,5 +974,14 @@ impl<'a, 'm> Expr<'a, 'm> {
             (true, Some(m), n) if m == n => Ok(()),
             _ => Err(invalid()),
         }
+    }
+}
+
+fn offset_parser(branch: SideTableBranch, off: isize) -> &[u8] {
+    unsafe {
+        core::slice::from_raw_parts(
+            branch.parser.as_ptr().offset(off),
+            (branch.parser.len() as isize - off) as usize,
+        )
     }
 }
