@@ -15,6 +15,7 @@
 // TODO: Some toctou could be used instead of panic.
 use alloc::vec;
 use alloc::vec::Vec;
+use core::fmt::Debug;
 
 use crate::error::*;
 use crate::module::*;
@@ -759,14 +760,13 @@ impl<'m> Thread<'m> {
 
     fn step(mut self, store: &mut Store<'m>) -> Result<ThreadResult<'m>, Error> {
         use Instr::*;
-        let saved = self.parser.save();
         let inst_id = self.frame().inst_id;
         let inst = &mut store.insts[inst_id];
         match self.parser.parse_instr().into_ok() {
             Unreachable => return Err(trap()),
             Nop => (),
             Block(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Block),
-            Loop(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Loop(saved)),
+            Loop(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Loop),
             If(b) => match self.pop_value().unwrap_i32() {
                 0 => {
                     self.take_jump(0);
@@ -982,11 +982,11 @@ impl<'m> Thread<'m> {
         self.frames.last_mut().unwrap()
     }
 
-    fn labels(&mut self) -> &mut Vec<Label<'m>> {
+    fn labels(&mut self) -> &mut Vec<Label> {
         &mut self.frame().labels
     }
 
-    fn label(&mut self) -> &mut Label<'m> {
+    fn label(&mut self) -> &mut Label {
         self.labels().last_mut().unwrap()
     }
 
@@ -1036,10 +1036,10 @@ impl<'m> Thread<'m> {
         self.values().split_off(len)
     }
 
-    fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind<'m>) {
+    fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind) {
         let arity = match kind {
             LabelKind::Block | LabelKind::If => type_.results.len(),
-            LabelKind::Loop(_) => type_.params.len(),
+            LabelKind::Loop => type_.params.len(),
         };
         let label = Label { arity, kind, values_cnt: type_.params.len() };
         self.label().values_cnt -= label.values_cnt;
@@ -1058,11 +1058,7 @@ impl<'m> Thread<'m> {
         self.values().drain(values_len - values_cnt .. values_len - arity);
         self.label().values_cnt += arity;
         match kind {
-            LabelKind::Loop(parser_data) => unsafe {
-                self.take_jump(offset);
-                self.parser.restore(parser_data)
-            },
-            LabelKind::Block | LabelKind::If => self.take_jump(offset),
+            LabelKind::Block | LabelKind::If | LabelKind::Loop => self.take_jump(offset),
         }
         ThreadResult::Continue(self)
     }
@@ -1416,7 +1412,7 @@ struct Frame<'m> {
     arity: usize,
     ret: &'m [u8],
     locals: Vec<Val>,
-    labels: Vec<Label<'m>>,
+    labels: Vec<Label>,
     side_table: &'m [SideTableEntry],
 }
 
@@ -1442,20 +1438,18 @@ impl<'m> Frame<'m> {
 }
 
 #[derive(Debug)]
-struct Label<'m> {
+struct Label {
     arity: usize,
-    kind: LabelKind<'m>,
+    kind: LabelKind,
     values_cnt: usize,
 }
 
 #[derive(Debug)]
-enum LabelKind<'m> {
+enum LabelKind {
     // TODO: If and Block can be merged and then we just have Option<NonNull<u8>> which is
     // optimized.
     Block,
-    // TODO: Could be just NonNull<u8> since we can reuse the end of current parser since it
-    // never changes.
-    Loop(&'m [u8]),
+    Loop,
     If,
 }
 
