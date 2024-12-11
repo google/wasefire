@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
-use crate::cache::Cache;
 use crate::parser::{SkipData, SkipElem};
 use crate::side_table::*;
 use crate::syntax::*;
@@ -24,29 +24,13 @@ use crate::valid::validate;
 use crate::*;
 
 /// Valid module.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Module<'m> {
     binary: &'m [u8],
     types: Vec<FuncType<'m>>,
     // TODO(dev/fast-interp): Flatten it to 1D array when making it persistent in
     // flash.
-    side_tables: Vec<Vec<SideTableEntry>>,
-    cache: Cache<CacheKey, CacheValue>,
-}
-
-impl Default for Module<'_> {
-    fn default() -> Self {
-        Self { binary: &[], types: Vec::new(), side_tables: Vec::new(), cache: Cache::unbounded() }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Hash)]
-enum CacheKey {
-    Skip { ptr: *const u8, depth: LabelIdx },
-}
-
-union CacheValue {
-    skip: usize, // delta
+    side_tables: &'m [Vec<SideTableEntry>],
 }
 
 impl<'m> Import<'m> {
@@ -71,7 +55,8 @@ impl<'m> Module<'m> {
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
         let side_tables = validate(binary)?;
         let mut module = unsafe { Self::new_unchecked(binary) };
-        module.side_tables = side_tables;
+        // TODO(dev/fast-interp): We should take a buffer as argument to write to.
+        module.side_tables = Box::leak(Box::new(side_tables));
         Ok(module)
     }
 
@@ -199,13 +184,14 @@ impl<'m> Module<'m> {
         unreachable!()
     }
 
-    pub(crate) fn func(&self, x: FuncIdx) -> Parser<'m> {
+    // TODO(dev/fast-interp): Improve the performance of such accessor functions from O(n) to O(1).
+    pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [SideTableEntry]) {
         let mut parser = self.section(SectionId::Code).unwrap();
         for i in 0 .. parser.parse_vec().into_ok() {
             let size = parser.parse_u32().into_ok() as usize;
             let parser = parser.split_at(size).into_ok();
             if i == x as usize {
-                return parser;
+                return (parser, &self.side_tables[i]);
             }
         }
         unreachable!()
@@ -220,29 +206,5 @@ impl<'m> Module<'m> {
             parser.parse_data(&mut SkipData).into_ok();
         }
         unreachable!()
-    }
-
-    pub(crate) fn skip(
-        &mut self, parser: &mut Parser<'m>, depth: LabelIdx,
-        compute: impl Fn(&mut Parser<'m>, LabelIdx),
-    ) {
-        let saved = parser.save();
-        let key = CacheKey::Skip { ptr: saved.as_ptr(), depth };
-        match self.cache.get(&key) {
-            Some(delta) => unsafe { parser.restore(&saved[delta.skip ..]) },
-            None => {
-                compute(parser, depth);
-                let delta = saved.len() - parser.save().len();
-                self.cache.put(key, CacheValue { skip: delta });
-            }
-        }
-    }
-
-    pub(crate) fn skip_to_else(&mut self, parser: &mut Parser<'m>) {
-        self.skip(parser, 0, |p, _| p.skip_to_else().into_ok());
-    }
-
-    pub(crate) fn skip_to_end(&mut self, parser: &mut Parser<'m>, l: LabelIdx) {
-        self.skip(parser, l, |p, l| p.skip_to_end(l).into_ok());
     }
 }
