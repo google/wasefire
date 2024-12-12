@@ -21,6 +21,7 @@ use crate::module::*;
 use crate::side_table::SideTableEntry;
 use crate::syntax::*;
 use crate::toctou::*;
+use crate::util::*;
 use crate::*;
 
 pub const MEMORY_ALIGN: usize = 16;
@@ -1040,7 +1041,7 @@ impl<'m> Thread<'m> {
             LabelKind::Block | LabelKind::If => type_.results.len(),
             LabelKind::Loop => type_.params.len(),
         };
-        let label = Label { arity, kind, values_cnt: type_.params.len() };
+        let label = Label { arity, values_cnt: type_.params.len() };
         self.label().values_cnt -= label.values_cnt;
         self.labels().push(label);
     }
@@ -1052,13 +1053,11 @@ impl<'m> Thread<'m> {
         }
         let frame = self.frame();
         let values_cnt: usize = frame.labels[i ..].iter().map(|label| label.values_cnt).sum();
-        let Label { arity, kind, .. } = frame.labels.drain(i ..).next().unwrap();
+        let Label { arity, .. } = frame.labels.drain(i ..).next().unwrap();
         let values_len = self.values().len();
         self.values().drain(values_len - values_cnt .. values_len - arity);
         self.label().values_cnt += arity;
-        match kind {
-            LabelKind::Block | LabelKind::If | LabelKind::Loop => self.take_jump(offset),
-        }
+        self.take_jump(offset);
         ThreadResult::Continue(self)
     }
 
@@ -1420,7 +1419,7 @@ impl<'m> Frame<'m> {
         inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>,
         side_table: &'m [SideTableEntry],
     ) -> Self {
-        let label = Label { arity, kind: LabelKind::Block, values_cnt: 0 };
+        let label = Label { arity, values_cnt: 0 };
         Frame { inst_id, arity, ret, locals, labels: vec![label], side_table }
     }
 
@@ -1439,7 +1438,6 @@ impl<'m> Frame<'m> {
 #[derive(Debug)]
 struct Label {
     arity: usize,
-    kind: LabelKind,
     values_cnt: usize,
 }
 
@@ -1624,12 +1622,4 @@ fn memory_too_small(x: usize, n: usize, mem: &Memory) {
     let _ = (x, n, mem);
     #[cfg(feature = "debug")]
     eprintln!("Memory too small: {x} + {n} > {}", mem.len());
-}
-
-// TODO(dev/fast-interp): Add debug asserts when `off` is positive and negative, and `toctou`
-// support.
-fn offset_front<T>(cur: &[T], off: isize) -> &[T] {
-    unsafe {
-        core::slice::from_raw_parts(cur.as_ptr().offset(off), (cur.len() as isize - off) as usize)
-    }
 }

@@ -21,6 +21,7 @@ use crate::error::*;
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
+use crate::util::*;
 use crate::*;
 
 /// Checks whether a WASM module in binary format is valid.
@@ -558,6 +559,7 @@ impl<'a, 'm> Expr<'a, 'm> {
 
     fn instr(&mut self) -> CheckResult {
         use Instr::*;
+        let saved = self.parser.save();
         let instr = self.parser.parse_instr()?;
         if matches!(instr, End) {
             return self.end_label();
@@ -587,7 +589,7 @@ impl<'a, 'm> Expr<'a, 'm> {
             Loop(b) => {
                 let type_ = self.blocktype(&b)?;
                 let mut target = self.branch_target(type_.params.len());
-                target.parser = offset_parser(target, -2);
+                target.parser = saved;
                 self.push_label(type_, LabelKind::Loop(target))?
             }
             If(b) => {
@@ -861,7 +863,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         if let LabelKind::If(source) = label.kind {
             check(label.type_.params == label.type_.results)?;
             // SAFETY: This function is only called after parsing an End instruction.
-            target.parser = offset_parser(target, -1);
+            target.parser = offset_front(target.parser, -1);
             self.side_table.stitch(source, target)?;
         }
         let results = self.label().type_.results;
@@ -974,14 +976,5 @@ impl<'a, 'm> Expr<'a, 'm> {
             (true, Some(m), n) if m == n => Ok(()),
             _ => Err(invalid()),
         }
-    }
-}
-
-fn offset_parser(branch: SideTableBranch, off: isize) -> &[u8] {
-    unsafe {
-        core::slice::from_raw_parts(
-            branch.parser.as_ptr().offset(off),
-            (branch.parser.len() as isize - off) as usize,
-        )
     }
 }

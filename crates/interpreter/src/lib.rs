@@ -148,6 +148,7 @@ mod parser;
 mod side_table;
 mod syntax;
 mod toctou;
+mod util;
 mod valid;
 
 pub use error::{Error, TRAP_CODE, Unsupported};
