@@ -21,6 +21,7 @@ use crate::error::*;
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
+use crate::util::*;
 use crate::*;
 
 /// Checks whether a WASM module in binary format is valid.
@@ -558,6 +559,7 @@ impl<'a, 'm> Expr<'a, 'm> {
 
     fn instr(&mut self) -> CheckResult {
         use Instr::*;
+        let saved = self.parser.save();
         let instr = self.parser.parse_instr()?;
         if matches!(instr, End) {
             return self.end_label();
@@ -586,7 +588,9 @@ impl<'a, 'm> Expr<'a, 'm> {
             Block(b) => self.push_label(self.blocktype(&b)?, LabelKind::Block)?,
             Loop(b) => {
                 let type_ = self.blocktype(&b)?;
-                self.push_label(type_, LabelKind::Loop(self.branch_target(type_.params.len())))?
+                let mut target = self.branch_target(type_.params.len());
+                target.parser = saved;
+                self.push_label(type_, LabelKind::Loop(target))?
             }
             If(b) => {
                 self.pop_check(ValType::I32)?;
@@ -859,12 +863,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         if let LabelKind::If(source) = label.kind {
             check(label.type_.params == label.type_.results)?;
             // SAFETY: This function is only called after parsing an End instruction.
-            target.parser = unsafe {
-                core::slice::from_raw_parts(
-                    target.parser.as_ptr().offset(-1),
-                    target.parser.len() + 1,
-                )
-            };
+            target.parser = offset_front(target.parser, -1);
             self.side_table.stitch(source, target)?;
         }
         let results = self.label().type_.results;
