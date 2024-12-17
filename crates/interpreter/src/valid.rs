@@ -432,7 +432,7 @@ impl SideTable {
         let delta_stp = Self::delta(source, target, |x| x.side_table as isize)?;
         let val_cnt = u32::try_from(target.result).map_err(|_| {
             #[cfg(feature = "debug")]
-            eprintln!("side-table val_cnt overflow {0}", source.result);
+            eprintln!("side-table val_cnt overflow {0}", target.result);
             unsupported(if_debug!(Unsupported::SideTable))
         })?;
         let pop_cnt = Self::pop_cnt(source, target)?;
