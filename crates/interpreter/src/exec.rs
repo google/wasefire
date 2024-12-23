@@ -197,7 +197,7 @@ impl<'m> Store<'m> {
             let (mut parser, side_table) = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals, side_table, None));
+            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals, side_table, 0));
             let result = thread.run(self)?;
             assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
         }
@@ -226,7 +226,7 @@ impl<'m> Store<'m> {
         check_types(&t.params, &args)?;
         let mut locals = args;
         append_locals(&mut parser, &mut locals);
-        let frame = Frame::new(inst_id, t.results.len(), &[], locals, side_table, None);
+        let frame = Frame::new(inst_id, t.results.len(), &[], locals, side_table, 0);
         Thread::new(parser, frame).run(self)
     }
 
@@ -730,7 +730,7 @@ impl<'m> Thread<'m> {
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
         let parser = mut_parser.clone();
-        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new(), &[], None));
+        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new(), &[], 0));
         let (parser, results) = loop {
             let p = thread.parser.save();
             match thread.step(store).unwrap() {
@@ -1373,14 +1373,7 @@ impl<'m> Thread<'m> {
         let ret = self.parser.save();
         self.parser = parser;
         let prev_stack = self.values().len();
-        self.frames.push(Frame::new(
-            inst_id,
-            t.results.len(),
-            ret,
-            locals,
-            side_table,
-            Some(prev_stack),
-        ));
+        self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals, side_table, prev_stack));
         Ok(ThreadResult::Continue(self))
     }
 }
@@ -1423,18 +1416,10 @@ struct Frame<'m> {
 impl<'m> Frame<'m> {
     fn new(
         inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>,
-        side_table: &'m [SideTableEntry], prev_stack: Option<usize>,
+        side_table: &'m [SideTableEntry], prev_stack: usize,
     ) -> Self {
         let label = Label { arity, values_cnt: 0 };
-        Frame {
-            inst_id,
-            arity,
-            ret,
-            locals,
-            labels: vec![label],
-            side_table,
-            prev_stack: prev_stack.unwrap_or(0),
-        }
+        Frame { inst_id, arity, ret, locals, labels: vec![label], side_table, prev_stack }
     }
 
     fn skip_jump(&mut self) {
