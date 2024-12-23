@@ -487,7 +487,7 @@ struct SideTableBranch<'m> {
     parser: &'m [u8],
     side_table: usize,
     stack: usize,
-    result: usize, // unused (zero) for target branches
+    result: usize, // unused (zero) for source branches
 }
 
 #[derive(Debug, Default)]
@@ -594,15 +594,14 @@ impl<'a, 'm> Expr<'a, 'm> {
             }
             If(b) => {
                 self.pop_check(ValType::I32)?;
-                let mut branch = self.branch_source();
-                let type_ = self.blocktype(&b)?;
-                branch.result = type_.results.len();
-                self.push_label(type_, LabelKind::If(branch))?;
+                let branch = self.branch_source();
+                self.push_label(self.blocktype(&b)?, LabelKind::If(branch))?;
             }
             Else => {
                 match core::mem::replace(&mut self.label().kind, LabelKind::Block) {
                     LabelKind::If(source) => {
-                        let mut target = self.branch_target(source.result);
+                        let result = self.label().type_.results.len();
+                        let mut target = self.branch_target(result);
                         target.side_table += 1;
                         self.side_table.stitch(source, target)?
                     }
