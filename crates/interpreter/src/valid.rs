@@ -432,7 +432,7 @@ impl SideTable {
         let delta_stp = Self::delta(source, target, |x| x.side_table as isize)?;
         let val_cnt = u32::try_from(target.result).map_err(|_| {
             #[cfg(feature = "debug")]
-            eprintln!("side-table val_cnt overflow {0}", source.result);
+            eprintln!("side-table val_cnt overflow {0}", target.result);
             unsupported(if_debug!(Unsupported::SideTable))
         })?;
         let pop_cnt = Self::pop_cnt(source, target)?;
@@ -487,7 +487,7 @@ struct SideTableBranch<'m> {
     parser: &'m [u8],
     side_table: usize,
     stack: usize,
-    result: usize, // unused (zero) for target branches
+    result: usize, // unused (zero) for source branches
 }
 
 #[derive(Debug, Default)]
@@ -600,7 +600,8 @@ impl<'a, 'm> Expr<'a, 'm> {
             Else => {
                 match core::mem::replace(&mut self.label().kind, LabelKind::Block) {
                     LabelKind::If(source) => {
-                        let mut target = self.branch_target(source.result);
+                        let result = self.label().type_.results.len();
+                        let mut target = self.branch_target(result);
                         target.side_table += 1;
                         self.side_table.stitch(source, target)?
                     }

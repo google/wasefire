@@ -15,7 +15,6 @@
 use crate::bit_field::*;
 use crate::error::*;
 
-#[allow(dead_code)] // TODO(dev/fast-interp)
 #[derive(Default, Copy, Clone, Debug)]
 #[repr(transparent)]
 pub struct SideTableEntry(u64);
@@ -31,7 +30,6 @@ pub struct SideTableEntryView {
     pub pop_cnt: u32,
 }
 
-#[allow(dead_code)] // TODO(dev/fast-interp)
 impl SideTableEntry {
     const DELTA_IP_MASK: u64 = 0xffff;
     const DELTA_STP_MASK: u64 = 0xffff << 16;
