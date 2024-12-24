@@ -762,11 +762,6 @@ impl<'m> Thread<'m> {
         use Instr::*;
         let inst_id = self.frame().inst_id;
         let inst = &mut store.insts[inst_id];
-        let side_table = self.frame().side_table;
-        let val_cnt =
-            if !side_table.is_empty() { Some(side_table[0].view().val_cnt) } else { None };
-        let pop_cnt =
-            if !side_table.is_empty() { Some(side_table[0].view().pop_cnt) } else { None };
         match self.parser.parse_instr().into_ok() {
             Unreachable => return Err(trap()),
             Nop => (),
@@ -787,10 +782,10 @@ impl<'m> Thread<'m> {
                 return Ok(self.exit_label());
             }
             End => return Ok(self.exit_label()),
-            Br(l) => return Ok(self.pop_label(l, 0, pop_cnt, val_cnt)),
+            Br(l) => return Ok(self.pop_label(l, 0)),
             BrIf(l) => {
                 if self.pop_value().unwrap_i32() != 0 {
-                    return Ok(self.pop_label(l, 0, pop_cnt, val_cnt));
+                    return Ok(self.pop_label(l, 0));
                 }
                 self.frame().skip_jump();
             }
@@ -798,12 +793,8 @@ impl<'m> Thread<'m> {
                 // In validation for BrTable, the side table entry for the last label index is
                 // created at first.
                 let i = self.pop_value().unwrap_i32() as usize;
-                return Ok(self.pop_label(
-                    ls.get(i).cloned().unwrap_or(ln),
-                    ls.get(i).map_or(0, |_| i + 1),
-                    pop_cnt,
-                    val_cnt,
-                ));
+                return Ok(self
+                    .pop_label(ls.get(i).cloned().unwrap_or(ln), ls.get(i).map_or(0, |_| i + 1)));
             }
             Return => return Ok(self.exit_frame()),
             Call(x) => return self.invoke(store, store.func_ptr(inst_id, x)),
@@ -1055,26 +1046,20 @@ impl<'m> Thread<'m> {
         self.labels().push(label);
     }
 
-    fn pop_label(
-        mut self, l: LabelIdx, offset: usize, pop_cnt: Option<u32>, val_cnt: Option<u32>,
-    ) -> ThreadResult<'m> {
+    fn pop_label(mut self, l: LabelIdx, offset: usize) -> ThreadResult<'m> {
         let i = self.labels().len() - l as usize - 1;
         if i == 0 {
             return self.exit_frame();
         }
         let frame = self.frame();
+        let side_table_entry = frame.side_table[0].view();
         let values_cnt: usize = frame.labels[i ..].iter().map(|label| label.values_cnt).sum();
-
         let Label { arity, kind, .. } = frame.labels.drain(i ..).next().unwrap();
-        if val_cnt.is_some() {
-            debug_assert_eq!(arity as u32, val_cnt.unwrap())
-        }
+        debug_assert_eq!(arity as u32, side_table_entry.val_cnt);
         match kind {
             LabelKind::Block => {}
             _ => {
-                if pop_cnt.is_some() {
-                    debug_assert_eq!(values_cnt as u32 - arity as u32, pop_cnt.unwrap());
-                }
+                debug_assert_eq!(values_cnt as u32 - arity as u32, side_table_entry.pop_cnt);
             }
         }
         let values_len = self.values().len();
