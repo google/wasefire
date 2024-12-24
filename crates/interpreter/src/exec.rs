@@ -770,16 +770,16 @@ impl<'m> Thread<'m> {
         match self.parser.parse_instr().into_ok() {
             Unreachable => return Err(trap()),
             Nop => (),
-            Block(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Block, val_cnt),
-            Loop(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Loop, val_cnt),
+            Block(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Block),
+            Loop(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Loop),
             If(b) => match self.pop_value().unwrap_i32() {
                 0 => {
                     self.take_jump(0);
-                    self.push_label(self.blocktype(inst, &b), LabelKind::Block, val_cnt);
+                    self.push_label(self.blocktype(inst, &b), LabelKind::Block);
                 }
                 _ => {
                     self.frame().skip_jump();
-                    self.push_label(self.blocktype(inst, &b), LabelKind::If, val_cnt);
+                    self.push_label(self.blocktype(inst, &b), LabelKind::If);
                 }
             },
             Else => {
@@ -787,10 +787,10 @@ impl<'m> Thread<'m> {
                 return Ok(self.exit_label());
             }
             End => return Ok(self.exit_label()),
-            Br(l) => return Ok(self.pop_label(l, 0, pop_cnt)),
+            Br(l) => return Ok(self.pop_label(l, 0, pop_cnt, val_cnt)),
             BrIf(l) => {
                 if self.pop_value().unwrap_i32() != 0 {
-                    return Ok(self.pop_label(l, 0, pop_cnt));
+                    return Ok(self.pop_label(l, 0, pop_cnt, val_cnt));
                 }
                 self.frame().skip_jump();
             }
@@ -802,6 +802,7 @@ impl<'m> Thread<'m> {
                     ls.get(i).cloned().unwrap_or(ln),
                     ls.get(i).map_or(0, |_| i + 1),
                     pop_cnt,
+                    val_cnt,
                 ));
             }
             Return => return Ok(self.exit_frame()),
@@ -1044,31 +1045,19 @@ impl<'m> Thread<'m> {
         self.values().split_off(len)
     }
 
-    fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind, val_cnt: Option<u32>) {
+    fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind) {
         let arity = match kind {
             LabelKind::Block | LabelKind::If => type_.results.len(),
             LabelKind::Loop => type_.params.len(),
         };
-        match kind {
-            LabelKind::If => {
-                if val_cnt.is_some() {
-                    debug_assert_eq!(arity as u32, val_cnt.unwrap())
-                }
-            }
-            LabelKind::Loop => {
-                // There is no side table entry for a loop that is only executed once.
-                if val_cnt.is_some() && !type_.params.is_empty() {
-                    debug_assert_eq!(arity as u32, val_cnt.unwrap())
-                }
-            }
-            _ => {}
-        }
         let label = Label { arity, values_cnt: type_.params.len(), kind };
         self.label().values_cnt -= label.values_cnt;
         self.labels().push(label);
     }
 
-    fn pop_label(mut self, l: LabelIdx, offset: usize, pop_cnt: Option<u32>) -> ThreadResult<'m> {
+    fn pop_label(
+        mut self, l: LabelIdx, offset: usize, pop_cnt: Option<u32>, val_cnt: Option<u32>,
+    ) -> ThreadResult<'m> {
         let i = self.labels().len() - l as usize - 1;
         if i == 0 {
             return self.exit_frame();
@@ -1077,6 +1066,9 @@ impl<'m> Thread<'m> {
         let values_cnt: usize = frame.labels[i ..].iter().map(|label| label.values_cnt).sum();
 
         let Label { arity, kind, .. } = frame.labels.drain(i ..).next().unwrap();
+        if val_cnt.is_some() {
+            debug_assert_eq!(arity as u32, val_cnt.unwrap())
+        }
         match kind {
             LabelKind::Block => {}
             _ => {
