@@ -197,7 +197,7 @@ impl<'m> Store<'m> {
             let (mut parser, side_table) = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals, side_table));
+            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals, side_table, 0));
             let result = thread.run(self)?;
             assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
         }
@@ -226,7 +226,7 @@ impl<'m> Store<'m> {
         check_types(&t.params, &args)?;
         let mut locals = args;
         append_locals(&mut parser, &mut locals);
-        let frame = Frame::new(inst_id, t.results.len(), &[], locals, side_table);
+        let frame = Frame::new(inst_id, t.results.len(), &[], locals, side_table, 0);
         Thread::new(parser, frame).run(self)
     }
 
@@ -730,7 +730,7 @@ impl<'m> Thread<'m> {
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
         let parser = mut_parser.clone();
-        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new(), &[]));
+        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new(), &[], 0));
         let (parser, results) = loop {
             let p = thread.parser.save();
             match thread.step(store).unwrap() {
@@ -994,10 +994,6 @@ impl<'m> Thread<'m> {
         &mut self.values
     }
 
-    fn last_frame_values_cnt(&mut self) -> usize {
-        self.frame().labels.iter().map(|label| label.values_cnt).sum()
-    }
-
     fn peek_value(&mut self) -> Val {
         *self.values().last().unwrap()
     }
@@ -1082,8 +1078,8 @@ impl<'m> Thread<'m> {
     }
 
     fn exit_frame(mut self) -> ThreadResult<'m> {
-        let values_cnt = self.last_frame_values_cnt();
-        let mut values = self.only_pop_values(values_cnt);
+        let prev_stack = self.frame().prev_stack;
+        let mut values = self.values().split_off(prev_stack);
         let frame = self.frames.pop().unwrap();
         let mid = values.len() - frame.arity;
         if self.frames.is_empty() {
@@ -1379,7 +1375,8 @@ impl<'m> Thread<'m> {
         append_locals(&mut parser, &mut locals);
         let ret = self.parser.save();
         self.parser = parser;
-        self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals, side_table));
+        let prev_stack = self.values().len();
+        self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals, side_table, prev_stack));
         Ok(ThreadResult::Continue(self))
     }
 }
@@ -1415,15 +1412,17 @@ struct Frame<'m> {
     locals: Vec<Val>,
     labels: Vec<Label>,
     side_table: &'m [SideTableEntry],
+    /// Total length of the value stack in the thread prior to this frame.
+    prev_stack: usize,
 }
 
 impl<'m> Frame<'m> {
     fn new(
         inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>,
-        side_table: &'m [SideTableEntry],
+        side_table: &'m [SideTableEntry], prev_stack: usize,
     ) -> Self {
         let label = Label { arity, values_cnt: 0 };
-        Frame { inst_id, arity, ret, locals, labels: vec![label], side_table }
+        Frame { inst_id, arity, ret, locals, labels: vec![label], side_table, prev_stack }
     }
 
     fn skip_jump(&mut self) {
