@@ -1048,8 +1048,11 @@ impl<'m> Thread<'m> {
             return self.exit_frame();
         }
         let frame = self.frame();
+        let side_table_entry = frame.side_table[offset].view();
         let values_cnt: usize = frame.labels[i ..].iter().map(|label| label.values_cnt).sum();
         let Label { arity, .. } = frame.labels.drain(i ..).next().unwrap();
+        debug_assert_eq!(arity as u32, side_table_entry.val_cnt);
+        debug_assert_eq!(values_cnt as u32 - arity as u32, side_table_entry.pop_cnt);
         let values_len = self.values().len();
         self.values().drain(values_len - values_cnt .. values_len - arity);
         self.label().values_cnt += arity;
