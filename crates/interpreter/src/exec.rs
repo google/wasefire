@@ -18,7 +18,7 @@ use alloc::vec::Vec;
 
 use crate::error::*;
 use crate::module::*;
-use crate::side_table::SideTableEntry;
+use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
 use crate::util::*;
@@ -1031,12 +1031,9 @@ impl<'m> Thread<'m> {
             return self.exit_frame();
         }
         frame.labels_cnt = i;
-        let side_table_entry = frame.side_table[offset].view();
-        let values_len = self.values().len();
-        self.values().drain(
-            (values_len as u32 - (side_table_entry.pop_cnt + side_table_entry.val_cnt)) as usize
-                .. values_len - side_table_entry.val_cnt as usize,
-        );
+        let SideTableEntryView { val_cnt, pop_cnt, .. } = frame.side_table[offset].view();
+        let val_pos = self.values().len() - val_cnt as usize;
+        self.values().drain(val_pos - pop_cnt as usize .. val_pos);
         self.take_jump(offset);
         ThreadResult::Continue(self)
     }
