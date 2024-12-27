@@ -49,6 +49,7 @@ case "$1" in
       *) e "Wrapper does not support 'cargo $2'" ;;
     esac
     ;;
+  defmt-print) ensure_cargo defmt-print 0.3.13 ;;
   mdbook) ensure_cargo mdbook 0.4.45 ;;
   probe-rs) ensure_cargo probe-rs-tools 0.27.0 ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
