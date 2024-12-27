@@ -14,7 +14,7 @@
 
 pub struct SectionTable {
     /// Parser sizes in the Element section.
-    pub elem_parser_sizes: Vec<32>,
+    pub elem_parser_sizes: Vec<u32>,
     /// Parser sizes in the Code section.
     pub func_parser_sizes: Vec<u32>,
     /// Parser sizes in the Data section.
