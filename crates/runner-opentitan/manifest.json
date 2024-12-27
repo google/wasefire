@@ -1,0 +1,37 @@
+{
+	"extension_params": [],
+	"extensions": [
+		"spx_key",
+		"spx_signature",
+		"secver_write",
+		"isfb",
+		"isfb_erase",
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null
+	],
+	"identifier": "0x3042544f",
+	"usage_constraints": {
+		"device_id": [
+			"0xa5a5a5a5",
+			"0xa5a5a5a5",
+			"0xa5a5a5a5",
+			"0xa5a5a5a5",
+			"0xa5a5a5a5",
+			"0xa5a5a5a5",
+			"0xa5a5a5a5",
+			"0xa5a5a5a5"
+		],
+		"life_cycle_state": "0xa5a5a5a5",
+		"manuf_state_creator": "0xa5a5a5a5",
+		"manuf_state_owner": "0xa5a5a5a5",
+		"selector_bits": 0
+	}
+}

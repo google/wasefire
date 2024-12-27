@@ -32,41 +32,41 @@ features() {
   package_features | grep -v -e human -e test
 }
 
-# <protocol> {,--release} [<runner>]
+# <protocol> {,--release} [<runner..>]
 run() {
   local protocol=$1 release=$2
-  local runner=$3
-  local name feature runner
+  local name feature
+  shift 2
   for name in $(list); do
-    [ -n "$runner" ] || x cargo xtask $release applet rust $name install $protocol wait
+    [ $# -gt 0 ] || x cargo xtask $release applet rust $name install $protocol wait
     for feature in $(cd examples/rust/$name && features); do
       if [ $feature = native ]; then
-        [ -n "$runner" ] || continue
+        [ $# -gt 0 ] || continue
         x cargo xtask $release --native \
           applet rust $name --features=native \
-          runner $runner $RUNNER_ARGS update $protocol
+          runner "$@" update $protocol
         x cargo xtask wait-applet $protocol
       else
-        [ -z "$runner" ] || continue
+        [ $# -gt 0 ] && continue
         x cargo xtask $release applet rust $name --features=$feature install $protocol wait
       fi
     done
   done
 }
 
-# <protocol> <runner>
+# <protocol> <runner..>
 full() {
   local protocol=--protocol=$1
-  local runner=$2
   local release pid
+  shift
   trap "trap 'exit 1' TERM && kill -- -$$" EXIT
   cargo wasefire platform-lock --timeout=200ms $protocol 2>/dev/null || true
   for release in '' --release; do
-    y cargo xtask --setsid $release runner $runner $RUNNER_ARGS flash --reset-flash $FLASH_ARGS
+    y cargo xtask --setsid $release runner "$@" flash --reset-flash $FLASH_ARGS
     pid=$!
     x cargo xtask wait-platform $protocol
     run $protocol "$release"
-    [ $runner = host ] || run $protocol "$release" $runner
+    [ $1 = host ] || run $protocol "$release" "$@"
     x cargo wasefire platform-lock $protocol
     x kill -TERM -$pid
     sleep 1 # for the OS to cleanup probe-rs resources (claimed USB interface)
@@ -78,5 +78,6 @@ case $1 in
   host) FLASH_ARGS=--protocol=unix full unix host ;;
   # P1.01, P1.02, and P1.03 must be connected together (gpio_test).
   nordic) full usb nordic ;;
+  opentitan) full usb opentitan --features=test-vendor ;;
   *) run --protocol=${1:-usb} "$2" ;;
 esac

@@ -42,6 +42,7 @@ wasefire-error = { version = "0.1.3-git", path = "../error" }
 wasefire-logger = { version = "0.1.7-git", path = "../logger" }
 wasefire-protocol = { version = "0.3.0-git", path = "../protocol" }
 wasefire-store = { version = "0.3.1-git", path = "../store", optional = true }
+wasefire-sync = { version = "0.1.2-git", path = "../sync" }
 # TODO(usbd-hid > 0.8.2): Remove
 ssmarshal = { version = "1.0.0", default-features = false, optional = true }
 

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![feature(never_type)]
 #![feature(try_blocks)]
 
 use std::borrow::Cow;
@@ -35,6 +36,7 @@ use wasefire_cli_tools::{action, changelog, cmd, fs};
 
 mod footprint;
 mod lazy;
+mod opentitan;
 mod textreview;
 
 #[derive(Parser)]
@@ -182,8 +184,12 @@ struct RunnerOptions {
 
     /// Platform version (big-endian hexadecimal number).
     ///
-    /// For the nordic runner, it must be a u32 smaller than u32::MAX. There are no restrictions
-    /// for the host runner.
+    /// Each runner has its own format:
+    /// - Host supports any hexadecimal string.
+    /// - Nordic needs 4 bytes that are not all 0xff.
+    /// - OpenTitan needs 20 bytes that are not all 0xff. The bytes are the major version (4
+    ///   bytes), the minor version (4 bytes), the security version (4 bytes), and the timestamp (8
+    ///   bytes).
     #[clap(long)]
     version: Option<String>,
 
@@ -252,6 +258,12 @@ struct Flash {
     /// Resets the flash before running.
     #[clap(long)]
     reset_flash: bool,
+
+    /// Additional flags for `defmt-print run`.
+    ///
+    /// This is only for the OpenTitan runner so far.
+    #[clap(long)]
+    defmt_print: Vec<String>,
 
     /// Arguments to forward to the runner.
     ///
@@ -480,7 +492,7 @@ impl RunnerOptions {
         cargo.arg("--release");
         cargo.arg(format!("--target={}", self.target().await));
         let (side, max_step) = match self.name.as_str() {
-            "nordic" => (Some(step), 1),
+            "nordic" | "opentitan" => (Some(step), 1),
             "host" => (None, 0),
             _ => unimplemented!(),
         };
@@ -497,15 +509,29 @@ impl RunnerOptions {
             cmd::execute(Command::new("make").current_dir("crates/runner-host/crates/web-client"))
                 .await?;
         }
-        if self.name == "nordic" {
-            let native = main.is_native() as u8;
-            rustflags.push(format!("-C link-arg=--defsym=RUNNER_NATIVE={native}"));
+        if matches!(self.name.as_str(), "nordic" | "opentitan") {
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
-            let version = version.as_deref().unwrap_or("00000000");
-            ensure!(version.len() == 8, "--version must be a big-endian hexadecimal u32");
-            ensure!(version != "ffffffff", "--version must be smaller than u32::MAX");
-            let version = u32::from_be_bytes(HEX.decode(version.as_bytes())?[..].try_into()?);
-            rustflags.push(format!("-C link-arg=--defsym=RUNNER_VERSION={version}"));
+            if self.name == "nordic" {
+                let version = version.as_deref().unwrap_or("00000000");
+                ensure!(version.len() == 8, "--version must be a big-endian hexadecimal u32");
+                ensure!(version != "ffffffff", "--version must be smaller than u32::MAX");
+                let version = u32::from_be_bytes(HEX.decode(version.as_bytes())?[..].try_into()?);
+                rustflags.push(format!("-C link-arg=--defsym=RUNNER_VERSION={version}"));
+            }
+            if self.name == "opentitan" {
+                let version = match version {
+                    Some(x) => HEX.decode(x.as_bytes())?,
+                    None => vec![0; 20],
+                };
+                ensure!(version.len() == 20, "--version must be 20 bytes in hexadecimal");
+                ensure!(version != [0xff; 20], "--version must not be all 0xff");
+                for (i, name) in ["MAJ", "MIN", "SEC", "THG", "TLW"].into_iter().enumerate() {
+                    let value = u32::from_be_bytes(version[4 * i ..][.. 4].try_into().unwrap());
+                    rustflags.push(format!("-C link-arg=--defsym=RUNNER_VERSION_{name}={value}"));
+                }
+                rustflags.push("-C link-arg=-Tmemory.x".to_string());
+                cargo.env("RISCV_MTVEC_ALIGN", "256");
+            }
             rustflags.push("-C link-arg=-Tlink.x".to_string());
             if main.release {
                 cargo.arg("-Zbuild-std=core,alloc");
@@ -660,6 +686,7 @@ impl RunnerOptions {
         };
         let chip = match self.name.as_str() {
             "nordic" => "nRF52840_xxAA",
+            "opentitan" => opentitan::execute(main, &flash, &elf).await?,
             "host" => unreachable!(),
             _ => unimplemented!(),
         };
@@ -728,12 +755,19 @@ impl RunnerOptions {
             _ => unimplemented!(),
         };
         let bundle = format!("target/wasefire/platform{side}.bin");
-        if self.name == "host" {
-            fs::copy(elf, &bundle).await?;
-        } else {
-            let mut objcopy = wrap_command().await?;
-            objcopy.args(["rust-objcopy", "-O", "binary", elf, &bundle]);
-            cmd::execute(&mut objcopy).await?;
+        match self.name.as_str() {
+            "host" => drop(fs::copy(elf, &bundle).await?),
+            "opentitan" => {
+                let signed = format!("{elf}.appkey_prod_0.signed.bin");
+                opentitan::build(elf).await?;
+                opentitan::truncate(&signed).await?;
+                fs::copy(&signed, &bundle).await?;
+            }
+            _ => {
+                let mut objcopy = wrap_command().await?;
+                objcopy.args(["rust-objcopy", "-O", "binary", elf, &bundle]);
+                cmd::execute(&mut objcopy).await?;
+            }
         }
         Ok(bundle)
     }
@@ -746,6 +780,7 @@ impl RunnerOptions {
         static HOST_TARGET: OnceCell<String> = OnceCell::const_new();
         match self.name.as_str() {
             "nordic" => "thumbv7em-none-eabi",
+            "opentitan" => "riscv32imc-unknown-none-elf",
             "host" => {
                 HOST_TARGET
                     .get_or_init(|| async {
@@ -762,6 +797,7 @@ impl RunnerOptions {
     fn log_env(&self) -> &'static str {
         match self.name.as_str() {
             "nordic" => "DEFMT_LOG",
+            "opentitan" => "DEFMT_LOG",
             "host" => "RUST_LOG",
             _ => unimplemented!(),
         }
