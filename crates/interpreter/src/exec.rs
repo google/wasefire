@@ -18,7 +18,7 @@ use alloc::vec::Vec;
 
 use crate::error::*;
 use crate::module::*;
-use crate::side_table::SideTableEntry;
+use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
 use crate::util::*;
@@ -765,16 +765,16 @@ impl<'m> Thread<'m> {
         match self.parser.parse_instr().into_ok() {
             Unreachable => return Err(trap()),
             Nop => (),
-            Block(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Block),
-            Loop(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Loop),
-            If(b) => match self.pop_value().unwrap_i32() {
+            Block(_) => self.push_label(),
+            Loop(_) => self.push_label(),
+            If(_) => match self.pop_value().unwrap_i32() {
                 0 => {
                     self.take_jump(0);
-                    self.push_label(self.blocktype(inst, &b), LabelKind::Block);
+                    self.push_label();
                 }
                 _ => {
                     self.frame().skip_jump();
-                    self.push_label(self.blocktype(inst, &b), LabelKind::If);
+                    self.push_label();
                 }
             },
             Else => {
@@ -982,14 +982,6 @@ impl<'m> Thread<'m> {
         self.frames.last_mut().unwrap()
     }
 
-    fn labels(&mut self) -> &mut Vec<Label> {
-        &mut self.frame().labels
-    }
-
-    fn label(&mut self) -> &mut Label {
-        self.labels().last_mut().unwrap()
-    }
-
     fn values(&mut self) -> &mut Vec<Val> {
         &mut self.values
     }
@@ -1000,7 +992,6 @@ impl<'m> Thread<'m> {
 
     fn push_value(&mut self, value: Val) {
         self.values().push(value);
-        self.label().values_cnt += 1;
     }
 
     fn push_value_or_trap(&mut self, value: Option<Val>) -> Result<(), Error> {
@@ -1014,16 +1005,13 @@ impl<'m> Thread<'m> {
 
     fn push_values(&mut self, values: &[Val]) {
         self.values().extend_from_slice(values);
-        self.label().values_cnt += values.len();
     }
 
     fn pop_value(&mut self) -> Val {
-        self.label().values_cnt -= 1;
         self.values().pop().unwrap()
     }
 
     fn pop_values(&mut self, n: usize) -> Vec<Val> {
-        self.label().values_cnt -= n;
         self.only_pop_values(n)
     }
 
@@ -1032,48 +1020,38 @@ impl<'m> Thread<'m> {
         self.values().split_off(len)
     }
 
-    fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind) {
-        let arity = match kind {
-            LabelKind::Block | LabelKind::If => type_.results.len(),
-            LabelKind::Loop => type_.params.len(),
-        };
-        let label = Label { arity, values_cnt: type_.params.len() };
-        self.label().values_cnt -= label.values_cnt;
-        self.labels().push(label);
+    fn push_label(&mut self) {
+        self.frame().labels_cnt += 1;
     }
 
     fn pop_label(mut self, l: LabelIdx, offset: usize) -> ThreadResult<'m> {
-        let i = self.labels().len() - l as usize - 1;
+        let frame = self.frame();
+        let i = frame.labels_cnt - l as usize - 1;
         if i == 0 {
             return self.exit_frame();
         }
-        let frame = self.frame();
-        let side_table_entry = frame.side_table[offset].view();
-        let values_cnt: usize = frame.labels[i ..].iter().map(|label| label.values_cnt).sum();
-        let Label { arity, .. } = frame.labels.drain(i ..).next().unwrap();
-        debug_assert_eq!(arity as u32, side_table_entry.val_cnt);
-        debug_assert_eq!(values_cnt as u32 - arity as u32, side_table_entry.pop_cnt);
-        let values_len = self.values().len();
-        self.values().drain(values_len - values_cnt .. values_len - arity);
-        self.label().values_cnt += arity;
+        frame.labels_cnt = i;
+        let SideTableEntryView { val_cnt, pop_cnt, .. } = frame.side_table[offset].view();
+        let val_pos = self.values().len() - val_cnt as usize;
+        self.values().drain(val_pos - pop_cnt as usize .. val_pos);
         self.take_jump(offset);
         ThreadResult::Continue(self)
     }
 
     fn exit_label(mut self) -> ThreadResult<'m> {
         let frame = self.frame();
-        let label = frame.labels.pop().unwrap();
-        if frame.labels.is_empty() {
-            let values = self.only_pop_values(label.values_cnt);
+        let arity = frame.arity;
+        frame.labels_cnt -= 1;
+        if frame.labels_cnt == 0 {
+            let values = self.only_pop_values(arity);
             let frame = self.frames.pop().unwrap();
-            debug_assert_eq!(values.len(), frame.arity);
+            debug_assert_eq!(values.len(), arity);
             if self.frames.is_empty() {
                 return ThreadResult::Done(values);
             }
             unsafe { self.parser.restore(frame.ret) };
             self.values().extend(values);
         }
-        self.label().values_cnt += label.values_cnt;
         ThreadResult::Continue(self)
     }
 
@@ -1088,21 +1066,12 @@ impl<'m> Thread<'m> {
         }
         unsafe { self.parser.restore(frame.ret) };
         self.values().extend_from_slice(&values[mid ..]);
-        self.label().values_cnt += frame.arity;
         ThreadResult::Continue(self)
     }
 
     fn take_jump(&mut self, offset: usize) {
         let parser_pos = self.parser.save();
         self.parser = self.frame().take_jump(parser_pos, offset);
-    }
-
-    fn blocktype(&self, inst: &Instance<'m>, b: &BlockType) -> FuncType<'m> {
-        match *b {
-            BlockType::None => FuncType { params: ().into(), results: ().into() },
-            BlockType::Type(t) => FuncType { params: ().into(), results: t.into() },
-            BlockType::Index(x) => inst.module.types()[x as usize],
-        }
     }
 
     fn mem_slice<'a>(
@@ -1410,10 +1379,10 @@ struct Frame<'m> {
     arity: usize,
     ret: &'m [u8],
     locals: Vec<Val>,
-    labels: Vec<Label>,
     side_table: &'m [SideTableEntry],
     /// Total length of the value stack in the thread prior to this frame.
     prev_stack: usize,
+    labels_cnt: usize,
 }
 
 impl<'m> Frame<'m> {
@@ -1421,8 +1390,7 @@ impl<'m> Frame<'m> {
         inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>,
         side_table: &'m [SideTableEntry], prev_stack: usize,
     ) -> Self {
-        let label = Label { arity, values_cnt: 0 };
-        Frame { inst_id, arity, ret, locals, labels: vec![label], side_table, prev_stack }
+        Frame { inst_id, arity, ret, locals, side_table, prev_stack, labels_cnt: 1 }
     }
 
     fn skip_jump(&mut self) {
@@ -1435,21 +1403,6 @@ impl<'m> Frame<'m> {
         self.side_table = offset_front(self.side_table, entry.delta_stp as isize);
         unsafe { Parser::new(offset_front(parser_pos, entry.delta_ip as isize)) }
     }
-}
-
-#[derive(Debug)]
-struct Label {
-    arity: usize,
-    values_cnt: usize,
-}
-
-#[derive(Debug)]
-enum LabelKind {
-    // TODO: If and Block can be merged and then we just have Option<NonNull<u8>> which is
-    // optimized.
-    Block,
-    Loop,
-    If,
 }
 
 impl Table {
