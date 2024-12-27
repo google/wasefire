@@ -12,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+pub struct ParserRange {
+    pub begin: u32,
+    pub end: u32,
+}
+
 pub struct SectionTable {
-    /// Parser sizes in the Element section.
-    pub elem_parser_sizes: Vec<u32>,
-    /// Parser sizes in the Code section.
-    pub func_parser_sizes: Vec<u32>,
-    /// Parser sizes in the Data section.
-    pub data_parser_sizes: Vec<u32>,
+    /// Parser ranges in the Element section.
+    pub elem_parser_ranges: Vec<ParserRange>,
+    /// Parser ranges in the Code section.
+    pub func_parser_ranges: Vec<ParserRange>,
+    /// Parser ranges in the Data section.
+    pub data_parser_ranges: Vec<ParserRange>,
 }
