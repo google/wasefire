@@ -32,6 +32,6 @@ fn test_error() {
         (0xffffffff, Err(Error::default())),
     ] {
         debug!("- {x:08x} -> {r:?}");
-        assert_eq!(syscall(0, 0, 0, x), r);
+        assert_eq!(unsafe { syscall(0, 0, 0, x) }, r);
     }
 }
