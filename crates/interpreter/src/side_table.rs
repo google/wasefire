@@ -31,8 +31,8 @@ pub struct SideTableEntryView {
 }
 
 impl SideTableEntry {
-    const DELTA_IP_MASK: u64 = 0x7fff;
-    const DELTA_STP_MASK: u64 = 0x7fff << 15;
+    const DELTA_IP_MASK: u64 = 0xffff;
+    const DELTA_STP_MASK: u64 = 0x3fff << 16;
     const VAL_CNT_MASK: u64 = 0xffff << 30;
     const POP_CNT_MASK: u64 = 0xffff << 46;
 
