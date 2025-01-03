@@ -17,7 +17,7 @@ use crate::error::*;
 
 #[derive(Default, Copy, Clone, Debug)]
 #[repr(transparent)]
-pub struct SideTableEntry(u64);
+pub struct SideTableEntry(u128);
 
 pub struct SideTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
@@ -28,13 +28,22 @@ pub struct SideTableEntryView {
     pub val_cnt: u32,
     /// The number of values that will be popped if the branch is taken.
     pub pop_cnt: u32,
+    /// The index to access the function type.
+    pub type_idx: u32,
+    /// The parser start position for the function.
+    pub parser_pos: u32,
+    /// The parser size for the function.
+    pub parser_size: u32,
 }
 
 impl SideTableEntry {
-    const DELTA_IP_MASK: u64 = 0xffff;
-    const DELTA_STP_MASK: u64 = 0x7fff << 16;
-    const VAL_CNT_MASK: u64 = 0x3 << 31;
-    const POP_CNT_MASK: u64 = 0x3 << 33;
+    const DELTA_IP_MASK: u128 = 0xffff;
+    const DELTA_STP_MASK: u128 = 0x7fff << 16;
+    const VAL_CNT_MASK: u128 = 0x3 << 31;
+    const POP_CNT_MASK: u128 = 0x3 << 33;
+    const TYPE_IDX_MASK: u128 = 0xffff << 35;
+    const PARSER_POS_MASK: u128 = 0xffff << 71;
+    const PARSER_SIZE_MASK: u128 = 0xffff << 107;
 
     pub fn new(view: SideTableEntryView) -> Result<Self, Error> {
         let mut fields = 0;
