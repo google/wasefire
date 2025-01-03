@@ -42,8 +42,8 @@ impl SideTableEntry {
     const VAL_CNT_MASK: u128 = 0x3 << 31;
     const POP_CNT_MASK: u128 = 0x3 << 33;
     const TYPE_IDX_MASK: u128 = 0xffff << 35;
-    const PARSER_POS_MASK: u128 = 0xffff << 71;
-    const PARSER_SIZE_MASK: u128 = 0xffff << 107;
+    const PARSER_POS_MASK: u128 = 0xffff << 51;
+    const PARSER_SIZE_MASK: u128 = 0xffff << 67;
 
     pub fn new(view: SideTableEntryView) -> Result<Self, Error> {
         let mut fields = 0;
