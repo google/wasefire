@@ -56,7 +56,7 @@ pub fn find(key: usize) -> Result<Option<Box<[u8]>>, Error> {
     let mut len = 0;
     let params = api::find::Params { key, ptr: &mut ptr, len: &mut len };
     if convert_bool(unsafe { api::find(params) })? {
-        let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
+        let ptr = core::ptr::slice_from_raw_parts_mut(ptr, len);
         Ok(Some(unsafe { Box::from_raw(ptr) }))
     } else {
         Ok(None)

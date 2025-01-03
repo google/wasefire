@@ -255,7 +255,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "wasefire"
-version = "0.7.1-git"
+version = "0.8.0-git"
 dependencies = [
  "aead",
  "bytemuck",

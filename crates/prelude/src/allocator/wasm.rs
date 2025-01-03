@@ -38,10 +38,11 @@ extern "C" fn init() {
 
 #[unsafe(no_mangle)]
 extern "C" fn alloc(size: u32, align: u32) -> u32 {
-    let layout = match Layout::from_size_align(size as usize, align as usize) {
-        Ok(x) => x,
-        Err(_) => return 0,
-    };
+    let Ok(layout) = Layout::from_size_align(size as usize, align as usize) else { return 0 };
+    if size == 0 {
+        return 0; // this is not checked by Layout::from_size_align()
+    }
+    // SAFETY: Layout has non-zero size.
     unsafe { ALLOCATOR.alloc(layout) as u32 }
 }
 

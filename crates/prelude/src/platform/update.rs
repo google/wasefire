@@ -33,7 +33,7 @@ pub fn metadata() -> Result<Box<[u8]>, Error> {
     let mut len = 0;
     let params = api::metadata::Params { ptr: &mut ptr, len: &mut len };
     convert_unit(unsafe { api::metadata(params) })?;
-    let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
+    let ptr = core::ptr::slice_from_raw_parts_mut(ptr, len);
     Ok(unsafe { Box::from_raw(ptr) })
 }
 
