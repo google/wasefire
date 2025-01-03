@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `rng::bytes{,_array}()` as safer alternatives to `rng::fill_bytes()`
 - Use Rust edition 2024
 
 ### Patch

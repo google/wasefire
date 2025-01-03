@@ -17,7 +17,6 @@
 #![no_std]
 wasefire::applet!();
 
-use alloc::vec;
 use alloc::vec::Vec;
 
 use wasefire::crypto::ec::{
@@ -103,8 +102,7 @@ fn test_ecdsa_random<C: Curve>(name: &str) {
     let mut rs = Vec::new();
     for _ in 0 .. 5 {
         let d = EcdsaPrivate::<C>::random().unwrap();
-        let mut m = vec![0; 257];
-        rng::fill_bytes(&mut m).unwrap();
+        let mut m = rng::bytes(257).unwrap().into_vec();
         m.truncate(m[256] as usize);
         let s = d.sign(&m).unwrap();
         debug!("- {:02x?}{:02x?} ({} bytes message)", &s.r()[.. 4], &s.s()[.. 4], m.len());

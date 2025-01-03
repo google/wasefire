@@ -30,6 +30,8 @@
 #![feature(alloc_error_handler)]
 #![feature(doc_auto_cfg)]
 #![feature(macro_metavar_expr)]
+#![feature(maybe_uninit_array_assume_init)]
+#![feature(maybe_uninit_uninit_array)]
 #![feature(negative_impls)]
 #![feature(never_type)]
 #![feature(vec_into_raw_parts)]
