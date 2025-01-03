@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add error context to `Pipe::new_{unix,tcp}()` for `device`
 - Use Rust edition 2024
 
 ### Patch
