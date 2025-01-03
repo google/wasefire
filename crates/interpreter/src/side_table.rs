@@ -31,10 +31,10 @@ pub struct SideTableEntryView {
 }
 
 impl SideTableEntry {
-    const DELTA_IP_MASK: u64 = 0x7FF;
-    const DELTA_STP_MASK: u64 = 0x7FFF << 11;
-    const VAL_CNT_MASK: u64 = 0x7 << 26;
-    const POP_CNT_MASK: u64 = 0x7 << 29;
+    const DELTA_IP_MASK: u64 = 0xffff;
+    const DELTA_STP_MASK: u64 = 0x7fff << 16;
+    const VAL_CNT_MASK: u64 = 0x3 << 31;
+    const POP_CNT_MASK: u64 = 0x3 << 33;
 
     pub fn new(view: SideTableEntryView) -> Result<Self, Error> {
         let mut fields = 0;
