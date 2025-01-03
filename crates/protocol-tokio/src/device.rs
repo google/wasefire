@@ -20,7 +20,7 @@ use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream, UnixListener, UnixStream};
 use tokio::select;
@@ -62,11 +62,12 @@ impl Drop for Pipe {
 
 impl Pipe {
     pub async fn new_unix<P: Push>(path: &Path, push: P) -> Result<Self> {
-        Self::new::<UnixListener, P>(path, push).await
+        let name = path.display();
+        Self::new::<UnixListener, P>(path, push).await.with_context(|| format!("binding to {name}"))
     }
 
     pub async fn new_tcp<P: Push>(addr: SocketAddr, push: P) -> Result<Self> {
-        Self::new::<TcpListener, P>(addr, push).await
+        Self::new::<TcpListener, P>(addr, push).await.with_context(|| format!("binding to {addr}"))
     }
 
     pub fn read(&mut self) -> Result<Option<Box<[u8]>>, Error> {

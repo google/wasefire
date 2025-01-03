@@ -150,9 +150,9 @@ async fn main() -> Result<()> {
         move |event: Event| drop(sender.try_send(event.into()))
     };
     let protocol = match FLAGS.protocol {
-        Protocol::Tcp => ProtocolState::Pipe(Pipe::new_tcp(FLAGS.tcp_addr, push).await.unwrap()),
+        Protocol::Tcp => ProtocolState::Pipe(Pipe::new_tcp(FLAGS.tcp_addr, push).await?),
         Protocol::Unix => {
-            let pipe = Pipe::new_unix(&FLAGS.unix_path, push).await.unwrap();
+            let pipe = Pipe::new_unix(&FLAGS.unix_path, push).await?;
             cleanup::push(Box::new(move || drop(std::fs::remove_file(&FLAGS.unix_path))));
             ProtocolState::Pipe(pipe)
         }
