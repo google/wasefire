@@ -17,7 +17,6 @@
 #![no_std]
 wasefire::applet!();
 
-use alloc::vec;
 use alloc::vec::Vec;
 
 use wasefire::crypto::ec::{
