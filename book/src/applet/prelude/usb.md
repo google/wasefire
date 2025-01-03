@@ -43,7 +43,7 @@ We then wait until the player presses Enter. We can read a single byte from the 
 {{#include usb.rs:ready}}
 ```
 
-To generate the next question, we use `rng::fill_bytes()` which fills a buffer with random bytes. We
+To generate the next question, we use `rng::bytes()` which returns a slice of random bytes. We
 provide a buffer with the length of the current level. For the string to be printable we truncate
 the entropy of each byte from 8 to 5 bits and convert it to a `base32` symbol.
 
