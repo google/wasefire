@@ -19,6 +19,7 @@ use crate::error::*;
 #[repr(transparent)]
 pub struct SideTableEntry(u64);
 
+// TODO(dev/fast-interp): Change the type of `val_cnt` and `pop_cnt` to `u8`.
 pub struct SideTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
     pub delta_ip: i32,
