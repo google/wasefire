@@ -25,7 +25,7 @@ use crate::util::*;
 use crate::*;
 
 /// Checks whether a WASM module in binary format is valid.
-pub fn validate(binary: &[u8]) -> Result<Vec<Vec<SideTableEntry>>, Error> {
+pub fn validate(binary: &[u8]) -> Result<Vec<Vec<BranchTableEntry>>, Error> {
     Context::default().check_module(&mut Parser::new(binary))
 }
 
@@ -46,7 +46,7 @@ struct Context<'m> {
 impl<'m> Context<'m> {
     fn check_module(
         &mut self, parser: &mut Parser<'m>,
-    ) -> MResult<Vec<Vec<SideTableEntry>>, Check> {
+    ) -> MResult<Vec<Vec<BranchTableEntry>>, Check> {
         check(parser.parse_bytes(8)? == b"\0asm\x01\0\0\0")?;
         if let Some(mut parser) = self.check_section(parser, SectionId::Type)? {
             let n = parser.parse_vec()?;
@@ -414,7 +414,7 @@ struct Expr<'a, 'm> {
 
 #[derive(Default)]
 struct SideTable {
-    entries: Vec<SideTableEntry>,
+    entries: Vec<BranchTableEntry>,
 }
 
 impl SideTable {
@@ -423,7 +423,7 @@ impl SideTable {
     }
 
     fn branch(&mut self) {
-        self.entries.push(SideTableEntry::invalid());
+        self.entries.push(BranchTableEntry::invalid());
     }
 
     fn stitch(&mut self, source: SideTableBranch, target: SideTableBranch) -> CheckResult {
@@ -437,7 +437,7 @@ impl SideTable {
         let pop_cnt = Self::pop_cnt(source, target)?;
         debug_assert!(self.entries[source.side_table].is_invalid());
         self.entries[source.side_table] =
-            SideTableEntry::new(SideTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt })?;
+            BranchTableEntry::new(BranchTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt })?;
         Ok(())
     }
 
@@ -476,7 +476,7 @@ impl SideTable {
         })
     }
 
-    fn persist(self) -> MResult<Vec<SideTableEntry>, Check> {
+    fn persist(self) -> MResult<Vec<BranchTableEntry>, Check> {
         debug_assert!(self.entries.iter().all(|x| !x.is_invalid()));
         Ok(self.entries)
     }
@@ -541,7 +541,7 @@ impl<'a, 'm> Expr<'a, 'm> {
     fn check_body(
         context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a [bool],
         locals: Vec<ValType>, results: ResultType<'m>,
-    ) -> MResult<Vec<SideTableEntry>, Check> {
+    ) -> MResult<Vec<BranchTableEntry>, Check> {
         let mut expr = Expr::new(context, parser, Err(refs));
         expr.is_body = true;
         expr.locals = locals;

@@ -17,7 +17,7 @@ use crate::error::*;
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
-pub struct SideTableEntry(u64);
+pub struct BranchTableEntry(u64);
 
 pub struct SideTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
@@ -30,7 +30,7 @@ pub struct SideTableEntryView {
     pub pop_cnt: u32,
 }
 
-impl SideTableEntry {
+impl BranchTableEntry {
     const DELTA_IP_MASK: u64 = 0xffff;
     const DELTA_STP_MASK: u64 = 0x7fff << 16;
     const VAL_CNT_MASK: u64 = 0x3 << 31;
@@ -42,7 +42,7 @@ impl SideTableEntry {
         fields |= into_signed_field(Self::DELTA_STP_MASK, view.delta_stp)?;
         fields |= into_field(Self::VAL_CNT_MASK, view.val_cnt)?;
         fields |= into_field(Self::POP_CNT_MASK, view.pop_cnt)?;
-        Ok(SideTableEntry(fields))
+        Ok(BranchTableEntry(fields))
     }
 
     pub fn view(self) -> SideTableEntryView {

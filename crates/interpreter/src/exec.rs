@@ -1379,7 +1379,7 @@ struct Frame<'m> {
     arity: usize,
     ret: &'m [u8],
     locals: Vec<Val>,
-    side_table: &'m [SideTableEntry],
+    side_table: &'m [BranchTableEntry],
     /// Total length of the value stack in the thread prior to this frame.
     prev_stack: usize,
     labels_cnt: usize,
@@ -1388,7 +1388,7 @@ struct Frame<'m> {
 impl<'m> Frame<'m> {
     fn new(
         inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>,
-        side_table: &'m [SideTableEntry], prev_stack: usize,
+        side_table: &'m [BranchTableEntry], prev_stack: usize,
     ) -> Self {
         Frame { inst_id, arity, ret, locals, side_table, prev_stack, labels_cnt: 1 }
     }

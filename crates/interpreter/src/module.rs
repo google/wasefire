@@ -30,7 +30,7 @@ pub struct Module<'m> {
     types: Vec<FuncType<'m>>,
     // TODO(dev/fast-interp): Flatten it to 1D array when making it persistent in
     // flash.
-    side_tables: &'m [Vec<SideTableEntry>],
+    side_tables: &'m [Vec<BranchTableEntry>],
 }
 
 impl<'m> Import<'m> {
@@ -185,7 +185,7 @@ impl<'m> Module<'m> {
     }
 
     // TODO(dev/fast-interp): Improve the performance of such accessor functions from O(n) to O(1).
-    pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [SideTableEntry]) {
+    pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
         let mut parser = self.section(SectionId::Code).unwrap();
         for i in 0 .. parser.parse_vec().into_ok() {
             let size = parser.parse_u32().into_ok() as usize;
