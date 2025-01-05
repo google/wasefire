@@ -1031,7 +1031,7 @@ impl<'m> Thread<'m> {
             return self.exit_frame();
         }
         frame.labels_cnt = i;
-        let SideTableEntryView { val_cnt, pop_cnt, .. } = frame.side_table[offset].view();
+        let BranchTableEntryView { val_cnt, pop_cnt, .. } = frame.side_table[offset].view();
         let val_pos = self.values().len() - val_cnt as usize;
         self.values().drain(val_pos - pop_cnt as usize .. val_pos);
         self.take_jump(offset);

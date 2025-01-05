@@ -19,7 +19,7 @@ use crate::error::*;
 #[repr(transparent)]
 pub struct BranchTableEntry(u64);
 
-pub struct SideTableEntryView {
+pub struct BranchTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
     pub delta_ip: i32,
     /// The amount to adjust the side-table pointer by if the branch is taken.
@@ -36,7 +36,7 @@ impl BranchTableEntry {
     const VAL_CNT_MASK: u64 = 0x3 << 31;
     const POP_CNT_MASK: u64 = 0x3 << 33;
 
-    pub fn new(view: SideTableEntryView) -> Result<Self, Error> {
+    pub fn new(view: BranchTableEntryView) -> Result<Self, Error> {
         let mut fields = 0;
         fields |= into_signed_field(Self::DELTA_IP_MASK, view.delta_ip)?;
         fields |= into_signed_field(Self::DELTA_STP_MASK, view.delta_stp)?;
@@ -45,12 +45,12 @@ impl BranchTableEntry {
         Ok(BranchTableEntry(fields))
     }
 
-    pub fn view(self) -> SideTableEntryView {
+    pub fn view(self) -> BranchTableEntryView {
         let delta_ip = from_signed_field(Self::DELTA_IP_MASK, self.0);
         let delta_stp = from_signed_field(Self::DELTA_STP_MASK, self.0);
         let val_cnt = from_field(Self::VAL_CNT_MASK, self.0);
         let pop_cnt = from_field(Self::POP_CNT_MASK, self.0);
-        SideTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt }
+        BranchTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt }
     }
 
     pub fn is_invalid(self) -> bool {
