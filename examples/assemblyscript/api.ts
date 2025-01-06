@@ -12,6 +12,81 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// # Applet functions
+//
+// An applet must expose 3 functions to the platform:
+//
+// - `init: () -> ()` called exactly once before anything else. It cannot call any
+//   platform function except `dp` (aka `debug::println()`).
+// - `main: () -> ()` called exactly once after `init` returns. It can call all
+//   platform functions.
+// - `alloc: (size: u32, align: u32) -> (ptr: u32)` may be called at any time after
+//   `init` returns. It cannot call any platform function. A return value of zero
+//   indicates an error and will trap the applet. The applet may assume that `size`
+//   is a non-zero multiple of `align` and `align` is either 1, 2, or 4.
+//
+// # Platform functions
+//
+// The platform exposes many functions. Each function comes with its own
+// documentation, which may omit the following general properties.
+//
+// ## Parameters and result
+//
+// At WebAssembly level, all functions use `u32` (more precisely `i32`) as
+// parameters and result (WebAssembly permits multiple results, but platform
+// functions never return more than one value). However, platform functions will be
+// documented with more specific types to better convey the intent.
+//
+// Languages that compile to WebAssembly may use similar specific types when
+// binding platform functions. Those types should be compatible with `u32` in
+// WebAssembly.
+//
+// ## Applet closures
+//
+// Some functions (usually called `register`) may register a closure. There is
+// usually an associated function (usually called `unregister`) that unregisters
+// the registered closure. The "register" function takes `fn { data: *const void,
+// ... }` (usually called `handler_func`) and a `*const void` (usually called
+// `handler_data`) as arguments. The "unregister" function (if it exists) doesn't
+// have any particular parameters.
+//
+// After the closure is registered (the "register" function is called) and as long
+// as it stays registered (the "unregister" function is not called), the platform
+// may call this closure any time `sw` (aka `scheduling::wait_for_callback()`) is
+// called. Note that if `main` returns and there are registered closures, the
+// applet behaves as if `sw` is called indefinitely.
+//
+// An applet closure may call any platform function unless explicitly documented by
+// the "register" function.
+//
+// ## Reading and writing memory
+//
+// Some functions take pointers as argument (usually `*const u8` or `*mut u8`).
+// They either document the expected size or take an associated length argument.
+//
+// The platform may read and write (only for `*mut T` pointers) the designated
+// region of the WebAssembly memory during the function call.
+//
+// ## Allocating memory
+//
+// Finally, some functions take nested pointers as argument (usually `*mut *mut
+// u8`). They either return a `usize` or take a `*mut usize` as argument.
+//
+// Those functions may call `alloc` (at most once per such nested pointer argument)
+// with a dynamic size but fixed alignment (usually 1). If they do, they will store
+// the non-null result in the `*mut *mut u8` argument. They always store the size
+// in the `*mut usize` argument (if it exists) or return it (otherwise).
+//
+// Note that `alloc` will not be called with a size of zero. So if the size is zero
+// after the function returns, this signifies that `alloc` was not called (and the
+// `*mut *mut u8` not written) and an empty output (unless otherwise documented
+// like in the case of an absence of output).
+//
+// The caller is responsible for managing the allocation after the function returns
+// and the pointer is non-null. To avoid memory leaks, the applet should initialize
+// the `*mut *mut u8` argument to a null pointer and consider having ownership of
+// the pointer if it is non-null after the call.
+
 // START OF MODULE button
 // Button and touch operations.
   // Describes the state of a button.
@@ -671,13 +746,10 @@
   // Platform protocol.
     // Reads the last request, if any.
     //
-    // Returns whether a request was allocated.
+    // This is an [allocating function](crate#allocating-memory).
     @external("env", "ppr")
     export declare function platform_protocol_read(
       // Where to write the request, if any.
-      //
-      // The (inner) pointer will be allocated by the callee and must be freed by the
-      // caller. It is thus owned by the caller when the function returns.
       ptr: usize,
 
       // Where to write the length of the request, if any.
@@ -719,9 +791,12 @@
     export declare function platform_update_is_supported(
     ): i32
 
-    // Returns the metadata of the platform.
+    // Reads the metadata of the platform.
     //
-    // This typically contains the version and side (A or B) of the running platform.
+    // The metadata typically contains the version and side (A or B) of the running
+    // platform.
+    //
+    // This is an [allocating function](crate#allocating-memory).
     @external("env", "pum")
     export declare function platform_update_metadata(
       // Where to write the allocated metadata.
@@ -760,31 +835,21 @@
     ): i32
   // END OF MODULE platform_update
 
-  // Returns the serial of the platform.
+  // Reads the serial of the platform.
   //
-  // Returns the length of the serial in bytes. The serial is not allocated if the
-  // length is zero (and the pointer is not written).
+  // This is an [allocating function](crate#allocating-memory) returning the length.
   @external("env", "ps")
   export declare function platform_serial(
     // Where to write the serial.
-    //
-    // If the returned length is positive, the (inner) pointer will be allocated by the
-    // callee and must be freed by the caller. It is thus owned by the caller when the
-    // function returns.
     ptr: usize,
   ): i32
 
-  // Returns the version of the platform.
+  // Reads the version of the platform.
   //
-  // Returns the length of the version in bytes. The version is not allocated if the
-  // length is zero (and the pointer is not written).
+  // This is an [allocating function](crate#allocating-memory) returning the length.
   @external("env", "pv")
   export declare function platform_version(
     // Where to write the version.
-    //
-    // If the returned length is positive, the (inner) pointer will be allocated by the
-    // callee and must be freed by the caller. It is thus owned by the caller when the
-    // function returns.
     ptr: usize,
   ): i32
 
@@ -926,15 +991,14 @@
   // Finds an entry in the store, if any.
   //
   // Returns whether an entry was found.
+  //
+  // This is an [allocating function](crate#allocating-memory).
   @external("env", "sf")
   export declare function store_find(
     // Key of the entry to find.
     key: usize,
 
     // Where to write the value of the entry, if found.
-    //
-    // The (inner) pointer will be allocated by the callee and must be freed by the
-    // caller. It is thus owned by the caller when the function returns.
     ptr: usize,
 
     // Where to write the length of the value, if found.
@@ -943,14 +1007,11 @@
 
   // Returns the unordered keys of the entries in the store.
   //
-  // Returns the number of keys, and thus the length of the array. The array is not
-  // allocated if the length is zero (and the pointer is not written).
+  // This is an [allocating function](crate#allocating-memory) returning the number of
+  // keys (thus half the number of allocated bytes).
   @external("env", "sk")
   export declare function store_keys(
-    // Where to write the keys as an array of u16, if at least one.
-    //
-    // The (inner) pointer will be allocated by the callee and must be freed by the
-    // caller. It is thus owned by the caller when the function returns.
+    // Where to write the keys as an array of u16.
     ptr: usize,
   ): i32
 
@@ -997,15 +1058,14 @@
     // The entry may be fragmented withen the provided range.
     //
     // Returns whether an entry was found.
+    //
+    // This is an [allocating function](crate#allocating-memory).
     @external("env", "sff")
     export declare function store_fragment_find(
       // Range of keys to concatenate as an entry.
       keys: u32,
 
       // Where to write the value of the entry, if found.
-      //
-      // The (inner) pointer will be allocated by the callee and must be freed by the
-      // caller. It is thus owned by the caller when the function returns.
       ptr: usize,
 
       // Where to write the length of the value, if found.
@@ -1058,14 +1118,14 @@
   // called.
   @external("env", "tc")
   export declare function timer_stop(
-    // The identifier of the timer to start.
+    // The identifier of the timer to stop.
     id: usize,
   ): i32
 
   // Deallocates a stopped timer given its identifier.
   @external("env", "td")
   export declare function timer_free(
-    // The identifier of the timer to start.
+    // The identifier of the timer to free.
     id: usize,
   ): i32
 // END OF MODULE timer

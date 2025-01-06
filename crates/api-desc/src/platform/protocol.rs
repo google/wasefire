@@ -23,12 +23,9 @@ pub(crate) fn new() -> Item {
         item! {
             /// Reads the last request, if any.
             ///
-            /// Returns whether a request was allocated.
+            /// This is an [allocating function](crate#allocating-memory).
             fn read "ppr" {
                 /// Where to write the request, if any.
-                ///
-                /// The (inner) pointer will be allocated by the callee and must be freed by the
-                /// caller. It is thus owned by the caller when the function returns.
                 ptr: *mut *mut u8,
 
                 /// Where to write the length of the request, if any.

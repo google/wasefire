@@ -148,7 +148,7 @@ impl<'a, T: Serial> Listener<'a, T> {
     pub fn new(serial: &'a T, event: Event) -> Self {
         let notified = Box::into_raw(Box::new(Cell::new(true)));
         let func = Self::call;
-        let data = notified as *mut _ as *const u8;
+        let data = notified as *const u8;
         unsafe { serial.register(event, func, data) }.unwrap();
         Listener { serial, event, notified }
     }
@@ -156,7 +156,7 @@ impl<'a, T: Serial> Listener<'a, T> {
     /// Returns whether the event triggered since the last call.
     pub fn is_notified(&mut self) -> bool {
         // SAFETY: `self.notified` is a `Box<Cell<bool>> we share with the platform (see field
-        // invariant). We crate a shared borrow for the duration of this call.
+        // invariant). We create a shared borrow for the duration of this call.
         unsafe { &*self.notified }.replace(false)
     }
 

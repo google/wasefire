@@ -37,8 +37,7 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
         match applet.get_request()? {
             None => false,
             Some(value) => {
-                let mut memory = applet.memory();
-                memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &value)?;
+                applet.memory().alloc_copy(*ptr_ptr, Some(*len_ptr), &value)?;
                 true
             }
         }

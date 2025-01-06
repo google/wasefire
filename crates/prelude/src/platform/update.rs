@@ -34,7 +34,9 @@ pub fn metadata() -> Result<Box<[u8]>, Error> {
     let params = api::metadata::Params { ptr: &mut ptr, len: &mut len };
     convert_unit(unsafe { api::metadata(params) })?;
     let ptr = core::ptr::slice_from_raw_parts_mut(ptr, len);
-    Ok(unsafe { Box::from_raw(ptr) })
+    // SAFETY: If `len` is non-zero then `api::metadata()` allocated. The rest is similar as in
+    // `crate::platform::serial()`.
+    Ok(if len == 0 { Box::new([]) } else { unsafe { Box::from_raw(ptr) } })
 }
 
 /// Starts a platform update process.

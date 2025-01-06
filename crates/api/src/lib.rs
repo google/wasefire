@@ -14,6 +14,8 @@
 
 #![cfg_attr(feature = "host", doc = "Platform-side of the applet API.")]
 #![cfg_attr(feature = "wasm", doc = include_str!("wasm.md"))]
+#![cfg_attr(feature = "wasm", doc = "\n## Language-agnostic documentation\n")]
+#![cfg_attr(feature = "wasm", doc = include_str!("api.md"))]
 #![no_std]
 #![cfg_attr(all(feature = "wasm", feature = "native"), feature(linkage))]
 #![cfg_attr(feature = "host", feature(never_type))]

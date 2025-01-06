@@ -73,6 +73,15 @@ fn main() -> Result<()> {
 
 "#,
     )?;
-    Api::default().wasm(&mut output, flags.lang.into())?;
+    let api = Api::default();
+    for line in api.wasm_markdown().lines() {
+        write!(&mut output, "//")?;
+        if !line.is_empty() {
+            write!(&mut output, " ")?;
+        }
+        writeln!(&mut output, "{}", line.strip_prefix("##").unwrap_or(line))?;
+    }
+    writeln!(&mut output)?;
+    api.wasm(&mut output, flags.lang.into())?;
     Ok(())
 }

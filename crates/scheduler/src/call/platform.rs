@@ -23,9 +23,9 @@ use wasefire_board_api::platform::Api as _;
 
 use crate::DispatchSchedulerCall;
 #[cfg(feature = "applet-api-platform")]
-use crate::applet::store::MemoryApi;
+use crate::SchedulerCall;
 #[cfg(feature = "applet-api-platform")]
-use crate::{Applet, Failure, SchedulerCall};
+use crate::applet::store::MemoryApi;
 
 #[cfg(feature = "applet-api-platform-protocol")]
 mod protocol;
@@ -50,14 +50,14 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 #[cfg(feature = "applet-api-platform")]
 fn serial<B: Board>(mut call: SchedulerCall<B, api::serial::Sig>) {
     let api::serial::Params { ptr } = call.read();
-    let result = alloc_bytes(call.applet(), *ptr, &board::Platform::<B>::serial());
+    let result = try { call.memory().alloc_copy(*ptr, None, &board::Platform::<B>::serial())? };
     call.reply(result);
 }
 
 #[cfg(feature = "applet-api-platform")]
 fn version<B: Board>(mut call: SchedulerCall<B, api::version::Sig>) {
     let api::version::Params { ptr } = call.read();
-    let result = alloc_bytes(call.applet(), *ptr, &board::Platform::<B>::version());
+    let result = try { call.memory().alloc_copy(*ptr, None, &board::Platform::<B>::version())? };
     call.reply(result);
 }
 
@@ -65,16 +65,4 @@ fn version<B: Board>(mut call: SchedulerCall<B, api::version::Sig>) {
 fn reboot<B: Board>(call: SchedulerCall<B, api::reboot::Sig>) {
     let api::reboot::Params {} = call.read();
     call.reply(board::Platform::<B>::reboot().map_err(|x| x.into()));
-}
-
-#[cfg(feature = "applet-api-platform")]
-fn alloc_bytes<B: Board>(
-    applet: &mut Applet<B>, ptr_ptr: u32, data: &[u8],
-) -> Result<u32, Failure> {
-    if data.is_empty() {
-        return Ok(0);
-    }
-    let mut memory = applet.memory();
-    memory.alloc_copy(ptr_ptr, None, data)?;
-    Ok(data.len() as u32)
 }

@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.4.1-git
+## 0.5.0-git
+
+### Major
+
+- Do not allocate if the size is zero for the applet API
 
 ### Minor
 

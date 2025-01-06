@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Improve safety documentation
 - Use Rust edition 2024
 - Provide `bytemuck::Pod` for `ArrayU32`
 - Implement `bytemuck::Pod` for `U32<T>`

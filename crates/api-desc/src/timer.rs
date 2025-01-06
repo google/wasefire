@@ -63,14 +63,14 @@ pub(crate) fn new() -> Item {
             /// Note that if the timer triggers while being stopped, the handler may still be
             /// called.
             fn stop "tc" {
-                /// The identifier of the timer to start.
+                /// The identifier of the timer to stop.
                 id: usize,
             } -> ()
         },
         item! {
             /// Deallocates a stopped timer given its identifier.
             fn free "td" {
-                /// The identifier of the timer to start.
+                /// The identifier of the timer to free.
                 id: usize,
             } -> ()
         },
