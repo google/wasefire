@@ -23,6 +23,8 @@ pub(crate) fn new() -> Item {
         item! {
             /// Reads the last request, if any.
             ///
+            /// Returns whether a request was read.
+            ///
             /// This is an [allocating function](crate#allocating-memory).
             fn read "ppr" {
                 /// Where to write the request, if any.
