@@ -1,9 +1,14 @@
 # Changelog
 
-## 0.7.1-git
+## 0.8.0-git
+
+### Major
+
+- Make `syscall()` unsafe to call
 
 ### Minor
 
+- Support the new behavior of the scheduler (not allocating if the size is zero)
 - Add `rng::bytes{,_array}()` as safer alternatives to `rng::fill_bytes()`
 - Use Rust edition 2024
 

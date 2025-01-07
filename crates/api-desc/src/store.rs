@@ -56,14 +56,13 @@ pub(crate) fn new() -> Item {
             /// Finds an entry in the store, if any.
             ///
             /// Returns whether an entry was found.
+            ///
+            /// This is an [allocating function](crate#allocating-memory).
             fn find "sf" {
                 /// Key of the entry to find.
                 key: usize,
 
                 /// Where to write the value of the entry, if found.
-                ///
-                /// The (inner) pointer will be allocated by the callee and must be freed by the
-                /// caller. It is thus owned by the caller when the function returns.
                 ptr: *mut *mut u8,
 
                 /// Where to write the length of the value, if found.
@@ -74,13 +73,10 @@ pub(crate) fn new() -> Item {
         item! {
             /// Returns the unordered keys of the entries in the store.
             ///
-            /// Returns the number of keys, and thus the length of the array. The array is not
-            /// allocated if the length is zero (and the pointer is not written).
+            /// This is an [allocating function](crate#allocating-memory) returning the number of
+            /// keys (thus half the number of allocated bytes).
             fn keys "sk" {
-                /// Where to write the keys as an array of u16, if at least one.
-                ///
-                /// The (inner) pointer will be allocated by the callee and must be freed by the
-                /// caller. It is thus owned by the caller when the function returns.
+                /// Where to write the keys as an array of u16.
                 ptr: *mut *mut u8,
             } -> usize
         },

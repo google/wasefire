@@ -138,25 +138,31 @@ pub fn flush<T: Serial>(serial: &T) -> Result<(), Error> {
 pub struct Listener<'a, T: Serial> {
     serial: &'a T,
     event: Event,
-    notified: &'static Cell<bool>,
+    // Safety: This is a `Box<Cell<bool>>` we own and lend the platform as a shared borrow with a
+    // lifetime starting at `Serial::register()` and ending at `Serial::unregister()`.
+    notified: *const Cell<bool>,
 }
 
 impl<'a, T: Serial> Listener<'a, T> {
     /// Starts listening for the provided event until dropped.
     pub fn new(serial: &'a T, event: Event) -> Self {
-        let notified = Box::leak(Box::new(Cell::new(true)));
+        let notified = Box::into_raw(Box::new(Cell::new(true)));
         let func = Self::call;
-        let data = notified as *mut _ as *const u8;
+        let data = notified as *const u8;
         unsafe { serial.register(event, func, data) }.unwrap();
         Listener { serial, event, notified }
     }
 
     /// Returns whether the event triggered since the last call.
     pub fn is_notified(&mut self) -> bool {
-        self.notified.replace(false)
+        // SAFETY: `self.notified` is a `Box<Cell<bool>> we share with the platform (see field
+        // invariant). We create a shared borrow for the duration of this call.
+        unsafe { &*self.notified }.replace(false)
     }
 
     extern "C" fn call(data: *const u8) {
+        // SAFETY: `data` is the shared borrow we lent the platform (see field invariant). We are
+        // borrowing it back for the duration of this call.
         let notified = unsafe { &*(data as *const Cell<bool>) };
         notified.set(true);
     }
@@ -165,7 +171,9 @@ impl<'a, T: Serial> Listener<'a, T> {
 impl<T: Serial> Drop for Listener<'_, T> {
     fn drop(&mut self) {
         self.serial.unregister(self.event).unwrap();
-        drop(unsafe { Box::from_raw(self.notified.as_ptr()) });
+        // SAFETY: `self.notified` is a `Box<Cell<bool>>` we own back, now that the lifetime of the
+        // platform borrow is over (see field invariant).
+        drop(unsafe { Box::from_raw(self.notified as *mut Cell<bool>) });
     }
 }
 

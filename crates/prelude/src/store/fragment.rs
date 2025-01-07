@@ -53,8 +53,10 @@ pub fn find(keys: Range<usize>) -> Result<Option<Box<[u8]>>, Error> {
     let mut len = 0;
     let params = api::find::Params { keys: encode_keys(keys)?, ptr: &mut ptr, len: &mut len };
     if convert_bool(unsafe { api::find(params) })? {
-        let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
-        Ok(Some(unsafe { Box::from_raw(ptr) }))
+        // SAFETY: If `api::find()` returns true and `len` is non-zero then it allocated. The rest
+        // is similar as in `crate::platform::serial()`.
+        let ptr = core::ptr::slice_from_raw_parts_mut(ptr, len);
+        Ok(Some(if len == 0 { Box::new([]) } else { unsafe { Box::from_raw(ptr) } }))
     } else {
         Ok(None)
     }

@@ -34,7 +34,9 @@ impl crate::rpc::Rpc for RpcProtocol {
         if !convert_bool(unsafe { api::read(params) })? {
             return Ok(None);
         }
-        Ok(Some(unsafe { Vec::from_raw_parts(ptr, len, len) }))
+        // SAFETY: If `api::read()` returns true and `len` is non-zero then it allocated. The rest
+        // is similar as in `crate::platform::serial()`.
+        Ok(Some(if len == 0 { Vec::new() } else { unsafe { Vec::from_raw_parts(ptr, len, len) } }))
     }
 
     fn write(&self, response: &[u8]) -> Result<(), Error> {

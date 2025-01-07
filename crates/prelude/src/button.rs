@@ -50,6 +50,8 @@ impl<F: Fn(State) + 'static> Handler for F {
 #[must_use]
 pub struct Listener<H: Handler> {
     button: usize,
+    // Safety: This is a `Box<H>` we own and lend the platform as a shared borrow `&'a H` where
+    // `'a` starts at `api::register()` and ends at `api::unregister()`.
     handler: *const H,
 }
 
@@ -93,6 +95,8 @@ impl<H: Handler> Listener<H> {
     }
 
     extern "C" fn call(data: *const u8, state: usize) {
+        // SAFETY: `data` is the `&H` we lent the platform (see `Listener::handler`). We are
+        // borrowing it back for the duration of this call.
         let handler = unsafe { &*(data as *const H) };
         let state = state.into();
         handler.event(state);
@@ -103,6 +107,8 @@ impl<H: Handler> Drop for Listener<H> {
     fn drop(&mut self) {
         let params = api::unregister::Params { button: self.button };
         convert_unit(unsafe { api::unregister(params) }).unwrap();
+        // SAFETY: `self.handler` is a `Box<H>` we own back, now that the lifetime of the platform
+        // borrow is over (see `Listener::handler`).
         drop(unsafe { Box::from_raw(self.handler as *mut H) });
     }
 }

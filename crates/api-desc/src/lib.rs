@@ -106,6 +106,10 @@ impl Api {
         }
     }
 
+    pub fn wasm_markdown(&self) -> &'static str {
+        include_str!("api.md")
+    }
+
     pub fn wasm_rust(&self) -> TokenStream {
         let items: Vec<_> = self.0.iter().map(|x| x.wasm_rust()).collect();
         quote!(#(#items)*)
@@ -730,7 +734,7 @@ mod tests {
     #[test]
     fn link_names_are_unique() {
         let mut seen = HashSet::new();
-        let Api(mut todo) = Api::default();
+        let mut todo = Api::default().0;
         while let Some(item) = todo.pop() {
             match item {
                 Item::Enum(_) => (),
@@ -746,7 +750,7 @@ mod tests {
     /// This invariant is assumed by unsafe code.
     #[test]
     fn enum_values_are_valid() {
-        let Api(mut todo) = Api::default();
+        let mut todo = Api::default().0;
         while let Some(item) = todo.pop() {
             match item {
                 Item::Enum(Enum { variants, .. }) => {
@@ -773,7 +777,7 @@ mod tests {
             let name = &field.name;
             assert!(field.type_.is_param(), "Param {name} of {link:?} is not U32");
         }
-        let Api(mut todo) = Api::default();
+        let mut todo = Api::default().0;
         while let Some(item) = todo.pop() {
             match item {
                 Item::Enum(_) => (),
@@ -786,7 +790,7 @@ mod tests {
 
     #[test]
     fn results_are_valid() {
-        let Api(mut todo) = Api::default();
+        let mut todo = Api::default().0;
         while let Some(item) = todo.pop() {
             match item {
                 Item::Enum(_) => (),
