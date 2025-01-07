@@ -15,7 +15,7 @@
 use crate::bit_field::*;
 use crate::error::*;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Default, Copy, Clone, Debug)]
 #[repr(transparent)]
 pub struct BranchTableEntry(u64);
 
