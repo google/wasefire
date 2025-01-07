@@ -19,7 +19,6 @@ use crate::error::*;
 #[repr(transparent)]
 pub struct SideTableEntry(u64);
 
-#[derive(Default)]
 pub struct SideTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
     pub delta_ip: i32,
