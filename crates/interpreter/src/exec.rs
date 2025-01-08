@@ -17,7 +17,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use crate::error::*;
-use crate::module::*;
+use crate::module::{Parser, *};
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
