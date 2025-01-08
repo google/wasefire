@@ -15,7 +15,7 @@
 use crate::bit_field::*;
 use crate::error::*;
 
-#[derive(Default, Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
 pub struct SideTableEntry(u64);
 
@@ -51,5 +51,13 @@ impl SideTableEntry {
         let val_cnt = from_field(Self::VAL_CNT_MASK, self.0);
         let pop_cnt = from_field(Self::POP_CNT_MASK, self.0);
         SideTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt }
+    }
+
+    pub fn is_invalid(self) -> bool {
+        self.0 == 0
+    }
+
+    pub fn invalid() -> Self {
+        SideTableEntry(0)
     }
 }

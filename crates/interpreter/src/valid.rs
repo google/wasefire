@@ -423,7 +423,7 @@ impl SideTable {
     }
 
     fn branch(&mut self) {
-        self.entries.push(SideTableEntry::default());
+        self.entries.push(SideTableEntry::invalid());
     }
 
     fn stitch(&mut self, source: SideTableBranch, target: SideTableBranch) -> CheckResult {
@@ -435,6 +435,7 @@ impl SideTable {
             unsupported(if_debug!(Unsupported::SideTable))
         })?;
         let pop_cnt = Self::pop_cnt(source, target)?;
+        debug_assert!(self.entries[source.side_table].is_invalid());
         self.entries[source.side_table] =
             SideTableEntry::new(SideTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt })?;
         Ok(())
@@ -476,6 +477,7 @@ impl SideTable {
     }
 
     fn persist(self) -> MResult<Vec<SideTableEntry>, Check> {
+        debug_assert!(self.entries.iter().all(|x| !x.is_invalid()));
         Ok(self.entries)
     }
 }
