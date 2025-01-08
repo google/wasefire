@@ -115,10 +115,11 @@ impl BranchTableEntry {
     }
 
     pub fn is_invalid(self) -> bool {
-        self.0 == 0
+        let entry: u64 = cast(self.0);
+        entry == 0
     }
 
     pub fn invalid() -> Self {
-        SideTableEntry(0)
+        BranchTableEntry(cast(0u64))
     }
 }
