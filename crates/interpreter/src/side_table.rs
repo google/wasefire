@@ -12,12 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use bytemuck::cast;
+
 use crate::bit_field::*;
 use crate::error::*;
 
+#[allow(dead_code)]
+pub struct SideTable<'m> {
+    indices: &'m [u16], // including 0 and the length of metadata_array
+    metadata_array: &'m [Metadata<'m>],
+}
+
+#[allow(dead_code)]
+struct Metadata<'m>(&'m [u16]);
+
 #[derive(Default, Copy, Clone, Debug)]
 #[repr(transparent)]
-pub struct BranchTableEntry(u64);
+pub struct BranchTableEntry([u8; 8]);
 
 pub struct BranchTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
@@ -42,14 +53,15 @@ impl BranchTableEntry {
         fields |= into_signed_field(Self::DELTA_STP_MASK, view.delta_stp)?;
         fields |= into_field(Self::VAL_CNT_MASK, view.val_cnt)?;
         fields |= into_field(Self::POP_CNT_MASK, view.pop_cnt)?;
-        Ok(BranchTableEntry(fields))
+        Ok(BranchTableEntry(cast(fields)))
     }
 
     pub fn view(self) -> BranchTableEntryView {
-        let delta_ip = from_signed_field(Self::DELTA_IP_MASK, self.0);
-        let delta_stp = from_signed_field(Self::DELTA_STP_MASK, self.0);
-        let val_cnt = from_field(Self::VAL_CNT_MASK, self.0);
-        let pop_cnt = from_field(Self::POP_CNT_MASK, self.0);
+        let entry = cast(self.0);
+        let delta_ip = from_signed_field(Self::DELTA_IP_MASK, entry);
+        let delta_stp = from_signed_field(Self::DELTA_STP_MASK, entry);
+        let val_cnt = from_field(Self::VAL_CNT_MASK, entry);
+        let pop_cnt = from_field(Self::POP_CNT_MASK, entry);
         BranchTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt }
     }
 
