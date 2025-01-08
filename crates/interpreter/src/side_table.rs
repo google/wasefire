@@ -28,7 +28,7 @@ pub struct SideTable<'m> {
     indices: &'m [u16], // including 0 and the length of metadata_array
     metadata: &'m Metadata<'m>,
 }
-
+#[allow(dead_code)]
 impl<'m> SideTable<'m> {
     fn metadata(&self, func_idx: usize) -> Metadata<'m> {
         Metadata(
@@ -41,6 +41,7 @@ impl<'m> SideTable<'m> {
 #[allow(dead_code)]
 struct Metadata<'m>(&'m [u8]);
 
+#[allow(dead_code)]
 impl<'m> Metadata<'m> {
     pub fn type_idx(&self) -> usize {
         let bytes = &self.0[.. size_of::<usize>()];
