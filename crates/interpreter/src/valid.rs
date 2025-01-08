@@ -414,8 +414,7 @@ struct Expr<'a, 'm> {
 
 #[derive(Default)]
 struct SideTable {
-    // TODO(dev/fast-interp): Consider removing `Option` if confident.
-    entries: Vec<Option<SideTableEntryView>>,
+    entries: Vec<SideTableEntry>,
 }
 
 impl SideTable {
@@ -424,7 +423,7 @@ impl SideTable {
     }
 
     fn branch(&mut self) {
-        self.entries.push(None);
+        self.entries.push(SideTableEntry::invalid());
     }
 
     fn stitch(&mut self, source: SideTableBranch, target: SideTableBranch) -> CheckResult {
@@ -436,9 +435,9 @@ impl SideTable {
             unsupported(if_debug!(Unsupported::SideTable))
         })?;
         let pop_cnt = Self::pop_cnt(source, target)?;
-        let entry = &mut self.entries[source.side_table];
-        assert!(entry.is_none());
-        *entry = Some(SideTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt });
+        debug_assert!(self.entries[source.side_table].is_invalid());
+        self.entries[source.side_table] =
+            SideTableEntry::new(SideTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt })?;
         Ok(())
     }
 
@@ -478,7 +477,8 @@ impl SideTable {
     }
 
     fn persist(self) -> MResult<Vec<SideTableEntry>, Check> {
-        self.entries.into_iter().map(|entry| SideTableEntry::new(entry.unwrap())).collect()
+        debug_assert!(self.entries.iter().all(|x| !x.is_invalid()));
+        Ok(self.entries)
     }
 }
 
