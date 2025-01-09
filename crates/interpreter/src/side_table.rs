@@ -26,58 +26,43 @@ pub type Parser<'m> = parser::Parser<'m, Use>;
 #[allow(dead_code)]
 pub struct SideTable<'m> {
     indices: &'m [u16], // including 0 and the length of metadata_array
-    metadata: &'m Metadata<'m>,
+    metadata: &'m [u16],
 }
+
 #[allow(dead_code)]
 impl<'m> SideTable<'m> {
     fn metadata(&self, func_idx: usize) -> Metadata<'m> {
         Metadata(
-            &self.metadata.0
-                [self.indices[func_idx] as usize .. self.indices[func_idx + 1] as usize],
+            &self.metadata[self.indices[func_idx] as usize .. self.indices[func_idx + 1] as usize],
         )
     }
 }
 
 #[allow(dead_code)]
-struct Metadata<'m>(&'m [u8]);
+#[derive(Copy, Clone)]
+struct Metadata<'m>(&'m [u16]);
 
 #[allow(dead_code)]
 impl<'m> Metadata<'m> {
     pub fn type_idx(&self) -> usize {
-        let bytes = &self.0[.. size_of::<usize>()];
-        usize::from_ne_bytes(bytes.try_into().unwrap())
+        self.0[0] as usize
     }
 
-    pub fn parser(&self) -> Parser<'m> {
-        unsafe {
-            Parser::new(&self.0[self.parser_size_start() + size_of::<u32>() .. self.parser_end()])
-        }
+    pub fn parser(&self, code: &'m [u8]) -> Parser<'m> {
+        unsafe { Parser::new(&code[self.0[1] as usize .. self.0[5] as usize]) }
     }
 
     fn branch_table(&self) -> &[BranchTableEntry] {
-        let bytes = &self.0[self.parser_end() ..];
-        let branch_table_len = bytes.len() / 8;
+        let bytes = &self.0[5 ..];
         unsafe {
-            slice::from_raw_parts(bytes.as_ptr() as *const BranchTableEntry, branch_table_len)
+            slice::from_raw_parts(bytes.as_ptr() as *const BranchTableEntry, self.0.len() - 5)
         }
-    }
-
-    fn parser_size_start(&self) -> usize {
-        size_of::<usize>()
-    }
-
-    fn parser_end(&self) -> usize {
-        let u32_size = size_of::<u32>();
-        let parser_size_bytes =
-            &self.0[self.parser_size_start() .. self.parser_size_start() + u32_size];
-        let parser_size = usize::from_ne_bytes(parser_size_bytes.try_into().unwrap());
-        self.parser_size_start() + u32_size + parser_size
     }
 }
 
-#[derive(Default, Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
-pub struct BranchTableEntry([u8; 8]);
+pub struct BranchTableEntry([u16; 4]);
 
 pub struct BranchTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
