@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use core::slice;
-
-use bytemuck::{bytes_of, pod_read_unaligned};
-
 use crate::error::*;
 use crate::module::Parser;
 
@@ -45,24 +41,19 @@ impl<'m> Metadata<'m> {
     }
 
     pub fn parser(&self, code: &'m [u8]) -> Parser<'m> {
-        unsafe { Parser::new(&code[self.parser_pos(1, 3) .. self.parser_pos(3, 5)]) }
+        unsafe { Parser::new(&code[self.parser_pos(1) .. self.parser_pos(3)]) }
     }
 
     pub fn branch_table(&self) -> &[BranchTableEntry] {
-        let bytes = &self.0[5 ..];
-        unsafe {
-            slice::from_raw_parts(bytes.as_ptr() as *const BranchTableEntry, self.0.len() - 5)
-        }
+        bytemuck::cast_slice(&self.0[5 ..])
     }
 
-    fn parser_pos(&self, start: usize, end: usize) -> usize {
-        debug_assert_eq!(start + 2, end);
-        let pair: &[u16; 2] = &self.0[start .. end].try_into().unwrap();
-        pod_read_unaligned::<u32>(bytes_of(pair)) as usize
+    fn parser_pos(&self, idx: usize) -> usize {
+        bytemuck::pod_read_unaligned::<u32>(bytemuck::cast_slice(&self.0[idx .. idx + 2])) as usize
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, bytemuck::AnyBitPattern)]
 #[repr(transparent)]
 pub struct BranchTableEntry([u16; 3]);
 
@@ -79,10 +70,14 @@ pub struct BranchTableEntryView {
 
 impl BranchTableEntry {
     pub fn new(view: BranchTableEntryView) -> Result<Self, Error> {
+        debug_assert!((i16::MIN as i32 .. i16::MAX as i32).contains(&view.delta_ip));
+        debug_assert!((i16::MIN as i32 .. i16::MAX as i32).contains(&view.delta_stp));
+        debug_assert!(view.val_cnt <= 0xf);
+        debug_assert!(view.pop_cnt <= 0xfff);
         Ok(BranchTableEntry([
             view.delta_ip as u16,
             view.delta_stp as u16,
-            ((view.pop_cnt & 0xfff) << 4) as u16 | (view.val_cnt & 0xf) as u16,
+            (view.pop_cnt << 4 | view.val_cnt) as u16,
         ]))
     }
 
@@ -91,12 +86,12 @@ impl BranchTableEntry {
             delta_ip: (self.0[0] as i16) as i32,
             delta_stp: (self.0[1] as i16) as i32,
             val_cnt: (self.0[2] & 0xf) as u32,
-            pop_cnt: ((self.0[2] >> 4) & 0xfff) as u32,
+            pop_cnt: (self.0[2] >> 4) as u32,
         }
     }
 
     pub fn is_invalid(self) -> bool {
-        self.0.iter().all(|&x| x == 0)
+        self.0 == [0; 3]
     }
 
     pub fn invalid() -> Self {
