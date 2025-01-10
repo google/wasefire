@@ -14,13 +14,10 @@
 
 use core::slice;
 
-use bytemuck::cast;
+use bytemuck::{bytes_of, pod_read_unaligned};
 
 use crate::error::*;
-use crate::parser;
-use crate::toctou::Use;
-
-pub type Parser<'m> = parser::Parser<'m, Use>;
+use crate::module::Parser;
 
 #[allow(dead_code)]
 pub struct SideTable<'m> {
@@ -48,7 +45,7 @@ impl<'m> Metadata<'m> {
     }
 
     pub fn parser(&self, code: &'m [u8]) -> Parser<'m> {
-        unsafe { Parser::new(&code[self.0[1] as usize .. self.0[5] as usize]) }
+        unsafe { Parser::new(&code[self.parser_pos(1, 3) .. self.parser_pos(3, 5)]) }
     }
 
     fn branch_table(&self) -> &[BranchTableEntry] {
@@ -56,6 +53,12 @@ impl<'m> Metadata<'m> {
         unsafe {
             slice::from_raw_parts(bytes.as_ptr() as *const BranchTableEntry, self.0.len() - 5)
         }
+    }
+
+    fn parser_pos(&self, start: usize, end: usize) -> usize {
+        debug_assert_eq!(start + 2, end);
+        let pair: &[u16; 2] = &self.0[start .. end].try_into().unwrap();
+        pod_read_unaligned::<u32>(bytes_of(pair)) as usize
     }
 }
 
@@ -93,7 +96,7 @@ impl BranchTableEntry {
     }
 
     pub fn is_invalid(self) -> bool {
-        self.0[0] == 0 && self.0[1] == 0 && self.0[2] == 0
+        self.0.iter().all(|&x| x == 0)
     }
 
     pub fn invalid() -> Self {
