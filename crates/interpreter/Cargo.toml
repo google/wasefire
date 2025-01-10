@@ -12,6 +12,7 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
+bytemuck = { version = "1.16.0", default-features = false, features = ["derive"] }
 libm = { version = "0.2.8", default-features = false, optional = true }
 num_enum = { version = "0.7.2", default-features = false }
 paste = { version = "1.0.15", default-features = false }
