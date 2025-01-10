@@ -48,7 +48,7 @@ impl<'m> Metadata<'m> {
         unsafe { Parser::new(&code[self.parser_pos(1, 3) .. self.parser_pos(3, 5)]) }
     }
 
-    fn branch_table(&self) -> &[BranchTableEntry] {
+    pub fn branch_table(&self) -> &[BranchTableEntry] {
         let bytes = &self.0[5 ..];
         unsafe {
             slice::from_raw_parts(bytes.as_ptr() as *const BranchTableEntry, self.0.len() - 5)
