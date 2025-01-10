@@ -16,7 +16,6 @@ use core::slice;
 
 use bytemuck::cast;
 
-use crate::bit_field::*;
 use crate::error::*;
 use crate::parser;
 use crate::toctou::Use;
@@ -62,7 +61,7 @@ impl<'m> Metadata<'m> {
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
-pub struct BranchTableEntry([u16; 4]);
+pub struct BranchTableEntry([u16; 3]);
 
 pub struct BranchTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
@@ -76,35 +75,28 @@ pub struct BranchTableEntryView {
 }
 
 impl BranchTableEntry {
-    const DELTA_IP_MASK: u64 = 0xffff;
-    const DELTA_STP_MASK: u64 = 0xffff << 16;
-    const VAL_CNT_MASK: u64 = 0xf << 32;
-    const POP_CNT_MASK: u64 = 0xfff << 36;
-
     pub fn new(view: BranchTableEntryView) -> Result<Self, Error> {
-        let mut fields = 0;
-        fields |= into_signed_field(Self::DELTA_IP_MASK, view.delta_ip)?;
-        fields |= into_signed_field(Self::DELTA_STP_MASK, view.delta_stp)?;
-        fields |= into_field(Self::VAL_CNT_MASK, view.val_cnt)?;
-        fields |= into_field(Self::POP_CNT_MASK, view.pop_cnt)?;
-        Ok(BranchTableEntry(cast(fields)))
+        Ok(BranchTableEntry([
+            view.delta_ip as u16,
+            view.delta_stp as u16,
+            ((view.pop_cnt & 0xfff) << 4) as u16 | (view.val_cnt & 0xf) as u16,
+        ]))
     }
 
     pub fn view(self) -> BranchTableEntryView {
-        let entry = cast(self.0);
-        let delta_ip = from_signed_field(Self::DELTA_IP_MASK, entry);
-        let delta_stp = from_signed_field(Self::DELTA_STP_MASK, entry);
-        let val_cnt = from_field(Self::VAL_CNT_MASK, entry);
-        let pop_cnt = from_field(Self::POP_CNT_MASK, entry);
-        BranchTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt }
+        BranchTableEntryView {
+            delta_ip: (self.0[0] as i16) as i32,
+            delta_stp: (self.0[1] as i16) as i32,
+            val_cnt: (self.0[2] & 0xf) as u32,
+            pop_cnt: ((self.0[2] >> 4) & 0xfff) as u32,
+        }
     }
 
     pub fn is_invalid(self) -> bool {
-        let entry: u64 = cast(self.0);
-        entry == 0
+        self.0[0] == 0 && self.0[1] == 0 && self.0[2] == 0
     }
 
     pub fn invalid() -> Self {
-        BranchTableEntry(cast(0u64))
+        BranchTableEntry([0; 3])
     }
 }

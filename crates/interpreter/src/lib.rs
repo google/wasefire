@@ -139,7 +139,6 @@ macro_rules! support_if {
     }};
 }
 
-mod bit_field;
 mod error;
 mod exec;
 mod id;
