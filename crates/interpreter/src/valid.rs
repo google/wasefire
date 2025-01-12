@@ -414,29 +414,29 @@ struct Expr<'a, 'm> {
 
 #[derive(Default)]
 struct SideTable {
-    entries: Vec<BranchTableEntry>,
+    branch_table: Vec<BranchTableEntry>,
 }
 
 impl SideTable {
     fn save(&self) -> usize {
-        self.entries.len()
+        self.branch_table.len()
     }
 
     fn branch(&mut self) {
-        self.entries.push(BranchTableEntry::invalid());
+        self.branch_table.push(BranchTableEntry::invalid());
     }
 
     fn stitch(&mut self, source: SideTableBranch, target: SideTableBranch) -> CheckResult {
         let delta_ip = Self::delta(source, target, |x| x.parser.as_ptr() as isize)?;
-        let delta_stp = Self::delta(source, target, |x| x.side_table as isize)?;
+        let delta_stp = Self::delta(source, target, |x| x.branch_table as isize)?;
         let val_cnt = u32::try_from(target.result).map_err(|_| {
             #[cfg(feature = "debug")]
             eprintln!("side-table val_cnt overflow {0}", target.result);
             unsupported(if_debug!(Unsupported::SideTable))
         })?;
         let pop_cnt = Self::pop_cnt(source, target)?;
-        debug_assert!(self.entries[source.side_table].is_invalid());
-        self.entries[source.side_table] =
+        debug_assert!(self.branch_table[source.branch_table].is_invalid());
+        self.branch_table[source.branch_table] =
             BranchTableEntry::new(BranchTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt })?;
         Ok(())
     }
@@ -477,15 +477,15 @@ impl SideTable {
     }
 
     fn persist(self) -> MResult<Vec<BranchTableEntry>, Check> {
-        debug_assert!(self.entries.iter().all(|x| !x.is_invalid()));
-        Ok(self.entries)
+        debug_assert!(self.branch_table.iter().all(|x| !x.is_invalid()));
+        Ok(self.branch_table)
     }
 }
 
 #[derive(Debug, Copy, Clone)]
 struct SideTableBranch<'m> {
     parser: &'m [u8],
-    side_table: usize,
+    branch_table: usize,
     stack: usize,
     result: usize, // unused (zero) for source branches
 }
@@ -602,7 +602,7 @@ impl<'a, 'm> Expr<'a, 'm> {
                     LabelKind::If(source) => {
                         let result = self.label().type_.results.len();
                         let mut target = self.branch_target(result);
-                        target.side_table += 1;
+                        target.branch_table += 1;
                         self.side_table.stitch(source, target)?
                     }
                     _ => Err(invalid())?,
@@ -911,7 +911,7 @@ impl<'a, 'm> Expr<'a, 'm> {
     fn branch(&self) -> SideTableBranch<'m> {
         SideTableBranch {
             parser: self.parser.save(),
-            side_table: self.side_table.save(),
+            branch_table: self.side_table.save(),
             stack: self.immutable_label().prev_stack,
             result: 0,
         }
