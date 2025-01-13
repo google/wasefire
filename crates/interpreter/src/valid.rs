@@ -129,12 +129,15 @@ impl<'m> Context<'m> {
         let mut side_tables = vec![];
         if let Some(mut parser) = self.check_section(parser, SectionId::Code)? {
             check(self.funcs.len() == imported_funcs + parser.parse_vec()?)?;
+            let saved = parser.save();
             for x in imported_funcs .. self.funcs.len() {
                 let size = parser.parse_u32()? as usize;
                 let mut parser = parser.split_at(size)?;
                 let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
+                let parser_start =
+                    unsafe { parser.save().as_ptr().offset_from(saved.as_ptr()) as usize };
                 side_tables.push(Expr::check_body(
                     self,
                     &mut parser,
@@ -142,6 +145,7 @@ impl<'m> Context<'m> {
                     locals,
                     t.results,
                     Some(self.funcs[x]),
+                    ParserRange { start: parser_start, end: parser_start + size },
                 )?);
                 check(parser.is_empty())?;
             }
@@ -419,10 +423,19 @@ struct Expr<'a, 'm> {
     side_table: SideTable,
 }
 
+#[allow(dead_code)]
+#[derive(Default)]
+struct ParserRange {
+    start: usize,
+    end: usize, // exclusive
+}
+
 #[derive(Default)]
 struct SideTable {
     #[allow(dead_code)]
     type_idx: usize,
+    #[allow(dead_code)]
+    parser_range: ParserRange,
     branch_table: Vec<BranchTableEntry>,
 }
 
@@ -524,6 +537,7 @@ impl<'a, 'm> Expr<'a, 'm> {
     fn new(
         context: &'a Context<'m>, parser: &'a mut Parser<'m>,
         is_const: Result<&'a mut [bool], &'a [bool]>, type_idx: Option<TypeIdx>,
+        parser_range: ParserRange,
     ) -> Self {
         Self {
             context,
@@ -535,6 +549,7 @@ impl<'a, 'm> Expr<'a, 'm> {
             labels: vec![Label::default()],
             side_table: type_idx.map_or_else(SideTable::default, |idx| SideTable {
                 type_idx: idx as usize,
+                parser_range,
                 branch_table: vec![],
             }),
         }
@@ -544,7 +559,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a mut [bool],
         num_global_imports: usize, expected: ResultType<'m>,
     ) -> CheckResult {
-        let mut expr = Expr::new(context, parser, Ok(refs), None);
+        let mut expr = Expr::new(context, parser, Ok(refs), None, ParserRange::default());
         expr.globals_len = num_global_imports;
         expr.label().type_.results = expected;
         expr.check()
@@ -553,8 +568,9 @@ impl<'a, 'm> Expr<'a, 'm> {
     fn check_body(
         context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a [bool],
         locals: Vec<ValType>, results: ResultType<'m>, type_idx: Option<TypeIdx>,
+        parser_range: ParserRange,
     ) -> MResult<Vec<BranchTableEntry>, Check> {
-        let mut expr = Expr::new(context, parser, Err(refs), type_idx);
+        let mut expr = Expr::new(context, parser, Err(refs), type_idx, parser_range);
         expr.is_body = true;
         expr.locals = locals;
         expr.label().type_.results = results;
