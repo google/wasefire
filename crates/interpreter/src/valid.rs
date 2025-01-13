@@ -135,7 +135,14 @@ impl<'m> Context<'m> {
                 let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
-                side_tables.push(Expr::check_body(self, &mut parser, &refs, locals, t.results)?);
+                side_tables.push(Expr::check_body(
+                    self,
+                    &mut parser,
+                    &refs,
+                    locals,
+                    t.results,
+                    Some(self.funcs[x]),
+                )?);
                 check(parser.is_empty())?;
             }
             check(parser.is_empty())?;
@@ -414,6 +421,8 @@ struct Expr<'a, 'm> {
 
 #[derive(Default)]
 struct SideTable {
+    #[allow(dead_code)]
+    type_idx: usize,
     branch_table: Vec<BranchTableEntry>,
 }
 
@@ -514,7 +523,7 @@ enum LabelKind<'m> {
 impl<'a, 'm> Expr<'a, 'm> {
     fn new(
         context: &'a Context<'m>, parser: &'a mut Parser<'m>,
-        is_const: Result<&'a mut [bool], &'a [bool]>,
+        is_const: Result<&'a mut [bool], &'a [bool]>, type_idx: Option<TypeIdx>,
     ) -> Self {
         Self {
             context,
@@ -524,7 +533,10 @@ impl<'a, 'm> Expr<'a, 'm> {
             is_body: false,
             locals: vec![],
             labels: vec![Label::default()],
-            side_table: SideTable::default(),
+            side_table: type_idx.map_or_else(SideTable::default, |idx| SideTable {
+                type_idx: idx as usize,
+                branch_table: vec![],
+            }),
         }
     }
 
@@ -532,7 +544,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a mut [bool],
         num_global_imports: usize, expected: ResultType<'m>,
     ) -> CheckResult {
-        let mut expr = Expr::new(context, parser, Ok(refs));
+        let mut expr = Expr::new(context, parser, Ok(refs), None);
         expr.globals_len = num_global_imports;
         expr.label().type_.results = expected;
         expr.check()
@@ -540,9 +552,9 @@ impl<'a, 'm> Expr<'a, 'm> {
 
     fn check_body(
         context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a [bool],
-        locals: Vec<ValType>, results: ResultType<'m>,
+        locals: Vec<ValType>, results: ResultType<'m>, type_idx: Option<TypeIdx>,
     ) -> MResult<Vec<BranchTableEntry>, Check> {
-        let mut expr = Expr::new(context, parser, Err(refs));
+        let mut expr = Expr::new(context, parser, Err(refs), type_idx);
         expr.is_body = true;
         expr.locals = locals;
         expr.label().type_.results = results;
