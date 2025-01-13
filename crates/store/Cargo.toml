@@ -24,8 +24,8 @@ tempfile = "3.10.1"
 std = ["wasefire-error/std"]
 
 [lints]
+clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
-rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

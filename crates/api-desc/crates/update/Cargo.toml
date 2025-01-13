@@ -12,8 +12,8 @@ clap = { version = "4.5.4", default-features = false, features = ["derive", "std
 wasefire-applet-api-desc = { path = "../.." }
 
 [lints]
+clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
-rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

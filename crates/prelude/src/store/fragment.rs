@@ -65,5 +65,5 @@ pub fn find(keys: Range<usize>) -> Result<Option<Box<[u8]>>, Error> {
 fn encode_keys(keys: Range<usize>) -> Result<u32, Error> {
     let start = u16::try_from(keys.start).map_err(|_| Error::user(0))? as u32;
     let end = u16::try_from(keys.end).map_err(|_| Error::user(0))? as u32;
-    Ok(end << 16 | start)
+    Ok((end << 16) | start)
 }
