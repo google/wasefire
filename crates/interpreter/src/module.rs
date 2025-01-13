@@ -183,7 +183,6 @@ impl<'m> Module<'m> {
         unreachable!()
     }
 
-    // TODO(dev/fast-interp): Improve the performance of such accessor functions from O(n) to O(1).
     pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
         let mut parser = self.section(SectionId::Code).unwrap();
         for i in 0 .. parser.parse_vec().into_ok() {
