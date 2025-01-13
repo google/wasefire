@@ -79,7 +79,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         loop {
             let mut byte = self.parse_byte()? as u64;
             if byte & 0x80 == 0 {
-                if signed && byte & 1 << core::cmp::min(len - 1, 6) != 0 {
+                if signed && byte & (1 << core::cmp::min(len - 1, 6)) != 0 {
                     if let Some(len) = len.checked_sub(7) {
                         val |= ((1 << len) - 1) << (bits - len);
                     } else {

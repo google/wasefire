@@ -89,7 +89,7 @@ impl Entropy<'_> {
         }
         let b = self.bit;
         self.bit += 1;
-        self.data[b / 8] & 1 << (b % 8) != 0
+        self.data[b / 8] & (1 << (b % 8)) != 0
     }
 
     /// Reads a number with a given bit-width.

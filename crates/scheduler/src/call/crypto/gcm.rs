@@ -40,8 +40,8 @@ fn support<B: Board>(call: SchedulerCall<B, api::support::Sig>) {
     let support = {
         use wasefire_applet_api::crypto::gcm::Support;
         let support = board::crypto::Aes256Gcm::<B>::SUPPORT;
-        (support.no_copy as u32) << Support::NoCopy as u32
-            | (support.in_place_no_copy as u32) << Support::InPlaceNoCopy as u32
+        ((support.no_copy as u32) << Support::NoCopy as u32)
+            | ((support.in_place_no_copy as u32) << Support::InPlaceNoCopy as u32)
     };
     #[cfg(not(feature = "board-api-crypto-aes256-gcm"))]
     let support = 0;

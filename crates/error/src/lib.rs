@@ -42,7 +42,7 @@ impl Error {
 
     /// Creates a new error at compile-time.
     pub const fn new_const(space: u8, code: u16) -> Self {
-        Error((space as u32) << 16 | code as u32)
+        Error(((space as u32) << 16) | code as u32)
     }
 
     /// Returns the error space.
