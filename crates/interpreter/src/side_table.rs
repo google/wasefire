@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::vec::Vec;
+use core::ops::Range;
+
 use crate::error::*;
 use crate::module::Parser;
 
@@ -97,4 +100,18 @@ impl BranchTableEntry {
     pub fn invalid() -> Self {
         BranchTableEntry([0; 3])
     }
+}
+
+#[derive(Default, Debug)]
+pub struct SideTableEntry {
+    #[allow(dead_code)]
+    pub type_idx: usize,
+    pub metadata_entry: MetadataEntry,
+}
+
+#[derive(Default, Debug)]
+pub struct MetadataEntry {
+    #[allow(dead_code)]
+    pub parser_range: Range<usize>,
+    pub branch_table: Vec<BranchTableEntry>,
 }

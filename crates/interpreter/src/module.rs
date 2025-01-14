@@ -30,7 +30,7 @@ pub struct Module<'m> {
     types: Vec<FuncType<'m>>,
     // TODO(dev/fast-interp): Flatten it to 1D array when making it persistent in
     // flash.
-    side_tables: &'m [Vec<BranchTableEntry>],
+    side_table: &'m [SideTableEntry],
 }
 
 impl<'m> Import<'m> {
@@ -56,7 +56,7 @@ impl<'m> Module<'m> {
         let side_tables = validate(binary)?;
         let mut module = unsafe { Self::new_unchecked(binary) };
         // TODO(dev/fast-interp): We should take a buffer as argument to write to.
-        module.side_tables = Box::leak(Box::new(side_tables));
+        module.side_table = Box::leak(Box::new(side_tables));
         Ok(module)
     }
 
@@ -184,13 +184,14 @@ impl<'m> Module<'m> {
         unreachable!()
     }
 
+    // TODO(dev/fast-interp): Improve the performance of such accessor functions from O(n) to O(1).
     pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
         let mut parser = self.section(SectionId::Code).unwrap();
         for i in 0 .. parser.parse_vec().into_ok() {
             let size = parser.parse_u32().into_ok() as usize;
             let parser = parser.split_at(size).into_ok();
             if i == x as usize {
-                return (parser, &self.side_tables[i]);
+                return (parser, &self.side_table[i].metadata_entry.branch_table);
             }
         }
         unreachable!()
