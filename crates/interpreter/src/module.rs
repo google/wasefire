@@ -30,7 +30,7 @@ pub struct Module<'m> {
     types: Vec<FuncType<'m>>,
     // TODO(dev/fast-interp): Flatten it to 1D array when making it persistent in
     // flash.
-    side_table: &'m [SideTableEntry],
+    side_table: &'m [MetadataEntry],
 }
 
 impl<'m> Import<'m> {
@@ -191,7 +191,7 @@ impl<'m> Module<'m> {
             let size = parser.parse_u32().into_ok() as usize;
             let parser = parser.split_at(size).into_ok();
             if i == x as usize {
-                return (parser, &self.side_table[i].metadata_entry.branch_table);
+                return (parser, &self.side_table[i].branch_table);
             }
         }
         unreachable!()

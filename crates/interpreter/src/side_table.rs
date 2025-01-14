@@ -56,6 +56,15 @@ impl<'m> Metadata<'m> {
     }
 }
 
+#[derive(Default, Debug)]
+pub struct MetadataEntry {
+    #[allow(dead_code)]
+    pub type_idx: usize,
+    #[allow(dead_code)]
+    pub parser_range: Range<usize>,
+    pub branch_table: Vec<BranchTableEntry>,
+}
+
 #[derive(Copy, Clone, Debug, bytemuck::AnyBitPattern)]
 #[repr(transparent)]
 pub struct BranchTableEntry([u16; 3]);
@@ -100,18 +109,4 @@ impl BranchTableEntry {
     pub fn invalid() -> Self {
         BranchTableEntry([0; 3])
     }
-}
-
-#[derive(Default, Debug)]
-pub struct SideTableEntry {
-    #[allow(dead_code)]
-    pub type_idx: usize,
-    pub metadata_entry: MetadataEntry,
-}
-
-#[derive(Default, Debug)]
-pub struct MetadataEntry {
-    #[allow(dead_code)]
-    pub parser_range: Range<usize>,
-    pub branch_table: Vec<BranchTableEntry>,
 }

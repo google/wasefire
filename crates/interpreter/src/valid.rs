@@ -26,7 +26,7 @@ use crate::util::*;
 use crate::*;
 
 /// Checks whether a WASM module in binary format is valid.
-pub fn validate(binary: &[u8]) -> Result<Vec<SideTableEntry>, Error> {
+pub fn validate(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
     Context::default().check_module(&mut Parser::new(binary))
 }
 
@@ -45,7 +45,7 @@ struct Context<'m> {
 }
 
 impl<'m> Context<'m> {
-    fn check_module(&mut self, parser: &mut Parser<'m>) -> MResult<Vec<SideTableEntry>, Check> {
+    fn check_module(&mut self, parser: &mut Parser<'m>) -> MResult<Vec<MetadataEntry>, Check> {
         check(parser.parse_bytes(8)? == b"\0asm\x01\0\0\0")?;
         if let Some(mut parser) = self.check_section(parser, SectionId::Type)? {
             let n = parser.parse_vec()?;
@@ -137,12 +137,10 @@ impl<'m> Context<'m> {
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
                 let branch_table = Expr::check_body(self, &mut parser, &refs, locals, t.results)?;
-                side_tables.push(SideTableEntry {
+                side_tables.push(MetadataEntry {
                     type_idx: self.funcs[x] as usize,
-                    metadata_entry: MetadataEntry {
-                        parser_range: Range { start: offset, end: offset + size },
-                        branch_table,
-                    },
+                    parser_range: Range { start: offset, end: offset + size },
+                    branch_table,
                 });
                 offset += size;
                 check(parser.is_empty())?;
