@@ -128,21 +128,20 @@ impl<'m> Context<'m> {
         let mut side_tables = vec![];
         if let Some(mut parser) = self.check_section(parser, SectionId::Code)? {
             check(self.funcs.len() == imported_funcs + parser.parse_vec()?)?;
-            let mut offset = 0;
+            let saved = parser.save();
             for x in imported_funcs .. self.funcs.len() {
                 let size = parser.parse_u32()? as usize;
-                offset += size_of::<u32>();
                 let mut parser = parser.split_at(size)?;
-                let t = self.functype(x as FuncIdx)?;
+                let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
+                let parser_start = parser.save().as_ptr() as usize - saved.as_ptr() as usize;
                 let branch_table = Expr::check_body(self, &mut parser, &refs, locals, t.results)?;
                 side_tables.push(MetadataEntry {
                     type_idx: self.funcs[x] as usize,
-                    parser_range: Range { start: offset, end: offset + size },
+                    parser_range: Range { start: parser_start, end: parser_start + size },
                     branch_table,
                 });
-                offset += size;
                 check(parser.is_empty())?;
             }
             check(parser.is_empty())?;

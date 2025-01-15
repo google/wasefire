@@ -28,8 +28,7 @@ use crate::*;
 pub struct Module<'m> {
     binary: &'m [u8],
     types: Vec<FuncType<'m>>,
-    // TODO(dev/fast-interp): Flatten it to 1D array when making it persistent in
-    // flash.
+    // TODO(dev/fast-interp): Use a shallow (unstructured) view in the flash.
     side_table: &'m [MetadataEntry],
 }
 
@@ -53,10 +52,10 @@ impl ImportDesc {
 impl<'m> Module<'m> {
     /// Validates a WASM module in binary format.
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        let side_tables = validate(binary)?;
+        let side_table = validate(binary)?;
         let mut module = unsafe { Self::new_unchecked(binary) };
         // TODO(dev/fast-interp): We should take a buffer as argument to write to.
-        module.side_table = Box::leak(Box::new(side_tables));
+        module.side_table = Box::leak(Box::new(side_table));
         Ok(module)
     }
 
