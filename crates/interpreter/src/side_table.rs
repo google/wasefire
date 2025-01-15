@@ -58,9 +58,7 @@ impl<'m> Metadata<'m> {
 
 #[derive(Default, Debug)]
 pub struct MetadataEntry {
-    #[allow(dead_code)]
     pub type_idx: usize,
-    #[allow(dead_code)]
     pub parser_range: Range<usize>,
     pub branch_table: Vec<BranchTableEntry>,
 }

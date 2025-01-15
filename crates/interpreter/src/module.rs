@@ -116,14 +116,7 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func_type(&self, x: FuncIdx) -> FuncType<'m> {
-        let mut parser = self.section(SectionId::Function).unwrap();
-        for i in 0 .. parser.parse_vec().into_ok() {
-            let y = parser.parse_typeidx().into_ok();
-            if i == x as usize {
-                return self.types[y as usize];
-            }
-        }
-        unreachable!()
+        self.types[self.side_table[x as usize].type_idx]
     }
 
     pub(crate) fn table_type(&self, x: TableIdx) -> TableType {
@@ -185,14 +178,13 @@ impl<'m> Module<'m> {
 
     pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
         let mut parser = self.section(SectionId::Code).unwrap();
-        for i in 0 .. parser.parse_vec().into_ok() {
-            let size = parser.parse_u32().into_ok() as usize;
-            let parser = parser.split_at(size).into_ok();
-            if i == x as usize {
-                return (parser, &self.side_table[i].branch_table);
-            }
+        let saved = parser.save();
+        let entry = &self.side_table[x as usize];
+        let range = &entry.parser_range;
+        unsafe {
+            parser.restore(&saved[range.start .. range.end]);
         }
-        unreachable!()
+        (parser, &entry.branch_table)
     }
 
     pub(crate) fn data(&self, x: DataIdx) -> Parser<'m> {
