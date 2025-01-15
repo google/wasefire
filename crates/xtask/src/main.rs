@@ -638,7 +638,10 @@ impl RunnerOptions {
                 let session = session.clone();
                 move || {
                     let mut session = session.lock().unwrap();
-                    anyhow::Ok(flashing::erase_all(session.get()?, None)?)
+                    anyhow::Ok(flashing::erase_all(
+                        session.get()?,
+                        flashing::FlashProgress::empty(),
+                    )?)
                 }
             })
             .await??;

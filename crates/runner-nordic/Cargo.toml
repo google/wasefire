@@ -84,7 +84,7 @@ wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
 _software-crypto = ["software-crypto-aes256-gcm", "software-crypto-p256", "software-crypto-sha256"]
 
 [lints]
+clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
-rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

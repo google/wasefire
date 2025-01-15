@@ -33,6 +33,8 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   grep -q '^\[lints\.' $file && e "unexpected [lints.*] section in $file"
   sed -i '/^\[lints\]$/q' $file
   [ "$(tail -n1 $file)" = '[lints]' ] || printf '\n[lints]\n' >> $file
+  # TODO(https://github.com/rust-lang/rust-clippy/issues/13994): Remove when fixed.
+  add_lint $file allow clippy.literal-string-with-formatting-args
   add_lint $file warn clippy.mod-module-files
   add_lint $file allow clippy.unit-arg
   # add_lint $file warn rust.elided-lifetimes-in-paths
@@ -50,7 +52,6 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
     interpreter|runner-*|scheduler|xtask|*/fuzz) ;;
     *) add_lint $file warn rust.unreachable-pub ;;
   esac
-  add_lint $file warn rust.unsafe-op-in-unsafe-fn
   case $crate in
     */fuzz) ;;
     *) add_lint $file warn rust.unused-crate-dependencies ;;

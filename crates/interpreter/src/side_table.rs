@@ -89,7 +89,7 @@ impl BranchTableEntry {
         Ok(BranchTableEntry([
             view.delta_ip as u16,
             view.delta_stp as u16,
-            (view.pop_cnt << 4 | view.val_cnt) as u16,
+            ((view.pop_cnt << 4) | view.val_cnt) as u16,
         ]))
     }
 

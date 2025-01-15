@@ -31,7 +31,7 @@ features = ["build-bindgen", "use-32bit-slots"]
 optional = true
 
 [dependencies.wasmtime]
-version = "27.0.0"
+version = "28.0.0"
 default-features = false
 features = ["cranelift", "runtime"]
 optional = true
@@ -58,8 +58,8 @@ lto = true
 panic = "abort"
 
 [lints]
+clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
-rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

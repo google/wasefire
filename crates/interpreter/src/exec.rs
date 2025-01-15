@@ -393,7 +393,7 @@ impl Ptr {
         let inst = inst.into_repr() as u32;
         assert_eq!(inst & !Self::INST_MASK, 0);
         assert_eq!(idx & !Self::INDEX_MASK, 0);
-        Self(inst << Self::INDEX_BITS | idx)
+        Self((inst << Self::INDEX_BITS) | idx)
     }
 
     fn instance(self) -> Side {

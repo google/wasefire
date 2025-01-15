@@ -51,8 +51,8 @@ pub fn is_supported() -> bool {
 pub fn support() -> Support {
     let support = convert(unsafe { api::support() }).unwrap();
     Support {
-        no_copy: (support & 1 << api::Support::NoCopy as u32) != 0,
-        in_place_no_copy: (support & 1 << api::Support::InPlaceNoCopy as u32) != 0,
+        no_copy: (support & (1 << api::Support::NoCopy as u32)) != 0,
+        in_place_no_copy: (support & (1 << api::Support::InPlaceNoCopy as u32)) != 0,
     }
 }
 

@@ -37,11 +37,9 @@ fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
 
 fn metadata<B: Board>(mut call: SchedulerCall<B, api::metadata::Sig>) {
     let api::metadata::Params { ptr: ptr_ptr, len: len_ptr } = call.read();
-    let applet = call.applet();
-    let mut memory = applet.memory();
     let result = try {
         let metadata = board::platform::Update::<B>::metadata()?;
-        memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &metadata)?;
+        call.memory().alloc_copy(*ptr_ptr, Some(*len_ptr), &metadata)?;
     };
     call.reply(result);
 }

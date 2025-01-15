@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Fix clippy lints
 - Add clippy lint
 
 ## 0.1.2
@@ -35,4 +36,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 1 -->

@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add error context to `Pipe::new_{unix,tcp}()` for `device`
 - Use Rust edition 2024
 
 ### Patch
@@ -12,4 +13,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 1 -->
+<!-- Increment to skip CHANGELOG.md test: 2 -->

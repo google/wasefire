@@ -1,6 +1,6 @@
 # [Introduction](https://google.github.io/wasefire)
 
-This book is a walk through the _Wasefire_ project.
+This book is a walkthrough of the _Wasefire_ project.
 
 ## Vision
 

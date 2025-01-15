@@ -140,7 +140,7 @@ impl State {
         if !matches!(self, WaitResponse) {
             return Err(Error::user(Code::InvalidState));
         }
-        let packets: VecDeque<_> = Encoder::new(response).map(Into::into).collect();
+        let packets: VecDeque<_> = Encoder::new(response).collect();
         log::debug!("Sending a message of {} bytes in {} packets.", response.len(), packets.len());
         *self = SendResponse { packets };
         self.send(ep);

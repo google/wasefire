@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.4.1-git
+## 0.5.0-git
+
+### Major
+
+- Do not allocate if the size is zero for the applet API
 
 ### Minor
 
@@ -8,6 +12,7 @@
 
 ### Patch
 
+- Fix clippy lints
 - Update dependencies
 
 ## 0.4.0
@@ -181,4 +186,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 2 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->

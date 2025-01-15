@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-scheduler"
-version = "0.4.1-git"
+version = "0.5.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -226,7 +226,7 @@ internal-debug = []
 internal-hash-context = []
 
 [lints]
+clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
-rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

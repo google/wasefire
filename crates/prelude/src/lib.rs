@@ -30,6 +30,8 @@
 #![feature(alloc_error_handler)]
 #![feature(doc_auto_cfg)]
 #![feature(macro_metavar_expr)]
+#![feature(maybe_uninit_array_assume_init)]
+#![feature(maybe_uninit_uninit_array)]
 #![feature(negative_impls)]
 #![feature(never_type)]
 #![feature(vec_into_raw_parts)]
@@ -83,7 +85,13 @@ at_most_one_of!["native", "test", "wasm"];
 /// Board-specific syscalls.
 ///
 /// Those calls are directly forwarded to the board by the scheduler.
-pub fn syscall(x1: usize, x2: usize, x3: usize, x4: usize) -> Result<usize, Error> {
+///
+/// # Safety
+///
+/// For the syscalls they support, boards must either provide safe libraries or safety documentation
+/// (these requirements are not exclusive). If no safety documentation is provided, it must be
+/// assumed that this function cannot be called (regardless of its arguments).
+pub unsafe fn syscall(x1: usize, x2: usize, x3: usize, x4: usize) -> Result<usize, Error> {
     let params = api::syscall::Params { x1, x2, x3, x4 };
     convert(unsafe { api::syscall(params) })
 }

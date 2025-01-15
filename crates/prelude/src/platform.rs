@@ -15,9 +15,6 @@
 //! Provides API to interact with the platform.
 
 #[cfg(feature = "api-platform")]
-use alloc::boxed::Box;
-
-#[cfg(feature = "api-platform")]
 use wasefire_applet_api::platform as api;
 #[cfg(feature = "api-platform")]
 use wasefire_sync::Lazy;
@@ -33,26 +30,30 @@ pub mod update;
 /// Returns the serial of the platform.
 #[cfg(feature = "api-platform")]
 pub fn serial() -> &'static [u8] {
-    fn init() -> Box<[u8]> {
+    fn init() -> &'static [u8] {
         let mut ptr = core::ptr::null_mut();
         let params = api::serial::Params { ptr: &mut ptr };
         let len = convert(unsafe { api::serial(params) }).unwrap();
-        unsafe { Box::from_raw(core::slice::from_raw_parts_mut(ptr, len)) }
+        // SAFETY: If `len` is non-zero then `ptr` is the non-null result of `alloc(len, 1)`. The
+        // scheduler traps the applet if `alloc()` returns null. The slice was fully initialized by
+        // the scheduler.
+        if len == 0 { &[] } else { unsafe { core::slice::from_raw_parts(ptr, len) } }
     }
-    static SERIAL: Lazy<Box<[u8]>> = Lazy::new(init);
+    static SERIAL: Lazy<&'static [u8]> = Lazy::new(init);
     &SERIAL
 }
 
 /// Returns the version of the platform.
 #[cfg(feature = "api-platform")]
 pub fn version() -> &'static [u8] {
-    fn init() -> Box<[u8]> {
+    fn init() -> &'static [u8] {
         let mut ptr = core::ptr::null_mut();
         let params = api::version::Params { ptr: &mut ptr };
         let len = convert(unsafe { api::version(params) }).unwrap();
-        unsafe { Box::from_raw(core::slice::from_raw_parts_mut(ptr, len)) }
+        // SAFETY: Similar as in `serial()` above.
+        if len == 0 { &[] } else { unsafe { core::slice::from_raw_parts(ptr, len) } }
     }
-    static VERSION: Lazy<Box<[u8]>> = Lazy::new(init);
+    static VERSION: Lazy<&'static [u8]> = Lazy::new(init);
     &VERSION
 }
 

@@ -1233,7 +1233,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-scheduler"
-version = "0.4.1-git"
+version = "0.5.0-git"
 dependencies = [
  "bytemuck",
  "defmt",

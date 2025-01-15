@@ -65,6 +65,8 @@ impl<F: FnMut(Vec<u8>) -> Vec<u8> + 'static> Service for F {
 /// Listens on RPC requests processing them according to a service.
 #[must_use]
 pub struct Listener<'a, T: Rpc, S: Service> {
+    // Safety: This is a `Box<State<'a, T, S>>` we own and lend the platform as a shared borrow
+    // with a lifetime starting at `Rpc::register()` and ending at `Rpc::unregister()`.
     state: *const State<'a, T, S>,
 }
 
@@ -87,8 +89,9 @@ impl<'a, T: Rpc, S: Service> Listener<'a, T, S> {
     /// Listener::new(&platform::protocol::RpcProtocol, |request| Response::from(request))
     /// ```
     pub fn new(rpc: &'a T, service: S) -> Self {
-        let state = Box::leak(Box::new(State { rpc, handler: RefCell::new(service) }));
-        unsafe { rpc.register(Self::call, state as *mut _ as *const u8) }.unwrap();
+        let state = Box::into_raw(Box::new(State { rpc, handler: RefCell::new(service) }));
+        // SAFETY: The `state` lifetime ends after unregister (see field invariant).
+        unsafe { rpc.register(Self::call, state as *const u8) }.unwrap();
         Listener { state }
     }
 
@@ -109,6 +112,8 @@ impl<'a, T: Rpc, S: Service> Listener<'a, T, S> {
     }
 
     extern "C" fn call(state: *const u8) {
+        // SAFETY: `state` is the shared borrow we lent the platform (see field invariant). We are
+        // borrowing it back for the duration of this call.
         let state = unsafe { &*(state as *const State<'a, T, S>) };
         let request = match state.rpc.read().unwrap() {
             Some(x) => x,
@@ -125,6 +130,8 @@ impl<'a, T: Rpc, S: Service> Drop for Listener<'a, T, S> {
     fn drop(&mut self) {
         let state = unsafe { &*self.state };
         state.rpc.unregister().unwrap();
+        // SAFETY: `self.state` is a `Box<State<'a, T, S>>` we own back, now that the lifetime of
+        // the platform borrow is over (see field invariant).
         drop(unsafe { Box::from_raw(self.state as *mut State<'a, T, S>) });
     }
 }
