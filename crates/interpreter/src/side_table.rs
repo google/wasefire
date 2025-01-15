@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::vec::Vec;
+use core::ops::Range;
+
 use crate::error::*;
 use crate::module::Parser;
 
@@ -51,6 +54,15 @@ impl<'m> Metadata<'m> {
     fn parser_pos(&self, idx: usize) -> usize {
         bytemuck::pod_read_unaligned::<u32>(bytemuck::cast_slice(&self.0[idx .. idx + 2])) as usize
     }
+}
+
+#[derive(Default, Debug)]
+pub struct MetadataEntry {
+    #[allow(dead_code)]
+    pub type_idx: usize,
+    #[allow(dead_code)]
+    pub parser_range: Range<usize>,
+    pub branch_table: Vec<BranchTableEntry>,
 }
 
 #[derive(Copy, Clone, Debug, bytemuck::AnyBitPattern)]
