@@ -480,7 +480,7 @@ impl BranchTable {
         })
     }
 
-    fn check(self) -> MResult<Vec<BranchTableEntry>, Check> {
+    fn persist(self) -> MResult<Vec<BranchTableEntry>, Check> {
         debug_assert!(self.0.iter().all(|x| !x.is_invalid()));
         Ok(self.0)
     }
@@ -551,7 +551,7 @@ impl<'a, 'm> Expr<'a, 'm> {
         expr.locals = locals;
         expr.label().type_.results = results;
         expr.check()?;
-        expr.branch_table.check()
+        expr.branch_table.persist()
     }
 
     fn check(&mut self) -> CheckResult {
