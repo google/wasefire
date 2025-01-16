@@ -43,15 +43,19 @@ impl<'m> Metadata<'m> {
         self.0[0] as usize
     }
 
+    pub fn code_start(&self) -> usize {
+        self.combine_two_u16s(1)
+    }
+
     pub fn parser(&self, code: &'m [u8]) -> Parser<'m> {
-        unsafe { Parser::new(&code[self.parser_pos(1) .. self.parser_pos(3)]) }
+        unsafe { Parser::new(&code[self.combine_two_u16s(3) .. self.combine_two_u16s(5)]) }
     }
 
     pub fn branch_table(&self) -> &[BranchTableEntry] {
-        bytemuck::cast_slice(&self.0[5 ..])
+        bytemuck::cast_slice(&self.0[7 ..])
     }
 
-    fn parser_pos(&self, idx: usize) -> usize {
+    fn combine_two_u16s(&self, idx: usize) -> usize {
         bytemuck::pod_read_unaligned::<u32>(bytemuck::cast_slice(&self.0[idx .. idx + 2])) as usize
     }
 }
@@ -59,6 +63,8 @@ impl<'m> Metadata<'m> {
 #[derive(Default, Debug)]
 pub struct MetadataEntry {
     pub type_idx: usize,
+    #[allow(dead_code)]
+    pub code_start: usize,
     pub parser_range: Range<usize>,
     pub branch_table: Vec<BranchTableEntry>,
 }
