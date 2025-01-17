@@ -46,8 +46,8 @@ struct Context<'m> {
 
 impl<'m> Context<'m> {
     fn check_module(&mut self, parser: &mut Parser<'m>) -> MResult<Vec<MetadataEntry>, Check> {
-        let module_start = parser.save().as_ptr() as usize;
         check(parser.parse_bytes(8)? == b"\0asm\x01\0\0\0")?;
+        let module_start = parser.save().as_ptr() as usize;
         if let Some(mut parser) = self.check_section(parser, SectionId::Type)? {
             let n = parser.parse_vec()?;
             self.types.reserve(n);
@@ -132,7 +132,7 @@ impl<'m> Context<'m> {
             for x in imported_funcs .. self.funcs.len() {
                 let size = parser.parse_u32()? as usize;
                 let mut parser = parser.split_at(size)?;
-                let parser_start = parser.save().as_ptr() as usize - module_start - 8;
+                let parser_start = parser.save().as_ptr() as usize - module_start;
                 let parser_end = parser_start + size;
                 let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
