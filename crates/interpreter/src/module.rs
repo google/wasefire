@@ -177,13 +177,9 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
-        let mut parser = unsafe { Parser::new(self.binary) };
         let entry = &self.side_table[x as usize];
         let range = &entry.parser_range;
-        unsafe {
-            parser.restore(&parser.save()[range.start .. range.end]);
-        }
-        (parser, &entry.branch_table)
+        (unsafe { Parser::new(&self.binary[range.start .. range.end]) }, &entry.branch_table)
     }
 
     pub(crate) fn data(&self, x: DataIdx) -> Parser<'m> {
