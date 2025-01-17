@@ -133,14 +133,13 @@ impl<'m> Context<'m> {
                 let size = parser.parse_u32()? as usize;
                 let mut parser = parser.split_at(size)?;
                 let parser_start = parser.save().as_ptr() as usize - module_start;
-                let parser_end = parser_start + size;
                 let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
                 let branch_table = Expr::check_body(self, &mut parser, &refs, locals, t.results)?;
                 side_tables.push(MetadataEntry {
                     type_idx: self.funcs[x] as usize,
-                    parser_range: Range { start: parser_start, end: parser_end },
+                    parser_range: Range { start: parser_start, end: parser_start + size },
                     branch_table,
                 });
                 check(parser.is_empty())?;
