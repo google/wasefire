@@ -44,14 +44,14 @@ impl<'m> Metadata<'m> {
     }
 
     pub fn parser(&self, module: &'m [u8]) -> Parser<'m> {
-        unsafe { Parser::new(&module[self.combine_two_u16s(1) .. self.combine_two_u16s(3)]) }
+        unsafe { Parser::new(&module[self.read_u32(1) .. self.read_u32(3)]) }
     }
 
     pub fn branch_table(&self) -> &[BranchTableEntry] {
         bytemuck::cast_slice(&self.0[5 ..])
     }
 
-    fn combine_two_u16s(&self, idx: usize) -> usize {
+    fn read_u32(&self, idx: usize) -> usize {
         bytemuck::pod_read_unaligned::<u32>(bytemuck::cast_slice(&self.0[idx .. idx + 2])) as usize
     }
 }
