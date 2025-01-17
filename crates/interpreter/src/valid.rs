@@ -132,7 +132,7 @@ impl<'m> Context<'m> {
             for x in imported_funcs .. self.funcs.len() {
                 let size = parser.parse_u32()? as usize;
                 let mut parser = parser.split_at(size)?;
-                let parser_start = parser.save().as_ptr() as usize - module_start;
+                let parser_start = parser.save().as_ptr() as usize - module_start - 8;
                 let parser_end = parser_start + size;
                 let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
