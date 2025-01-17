@@ -47,6 +47,7 @@ struct Context<'m> {
 impl<'m> Context<'m> {
     fn check_module(&mut self, parser: &mut Parser<'m>) -> MResult<Vec<MetadataEntry>, Check> {
         check(parser.parse_bytes(8)? == b"\0asm\x01\0\0\0")?;
+        let module_start = parser.save().as_ptr() as usize;
         if let Some(mut parser) = self.check_section(parser, SectionId::Type)? {
             let n = parser.parse_vec()?;
             self.types.reserve(n);
@@ -128,19 +129,17 @@ impl<'m> Context<'m> {
         let mut side_tables = vec![];
         if let Some(mut parser) = self.check_section(parser, SectionId::Code)? {
             check(self.funcs.len() == imported_funcs + parser.parse_vec()?)?;
-            let code_start = parser.save().as_ptr() as usize;
             for x in imported_funcs .. self.funcs.len() {
                 let size = parser.parse_u32()? as usize;
                 let mut parser = parser.split_at(size)?;
+                let parser_start = parser.save().as_ptr() as usize - module_start;
                 let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
-                let parser_start = parser.save().as_ptr() as usize - code_start;
                 let branch_table = Expr::check_body(self, &mut parser, &refs, locals, t.results)?;
-                let parser_end = parser.save().as_ptr() as usize - code_start;
                 side_tables.push(MetadataEntry {
                     type_idx: self.funcs[x] as usize,
-                    parser_range: Range { start: parser_start, end: parser_end },
+                    parser_range: Range { start: parser_start, end: parser_start + size },
                     branch_table,
                 });
                 check(parser.is_empty())?;

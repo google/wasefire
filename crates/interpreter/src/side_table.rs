@@ -43,24 +43,22 @@ impl<'m> Metadata<'m> {
         self.0[0] as usize
     }
 
-    pub fn parser(&self, code: &'m [u8]) -> Parser<'m> {
-        unsafe { Parser::new(&code[self.parser_pos(1) .. self.parser_pos(3)]) }
+    pub fn parser(&self, module: &'m [u8]) -> Parser<'m> {
+        unsafe { Parser::new(&module[self.read_u32(1) .. self.read_u32(3)]) }
     }
 
     pub fn branch_table(&self) -> &[BranchTableEntry] {
         bytemuck::cast_slice(&self.0[5 ..])
     }
 
-    fn parser_pos(&self, idx: usize) -> usize {
+    fn read_u32(&self, idx: usize) -> usize {
         bytemuck::pod_read_unaligned::<u32>(bytemuck::cast_slice(&self.0[idx .. idx + 2])) as usize
     }
 }
 
 #[derive(Default, Debug)]
 pub struct MetadataEntry {
-    #[allow(dead_code)]
     pub type_idx: usize,
-    #[allow(dead_code)]
     pub parser_range: Range<usize>,
     pub branch_table: Vec<BranchTableEntry>,
 }
