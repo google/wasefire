@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,16 +25,26 @@ use crate::toctou::*;
 use crate::util::*;
 use crate::*;
 
+pub trait ValidMode {}
+
+pub struct Prepare;
+impl ValidMode for Prepare {}
+
+impl Default for Prepare {
+    fn default() -> Self {
+        Self
+    }
+}
+
 /// Checks whether a WASM module in binary format is valid.
-pub fn validate(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
+pub fn validate<M: ValidMode + Default>(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
     Context::default().check_module(&mut Parser::new(binary))
 }
 
 type Parser<'m> = parser::Parser<'m, Check>;
 type CheckResult = MResult<(), Check>;
 
-#[derive(Default)]
-struct Context<'m> {
+struct Context<'m, M: ValidMode = Prepare> {
     types: Vec<FuncType<'m>>,
     funcs: Vec<TypeIdx>,
     tables: Vec<TableType>,
@@ -42,6 +52,20 @@ struct Context<'m> {
     globals: Vec<GlobalType>,
     elems: Vec<RefType>,
     datas: Option<usize>,
+    #[allow(dead_code)]
+    mode: M,
+}
+
+impl<'m, M: ValidMode + Default> Context<'m, M> {
+    fn new(mode: M) -> Self {
+        Self { mode, ..Default::default() }
+    }
+}
+
+impl<'m, M: ValidMode + Default> Default for Context<'m, M> {
+    fn default() -> Self {
+        Self::new(M::default())
+    }
 }
 
 impl<'m> Context<'m> {

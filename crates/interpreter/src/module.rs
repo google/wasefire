@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ use crate::parser::{SkipData, SkipElem};
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
-use crate::valid::validate;
+use crate::valid::{validate, Prepare};
 use crate::*;
 
 /// Valid module.
@@ -52,7 +52,7 @@ impl ImportDesc {
 impl<'m> Module<'m> {
     /// Validates a WASM module in binary format.
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        let side_table = validate(binary)?;
+        let side_table = validate::<Prepare>(binary)?;
         let mut module = unsafe { Self::new_unchecked(binary) };
         // TODO(dev/fast-interp): We should take a buffer as argument to write to.
         module.side_table = Box::leak(Box::new(side_table));
