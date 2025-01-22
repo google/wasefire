@@ -515,6 +515,7 @@ struct Label<'m> {
     /// Whether the bottom of the stack is polymorphic.
     polymorphic: bool,
     stack: Vec<OpdType>,
+    // In the Verify mode, below becomes branch: Option<SideTableBranch<'m>>` (optimizing RAM)
     branches: Vec<SideTableBranch<'m>>,
     /// Total stack length of the labels in this function up to this label.
     prev_stack: usize,
@@ -874,6 +875,8 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
     fn end_label(&mut self) -> CheckResult {
         let results_len = self.label().type_.results.len();
         let mut target = self.branch_target(results_len);
+        // Instead of calling stitch(), make sure the side table entry is consistent with the one in
+        // flash.
         for source in core::mem::take(&mut self.label().branches) {
             self.branch_table.stitch(source, target)?;
         }
@@ -898,7 +901,12 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
         let n = self.labels.len();
         check(l < n)?;
         let source = self.branch_source();
+        // Apply the side table entry in flash and compute the expected target branch.
+        // source.parser += delta_ip;
+        // source.branch_table += delta_stp;
         let label = &mut self.labels[n - l - 1];
+        // if label.branch.is_none() { label.branch = source; }
+        // else { compare label.branch.unwrap() with source }
         Ok(match label.kind {
             LabelKind::Block | LabelKind::If(_) => {
                 label.branches.push(source);
