@@ -20,7 +20,7 @@ use crate::parser::{SkipData, SkipElem};
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
-use crate::valid::{validate, Prepare};
+use crate::valid::{Prepare, validate};
 use crate::*;
 
 /// Valid module.
