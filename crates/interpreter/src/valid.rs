@@ -906,7 +906,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
         // source.branch_table += delta_stp;
         let label = &mut self.labels[n - l - 1];
         // if label.branch.is_none() { label.branch = source; }
-        // else { compare label.branch.unwrap() with source }
+        // else { compare label.branch.unwrap() with source to make sure they are the same }
         Ok(match label.kind {
             LabelKind::Block | LabelKind::If(_) => {
                 label.branches.push(source);
