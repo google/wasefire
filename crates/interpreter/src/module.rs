@@ -20,7 +20,7 @@ use crate::parser::{SkipData, SkipElem};
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
-use crate::valid::{Prepare, validate};
+use crate::valid::validate;
 use crate::*;
 
 /// Valid module.
@@ -52,7 +52,7 @@ impl ImportDesc {
 impl<'m> Module<'m> {
     /// Validates a WASM module in binary format.
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        let side_table = validate::<Prepare>(binary)?;
+        let side_table = validate(binary)?;
         let mut module = unsafe { Self::new_unchecked(binary) };
         // TODO(dev/fast-interp): We should take a buffer as argument to write to.
         module.side_table = Box::leak(Box::new(side_table));
