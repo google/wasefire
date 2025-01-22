@@ -16,6 +16,7 @@ use alloc::collections::BTreeSet;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
+use core::marker::PhantomData;
 use core::ops::Range;
 
 use crate::error::*;
@@ -27,14 +28,20 @@ use crate::*;
 
 /// Checks whether a WASM module in binary format is valid.
 pub fn validate(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
-    Context::default().check_module(&mut Parser::new(binary))
+    Context::<Prepare>::default().check_module(&mut Parser::new(binary))
 }
+
+pub trait ValidMode: Default {}
+
+#[derive(Default)]
+pub struct Prepare;
+impl ValidMode for Prepare {}
 
 type Parser<'m> = parser::Parser<'m, Check>;
 type CheckResult = MResult<(), Check>;
 
 #[derive(Default)]
-struct Context<'m> {
+struct Context<'m, M: ValidMode> {
     types: Vec<FuncType<'m>>,
     funcs: Vec<TypeIdx>,
     tables: Vec<TableType>,
@@ -42,9 +49,11 @@ struct Context<'m> {
     globals: Vec<GlobalType>,
     elems: Vec<RefType>,
     datas: Option<usize>,
+    #[allow(dead_code)]
+    mode: PhantomData<M>,
 }
 
-impl<'m> Context<'m> {
+impl<'m, M: ValidMode> Context<'m, M> {
     fn check_module(&mut self, parser: &mut Parser<'m>) -> MResult<Vec<MetadataEntry>, Check> {
         check(parser.parse_bytes(8)? == b"\0asm\x01\0\0\0")?;
         let module_start = parser.save().as_ptr() as usize;
@@ -263,16 +272,18 @@ impl<'m> Context<'m> {
     }
 }
 
-struct ParseElem<'a, 'm> {
-    context: &'a mut Context<'m>,
+struct ParseElem<'a, 'm, M: ValidMode> {
+    context: &'a mut Context<'m, M>,
     refs: &'a mut [bool],
     num_global_imports: usize,
     table_type: OpdType,
     elem_type: RefType,
 }
 
-impl<'a, 'm> ParseElem<'a, 'm> {
-    fn new(context: &'a mut Context<'m>, refs: &'a mut [bool], num_global_imports: usize) -> Self {
+impl<'a, 'm, M: ValidMode> ParseElem<'a, 'm, M> {
+    fn new(
+        context: &'a mut Context<'m, M>, refs: &'a mut [bool], num_global_imports: usize,
+    ) -> Self {
         Self {
             context,
             num_global_imports,
@@ -283,7 +294,7 @@ impl<'a, 'm> ParseElem<'a, 'm> {
     }
 }
 
-impl<'m> parser::ParseElem<'m, Check> for ParseElem<'_, 'm> {
+impl<'m, M: ValidMode> parser::ParseElem<'m, Check> for ParseElem<'_, 'm, M> {
     fn mode(&mut self, mode: parser::ElemMode<'_, 'm, Check>) -> MResult<(), Check> {
         if let parser::ElemMode::Active { table, offset } = mode {
             Expr::check_const(
@@ -322,19 +333,21 @@ impl<'m> parser::ParseElem<'m, Check> for ParseElem<'_, 'm> {
     }
 }
 
-struct ParseData<'a, 'm> {
-    context: &'a mut Context<'m>,
+struct ParseData<'a, 'm, M: ValidMode> {
+    context: &'a mut Context<'m, M>,
     refs: &'a mut [bool],
     num_global_imports: usize,
 }
 
-impl<'a, 'm> ParseData<'a, 'm> {
-    fn new(context: &'a mut Context<'m>, refs: &'a mut [bool], num_global_imports: usize) -> Self {
+impl<'a, 'm, M: ValidMode> ParseData<'a, 'm, M> {
+    fn new(
+        context: &'a mut Context<'m, M>, refs: &'a mut [bool], num_global_imports: usize,
+    ) -> Self {
         Self { context, refs, num_global_imports }
     }
 }
 
-impl<'m> parser::ParseData<'m, Check> for ParseData<'_, 'm> {
+impl<'m, M: ValidMode> parser::ParseData<'m, Check> for ParseData<'_, 'm, M> {
     fn mode(&mut self, mode: parser::DataMode<'_, 'm, Check>) -> MResult<(), Check> {
         if let parser::DataMode::Active { memory, offset } = mode {
             self.context.mem(memory)?;
@@ -406,8 +419,8 @@ impl OpdType {
     }
 }
 
-struct Expr<'a, 'm> {
-    context: &'a Context<'m>,
+struct Expr<'a, 'm, M: ValidMode> {
+    context: &'a Context<'m, M>,
     parser: &'a mut Parser<'m>,
     globals_len: usize,
     /// Whether the expression is const and the function references.
@@ -515,9 +528,9 @@ enum LabelKind<'m> {
     If(SideTableBranch<'m>),
 }
 
-impl<'a, 'm> Expr<'a, 'm> {
+impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
     fn new(
-        context: &'a Context<'m>, parser: &'a mut Parser<'m>,
+        context: &'a Context<'m, M>, parser: &'a mut Parser<'m>,
         is_const: Result<&'a mut [bool], &'a [bool]>,
     ) -> Self {
         Self {
@@ -533,7 +546,7 @@ impl<'a, 'm> Expr<'a, 'm> {
     }
 
     fn check_const(
-        context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a mut [bool],
+        context: &'a Context<'m, M>, parser: &'a mut Parser<'m>, refs: &'a mut [bool],
         num_global_imports: usize, expected: ResultType<'m>,
     ) -> CheckResult {
         let mut expr = Expr::new(context, parser, Ok(refs));
@@ -543,7 +556,7 @@ impl<'a, 'm> Expr<'a, 'm> {
     }
 
     fn check_body(
-        context: &'a Context<'m>, parser: &'a mut Parser<'m>, refs: &'a [bool],
+        context: &'a Context<'m, M>, parser: &'a mut Parser<'m>, refs: &'a [bool],
         locals: Vec<ValType>, results: ResultType<'m>,
     ) -> MResult<Vec<BranchTableEntry>, Check> {
         let mut expr = Expr::new(context, parser, Err(refs));
