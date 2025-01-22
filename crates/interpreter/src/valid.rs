@@ -515,7 +515,7 @@ struct Label<'m> {
     /// Whether the bottom of the stack is polymorphic.
     polymorphic: bool,
     stack: Vec<OpdType>,
-    // In the Verify mode, below becomes branch: Option<SideTableBranch<'m>>` (optimizing RAM)
+    // In the Verify mode, below becomes `branch: Option<SideTableBranch<'m>>` (optimizing RAM)
     branches: Vec<SideTableBranch<'m>>,
     /// Total stack length of the labels in this function up to this label.
     prev_stack: usize,
