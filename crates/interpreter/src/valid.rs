@@ -27,7 +27,7 @@ use crate::util::*;
 use crate::*;
 
 /// Checks whether a WASM module in binary format is valid.
-pub fn validate(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
+pub fn prepare(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
     Context::<Prepare>::default().check_module(&mut Parser::new(binary))
 }
 
