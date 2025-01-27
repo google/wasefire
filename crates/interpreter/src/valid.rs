@@ -127,6 +127,7 @@ impl ValidMode for Verify {
         let n = expr.labels.len();
         check(l < n)?;
         let source = expr.branch_source();
+        // Should be `mut`.
         let expected_target = source;
         // expected_target.parser += delta_ip;
         // expected_target.branch_table += delta_stp;
