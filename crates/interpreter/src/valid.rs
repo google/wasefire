@@ -150,7 +150,8 @@ impl ValidMode for Verify {
                     eprintln!("The branch table entries for loop in the custom section are wrong.");
                     Err(unsupported(if_debug!(Unsupported::SideTable)))?
                 }
-                // expr.branch_table[source.branch_table] = branch table from the custom section;
+                // expr.branch_table[source.branch_table] = the branch table entry from the custom
+                // section;
                 label.type_.params
             }
         })
