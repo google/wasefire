@@ -35,7 +35,7 @@ pub fn prepare(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
 #[allow(unused_variables)]
 // Checks whether a WASM module with the side table in binary format is valid.
 pub fn verify(binary: &[u8]) -> Result<(), Error> {
-    Ok(())
+    todo!()
 }
 
 trait ValidMode: Default {
