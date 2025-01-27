@@ -26,16 +26,136 @@ use crate::toctou::*;
 use crate::util::*;
 use crate::*;
 
-/// Checks whether a WASM module in binary format is valid.
+/// Checks whether a WASM module in binary format is valid, and returns the side table.
 pub fn prepare(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
     Context::<Prepare>::default().check_module(&mut Parser::new(binary))
 }
 
-pub trait ValidMode: Default {}
+#[allow(dead_code)]
+#[allow(unused_variables)]
+// Checks whether a WASM module with the side table in binary format is valid.
+pub fn verify(binary: &[u8]) -> Result<(), Error> {
+    Ok(())
+}
+
+trait ValidMode: Default {
+    type LabelBranches<'m>: Default;
+
+    fn end_label(expr: &mut Expr<Self>) -> CheckResult;
+
+    fn br_label<'m>(expr: &mut Expr<'_, 'm, Self>, l: LabelIdx) -> Result<ResultType<'m>, Error>;
+}
 
 #[derive(Default)]
-pub struct Prepare;
-impl ValidMode for Prepare {}
+struct Prepare;
+impl ValidMode for Prepare {
+    type LabelBranches<'m> = Vec<SideTableBranch<'m>>;
+
+    fn end_label(expr: &mut Expr<Self>) -> CheckResult {
+        let results_len = expr.label().type_.results.len();
+        let mut target = expr.branch_target(results_len);
+        for source in core::mem::take(&mut expr.label().branches) {
+            expr.branch_table.stitch(source, target)?;
+        }
+        let label = expr.label();
+        if let LabelKind::If(source) = label.kind {
+            check(label.type_.params == label.type_.results)?;
+            // SAFETY: This function is only called after parsing an End instruction.
+            target.parser = offset_front(target.parser, -1);
+            expr.branch_table.stitch(source, target)?;
+        }
+        let results = expr.label().type_.results;
+        expr.pops(results)?;
+        check(expr.labels.pop().unwrap().stack.is_empty())?;
+        if !expr.labels.is_empty() {
+            expr.pushs(results);
+        }
+        Ok(())
+    }
+
+    fn br_label<'m>(expr: &mut Expr<'_, 'm, Self>, l: LabelIdx) -> Result<ResultType<'m>, Error> {
+        let l = l as usize;
+        let n = expr.labels.len();
+        check(l < n)?;
+        let source = expr.branch_source();
+        let label = &mut expr.labels[n - l - 1];
+        Ok(match label.kind {
+            LabelKind::Block | LabelKind::If(_) => {
+                label.branches.push(source);
+                label.type_.results
+            }
+            LabelKind::Loop(target) => {
+                expr.branch_table.stitch(source, target)?;
+                label.type_.params
+            }
+        })
+    }
+}
+
+#[derive(Default)]
+struct Verify;
+impl ValidMode for Verify {
+    type LabelBranches<'m> = Option<SideTableBranch<'m>>;
+
+    #[allow(dead_code)]
+    fn end_label(expr: &mut Expr<Self>) -> CheckResult {
+        let results_len = expr.label().type_.results.len();
+        let mut target = expr.branch_target(results_len);
+        let label = expr.label();
+        if let LabelKind::If(_) = label.kind {
+            check(label.type_.params == label.type_.results)?;
+            // SAFETY: This function is only called after parsing an End instruction.
+            target.parser = offset_front(target.parser, -1);
+        }
+        if expr.label().branches.is_none_or(|x| x != target) {
+            #[cfg(feature = "debug")]
+            eprintln!("The side table in the custom section is wrong.");
+            Err(unsupported(if_debug!(Unsupported::SideTable)))?
+        }
+        let results = expr.label().type_.results;
+        expr.pops(results)?;
+        check(expr.labels.pop().unwrap().stack.is_empty())?;
+        if !expr.labels.is_empty() {
+            expr.pushs(results);
+        }
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    fn br_label<'m>(expr: &mut Expr<'_, 'm, Self>, l: LabelIdx) -> Result<ResultType<'m>, Error> {
+        let l = l as usize;
+        let n = expr.labels.len();
+        check(l < n)?;
+        let source = expr.branch_source();
+        let expected_target = source;
+        // expected_target.parser += delta_ip;
+        // expected_target.branch_table += delta_stp;
+        let label = &mut expr.labels[n - l - 1];
+        Ok(match label.kind {
+            LabelKind::Block | LabelKind::If(_) => {
+                if !label.branches.replace(expected_target).is_none_or(|x| x == expected_target) {
+                    #[cfg(feature = "debug")]
+                    eprintln!(
+                        "The branch table entries in the custom section are consistent with each \
+                         other."
+                    );
+                    Err(unsupported(if_debug!(Unsupported::SideTable)))?
+                }
+                label.branches = Some(expected_target);
+                label.type_.results
+            }
+            LabelKind::Loop(target) => {
+                if expected_target != target {
+                    #[cfg(feature = "debug")]
+                    eprintln!("The branch table entries for loop in the custom section are wrong.");
+                    Err(unsupported(if_debug!(Unsupported::SideTable)))?
+                }
+                // expr.branch_table[source.branch_table] = branch table from the custom section;
+                label.type_.params
+            }
+        })
+    }
+}
 
 type Parser<'m> = parser::Parser<'m, Check>;
 type CheckResult = MResult<(), Check>;
@@ -49,7 +169,6 @@ struct Context<'m, M: ValidMode> {
     globals: Vec<GlobalType>,
     elems: Vec<RefType>,
     datas: Option<usize>,
-    #[allow(dead_code)]
     mode: PhantomData<M>,
 }
 
@@ -427,7 +546,7 @@ struct Expr<'a, 'm, M: ValidMode> {
     is_const: Result<&'a mut [bool], &'a [bool]>,
     is_body: bool,
     locals: Vec<ValType>,
-    labels: Vec<Label<'m>>,
+    labels: Vec<Label<'m, M>>,
     branch_table: BranchTable,
 }
 
@@ -499,7 +618,7 @@ impl BranchTable {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 struct SideTableBranch<'m> {
     parser: &'m [u8],
     branch_table: usize,
@@ -508,15 +627,14 @@ struct SideTableBranch<'m> {
 }
 
 #[derive(Debug, Default)]
-struct Label<'m> {
+struct Label<'m, M: ValidMode> {
     type_: FuncType<'m>,
     /// Whether an `else` is possible before `end`.
     kind: LabelKind<'m>,
     /// Whether the bottom of the stack is polymorphic.
     polymorphic: bool,
     stack: Vec<OpdType>,
-    // In the Verify mode, below becomes `branch: Option<SideTableBranch<'m>>` (optimizing RAM)
-    branches: Vec<SideTableBranch<'m>>,
+    branches: M::LabelBranches<'m>,
     /// Total stack length of the labels in this function up to this label.
     prev_stack: usize,
 }
@@ -788,11 +906,11 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
         self.locals.get(x as usize).cloned().ok_or_else(invalid)
     }
 
-    fn label(&mut self) -> &mut Label<'m> {
+    fn label(&mut self) -> &mut Label<'m, M> {
         self.labels.last_mut().unwrap()
     }
 
-    fn immutable_label(&self) -> &Label<'m> {
+    fn immutable_label(&self) -> &Label<'m, M> {
         self.labels.last().unwrap()
     }
 
@@ -867,56 +985,24 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
         let stack = type_.params.iter().cloned().map(OpdType::from).collect();
         let prev_label = self.immutable_label();
         let prev_stack = prev_label.prev_stack + prev_label.stack.len();
-        let label = Label { type_, kind, polymorphic: false, stack, branches: vec![], prev_stack };
+        let label = Label {
+            type_,
+            kind,
+            polymorphic: false,
+            stack,
+            branches: Default::default(),
+            prev_stack,
+        };
         self.labels.push(label);
         Ok(())
     }
 
     fn end_label(&mut self) -> CheckResult {
-        let results_len = self.label().type_.results.len();
-        let mut target = self.branch_target(results_len);
-        // Instead of calling stitch(), make sure the side table entry is consistent with the one in
-        // flash.
-        for source in core::mem::take(&mut self.label().branches) {
-            self.branch_table.stitch(source, target)?;
-        }
-        let label = self.label();
-        if let LabelKind::If(source) = label.kind {
-            check(label.type_.params == label.type_.results)?;
-            // SAFETY: This function is only called after parsing an End instruction.
-            target.parser = offset_front(target.parser, -1);
-            self.branch_table.stitch(source, target)?;
-        }
-        let results = self.label().type_.results;
-        self.pops(results)?;
-        check(self.labels.pop().unwrap().stack.is_empty())?;
-        if !self.labels.is_empty() {
-            self.pushs(results);
-        }
-        Ok(())
+        M::end_label(self)
     }
 
     fn br_label(&mut self, l: LabelIdx) -> Result<ResultType<'m>, Error> {
-        let l = l as usize;
-        let n = self.labels.len();
-        check(l < n)?;
-        let source = self.branch_source();
-        // Apply the side table entry in flash and compute the expected target branch.
-        // source.parser += delta_ip;
-        // source.branch_table += delta_stp;
-        let label = &mut self.labels[n - l - 1];
-        // if label.branch.is_none() { label.branch = source; }
-        // else { compare label.branch.unwrap() with source to make sure they are the same }
-        Ok(match label.kind {
-            LabelKind::Block | LabelKind::If(_) => {
-                label.branches.push(source);
-                label.type_.results
-            }
-            LabelKind::Loop(target) => {
-                self.branch_table.stitch(source, target)?;
-                label.type_.params
-            }
-        })
+        M::br_label(self, l)
     }
 
     fn branch_source(&mut self) -> SideTableBranch<'m> {
