@@ -90,6 +90,7 @@ jobs:
         with:
           checks: "[\"${{ matrix.check }}\"]"
           token: ${{ secrets.GITHUB_TOKEN }}
+        timeout-minutes: 15
   ubuntu:
     runs-on: ubuntu-latest
     needs: matrix
