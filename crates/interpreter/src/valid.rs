@@ -43,32 +43,39 @@ trait ValidMode: Default {
     ///
     /// When verifying, contains at most one _target_ branch. Source branches are eagerly patched to
     /// their target branch using the branch table.
-    type Branches<'m>: Default + IntoIterator<Item = SideTableBranch<'m>>;
+    type Branches<'m>: BranchesApi<'m>;
 
     /// Branch table to prepare or verify.
-    type BranchTable<'m>;
+    type BranchTable<'m>: BranchTableApi<'m>;
+}
 
-    /// Updates the branch table for source according to target, when preparing.
-    ///
-    /// When verifying, makes sure source is target branch.
-    fn stitch_branch<'m>(
-        expr: &mut Expr<'_, 'm, Self>, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
-    ) -> CheckResult;
-
+trait BranchesApi<'m>: Default + IntoIterator<Item = SideTableBranch<'m>> {
+    // fn push(&mut self, branch: SideTableBranch<'m>) -> CheckResult;
     /// Pushes a source branch, when preparing.
     ///
     /// When verifying, only push if there are no branches already. If there is one, verify that
     /// it's the same.
-    fn push_branch<'m>(
-        branches: &mut Self::Branches<'m>, branch: SideTableBranch<'m>,
+    fn push_branch(&mut self, branch: SideTableBranch<'m>) -> CheckResult;
+}
+
+trait BranchTableApi<'m>: Default {
+    /// Updates the branch table for source according to target, when preparing.
+    ///
+    /// When verifying, makes sure source is target branch.
+    fn stitch_branch(
+        &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult;
 
     /// Does nothing, when preparing.
     ///
     /// When verifying, patches a source branch to its target branch using the branch table.
-    fn patch_branch<'m>(
-        table: &Self::BranchTable<'m>, source: SideTableBranch<'m>,
-    ) -> Result<SideTableBranch<'m>, Error>;
+    fn patch_branch(&self, source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error>;
+
+    fn persist(self) -> MResult<Vec<BranchTableEntry>, Check>;
+
+    fn branch(&mut self);
+
+    fn save(&self) -> usize;
 }
 
 #[derive(Default)]
@@ -76,50 +83,76 @@ struct Prepare;
 impl ValidMode for Prepare {
     type Branches<'m> = Vec<SideTableBranch<'m>>;
     type BranchTable<'m> = BranchTable;
+}
 
-    fn stitch_branch<'m>(
-        expr: &mut Expr<'_, 'm, Self>, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
-    ) -> CheckResult {
-        expr.branch_table.stitch(source, target)
-    }
-
-    fn push_branch<'m>(
-        branches: &mut Self::Branches<'m>, branch: SideTableBranch<'m>,
-    ) -> CheckResult {
-        Ok(branches.push(branch))
-    }
-
-    fn patch_branch<'m>(
-        _: &Self::BranchTable<'m>, source: SideTableBranch<'m>,
-    ) -> Result<SideTableBranch<'m>, Error> {
-        Ok(source)
+impl<'m> BranchesApi<'m> for <Prepare as ValidMode>::Branches<'m> {
+    fn push_branch(&mut self, branch: SideTableBranch<'m>) -> CheckResult {
+        Ok(self.push(branch))
     }
 }
+
+impl<'m> BranchTableApi<'m> for <Prepare as ValidMode>::BranchTable<'m> {
+    fn stitch_branch(
+        &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
+    ) -> CheckResult {
+        BranchTable::stitch(self, source, target)
+    }
+
+    fn patch_branch(&self, source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
+        Ok(source)
+    }
+
+    fn persist(self) -> MResult<Vec<BranchTableEntry>, Check> {
+        BranchTable::persist(self)
+    }
+
+    fn branch(&mut self) {
+        BranchTable::branch(self);
+    }
+
+    fn save(&self) -> usize {
+        BranchTable::save(self)
+    }
+}
+
+#[derive(Default)]
+struct BranchTableView;
 
 #[derive(Default)]
 struct Verify;
 impl ValidMode for Verify {
     type Branches<'m> = Option<SideTableBranch<'m>>;
-    type BranchTable<'m> = BranchTableView<'m>;
+    type BranchTable<'m> = BranchTableView;
+}
 
-    fn stitch_branch<'m>(
-        _: &mut Expr<'_, 'm, Self>, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
+impl<'m> BranchesApi<'m> for <Verify as ValidMode>::Branches<'m> {
+    fn push_branch(&mut self, branch: SideTableBranch<'m>) -> CheckResult {
+        check(self.replace(branch).is_none_or(|x| x == branch))
+    }
+}
+
+impl<'m> BranchTableApi<'m> for <Verify as ValidMode>::BranchTable<'m> {
+    fn stitch_branch(
+        &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult {
         check(source == target)
     }
 
-    fn push_branch<'m>(
-        branches: &mut Self::Branches<'m>, branch: SideTableBranch<'m>,
-    ) -> CheckResult {
-        check(branches.replace(branch).is_none_or(|x| x == branch))
-    }
-
-    fn patch_branch<'m>(
-        table: &Self::BranchTable<'m>, source: SideTableBranch<'m>,
-    ) -> Result<SideTableBranch<'m>, Error> {
+    fn patch_branch(&self, _source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
         // source.parser += delta_ip;
         // source.branch_table += delta_stp;
         todo!()
+    }
+
+    // TODO(dev/fast-interp): Check the end of the function is reached.
+    fn persist(self) -> MResult<Vec<BranchTableEntry>, Check> {
+        Ok(vec![])
+    }
+
+    fn branch(&mut self) {}
+
+    fn save(&self) -> usize {
+        0
     }
 }
 
@@ -626,7 +659,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
             is_body: false,
             locals: vec![],
             labels: vec![Label::default()],
-            branch_table: BranchTable::default(),
+            branch_table: M::BranchTable::default(),
         }
     }
 
@@ -705,7 +738,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
                         let result = self.label().type_.results.len();
                         let mut target = self.branch_target(result);
                         target.branch_table += 1;
-                        M::stitch_branch(self, source, target)?;
+                        M::BranchTable::stitch_branch(&mut self.branch_table, source, target)?;
                     }
                     _ => Err(invalid())?,
                 }
@@ -967,14 +1000,14 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
         let results_len = self.label().type_.results.len();
         let mut target = self.branch_target(results_len);
         for source in core::mem::take(&mut self.label().branches) {
-            M::stitch_branch(self, source, target)?;
+            M::BranchTable::stitch_branch(&mut self.branch_table, source, target)?;
         }
         let label = self.label();
         if let LabelKind::If(source) = label.kind {
             check(label.type_.params == label.type_.results)?;
             // SAFETY: This function is only called after parsing an End instruction.
             target.parser = offset_front(target.parser, -1);
-            M::stitch_branch(self, source, target)?;
+            M::BranchTable::stitch_branch(&mut self.branch_table, source, target)?;
         }
         let results = self.label().type_.results;
         self.pops(results)?;
@@ -990,16 +1023,16 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
         let n = self.labels.len();
         check(l < n)?;
         let source = self.branch_source();
-        let source = M::patch_branch(&self.branch_table, source)?;
+        let source = M::BranchTable::patch_branch(&self.branch_table, source)?;
         let label = &mut self.labels[n - l - 1];
         Ok(match label.kind {
             LabelKind::Block | LabelKind::If(_) => {
-                M::push_branch(&mut label.branches, source)?;
+                M::Branches::push_branch(&mut label.branches, source)?;
                 label.type_.results
             }
             LabelKind::Loop(target) => {
                 let params = label.type_.params;
-                M::stitch_branch(self, source, target)?;
+                M::BranchTable::stitch_branch(&mut self.branch_table, source, target)?;
                 params
             }
         })
