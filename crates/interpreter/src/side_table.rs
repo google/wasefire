@@ -19,13 +19,13 @@ use crate::error::*;
 use crate::module::Parser;
 
 #[allow(dead_code)]
-pub struct SideTable<'m> {
+pub struct SideTableView<'m> {
     indices: &'m [u16], // including 0 and the length of metadata_array
     metadata: &'m [u16],
 }
 
 #[allow(dead_code)]
-impl<'m> SideTable<'m> {
+impl<'m> SideTableView<'m> {
     fn metadata(&self, func_idx: usize) -> Metadata<'m> {
         Metadata(
             &self.metadata[self.indices[func_idx] as usize .. self.indices[func_idx + 1] as usize],
