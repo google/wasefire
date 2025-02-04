@@ -42,6 +42,8 @@ trait ValidMode: Default {
     type Branches<'m>: BranchesApi<'m>;
 
     type BranchTable<'m>: BranchTableApi<'m>;
+
+    type SideTable<'m>: SideTableApi<'m>;
 }
 
 trait BranchesApi<'m>: Default + IntoIterator<Item = SideTableBranch<'m>> {
@@ -62,12 +64,28 @@ trait BranchTableApi<'m>: Default {
     fn next_index(&self) -> usize;
 }
 
+trait SideTableApi<'m> {
+    fn parse_side_table() -> ValidMode::SideTable<'m>;
+
+    // For Verify, need to check if the inputs are consistent with the ones in flash.
+    // NextBranchTable is a new associated type in ValidMode that is a &BranchTable for Verify and a
+    // BranchTable for Prepare.
+    // fn next(type_idx, parser_range) -> NextBranchTable;
+}
+
 #[derive(Default)]
 struct Prepare;
 impl ValidMode for Prepare {
     /// List of source branches.
     type Branches<'m> = Vec<SideTableBranch<'m>>;
     type BranchTable<'m> = BranchTable;
+    type SideTable<'m> = Vec<MetadataEntry>;
+}
+
+impl<'m> SideTableApi<'m> for <Prepare as ValidMode>::SideTable<'m> {
+    fn parse_side_table() -> Vec<MetadataEntry> {
+        vec![]
+    }
 }
 
 impl<'m> BranchesApi<'m> for <Prepare as ValidMode>::Branches<'m> {
@@ -112,6 +130,13 @@ impl ValidMode for Verify {
     /// their target branch using the branch table.
     type Branches<'m> = Option<SideTableBranch<'m>>;
     type BranchTable<'m> = BranchTableView;
+    type SideTable<'m> = SideTableView<'m>;
+}
+
+impl<'m> SideTableApi<'m> for <Prepare as ValidMode>::SideTable<'m> {
+    fn parse_side_table() -> SideTableView<'m> {
+        todo!()
+    }
 }
 
 impl<'m> BranchesApi<'m> for <Verify as ValidMode>::Branches<'m> {
@@ -165,6 +190,7 @@ struct Context<'m, M: ValidMode> {
 impl<'m, M: ValidMode> Context<'m, M> {
     fn check_module(&mut self, parser: &mut Parser<'m>) -> MResult<Vec<MetadataEntry>, Check> {
         check(parser.parse_bytes(8)? == b"\0asm\x01\0\0\0")?;
+        // let mut side_tables = M::parse_side_table();
         let module_start = parser.save().as_ptr() as usize;
         if let Some(mut parser) = self.check_section(parser, SectionId::Type)? {
             let n = parser.parse_vec()?;
@@ -254,6 +280,8 @@ impl<'m, M: ValidMode> Context<'m, M> {
                 let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
+                // Pass M::SideTableApi::next(type_idx, parser_range) as argument to check_body
+                // instead of calling `side_tables.push()` below.
                 let branch_table = Expr::check_body(self, &mut parser, &refs, locals, t.results)?;
                 side_tables.push(MetadataEntry {
                     type_idx: self.funcs[x] as usize,
