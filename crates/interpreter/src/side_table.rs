@@ -33,9 +33,8 @@ impl<'m> SideTableView<'m> {
     }
 }
 
-#[allow(dead_code)]
-#[derive(Copy, Clone)]
-struct Metadata<'m>(&'m [u16]);
+#[derive(Default, Copy, Clone)]
+pub struct Metadata<'m>(&'m [u16]);
 
 #[allow(dead_code)]
 impl<'m> Metadata<'m> {
