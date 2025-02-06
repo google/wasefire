@@ -18,15 +18,14 @@ use core::ops::Range;
 use crate::error::*;
 use crate::module::Parser;
 
-#[allow(dead_code)]
 pub struct SideTableView<'m> {
-    indices: &'m [u16], // including 0 and the length of metadata_array
-    metadata: &'m [u16],
+    pub func_idx: usize,
+    pub indices: &'m [u16], // including 0 and the length of metadata_array
+    pub metadata: &'m [u16],
 }
 
-#[allow(dead_code)]
 impl<'m> SideTableView<'m> {
-    fn metadata(&self, func_idx: usize) -> Metadata<'m> {
+    pub fn metadata(&self, func_idx: usize) -> Metadata<'m> {
         Metadata(
             &self.metadata[self.indices[func_idx] as usize .. self.indices[func_idx + 1] as usize],
         )
@@ -36,18 +35,22 @@ impl<'m> SideTableView<'m> {
 #[derive(Default, Copy, Clone)]
 pub struct Metadata<'m>(&'m [u16]);
 
-#[allow(dead_code)]
 impl<'m> Metadata<'m> {
     pub fn type_idx(&self) -> usize {
         self.0[0] as usize
     }
 
+    #[allow(dead_code)]
     pub fn parser(&self, module: &'m [u8]) -> Parser<'m> {
-        unsafe { Parser::new(&module[self.read_u32(1) .. self.read_u32(3)]) }
+        unsafe { Parser::new(&module[self.parser_range().start .. self.parser_range().end]) }
     }
 
     pub fn branch_table(&self) -> &[BranchTableEntry] {
         bytemuck::cast_slice(&self.0[5 ..])
+    }
+
+    pub fn parser_range(&self) -> Range<usize> {
+        self.read_u32(1) .. self.read_u32(3)
     }
 
     fn read_u32(&self, idx: usize) -> usize {

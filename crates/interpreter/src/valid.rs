@@ -19,6 +19,7 @@ use core::cmp::Ordering;
 use core::marker::PhantomData;
 use core::ops::Range;
 
+use crate::Error::Invalid;
 use crate::error::*;
 use crate::side_table::*;
 use crate::syntax::*;
@@ -51,8 +52,8 @@ trait ValidMode: Default {
     fn parse_side_table<'m>(parser: &mut Parser<'m>) -> Result<Self::SideTable<'m>, Error>;
     fn next_branch_table<'a, 'm>(
         side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
-    ) -> &'a mut Self::BranchTable<'m>;
-    fn side_table_result<'m>(side_table: Self::SideTable<'m>) -> Self::Result;
+    ) -> Result<&'a mut Self::BranchTable<'m>, Error>;
+    fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result;
 }
 
 trait BranchesApi<'m>: Default + IntoIterator<Item = SideTableBranch<'m>> {
@@ -86,12 +87,12 @@ impl ValidMode for Prepare {
 
     fn next_branch_table<'a, 'm>(
         side_tables: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
-    ) -> &'a mut Self::BranchTable<'m> {
+    ) -> Result<&'a mut Self::BranchTable<'m>, Error> {
         side_tables.push(MetadataEntry { type_idx, parser_range, branch_table: vec![] });
-        &mut side_tables.last_mut().unwrap().branch_table
+        Ok(&mut side_tables.last_mut().unwrap().branch_table)
     }
 
-    fn side_table_result<'m>(side_table: Self::SideTable<'m>) -> Self::Result {
+    fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result {
         side_table
     }
 }
@@ -121,7 +122,6 @@ impl<'m> BranchTableApi<'m> for Vec<BranchTableEntry> {
         Ok(())
     }
 
-    /// Patches a source branch to its target branch using the branch table.
     fn patch_branch(&self, source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
         Ok(source)
     }
@@ -151,22 +151,34 @@ impl ValidMode for Verify {
         check(section.parse_name()? == "wasefire-sidetable")?;
         // TODO: Make a SideTableView from the section content. We probably want SideTableView to
         // have a state (the current function index). We also need to use u8 instead of u16.
-        todo!()
+        let indices_len = parser.parse_u16()? as usize;
+        let mut parser = parser.split_at(indices_len)?;
+        let indices_bytes = parser.save().get(0 .. indices_len * 2).unwrap();
+        let indices: &'m [u16] = bytemuck::cast_slice::<_, u16>(indices_bytes);
+        let metadata_len = parser.parse_u16()? as usize;
+        let parser = parser.split_at(metadata_len)?;
+        let metadata_bytes = parser.save().get(0 .. metadata_len * 2).unwrap();
+        let metadata: &'m [u16] = bytemuck::cast_slice::<_, u16>(metadata_bytes);
+        Ok(SideTableView { func_idx: 0, indices, metadata })
     }
 
     fn next_branch_table<'a, 'm>(
-        side_tables: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
-    ) -> &'a mut Self::BranchTable<'m> {
+        side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
+    ) -> Result<&'a mut Self::BranchTable<'m>, Error> {
         // TODO: Increment the current function index and return the Metadata of the (now previous)
         // function. Could be renamed to BranchTableView.
         // TODO: Also check the type_idx and parser_range.
-        todo!()
+        let metadata = side_table.metadata(side_table.func_idx);
+        side_table.func_idx += 1;
+        check(metadata.type_idx() == type_idx && metadata.parser_range() == parser_range)?;
+        // metadata
+        Err(Invalid)
     }
 
-    fn side_table_result<'m>(side_table: Self::SideTable<'m>) -> Self::Result {
+    fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result {
         // TODO: Check that side_table is at the end (current function is one past the number of
-        // funtions).
-        todo!()
+        // functions).
+        check(side_table.func_idx == side_table.indices.len()).unwrap()
     }
 }
 
@@ -177,18 +189,19 @@ impl<'m> BranchesApi<'m> for Option<SideTableBranch<'m>> {
 }
 
 impl<'m> BranchTableApi<'m> for Metadata<'m> {
-    /// Makes sure source is target branch.
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult {
         check(source == target)
     }
 
-    /// Patches a source branch to its target branch using the branch table.
-    fn patch_branch(&self, _source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
-        // source.parser += delta_ip;
-        // source.branch_table += delta_stp;
-        todo!()
+    fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
+        let entry = self.branch_table()[source.branch_table].view();
+        offset_front(source.parser, entry.delta_ip as isize);
+        source.branch_table += entry.delta_stp as usize;
+        source.result = entry.val_cnt as usize;
+        source.stack -= entry.pop_cnt as usize;
+        Ok(source)
     }
 
     fn allocate_branch(&mut self) {}
@@ -310,7 +323,14 @@ impl<'m, M: ValidMode> Context<'m, M> {
                         start: parser_start,
                         end: parser_start + size,
                     });
-                Expr::check_body(self, &mut parser, &refs, locals, t.results, branch_table)?;
+                Expr::check_body(
+                    self,
+                    &mut parser,
+                    &refs,
+                    locals,
+                    t.results,
+                    branch_table.unwrap(),
+                )?;
                 check(parser.is_empty())?;
             }
             check(parser.is_empty())?;
