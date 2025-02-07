@@ -15,6 +15,8 @@
 //! Tests that the random number generator is working properly.
 
 #![no_std]
+
+use wasefire::error::Code;
 wasefire::applet!();
 
 fn main() {
@@ -24,7 +26,7 @@ fn main() {
 
 fn test_non_constant() {
     debug!("test_non_constant(): This should generate 5 different buffers.");
-    if rng::fill_bytes(&mut []).is_err() {
+    if rng::fill_bytes(&mut []) == Err(Error::world(Code::NotImplemented)) {
         debug!("- not supported");
         scheduling::exit();
     }
