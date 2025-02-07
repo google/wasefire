@@ -22,14 +22,35 @@ pub struct SideTableView<'m> {
     pub func_idx: usize,
     pub indices: &'m [u16], // including 0 and the length of metadata_array
     pub metadata: &'m [u16],
+    pub branch_table_view: Metadata<'m>,
 }
 
 impl<'m> SideTableView<'m> {
+    pub fn new(parser: &mut crate::valid::Parser<'m>) -> Result<Self, Error> {
+        Ok(SideTableView {
+            func_idx: 0,
+            indices: parse_side_table_field(parser)?,
+            metadata: parse_side_table_field(parser)?,
+            branch_table_view: Default::default(),
+        })
+    }
+
     pub fn metadata(&self, func_idx: usize) -> Metadata<'m> {
         Metadata(
             &self.metadata[self.indices[func_idx] as usize .. self.indices[func_idx + 1] as usize],
         )
     }
+}
+
+fn parse_u16(data: &[u8]) -> u16 {
+    bytemuck::pod_read_unaligned::<u16>(bytemuck::cast_slice(&data[0 .. 2]))
+}
+
+fn parse_side_table_field<'m>(parser: &mut crate::valid::Parser<'m>) -> Result<&'m [u16], Error> {
+    let len = parse_u16(parser.save()) as usize;
+    let parser = parser.split_at(len)?;
+    let bytes = parser.save().get(0 .. len * 2).unwrap();
+    Ok(bytemuck::cast_slice::<_, u16>(bytes))
 }
 
 #[derive(Default, Copy, Clone)]
@@ -42,7 +63,7 @@ impl<'m> Metadata<'m> {
 
     #[allow(dead_code)]
     pub fn parser(&self, module: &'m [u8]) -> Parser<'m> {
-        unsafe { Parser::new(&module[self.parser_range().start .. self.parser_range().end]) }
+        unsafe { Parser::new(&module[self.parser_range()]) }
     }
 
     pub fn branch_table(&self) -> &[BranchTableEntry] {

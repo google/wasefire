@@ -19,7 +19,6 @@ use core::cmp::Ordering;
 use core::marker::PhantomData;
 use core::ops::Range;
 
-use crate::Error::Invalid;
 use crate::error::*;
 use crate::side_table::*;
 use crate::syntax::*;
@@ -79,6 +78,7 @@ impl ValidMode for Prepare {
     type Branches<'m> = Vec<SideTableBranch<'m>>;
     type BranchTable<'m> = Vec<BranchTableEntry>;
     type SideTable<'m> = Vec<MetadataEntry>;
+    // TODO(dev/fast-interp): Change it to Vec<u8>.
     type Result = Vec<MetadataEntry>;
 
     fn parse_side_table<'m>(_: &mut Parser<'m>) -> Result<Self::SideTable<'m>, Error> {
@@ -149,35 +149,22 @@ impl ValidMode for Verify {
         check(parser.parse_section_id()? == SectionId::Custom)?;
         let mut section = parser.split_section()?;
         check(section.parse_name()? == "wasefire-sidetable")?;
-        // TODO: Make a SideTableView from the section content. We probably want SideTableView to
-        // have a state (the current function index). We also need to use u8 instead of u16.
-        let indices_len = parser.parse_u16()? as usize;
-        let mut parser = parser.split_at(indices_len)?;
-        let indices_bytes = parser.save().get(0 .. indices_len * 2).unwrap();
-        let indices: &'m [u16] = bytemuck::cast_slice::<_, u16>(indices_bytes);
-        let metadata_len = parser.parse_u16()? as usize;
-        let parser = parser.split_at(metadata_len)?;
-        let metadata_bytes = parser.save().get(0 .. metadata_len * 2).unwrap();
-        let metadata: &'m [u16] = bytemuck::cast_slice::<_, u16>(metadata_bytes);
-        Ok(SideTableView { func_idx: 0, indices, metadata })
+        SideTableView::new(parser)
     }
 
     fn next_branch_table<'a, 'm>(
         side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
     ) -> Result<&'a mut Self::BranchTable<'m>, Error> {
-        // TODO: Increment the current function index and return the Metadata of the (now previous)
-        // function. Could be renamed to BranchTableView.
-        // TODO: Also check the type_idx and parser_range.
-        let metadata = side_table.metadata(side_table.func_idx);
+        side_table.branch_table_view = side_table.metadata(side_table.func_idx);
         side_table.func_idx += 1;
-        check(metadata.type_idx() == type_idx && metadata.parser_range() == parser_range)?;
-        // metadata
-        Err(Invalid)
+        check(
+            side_table.branch_table_view.type_idx() == type_idx
+                && side_table.branch_table_view.parser_range() == parser_range,
+        )?;
+        Ok(&mut side_table.branch_table_view)
     }
 
     fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result {
-        // TODO: Check that side_table is at the end (current function is one past the number of
-        // functions).
         check(side_table.func_idx == side_table.indices.len()).unwrap()
     }
 }
@@ -211,7 +198,7 @@ impl<'m> BranchTableApi<'m> for Metadata<'m> {
     }
 }
 
-type Parser<'m> = parser::Parser<'m, Check>;
+pub type Parser<'m> = parser::Parser<'m, Check>;
 type CheckResult = MResult<(), Check>;
 
 #[derive(Default)]
@@ -322,15 +309,8 @@ impl<'m, M: ValidMode> Context<'m, M> {
                     M::next_branch_table(&mut side_table, self.funcs[x] as usize, Range {
                         start: parser_start,
                         end: parser_start + size,
-                    });
-                Expr::check_body(
-                    self,
-                    &mut parser,
-                    &refs,
-                    locals,
-                    t.results,
-                    branch_table.unwrap(),
-                )?;
+                    })?;
+                Expr::check_body(self, &mut parser, &refs, locals, t.results, branch_table)?;
                 check(parser.is_empty())?;
             }
             check(parser.is_empty())?;
@@ -1029,9 +1009,8 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
                 label.type_.results
             }
             LabelKind::Loop(target) => {
-                let params = label.type_.params;
                 M::BranchTable::stitch_branch(self.branch_table.as_mut().unwrap(), source, target)?;
-                params
+                label.type_.params
             }
         })
     }
