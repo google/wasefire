@@ -28,7 +28,7 @@ fn test_non_constant() {
     debug!("test_non_constant(): This should generate 5 different buffers.");
     if rng::fill_bytes(&mut []) == Err(Error::world(Code::NotImplemented)) {
         debug!("- not supported");
-        scheduling::exit();
+        return;
     }
     let mut buffers = [[0; 8]; 5];
     for buffer in buffers.iter_mut() {
