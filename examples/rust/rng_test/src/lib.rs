@@ -15,9 +15,9 @@
 //! Tests that the random number generator is working properly.
 
 #![no_std]
+wasefire::applet!();
 
 use wasefire::error::Code;
-wasefire::applet!();
 
 fn main() {
     test_non_constant();
