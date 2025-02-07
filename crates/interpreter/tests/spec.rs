@@ -164,8 +164,10 @@ impl<'m> Env<'m> {
     }
 
     fn maybe_instantiate(&mut self, name: &str, wasm: &[u8]) -> Result<InstId, Error> {
-        let module = self.alloc(wasm.len());
-        module.copy_from_slice(wasm);
+        let side_table = prepare(wasm)?;
+        let wasm_with_side_table = merge(wasm, side_table)?.as_slice();
+        let module = self.alloc(wasm_with_side_table.len());
+        module.copy_from_slice(wasm_with_side_table);
         let module = Module::new(module)?;
         let memory = self.alloc(mem_size(name));
         self.store.instantiate(module, memory)

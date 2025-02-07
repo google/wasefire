@@ -25,6 +25,15 @@ use crate::syntax::*;
 use crate::toctou::*;
 use crate::util::*;
 use crate::*;
+use crate::Error::Invalid;
+
+pub fn merge(binary: &[u8], side_table: Vec<MetadataEntry>) -> Result<Vec<u8>, Error> {
+    // Convert Vec<MetadataEntry> to Vec<u8>.
+    // Create a custom section at the beginning of the binary,
+    // and put the serialized `side_table` in it.
+    // Return the new module.
+    Err(Invalid)
+}
 
 /// Checks whether a WASM module in binary format is valid, and returns the side table.
 pub fn prepare(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
