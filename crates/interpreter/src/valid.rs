@@ -63,11 +63,8 @@ trait BranchTableApi<'m>: Default {
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult;
-
     fn patch_branch(&self, source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error>;
-
     fn allocate_branch(&mut self);
-
     fn next_index(&self) -> usize;
 }
 
@@ -157,10 +154,8 @@ impl ValidMode for Verify {
     ) -> Result<&'a mut Self::BranchTable<'m>, Error> {
         side_table.branch_table_view = side_table.metadata(side_table.func_idx);
         side_table.func_idx += 1;
-        check(
-            side_table.branch_table_view.type_idx() == type_idx
-                && side_table.branch_table_view.parser_range() == parser_range,
-        )?;
+        check(side_table.branch_table_view.type_idx() == type_idx)?;
+        check(side_table.branch_table_view.parser_range() == parser_range)?;
         Ok(&mut side_table.branch_table_view)
     }
 
@@ -305,11 +300,9 @@ impl<'m, M: ValidMode> Context<'m, M> {
                 let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
+                let parser_range = Range { start: parser_start, end: parser_start + size };
                 let branch_table =
-                    M::next_branch_table(&mut side_table, self.funcs[x] as usize, Range {
-                        start: parser_start,
-                        end: parser_start + size,
-                    })?;
+                    M::next_branch_table(&mut side_table, self.funcs[x] as usize, parser_range)?;
                 Expr::check_body(self, &mut parser, &refs, locals, t.results, branch_table)?;
                 check(parser.is_empty())?;
             }
@@ -975,17 +968,23 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
     }
 
     fn end_label(&mut self) -> CheckResult {
-        let results_len = self.label().type_.results.len();
-        let mut target = self.branch_target(results_len);
-        for source in core::mem::take(&mut self.label().branches) {
-            M::BranchTable::stitch_branch(self.branch_table.as_mut().unwrap(), source, target)?;
-        }
-        let label = self.label();
-        if let LabelKind::If(source) = label.kind {
-            check(label.type_.params == label.type_.results)?;
-            // SAFETY: This function is only called after parsing an End instruction.
-            target.parser = offset_front(target.parser, -1);
-            M::BranchTable::stitch_branch(self.branch_table.as_mut().unwrap(), source, target)?;
+        let branches = core::mem::take(&mut self.label().branches);
+        if self.is_const.is_ok() {
+            assert_eq!(branches.into_iter().count(), 0);
+            assert!(matches!(self.label().kind, LabelKind::Block));
+        } else {
+            let results_len = self.label().type_.results.len();
+            let mut target = self.branch_target(results_len);
+            for source in branches {
+                M::BranchTable::stitch_branch(self.branch_table.as_mut().unwrap(), source, target)?;
+            }
+            let label = self.label();
+            if let LabelKind::If(source) = label.kind {
+                check(label.type_.params == label.type_.results)?;
+                // SAFETY: This function is only called after parsing an End instruction.
+                target.parser = offset_front(target.parser, -1);
+                M::BranchTable::stitch_branch(self.branch_table.as_mut().unwrap(), source, target)?;
+            }
         }
         let results = self.label().type_.results;
         self.pops(results)?;
@@ -1032,7 +1031,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
     fn branch(&self) -> SideTableBranch<'m> {
         SideTableBranch {
             parser: self.parser.save(),
-            branch_table: self.branch_table.as_ref().map_or(0, |x| x.next_index()),
+            branch_table: self.branch_table.as_ref().unwrap().next_index(),
             stack: self.immutable_label().prev_stack,
             result: 0,
         }
