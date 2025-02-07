@@ -156,4 +156,4 @@ pub use module::Module;
 pub use syntax::{
     FuncType, GlobalType, ImportDesc, Limits, Mut, RefType, ResultType, TableType, ValType,
 };
-pub use valid::validate;
+pub use valid::prepare;
