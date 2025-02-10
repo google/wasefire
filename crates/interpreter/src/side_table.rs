@@ -20,43 +20,36 @@ use crate::module::Parser;
 
 pub struct SideTableView<'m> {
     pub func_idx: usize,
-    pub indices: &'m [u16], // including 0 and the length of metadata_array
-    pub metadata: &'m [u16],
+    pub indices: &'m [u8], // including 0 and the length of metadata_array
+    pub metadata: &'m [u8],
 }
 
 impl<'m> SideTableView<'m> {
-    pub fn new(parser: &mut crate::valid::Parser<'m>) -> Result<Self, Error> {
+    pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
+        let num_functions =
+            bytemuck::pod_read_unaligned::<u16>(bytemuck::cast_slice(&binary[0 .. 2])) as usize;
+        let indices_end = 2 + (num_functions + 1) * 2;
         Ok(SideTableView {
             func_idx: 0,
-            indices: parse_side_table_field(parser)?,
-            metadata: parse_side_table_field(parser)?,
+            indices: &binary[2 .. indices_end],
+            metadata: &binary[indices_end ..],
         })
     }
 
     pub fn metadata(&self, func_idx: usize) -> Metadata<'m> {
         Metadata(
-            &self.metadata[self.indices[func_idx] as usize .. self.indices[func_idx + 1] as usize],
+            &self.metadata
+                [self.indices[func_idx * 2] as usize .. self.indices[(func_idx + 1) * 2] as usize],
         )
     }
 }
 
-fn parse_u16(data: &[u8]) -> u16 {
-    bytemuck::pod_read_unaligned::<u16>(bytemuck::cast_slice(&data[0 .. 2]))
-}
-
-fn parse_side_table_field<'m>(parser: &mut crate::valid::Parser<'m>) -> Result<&'m [u16], Error> {
-    let len = parse_u16(parser.save()) as usize;
-    let parser = parser.split_at(len)?;
-    let bytes = parser.save().get(0 .. len * 2).unwrap();
-    Ok(bytemuck::cast_slice::<_, u16>(bytes))
-}
-
 #[derive(Default, Copy, Clone)]
-pub struct Metadata<'m>(&'m [u16]);
+pub struct Metadata<'m>(&'m [u8]);
 
 impl<'m> Metadata<'m> {
     pub fn type_idx(&self) -> usize {
-        self.0[0] as usize
+        bytemuck::pod_read_unaligned::<u16>(bytemuck::cast_slice(&self.0[0 .. 2])) as usize
     }
 
     #[allow(dead_code)]
@@ -65,15 +58,15 @@ impl<'m> Metadata<'m> {
     }
 
     pub fn branch_table(&self) -> &[BranchTableEntry] {
-        bytemuck::cast_slice(&self.0[5 ..])
+        bytemuck::cast_slice(&self.0[10 ..])
     }
 
     pub fn parser_range(&self) -> Range<usize> {
-        self.read_u32(1) .. self.read_u32(3)
+        self.read_u32(2) .. self.read_u32(6)
     }
 
     fn read_u32(&self, idx: usize) -> usize {
-        bytemuck::pod_read_unaligned::<u32>(bytemuck::cast_slice(&self.0[idx .. idx + 2])) as usize
+        bytemuck::pod_read_unaligned::<u32>(bytemuck::cast_slice(&self.0[idx .. idx + 4])) as usize
     }
 }
 
