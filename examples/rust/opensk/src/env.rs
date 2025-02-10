@@ -23,17 +23,7 @@ mod rng;
 mod user_presence;
 mod write;
 
-#[derive(Default)]
-struct WasefireEnv {
-    // write: write::WasefireWrite,
-    // store: Store<Storage<S, C>>,
-    // upgrade_storage: Option<UpgradeStorage<S, C>>,
-    // main_connection: WasefireHidConnection,
-    // vendor_connection: WasefireHidConnection,
-    // blink_pattern: usize,
-    // clock: clock::WasefireClock,
-    // c: PhantomData<C>,
-}
+pub struct WasefireEnv;
 
 impl Env for WasefireEnv {
     type Rng = Self;
