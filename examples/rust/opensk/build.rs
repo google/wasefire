@@ -14,15 +14,14 @@
 
 extern crate alloc;
 
-use std::env;
-use std::path::Path;
+use std::path::PathBuf;
 
 use uuid::Uuid;
 
 fn main() {
-    let out_dir = env::var_os("OUT_DIR").unwrap();
+    let out_dir = PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
     println!("cargo:rerun-if-changed=crypto_data/aaguid.txt");
     let content = std::fs::read_to_string("crypto_data/aaguid.txt").unwrap();
     let aaguid = Uuid::parse_str(content.trim()).unwrap();
-    std::fs::write(Path::new(&out_dir).join("opensk_aaguid.bin"), aaguid.as_bytes()).unwrap();
+    std::fs::write(out_dir.join("opensk_aaguid.bin"), aaguid.as_bytes()).unwrap();
 }

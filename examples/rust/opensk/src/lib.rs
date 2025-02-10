@@ -12,177 +12,122 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! TODO: Add docs
+//! Example applet running OpenSK.
 
 #![no_std]
 wasefire::applet!();
 
-use alloc::boxed::Box;
-use alloc::vec::Vec;
+// use alloc::boxed::Box;
+// use alloc::vec::Vec;
 
-use opensk_lib::api::connection::{HidConnection, SendOrRecvResult};
-use opensk_lib::api::crypto::software_crypto::SoftwareCrypto;
-use opensk_lib::api::customization::{CustomizationImpl, AAGUID_LENGTH, DEFAULT_CUSTOMIZATION};
-use opensk_lib::api::key_store;
-use opensk_lib::api::persist::{Persist, PersistIter};
-use opensk_lib::ctap::status_code::Ctap2StatusCode::{
-    self, CTAP1_ERR_OTHER, CTAP2_ERR_KEY_STORE_FULL, CTAP2_ERR_VENDOR_HARDWARE_FAILURE,
-    CTAP2_ERR_VENDOR_INTERNAL_ERROR,
-};
-use opensk_lib::ctap::status_code::CtapResult;
-use opensk_lib::env::Env;
-use wasefire_error::{Code, Space};
+// use opensk_lib::api::connection::HidConnection;
+// use opensk_lib::api::crypto::software_crypto::SoftwareCrypto;
+// use opensk_lib::api::customization::{CustomizationImpl, AAGUID_LENGTH, DEFAULT_CUSTOMIZATION};
+// use opensk_lib::api::key_store;
+// use opensk_lib::api::persist::{Persist, PersistIter};
+// use opensk_lib::ctap::status_code::Ctap2StatusCode::{
+//     self, CTAP1_ERR_OTHER, CTAP2_ERR_KEY_STORE_FULL, CTAP2_ERR_VENDOR_HARDWARE_FAILURE,
+//     CTAP2_ERR_VENDOR_INTERNAL_ERROR,
+// };
+// use opensk_lib::ctap::status_code::CtapResult;
+// use wasefire_error::{Code, Space};
 // use wasefire::clock::{Handler, Timer};
 
-mod clock;
-mod rng;
-mod user_presence;
-mod write;
+// mod clock;
+// mod env;
+// mod rng;
+// mod user_presence;
+// mod write;
 
-#[allow(dead_code)]
-fn main() {
-    debug!("hello world");
+fn main() -> ! {
+    todo!();
 }
 
-pub const AAGUID: &[u8; AAGUID_LENGTH] =
-    include_bytes!(concat!(env!("OUT_DIR"), "/opensk_aaguid.bin"));
+// pub const AAGUID: &[u8; AAGUID_LENGTH] =
+//     include_bytes!(concat!(env!("OUT_DIR"), "/opensk_aaguid.bin"));
 
-const WASEFIRE_CUSTOMIZATION: CustomizationImpl =
-    CustomizationImpl { aaguid: AAGUID, ..DEFAULT_CUSTOMIZATION };
+// const WASEFIRE_CUSTOMIZATION: CustomizationImpl =
+//     CustomizationImpl { aaguid: AAGUID, ..DEFAULT_CUSTOMIZATION };
 
-#[derive(Clone, Copy, Default)]
-pub struct WasefireHidConnection;
+// #[derive(Clone, Copy, Default)]
+// pub struct WasefireHidConnection;
 
-impl HidConnection for WasefireHidConnection {
-    fn send_and_maybe_recv(&mut self, _buf: &mut [u8; 64], _timeout_ms: usize) -> SendOrRecvResult {
-        todo!()
-    }
-}
+// impl HidConnection for WasefireHidConnection {
+//     fn send(
+//         &mut self, buf: &[u8; 64], endpoint: opensk_lib::api::connection::UsbEndpoint,
+//     ) -> CtapResult<()> {
+//         todo!()
+//     }
 
-#[allow(dead_code)]
-#[derive(Default)]
-struct WasefireEnv {
-    write: write::WasefireWrite,
-    // store: Store<Storage<S, C>>,
-    // upgrade_storage: Option<UpgradeStorage<S, C>>,
-    main_connection: WasefireHidConnection,
-    vendor_connection: WasefireHidConnection,
-    // blink_pattern: usize,
-    clock: clock::WasefireClock,
-    // c: PhantomData<C>,
-}
+//     fn recv(
+//         &mut self, buf: &mut [u8; 64], timeout_ms: usize,
+//     ) -> CtapResult<opensk_lib::api::connection::RecvStatus> {
+//         todo!()
+//     }
+// }
 
-fn convert(error: wasefire::Error) -> Ctap2StatusCode {
-    match (Space::try_from(error.space()), Code::try_from(error.code())) {
-        (_, Ok(Code::NotEnough)) => CTAP2_ERR_KEY_STORE_FULL,
-        (Ok(Space::User | Space::Internal), _) => CTAP2_ERR_VENDOR_INTERNAL_ERROR,
-        (Ok(Space::World), _) => CTAP2_ERR_VENDOR_HARDWARE_FAILURE,
-        _ => CTAP1_ERR_OTHER,
-    }
-}
+// fn convert(error: wasefire::Error) -> Ctap2StatusCode {
+//     match (Space::try_from(error.space()), Code::try_from(error.code())) {
+//         (_, Ok(Code::NotEnough)) => CTAP2_ERR_KEY_STORE_FULL,
+//         (Ok(Space::User | Space::Internal), _) => CTAP2_ERR_VENDOR_INTERNAL_ERROR,
+//         (Ok(Space::World), _) => CTAP2_ERR_VENDOR_HARDWARE_FAILURE,
+//         _ => CTAP1_ERR_OTHER,
+//     }
+// }
 
-impl Persist for WasefireEnv {
-    fn find(&self, key: usize) -> CtapResult<Option<Vec<u8>>> {
-        match store::find(key) {
-            Err(e) => Err(convert(e)),
-            Ok(None) => Ok(None),
-            Ok(Some(data)) => Ok(Some(data.into_vec())),
-        }
-    }
+// impl Persist for WasefireEnv {
+//     fn find(&self, key: usize) -> CtapResult<Option<Vec<u8>>> {
+//         match store::find(key) {
+//             Err(e) => Err(convert(e)),
+//             Ok(None) => Ok(None),
+//             Ok(Some(data)) => Ok(Some(data.into_vec())),
+//         }
+//     }
 
-    fn insert(&mut self, key: usize, value: &[u8]) -> CtapResult<()> {
-        store::insert(key, value).map_err(convert)
-    }
+//     fn insert(&mut self, key: usize, value: &[u8]) -> CtapResult<()> {
+//         store::insert(key, value).map_err(convert)
+//     }
 
-    fn remove(&mut self, key: usize) -> CtapResult<()> {
-        store::remove(key).map_err(convert)
-    }
+//     fn remove(&mut self, key: usize) -> CtapResult<()> {
+//         store::remove(key).map_err(convert)
+//     }
 
-    fn iter(&self) -> CtapResult<PersistIter<'_>> {
-        let keys = store::keys().map_err(convert)?;
-        Ok(Box::new(keys.into_iter().map(|x| Ok(x as usize))))
-    }
-}
+//     fn iter(&self) -> CtapResult<PersistIter<'_>> {
+//         let keys = store::keys().map_err(convert)?;
+//         Ok(Box::new(keys.into_iter().map(|x| Ok(x as usize))))
+//     }
+// }
 
-impl key_store::Helper for WasefireEnv {}
+// impl key_store::Helper for WasefireEnv {}
 
-impl Env for WasefireEnv {
-    type Rng = Self;
-    type Customization = CustomizationImpl;
-    type UserPresence = Self;
-    type KeyStore = Self;
-    type Persist = Self;
-    type Write = write::WasefireWrite;
-    type HidConnection = WasefireHidConnection;
-    type Clock = clock::WasefireClock;
-    // TODO: We should use wasefire crypto here instead.
-    type Crypto = SoftwareCrypto;
+// #[cfg(test)]
+// mod tests {
 
-    fn rng(&mut self) -> &mut Self::Rng {
-        self
-    }
+//     use opensk_lib::api::crypto::ecdsa::SecretKey;
+//     use opensk_lib::api::customization::is_valid;
+//     use opensk_lib::api::private_key::PrivateKey;
+//     use opensk_lib::ctap::data_formats::CoseKey;
+//     use wasefire_stub as _;
 
-    fn customization(&self) -> &Self::Customization {
-        &WASEFIRE_CUSTOMIZATION
-    }
+//     use super::*;
 
-    fn user_presence(&mut self) -> &mut Self::UserPresence {
-        self
-    }
+//     #[test]
+//     fn test_invariants() {
+//         assert!(is_valid(&WASEFIRE_CUSTOMIZATION));
+//     }
 
-    fn key_store(&mut self) -> &mut Self::KeyStore {
-        self
-    }
+//     // TODO: Add tests for Rng, Customization and others
 
-    fn clock(&mut self) -> &mut Self::Clock {
-        &mut self.clock
-    }
-
-    fn write(&mut self) -> Self::Write {
-        Self::Write::default()
-    }
-
-    fn main_hid_connection(&mut self) -> &mut Self::HidConnection {
-        todo!()
-    }
-
-    fn persist(&mut self) -> &mut Self::Persist {
-        self
-    }
-
-    fn boots_after_soft_reset(&self) -> bool {
-        false
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use opensk_lib::api::crypto::ecdsa::SecretKey;
-    use opensk_lib::api::customization::is_valid;
-    use opensk_lib::api::private_key::PrivateKey;
-    use opensk_lib::ctap::data_formats::CoseKey;
-    use wasefire_stub as _;
-
-    use super::*;
-
-    #[test]
-    fn test_invariants() {
-        assert!(is_valid(&WASEFIRE_CUSTOMIZATION));
-    }
-
-    // TODO: Add tests for Rng, Customization and others
-
-    #[test]
-    fn test_private_key_get_pub_key() {
-        // let mut env = TestEnv::default();
-        let mut env = WasefireEnv::default();
-        let private_key = PrivateKey::new_ecdsa(&mut env);
-        let ecdsa_key = private_key.ecdsa_key::<WasefireEnv>().unwrap();
-        let public_key = ecdsa_key.public_key();
-        assert_eq!(
-            private_key.get_pub_key::<WasefireEnv>(),
-            Ok(CoseKey::from_ecdsa_public_key(public_key))
-        );
-    }
-}
+//     #[test]
+//     fn test_private_key_get_pub_key() {
+//         // let mut env = TestEnv::default();
+//         let mut env = WasefireEnv::default();
+//         let private_key = PrivateKey::new_ecdsa(&mut env);
+//         let ecdsa_key = private_key.ecdsa_key::<WasefireEnv>().unwrap();
+//         let public_key = ecdsa_key.public_key();
+//         assert_eq!(
+//             private_key.get_pub_key::<WasefireEnv>(),
+//             Ok(CoseKey::from_ecdsa_public_key(public_key))
+//         );
+//     }
+// }

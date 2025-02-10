@@ -7,7 +7,6 @@
 [submodule "third_party/google/OpenSK"]
 	path = third_party/google/OpenSK
 	url = https://github.com/google/OpenSK.git
-	branch = develop
 [submodule "third_party/rust-lang/rustup"]
 	path = third_party/rust-lang/rustup
 	url = https://github.com/rust-lang/rustup.git

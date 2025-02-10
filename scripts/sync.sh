@@ -100,6 +100,7 @@ book_example store store
 GIT_MODULES='
 SchemaStore/schemastore
 WebAssembly/spec
+google/OpenSK
 rust-lang/rustup
 wasm3/wasm-coremark
 '
