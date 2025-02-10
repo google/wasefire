@@ -33,11 +33,7 @@ wasefire::applet!();
 // use wasefire_error::{Code, Space};
 // use wasefire::clock::{Handler, Timer};
 
-// mod clock;
-// mod env;
-// mod rng;
-// mod user_presence;
-// mod write;
+mod env;
 
 fn main() -> ! {
     todo!();
@@ -99,35 +95,3 @@ fn main() -> ! {
 // }
 
 // impl key_store::Helper for WasefireEnv {}
-
-// #[cfg(test)]
-// mod tests {
-
-//     use opensk_lib::api::crypto::ecdsa::SecretKey;
-//     use opensk_lib::api::customization::is_valid;
-//     use opensk_lib::api::private_key::PrivateKey;
-//     use opensk_lib::ctap::data_formats::CoseKey;
-//     use wasefire_stub as _;
-
-//     use super::*;
-
-//     #[test]
-//     fn test_invariants() {
-//         assert!(is_valid(&WASEFIRE_CUSTOMIZATION));
-//     }
-
-//     // TODO: Add tests for Rng, Customization and others
-
-//     #[test]
-//     fn test_private_key_get_pub_key() {
-//         // let mut env = TestEnv::default();
-//         let mut env = WasefireEnv::default();
-//         let private_key = PrivateKey::new_ecdsa(&mut env);
-//         let ecdsa_key = private_key.ecdsa_key::<WasefireEnv>().unwrap();
-//         let public_key = ecdsa_key.public_key();
-//         assert_eq!(
-//             private_key.get_pub_key::<WasefireEnv>(),
-//             Ok(CoseKey::from_ecdsa_public_key(public_key))
-//         );
-//     }
-// }

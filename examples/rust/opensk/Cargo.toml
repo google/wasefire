@@ -8,8 +8,6 @@ edition = "2024"
 [dependencies]
 rand_core = "0.6.4"
 wasefire = { path = "../../../crates/prelude" }
-wasefire-error = { path = "../../../crates/error" }
-wasefire-stub = { path = "../../../crates/stub", optional = true }
 
 [dependencies.opensk-lib]
 path = "../../../third_party/google/OpenSK/libraries/opensk"
@@ -19,5 +17,8 @@ default-features = false
 [build-dependencies]
 uuid = "1.8.0"
 
-[features]
-test = ["dep:wasefire-stub", "opensk-lib/std", "wasefire/test"]
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.unit-arg = "allow"
+rust.unused-crate-dependencies = "warn"
