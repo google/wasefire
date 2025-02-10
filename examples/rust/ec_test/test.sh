@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2022 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,17 +14,11 @@
 # limitations under the License.
 
 set -e
-. scripts/log.sh
-. scripts/package.sh
 
-# This script runs the continuous integration tests for applets.
+. "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
-for lang in $(ls examples); do
-  for name in $(ls examples/$lang); do
-    [ $lang = assemblyscript -a $name = node_modules ] && continue
-    [ $lang = assemblyscript -a $name = api.ts ] && continue
-    [ $lang = rust -a $name = exercises ] && continue
-    x cargo xtask applet $lang $name
-    x cargo xtask --release applet $lang $name
-  done
-done
+test_helper
+
+cargo check --lib --target=wasm32-unknown-unknown
+cargo test --lib --features=test
+WASEFIRE_DEBUG=1 cargo run --bin=ec_test --features=test

@@ -60,7 +60,7 @@ diff_sorted() {
 }
 
 test_helper() {
-  _test_desc | grep -Ev 'cargo (check|(miri )?test) --(lib|(bin|test|example)=[^ ]*)( |$)' \
+  _test_desc | grep -Ev 'cargo (check|(miri )?test|run) --(lib|(bin|test|example)=[^ ]*)( |$)' \
     && e 'Invalid description (invalid commands are listed above).'
   _test_ensure_lib
   _test_ensure_bins
@@ -69,6 +69,7 @@ test_helper() {
   _test_desc | _test_check | grep 'cargo check' | sh -ex
   _test_desc | grep 'cargo test' | sh -ex
   _test_desc | grep 'cargo miri test' | sh -ex
+  _test_desc | grep 'cargo run' | sh -ex
   x cargo fmt -- --check
   _test_desc | _test_check | _test_clippy | grep 'cargo clippy' | sh -ex
   if [ -e src/lib.rs -a "$(package_publish)" = true ]; then
@@ -88,7 +89,7 @@ _test_desc() {
   sed '0,/^test_helper$/d;:a;/\\$/{N;s/\\\n//;ta};s/ \+/ /g' "$SELF" | grep -Ev '^($|#)'
 }
 
-_test_check() { sed 's/cargo test/cargo check --profile=test/'; }
+_test_check() { sed 's/cargo test/cargo check --profile=test/;s/cargo run/cargo check/'; }
 _test_clippy() { sed 's/cargo check/cargo clippy/;s/$/ -- --deny=warnings/'; }
 
 _test_ensure_lib() {
@@ -102,10 +103,10 @@ _test_ensure_lib() {
 _test_ensure_bins() {
   local i
   for i in $(package_bin_name); do
-    _test_ensure_desc "cargo (check|test) --bin=$i"
+    _test_ensure_desc "cargo (check|test|run) --bin=$i"
   done
   if [ -e src/main.rs ] && ! package_bin_path | grep -q src/main.rs; then
-    _test_ensure_desc "cargo (check|test) --bin=$(package_name)"
+    _test_ensure_desc "cargo (check|test|run) --bin=$(package_name)"
   fi
 }
 _test_ensure_dir() {
