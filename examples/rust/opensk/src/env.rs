@@ -12,7 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.use opensk_lib::api::clock::Clock;
 
+use opensk_lib::api::crypto::software_crypto::SoftwareCrypto;
+use opensk_lib::api::customization::{CustomizationImpl, DEFAULT_CUSTOMIZATION};
 use opensk_lib::env::Env;
+
+mod clock;
+mod hid_connection;
+mod persist;
+mod rng;
+mod user_presence;
+mod write;
 
 #[derive(Default)]
 struct WasefireEnv {
@@ -27,50 +36,51 @@ struct WasefireEnv {
 }
 
 impl Env for WasefireEnv {
-    // type Rng = Self;
-    // type Customization = CustomizationImpl;
-    // type UserPresence = Self;
-    // type KeyStore = Self;
-    // type Persist = Self;
-    // type Write = write::WasefireWrite;
-    // type HidConnection = WasefireHidConnection;
-    // type Clock = clock::WasefireClock;
-    // // TODO: We should use wasefire crypto here instead.
-    // type Crypto = SoftwareCrypto;
+    type Rng = Self;
+    type UserPresence = Self;
+    type Persist = Self;
+    type KeyStore = Self;
+    type Write = write::Impl;
+    type Customization = CustomizationImpl;
+    type HidConnection = Self;
+    type Clock = Self;
+    type Crypto = SoftwareCrypto; // TODO: Use wasefire.
 
-    // fn rng(&mut self) -> &mut Self::Rng {
-    //     self
-    // }
+    fn rng(&mut self) -> &mut Self::Rng {
+        self
+    }
 
-    // fn customization(&self) -> &Self::Customization {
-    //     &WASEFIRE_CUSTOMIZATION
-    // }
+    fn user_presence(&mut self) -> &mut Self::UserPresence {
+        self
+    }
 
-    // fn user_presence(&mut self) -> &mut Self::UserPresence {
-    //     self
-    // }
+    fn persist(&mut self) -> &mut Self::Persist {
+        self
+    }
 
-    // fn key_store(&mut self) -> &mut Self::KeyStore {
-    //     self
-    // }
+    fn key_store(&mut self) -> &mut Self::KeyStore {
+        self
+    }
 
-    // fn clock(&mut self) -> &mut Self::Clock {
-    //     &mut self.clock
-    // }
+    fn clock(&mut self) -> &mut Self::Clock {
+        self
+    }
 
-    // fn write(&mut self) -> Self::Write {
-    //     Self::Write::default()
-    // }
+    fn write(&mut self) -> Self::Write {
+        write::Impl::default()
+    }
 
-    // fn main_hid_connection(&mut self) -> &mut Self::HidConnection {
-    //     todo!()
-    // }
+    fn customization(&self) -> &Self::Customization {
+        &DEFAULT_CUSTOMIZATION
+    }
 
-    // fn persist(&mut self) -> &mut Self::Persist {
-    //     self
-    // }
+    fn hid_connection(&mut self) -> &mut Self::HidConnection {
+        self
+    }
 
-    // fn boots_after_soft_reset(&self) -> bool {
-    //     false
-    // }
+    fn boots_after_soft_reset(&self) -> bool {
+        todo!()
+    }
 }
+
+impl opensk_lib::api::key_store::Helper for WasefireEnv {}
