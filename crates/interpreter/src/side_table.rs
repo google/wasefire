@@ -22,7 +22,6 @@ pub struct SideTableView<'m> {
     pub func_idx: usize,
     pub indices: &'m [u16], // including 0 and the length of metadata_array
     pub metadata: &'m [u16],
-    pub branch_table_view: Metadata<'m>,
 }
 
 impl<'m> SideTableView<'m> {
@@ -31,7 +30,6 @@ impl<'m> SideTableView<'m> {
             func_idx: 0,
             indices: parse_side_table_field(parser)?,
             metadata: parse_side_table_field(parser)?,
-            branch_table_view: Default::default(),
         })
     }
 
