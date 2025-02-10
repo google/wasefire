@@ -48,6 +48,7 @@ unsafe extern "C" {
     ) -> isize;
 }
 
+#[allow(clippy::missing_safety_doc)]
 #[cfg(feature = "native")]
 mod native {
     use core::ffi::{CStr, c_char};
@@ -73,6 +74,7 @@ mod native {
         test_only("test_only_1b\0", &[x as u32])
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub unsafe fn test_only_10(
         x0: usize, x1: usize, x2: usize, x3: usize, x4: usize, x5: usize, x6: usize, x7: usize,
         x8: usize, x9: usize,
