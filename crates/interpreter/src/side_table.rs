@@ -33,11 +33,14 @@ pub struct SideTableView<'m> {
 }
 
 impl<'m> SideTableView<'m> {
-    pub fn new(parser: &mut crate::valid::Parser<'m>) -> Result<Self, Error> {
+    pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
+        let num_funcs =
+            bytemuck::pod_read_unaligned::<u16>(bytemuck::cast_slice(&binary[0 .. 2])) as usize;
+        let indices_end = 2 + (num_funcs + 1) * 2;
         Ok(SideTableView {
             func_idx: 0,
-            indices: parse_side_table_field(parser)?,
-            metadata: parse_side_table_field(parser)?,
+            indices: bytemuck::cast_slice::<_, u16>(binary.get(2 .. indices_end).unwrap()),
+            metadata: bytemuck::cast_slice::<_, u16>(binary.get(indices_end ..).unwrap()),
             branch_table_view: Default::default(),
         })
     }
@@ -51,17 +54,6 @@ impl<'m> SideTableView<'m> {
             &self.metadata[self.indices[func_idx] as usize .. self.indices[func_idx + 1] as usize],
         )
     }
-}
-
-fn parse_u16(data: &[u8]) -> u16 {
-    bytemuck::pod_read_unaligned::<u16>(bytemuck::cast_slice(&data[0 .. 2]))
-}
-
-fn parse_side_table_field<'m>(parser: &mut crate::valid::Parser<'m>) -> Result<&'m [u16], Error> {
-    let len = parse_u16(parser.save()) as usize;
-    let parser = parser.split_at(len)?;
-    let bytes = parser.save().get(0 .. len * 2).unwrap();
-    Ok(bytemuck::cast_slice::<_, u16>(bytes))
 }
 
 #[derive(Default, Copy, Clone)]

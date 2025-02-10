@@ -155,7 +155,7 @@ impl ValidMode for Verify {
         check(parser.parse_section_id()? == SectionId::Custom)?;
         let mut section = parser.split_section()?;
         check(section.parse_name()? == "wasefire-sidetable")?;
-        SideTableView::new(parser)
+        SideTableView::new(parser.save())
     }
 
     fn next_branch_table<'a, 'm>(
