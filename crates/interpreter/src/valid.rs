@@ -26,7 +26,7 @@ use crate::toctou::*;
 use crate::util::*;
 use crate::*;
 
-pub fn merge(binary: &[u8], side_table: Vec<MetadataEntry>) -> Result<Vec<u8>, Error> {
+pub fn merge(binary: &[u8], side_table: Vec<MetadataEntry>) -> Vec<u8> {
     let mut wasm = vec![];
     wasm.extend_from_slice(&binary[0 .. 8]);
     wasm.push(0);
@@ -40,7 +40,7 @@ pub fn merge(binary: &[u8], side_table: Vec<MetadataEntry>) -> Result<Vec<u8>, E
         }
     }
     wasm.extend_from_slice(&binary[8 ..]);
-    Ok(wasm)
+    wasm
 }
 
 /// Checks whether a WASM module in binary format is valid, and returns the side table.
