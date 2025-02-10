@@ -26,6 +26,23 @@ use crate::toctou::*;
 use crate::util::*;
 use crate::*;
 
+pub fn merge(binary: &[u8], side_table: Vec<MetadataEntry>) -> Vec<u8> {
+    let mut wasm = vec![];
+    wasm.extend_from_slice(&binary[0 .. 8]);
+    wasm.push(0);
+    wasm.extend_from_slice(&side_table.len().to_le_bytes());
+    for entry in side_table {
+        wasm.extend_from_slice(&entry.type_idx.to_le_bytes());
+        wasm.extend_from_slice(&entry.parser_range.start.to_le_bytes());
+        wasm.extend_from_slice(&entry.parser_range.end.to_le_bytes());
+        for branch in entry.branch_table {
+            wasm.extend_from_slice(branch.as_bytes());
+        }
+    }
+    wasm.extend_from_slice(&binary[8 ..]);
+    wasm
+}
+
 /// Checks whether a WASM module in binary format is valid, and returns the side table.
 pub fn prepare(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
     validate::<Prepare>(binary)
@@ -138,7 +155,7 @@ impl ValidMode for Verify {
     /// Contains at most one _target_ branch. Source branches are eagerly patched to
     /// their target branch using the branch table.
     type Branches<'m> = Option<SideTableBranch<'m>>;
-    type BranchTable<'m> = Metadata<'m>;
+    type BranchTable<'m> = BranchTableView<'m>;
     type SideTable<'m> = SideTableView<'m>;
     type Result = ();
 
@@ -146,16 +163,16 @@ impl ValidMode for Verify {
         check(parser.parse_section_id()? == SectionId::Custom)?;
         let mut section = parser.split_section()?;
         check(section.parse_name()? == "wasefire-sidetable")?;
-        SideTableView::new(parser)
+        SideTableView::new(parser.save())
     }
 
     fn next_branch_table<'a, 'm>(
         side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
     ) -> Result<&'a mut Self::BranchTable<'m>, Error> {
-        side_table.branch_table_view = side_table.metadata(side_table.func_idx);
+        side_table.branch_table_view = side_table.branch_table_view(side_table.func_idx);
         side_table.func_idx += 1;
-        check(side_table.branch_table_view.type_idx() == type_idx)?;
-        check(side_table.branch_table_view.parser_range() == parser_range)?;
+        check(side_table.branch_table_view.metadata.type_idx() == type_idx)?;
+        check(side_table.branch_table_view.metadata.parser_range() == parser_range)?;
         Ok(&mut side_table.branch_table_view)
     }
 
@@ -170,7 +187,7 @@ impl<'m> BranchesApi<'m> for Option<SideTableBranch<'m>> {
     }
 }
 
-impl<'m> BranchTableApi<'m> for Metadata<'m> {
+impl<'m> BranchTableApi<'m> for BranchTableView<'m> {
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult {
@@ -178,7 +195,8 @@ impl<'m> BranchTableApi<'m> for Metadata<'m> {
     }
 
     fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
-        let entry = self.branch_table()[source.branch_table].view();
+        source.branch_table = self.branch_idx;
+        let entry = self.metadata.branch_table()[source.branch_table].view();
         offset_front(source.parser, entry.delta_ip as isize);
         source.branch_table += entry.delta_stp as usize;
         source.result = entry.val_cnt as usize;
@@ -186,10 +204,12 @@ impl<'m> BranchTableApi<'m> for Metadata<'m> {
         Ok(source)
     }
 
-    fn allocate_branch(&mut self) {}
+    fn allocate_branch(&mut self) {
+        self.branch_idx += 1;
+    }
 
     fn next_index(&self) -> usize {
-        0
+        self.branch_idx
     }
 }
 

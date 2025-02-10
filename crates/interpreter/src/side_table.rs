@@ -15,42 +15,47 @@
 use alloc::vec::Vec;
 use core::ops::Range;
 
+use bytemuck::{Pod, Zeroable};
+
 use crate::error::*;
 use crate::module::Parser;
 
+#[derive(Default)]
+pub struct BranchTableView<'m> {
+    pub metadata: Metadata<'m>,
+    pub branch_idx: usize,
+}
+
+// TODO(dev/fast-interp): Change [u16] to [u8] to not rely on alignment.
 pub struct SideTableView<'m> {
     pub func_idx: usize,
     pub indices: &'m [u16], // including 0 and the length of metadata_array
     pub metadata: &'m [u16],
-    pub branch_table_view: Metadata<'m>,
+    pub branch_table_view: BranchTableView<'m>,
 }
 
 impl<'m> SideTableView<'m> {
-    pub fn new(parser: &mut crate::valid::Parser<'m>) -> Result<Self, Error> {
+    pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
+        let num_funcs =
+            bytemuck::pod_read_unaligned::<u16>(bytemuck::cast_slice(&binary[0 .. 2])) as usize;
+        let indices_end = 2 + (num_funcs + 1) * 2;
         Ok(SideTableView {
             func_idx: 0,
-            indices: parse_side_table_field(parser)?,
-            metadata: parse_side_table_field(parser)?,
+            indices: bytemuck::cast_slice::<_, u16>(binary.get(2 .. indices_end).unwrap()),
+            metadata: bytemuck::cast_slice::<_, u16>(binary.get(indices_end ..).unwrap()),
             branch_table_view: Default::default(),
         })
     }
 
-    pub fn metadata(&self, func_idx: usize) -> Metadata<'m> {
+    pub fn branch_table_view(&mut self, func_idx: usize) -> BranchTableView<'m> {
+        BranchTableView { metadata: self.metadata(func_idx), ..Default::default() }
+    }
+
+    fn metadata(&self, func_idx: usize) -> Metadata<'m> {
         Metadata(
             &self.metadata[self.indices[func_idx] as usize .. self.indices[func_idx + 1] as usize],
         )
     }
-}
-
-fn parse_u16(data: &[u8]) -> u16 {
-    bytemuck::pod_read_unaligned::<u16>(bytemuck::cast_slice(&data[0 .. 2]))
-}
-
-fn parse_side_table_field<'m>(parser: &mut crate::valid::Parser<'m>) -> Result<&'m [u16], Error> {
-    let len = parse_u16(parser.save()) as usize;
-    let parser = parser.split_at(len)?;
-    let bytes = parser.save().get(0 .. len * 2).unwrap();
-    Ok(bytemuck::cast_slice::<_, u16>(bytes))
 }
 
 #[derive(Default, Copy, Clone)]
@@ -86,9 +91,15 @@ pub struct MetadataEntry {
     pub branch_table: Vec<BranchTableEntry>,
 }
 
-#[derive(Copy, Clone, Debug, bytemuck::AnyBitPattern)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 #[repr(transparent)]
 pub struct BranchTableEntry([u16; 3]);
+
+impl BranchTableEntry {
+    pub fn as_bytes(&self) -> &[u8; size_of::<Self>()] {
+        bytemuck::cast_ref(self)
+    }
+}
 
 pub struct BranchTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
