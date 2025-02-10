@@ -18,11 +18,18 @@ use core::ops::Range;
 use crate::error::*;
 use crate::module::Parser;
 
+#[derive(Default)]
+pub struct BranchTableView<'m> {
+    pub metadata: Metadata<'m>,
+    pub branch_idx: usize,
+}
+
+// TODO(dev/fast-interp): Change [u16] to [u8] to not rely on alignment.
 pub struct SideTableView<'m> {
     pub func_idx: usize,
     pub indices: &'m [u16], // including 0 and the length of metadata_array
     pub metadata: &'m [u16],
-    pub branch_table_view: Metadata<'m>,
+    pub branch_table_view: BranchTableView<'m>,
 }
 
 impl<'m> SideTableView<'m> {
@@ -35,7 +42,11 @@ impl<'m> SideTableView<'m> {
         })
     }
 
-    pub fn metadata(&self, func_idx: usize) -> Metadata<'m> {
+    pub fn branch_table_view(&mut self, func_idx: usize) -> BranchTableView<'m> {
+        BranchTableView { metadata: self.metadata(func_idx), ..Default::default() }
+    }
+
+    fn metadata(&self, func_idx: usize) -> Metadata<'m> {
         Metadata(
             &self.metadata[self.indices[func_idx] as usize .. self.indices[func_idx + 1] as usize],
         )
