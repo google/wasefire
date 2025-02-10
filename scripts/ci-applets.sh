@@ -16,8 +16,11 @@
 set -e
 . scripts/log.sh
 . scripts/package.sh
+. scripts/test-helper.sh
 
 # This script runs the continuous integration tests for applets.
+
+ensure_submodule third_party/google/OpenSK
 
 for lang in $(ls examples); do
   for name in $(ls examples/$lang); do
