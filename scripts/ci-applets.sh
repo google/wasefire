@@ -26,16 +26,5 @@ for lang in $(ls examples); do
     [ $lang = rust -a $name = exercises ] && continue
     x cargo xtask applet $lang $name
     x cargo xtask --release applet $lang $name
-    [ $lang = rust ] || continue
-    i "Run lints and tests for applet $name"
-    ( cd examples/rust/$name
-      x cargo fmt -- --check
-      x cargo clippy --lib --target=wasm32-unknown-unknown -- --deny=warnings
-      if package_features | grep -q '^test$'; then
-        x cargo clippy --features=test -- --deny=warnings
-        grep -q '^mod tests {$' src/lib.rs && x cargo test --features=test
-        [ -e src/main.rs ] && x env WASEFIRE_DEBUG=1 cargo run --features=test
-      fi
-    )
   done
 done

@@ -1,32 +1,84 @@
 [package]
 name = "wasefire-cli-tools"
-version = "0.1.1-git"
+version = "0.2.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
-edition = "2021"
+edition = "2024"
 description = "Command-line utilities for Wasefire"
 repository = "https://github.com/google/wasefire"
 include = ["/LICENSE", "/src/"]
 keywords = ["cli", "embedded", "framework", "wasm"]
 categories = ["command-line-utilities", "embedded", "wasm"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
-cargo_metadata = { version = "0.18.1", default-features = false }
-clap = { version = "4.5.4", default-features = false, features = ["derive", "std"] }
-rusb = { version = "0.9.4", default-features = false }
+cargo_metadata = { version = "0.19.1", default-features = false, optional = true }
+data-encoding = { version = "2.6.0", default-features = false, features = ["std"], optional = true }
+flate2 = { version = "1.0.34", default-features = false, features = ["rust_backend"] }
+humantime = { version = "2.1.0", default-features = false, optional = true }
+indicatif = { version = "0.17.8", default-features = false, optional = true }
+log = { version = "0.4.21", default-features = false }
+reqwest = { version = "0.12.9", default-features = false, features = ["default-tls", "http2"] }
+rusb = { version = "0.9.4", default-features = false, optional = true }
+semver = { version = "1.0.23", default-features = false, optional = true }
 serde = { version = "1.0.202", default-features = false, features = ["derive"] }
+tar = { version = "0.4.43", default-features = false }
 toml = { version = "0.8.13", default-features = false, features = ["display", "parse"] }
-wasefire-protocol = { version = "0.1.0", path = "../protocol" }
+wasefire-wire = { version = "0.1.2-git", path = "../wire", optional = true }
+
+[dependencies.clap]
+version = "4.5.4"
+default-features = false
+features = ["derive", "env", "std"]
+optional = true
+
+[dependencies.tokio]
+version = "1.40.0"
+default-features = false
+features = ["fs", "io-std", "io-util", "macros", "process", "rt"]
+
+[dependencies.wasefire-protocol]
+version = "0.2.1-git"
+path = "../protocol"
+features = ["host"]
+optional = true
+
+[dependencies.wasefire-protocol-tokio]
+version = "0.1.1-git"
+path = "../protocol-tokio"
+features = ["host", "log"]
+optional = true
 
 [dependencies.wasefire-protocol-usb]
-version = "0.1.0"
+version = "0.2.1-git"
 path = "../protocol-usb"
 features = ["host", "log"]
+optional = true
+
+[features]
+action = [
+  "cargo",
+  "dep:clap",
+  "dep:data-encoding",
+  "dep:humantime",
+  "dep:indicatif",
+  "dep:rusb",
+  "dep:wasefire-protocol",
+  "dep:wasefire-protocol-tokio",
+  "dep:wasefire-protocol-usb",
+  "dep:wasefire-wire",
+  "tokio/time",
+]
+cargo = ["dep:cargo_metadata"]
+changelog = ["cargo", "dep:clap", "dep:semver"]
 
 [lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
-rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

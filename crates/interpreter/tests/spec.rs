@@ -22,9 +22,9 @@ use wasefire_interpreter::*;
 use wast::core::{AbstractHeapType, WastArgCore, WastRetCore};
 use wast::lexer::Lexer;
 use wast::token::Id;
-use wast::{parser, QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, WastRet, Wat};
+use wast::{QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, WastRet, Wat, parser};
 
-fn test(repo: &str, name: &str) {
+fn test(repo: &str, name: &str, skip: usize) {
     let path = format!("../../third_party/WebAssembly/{repo}/test/core/{name}.wast");
     let content = std::fs::read_to_string(path).unwrap();
     let mut lexer = Lexer::new(&content);
@@ -36,19 +36,17 @@ fn test(repo: &str, name: &str) {
     let mut env = Env::new(pool);
     env.instantiate("spectest", &SPECTEST);
     env.register_name("spectest", None);
-    assert!(env.inst.is_ok());
+    assert!(matches!(env.inst, Sup::Yes(_)));
     for directive in wast.directives {
         eprintln!("{name}:{}", directive.span().offset());
         match directive {
-            WastDirective::Wat(QuoteWat::Wat(Wat::Module(mut m))) => {
+            WastDirective::Module(QuoteWat::Wat(Wat::Module(mut m))) => {
                 env.instantiate(name, &m.encode().unwrap());
-                if !matches!(env.inst, Err(Error::Unsupported(_))) {
-                    env.register_id(m.id, env.inst.unwrap());
-                }
+                env.register_id(m.id, env.inst);
             }
-            WastDirective::Wat(mut wat) => env.instantiate(name, &wat.encode().unwrap()),
-            WastDirective::AssertMalformed { module, .. } => assert_malformed(module),
-            WastDirective::AssertInvalid { module, .. } => assert_invalid(module),
+            WastDirective::Module(mut wat) => env.instantiate(name, &wat.encode().unwrap()),
+            WastDirective::AssertMalformed { module, .. } => assert_malformed(&mut env, module),
+            WastDirective::AssertInvalid { module, .. } => assert_invalid(&mut env, module),
             WastDirective::AssertReturn { exec, results, .. } => {
                 assert_return(&mut env, exec, results)
             }
@@ -60,6 +58,7 @@ fn test(repo: &str, name: &str) {
             _ => unimplemented!("{:?}", directive),
         }
     }
+    assert_eq!(env.skip, skip);
 }
 
 fn pool_size(name: &str) -> usize {
@@ -72,7 +71,7 @@ fn pool_size(name: &str) -> usize {
         "linking" => 0x1000000,
         "memory_copy" => 0x400000,
         "memory_fill" => 0x200000,
-        "memory_grow" => 0x400000,
+        "memory_grow" => 0x800000,
         "memory_init" => 0x400000,
         "memory_trap" => 0x200000,
         _ => 0x100000,
@@ -97,16 +96,60 @@ fn mem_size(name: &str) -> usize {
     }
 }
 
+/// Whether something is supported.
+#[derive(Copy, Clone)]
+enum Sup<T> {
+    Uninit,
+    No(Unsupported),
+    Yes(T),
+}
+
+impl<T> Sup<T> {
+    fn conv(x: Result<T, Error>) -> Result<Sup<T>, Error> {
+        match x {
+            Ok(x) => Ok(Sup::Yes(x)),
+            Err(Error::Unsupported(x)) => {
+                eprintln!("unsupported {x:?}");
+                Ok(Sup::No(x))
+            }
+            Err(x) => Err(x),
+        }
+    }
+
+    fn res(self) -> Result<T, Error> {
+        match self {
+            Sup::Uninit => unreachable!(),
+            Sup::No(x) => Err(Error::Unsupported(x)),
+            Sup::Yes(x) => Ok(x),
+        }
+    }
+}
+
+macro_rules! only_sup {
+    ($e:expr, $x:expr) => {
+        match $x {
+            Ok(x) => Ok(x),
+            Err(Error::Unsupported(x)) => {
+                eprintln!("skip unsupported {x:?}");
+                $e.skip += 1;
+                return;
+            }
+            Err(x) => Err(x),
+        }
+    };
+}
+
 struct Env<'m> {
     pool: &'m mut [u8],
     store: Store<'m>,
-    inst: Result<InstId, Error>,
-    map: HashMap<Id<'m>, InstId>,
+    inst: Sup<InstId>,
+    map: HashMap<Id<'m>, Sup<InstId>>,
+    skip: usize,
 }
 
 impl<'m> Env<'m> {
     fn new(pool: &'m mut [u8]) -> Self {
-        Env { pool, store: Store::default(), inst: Err(Error::Invalid), map: HashMap::new() }
+        Env { pool, store: Store::default(), inst: Sup::Uninit, map: HashMap::new(), skip: 0 }
     }
 
     fn alloc(&mut self, size: usize) -> &'m mut [u8] {
@@ -120,28 +163,17 @@ impl<'m> Env<'m> {
         &mut result[.. size]
     }
 
-    fn set_inst(&mut self, inst: Result<InstId, Error>) {
-        match inst {
-            Ok(_) | Err(Error::Unsupported(_)) => (),
-            Err(e) => panic!("{e:?}"),
-        }
-        self.inst = inst;
-    }
-
     fn maybe_instantiate(&mut self, name: &str, wasm: &[u8]) -> Result<InstId, Error> {
         let module = self.alloc(wasm.len());
         module.copy_from_slice(wasm);
-        let module = match Module::new(module) {
-            Ok(x) => x,
-            Err(e) => return Err(e),
-        };
+        let module = Module::new(module)?;
         let memory = self.alloc(mem_size(name));
         self.store.instantiate(module, memory)
     }
 
     fn instantiate(&mut self, name: &str, wasm: &[u8]) {
         let inst = self.maybe_instantiate(name, wasm);
-        self.set_inst(inst);
+        self.inst = Sup::conv(inst).unwrap();
     }
 
     fn invoke(&mut self, inst_id: InstId, name: &str, args: Vec<Val>) -> Result<Vec<Val>, Error> {
@@ -152,20 +184,21 @@ impl<'m> Env<'m> {
     }
 
     fn register_name(&mut self, name: &'m str, module: Option<Id<'m>>) {
-        let inst_id = self.inst.unwrap();
-        self.register_id(module, inst_id);
-        self.store.set_name(inst_id, name).unwrap();
+        self.register_id(module, self.inst);
+        if let Sup::Yes(inst_id) = self.inst {
+            self.store.set_name(inst_id, name).unwrap();
+        }
     }
 
-    fn register_id(&mut self, id: Option<Id<'m>>, inst_id: InstId) {
+    fn register_id(&mut self, id: Option<Id<'m>>, inst_id: Sup<InstId>) {
         if let Some(id) = id {
             self.map.insert(id, inst_id);
         }
     }
 
-    fn inst_id(&self, id: Option<Id>) -> Result<InstId, Error> {
+    fn inst_id(&self, id: Option<Id>) -> Sup<InstId> {
         match id {
-            Some(x) => Ok(self.map[&x]),
+            Some(x) => self.map[&x],
             None => self.inst,
         }
     }
@@ -257,15 +290,15 @@ fn spectest() -> Vec<u8> {
 }
 
 fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
-    let actual = wast_execute(env, exec).unwrap();
+    let actual = only_sup!(env, wast_execute(env, exec)).unwrap();
     assert_eq!(actual.len(), expected.len());
     for (actual, expected) in actual.into_iter().zip(expected.into_iter()) {
-        use wast::core::HeapType;
-        #[cfg(feature = "float-types")]
-        use wast::core::NanPattern as NP;
         use Val::*;
         use WastRet::Core as C;
         use WastRetCore as W;
+        use wast::core::HeapType;
+        #[cfg(feature = "float-types")]
+        use wast::core::NanPattern as NP;
         match (actual, expected) {
             (I32(x), C(W::I32(y))) => assert_eq!(x, y as u32),
             (I64(x), C(W::I64(y))) => assert_eq!(x, y as u64),
@@ -295,42 +328,31 @@ fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
 }
 
 fn assert_trap(env: &mut Env, exec: WastExecute) {
-    assert_eq!(wast_execute(env, exec), Err(Error::Trap));
+    assert_eq!(only_sup!(env, wast_execute(env, exec)), Err(Error::Trap));
 }
 
 fn assert_invoke(env: &mut Env, invoke: WastInvoke) {
-    assert_eq!(wast_invoke(env, invoke), Ok(Vec::new()));
+    assert_eq!(only_sup!(env, wast_invoke(env, invoke)), Ok(Vec::new()));
 }
 
-fn assert_malformed(mut wat: QuoteWat) {
+fn assert_malformed(env: &mut Env, mut wat: QuoteWat) {
     if let Ok(wasm) = wat.encode() {
-        let module = Module::new(&wasm);
-        if !matches!(module, Err(Error::Unsupported(_))) {
-            assert_eq!(module.err(), Some(Error::Invalid));
-        }
+        assert_eq!(only_sup!(env, Module::new(&wasm)).err(), Some(Error::Invalid));
     }
 }
 
-fn assert_invalid(mut wat: QuoteWat) {
+fn assert_invalid(env: &mut Env, mut wat: QuoteWat) {
     let wasm = wat.encode().unwrap();
-    let module = Module::new(&wasm);
-    if !matches!(module, Err(Error::Unsupported(_))) {
-        assert_eq!(module.err(), Some(Error::Invalid));
-    }
+    assert_eq!(only_sup!(env, Module::new(&wasm)).err(), Some(Error::Invalid));
 }
 
 fn assert_exhaustion(env: &mut Env, call: WastInvoke) {
-    let result = wast_invoke(env, call);
-    if !matches!(result, Err(Error::Unsupported(_))) {
-        assert_eq!(result, Err(Error::Trap));
-    }
+    assert_eq!(only_sup!(env, wast_invoke(env, call)), Err(Error::Trap));
 }
 
 fn assert_unlinkable(env: &mut Env, mut wat: Wat) {
-    let inst = env.maybe_instantiate("", &wat.encode().unwrap());
-    if !matches!(inst, Err(Error::Unsupported(_))) {
-        assert_eq!(inst.err(), Some(Error::NotFound));
-    }
+    let inst = only_sup!(env, env.maybe_instantiate("", &wat.encode().unwrap()));
+    assert_eq!(inst.err(), Some(Error::NotFound));
 }
 
 fn wast_execute(env: &mut Env, exec: WastExecute) -> Result<Vec<Val>, Error> {
@@ -340,14 +362,14 @@ fn wast_execute(env: &mut Env, exec: WastExecute) -> Result<Vec<Val>, Error> {
             env.maybe_instantiate("", &wat.encode().unwrap()).map(|_| Vec::new())
         }
         WastExecute::Get { module, global, .. } => {
-            let inst_id = env.inst_id(module)?;
+            let inst_id = env.inst_id(module).res()?;
             env.store.get_global(inst_id, global).map(|x| vec![x])
         }
     }
 }
 
 fn wast_invoke(env: &mut Env, invoke: WastInvoke) -> Result<Vec<Val>, Error> {
-    let inst_id = env.inst_id(invoke.module)?;
+    let inst_id = env.inst_id(invoke.module).res()?;
     let args = wast_args(invoke.args);
     env.invoke(inst_id, invoke.name, args)
 }
@@ -384,20 +406,32 @@ fn wast_arg_core(core: WastArgCore) -> Val {
 }
 
 macro_rules! test {
-    ($(#[$m:meta])* $name: ident$(, $file: literal)?) => {
-        test!($(#[$m])* "spec", $name$(, $file)?);
+    ($(#[$m:meta])* $($repo:literal,)? $name:ident$(, $file:literal)?$(; $skip:literal)?) => {
+        test!(=1 {$(#[$m])*} [$($repo)?] $name [$($file)?] [$($skip)?]);
     };
-    ($(#[$m:meta])* $repo: literal, $name: ident) => {
-        test!([1] $(#[$m])* $name [$repo $name]);
+    (=1 $meta:tt [] $name:ident $file:tt $skip:tt) => {
+        test!(=2 $meta "spec" $name $file $skip);
     };
-    ($(#[$m:meta])* $repo: literal, $name: ident, $file: literal) => {
-        test!([1] $(#[$m])* $name [$repo $file]);
+    (=1 $meta:tt [$repo:literal] $name:ident $file:tt $skip:tt) => {
+        test!(=2 $meta $repo $name $file $skip);
     };
-    ([1] $(#[$m:meta])* $name: ident [$repo: literal $($file: tt)*]) => {
-        #[test] $(#[$m])* fn $name() { test($repo, test!([2] $($file)*)); }
+    (=2 $meta:tt $repo:literal $name:ident [] $skip:tt) => {
+        test!(=3 $meta $repo $name $name $skip);
     };
-    ([2] $file: ident) => { stringify!($file) };
-    ([2] $file: literal) => { $file };
+    (=2 $meta:tt $repo:literal $name:ident [$file:literal] $skip:tt) => {
+        test!(=3 $meta $repo $name $file $skip);
+    };
+    (=3 $meta:tt $repo:literal $name:ident $file:tt []) => {
+        test!(=4 $meta $repo $name $file 0);
+    };
+    (=3 $meta:tt $repo:literal $name:ident $file:tt [$skip:literal]) => {
+        test!(=4 $meta $repo $name $file $skip);
+    };
+    (=4 {$(#[$m:meta])*} $repo:literal $name:ident $file:tt $skip:literal) => {
+        #[test] $(#[$m])* fn $name() { test($repo, test!(=5 $file), $skip); }
+    };
+    (=5 $name:ident) => { stringify!($name) };
+    (=5 $file:literal) => { $file };
 }
 
 test!(address);
@@ -411,11 +445,7 @@ test!(br_table);
 test!(bulk);
 test!(call);
 test!(call_indirect);
-test!(
-    // This test seems specific to text format.
-    #[ignore]
-    comments
-);
+test!(comments);
 test!(const_, "const");
 test!(conversions);
 test!(custom);
@@ -463,12 +493,13 @@ test!(memory_size);
 test!(memory_trap);
 test!(names);
 test!(nop);
+test!(obsolete_keywords, "obsolete-keywords");
 test!(ref_func);
 test!(ref_is_null);
 test!(ref_null);
 test!(return_, "return");
 test!(select);
-test!(skip_stack_guard_page, "skip-stack-guard-page");
+test!(skip_stack_guard_page, "skip-stack-guard-page"; 10);
 test!(stack);
 test!(start);
 test!(store);
@@ -483,11 +514,6 @@ test!(table_init);
 test!(table_set);
 test!(table_size);
 test!(token);
-test!(
-    // This test seems specific to text format.
-    #[ignore]
-    tokens
-);
 test!(traps);
 test!(type_, "type");
 test!(unreachable);

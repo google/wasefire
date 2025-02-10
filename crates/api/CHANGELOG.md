@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.7.1-git
+
+### Minor
+
+- Improve safety documentation
+- Use Rust edition 2024
+- Provide `bytemuck::Pod` for `ArrayU32`
+- Implement `bytemuck::Pod` for `U32<T>`
+
+## 0.7.0
+
+### Major
+
+- Update `wasefire-applet-api-macro` version
+
+### Patch
+
+- Make sure at compile-time that exactly one `host` or `wasm` feature is enabled
+- Update dependencies
+
 ## 0.6.1
 
 ### Minor
@@ -87,4 +107,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->

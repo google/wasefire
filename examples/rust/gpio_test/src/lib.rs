@@ -28,7 +28,7 @@ use wasefire::gpio::{Config, Gpio, InputConfig, OutputConfig};
 fn main() -> Result<(), Error> {
     if gpio::count() < 3 {
         debug!("This test needs at least 3 GPIOs (connected together).");
-        debug::exit(true);
+        scheduling::exit();
     }
     let mut configs = Vec::new();
     for input in [InputConfig::Disabled, Floating, PullUp, PullDown] {
@@ -57,17 +57,17 @@ fn main() -> Result<(), Error> {
             let _src = Gpio::new(0, src)?;
             let dst = Gpio::new(1, dst)?;
             match expected {
-                Some(expected) => debug::assert_eq(&dst.read()?, &expected),
+                Some(expected) => assert_eq!(dst.read()?, expected),
                 None => {
                     let bus = Gpio::new(2, &Config::output(PushPull, false))?;
-                    debug::assert_eq(&dst.read()?, &false);
+                    assert!(!dst.read()?);
                     bus.write(true)?;
-                    debug::assert_eq(&dst.read()?, &true);
+                    assert!(dst.read()?);
                 }
             }
         }
     }
-    debug::exit(true);
+    scheduling::exit();
 }
 
 fn simulate(src: &Config, dst: &Config) -> Option<Option<bool>> {
@@ -120,7 +120,7 @@ fn combine(low: bool, high: bool) -> Option<Option<bool>> {
 
 struct Pretty<'a>(&'a Config);
 
-impl<'a> core::fmt::Display for Pretty<'a> {
+impl core::fmt::Display for Pretty<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let Config { input, output, initial } = &self.0;
         match (input, output) {

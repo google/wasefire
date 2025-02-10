@@ -17,15 +17,15 @@ use wasefire_applet_api::usb::serial as api;
 use wasefire_applet_api::usb::serial::Api;
 #[cfg(feature = "board-api-usb-serial")]
 use wasefire_board_api as board;
+use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-usb-serial")]
 use wasefire_board_api::usb::serial::{Api as _, Event};
-use wasefire_board_api::Api as Board;
 
+use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-usb-serial")]
 use crate::applet::store::MemoryApi;
 #[cfg(feature = "board-api-usb-serial")]
-use crate::event::{usb::serial::Key, Handler};
-use crate::DispatchSchedulerCall;
+use crate::event::{Handler, usb::serial::Key};
 #[cfg(feature = "board-api-usb-serial")]
 use crate::{SchedulerCall, Trap};
 
@@ -42,8 +42,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 #[cfg(feature = "board-api-usb-serial")]
 fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { ptr, len } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         let output = memory.get_mut(*ptr, *len)?;
         board::usb::Serial::<B>::read(output)? as u32
@@ -54,8 +54,8 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
 #[cfg(feature = "board-api-usb-serial")]
 fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let api::write::Params { ptr, len } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         let input = memory.get(*ptr, *len)?;
         board::usb::Serial::<B>::write(input)? as u32
@@ -67,10 +67,10 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
 fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { event, handler_func, handler_data } = call.read();
     let inst = call.inst();
-    let scheduler = call.scheduler();
+    let applet = call.applet();
     let result = try {
         let event = convert_event(*event)?;
-        scheduler.applet.enable(Handler {
+        applet.enable(Handler {
             key: Key::from(&event).into(),
             inst,
             func: *handler_func,
@@ -84,11 +84,10 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
 #[cfg(feature = "board-api-usb-serial")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { event } = call.read();
-    let scheduler = call.scheduler();
     let result = try {
         let event = convert_event(*event)?;
         board::usb::Serial::<B>::disable(&event).map_err(|_| Trap)?;
-        scheduler.disable_event(Key::from(&event).into())?;
+        call.scheduler().disable_event(Key::from(&event).into())?;
     };
     call.reply(result);
 }

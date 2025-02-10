@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.3.2-git
+
+### Minor
+
+- Use Rust edition 2024
+
+### Patch
+
+- Fix clippy lints
+- Update dependencies
+
+## 0.3.1
+
+### Minor
+
+- Implement `From<Error>` for `wasefire_error::Error`
+
+### Patch
+
+- Fix missing check when module has no data but data count
+- Fix rust and clippy lints
+- Update dependencies
+- Return an error instead of unsupported when too many locals
+- Only take the initial frame in `Thread::new()`
+- Fix and test the `cache` feature in continuous integration
+
 ## 0.3.0
 
 ### Major
@@ -68,4 +94,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->

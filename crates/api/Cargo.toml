@@ -1,10 +1,10 @@
 [package]
 name = "wasefire-applet-api"
-version = "0.6.1"
+version = "0.7.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
-edition = "2021"
+edition = "2024"
 description = "Low-level Wasefire applet API"
 repository = "https://github.com/google/wasefire"
 include = ["/LICENSE", "/src/"]
@@ -17,14 +17,21 @@ features = ["full-api", "wasm"]
 
 [dependencies]
 bytemuck = { version = "1.16.0", default-features = false, features = ["derive"] }
-sealed = { version = "0.5.0", default-features = false, optional = true }
-wasefire-applet-api-macro = { version = "0.6.1", path = "../api-macro" }
-wasefire-error = { version = "0.1.1", path = "../error" }
-wasefire-logger = { version = "0.1.5", path = "../logger", optional = true }
+sealed = { version = "0.6.0", default-features = false, optional = true }
+wasefire-applet-api-macro = { version = "0.8.0-git", path = "../api-macro" }
+wasefire-error = { version = "0.1.3-git", path = "../error" }
+wasefire-logger = { version = "0.1.7-git", path = "../logger", optional = true }
+wasefire-one-of = { version = "0.1.1-git", path = "../one-of" }
+
+[dependencies.derive-where]
+version = "1.2.7"
+default-features = false
+features = ["nightly"]
+optional = true
 
 [features]
 # Compiles for host or wasm (choose exactly one).
-host = ["dep:sealed"]
+host = ["dep:derive-where", "dep:sealed"]
 wasm = []
 # API features.
 api-button = ["wasefire-applet-api-macro/api-button"]
@@ -80,7 +87,8 @@ native = ["dep:wasefire-logger"]
 internal-api-crypto-hash = []
 
 [lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
-rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

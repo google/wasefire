@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.2.2-git
+
+### Minor
+
+- Improve safety documentation
+- Add `Api::wasm_markdown()` for top-level documentation
+- Use Rust edition 2024
+- Use C-string literals to implement dispatch for native applets
+- Implement `bytemuck::Pod` for generated `Params`
+
+## 0.2.1
+
+### Minor
+
+- Remove `debug::exit()` and add `scheduling::exit()` instead
+
+### Patch
+
+- Fix rust and clippy lints
+- Update dependencies
+
 ## 0.2.0
 
 ### Major
@@ -69,7 +90,7 @@
 ### Minor
 
 - Add `scheduling::abort()`
-- Require the `U32` type to implement `bytemuck::Pod`.
+- Require the `U32` type to implement `bytemuck::Pod`
 - Add `debug::time()`, `debug::perf()`, and `debug::Perf` for simple performance
   measurement
 
@@ -118,4 +139,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->

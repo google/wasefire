@@ -14,16 +14,10 @@
 
 use wasefire_applet_api::debug as api;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn env_dp(params: api::println::Params) {
     let api::println::Params { ptr, len } = params;
     let msg = unsafe { std::slice::from_raw_parts(ptr, len) };
     let msg = std::str::from_utf8(msg).unwrap();
     eprintln!("{msg}");
-}
-
-#[no_mangle]
-unsafe extern "C" fn env_de(params: api::exit::Params) {
-    let api::exit::Params { code } = params;
-    std::process::exit(code as i32)
 }

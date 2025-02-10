@@ -24,13 +24,13 @@ pub(crate) fn run(wasm: &[u8]) -> f32 {
 
     let mut store = Store::default();
     store
-        .link_func_custom(
-            "env",
-            "clock_ms",
-            FuncType { params: ().into(), results: ValType::I64.into() },
-        )
+        .link_func_custom("env", "clock_ms", FuncType {
+            params: ().into(),
+            results: ValType::I64.into(),
+        })
         .unwrap();
     let module = Module::new(wasm).unwrap();
+    #[allow(static_mut_refs)]
     let inst = store.instantiate(module, unsafe { &mut MEMORY.0 }).unwrap();
     let mut state = store.invoke(inst, "run", vec![]).unwrap();
     let results = loop {

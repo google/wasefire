@@ -15,19 +15,19 @@
 use wasefire_applet_api::button::{self as api, Api};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-button")]
-use wasefire_board_api::{self as board, button::Api as _, Id, Support};
+use wasefire_board_api::{self as board, Id, Support, button::Api as _};
 #[cfg(feature = "board-api-button")]
 use wasefire_error::{Code, Error};
 
 #[cfg(feature = "board-api-button")]
-use crate::event::{button::Key, Handler};
+use crate::event::{Handler, button::Key};
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Count(call) => count(call),
-        Api::Register(call) => or_trap!("board-api-button", register(call)),
-        Api::Unregister(call) => or_trap!("board-api-button", unregister(call)),
+        Api::Register(call) => or_fail!("board-api-button", register(call)),
+        Api::Unregister(call) => or_fail!("board-api-button", unregister(call)),
     }
 }
 
@@ -46,8 +46,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let inst = call.inst();
     let result = try {
         let button = Id::new(*button as usize)?;
-        call.scheduler()
-            .applet
+        call.applet()
             .enable(Handler {
                 key: Key { button }.into(),
                 inst,

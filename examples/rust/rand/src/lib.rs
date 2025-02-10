@@ -21,7 +21,7 @@
 #![no_std]
 wasefire::applet!();
 
-use alloc::{format, vec};
+use alloc::format;
 
 use wasefire::usb::serial::UsbSerial;
 
@@ -32,8 +32,7 @@ fn main() {
             b'0' => 10,
             _ => continue,
         };
-        let mut buf = vec![0; len as usize];
-        rng::fill_bytes(&mut buf).unwrap();
+        let buf = rng::bytes(len as usize).unwrap();
         serial::write_all(&UsbSerial, format!("{buf:02x?}\r\n").as_bytes()).unwrap();
     }
 }

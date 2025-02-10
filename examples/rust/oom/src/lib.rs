@@ -17,10 +17,7 @@
 #![no_std]
 wasefire::applet!();
 
-use alloc::vec;
-
 fn main() {
-    let mut data = vec![0; 100000];
-    rng::fill_bytes(&mut data).unwrap();
+    let data = rng::bytes(100000).unwrap();
     store::insert(0, &data).unwrap();
 }

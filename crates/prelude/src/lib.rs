@@ -30,6 +30,8 @@
 #![feature(alloc_error_handler)]
 #![feature(doc_auto_cfg)]
 #![feature(macro_metavar_expr)]
+#![feature(maybe_uninit_array_assume_init)]
+#![feature(maybe_uninit_uninit_array)]
 #![feature(negative_impls)]
 #![feature(never_type)]
 #![feature(vec_into_raw_parts)]
@@ -37,7 +39,8 @@
 extern crate alloc;
 
 use wasefire_applet_api as api;
-pub use wasefire_error::Error;
+pub use wasefire_error::{self as error, Error};
+use wasefire_one_of::at_most_one_of;
 #[cfg(feature = "rust-crypto")]
 use {aead as _, crypto_common as _, digest as _, typenum as _, zeroize as _};
 
@@ -77,10 +80,18 @@ pub mod uart;
 #[cfg(feature = "internal-api-usb")]
 pub mod usb;
 
+at_most_one_of!["native", "test", "wasm"];
+
 /// Board-specific syscalls.
 ///
 /// Those calls are directly forwarded to the board by the scheduler.
-pub fn syscall(x1: usize, x2: usize, x3: usize, x4: usize) -> Result<usize, Error> {
+///
+/// # Safety
+///
+/// For the syscalls they support, boards must either provide safe libraries or safety documentation
+/// (these requirements are not exclusive). If no safety documentation is provided, it must be
+/// assumed that this function cannot be called (regardless of its arguments).
+pub unsafe fn syscall(x1: usize, x2: usize, x3: usize, x4: usize) -> Result<usize, Error> {
     let params = api::syscall::Params { x1, x2, x3, x4 };
     convert(unsafe { api::syscall(params) })
 }
@@ -110,7 +121,7 @@ macro_rules! applet {
 
         use wasefire::*;
 
-        #[export_name = "main"]
+        #[unsafe(export_name = "main")]
         #[allow(unreachable_code)]
         #[allow(clippy::diverging_sub_expression)]
         extern "C" fn _main() {
@@ -128,7 +139,7 @@ macro_rules! applet {
 
         use wasefire::*;
 
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         #[allow(unreachable_code)]
         #[allow(clippy::diverging_sub_expression)]
         extern "C" fn applet_main() {
@@ -151,7 +162,7 @@ macro_rules! applet {
 #[cfg(not(feature = "test"))]
 #[panic_handler]
 fn handle_panic(info: &core::panic::PanicInfo) -> ! {
-    debug!("{}", info);
+    debug!("{info}");
     scheduling::abort();
 }
 

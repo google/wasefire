@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::usb::Event;
 use wasefire_board_api::Api as Board;
+use wasefire_board_api::usb::Event;
+use wasefire_error::Error;
 
 #[cfg(feature = "board-api-usb-serial")]
 pub mod serial;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
     #[cfg(feature = "board-api-usb-serial")]
@@ -35,6 +37,15 @@ impl<'a> From<&'a Event> for Key {
         match event {
             #[cfg(feature = "board-api-usb-serial")]
             Event::Serial(event) => Key::Serial(event.into()),
+        }
+    }
+}
+
+impl Key {
+    pub fn disable<B: Board>(self) -> Result<(), Error> {
+        match self {
+            #[cfg(feature = "board-api-usb-serial")]
+            Key::Serial(x) => x.disable::<B>(),
         }
     }
 }

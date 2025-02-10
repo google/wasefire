@@ -14,6 +14,8 @@
 
 #![cfg_attr(feature = "host", doc = "Platform-side of the applet API.")]
 #![cfg_attr(feature = "wasm", doc = include_str!("wasm.md"))]
+#![cfg_attr(feature = "wasm", doc = "\n## WebAssembly-level documentation\n")]
+#![cfg_attr(feature = "wasm", doc = include_str!("api.md"))]
 #![no_std]
 #![cfg_attr(all(feature = "wasm", feature = "native"), feature(linkage))]
 #![cfg_attr(feature = "host", feature(never_type))]
@@ -24,11 +26,14 @@ extern crate alloc;
 #[cfg(feature = "host")]
 pub use host::*;
 use wasefire_error as _;
+use wasefire_one_of::exactly_one_of;
 
 #[cfg(feature = "host")]
 mod host;
 #[cfg(feature = "wasm")]
 pub(crate) mod wasm;
+
+exactly_one_of!["host", "wasm"];
 
 #[cfg(feature = "wasm")]
 wasefire_applet_api_macro::wasm!();

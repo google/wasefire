@@ -19,7 +19,7 @@ use rubble::beacon::{BeaconScanner, ScanCallback};
 use rubble::bytes::{ByteWriter, ToBytes};
 use rubble::link::ad_structure::AdStructure;
 use rubble::link::filter::AllowAll;
-use rubble::link::{DeviceAddress, Metadata, NextUpdate, RadioCmd, MIN_PDU_BUF};
+use rubble::link::{DeviceAddress, MIN_PDU_BUF, Metadata, NextUpdate, RadioCmd};
 use rubble::time::{Duration, Timer};
 use rubble_nrf5x::radio::BleRadio;
 use rubble_nrf5x::timer::BleTimer;

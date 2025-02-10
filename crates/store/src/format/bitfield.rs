@@ -16,8 +16,10 @@
 //!
 //! This module assumes that `Word` and `Nat` are both represented as `u32`.
 
+use wasefire_error::Error;
+
+use crate::Nat;
 use crate::format::Word;
-use crate::{Nat, StoreError, StoreResult};
 
 /// Represents a bit field.
 ///
@@ -46,14 +48,14 @@ impl Field {
     ///
     /// - The value must fit in the bit field: `num_bits(value) < self.len`.
     /// - The value must only change bits from 1 to 0: `self.get(*word) & value == value`.
-    pub fn set(&self, word: &mut Word, value: Nat) -> StoreResult<()> {
+    pub fn set(&self, word: &mut Word, value: Nat) -> Result<(), Error> {
         if value & self.mask() != value {
-            return Err(StoreError::InvalidStorage);
+            return Err(crate::INVALID_STORAGE);
         }
         let mask = !(self.mask() << self.pos);
         word.0 &= mask | (value << self.pos);
         if self.get(*word) != value {
-            return Err(StoreError::InvalidStorage);
+            return Err(crate::INVALID_STORAGE);
         }
         Ok(())
     }
@@ -87,7 +89,7 @@ impl ConstField {
     }
 
     /// Sets the bit field to its value.
-    pub fn set(&self, word: &mut Word) -> StoreResult<()> {
+    pub fn set(&self, word: &mut Word) -> Result<(), Error> {
         self.field.set(word, self.value)
     }
 }
@@ -130,10 +132,10 @@ impl Checksum {
     /// # Errors
     ///
     /// Returns `InvalidStorage` if the external increment would be negative.
-    pub fn get(&self, word: Word) -> StoreResult<Nat> {
+    pub fn get(&self, word: Word) -> Result<Nat, Error> {
         let checksum = self.field.get(word);
         let zeros = word.0.count_zeros() - (self.field.len - checksum.count_ones());
-        checksum.checked_sub(zeros).ok_or(StoreError::InvalidStorage)
+        checksum.checked_sub(zeros).ok_or(crate::INVALID_STORAGE)
     }
 
     /// Sets the checksum to the external increment value.
@@ -144,7 +146,7 @@ impl Checksum {
     ///   self.field.mask()`.
     /// - The checksum value should fit in the checksum bit field: `num_bits(word.count_zeros() +
     ///   value) < self.field.len`.
-    pub fn set(&self, word: &mut Word, value: Nat) -> StoreResult<()> {
+    pub fn set(&self, word: &mut Word, value: Nat) -> Result<(), Error> {
         debug_assert_eq!(self.field.get(*word), self.field.mask());
         self.field.set(word, word.0.count_zeros() + value)
     }
@@ -324,12 +326,12 @@ mod tests {
     #[test]
     fn checksum_ok() {
         let field = Checksum { field: Field { pos: 3, len: 5 } };
-        assert_eq!(field.get(Word(0x00000000)), Err(StoreError::InvalidStorage));
+        assert_eq!(field.get(Word(0x00000000)), Err(crate::INVALID_STORAGE));
         assert_eq!(field.get(Word(0xffffffff)), Ok(31));
         assert_eq!(field.get(Word(0xffffff07)), Ok(0));
         assert_eq!(field.get(Word(0xffffff0f)), Ok(1));
         assert_eq!(field.get(Word(0x00ffff67)), Ok(4));
-        assert_eq!(field.get(Word(0x7fffff07)), Err(StoreError::InvalidStorage));
+        assert_eq!(field.get(Word(0x7fffff07)), Err(crate::INVALID_STORAGE));
         let mut word = Word(0x0fffffff);
         field.set(&mut word, 4).unwrap();
         assert_eq!(word, Word(0x0fffff47));

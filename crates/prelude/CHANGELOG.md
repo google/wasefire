@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.8.0-git
+
+### Major
+
+- Make `syscall()` unsafe to call
+
+### Minor
+
+- Support the new behavior of the scheduler (not allocating if the size is zero)
+- Add `rng::bytes{,_array}()` as safer alternatives to `rng::fill_bytes()`
+- Use Rust edition 2024
+
+### Patch
+
+- Fix clippy lints
+- Update dependencies
+
+## 0.7.0
+
+### Major
+
+- Remove `debug::{assert,assert_eq}()` in favor of `core::{assert,assert_eq}!`
+- Remove `debug::exit()` in favor of `scheduling::{abort,exit}()`
+
+### Minor
+
+- Export `wasefire-error` as `error` module
+- Initialize heap for wasm applets
+- Add `scheduling::exit()` for successful applet exit
+
+### Patch
+
+- Fix rust and clippy lints
+- Make sure at compile-time that at most one `native`, `test`, or `wasm` feature is enabled
+- Update dependencies
+
 ## 0.6.0
 
 ### Major
@@ -156,4 +192,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 2 -->

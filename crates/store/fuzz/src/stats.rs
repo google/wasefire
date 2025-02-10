@@ -20,7 +20,7 @@ use std::collections::HashMap;
 
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 
-use crate::histogram::{bucket_from_width, Histogram};
+use crate::histogram::{Histogram, bucket_from_width};
 
 /// Statistics for each fuzzing run.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, EnumIter, EnumString, Display)]

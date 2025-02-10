@@ -14,17 +14,17 @@
 
 use core::ptr::addr_of_mut;
 
-use embedded_alloc::Heap;
+use embedded_alloc::LlffHeap as Heap;
 
 #[global_allocator]
 static ALLOCATOR: Heap = Heap::empty();
 
 macro_rules! addr_of_sym {
     ($sym:ident) => {{
-        extern "C" {
+        unsafe extern "C" {
             static mut $sym: u32;
         }
-        unsafe { addr_of_mut!($sym) as usize }
+        addr_of_mut!($sym) as usize
     }};
 }
 

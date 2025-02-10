@@ -14,14 +14,15 @@
 
 //! USB serial interface.
 
-use usb_device::class_prelude::UsbBus;
 use usb_device::UsbError;
+use usb_device::class_prelude::UsbBus;
 use usbd_serial::SerialPort;
 use wasefire_logger as log;
 
 use crate::Error;
 
 /// USB serial event.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, PartialEq, Eq)]
 pub enum Event {
     /// There might be data to read.
@@ -73,8 +74,6 @@ pub trait HasSerial: Send {
 }
 
 /// Wrapper type for boards using the `usbd_serial` crate.
-// TODO(https://github.com/rust-lang/rust/issues/128053): Remove dead-code.
-#[allow(dead_code)]
 pub struct WithSerial<T: HasSerial> {
     _never: !,
     _has_serial: T,
@@ -93,32 +92,9 @@ impl<'a, T: UsbBus> Serial<'a, T> {
         Self { port, read_enabled: false, write_enabled: false }
     }
 
-    /// Accesses the port of a serial.
-    pub fn port(&mut self) -> &mut SerialPort<'a, T> {
-        &mut self.port
-    }
-
-    /// Pushes events based on whether the USB serial was polled.
-    pub fn tick(&mut self, polled: bool, mut push: impl FnMut(Event)) {
-        if self.read_enabled && polled {
-            push(Event::Read);
-        }
-        if self.write_enabled && self.port.dtr() {
-            push(Event::Write);
-        }
-    }
-
-    fn set(&mut self, event: &Event, enabled: bool) {
-        match event {
-            Event::Read => self.read_enabled = enabled,
-            Event::Write => self.write_enabled = enabled,
-        }
-    }
-}
-
-impl<T: HasSerial> Api for WithSerial<T> {
-    fn read(output: &mut [u8]) -> Result<usize, Error> {
-        match T::with_serial(|serial| serial.port.read(output)) {
+    /// Reads from the USB serial into a buffer.
+    pub fn read(&mut self, output: &mut [u8]) -> Result<usize, Error> {
+        match self.port.read(output) {
             Ok(len) => {
                 log::trace!("{}{:?} = read({})", len, &output[.. len], output.len());
                 Ok(len)
@@ -131,12 +107,13 @@ impl<T: HasSerial> Api for WithSerial<T> {
         }
     }
 
-    fn write(input: &[u8]) -> Result<usize, Error> {
-        if !T::with_serial(|serial| serial.port.dtr()) {
+    /// Writes from a buffer to the USB serial.
+    pub fn write(&mut self, input: &[u8]) -> Result<usize, Error> {
+        if !self.port.dtr() {
             // Data terminal is not ready.
             return Ok(0);
         }
-        match T::with_serial(|serial| serial.port.write(input)) {
+        match self.port.write(input) {
             Ok(len) => {
                 log::trace!("{} = write({}{:?})", len, input.len(), input);
                 Ok(len)
@@ -149,9 +126,10 @@ impl<T: HasSerial> Api for WithSerial<T> {
         }
     }
 
-    fn flush() -> Result<(), Error> {
+    /// Flushes the USB serial.
+    pub fn flush(&mut self) -> Result<(), Error> {
         loop {
-            match T::with_serial(|serial| serial.port.flush()) {
+            match self.port.flush() {
                 Ok(()) => {
                     log::trace!("flush()");
                     break Ok(());
@@ -168,13 +146,58 @@ impl<T: HasSerial> Api for WithSerial<T> {
         }
     }
 
-    fn enable(event: &Event) -> Result<(), Error> {
-        T::with_serial(|serial| serial.set(event, true));
+    /// Enables a given event to be triggered.
+    pub fn enable(&mut self, event: &Event) -> Result<(), Error> {
+        self.set(event, true)
+    }
+
+    /// Disables a given event from being triggered.
+    pub fn disable(&mut self, event: &Event) -> Result<(), Error> {
+        self.set(event, false)
+    }
+
+    /// Accesses the port of a serial.
+    pub fn port(&mut self) -> &mut SerialPort<'a, T> {
+        &mut self.port
+    }
+
+    /// Pushes events based on whether the USB serial was polled.
+    pub fn tick(&mut self, polled: bool, mut push: impl FnMut(Event)) {
+        if self.read_enabled && polled {
+            push(Event::Read);
+        }
+        if self.write_enabled && self.port.dtr() {
+            push(Event::Write);
+        }
+    }
+
+    fn set(&mut self, event: &Event, enabled: bool) -> Result<(), Error> {
+        match event {
+            Event::Read => self.read_enabled = enabled,
+            Event::Write => self.write_enabled = enabled,
+        }
         Ok(())
+    }
+}
+
+impl<T: HasSerial> Api for WithSerial<T> {
+    fn read(output: &mut [u8]) -> Result<usize, Error> {
+        T::with_serial(|x| x.read(output))
+    }
+
+    fn write(input: &[u8]) -> Result<usize, Error> {
+        T::with_serial(|x| x.write(input))
+    }
+
+    fn flush() -> Result<(), Error> {
+        T::with_serial(|x| x.flush())
+    }
+
+    fn enable(event: &Event) -> Result<(), Error> {
+        T::with_serial(|x| x.enable(event))
     }
 
     fn disable(event: &Event) -> Result<(), Error> {
-        T::with_serial(|serial| serial.set(event, false));
-        Ok(())
+        T::with_serial(|x| x.disable(event))
     }
 }

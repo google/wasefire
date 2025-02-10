@@ -57,6 +57,5 @@ fi
 ensure bin cc
 ensure lib libudev
 
-# Transitive dependencies of runner-host. This should ideally be installed on
-# demand by xtask.
+# Transitive dependencies of runner-host.
 ensure bin usbip

@@ -1,15 +1,55 @@
 # Changelog
 
-## 0.3.2-git
+## 0.5.0-git
+
+### Major
+
+- Do not allocate if the size is zero for the applet API
+
+### Minor
+
+- Use Rust edition 2024
 
 ### Patch
 
+- Fix clippy lints
+- Update dependencies
+
+## 0.4.0
+
+### Major
+
+- Remove `board-api-platform{,-protocol,-update}` features
+
+### Minor
+
+- Gate dead-code when `applet-api-platform-protocol` is disabled
+- Exit applets when main exits with no registered callbacks
+- Call the `applet::notify_{start,exit}()` hooks
+- Trap applets calling into host during init (except for debug printing)
+- Support `PlatformLock` protocol call
+- Support `AppletExitStatus` protocol call (the platform keeps running when the applet exits)
+- Support `Applet{Install,Uninstall}` protocol calls
+- Migrate from `debug::exit()` to `scheduling::exit()`
+- Support `PlatformUpdate{Metadata,Transfer}` protocol calls
+
+### Patch
+
+- Fix rust and clippy lints
+- Reduce logging level of applet trapping (those are not errors)
+- Make sure at compile-time that exactly one `native` or `wasm` feature is enabled
+- Use `derive-where` instead of `derivative`
+- Implement `defmt::Format` for `Key` when `defmt` is enabled
+- Stop using `log::Debug2Format()` when logging events
+- Make applet optional
+- Update dependencies
 - Fix missing `build.rs` in cargo package
 
 ## 0.3.1
 
 ### Minor
 
+- Return an error when calling an unimplemented API
 - Support `PlatformVendor` protocol
 - Support `platform::serial()` function
 - Migrate `platform::version()` to the new board and applet APIs
@@ -146,4 +186,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->

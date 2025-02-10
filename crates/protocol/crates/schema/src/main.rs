@@ -16,20 +16,21 @@
 
 use std::collections::HashMap;
 use std::fmt::Write;
-use std::process::Command;
 
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{Context, Result, bail, ensure};
+use tokio::process::Command;
 use wasefire_cli_tools::{cmd, fs};
 use wasefire_error::Error;
-use wasefire_protocol::{Api, Descriptor, Request, Response, DESCRIPTORS, VERSION};
+use wasefire_protocol::{Api, DESCRIPTORS, Descriptor, Request, Response, VERSION};
 use wasefire_wire::schema::{View, ViewEnum, ViewFields};
 use wasefire_wire::{Wire, Yoke};
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let new = Schema::new();
-    new.write().context("writing bin")?;
-    new.print().context("printing txt")?;
-    let old = Schema::old()?;
+    new.write().await.context("writing bin")?;
+    new.print().await.context("printing txt")?;
+    let old = Schema::old().await?;
     check(&old.get().result, &new.result).context("checking result")?;
     check(&old.get().request, &new.request).context("checking request")?;
     check(&old.get().response, &new.response).context("checking response")?;
@@ -121,17 +122,17 @@ impl Schema<'static> {
         }
     }
 
-    fn old() -> Result<Yoke<Schema<'static>>> {
+    async fn old() -> Result<Yoke<Schema<'static>>> {
         let base = Self::base()?;
         let mut git = Command::new("git");
         git.args(["show", &format!("{base}:./{SIDE}.bin")]);
-        let data = cmd::output(&mut git)?.stdout.into_boxed_slice();
+        let data = cmd::output(&mut git).await?.stdout.into_boxed_slice();
         Ok(wasefire_wire::decode_yoke(data)?)
     }
 
     fn base() -> Result<String> {
-        use std::env::var;
         use std::env::VarError::*;
+        use std::env::var;
         Ok(match var("GITHUB_EVENT_NAME").as_deref() {
             Ok("pull_request") => format!("origin/{}", var("GITHUB_BASE_REF")?),
             Ok("push" | "schedule") => format!("origin/{}", var("GITHUB_REF_NAME")?),
@@ -145,11 +146,11 @@ impl Schema<'static> {
         })
     }
 
-    fn write(&self) -> Result<()> {
-        fs::write(format!("{SIDE}.bin"), wasefire_wire::encode(self)?)
+    async fn write(&self) -> Result<()> {
+        fs::write(format!("{SIDE}.bin"), wasefire_wire::encode(self)?).await
     }
 
-    fn print(&self) -> Result<()> {
+    async fn print(&self) -> Result<()> {
         let mut output = String::new();
         writeln!(&mut output, "result: {}", self.result)?;
         writeln!(&mut output, "version: {}", self.versions.version)?;
@@ -170,7 +171,7 @@ impl Schema<'static> {
         }
         assert!(response.next().is_none());
         assert!(descriptor.next().is_none());
-        fs::write(format!("{SIDE}.txt"), &output)
+        fs::write(format!("{SIDE}.txt"), &output).await
     }
 }
 

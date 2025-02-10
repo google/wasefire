@@ -17,6 +17,11 @@
 //! This crate implements a USB RPC protocol that supports the Wasefire platform protocol.
 
 #![no_std]
+#![feature(never_type)]
+
+use wasefire_one_of::exactly_one_of;
+
+exactly_one_of!["device", "host"];
 
 extern crate alloc;
 #[cfg(feature = "std")]

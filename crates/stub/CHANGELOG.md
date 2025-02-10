@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.6-git
+
+### Minor
+
+- Use Rust edition 2024
+
+### Patch
+
+- Update dependencies
+
+## 0.1.5
+
+### Minor
+
+- Migrate from `debug::exit()` to `scheduling::{abort,exit}()`
+
+### Patch
+
+- Update dependencies
+
 ## 0.1.4
 
 ### Patch
@@ -34,4 +54,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 2 -->

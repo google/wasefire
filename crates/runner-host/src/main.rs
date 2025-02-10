@@ -15,24 +15,38 @@
 #![feature(never_type)]
 #![feature(try_blocks)]
 
-use std::path::Path;
-use std::sync::Mutex;
+use std::net::SocketAddr;
+use std::path::PathBuf;
+use std::sync::{LazyLock, Mutex};
 
 use anyhow::Result;
-use board::Board;
 use clap::Parser;
-use tokio::runtime::Handle;
-use tokio::sync::mpsc::{channel, Receiver};
+use tokio::select;
+use tokio::sync::mpsc::{Receiver, channel};
 use wasefire_board_api::Event;
 #[cfg(feature = "wasm")]
 use wasefire_interpreter as _;
+use wasefire_one_of::exactly_one_of;
+use wasefire_protocol_tokio::Pipe;
 use wasefire_scheduler::Scheduler;
 use wasefire_store::{FileOptions, FileStorage};
 
+use crate::board::Board;
+use crate::board::platform::protocol::State as ProtocolState;
+
 mod board;
+mod cleanup;
+mod web;
+
+exactly_one_of!["debug", "release"];
+exactly_one_of!["native", "wasm"];
+
+#[cfg(feature = "native")]
+compile_error!("native is not supported");
 
 static STATE: Mutex<Option<board::State>> = Mutex::new(None);
 static RECEIVER: Mutex<Option<Receiver<Event<Board>>>> = Mutex::new(None);
+static FLAGS: LazyLock<Flags> = LazyLock::new(Flags::parse);
 
 fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
     f(STATE.lock().unwrap().as_mut().unwrap())
@@ -40,87 +54,149 @@ fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
 
 #[derive(Parser)]
 struct Flags {
-    #[cfg(feature = "web")]
-    #[clap(flatten)]
-    web_options: WebOptions,
+    /// Path of the directory containing the platform files.
+    dir: PathBuf,
+
+    /// Transport to listen to for the platform protocol.
+    #[arg(long, default_value = "usb", env = "WASEFIRE_PROTOCOL")]
+    protocol: Protocol,
+
+    /// Socket address to bind to when --protocol=tcp (ignored otherwise).
+    #[arg(long, default_value = "127.0.0.1:3457")]
+    tcp_addr: SocketAddr,
+
+    /// Socket path to bind to when --protocol=unix (ignored otherwise).
+    #[arg(long, default_value = "/tmp/wasefire")]
+    unix_path: PathBuf,
+
+    /// The VID:PID to use for the USB device.
+    ///
+    /// A USB device is used when --protocol=usb or --usb-serial (ignored otherwise). Note that USB
+    /// requires sudo.
+    #[arg(long, default_value = "16c0:27dd")]
+    usb_vid_pid: String,
+
+    /// Whether to enable USB serial.
+    #[arg(long)]
+    usb_serial: bool,
+
+    /// User interface to interact with the board.
+    #[arg(long, default_value = "stdio")]
+    interface: Interface,
+
+    /// Socket address to bind to when --interface=web (ignored otherwise).
+    #[arg(long, default_value = "127.0.0.1:5000")]
+    web_addr: SocketAddr,
+
+    /// Platform version (in hexadecimal).
+    #[arg(long, default_value = option_env!("WASEFIRE_HOST_VERSION").unwrap_or_default())]
+    version: Option<String>,
+
+    /// Platform serial (in hexadecimal).
+    #[arg(long, default_value = option_env!("WASEFIRE_HOST_SERIAL").unwrap_or_default())]
+    serial: Option<String>,
 }
 
-#[derive(clap::Args)]
-struct WebOptions {
-    /// Host to start the webserver.
-    #[clap(long, default_value = "127.0.0.1")]
-    web_host: String,
+#[test]
+fn flags() {
+    <Flags as clap::CommandFactory>::command().debug_assert();
+}
 
-    /// Port to start the webserver.
-    #[clap(long, default_value = "5000")]
-    web_port: u16,
+#[derive(Clone, clap::ValueEnum)]
+enum Protocol {
+    Tcp,
+    Unix,
+    Usb,
+}
+
+#[derive(Clone, clap::ValueEnum)]
+enum Interface {
+    Stdio,
+    Web,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    #[cfg(feature = "debug")]
     env_logger::init();
-    #[cfg_attr(not(feature = "web"), allow(unused_variables))]
-    let flags = Flags::parse();
-    // TODO: Should be a flag controlled by xtask (value is duplicated there).
-    const STORAGE: &str = "../../target/wasefire/storage.bin";
+    LazyLock::force(&FLAGS);
+    std::panic::set_hook(Box::new(|info| {
+        eprintln!("{info}");
+        cleanup::shutdown(1)
+    }));
+    tokio::spawn(async {
+        use tokio::signal::unix::{SignalKind, signal};
+        let mut sigint = signal(SignalKind::interrupt()).unwrap();
+        let mut sigterm = signal(SignalKind::terminate()).unwrap();
+        let signal = select! {
+            _ = sigint.recv() => SignalKind::interrupt(),
+            _ = sigterm.recv() => SignalKind::terminate(),
+        };
+        cleanup::shutdown(128 + signal.as_raw_value());
+    });
+    wasefire_cli_tools::fs::create_dir_all(&FLAGS.dir).await?;
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
-    let storage = Some(FileStorage::new(Path::new(STORAGE), options).unwrap());
+    let storage = Some(FileStorage::new(&FLAGS.dir.join("storage.bin"), options)?);
+    board::applet::init().await;
     let (sender, receiver) = channel(10);
     *RECEIVER.lock().unwrap() = Some(receiver);
-    #[cfg(feature = "web")]
-    let web = {
-        let (sender, mut receiver) = channel(10);
-        tokio::spawn(async move {
-            while let Some(event) = receiver.recv().await {
-                match event {
-                    web_server::Event::Button { pressed } => {
-                        with_state(|state| board::button::event(state, Some(pressed)));
-                    }
-                }
-            }
-        });
-        let url = format!("{}:{}", flags.web_options.web_host, flags.web_options.web_port);
-        web_server::Client::new(&url, sender).await?
+    let web = match FLAGS.interface {
+        Interface::Stdio => None,
+        Interface::Web => Some(web::init().await?),
     };
+    let push = {
+        use wasefire_board_api::platform::protocol::Event;
+        let sender = sender.clone();
+        move |event: Event| drop(sender.try_send(event.into()))
+    };
+    let protocol = match FLAGS.protocol {
+        Protocol::Tcp => ProtocolState::Pipe(Pipe::new_tcp(FLAGS.tcp_addr, push).await?),
+        Protocol::Unix => {
+            let pipe = Pipe::new_unix(&FLAGS.unix_path, push).await?;
+            cleanup::push(Box::new(move || drop(std::fs::remove_file(&FLAGS.unix_path))));
+            ProtocolState::Pipe(pipe)
+        }
+        Protocol::Usb => ProtocolState::Usb,
+    };
+    let usb = board::usb::State::new(
+        &FLAGS.usb_vid_pid,
+        matches!(protocol, ProtocolState::Usb),
+        FLAGS.usb_serial,
+    );
     *STATE.lock().unwrap() = Some(board::State {
         sender,
         button: false,
         led: false,
         timers: board::timer::Timers::default(),
         uarts: board::uart::Uarts::new(),
-        #[cfg(feature = "usb")]
-        usb: board::usb::Usb::default(),
+        protocol,
+        usb,
         storage,
-        #[cfg(feature = "web")]
         web,
     });
     board::uart::Uarts::init();
-    #[cfg(feature = "usb")]
-    board::usb::Usb::init()?;
-    #[cfg(not(feature = "web"))]
-    tokio::task::spawn_blocking(|| {
-        use std::io::BufRead;
-        // The tokio::io::Stdin documentation recommends to use blocking IO in a dedicated thread.
-        // Note that because of this, the runtime may not exit until the user press enter.
-        for line in std::io::stdin().lock().lines() {
-            let pressed = match line.unwrap().as_str() {
-                "button" => None,
-                "press" => Some(true),
-                "release" => Some(false),
-                x => {
-                    println!("Unrecognized command: {x}");
-                    continue;
-                }
-            };
-            with_state(|state| board::button::event(state, pressed));
-        }
-    });
-    println!("Board initialized. Starting scheduler.");
-    #[cfg(feature = "wasm")]
-    const WASM: &[u8] = include_bytes!("../../../target/wasefire/applet.wasm");
-    #[cfg(feature = "wasm")]
-    Handle::current().spawn_blocking(|| Scheduler::<board::Board>::run(WASM)).await?;
-    #[cfg(feature = "native")]
-    Handle::current().spawn_blocking(|| Scheduler::<board::Board>::run()).await?;
-    Ok(())
+    board::usb::init().await?;
+    if matches!(FLAGS.interface, Interface::Stdio) {
+        tokio::task::spawn_blocking(|| {
+            use std::io::BufRead;
+            // The tokio::io::Stdin documentation recommends to use blocking IO in a dedicated
+            // thread. Note that because of this, the runtime may not exit until the
+            // user press enter.
+            for line in std::io::stdin().lock().lines() {
+                let pressed = match line.unwrap().as_str() {
+                    "button" => None,
+                    "press" => Some(true),
+                    "release" => Some(false),
+                    x => {
+                        println!("Unrecognized command: {x}");
+                        continue;
+                    }
+                };
+                with_state(|state| board::button::event(state, pressed));
+            }
+        });
+    }
+    println!("Host platform running.");
+    // Not sure why Rust doesn't figure out this can't return (maybe async).
+    let _: ! = tokio::task::spawn_blocking(|| Scheduler::<board::Board>::run()).await?;
 }

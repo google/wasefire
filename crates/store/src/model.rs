@@ -16,8 +16,10 @@
 
 use std::collections::HashMap;
 
+use wasefire_error::Error;
+
 use crate::format::Format;
-use crate::{usize_to_nat, StoreError, StoreRatio, StoreResult, StoreUpdate};
+use crate::{StoreRatio, StoreUpdate, usize_to_nat};
 
 /// Models the mutable operations of a store.
 ///
@@ -72,7 +74,7 @@ impl StoreModel {
     }
 
     /// Simulates a store operation.
-    pub fn apply(&mut self, operation: StoreOperation) -> StoreResult<()> {
+    pub fn apply(&mut self, operation: StoreOperation) -> Result<(), Error> {
         match operation {
             StoreOperation::Transaction { updates } => self.transaction(updates),
             StoreOperation::Clear { min_key } => self.clear(min_key),
@@ -89,15 +91,15 @@ impl StoreModel {
     }
 
     /// Applies a transaction.
-    fn transaction(&mut self, updates: Vec<StoreUpdate<Vec<u8>>>) -> StoreResult<()> {
+    fn transaction(&mut self, updates: Vec<StoreUpdate<Vec<u8>>>) -> Result<(), Error> {
         // Fail if the transaction is invalid.
         if self.format.transaction_valid(&updates).is_none() {
-            return Err(StoreError::InvalidArgument);
+            return Err(crate::INVALID_ARGUMENT);
         }
         // Fail if there is not enough capacity.
         let capacity = self.format.transaction_capacity(&updates) as usize;
         if self.capacity().remaining() < capacity {
-            return Err(StoreError::NoCapacity);
+            return Err(crate::NO_CAPACITY);
         }
         // Apply the updates.
         for update in updates {
@@ -114,18 +116,18 @@ impl StoreModel {
     }
 
     /// Applies a clear operation.
-    fn clear(&mut self, min_key: usize) -> StoreResult<()> {
+    fn clear(&mut self, min_key: usize) -> Result<(), Error> {
         if min_key > self.format.max_key() as usize {
-            return Err(StoreError::InvalidArgument);
+            return Err(crate::INVALID_ARGUMENT);
         }
         self.content.retain(|&k, _| k < min_key);
         Ok(())
     }
 
     /// Applies a prepare operation.
-    fn prepare(&self, length: usize) -> StoreResult<()> {
+    fn prepare(&self, length: usize) -> Result<(), Error> {
         if self.capacity().remaining() < length {
-            return Err(StoreError::NoCapacity);
+            return Err(crate::NO_CAPACITY);
         }
         Ok(())
     }

@@ -29,9 +29,12 @@ pub(crate) fn new() -> Item {
             fn is_supported "pus" {} -> bool
         },
         item! {
-            /// Returns the metadata of the platform.
+            /// Reads the metadata of the platform.
             ///
-            /// This typically contains the version and side (A or B) of the running platform.
+            /// The metadata typically contains the version and side (A or B) of the running
+            /// platform.
+            ///
+            /// This is an [allocating function](crate#allocating-memory).
             fn metadata "pum" {
                 /// Where to write the allocated metadata.
                 ptr: *mut *mut u8,

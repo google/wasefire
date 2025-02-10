@@ -12,126 +12,135 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::process::{Child, Command};
+use std::process::Stdio;
 use std::time::Duration;
 
-use anyhow::{ensure, Result};
+use anyhow::{Result, ensure};
+use tokio::process::{Child, Command};
+use usb_device::UsbError;
+use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::StringDescriptors;
 use usb_device::prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
-use usb_device::UsbError;
 use usbd_serial::SerialPort;
 use usbip_device::UsbIpBus;
-use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
 use wasefire_board_api::usb::Api;
+use wasefire_board_api::usb::serial::Serial;
+use wasefire_cli_tools::cmd;
 use wasefire_error::{Code, Error};
-use wasefire_protocol_usb::{HasRpc, Rpc};
+use wasefire_protocol_usb::Rpc;
 
-use crate::board::State;
 use crate::with_state;
+
+mod serial;
 
 pub enum Impl {}
 
-pub type ProtocolImpl = wasefire_protocol_usb::Impl<'static, UsbIpBus, crate::board::usb::Impl>;
-
 impl Api for Impl {
-    type Serial = WithSerial<Impl>;
+    type Serial = serial::Impl;
 }
 
-impl HasRpc<'static, UsbIpBus> for Impl {
-    fn with_rpc<R>(f: impl FnOnce(&mut Rpc<'static, UsbIpBus>) -> R) -> R {
-        with_state(|state| f(&mut state.usb.protocol))
+pub struct State {
+    protocol: Option<Rpc<'static, UsbIpBus>>,
+    serial: Option<Serial<'static, UsbIpBus>>,
+    // Some iff at least one class is Some.
+    usb_dev: Option<UsbDevice<'static, UsbIpBus>>,
+}
+
+pub async fn init() -> Result<()> {
+    if with_state(|x| x.usb.usb_dev.is_none()) {
+        return Ok(());
     }
-
-    fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error> {
-        if let Some(request) = request.strip_prefix(b"echo ") {
-            let mut response = request.to_vec().into_boxed_slice();
-            for x in &mut response {
-                if x.is_ascii_alphabetic() {
-                    *x ^= 0x20;
-                }
-                if matches!(*x, b'I' | b'O' | b'i' | b'o') {
-                    *x ^= 0x6;
-                }
-            }
-            Ok(response)
-        } else {
-            Err(Error::user(Code::InvalidArgument))
-        }
-    }
-}
-
-impl HasSerial for Impl {
-    type UsbBus = UsbIpBus;
-
-    fn with_serial<R>(f: impl FnOnce(&mut Serial<Self::UsbBus>) -> R) -> R {
-        with_state(|state| f(&mut state.usb.serial))
-    }
-}
-
-pub struct Usb {
-    pub protocol: Rpc<'static, UsbIpBus>,
-    pub serial: Serial<'static, UsbIpBus>,
-    pub usb_dev: UsbDevice<'static, UsbIpBus>,
-}
-
-impl Default for Usb {
-    fn default() -> Self {
-        let usb_bus = Box::leak(Box::new(UsbBusAllocator::new(UsbIpBus::new())));
-        let protocol = Rpc::new(usb_bus);
-        let serial = Serial::new(SerialPort::new(usb_bus));
-        // TODO: VID and PID should be configurable.
-        let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x16c0, 0x27dd))
-            .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Wasefire")])
-            .unwrap()
-            .build();
-        Self { protocol, serial, usb_dev }
-    }
-}
-
-impl Usb {
-    pub fn init() -> Result<()> {
+    if !has_mod("vhci_hcd").await? {
         ensure!(
-            spawn(&["sudo", "modprobe", "vhci-hcd"]).wait().unwrap().code() == Some(0),
+            spawn(&["sudo", "modprobe", "vhci-hcd"])?.wait().await?.code() == Some(0),
             "failed to load kernel module for USB/IP"
         );
-        let mut usbip = spawn(&["sudo", "usbip", "attach", "-r", "localhost", "-b", "1-1"]);
+    }
+    let mut usbip = spawn(&["sudo", "usbip", "attach", "-r", "localhost", "-b", "1-1"])?;
+    loop {
+        let fast = with_state(|state| state.usb.poll());
+        let Some(status) = usbip.try_wait()? else {
+            tokio::time::sleep(Duration::from_millis(if fast { 1 } else { 500 })).await;
+            continue;
+        };
+        ensure!(status.code() == Some(0), "failed to attach remote USB/IP device");
+        break;
+    }
+    tokio::spawn(async move {
         loop {
-            with_state(|state| state.usb.poll());
-            match usbip.try_wait().unwrap() {
-                None => continue,
-                Some(e) => ensure!(e.code() == Some(0), "failed to attach remote USB/IP device"),
-            }
-            break;
-        }
-        tokio::spawn({
-            async move {
-                loop {
-                    tokio::time::sleep(Duration::from_millis(1)).await;
-                    with_state(|state| {
-                        let polled = state.usb.poll();
-                        let has_serial = !matches!(
-                            state.usb.serial.port().read(&mut []),
-                            Err(UsbError::WouldBlock)
-                        );
-                        let State { sender, usb: Usb { protocol, serial, .. }, .. } = state;
-                        protocol.tick(|event| drop(sender.try_send(event.into())));
-                        serial.tick(polled && has_serial, |event| {
-                            drop(sender.try_send(event.into()))
-                        });
-                    });
+            tokio::time::sleep(Duration::from_millis(1)).await;
+            with_state(|state| {
+                let polled = state.usb.poll();
+                let crate::board::State { sender, usb: State { protocol, serial, .. }, .. } = state;
+                if let Some(protocol) = protocol {
+                    protocol.tick(|event| drop(sender.try_send(event.into())));
                 }
-            }
-        });
-        Ok(())
+                if let Some(serial) = serial {
+                    let has_serial =
+                        !matches!(serial.port().read(&mut []), Err(UsbError::WouldBlock));
+                    serial.tick(polled && has_serial, |event| drop(sender.try_send(event.into())));
+                }
+            });
+        }
+    });
+    Ok(())
+}
+
+impl State {
+    pub fn new(vid_pid: &str, protocol: bool, serial: bool) -> Self {
+        let mut state = State { protocol: None, serial: None, usb_dev: None };
+        if !protocol && !serial {
+            return state;
+        }
+        let usb_bus = Box::leak(Box::new(UsbBusAllocator::new(UsbIpBus::new())));
+        if protocol {
+            state.protocol = Some(Rpc::new(usb_bus));
+        }
+        if serial {
+            state.serial = Some(Serial::new(SerialPort::new(usb_bus)));
+        }
+        let (vid, pid) = vid_pid.split_once(':').expect("--usb-vid-pid must be VID:PID");
+        let vid = u16::from_str_radix(vid, 16).expect("invalid VID");
+        let pid = u16::from_str_radix(pid, 16).expect("invalid PID");
+        state.usb_dev = Some(
+            UsbDeviceBuilder::new(usb_bus, UsbVidPid(vid, pid))
+                .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Wasefire")])
+                .unwrap()
+                .build(),
+        );
+        state
     }
 
-    pub fn poll(&mut self) -> bool {
-        self.usb_dev.poll(&mut [&mut self.protocol, self.serial.port()])
+    pub fn protocol(&mut self) -> &mut Rpc<'static, UsbIpBus> {
+        self.protocol.as_mut().unwrap()
+    }
+
+    pub fn serial(&mut self) -> Result<&mut Serial<'static, UsbIpBus>, Error> {
+        self.serial.as_mut().ok_or(Error::world(Code::NotImplemented))
+    }
+
+    fn poll(&mut self) -> bool {
+        let usb_dev = self.usb_dev.as_mut().unwrap();
+        let mut classes = Vec::<&mut dyn UsbClass<_>>::with_capacity(2);
+        classes.extend(self.protocol.as_mut().map(|x| x as &mut dyn UsbClass<_>));
+        classes.extend(self.serial.as_mut().map(|x| x.port() as &mut dyn UsbClass<_>));
+        usb_dev.poll(&mut classes)
     }
 }
 
-fn spawn(cmd: &[&str]) -> Child {
+fn spawn(cmd: &[&str]) -> Result<Child> {
     println!("Executing: {}", cmd.join(" "));
-    Command::new(cmd[0]).args(&cmd[1 ..]).spawn().unwrap()
+    cmd::spawn(Command::new(cmd[0]).args(&cmd[1 ..]).stdin(Stdio::null()))
+}
+
+async fn has_mod(name: &str) -> Result<bool> {
+    for line in cmd::output(&mut Command::new("lsmod")).await?.stdout.split(|&x| x == b'\n') {
+        if let Some(suffix) = line.strip_prefix(name.as_bytes()) {
+            if suffix.first() == Some(&b' ') {
+                return Ok(true);
+            }
+        }
+    }
+    Ok(false)
 }

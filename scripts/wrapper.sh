@@ -35,11 +35,9 @@ run() {
 
 ensure_cargo() {
   local flags="$1@$2"
-  local locked=--locked
   { cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2:\$"; } && return
-  [ "$1" = taplo-cli ] && locked=
   shift 2
-  x cargo install $locked --root="$CARGO_ROOT" "$flags" "$@"
+  x cargo install --locked --root="$CARGO_ROOT" "$flags" "$@"
 }
 
 IS_CARGO=y
@@ -51,10 +49,11 @@ case "$1" in
       *) e "Wrapper does not support 'cargo $2'" ;;
     esac
     ;;
-  mdbook) ensure_cargo mdbook 0.4.40 ;;
-  probe-rs) ensure_cargo probe-rs-tools 0.24.0 ;;
+  mdbook) ensure_cargo mdbook 0.4.43 ;;
+  probe-rs) ensure_cargo probe-rs-tools 0.25.0 ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
-  taplo) ensure_cargo taplo-cli 0.9.0 ;;
+  taplo) ensure_cargo taplo-cli 0.9.3 ;;
+  trunk) ensure_cargo trunk 0.21.5 ;;
   twiggy) ensure_cargo twiggy 0.7.0 ;;
   *) IS_CARGO=n ;;
 esac

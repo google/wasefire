@@ -4,6 +4,5 @@
 *.bin -textreview
 *.pdf -textreview
 *.png -textreview
-*.wasm -textreview
 # Submodules are not reviewed in printed form.
 /third_party/** -textreview

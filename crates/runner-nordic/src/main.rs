@@ -15,6 +15,7 @@
 #![no_std]
 #![no_main]
 #![feature(never_type)]
+#![feature(ptr_metadata)]
 #![feature(try_blocks)]
 
 extern crate alloc;
@@ -39,7 +40,7 @@ use nrf52840_hal::clocks::{self, ExternalOscillator, Internal, LfOscStopped};
 use nrf52840_hal::gpio;
 use nrf52840_hal::gpio::{Level, Output, Pin, PushPull};
 use nrf52840_hal::gpiote::Gpiote;
-use nrf52840_hal::pac::{interrupt, Interrupt, FICR};
+use nrf52840_hal::pac::{FICR, Interrupt, interrupt};
 use nrf52840_hal::rng::Rng;
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 #[cfg(feature = "release")]
@@ -56,16 +57,20 @@ use wasefire_board_api::{Id, Support};
 #[cfg(feature = "wasm")]
 use wasefire_interpreter as _;
 use wasefire_logger as log;
+use wasefire_one_of::exactly_one_of;
 use wasefire_scheduler::Scheduler;
 
-use crate::board::button::{channel, Button};
+use crate::board::button::{Button, channel};
 use crate::board::gpio::Gpio;
 use crate::board::radio::ble::Ble;
 use crate::board::timer::Timers;
 use crate::board::uart::Uarts;
 use crate::board::usb::Usb;
-use crate::board::{button, led, Events};
+use crate::board::{Events, button, led};
 use crate::storage::Storage;
+
+exactly_one_of!["debug", "release"];
+exactly_one_of!["native", "wasm"];
 
 #[cfg(feature = "debug")]
 #[defmt::panic_handler]
@@ -101,8 +106,6 @@ fn with_state<R>(f: impl FnOnce(&mut State) -> R) -> R {
     critical_section::with(|cs| f(STATE.borrow_ref_mut(cs).as_mut().unwrap()))
 }
 
-// TODO(https://github.com/rust-embedded/cortex-m/issues/537): Remove when fixed.
-#[allow(unsafe_op_in_unsafe_fn)]
 #[entry]
 fn main() -> ! {
     static mut CLOCKS: MaybeUninit<Clocks> = MaybeUninit::uninit();
@@ -168,6 +171,7 @@ fn main() -> ! {
     storage::init(p.NVMC);
     let storage = Some(Storage::new_store());
     crate::board::platform::update::init(Storage::new_other());
+    crate::board::applet::init(Storage::new_applet());
     let uart_rx = port0.p0_28.into_floating_input().degrade();
     let uart_tx = port0.p0_29.into_push_pull_output(gpio::Level::High).degrade();
     let uarts = Uarts::new(p.UARTE0, uart_rx, uart_tx, p.UARTE1);
@@ -196,11 +200,6 @@ fn main() -> ! {
         unsafe { NVIC::unmask(interrupt) };
     }
     log::debug!("Runner is initialized.");
-    #[cfg(feature = "wasm")]
-    const WASM: &[u8] = include_bytes!("../../../target/wasefire/applet.wasm");
-    #[cfg(feature = "wasm")]
-    Scheduler::<Board>::run(WASM);
-    #[cfg(feature = "native")]
     Scheduler::<Board>::run();
 }
 

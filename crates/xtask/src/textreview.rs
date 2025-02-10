@@ -13,13 +13,13 @@
 // limitations under the License.
 
 use std::io::BufRead;
-use std::process::Command;
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{Context, Result, ensure};
+use tokio::process::Command;
 use wasefire_cli_tools::cmd;
 
-pub fn execute() -> Result<()> {
-    let paths = cmd::output(Command::new("git").args(["ls-files", ":(attr:textreview)"]))?;
+pub async fn execute() -> Result<()> {
+    let paths = cmd::output(Command::new("git").args(["ls-files", ":(attr:textreview)"])).await?;
     let mut errors = Vec::new();
     for path in paths.stdout.lines() {
         let path = path?;

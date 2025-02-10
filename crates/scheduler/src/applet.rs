@@ -12,22 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(feature = "board-api-platform-protocol")]
+#[cfg(feature = "applet-api-platform-protocol")]
 use alloc::boxed::Box;
 use alloc::collections::{BTreeSet, VecDeque};
 
 #[cfg(feature = "internal-hash-context")]
 use wasefire_board_api as board;
 use wasefire_board_api::{Api as Board, Event};
-#[cfg(feature = "board-api-platform-protocol")]
+#[cfg(feature = "applet-api-platform-protocol")]
 use wasefire_error::{Code, Error};
 use wasefire_logger as log;
 
 use self::store::{Memory, Store, StoreApi};
-use crate::event::{Handler, Key};
 use crate::Trap;
+use crate::event::{Handler, Key};
 
 pub mod store;
+
+pub enum Slot<B: Board> {
+    #[cfg(feature = "wasm")]
+    Empty,
+    Running(Applet<B>),
+    Exited(wasefire_protocol::applet::ExitStatus),
+}
+
+impl<B: Board> Slot<B> {
+    pub fn get(&mut self) -> Option<&mut Applet<B>> {
+        match self {
+            Slot::Running(x) => Some(x),
+            _ => None,
+        }
+    }
+}
 
 pub struct Applet<B: Board> {
     pub store: self::store::Store,
@@ -36,7 +52,7 @@ pub struct Applet<B: Board> {
     events: VecDeque<Event<B>>,
 
     /// Protocol request or response, if any.
-    #[cfg(feature = "board-api-platform-protocol")]
+    #[cfg(feature = "applet-api-platform-protocol")]
     protocol: Protocol,
 
     /// Whether we returned from a callback.
@@ -55,7 +71,7 @@ impl<B: Board> Default for Applet<B> {
         Self {
             store: Default::default(),
             events: Default::default(),
-            #[cfg(feature = "board-api-platform-protocol")]
+            #[cfg(feature = "applet-api-platform-protocol")]
             protocol: Default::default(),
             #[cfg(feature = "wasm")]
             done: Default::default(),
@@ -66,8 +82,8 @@ impl<B: Board> Default for Applet<B> {
     }
 }
 
-#[cfg(feature = "board-api-platform-protocol")]
 #[derive(Debug, Default)]
+#[cfg(feature = "applet-api-platform-protocol")]
 enum Protocol {
     #[default]
     Empty,
@@ -134,14 +150,14 @@ impl<B: Board> Applet<B> {
         if !self.handlers.contains(&Key::from(&event)) {
             // This can happen after an event is disabled and the event queue of the board is
             // flushed.
-            log::trace!("Discarding {}", log::Debug2Format(&event));
+            log::trace!("Discarding {:?}", event);
         } else if self.events.contains(&event) {
-            log::trace!("Merging {}", log::Debug2Format(&event));
+            log::trace!("Merging {:?}", event);
         } else if self.events.len() < MAX_EVENTS {
-            log::debug!("Pushing {}", log::Debug2Format(&event));
+            log::debug!("Pushing {:?}", event);
             self.events.push_back(event);
         } else {
-            log::warn!("Dropping {}", log::Debug2Format(&event));
+            log::warn!("Dropping {:?}", event);
         }
     }
 
@@ -184,15 +200,29 @@ impl<B: Board> Applet<B> {
         }
     }
 
+    pub fn free(&mut self) {
+        self.events.clear();
+        for &Handler { key, .. } in &self.handlers {
+            if let Err(error) = key.disable() {
+                log::warn!("Failed disabling {:?}: {}", key, error);
+            }
+        }
+    }
+
     pub fn get(&self, key: Key<B>) -> Option<&Handler<B>> {
         self.handlers.get(&key)
+    }
+
+    #[cfg(feature = "wasm")]
+    pub fn has_handlers(&self) -> bool {
+        !self.handlers.is_empty()
     }
 
     pub fn len(&self) -> usize {
         self.events.len()
     }
 
-    #[cfg(feature = "board-api-platform-protocol")]
+    #[cfg(feature = "applet-api-platform-protocol")]
     pub fn put_request(&mut self, event: Event<B>, request: &[u8]) -> Result<(), Error> {
         self.get(Key::from(&event)).ok_or(Error::world(Code::InvalidState))?;
         // If the applet is processing a request, we'll send the event when they respond.
@@ -204,7 +234,7 @@ impl<B: Board> Applet<B> {
         Ok(())
     }
 
-    #[cfg(feature = "board-api-platform-protocol")]
+    #[cfg(feature = "applet-api-platform-protocol")]
     pub fn get_request(&mut self) -> Result<Option<Box<[u8]>>, Error> {
         let (update, result) = match core::mem::take(&mut self.protocol) {
             x @ (Protocol::Empty | Protocol::Response(_)) => (x, Ok(None)),
@@ -215,7 +245,7 @@ impl<B: Board> Applet<B> {
         result
     }
 
-    #[cfg(feature = "board-api-platform-protocol")]
+    #[cfg(feature = "applet-api-platform-protocol")]
     pub fn put_response(&mut self, response: Box<[u8]>) -> Result<(), Error> {
         match &self.protocol {
             Protocol::Processing => self.protocol = Protocol::Response(response),
@@ -226,7 +256,7 @@ impl<B: Board> Applet<B> {
         Ok(())
     }
 
-    #[cfg(feature = "board-api-platform-protocol")]
+    #[cfg(feature = "applet-api-platform-protocol")]
     pub fn get_response(&mut self) -> Result<Option<Box<[u8]>>, Error> {
         let (update, result) = match core::mem::take(&mut self.protocol) {
             x @ (Protocol::Processing | Protocol::Request(_)) => (x, Ok(None)),

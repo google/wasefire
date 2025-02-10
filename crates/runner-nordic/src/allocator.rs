@@ -14,18 +14,18 @@
 
 use core::ptr::addr_of_mut;
 
-use embedded_alloc::Heap;
+use embedded_alloc::TlsfHeap as Heap;
 
 #[global_allocator]
 static ALLOCATOR: Heap = Heap::empty();
 
 pub fn init() {
-    extern "C" {
+    unsafe extern "C" {
         static mut __sheap: u32;
         static mut __eheap: u32;
     }
-    let sheap = unsafe { addr_of_mut!(__sheap) as usize };
-    let eheap = unsafe { addr_of_mut!(__eheap) as usize };
+    let sheap = addr_of_mut!(__sheap) as usize;
+    let eheap = addr_of_mut!(__eheap) as usize;
     assert!(sheap < eheap);
     // Unsafe: Called only once before any allocation.
     unsafe { ALLOCATOR.init(sheap, eheap - sheap) }

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crypto_common::generic_array::{ArrayLength, GenericArray};
 use crypto_common::BlockSizeUser;
+use crypto_common::generic_array::{ArrayLength, GenericArray};
 use digest::{Digest, FixedOutput, FixedOutputReset};
 use ecdsa::hazmat::{SignPrimitive, VerifyPrimitive};
 use ecdsa::{Signature, SignatureSize, VerifyingKey};
@@ -30,12 +30,12 @@ use wasefire_error::Error;
 
 use crate::{convert_bool, convert_unit};
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn env_ces(_: api::is_supported::Params) -> isize {
     1
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn env_cet(params: api::is_valid_scalar::Params) -> isize {
     let api::is_valid_scalar::Params { curve, n } = params;
     let valid = match api::Curve::from(curve) {
@@ -45,7 +45,7 @@ unsafe extern "C" fn env_cet(params: api::is_valid_scalar::Params) -> isize {
     convert_bool(Ok(valid))
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn env_ceq(params: api::is_valid_point::Params) -> isize {
     let api::is_valid_point::Params { curve, x, y } = params;
     let valid = match api::Curve::from(curve) {
@@ -55,7 +55,7 @@ unsafe extern "C" fn env_ceq(params: api::is_valid_point::Params) -> isize {
     convert_bool(Ok(valid))
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn env_ceb(params: api::base_point_mul::Params) -> isize {
     let api::base_point_mul::Params { curve, n, x, y } = params;
     let res = match api::Curve::from(curve) {
@@ -65,7 +65,7 @@ unsafe extern "C" fn env_ceb(params: api::base_point_mul::Params) -> isize {
     convert_unit(res)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn env_cep(params: api::point_mul::Params) -> isize {
     let api::point_mul::Params { curve, n, in_x, in_y, out_x, out_y } = params;
     let res = match api::Curve::from(curve) {
@@ -75,7 +75,7 @@ unsafe extern "C" fn env_cep(params: api::point_mul::Params) -> isize {
     convert_unit(res)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn env_cei(params: api::ecdsa_sign::Params) -> isize {
     let api::ecdsa_sign::Params { curve, key, message, r, s } = params;
     let res = match api::Curve::from(curve) {
@@ -89,7 +89,7 @@ unsafe extern "C" fn env_cei(params: api::ecdsa_sign::Params) -> isize {
     convert_unit(res)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn env_cev(params: api::ecdsa_verify::Params) -> isize {
     let api::ecdsa_verify::Params { curve, message, x, y, r, s } = params;
     let res = match api::Curve::from(curve) {

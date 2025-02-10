@@ -65,10 +65,10 @@ pub enum Side {
 
 impl Side {
     pub fn current() -> Option<Self> {
-        extern "C" {
+        unsafe extern "C" {
             static mut __header_origin: u32;
         }
-        Self::new(unsafe { addr_of!(__header_origin) } as u32)
+        Self::new(addr_of!(__header_origin) as u32)
     }
 
     fn new(addr: u32) -> Option<Self> {
@@ -111,4 +111,4 @@ unsafe fn read(addr: u32) -> u32 {
 // Keep those values in sync with the memory.x linker script.
 const HEADER_LEN: u32 = 0x00000100;
 const FIRMWARE_A: u32 = 0x00010000;
-const FIRMWARE_B: u32 = 0x00080000;
+const FIRMWARE_B: u32 = 0x00060000;

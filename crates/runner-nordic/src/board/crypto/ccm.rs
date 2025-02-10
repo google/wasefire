@@ -15,7 +15,7 @@
 use alloc::vec;
 
 use nrf52840_hal::ccm::CcmData;
-use typenum::{U13, U16, U4};
+use typenum::{U4, U13, U16};
 use wasefire_board_api::crypto::aead::{AeadSupport, Api, Array};
 use wasefire_board_api::{Error, Support};
 use wasefire_error::Code;

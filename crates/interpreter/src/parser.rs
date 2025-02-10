@@ -79,7 +79,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         loop {
             let mut byte = self.parse_byte()? as u64;
             if byte & 0x80 == 0 {
-                if signed && byte & 1 << core::cmp::min(len - 1, 6) != 0 {
+                if signed && byte & (1 << core::cmp::min(len - 1, 6)) != 0 {
                     if let Some(len) = len.checked_sub(7) {
                         val |= ((1 << len) - 1) << (bits - len);
                     } else {
@@ -469,15 +469,16 @@ impl<'m, M: Mode> Parser<'m, M> {
     }
 
     pub fn parse_locals(&mut self, locals: &mut Vec<ValType>) -> MResult<(), M> {
+        let mut total = locals.len() as u32;
         for _ in 0 .. self.parse_vec()? {
-            let len = self.parse_u32()? as usize;
-            if locals.len().checked_add(len).map_or(true, |x| x > MAX_LOCALS) {
-                return M::unsupported(if_debug!(Unsupported::MaxLocals));
-            }
+            let len = self.parse_u32()?;
+            total = M::open(|| total.checked_add(len))?;
             let val = self.parse_valtype()?;
-            locals.extend(core::iter::repeat(val).take(len));
+            if total <= MAX_LOCALS {
+                locals.extend(core::iter::repeat(val).take(len as usize));
+            }
         }
-        Ok(())
+        if total <= MAX_LOCALS { Ok(()) } else { M::unsupported(if_debug!(Unsupported::MaxLocals)) }
     }
 
     pub fn parse_elem(&mut self, user: &mut impl ParseElem<'m, M>) -> MResult<(), M> {
@@ -616,7 +617,7 @@ pub enum ElemMode<'a, 'm, M: Mode> {
 
 pub struct SkipElem;
 
-impl<'m, M: Mode> ParseElem<'m, M> for SkipElem {}
+impl<M: Mode> ParseElem<'_, M> for SkipElem {}
 
 pub trait ParseData<'m, M: Mode> {
     // Must read an expr from the parser.
@@ -640,7 +641,7 @@ pub enum DataMode<'a, 'm, M: Mode> {
 
 pub struct SkipData;
 
-impl<'m, M: Mode> ParseData<'m, M> for SkipData {}
+impl<M: Mode> ParseData<'_, M> for SkipData {}
 
 impl<'m, M: Mode> Parser<'m, M> {
     fn internal_new(data: &'m [u8]) -> Self {
@@ -650,7 +651,7 @@ impl<'m, M: Mode> Parser<'m, M> {
 
 /// Maximum number of locals (must be less than 2^32).
 // NOTE: This should be configurable.
-const MAX_LOCALS: usize = 100;
+const MAX_LOCALS: u32 = 100;
 
 fn check_eq<M: Mode, T: Eq>(x: T, y: T) -> MResult<(), M> {
     M::check(|| x == y)

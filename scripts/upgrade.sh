@@ -15,6 +15,7 @@
 
 set -e
 . scripts/log.sh
+. scripts/package.sh
 
 # This script upgrades all dependencies.
 
@@ -32,14 +33,23 @@ x sed -i 's/^\(channel = "nightly-\)[^"]*"$/\1'$(date +%F)'"/' \
   rust-toolchain.toml
 
 get_crates() { sed -n 's/^.*ensure_cargo \([^ ]\+\) .*$/\1/p' scripts/wrapper.sh; }
-get_latest() { cargo search "$1" | sed -n '1s/^'"$1"' = "\([0-9.]*\)".*$/\1/p'; }
 update_crate() { x sed -i 's/\(ensure_cargo '"$1"'\) [0-9.]*/\1 '"$2"'/' scripts/wrapper.sh; }
 for crate in $(get_crates); do
-  update_crate "$crate" "$(get_latest "$crate")"
+  update_crate "$crate" "$(cargo_info_version "$crate")"
 done
 
+# TODO(https://github.com/rust-lang/cargo/issues/10307): Remove the loop and inline.
+update_breaking() {
+  while ! x cargo -Z unstable-options update --manifest-path=$1 --breaking; do
+    t 'Manually fix the issue with `cargo update <spec>` and hit ENTER'
+    read garbage
+  done
+}
+for crate in $TOPOLOGICAL_ORDER; do
+  update_breaking crates/$crate/Cargo.toml
+done
 for path in $(git ls-files '*/Cargo.toml'); do
-  cargo -Z unstable-options update --manifest-path=$path --breaking
+  update_breaking $path
 done
 
 ( cd examples/assemblyscript
@@ -49,4 +59,6 @@ ASC_VERSION=$(sed -n 's/^  "version": "\(.*\)",$/\1/p' \
   examples/assemblyscript/node_modules/assemblyscript/package.json)
 x sed -i "/ASC_VERSION:/s/\"[^\"]*\"/\"$ASC_VERSION\"/" crates/xtask/src/main.rs
 
-d "All dependencies have been upgraded"
+x git commit -am'Upgrade all dependencies'
+
+d "All dependencies have been upgraded and a commit created"

@@ -13,24 +13,24 @@
 // limitations under the License.
 
 use wasefire_applet_api::crypto::gcm::{self as api, Api};
+use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-crypto-aes256-gcm")]
 use wasefire_board_api::crypto::aead::Api as _;
-use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-crypto-aes256-gcm")]
 use wasefire_board_api::{self as board, Support as _};
 
 #[cfg(feature = "board-api-crypto-aes256-gcm")]
-use crate::applet::store::MemoryApi;
-#[cfg(feature = "board-api-crypto-aes256-gcm")]
 use crate::Trap;
+#[cfg(feature = "board-api-crypto-aes256-gcm")]
+use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Support(call) => support(call),
-        Api::TagLength(call) => or_trap!("board-api-crypto-aes256-gcm", tag_length(call)),
-        Api::Encrypt(call) => or_trap!("board-api-crypto-aes256-gcm", encrypt(call)),
-        Api::Decrypt(call) => or_trap!("board-api-crypto-aes256-gcm", decrypt(call)),
+        Api::TagLength(call) => or_fail!("board-api-crypto-aes256-gcm", tag_length(call)),
+        Api::Encrypt(call) => or_fail!("board-api-crypto-aes256-gcm", encrypt(call)),
+        Api::Decrypt(call) => or_fail!("board-api-crypto-aes256-gcm", decrypt(call)),
     }
 }
 
@@ -40,8 +40,8 @@ fn support<B: Board>(call: SchedulerCall<B, api::support::Sig>) {
     let support = {
         use wasefire_applet_api::crypto::gcm::Support;
         let support = board::crypto::Aes256Gcm::<B>::SUPPORT;
-        (support.no_copy as u32) << Support::NoCopy as u32
-            | (support.in_place_no_copy as u32) << Support::InPlaceNoCopy as u32
+        ((support.no_copy as u32) << Support::NoCopy as u32)
+            | ((support.in_place_no_copy as u32) << Support::InPlaceNoCopy as u32)
     };
     #[cfg(not(feature = "board-api-crypto-aes256-gcm"))]
     let support = 0;
@@ -57,8 +57,8 @@ fn tag_length<B: Board>(call: SchedulerCall<B, api::tag_length::Sig>) {
 #[cfg(feature = "board-api-crypto-aes256-gcm")]
 fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
     let api::encrypt::Params { key, iv, aad, aad_len, length, clear, cipher, tag } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         ensure_support::<B>()?;
         let key = memory.get_array::<32>(*key)?.into();
@@ -76,8 +76,8 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
 #[cfg(feature = "board-api-crypto-aes256-gcm")]
 fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
     let api::decrypt::Params { key, iv, aad, aad_len, tag, length, cipher, clear } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         ensure_support::<B>()?;
         let key = memory.get_array::<32>(*key)?.into();

@@ -22,10 +22,10 @@ use alloc::vec;
 #[cfg(feature = "rust-crypto")]
 use aead::{Aead, AeadInPlace, KeyInit, Payload};
 use wasefire::crypto::gcm::tag_length;
-#[cfg(not(feature = "rust-crypto"))]
-use wasefire::crypto::gcm::{decrypt, decrypt_in_place, encrypt, encrypt_in_place, Cipher};
 #[cfg(feature = "rust-crypto")]
 use wasefire::crypto::gcm::{Aes256Gcm, Aes256GcmInPlace};
+#[cfg(not(feature = "rust-crypto"))]
+use wasefire::crypto::gcm::{Cipher, decrypt, decrypt_in_place, encrypt, encrypt_in_place};
 
 fn main() {
     debug!("Use RustCrypto API: {}", cfg!(feature = "rust-crypto"));
@@ -35,7 +35,7 @@ fn main() {
         test_decrypt();
         test_decrypt_in_place();
     }
-    debug::exit(true);
+    scheduling::exit();
 }
 
 fn test_encrypt() {
@@ -53,8 +53,8 @@ fn test_encrypt() {
         };
         #[cfg(not(feature = "rust-crypto"))]
         let Cipher { text: cipher_, tag: tag_ } = encrypt(key, iv, aad, clear).unwrap();
-        debug::assert_eq(&cipher_[..], cipher);
-        debug::assert_eq(&tag_[..], &tag[.. tag_len]);
+        assert_eq!(cipher_[..], cipher[..]);
+        assert_eq!(tag_[..], tag[.. tag_len]);
     }
 }
 
@@ -73,8 +73,8 @@ fn test_encrypt_in_place() {
         }
         #[cfg(not(feature = "rust-crypto"))]
         encrypt_in_place(key, iv, aad, &mut cipher_, &mut tag_).unwrap();
-        debug::assert_eq(&cipher_[..], cipher);
-        debug::assert_eq(&tag_[..], &tag[.. tag_len]);
+        assert_eq!(cipher_[..], cipher[..]);
+        assert_eq!(tag_[..], tag[.. tag_len]);
     }
 }
 
@@ -98,7 +98,7 @@ fn test_decrypt() {
             let cipher = Cipher { text: cipher.to_vec(), tag: tag_ };
             decrypt(key, iv, aad, &cipher).unwrap()
         };
-        debug::assert_eq(&clear_[..], clear);
+        assert_eq!(clear_[..], clear[..]);
     }
 }
 
@@ -115,7 +115,7 @@ fn test_decrypt_in_place() {
             .unwrap();
         #[cfg(not(feature = "rust-crypto"))]
         decrypt_in_place(key, iv, aad, &tag[.. tag_len], &mut clear_).unwrap();
-        debug::assert_eq(&clear_[..], clear);
+        assert_eq!(clear_[..], clear[..]);
     }
 }
 

@@ -15,7 +15,6 @@
 use alloc::boxed::Box;
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
-use core::convert::Infallible;
 use core::marker::PhantomData;
 
 use usb_device::class_prelude::{
@@ -24,17 +23,15 @@ use usb_device::class_prelude::{
 use usb_device::descriptor::{BosWriter, DescriptorWriter};
 use usb_device::endpoint::{EndpointAddress, EndpointIn, EndpointOut};
 use usb_device::{LangID, UsbError};
-use wasefire_board_api::platform::protocol::{Api, Event};
 use wasefire_board_api::Error;
+use wasefire_board_api::platform::protocol::{Api, Event};
 use wasefire_error::Code;
 use wasefire_logger as log;
 
 use crate::common::{Decoder, Encoder};
 
-// TODO(https://github.com/rust-lang/rust/issues/128053): Remove dead-code.
-#[allow(dead_code)]
 pub struct Impl<'a, B: UsbBus, T: HasRpc<'a, B>> {
-    _never: Infallible,
+    _never: !,
     _phantom: PhantomData<(&'a (), B, T)>,
 }
 
@@ -45,31 +42,15 @@ pub trait HasRpc<'a, B: UsbBus> {
 
 impl<'a, B: UsbBus, T: HasRpc<'a, B>> Api for Impl<'a, B, T> {
     fn read() -> Result<Option<Box<[u8]>>, Error> {
-        T::with_rpc(|rpc| rpc.read())
+        T::with_rpc(|x| x.read())
     }
 
     fn write(response: &[u8]) -> Result<(), Error> {
-        T::with_rpc(|rpc| rpc.write(response))
+        T::with_rpc(|x| x.write(response))
     }
 
     fn enable() -> Result<(), Error> {
-        T::with_rpc(|rpc| match rpc.state {
-            State::Disabled => {
-                rpc.state = WaitRequest;
-                Ok(())
-            }
-            _ => Err(Error::user(Code::InvalidState)),
-        })
-    }
-
-    fn disable() -> Result<(), Error> {
-        T::with_rpc(|rpc| match rpc.state {
-            State::Disabled => Err(Error::user(Code::InvalidState)),
-            _ => {
-                rpc.state = Disabled;
-                Ok(())
-            }
-        })
+        T::with_rpc(|x| x.enable())
     }
 
     fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error> {
@@ -112,6 +93,16 @@ impl<'a, B: UsbBus> Rpc<'a, B> {
         self.state.write(response, &self.write_ep)
     }
 
+    pub fn enable(&mut self) -> Result<(), Error> {
+        match self.state {
+            State::Disabled => {
+                self.state = WaitRequest;
+                Ok(())
+            }
+            _ => Err(Error::user(Code::InvalidState)),
+        }
+    }
+
     pub fn tick(&mut self, push: impl FnOnce(Event)) {
         if self.state.notify() {
             push(Event);
@@ -149,7 +140,7 @@ impl State {
         if !matches!(self, WaitResponse) {
             return Err(Error::user(Code::InvalidState));
         }
-        let packets: VecDeque<_> = Encoder::new(response).map(Into::into).collect();
+        let packets: VecDeque<_> = Encoder::new(response).collect();
         log::debug!("Sending a message of {} bytes in {} packets.", response.len(), packets.len());
         *self = SendResponse { packets };
         self.send(ep);
@@ -239,7 +230,7 @@ impl State {
     }
 }
 
-impl<'a, B: UsbBus> UsbClass<B> for Rpc<'a, B> {
+impl<B: UsbBus> UsbClass<B> for Rpc<'_, B> {
     fn get_configuration_descriptors(
         &self, writer: &mut DescriptorWriter,
     ) -> usb_device::Result<()> {

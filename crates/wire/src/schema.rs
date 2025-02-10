@@ -128,7 +128,7 @@ impl core::fmt::Display for Builtin {
     }
 }
 
-impl<'a> core::fmt::Display for View<'a> {
+impl core::fmt::Display for View<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             View::Builtin(x) => write!(f, "{x}"),
@@ -145,7 +145,7 @@ impl<'a> core::fmt::Display for View<'a> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ViewFields<'a>(pub &'a ViewStruct<'a>);
 
-impl<'a> core::fmt::Display for ViewFields<'a> {
+impl core::fmt::Display for ViewFields<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write_fields(f, self.0)
     }
@@ -187,11 +187,7 @@ impl<'a> List for (&'a str, u32, ViewStruct<'a>) {
 }
 
 fn write_fields(f: &mut core::fmt::Formatter, xs: &[(Option<&str>, View)]) -> core::fmt::Result {
-    if xs.len() == 1 && xs[0].0.is_none() {
-        xs[0].1.fmt(f)
-    } else {
-        write_list(f, xs)
-    }
+    if xs.len() == 1 && xs[0].0.is_none() { xs[0].1.fmt(f) } else { write_list(f, xs) }
 }
 
 fn write_list<T: List>(f: &mut core::fmt::Formatter, xs: &[T]) -> core::fmt::Result {
@@ -208,7 +204,7 @@ fn write_list<T: List>(f: &mut core::fmt::Formatter, xs: &[T]) -> core::fmt::Res
     write!(f, "{}", T::END)
 }
 
-impl<'a> View<'a> {
+impl View<'_> {
     /// Simplifies a view preserving wire compatibility.
     ///
     /// Performs the following simplifications:
@@ -386,7 +382,7 @@ impl ViewFrame {
 impl ViewFrameLock {
     fn new(rec: Option<usize>, view: &View) -> Self {
         // TODO(https://github.com/rust-lang/rust-clippy/issues/12860): Remove when fixed.
-        #[allow(clippy::unnecessary_cast)]
+        #[expect(clippy::unnecessary_cast)]
         // SAFETY: This function is only called when drop is called before the lifetime ends.
         let view = unsafe { &*(view as *const _ as *const View<'static>) };
         let frame = ViewFrame { rec, view };

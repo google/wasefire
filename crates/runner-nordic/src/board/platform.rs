@@ -16,8 +16,8 @@ use alloc::borrow::Cow;
 use alloc::vec::Vec;
 
 use header::{Header, Side};
-use wasefire_board_api::platform::Api;
 use wasefire_board_api::Error;
+use wasefire_board_api::platform::Api;
 
 use crate::with_state;
 
@@ -53,7 +53,6 @@ impl Api for Impl {
 }
 
 pub fn reboot() -> ! {
-    #[cfg(feature = "debug")]
-    defmt::flush();
+    wasefire_logger::flush();
     nrf52840_hal::pac::SCB::sys_reset()
 }

@@ -23,7 +23,8 @@ pub struct Store(());
 pub struct Memory;
 
 impl StoreApi for Store {
-    type Memory<'a> = Memory
+    type Memory<'a>
+        = Memory
     where Self: 'a;
 
     fn memory(&mut self) -> Memory {
@@ -55,13 +56,13 @@ impl MemoryApi for Memory {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn board_alloc(size: u32, align: u32) -> *mut u8 {
     let layout = Layout::from_size_align(size as usize, align as usize).unwrap();
     unsafe { alloc::alloc::alloc(layout) }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn board_dealloc(ptr: *mut u8, size: u32, align: u32) {
     let layout = Layout::from_size_align(size as usize, align as usize).unwrap();
     unsafe { alloc::alloc::dealloc(ptr, layout) };

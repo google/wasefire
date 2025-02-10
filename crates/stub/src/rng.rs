@@ -15,7 +15,7 @@
 use rand::RngCore;
 use wasefire_applet_api::rng as api;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn env_rb(params: api::fill_bytes::Params) -> isize {
     let api::fill_bytes::Params { ptr, len } = params;
     let buf = unsafe { std::slice::from_raw_parts_mut(ptr, len) };

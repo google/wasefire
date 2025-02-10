@@ -12,20 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::net::IpAddr;
+use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::{mpsc, oneshot};
-use warp::ws::{Message, WebSocket};
 use warp::Filter;
+use warp::ws::{Message, WebSocket};
 use wasefire_logger as log;
+use wasefire_protocol::applet::ExitStatus;
 use web_common::{ButtonState, Command, Component};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Event {
+    Exit,
     Button { pressed: bool },
 }
 
@@ -34,23 +37,23 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn new(url: &str, events: mpsc::Sender<Event>) -> Result<Self> {
-        let (addr, port) = url.split_once(':').context("URL is not <addr>:<port>")?;
-        let addr: IpAddr = addr.parse().context("parsing <addr> in URL")?;
-        let port: u16 = port.parse().context("parsing <port> in URL")?;
-
+    pub async fn new(dir: PathBuf, addr: SocketAddr, events: mpsc::Sender<Event>) -> Result<Self> {
         let (sender, mut receiver) = oneshot::channel();
         let client = Arc::new(Mutex::new(Some((sender, events))));
 
-        let static_files = warp::fs::dir("crates/web-server/public");
+        let static_files = warp::fs::dir(dir);
         let ws = warp::path("board")
             .and(warp::ws())
             .and(warp::any().map(move || client.clone()))
             .map(|ws: warp::ws::Ws, client| ws.on_upgrade(|socket| handle(socket, client)));
         let routes = warp::get().and(static_files.or(ws));
 
-        tokio::spawn(async move { warp::serve(routes).run((addr, port)).await });
-        let url = format!("http://{addr}:{port}/");
+        tokio::spawn(async move { warp::serve(routes).run(addr).await });
+        #[cfg(feature = "log")]
+        let search = format!("?log={}", ::log::max_level());
+        #[cfg(not(feature = "log"))]
+        let search = "";
+        let url = format!("http://{addr}/{search}");
 
         // Wait 2 seconds for a client to connect, otherwise open a browser. The client is supposed
         // to connect every second. This should ensure that at most one client is open.
@@ -68,12 +71,20 @@ impl Client {
         Ok(receiver.await?)
     }
 
-    pub fn println(&self, message: String) {
-        self.send(Command::Log { message });
+    pub fn println(&self, timestamp: String, message: String) {
+        self.send(Command::Log { timestamp, message });
     }
 
     pub fn set_led(&self, state: bool) {
         self.send(Command::Set { component_id: LED_ID, state });
+    }
+
+    pub fn start(&self) {
+        self.send(Command::Start);
+    }
+
+    pub fn exit(&self, status: ExitStatus) {
+        self.send(Command::Exit { status });
     }
 
     fn send(&self, command: Command) {
@@ -109,10 +120,9 @@ async fn handle(mut ws: WebSocket, client: ClientInput) {
     });
     cmd_sender.send(Command::Connected).await.unwrap();
     let board_config = Command::BoardConfig {
-        components: vec![
-            Component::Button { id: BUTTON_ID },
-            Component::MonochromeLed { id: LED_ID },
-        ],
+        components: vec![Component::Button { id: BUTTON_ID }, Component::MonochromeLed {
+            id: LED_ID,
+        }],
     };
     cmd_sender.send(board_config).await.unwrap();
     let board_ready = ws_receiver.next().await.unwrap().unwrap();
@@ -165,7 +175,7 @@ async fn handle(mut ws: WebSocket, client: ClientInput) {
         }
     }
     log::info!("The client disconnected. Exiting the runner.");
-    std::process::exit(0);
+    event_sender.send(Event::Exit).await.unwrap();
 }
 
 fn to_message(command: &Command) -> Message {

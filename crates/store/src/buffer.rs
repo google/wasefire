@@ -21,7 +21,9 @@ use alloc::borrow::{Borrow, Cow};
 use alloc::boxed::Box;
 use alloc::vec;
 
-use crate::{Storage, StorageError, StorageIndex, StorageResult};
+use wasefire_error::{Code, Error, Space};
+
+use crate::{Storage, StorageIndex};
 
 /// Simulates a flash storage using a buffer in memory.
 ///
@@ -115,8 +117,8 @@ impl BufferStorage {
     /// Arms an interruption after a given delay.
     ///
     /// Before each subsequent mutable operation (write or erase), the delay is decremented if
-    /// positive. If the delay is elapsed, the operation is saved and an error is returned.
-    /// Subsequent operations will panic until either of:
+    /// positive. If the delay is elapsed, the operation is saved and the [`INTERRUPTION`] error is
+    /// returned. Subsequent operations will panic until either of:
     /// - The interrupted operation is [corrupted](BufferStorage::corrupt_operation).
     /// - The interruption is [reset](BufferStorage::reset_interruption).
     ///
@@ -197,7 +199,16 @@ impl BufferStorage {
     pub fn set_page_erases(&mut self, page: usize, cycle: usize) {
         self.page_erases[page] = cycle;
     }
+}
 
+/// Error indicating that an operation was interrupted.
+pub const INTERRUPTION: Error = Error::new_const(Space::World as u8, INTERRUPT.code());
+// By generating the interruption error as an internal error and letting user test for it as a world
+// error, we make sure the error got popped at least once in between (thus making sure we didn't
+// forget to pop errors for mutable operations).
+const INTERRUPT: Error = Error::new_const(Space::Internal as u8, 0xffff);
+
+impl BufferStorage {
     /// Returns whether a number is word-aligned.
     fn is_word_aligned(&self, x: usize) -> bool {
         x & (self.options.word_size - 1) == 0
@@ -267,7 +278,7 @@ impl BufferStorage {
     /// Returns the storage range of an operation.
     fn operation_range(
         &self, operation: &BufferOperation<impl Borrow<[u8]>>,
-    ) -> StorageResult<core::ops::Range<usize>> {
+    ) -> Result<core::ops::Range<usize>, Error> {
         match *operation {
             BufferOperation::Write { index, ref value } => index.range(value.borrow().len(), self),
             BufferOperation::Erase { page } => {
@@ -298,13 +309,13 @@ impl Storage for BufferStorage {
         self.options.max_page_erases
     }
 
-    fn read_slice(&self, index: StorageIndex, length: usize) -> StorageResult<Cow<[u8]>> {
+    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<[u8]>, Error> {
         Ok(Cow::Borrowed(&self.storage[index.range(length, self)?]))
     }
 
-    fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> StorageResult<()> {
+    fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> Result<(), Error> {
         if !self.is_word_aligned(index.byte) || !self.is_word_aligned(value.len()) {
-            return Err(StorageError::NotAligned);
+            return Err(Error::user(Code::InvalidAlign));
         }
         let operation = BufferOperation::Write { index, value };
         let range = self.operation_range(&operation)?;
@@ -323,7 +334,7 @@ impl Storage for BufferStorage {
         Ok(())
     }
 
-    fn erase_page(&mut self, page: usize) -> StorageResult<()> {
+    fn erase_page(&mut self, page: usize) -> Result<(), Error> {
         let operation = BufferOperation::Erase { page };
         let range = self.operation_range(&operation)?;
         // Interrupt operation if armed and delay expired.
@@ -385,7 +396,7 @@ type OwnedBufferOperation = BufferOperation<Box<[u8]>>;
 /// Represents a storage operation sharing its byte slices.
 type SharedBufferOperation<'a> = BufferOperation<&'a [u8]>;
 
-impl<'a> SharedBufferOperation<'a> {
+impl SharedBufferOperation<'_> {
     fn to_owned(&self) -> OwnedBufferOperation {
         match *self {
             BufferOperation::Write { index, value } => {
@@ -445,20 +456,20 @@ impl Interruption {
 
     /// Interrupts an operation if the delay is over.
     ///
-    /// Decrements the delay if positive. Otherwise, the operation is stored and an error is
-    /// returned to interrupt the operation.
+    /// Decrements the delay if positive. Otherwise, the operation is stored and the
+    /// [`INTERRUPTION`] error is returned to interrupt the operation.
     ///
     /// # Panics
     ///
     /// Panics if an operation has already been interrupted and the interruption has not been
     /// disarmed.
-    fn tick(&mut self, operation: &SharedBufferOperation) -> StorageResult<()> {
+    fn tick(&mut self, operation: &SharedBufferOperation) -> Result<(), Error> {
         match self {
             Interruption::Ready => (),
             Interruption::Armed { delay } if *delay == 0 => {
                 let operation = operation.to_owned();
                 *self = Interruption::Saved { operation };
-                return Err(StorageError::CustomError);
+                return Err(INTERRUPT);
             }
             Interruption::Armed { delay } => *delay -= 1,
             Interruption::Saved { .. } => panic!(),

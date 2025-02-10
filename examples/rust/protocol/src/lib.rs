@@ -17,6 +17,10 @@
 //! The applet converts the case of alphabetic ASCII characters from its request to its response.
 //! Also switches I and O.
 
+// DO NOT EDIT MANUALLY:
+// - Edit book/src/applet/prelude/rpc.rs instead.
+// - Then use ./scripts/sync.sh to generate this file.
+
 #![no_std]
 wasefire::applet!();
 
@@ -24,20 +28,20 @@ use alloc::vec::Vec;
 
 fn main() {
     let mut counter = 0;
-    rpc::Listener::new(&platform::protocol::RpcProtocol, move |mut data: Vec<u8>| {
-        data.iter_mut().for_each(switch_case);
+    let handler = move |mut data: Vec<u8>| {
+        data.iter_mut().for_each(convert);
         counter += 1;
         debug!("Converted {counter} lines.");
         data
-    })
-    .leak();
+    };
+    rpc::Listener::new(&platform::protocol::RpcProtocol, handler).leak();
 }
 
-fn switch_case(x: &mut u8) {
+fn convert(x: &mut u8) {
     if x.is_ascii_alphabetic() {
-        *x ^= 0x20;
+        *x ^= 0x20; // switch case
     }
     if matches!(*x, b'I' | b'O' | b'i' | b'o') {
-        *x ^= 0x6;
+        *x ^= 0x6; // switch between I and O preserving case
     }
 }

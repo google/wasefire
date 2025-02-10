@@ -1,10 +1,10 @@
 [package]
 name = "wasefire-cli"
-version = "0.1.2-git"
+version = "0.2.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
-edition = "2021"
+edition = "2024"
 description = "Wasefire CLI to manage applets and platforms"
 repository = "https://github.com/google/wasefire"
 include = ["/LICENSE", "/src/"]
@@ -19,15 +19,22 @@ path = "src/main.rs"
 anyhow = { version = "1.0.86", default-features = false }
 clap = { version = "4.5.4", default-features = false, features = ["default", "derive", "env"] }
 clap_complete = { version = "4.5.2", default-features = false }
-data-encoding = { version = "2.6.0", default-features = false, features = ["std"] }
-humantime = { version = "2.1.0", default-features = false }
-rusb = { version = "0.9.4", default-features = false }
-wasefire-cli-tools = { version = "0.1.1-git", path = "../cli-tools" }
-wasefire-protocol = { version = "0.1.0", path = "../protocol", features = ["host"] }
-wasefire-protocol-usb = { version = "0.1.0", path = "../protocol-usb", features = ["host"] }
+env_logger = { version = "0.11.3", default-features = false, features = ["default"] }
+wasefire-cli-tools = { version = "0.2.1-git", path = "../cli-tools", features = ["action"] }
+wasefire-one-of = { version = "0.1.1-git", path = "../one-of" }
+
+[dependencies.tokio]
+version = "1.40.0"
+default-features = false
+features = ["macros", "parking_lot", "rt", "rt-multi-thread"]
+
+[features]
+_dev = []
+_prod = []
 
 [lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
-rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

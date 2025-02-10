@@ -17,15 +17,15 @@ use wasefire_applet_api::rng as api;
 use wasefire_applet_api::rng::Api;
 #[cfg(feature = "board-api-rng")]
 use wasefire_board_api as board;
+use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-rng")]
 use wasefire_board_api::rng::Api as _;
-use wasefire_board_api::Api as Board;
 
-#[cfg(feature = "board-api-rng")]
-use crate::applet::store::MemoryApi;
 use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-rng")]
 use crate::SchedulerCall;
+#[cfg(feature = "board-api-rng")]
+use crate::applet::store::MemoryApi;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
@@ -36,8 +36,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 #[cfg(feature = "board-api-rng")]
 fn fill_bytes<B: Board>(mut call: SchedulerCall<B, api::fill_bytes::Sig>) {
     let api::fill_bytes::Params { ptr, len } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         let output = memory.get_mut(*ptr, *len)?;
         board::Rng::<B>::fill_bytes(output)?

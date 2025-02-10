@@ -1,10 +1,10 @@
 [package]
 name = "fuzz"
-version = "0.0.0"
+version = "0.1.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = false
-edition = "2021"
+edition = "2024"
 
 [package.metadata]
 cargo-fuzz = true
@@ -19,5 +19,6 @@ name = "correct"
 path = "fuzz_targets/correct.rs"
 
 [lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
-rust.unsafe-op-in-unsafe-fn = "warn"

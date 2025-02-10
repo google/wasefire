@@ -57,14 +57,13 @@ pub(crate) fn new() -> Item {
             /// The entry may be fragmented withen the provided range.
             ///
             /// Returns whether an entry was found.
+            ///
+            /// This is an [allocating function](crate#allocating-memory).
             fn find "sff" {
                 /// Range of keys to concatenate as an entry.
                 keys: u32,
 
                 /// Where to write the value of the entry, if found.
-                ///
-                /// The (inner) pointer will be allocated by the callee and must be freed by the
-                /// caller. It is thus owned by the caller when the function returns.
                 ptr: *mut *mut u8,
 
                 /// Where to write the length of the value, if found.

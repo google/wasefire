@@ -25,18 +25,19 @@ is_dev() {
 }
 
 x ./scripts/ci-copyright.sh
+is_dev || x ./scripts/ci-changelog.sh
 x cargo xtask textreview
+x ./scripts/sync.sh
+x ./scripts/publish.sh --dry-run
+x ./scripts/wrapper.sh mdl -g -s markdownlint.rb .
 x ./scripts/ci-taplo.sh
-x git submodule update --init third_party/google/OpenSK
-x cargo xtask applet rust opensk
-x cargo xtask --release applet rust opensk
-( cd examples/rust/opensk
-  x cargo test --features=test
-  x cargo fmt -- --check
-  # TODO: Enable these 2 lines at some point.
-  # x cargo clippy --lib --target=wasm32-unknown-unknown -- --deny=warnings
-  # x cargo clippy --features=test -- --deny=warnings
-)
+x ./scripts/ci-applets.sh
+x ./scripts/ci-runners.sh
+x ./scripts/ci-tests.sh
+x ./scripts/hwci.sh host
+x ./scripts/ci-book.sh
+x ./scripts/footprint.sh
+x rm footprint.toml
 git diff --exit-code || e 'Modified files'
 [ -z "$(git status -s | tee /dev/stderr)" ] || e 'Untracked files'
 d "CI passed"

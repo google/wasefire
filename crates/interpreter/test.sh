@@ -19,13 +19,24 @@ set -e
 
 ensure_submodule third_party/WebAssembly/spec
 
+list_files() {
+  find ../../third_party/WebAssembly/spec/test/core \
+    -maxdepth 1 -name '*.wast' -execdir basename -s .wast {} \;
+}
+list_tests() {
+  sed -n 's/^test!(.*, "\([^"]*\)".*);$/\1/p;s/^test!(\([^,]*\).*);$/\1/p' tests/spec.rs
+}
+diff_sorted tests/spec.rs "$(list_files | sort)" $(list_tests)
+
 test_helper
 
 cargo test --lib --features=toctou
 cargo check --lib --target=thumbv7em-none-eabi
+cargo check --lib --target=thumbv7em-none-eabi --features=cache
 cargo check --lib --target=riscv32imc-unknown-none-elf \
   --features=portable-atomic/critical-section
 RUSTFLAGS=--cfg=portable_atomic_unsafe_assume_single_core \
   cargo check --lib --target=riscv32imc-unknown-none-elf
-cargo test --test=spec --features=debug,toctou,float-types,vector-types
 cargo check --example=hello
+# Run with `-- --test-threads=1 --nocapture` to see unsupported tests.
+cargo test --test=spec --features=debug,toctou,float-types,vector-types

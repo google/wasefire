@@ -30,6 +30,6 @@ cargo check --lib --features=full-api,wasm,std,log
 cargo check --lib --target=i686-unknown-linux-gnu --features=full-api,native,std
 cargo check --lib --target=i686-unknown-linux-gnu --features=full-api,native,std,log
 cargo check --lib --target=thumbv7em-none-eabi --features=full-api,wasm
-cargo check --lib --target=thumbv7em-none-eabi --features=full-api,wasm,defmt
+DEFMT_LOG=trace cargo check --lib --target=thumbv7em-none-eabi --features=full-api,wasm,defmt
 cargo check --lib --target=thumbv7em-none-eabi --features=full-api,native
-cargo check --lib --target=thumbv7em-none-eabi --features=full-api,native,defmt
+DEFMT_LOG=trace cargo check --lib --target=thumbv7em-none-eabi --features=full-api,native,defmt

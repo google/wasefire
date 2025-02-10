@@ -1,10 +1,10 @@
 [package]
 name = "wasefire"
-version = "0.6.0"
+version = "0.8.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
-edition = "2021"
+edition = "2024"
 description = "High-level Wasefire applet API"
 repository = "https://github.com/google/wasefire"
 include = ["/LICENSE", "/src/"]
@@ -22,11 +22,12 @@ const-default = { version = "1.0.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.6", default-features = false, optional = true }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
 rlsf = { version = "0.2.1", default-features = false, optional = true }
-sealed = { version = "0.5.0", default-features = false, optional = true }
+sealed = { version = "0.6.0", default-features = false, optional = true }
 typenum = { version = "1.17.0", default-features = false, optional = true }
-wasefire-applet-api = { version = "0.6.1", path = "../api", features = ["wasm"] }
-wasefire-error = { version = "0.1.1", path = "../error" }
-wasefire-sync = { version = "0.1.1", path = "../sync" }
+wasefire-applet-api = { version = "0.7.1-git", path = "../api", features = ["wasm"] }
+wasefire-error = { version = "0.1.3-git", path = "../error" }
+wasefire-one-of = { version = "0.1.1-git", path = "../one-of" }
+wasefire-sync = { version = "0.1.2-git", path = "../sync" }
 zeroize = { version = "1.7.0", default-features = false, features = ["derive"], optional = true }
 
 [features]
@@ -102,8 +103,9 @@ internal-rpc = ["dep:sealed"]
 internal-serial = ["dep:sealed"]
 
 [lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.missing-docs = "warn"
 rust.unreachable-pub = "warn"
-rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

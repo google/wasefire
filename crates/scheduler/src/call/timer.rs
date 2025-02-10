@@ -13,16 +13,16 @@
 // limitations under the License.
 
 use wasefire_applet_api::timer::{self as api, Api};
+use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-timer")]
 use wasefire_board_api::timer::{Api as _, Command};
-use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-timer")]
 use wasefire_board_api::{self as board, Id};
 
 #[cfg(feature = "board-api-timer")]
-use crate::event::{timer::Key, Handler};
-#[cfg(feature = "board-api-timer")]
 use crate::Trap;
+#[cfg(feature = "board-api-timer")]
+use crate::event::{Handler, timer::Key};
 use crate::{DispatchSchedulerCall, SchedulerCall};
 #[cfg(feature = "board-api-timer")]
 use crate::{Scheduler, Timer};
@@ -30,9 +30,9 @@ use crate::{Scheduler, Timer};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Allocate(call) => allocate(call),
-        Api::Start(call) => or_trap!("board-api-timer", start(call)),
-        Api::Stop(call) => or_trap!("board-api-timer", stop(call)),
-        Api::Free(call) => or_trap!("board-api-timer", free(call)),
+        Api::Start(call) => or_fail!("board-api-timer", start(call)),
+        Api::Stop(call) => or_fail!("board-api-timer", stop(call)),
+        Api::Free(call) => or_fail!("board-api-timer", free(call)),
     }
 }
 
@@ -50,7 +50,7 @@ fn allocate<B: Board>(mut call: SchedulerCall<B, api::allocate::Sig>) {
         let timers = &mut call.scheduler().timers;
         let timer = timers.iter().position(|x| x.is_none()).ok_or(Trap)?;
         timers[timer] = Some(Timer {});
-        call.scheduler().applet.enable(Handler {
+        call.applet().enable(Handler {
             key: Key { timer: Id::new(timer).unwrap() }.into(),
             inst,
             func: *handler_func,

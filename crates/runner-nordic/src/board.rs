@@ -16,8 +16,9 @@ use wasefire_board_api::{self as board, Event, Singleton};
 use wasefire_error::Error;
 use wasefire_scheduler as scheduler;
 
-use crate::{with_state, Board};
+use crate::{Board, with_state};
 
+pub mod applet;
 pub mod button;
 mod crypto;
 mod debug;
@@ -53,6 +54,7 @@ impl board::Api for Board {
         }
     }
 
+    type Applet = applet::Impl;
     type Button = button::Impl;
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;

@@ -32,6 +32,9 @@ pub(crate) fn new() -> Item {
         },
         item! {
             /// Allocates a timer (initially stopped) and returns its identifier.
+            ///
+            /// This is a [register function](crate#applet-closures). The associated unregister
+            /// function is [`free()`].
             fn allocate "ta" {
                 /// Function called when the timer triggers.
                 handler_func: fn { data: *const void },
@@ -63,14 +66,14 @@ pub(crate) fn new() -> Item {
             /// Note that if the timer triggers while being stopped, the handler may still be
             /// called.
             fn stop "tc" {
-                /// The identifier of the timer to start.
+                /// The identifier of the timer to stop.
                 id: usize,
             } -> ()
         },
         item! {
             /// Deallocates a stopped timer given its identifier.
             fn free "td" {
-                /// The identifier of the timer to start.
+                /// The identifier of the timer to free.
                 id: usize,
             } -> ()
         },

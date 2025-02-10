@@ -13,36 +13,36 @@
 // limitations under the License.
 
 use core::alloc::{GlobalAlloc, Layout};
-use core::mem::MaybeUninit;
 use core::num::NonZeroUsize;
-use core::ptr::{null_mut, NonNull};
+use core::ptr::{NonNull, null_mut};
 
 use const_default::ConstDefault;
 use rlsf::Tlsf;
 
 use crate::sync::Mutex;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn init() {
     assert!(!wasefire_sync::executed!());
     const SIZE: usize = 32768;
     #[repr(align(16))]
-    struct Pool(MaybeUninit<[u8; SIZE]>);
-    static mut POOL: Pool = Pool(MaybeUninit::uninit());
+    struct Pool([u8; SIZE]);
+    static mut POOL: Pool = Pool([0; SIZE]);
     // SAFETY: This function is called at most once and POOL is only accessed here.
-    let pool_ptr = NonNull::new(unsafe { POOL.0.as_mut_ptr() }).unwrap();
+    let pool_ptr = NonNull::new(unsafe { &raw mut POOL.0 }).unwrap();
     let mut allocator = ALLOCATOR.0.lock();
     // SAFETY: POOL is static and won't be used again.
     let size = unsafe { allocator.insert_free_block_ptr(pool_ptr) };
     assert!(size > NonZeroUsize::new(SIZE / 2));
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn alloc(size: u32, align: u32) -> u32 {
-    let layout = match Layout::from_size_align(size as usize, align as usize) {
-        Ok(x) => x,
-        Err(_) => return 0,
-    };
+    let Ok(layout) = Layout::from_size_align(size as usize, align as usize) else { return 0 };
+    if size == 0 {
+        return 0; // this is not checked by Layout::from_size_align()
+    }
+    // SAFETY: Layout has non-zero size.
     unsafe { ALLOCATOR.alloc(layout) as u32 }
 }
 

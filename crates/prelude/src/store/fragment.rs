@@ -19,7 +19,7 @@ use core::ops::Range;
 
 use wasefire_applet_api::store::fragment as api;
 
-use crate::{convert_bool, convert_unit, Error};
+use crate::{Error, convert_bool, convert_unit};
 
 /// Inserts an entry in the store.
 ///
@@ -53,8 +53,10 @@ pub fn find(keys: Range<usize>) -> Result<Option<Box<[u8]>>, Error> {
     let mut len = 0;
     let params = api::find::Params { keys: encode_keys(keys)?, ptr: &mut ptr, len: &mut len };
     if convert_bool(unsafe { api::find(params) })? {
-        let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
-        Ok(Some(unsafe { Box::from_raw(ptr) }))
+        // SAFETY: If `api::find()` returns true and `len` is non-zero then it allocated. The rest
+        // is similar as in `crate::platform::serial()`.
+        let ptr = core::ptr::slice_from_raw_parts_mut(ptr, len);
+        Ok(Some(if len == 0 { Box::new([]) } else { unsafe { Box::from_raw(ptr) } }))
     } else {
         Ok(None)
     }
@@ -63,5 +65,5 @@ pub fn find(keys: Range<usize>) -> Result<Option<Box<[u8]>>, Error> {
 fn encode_keys(keys: Range<usize>) -> Result<u32, Error> {
     let start = u16::try_from(keys.start).map_err(|_| Error::user(0))? as u32;
     let end = u16::try_from(keys.end).map_err(|_| Error::user(0))? as u32;
-    Ok(end << 16 | start)
+    Ok((end << 16) | start)
 }

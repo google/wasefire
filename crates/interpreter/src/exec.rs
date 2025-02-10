@@ -91,7 +91,7 @@ pub struct Call<'a, 'm> {
     store: &'a mut Store<'m>,
 }
 
-impl<'m> Default for Store<'m> {
+impl Default for Store<'_> {
     fn default() -> Self {
         Self {
             id: STORE_ID.next(),
@@ -195,7 +195,7 @@ impl<'m> Store<'m> {
             let mut parser = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            let thread = Thread::new(parser, vec![Frame::new(inst_id, 0, &[], locals)]);
+            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals));
             let result = thread.run(self)?;
             assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
         }
@@ -225,7 +225,7 @@ impl<'m> Store<'m> {
         let mut locals = args;
         append_locals(&mut parser, &mut locals);
         let frame = Frame::new(inst_id, t.results.len(), &[], locals);
-        Thread::new(parser, vec![frame]).run(self)
+        Thread::new(parser, frame).run(self)
     }
 
     /// Returns the value of a global of an instance.
@@ -287,7 +287,7 @@ impl<'m> Store<'m> {
         let name = HostName { module, name };
         check(self.func_default.is_none())?;
         check(self.insts.is_empty())?;
-        check(self.funcs.last().map_or(true, |x| x.0 < name))?;
+        check(self.funcs.last().is_none_or(|x| x.0 < name))?;
         self.funcs.push((name, type_));
         Ok(())
     }
@@ -297,11 +297,7 @@ impl<'m> Store<'m> {
     /// This function returns `None` if nothing is running.
     // NOTE: This is like poll. Could be called next.
     pub fn last_call(&mut self) -> Option<Call<'_, 'm>> {
-        if self.threads.is_empty() {
-            None
-        } else {
-            Some(Call { store: self })
-        }
+        if self.threads.is_empty() { None } else { Some(Call { store: self }) }
     }
 }
 
@@ -395,7 +391,7 @@ impl Ptr {
         let inst = inst.into_repr() as u32;
         assert_eq!(inst & !Self::INST_MASK, 0);
         assert_eq!(idx & !Self::INDEX_MASK, 0);
-        Self(inst << Self::INDEX_BITS | idx)
+        Self((inst << Self::INDEX_BITS) | idx)
     }
 
     fn instance(self) -> Side {
@@ -479,7 +475,7 @@ pub enum RunAnswer {
     Host,
 }
 
-impl<'a, 'm> RunResult<'a, 'm> {
+impl RunResult<'_, '_> {
     pub fn forget(self) -> RunAnswer {
         match self {
             RunResult::Done(result) => RunAnswer::Done(result),
@@ -618,11 +614,7 @@ impl<'m> Store<'m> {
             }
         }
         let (ptr, ext_type_) = found.ok_or_else(not_found)?;
-        if ext_type_.matches(&imp_type_) {
-            Ok(ptr)
-        } else {
-            Err(not_found())
-        }
+        if ext_type_.matches(&imp_type_) { Ok(ptr) } else { Err(not_found()) }
     }
 }
 
@@ -646,7 +638,7 @@ impl<'a, 'm> ComputeElem<'a, 'm> {
     }
 }
 
-impl<'a, 'm> parser::ParseElem<'m, Use> for ComputeElem<'a, 'm> {
+impl<'m> parser::ParseElem<'m, Use> for ComputeElem<'_, 'm> {
     fn mode(&mut self, mode: parser::ElemMode<'_, 'm, Use>) -> MResult<(), Use> {
         let mode = match mode {
             parser::ElemMode::Passive => ElemMode::Passive,
@@ -690,7 +682,7 @@ impl<'a, 'm> ComputeData<'a, 'm> {
     }
 }
 
-impl<'a, 'm> parser::ParseData<'m, Use> for ComputeData<'a, 'm> {
+impl<'m> parser::ParseData<'m, Use> for ComputeData<'_, 'm> {
     fn mode(&mut self, mode: parser::DataMode<'_, 'm, Use>) -> MResult<(), Use> {
         let mode = match mode {
             parser::DataMode::Passive => DataMode::Passive,
@@ -727,14 +719,13 @@ enum ThreadResult<'m> {
 }
 
 impl<'m> Thread<'m> {
-    fn new(parser: Parser<'m>, frames: Vec<Frame<'m>>) -> Thread<'m> {
-        Thread { parser, frames }
+    fn new(parser: Parser<'m>, frame: Frame<'m>) -> Thread<'m> {
+        Thread { parser, frames: vec![frame] }
     }
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
-        let frames = vec![Frame::new(inst_id, 1, &[], Vec::new())];
         let parser = mut_parser.clone();
-        let mut thread = Thread::new(parser, frames);
+        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new()));
         let (parser, results) = loop {
             let p = thread.parser.save();
             match thread.step(store).unwrap() {
@@ -904,7 +895,7 @@ impl<'m> Thread<'m> {
                 let s = self.pop_value().unwrap_i32() as usize;
                 let d = self.pop_value().unwrap_i32() as usize;
                 let mem = store.mem(inst_id, 0);
-                if core::cmp::max(s, d).checked_add(n).map_or(true, |x| x > mem.len() as usize) {
+                if core::cmp::max(s, d).checked_add(n).is_none_or(|x| x > mem.len() as usize) {
                     return Err(trap());
                 }
                 mem.data.copy_within(s .. s + n, d);
@@ -914,7 +905,7 @@ impl<'m> Thread<'m> {
                 let val = self.pop_value().unwrap_i32() as u8;
                 let d = self.pop_value().unwrap_i32() as usize;
                 let mem = store.mem(inst_id, 0);
-                if d.checked_add(n).map_or(true, |x| x > mem.len() as usize) {
+                if d.checked_add(n).is_none_or(|x| x > mem.len() as usize) {
                     memory_too_small(d, n, mem);
                     return Err(trap());
                 }
@@ -959,7 +950,7 @@ impl<'m> Thread<'m> {
                 let val = self.pop_value();
                 let i = self.pop_value().unwrap_i32() as usize;
                 let table = store.table(inst_id, x);
-                if i.checked_add(n).map_or(true, |x| x > table.elems.len()) {
+                if i.checked_add(n).is_none_or(|x| x > table.elems.len()) {
                     return Err(trap());
                 }
                 table.elems[i ..][.. n].fill(val);
@@ -1372,8 +1363,8 @@ impl<'m> Thread<'m> {
 }
 
 fn table_init(d: usize, s: usize, n: usize, table: &mut Table, elems: &[Val]) -> Result<(), Error> {
-    if s.checked_add(n).map_or(true, |x| x > elems.len())
-        || d.checked_add(n).map_or(true, |x| x > table.elems.len())
+    if s.checked_add(n).is_none_or(|x| x > elems.len())
+        || d.checked_add(n).is_none_or(|x| x > table.elems.len())
     {
         Err(trap())
     } else {
@@ -1383,8 +1374,8 @@ fn table_init(d: usize, s: usize, n: usize, table: &mut Table, elems: &[Val]) ->
 }
 
 fn memory_init(d: usize, s: usize, n: usize, mem: &mut Memory, data: &[u8]) -> Result<(), Error> {
-    if s.checked_add(n).map_or(true, |x| x > data.len())
-        || d.checked_add(n).map_or(true, |x| x > mem.len() as usize)
+    if s.checked_add(n).is_none_or(|x| x > data.len())
+        || d.checked_add(n).is_none_or(|x| x > mem.len() as usize)
     {
         memory_too_small(d, n, mem);
         Err(trap())
@@ -1482,7 +1473,7 @@ trait Growable {
     fn grow(&mut self, n: u32, x: Self::Item);
 }
 
-impl<'m> Growable for Memory<'m> {
+impl Growable for Memory<'_> {
     type Item = ();
     fn size(&self) -> u32 {
         self.size

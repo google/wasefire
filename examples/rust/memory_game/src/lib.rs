@@ -25,9 +25,9 @@
 #![no_std]
 wasefire::applet!();
 
+use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
-use alloc::{format, vec};
 use core::cell::Cell;
 use core::time::Duration;
 
@@ -43,13 +43,12 @@ fn main() {
         while serial::read_byte(&UsbSerial).unwrap() != 0x0d {}
 
         // Generate a question for this level.
-        let mut question = vec![0; level];
-        rng::fill_bytes(&mut question).unwrap();
+        let mut question = rng::bytes(level).unwrap();
         for byte in &mut question {
             const BASE32: [u8; 32] = *b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
             *byte = BASE32[(*byte & 0x1f) as usize];
         }
-        let mut question = String::from_utf8(question).unwrap();
+        let mut question = String::from_utf8(question.into()).unwrap();
 
         // Display the question.
         process(3, "Memorize this", &mut question, |_, x| x == 0x0d);

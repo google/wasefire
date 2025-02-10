@@ -13,9 +13,9 @@
 // limitations under the License.
 
 use wasefire_applet_api::gpio::{self as api, Api};
+use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-gpio")]
 use wasefire_board_api::gpio::Api as _;
-use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-gpio")]
 use wasefire_board_api::{self as board, Id, Support};
 #[cfg(feature = "board-api-gpio")]
@@ -26,10 +26,10 @@ use crate::{DispatchSchedulerCall, SchedulerCall};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Count(call) => count(call),
-        Api::Configure(call) => or_trap!("board-api-gpio", configure(call)),
-        Api::Read(call) => or_trap!("board-api-gpio", read(call)),
-        Api::Write(call) => or_trap!("board-api-gpio", write(call)),
-        Api::LastWrite(call) => or_trap!("board-api-gpio", last_write(call)),
+        Api::Configure(call) => or_fail!("board-api-gpio", configure(call)),
+        Api::Read(call) => or_fail!("board-api-gpio", read(call)),
+        Api::Write(call) => or_fail!("board-api-gpio", write(call)),
+        Api::LastWrite(call) => or_fail!("board-api-gpio", last_write(call)),
     }
 }
 

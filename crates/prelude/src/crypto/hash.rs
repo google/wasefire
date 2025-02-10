@@ -20,7 +20,7 @@ use wasefire_applet_api::crypto::hash as api;
 use wasefire_error::Code;
 
 pub use self::api::Algorithm;
-use crate::{convert, convert_bool, convert_unit, Error};
+use crate::{Error, convert, convert_bool, convert_unit};
 
 /// Hashing context.
 #[cfg(feature = "api-crypto-hash")]

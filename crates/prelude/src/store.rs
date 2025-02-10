@@ -23,7 +23,7 @@ use alloc::vec::Vec;
 use wasefire_applet_api::store as api;
 
 #[cfg(feature = "api-store")]
-use crate::{convert, convert_bool, convert_unit, Error};
+use crate::{Error, convert, convert_bool, convert_unit};
 
 #[cfg(feature = "api-store-fragment")]
 pub mod fragment;
@@ -56,8 +56,10 @@ pub fn find(key: usize) -> Result<Option<Box<[u8]>>, Error> {
     let mut len = 0;
     let params = api::find::Params { key, ptr: &mut ptr, len: &mut len };
     if convert_bool(unsafe { api::find(params) })? {
-        let ptr = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
-        Ok(Some(unsafe { Box::from_raw(ptr) }))
+        // SAFETY: If `api::find()` returns true and `len` is non-zero then it allocated. The rest
+        // is similar as in `crate::platform::serial()`.
+        let ptr = core::ptr::slice_from_raw_parts_mut(ptr, len);
+        Ok(Some(if len == 0 { Box::new([]) } else { unsafe { Box::from_raw(ptr) } }))
     } else {
         Ok(None)
     }
@@ -69,11 +71,10 @@ pub fn keys() -> Result<Vec<u16>, Error> {
     let mut ptr = core::ptr::null_mut();
     let params = api::keys::Params { ptr: &mut ptr };
     let len = convert(unsafe { api::keys(params) })?;
-    if len == 0 {
-        Ok(Vec::new())
-    } else {
-        Ok(unsafe { Vec::from_raw_parts(ptr as *mut u16, len, len) })
-    }
+    let ptr = ptr as *mut u16;
+    // SAFETY: If `len` is non-zero then `api::keys()` allocated. The rest is similar as in
+    // `crate::platform::serial()`.
+    Ok(if len == 0 { Vec::new() } else { unsafe { Vec::from_raw_parts(ptr, len, len) } })
 }
 
 /// Clears the store, removing all entries.

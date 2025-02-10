@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.3.1-git
+
+### Minor
+
+- Use Rust edition 2024
+
+### Patch
+
+- Fix clippy lints
+
+## 0.3.0
+
+### Major
+
+- Use `wasefire-error` for errors
+
+### Patch
+
+- Fix rust and clippy lints
+
 ## 0.2.4
 
 ### Patch
@@ -54,4 +74,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 2 -->

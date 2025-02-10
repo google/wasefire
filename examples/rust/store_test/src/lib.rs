@@ -21,13 +21,13 @@ use alloc::vec::Vec;
 
 fn main() {
     store::clear().unwrap();
-    debug::assert(store::keys().unwrap().is_empty());
+    assert!(store::keys().unwrap().is_empty());
     test_insert();
     test_remove();
     test_find();
     test_keys();
     test_fragment();
-    debug::exit(true);
+    scheduling::exit();
 }
 
 fn test_insert() {
@@ -62,7 +62,7 @@ fn test_find() {
         let expected = (!removed).then(|| value(key));
         debug!("- Check {key:4} is {}", if removed { "-removed" } else { "present" });
         let actual = store::find(key).unwrap();
-        debug::assert_eq(&actual.as_deref(), &expected.as_deref());
+        assert_eq!(actual.as_deref(), expected.as_deref());
     }
     for &key in INSERTED {
         let removed = REMOVED.contains(&key);
@@ -86,17 +86,17 @@ fn test_keys() {
     let mut actual = store::keys().unwrap();
     actual.sort();
     debug!("- {actual:?}");
-    debug::assert_eq(&actual, &expected);
+    assert_eq!(actual, expected);
 }
 
 fn test_fragment() {
     debug!("test_fragment(): Test fragmented entries.");
     debug!("- insert then find");
     store::fragment::insert(0 .. 2, &[0xca; 1500]).unwrap();
-    debug::assert_eq(&store::fragment::find(0 .. 2).unwrap().unwrap()[..], &[0xca; 1500][..]);
+    assert_eq!(store::fragment::find(0 .. 2).unwrap().unwrap()[..], [0xca; 1500]);
     debug!("- remove then find");
     store::fragment::remove(0 .. 2).unwrap();
-    debug::assert(store::fragment::find(0 .. 2).unwrap().is_none());
+    assert!(store::fragment::find(0 .. 2).unwrap().is_none());
 }
 
 const INSERTED: &[usize] = &[0, 1, 2, 3, 100, 500, 1000, 2000];

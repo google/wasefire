@@ -13,30 +13,30 @@
 // limitations under the License.
 
 use wasefire_applet_api::uart::{self as api, Api};
+use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-uart")]
 use wasefire_board_api::uart::{Api as _, Direction, Event};
-use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-uart")]
 use wasefire_board_api::{self as board, Id, Support};
 
 #[cfg(feature = "board-api-uart")]
+use crate::Trap;
+#[cfg(feature = "board-api-uart")]
 use crate::applet::store::MemoryApi;
 #[cfg(feature = "board-api-uart")]
-use crate::event::{uart::Key, Handler};
-#[cfg(feature = "board-api-uart")]
-use crate::Trap;
+use crate::event::{Handler, uart::Key};
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Count(call) => count(call),
-        Api::SetBaudrate(call) => or_trap!("board-api-uart", set_baudrate(call)),
-        Api::Start(call) => or_trap!("board-api-uart", start(call)),
-        Api::Stop(call) => or_trap!("board-api-uart", stop(call)),
-        Api::Read(call) => or_trap!("board-api-uart", read(call)),
-        Api::Write(call) => or_trap!("board-api-uart", write(call)),
-        Api::Register(call) => or_trap!("board-api-uart", register(call)),
-        Api::Unregister(call) => or_trap!("board-api-uart", unregister(call)),
+        Api::SetBaudrate(call) => or_fail!("board-api-uart", set_baudrate(call)),
+        Api::Start(call) => or_fail!("board-api-uart", start(call)),
+        Api::Stop(call) => or_fail!("board-api-uart", stop(call)),
+        Api::Read(call) => or_fail!("board-api-uart", read(call)),
+        Api::Write(call) => or_fail!("board-api-uart", write(call)),
+        Api::Register(call) => or_fail!("board-api-uart", register(call)),
+        Api::Unregister(call) => or_fail!("board-api-uart", unregister(call)),
     }
 }
 
@@ -82,8 +82,8 @@ fn stop<B: Board>(call: SchedulerCall<B, api::stop::Sig>) {
 #[cfg(feature = "board-api-uart")]
 fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { uart, ptr, len } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         let output = memory.get_mut(*ptr, *len)?;
@@ -95,8 +95,8 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
 #[cfg(feature = "board-api-uart")]
 fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let api::write::Params { uart, ptr, len } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.memory();
+    let applet = call.applet();
+    let memory = applet.memory();
     let result = try {
         let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         let input = memory.get(*ptr, *len)?;
@@ -109,11 +109,11 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
 fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { uart, event, handler_func, handler_data } = call.read();
     let inst = call.inst();
-    let scheduler = call.scheduler();
+    let applet = call.applet();
     let result = try {
         let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         let event = convert_event(uart, *event)?;
-        scheduler.applet.enable(Handler {
+        applet.enable(Handler {
             key: Key::from(&event).into(),
             inst,
             func: *handler_func,
@@ -127,12 +127,11 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
 #[cfg(feature = "board-api-uart")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { uart, event } = call.read();
-    let scheduler = call.scheduler();
     let result = try {
         let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
         let event = convert_event(uart, *event)?;
         board::Uart::<B>::disable(uart, event.direction).map_err(|_| Trap)?;
-        scheduler.disable_event(Key::from(&event).into())?;
+        call.scheduler().disable_event(Key::from(&event).into())?;
     };
     call.reply(result);
 }

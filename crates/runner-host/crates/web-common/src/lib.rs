@@ -17,6 +17,7 @@
 //! The web client plays the role of the hardware. The web server is the host runner.
 
 use serde::{Deserialize, Serialize};
+use wasefire_protocol::applet::ExitStatus;
 
 /// Events from the hardware.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -50,7 +51,13 @@ pub enum Command {
     Set { component_id: usize, state: bool },
 
     /// Prints a debug message.
-    Log { message: String },
+    Log { timestamp: String, message: String },
+
+    /// Indicates that the applet started.
+    Start,
+
+    /// Indicates that the applet exited.
+    Exit { status: ExitStatus },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -66,60 +73,4 @@ pub enum ButtonState {
 pub enum Component {
     MonochromeLed { id: usize },
     Button { id: usize },
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn board_config() {
-        let board = Command::BoardConfig {
-            components: vec![Component::MonochromeLed { id: 1 }, Component::Button { id: 2 }],
-        };
-        assert_eq!(
-            serde_json::to_string(&board).unwrap(),
-            "{\"type\":\"board_config\",\"components\":[{\"type\":\"monochrome_led\",\"id\":1},{\"\
-             type\":\"button\",\"id\":2}]}"
-        );
-        assert_eq!(
-            serde_json::from_str::<Command>(
-                r#"{ "type": "board_config",
-                     "components": [
-                       { "type":"monochrome_led", "id": 1 },
-                       { "type": "button", "id":2 } ] }"#
-            )
-            .unwrap(),
-            board
-        );
-    }
-
-    #[test]
-    fn set() {
-        let set = Command::Set { component_id: 1, state: true };
-        assert_eq!(
-            serde_json::to_string(&set).unwrap(),
-            "{\"type\":\"set\",\"componentId\":1,\"state\":true}"
-        );
-        assert_eq!(
-            serde_json::from_str::<Command>(
-                r#"{ "type": "set", "componentId": 1, "state": true }"#
-            )
-            .unwrap(),
-            set
-        );
-    }
-
-    #[test]
-    fn log() {
-        let log = Command::Log { message: "hello".to_string() };
-        assert_eq!(
-            serde_json::to_string(&log).unwrap(),
-            "{\"type\":\"log\",\"message\":\"hello\"}"
-        );
-        assert_eq!(
-            serde_json::from_str::<Command>(r#"{ "type": "log", "message": "hello" }"#).unwrap(),
-            log
-        );
-    }
 }

@@ -15,18 +15,20 @@
 use std::sync::OnceLock;
 use std::time::Instant;
 
-use wasefire_board_api as board;
+use {wasefire_board_api as board, wasefire_logger as log};
 
 pub enum Impl {}
 
 impl board::debug::Api for Impl {
     const MAX_TIME: u64 = u64::MAX;
 
-    #[cfg(feature = "web")]
     fn println(line: &str) {
         let time = Self::time();
-        let message = format!("{}.{:06}: {}", time / 1000000, time % 1000000, line);
-        crate::with_state(|state| state.web.println(message))
+        let timestamp = format!("{}.{:06}", time / 1000000, time % 1000000);
+        crate::with_state(|state| match &state.web {
+            Some(x) => x.println(timestamp, line.to_string()),
+            None => log::println!("{timestamp}: {line}"),
+        })
     }
 
     fn time() -> u64 {
@@ -34,9 +36,5 @@ impl board::debug::Api for Impl {
         let now = Instant::now();
         let origin = ORIGIN.get_or_init(|| now);
         now.duration_since(*origin).as_micros() as u64
-    }
-
-    fn exit(success: bool) -> ! {
-        std::process::exit(if success { 0 } else { 1 })
     }
 }

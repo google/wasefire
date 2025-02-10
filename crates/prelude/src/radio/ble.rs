@@ -20,7 +20,7 @@ use bytemuck::Zeroable;
 use wasefire_applet_api::radio::ble as api;
 pub use wasefire_applet_api::radio::ble::{Advertisement, Event};
 
-use crate::{convert_bool, convert_unit, Error};
+use crate::{Error, convert_bool, convert_unit};
 
 /// Reads the next advertisement packet, if any.
 pub fn read_advertisement() -> Result<Option<Advertisement>, Error> {

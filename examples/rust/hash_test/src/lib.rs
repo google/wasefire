@@ -21,7 +21,7 @@ use alloc::vec;
 
 #[cfg(feature = "rust-crypto")]
 use digest::{Digest, Mac};
-use wasefire::crypto::hash::{hkdf_expand, hkdf_extract, Algorithm};
+use wasefire::crypto::hash::{Algorithm, hkdf_expand, hkdf_extract};
 #[cfg(not(feature = "rust-crypto"))]
 use wasefire::crypto::hash::{Digest, Hmac};
 #[cfg(feature = "rust-crypto")]
@@ -35,7 +35,7 @@ pub fn main() -> ! {
     test_hmac("sha384", Algorithm::Sha384, HMAC_SHA384_VECTORS);
     test_hkdf("sha256", Algorithm::Sha256, HKDF_SHA256_VECTORS);
     test_hkdf("sha384", Algorithm::Sha384, HKDF_SHA384_VECTORS);
-    debug::exit(true);
+    scheduling::exit();
 }
 
 fn test(name: &str, algorithm: Algorithm, vectors: &[Vector]) {
@@ -57,7 +57,7 @@ fn test(name: &str, algorithm: Algorithm, vectors: &[Vector]) {
             Digest::digest(algorithm, message, &mut digest).unwrap();
             digest
         };
-        debug::assert_eq(&digest_[..], digest);
+        assert_eq!(digest_[..], digest[..]);
     }
 }
 
@@ -90,7 +90,7 @@ fn test_hmac(name: &str, algorithm: Algorithm, vectors: &[HmacVector]) {
             Hmac::hmac(algorithm, key, msg, &mut mac).unwrap();
             mac
         };
-        debug::assert_eq(&mac_[..], mac);
+        assert_eq!(mac_[..], mac[..]);
     }
 }
 
@@ -108,10 +108,10 @@ fn test_hkdf(name: &str, algorithm: Algorithm, vectors: &[HkdfVector]) {
         debug!("- {test_case}");
         let mut prk_ = vec![0; algorithm.digest_len()];
         hkdf_extract(algorithm, salt, ikm, &mut prk_).unwrap();
-        debug::assert_eq(&prk_[..], prk);
+        assert_eq!(prk_[..], prk[..]);
         let mut okm_ = vec![0; okm.len()];
         hkdf_expand(algorithm, prk, info, &mut okm_).unwrap();
-        debug::assert_eq(&okm_[..], okm);
+        assert_eq!(okm_[..], okm[..]);
     }
 }
 

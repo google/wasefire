@@ -14,12 +14,12 @@
 
 use core::alloc::{GlobalAlloc, Layout};
 
-extern "C" {
-    fn board_alloc(size: u32, align: u32) -> *mut u8;
-    fn board_dealloc(ptr: *mut u8, size: u32, align: u32);
+unsafe extern "C" {
+    unsafe fn board_alloc(size: u32, align: u32) -> *mut u8;
+    unsafe fn board_dealloc(ptr: *mut u8, size: u32, align: u32);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn applet_init() {}
 
 struct Allocator;

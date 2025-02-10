@@ -20,7 +20,11 @@ set -e
 
 [ "$1" = --force ] && FORCE=y
 
-cargo xtask update-apis
+update_api() {
+  cargo update-api --features=wasefire-applet-api-desc/full-api -- \
+    --lang=$1 --output=examples/$1/api.$2
+}
+update_api assemblyscript ts
 
 add_lint() { echo "$3 = \"$2\"" >> $1; }
 for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
@@ -29,19 +33,25 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   grep -q '^\[lints\.' $file && e "unexpected [lints.*] section in $file"
   sed -i '/^\[lints\]$/q' $file
   [ "$(tail -n1 $file)" = '[lints]' ] || printf '\n[lints]\n' >> $file
+  # TODO(https://github.com/rust-lang/rust-clippy/issues/13994): Remove when fixed.
+  add_lint $file allow clippy.literal-string-with-formatting-args
+  add_lint $file warn clippy.mod-module-files
   add_lint $file allow clippy.unit-arg
   # add_lint $file warn rust.elided-lifetimes-in-paths
-  # add_lint $file warn rust.missing-debug-implementations
-  # TODO: Use the same [ -e src/lib.rs -a "$(package_publish)" = true ] test is test-helper.
+  # TODO: Use the same [ -e src/lib.rs -a "$(package_publish)" = true ] test as in test-helper.
   case $crate in
-    board|prelude) add_lint $file warn rust.missing-docs ;;
+    board|one-of|prelude) add_lint $file warn rust.missing-docs ;;
+  esac
+  # TODO(bytemuck > 1.20.0): Remove.
+  case $crate in
+    board) echo 'rust.unexpected_cfgs = { level = "allow", check-cfg = '\
+'["cfg(target_arch, values(\"spirv\"))"] }' >> $file ;;
   esac
   # TODO: Enable for all crates.
   case $crate in
     interpreter|runner-*|scheduler|xtask|*/fuzz) ;;
     *) add_lint $file warn rust.unreachable-pub ;;
   esac
-  add_lint $file warn rust.unsafe-op-in-unsafe-fn
   case $crate in
     */fuzz) ;;
     *) add_lint $file warn rust.unused-crate-dependencies ;;
@@ -49,10 +59,12 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   # add_lint $file warn rust.unused-results
 done
 
-( cd crates/protocol/crates/schema
-  cargo run --features=host
-  cargo run --features=device
-)
+for dir in $(git ls-files '*/sync.sh'); do
+  dir=$(dirname $dir)
+  [ $dir = scripts ] && continue
+  i "Sync $dir"
+  ( cd $dir && ./sync.sh )
+done
 
 book_example() {
   local src=book/src/applet/prelude/$1.rs
@@ -82,12 +94,12 @@ book_example button1 button
 book_example button2 led
 book_example timer button_abort
 book_example usb memory_game
+book_example rpc protocol
 book_example store store
 
 GIT_MODULES='
 SchemaStore/schemastore
 WebAssembly/spec
-google/OpenSK
 rust-lang/rustup
 wasm3/wasm-coremark
 '
@@ -97,9 +109,6 @@ for m in $GIT_MODULES; do
   echo "[submodule \"third_party/$m\"]"
   printf "\tpath = third_party/$m\n"
   printf "\turl = https://github.com/$m.git\n"
-  case $m in
-    google/OpenSK) printf "\tbranch = develop\n" ;;
-  esac
 done > .gitmodules
 
 # This is done here instead of upgrade.sh for 2 reasons:

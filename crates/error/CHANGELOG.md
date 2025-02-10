@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.3-git
+
+### Minor
+
+- Use Rust edition 2024
+
+### Patch
+
+- Fix clippy lints
+- Add clippy lint
+
+## 0.1.2
+
+### Minor
+
+- Add `Error::pop()` to propagate errors through space
+- Implement `From<std::io::Error>` for `Error` with `std` feature
+- Add `std` feature
+
 ## 0.1.1
 
 ### Minor
@@ -17,4 +36,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 1 -->

@@ -1,21 +1,18 @@
-# Github codespace tips
+# GitHub Codespace tips
 
 ## Editing an applet
 
-For rust-analyzer to work properly, you need to open the applet in its own
-workspace, for example:
+For rust-analyzer to work properly, you need to open the applet in its own workspace, for example:
 
 ```shell
 code examples/rust/exercises/part-1
 ```
 
-However, this will also modify the working directory of the terminal. To be able
-to run `cargo xtask`, you will need to go back to the root of the git
-repository:
+You can then open the `src/lib.rs` file and benefit from documentation (hovering a name),
+auto-completion, diagnostics, and other rust-analyzer features.
 
-```shell
-cd /workspaces/wasefire
-```
+## Troubleshooting
 
-You can then open the `src/lib.rs` file and benefit from documentation (hovering
-a name), auto-completion, diagnostics, and other rust-analyzer features.
+If you get an error about `lsmod` not found, you must run `exec bash` to make sure the
+`WASEFIRE_PROTOCOL` environment variable is set. The `.bashrc` file is modified as part of the
+Codespace setup and it may happen that the initial terminal was started before the setup finished.

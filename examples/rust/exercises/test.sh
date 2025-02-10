@@ -20,7 +20,7 @@ set -ex
 for part in part-*; do
   ( cd $part
     # This is only to update the Cargo.lock file.
-    cargo check --target=wasm32-unknown-unknown 2>/dev/null
+    RUSTFLAGS=--allow=warnings cargo check --target=wasm32-unknown-unknown
     # We check the usual for solutions though.
     [ ${part%-sol} = $part ] && exit
     cargo fmt -- --check

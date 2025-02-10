@@ -15,7 +15,7 @@
 use alloc::boxed::Box;
 
 use embedded_hal::digital::OutputPin;
-use nrf52840_hal::pac::uarte0::{errorsrc, RegisterBlock};
+use nrf52840_hal::pac::uarte0::{RegisterBlock, errorsrc};
 use nrf52840_hal::pac::{UARTE0, UARTE1};
 use nrf52840_hal::target_constants::{EASY_DMA_SIZE, SRAM_LOWER, SRAM_UPPER};
 use nrf52840_hal::{gpio, uarte};
@@ -24,7 +24,7 @@ use wasefire_board_api::{Error, Id, Support};
 use wasefire_error::Code;
 use wasefire_logger as log;
 
-use crate::{with_state, Board};
+use crate::{Board, with_state};
 
 pub struct Uarts {
     uarte0: UARTE0,
@@ -147,7 +147,7 @@ struct Uart<'a> {
     state: &'a mut State,
 }
 
-impl<'a> Uart<'a> {
+impl Uart<'_> {
     fn stoptx(regs: &RegisterBlock) {
         regs.tasks_stoptx.write(|w| w.tasks_stoptx().set_bit());
         while regs.events_txstopped.read().events_txstopped().bit_is_clear() {}
@@ -258,7 +258,7 @@ impl Api for Impl {
         if EASY_DMA_SIZE < input.len() || !in_ram(input) {
             return Err(Error::user(Code::InvalidArgument));
         }
-        with_state(|state| {
+        with_state::<Result<_, Error>>(|state| {
             let Uart { regs, state } = state.uarts.get(uart);
             Error::user(Code::InvalidState).check(state.running)?;
             regs.txd.ptr.write(|w| unsafe { w.ptr().bits(input.as_ptr() as u32) });
@@ -326,7 +326,7 @@ fn set_high(psel_bits: u32) {
 struct PrettyError<'a>(&'a errorsrc::R);
 
 #[cfg(feature = "debug")]
-impl<'a> defmt::Format for PrettyError<'a> {
+impl defmt::Format for PrettyError<'_> {
     fn format(&self, fmt: defmt::Formatter) {
         defmt::write!(fmt, "UART error:");
         if self.0.overrun().is_present() {

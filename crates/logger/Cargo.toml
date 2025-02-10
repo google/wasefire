@@ -1,10 +1,10 @@
 [package]
 name = "wasefire-logger"
-version = "0.1.5"
+version = "0.1.7-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
-edition = "2021"
+edition = "2024"
 description = "Wasefire platform logging"
 repository = "https://github.com/google/wasefire"
 include = ["/LICENSE", "/src/"]
@@ -20,7 +20,8 @@ defmt = ["dep:defmt"]
 log = ["dep:log"]
 
 [lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
-rust.unsafe-op-in-unsafe-fn = "warn"
 rust.unused-crate-dependencies = "warn"

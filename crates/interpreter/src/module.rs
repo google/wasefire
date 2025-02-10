@@ -30,7 +30,7 @@ pub struct Module<'m> {
     cache: Cache<CacheKey, CacheValue>,
 }
 
-impl<'m> Default for Module<'m> {
+impl Default for Module<'_> {
     fn default() -> Self {
         Self { binary: &[], types: Vec::new(), cache: Cache::unbounded() }
     }
@@ -89,7 +89,7 @@ impl<'m> Module<'m> {
         &self.types
     }
 
-    pub(crate) fn imports(&self) -> impl Iterator<Item = Import<'m>> {
+    pub(crate) fn imports(&self) -> impl Iterator<Item = Import<'m>> + use<'m> {
         let (n, mut parser) = match self.section(SectionId::Import) {
             None => (0, Parser::default()),
             Some(mut parser) => (parser.parse_vec().into_ok(), parser),

@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::io::{stdout, Read, Write};
+use std::io::{Read, Write, stdout};
 use std::path::Path;
 
-use fuzz::{fuzz, StatKey, Stats};
+use fuzz::{StatKey, Stats, fuzz};
 
 fn usage(program: &str) {
     println!(

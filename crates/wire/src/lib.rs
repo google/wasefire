@@ -50,8 +50,8 @@ use core::convert::Infallible;
 use core::mem::{ManuallyDrop, MaybeUninit};
 
 use wasefire_error::{Code, Error};
-use wasefire_wire_derive::internal_wire;
 pub use wasefire_wire_derive::Wire;
+use wasefire_wire_derive::internal_wire;
 
 #[cfg(feature = "schema")]
 use crate::internal::{Builtin, Rules};
@@ -97,6 +97,14 @@ pub struct Yoke<T: Wire<'static>> {
     // TODO(https://github.com/rust-lang/rust/issues/118166): Use MaybeDangling.
     value: MaybeUninit<T>,
     data: *mut [u8],
+}
+
+impl<T: Wire<'static>> core::fmt::Debug for Yoke<T>
+where for<'a> T::Type<'a>: core::fmt::Debug
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        <T::Type<'_> as core::fmt::Debug>::fmt(self.get(), f)
+    }
 }
 
 impl<T: Wire<'static>> Drop for Yoke<T> {
@@ -235,8 +243,6 @@ impl<'a, const N: usize> internal::Wire<'a> for &'a [u8; N] {
         }
     }
     fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
-        // TODO(https://github.com/rust-lang/rust-clippy/issues/9841): Remove.
-        #[allow(clippy::explicit_auto_deref)]
         Ok(writer.put_share(*self))
     }
     fn decode(reader: &mut Reader<'a>) -> Result<Self, Error> {
