@@ -19,7 +19,6 @@ use core::cmp::Ordering;
 use core::marker::PhantomData;
 use core::ops::Range;
 
-use crate::Error::Invalid;
 use crate::error::*;
 use crate::side_table::*;
 use crate::syntax::*;
@@ -28,11 +27,20 @@ use crate::util::*;
 use crate::*;
 
 pub fn merge(binary: &[u8], side_table: Vec<MetadataEntry>) -> Result<Vec<u8>, Error> {
-    // Convert Vec<MetadataEntry> to Vec<u8>.
-    // Create a custom section at the beginning of the binary,
-    // and put the serialized `side_table` in it.
-    // Return the new module.
-    Err(Invalid)
+    let mut wasm = vec![];
+    wasm.extend_from_slice(&binary[0 .. 8]);
+    wasm.push(0);
+    wasm.extend_from_slice(&side_table.len().to_le_bytes());
+    for entry in side_table {
+        wasm.extend_from_slice(&entry.type_idx.to_le_bytes());
+        wasm.extend_from_slice(&entry.parser_range.start.to_le_bytes());
+        wasm.extend_from_slice(&entry.parser_range.end.to_le_bytes());
+        for branch in entry.branch_table {
+            wasm.extend_from_slice(branch.as_bytes());
+        }
+    }
+    wasm.extend_from_slice(&binary[8 ..]);
+    Ok(wasm)
 }
 
 /// Checks whether a WASM module in binary format is valid, and returns the side table.

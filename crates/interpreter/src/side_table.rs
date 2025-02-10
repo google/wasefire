@@ -15,6 +15,8 @@
 use alloc::vec::Vec;
 use core::ops::Range;
 
+use bytemuck::{Pod, Zeroable};
+
 use crate::error::*;
 use crate::module::Parser;
 
@@ -89,9 +91,15 @@ pub struct MetadataEntry {
     pub branch_table: Vec<BranchTableEntry>,
 }
 
-#[derive(Copy, Clone, Debug, bytemuck::AnyBitPattern)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 #[repr(transparent)]
 pub struct BranchTableEntry([u16; 3]);
+
+impl BranchTableEntry {
+    pub fn as_bytes(&self) -> &[u8; size_of::<Self>()] {
+        bytemuck::cast_ref(self)
+    }
+}
 
 pub struct BranchTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
