@@ -14,6 +14,8 @@
 
 //! USB interface.
 
+#[cfg(feature = "api-usb-ctap")]
+pub mod ctap;
 #[cfg(feature = "api-usb-serial")]
 pub mod serial;
 
@@ -21,6 +23,10 @@ pub mod serial;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, PartialEq, Eq)]
 pub enum Event {
+    /// CTAP HID event.
+    #[cfg(feature = "api-usb-ctap")]
+    Ctap(ctap::Event),
+
     /// Serial event.
     #[cfg(feature = "api-usb-serial")]
     Serial(serial::Event),
@@ -34,10 +40,18 @@ impl<B: crate::Api> From<Event> for crate::Event<B> {
 
 /// USB interface.
 pub trait Api: Send {
+    /// CTAP HID interface.
+    #[cfg(feature = "api-usb-ctap")]
+    type Ctap: ctap::Api;
+
     /// USB serial interface.
     #[cfg(feature = "api-usb-serial")]
     type Serial: serial::Api;
 }
+
+/// CTAP HID interface.
+#[cfg(feature = "api-usb-ctap")]
+pub type Ctap<B> = <super::Usb<B> as Api>::Ctap;
 
 /// USB serial interface.
 #[cfg(feature = "api-usb-serial")]
