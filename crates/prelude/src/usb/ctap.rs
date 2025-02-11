@@ -19,7 +19,7 @@ use core::cell::Cell;
 
 use wasefire_applet_api::usb::ctap as api;
 
-use crate::{convert_bool, convert_unit, Error};
+use crate::{Error, convert_bool, convert_unit};
 
 /// Reads a CTAP HID packet without blocking.
 ///

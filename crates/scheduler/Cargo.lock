@@ -709,7 +709,7 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.7.1-git"
+version = "0.8.0-git"
 dependencies = [
  "bytemuck",
  "derive-where",
