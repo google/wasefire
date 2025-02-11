@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support `usb::ctap` module
 - Use Rust edition 2024
 
 ### Patch

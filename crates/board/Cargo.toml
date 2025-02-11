@@ -40,7 +40,7 @@ wasefire-protocol = { version = "0.2.1-git", path = "../protocol" }
 wasefire-store = { version = "0.3.1-git", path = "../store", optional = true }
 
 [dependencies.wasefire-applet-api]
-version = "0.7.1-git"
+version = "0.8.0-git"
 path = "../api"
 features = ["host"]
 optional = true
