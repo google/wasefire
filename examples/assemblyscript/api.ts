@@ -1242,6 +1242,54 @@
 
 // START OF MODULE usb
 // USB operations.
+  // START OF MODULE usb_ctap
+    // Reads from CTAP HID into a buffer.
+    //
+    // This function does not block and returns whether a packet was read.
+    @external("env", "ucr")
+    export declare function usb_ctap_read(
+      // Address of the 64-bytes buffer.
+      ptr: usize,
+    ): i32
+
+    // Writes to CTAP HID from a buffer.
+    //
+    // This function does not block and returns if the packet was written.
+    @external("env", "ucw")
+    export declare function usb_ctap_write(
+      // Address of the 64-bytes buffer.
+      ptr: usize,
+    ): i32
+
+    // CTAP HID events.
+    enum usb_ctap_Event {
+      // Ready for read.
+      Read = 0,
+
+      // Ready for write.
+      Write = 1,
+    }
+
+    // Registers a callback when CTAP HID is ready.
+    //
+    // It is possible that the callback is spuriously called. The callback is only
+    // guaranteed to be called after the associated operation returned false.
+    @external("env", "uce")
+    export declare function usb_ctap_register(
+      event: usize,
+
+      handler_func: usize,
+
+      handler_data: usize,
+    ): i32
+
+    // Unregisters a callback.
+    @external("env", "ucd")
+    export declare function usb_ctap_unregister(
+      event: usize,
+    ): i32
+  // END OF MODULE usb_ctap
+
   // START OF MODULE usb_serial
     // Reads from USB serial into a buffer.
     //

@@ -52,6 +52,7 @@ api-store = ["wasefire-applet-api-macro/api-store"]
 api-store-fragment = ["wasefire-applet-api-macro/api-store-fragment"]
 api-timer = ["wasefire-applet-api-macro/api-timer"]
 api-uart = ["wasefire-applet-api-macro/api-uart"]
+api-usb-ctap = ["wasefire-applet-api-macro/api-usb-ctap"]
 api-usb-serial = ["wasefire-applet-api-macro/api-usb-serial"]
 # Enables all API features (unstable for host).
 full-api = [
@@ -73,6 +74,7 @@ full-api = [
   "api-store-fragment",
   "api-timer",
   "api-uart",
+  "api-usb-ctap",
   "api-usb-serial",
 ]
 # Implements the API with weak symbols to permit custom definitions (only
