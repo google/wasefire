@@ -44,25 +44,22 @@ fn validate<M: ValidMode>(binary: &[u8]) -> Result<M::Result, Error> {
 
 trait ValidMode: Default {
     type Branches<'m>: BranchesApi<'m>;
-    type BranchTable<'m>: BranchTableApi<'m>;
+    type BranchTable<'a, 'm>: BranchTableApi<'m>;
     type SideTable<'m>;
     type Result;
 
     fn parse_side_table<'m>(parser: &mut Parser<'m>) -> Result<Self::SideTable<'m>, Error>;
-    fn next_branch_table<'m>(
-        side_table: &mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
-    ) -> Result<Self::BranchTable<'m>, Error>;
+    fn next_branch_table<'a, 'm>(
+        side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
+    ) -> Result<Self::BranchTable<'a, 'm>, Error>;
     fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result;
-    fn append_branch_table<'m>(
-        branch_table: Self::BranchTable<'m>, side_table: &mut Self::SideTable<'m>,
-    );
 }
 
 trait BranchesApi<'m>: Default + IntoIterator<Item = SideTableBranch<'m>> {
     fn push_branch(&mut self, branch: SideTableBranch<'m>) -> CheckResult;
 }
 
-trait BranchTableApi<'m>: Default {
+trait BranchTableApi<'m> {
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult;
@@ -76,7 +73,7 @@ struct Prepare;
 impl ValidMode for Prepare {
     /// List of source branches.
     type Branches<'m> = Vec<SideTableBranch<'m>>;
-    type BranchTable<'m> = Vec<BranchTableEntry>;
+    type BranchTable<'a, 'm> = &'a mut Vec<BranchTableEntry>;
     type SideTable<'m> = Vec<MetadataEntry>;
     // TODO(dev/fast-interp): Change it to Vec<u8>.
     type Result = Vec<MetadataEntry>;
@@ -85,21 +82,15 @@ impl ValidMode for Prepare {
         Ok(Vec::new())
     }
 
-    fn next_branch_table<'m>(
-        side_tables: &mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
-    ) -> Result<Self::BranchTable<'m>, Error> {
+    fn next_branch_table<'a, 'm>(
+        side_tables: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
+    ) -> Result<Self::BranchTable<'a, 'm>, Error> {
         side_tables.push(MetadataEntry { type_idx, parser_range, branch_table: vec![] });
-        Ok(vec![])
+        Ok(&mut side_tables.last_mut().unwrap().branch_table)
     }
 
     fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result {
         side_table
-    }
-
-    fn append_branch_table<'m>(
-        branch_table: Self::BranchTable<'m>, side_table: &mut Self::SideTable<'m>,
-    ) {
-        side_table.last_mut().unwrap().branch_table = branch_table;
     }
 }
 
@@ -109,7 +100,7 @@ impl<'m> BranchesApi<'m> for Vec<SideTableBranch<'m>> {
     }
 }
 
-impl<'m> BranchTableApi<'m> for Vec<BranchTableEntry> {
+impl<'m> BranchTableApi<'m> for &mut Vec<BranchTableEntry> {
     /// Updates the branch table for source according to target
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
@@ -147,7 +138,7 @@ impl ValidMode for Verify {
     /// Contains at most one _target_ branch. Source branches are eagerly patched to
     /// their target branch using the branch table.
     type Branches<'m> = Option<SideTableBranch<'m>>;
-    type BranchTable<'m> = Metadata<'m>;
+    type BranchTable<'a, 'm> = Metadata<'m>;
     type SideTable<'m> = SideTableView<'m>;
     type Result = ();
 
@@ -158,9 +149,9 @@ impl ValidMode for Verify {
         SideTableView::new(parser)
     }
 
-    fn next_branch_table<'m>(
-        side_table: &mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
-    ) -> Result<Self::BranchTable<'m>, Error> {
+    fn next_branch_table<'a, 'm>(
+        side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
+    ) -> Result<Self::BranchTable<'a, 'm>, Error> {
         let branch_table = side_table.metadata(side_table.func_idx);
         side_table.func_idx += 1;
         check(branch_table.type_idx() == type_idx)?;
@@ -170,11 +161,6 @@ impl ValidMode for Verify {
 
     fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result {
         check(side_table.func_idx == side_table.indices.len()).unwrap()
-    }
-
-    fn append_branch_table<'m>(
-        _branch_table: Self::BranchTable<'m>, _side_table: &mut Self::SideTable<'m>,
-    ) {
     }
 }
 
@@ -317,9 +303,7 @@ impl<'m, M: ValidMode> Context<'m, M> {
                 let parser_range = Range { start: parser_start, end: parser_start + size };
                 let branch_table =
                     M::next_branch_table(&mut side_table, self.funcs[x] as usize, parser_range)?;
-                let branch_table =
-                    Expr::check_body(self, &mut parser, &refs, locals, t.results, branch_table)?;
-                M::append_branch_table(branch_table, &mut side_table);
+                Expr::check_body(self, &mut parser, &refs, locals, t.results, branch_table)?;
                 check(parser.is_empty())?;
             }
             check(parser.is_empty())?;
@@ -597,7 +581,7 @@ struct Expr<'a, 'm, M: ValidMode> {
     is_body: bool,
     locals: Vec<ValType>,
     labels: Vec<Label<'m, M>>,
-    branch_table: Option<M::BranchTable<'m>>,
+    branch_table: Option<M::BranchTable<'a, 'm>>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -632,7 +616,7 @@ enum LabelKind<'m> {
 impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
     fn new(
         context: &'a Context<'m, M>, parser: &'a mut Parser<'m>,
-        is_const: Result<&'a mut [bool], &'a [bool]>, branch_table: Option<M::BranchTable<'m>>,
+        is_const: Result<&'a mut [bool], &'a [bool]>, branch_table: Option<M::BranchTable<'a, 'm>>,
     ) -> Self {
         Self {
             context,
@@ -658,14 +642,13 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
 
     fn check_body(
         context: &'a Context<'m, M>, parser: &'a mut Parser<'m>, refs: &'a [bool],
-        locals: Vec<ValType>, results: ResultType<'m>, branch_table: M::BranchTable<'m>,
-    ) -> Result<M::BranchTable<'m>, Error> {
+        locals: Vec<ValType>, results: ResultType<'m>, branch_table: M::BranchTable<'a, 'm>,
+    ) -> CheckResult {
         let mut expr = Expr::new(context, parser, Err(refs), Some(branch_table));
         expr.is_body = true;
         expr.locals = locals;
         expr.label().type_.results = results;
-        expr.check()?;
-        Ok(expr.branch_table.unwrap())
+        expr.check()
     }
 
     fn check(&mut self) -> CheckResult {
