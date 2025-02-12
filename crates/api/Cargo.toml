@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-applet-api"
-version = "0.8.0-git"
+version = "0.7.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true

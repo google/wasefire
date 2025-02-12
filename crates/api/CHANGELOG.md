@@ -1,13 +1,10 @@
 # Changelog
 
-## 0.8.0-git
-
-### Major
-
-- Update `wasefire-applet-api-macro` version
+## 0.7.1-git
 
 ### Minor
 
+- Support the `api-usb-ctap` feature
 - Improve safety documentation
 - Use Rust edition 2024
 - Provide `bytemuck::Pod` for `ArrayU32`
