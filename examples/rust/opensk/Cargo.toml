@@ -14,9 +14,6 @@ path = "../../../third_party/google/OpenSK/libraries/opensk"
 package = "opensk"
 default-features = false
 
-[build-dependencies]
-uuid = "1.8.0"
-
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
