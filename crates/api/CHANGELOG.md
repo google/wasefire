@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support the `api-usb-ctap` feature
 - Improve safety documentation
 - Use Rust edition 2024
 - Provide `bytemuck::Pod` for `ArrayU32`

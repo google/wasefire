@@ -14,6 +14,8 @@
 
 use crate::*;
 
+#[cfg(feature = "api-usb-ctap")]
+mod ctap;
 #[cfg(feature = "api-usb-serial")]
 mod serial;
 
@@ -23,6 +25,8 @@ pub(crate) fn new() -> Item {
     };
     let name = "usb".into();
     let items = vec![
+        #[cfg(feature = "api-usb-ctap")]
+        ctap::new(),
         #[cfg(feature = "api-usb-serial")]
         serial::new(),
     ];

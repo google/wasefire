@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `usb::Api::Ctap` for CTAP HID
 - Use Rust edition 2024
 
 ### Patch
@@ -171,4 +172,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 3 -->
+<!-- Increment to skip CHANGELOG.md test: 4 -->

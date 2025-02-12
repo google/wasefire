@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `usb::ctap` module for CTAP HID
 - Improve safety documentation
 - Add `Api::wasm_markdown()` for top-level documentation
 - Use Rust edition 2024

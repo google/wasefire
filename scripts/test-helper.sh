@@ -180,6 +180,7 @@ store
 store-fragment
 timer
 uart
+usb-ctap
 usb-serial
 '
 
@@ -200,6 +201,7 @@ rng
 storage
 timer
 uart
+usb-ctap
 usb-serial
 '
 

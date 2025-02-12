@@ -16,12 +16,17 @@ use wasefire_board_api::Api as Board;
 use wasefire_board_api::usb::Event;
 use wasefire_error::Error;
 
+#[cfg(feature = "board-api-usb-ctap")]
+pub mod ctap;
 #[cfg(feature = "board-api-usb-serial")]
 pub mod serial;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
+    #[cfg(feature = "board-api-usb-ctap")]
+    Ctap(ctap::Key),
+
     #[cfg(feature = "board-api-usb-serial")]
     Serial(serial::Key),
 }
@@ -35,6 +40,8 @@ impl<B: Board> From<Key> for crate::event::Key<B> {
 impl<'a> From<&'a Event> for Key {
     fn from(event: &'a Event) -> Self {
         match event {
+            #[cfg(feature = "board-api-usb-ctap")]
+            Event::Ctap(event) => Key::Ctap(event.into()),
             #[cfg(feature = "board-api-usb-serial")]
             Event::Serial(event) => Key::Serial(event.into()),
         }
@@ -44,6 +51,8 @@ impl<'a> From<&'a Event> for Key {
 impl Key {
     pub fn disable<B: Board>(self) -> Result<(), Error> {
         match self {
+            #[cfg(feature = "board-api-usb-ctap")]
+            Key::Ctap(x) => x.disable::<B>(),
             #[cfg(feature = "board-api-usb-serial")]
             Key::Serial(x) => x.disable::<B>(),
         }
@@ -52,6 +61,8 @@ impl Key {
 
 pub fn process(event: Event) {
     match event {
+        #[cfg(feature = "board-api-usb-ctap")]
+        Event::Ctap(_) => ctap::process(),
         #[cfg(feature = "board-api-usb-serial")]
         Event::Serial(_) => serial::process(),
     }
