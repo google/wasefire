@@ -226,7 +226,7 @@ fn process_install<B: Board>(
             board::Applet::<B>::finish()?;
             *scheduler.protocol.0.install() = TransferState::Ready;
             if !dry_run {
-                scheduler.start_applet()?;
+                scheduler.start_applet().inspect_err(|_| log::warn!("Failed to start applet."))?;
             }
         }
     }
