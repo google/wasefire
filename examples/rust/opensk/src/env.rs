@@ -14,7 +14,10 @@
 
 use opensk_lib::api::crypto::software_crypto::SoftwareCrypto;
 use opensk_lib::api::customization::{CustomizationImpl, DEFAULT_CUSTOMIZATION};
+use opensk_lib::ctap::status_code::Ctap2StatusCode;
 use opensk_lib::env::Env;
+use wasefire::Error;
+use wasefire::error::Space;
 
 mod clock;
 mod hid_connection;
@@ -74,3 +77,11 @@ impl Env for WasefireEnv {
 }
 
 impl opensk_lib::api::key_store::Helper for WasefireEnv {}
+
+fn convert_error(error: Error) -> Ctap2StatusCode {
+    match Space::try_from(error.space()) {
+        Ok(Space::User | Space::Internal) => Ctap2StatusCode::CTAP2_ERR_VENDOR_INTERNAL_ERROR,
+        Ok(Space::World) => Ctap2StatusCode::CTAP2_ERR_VENDOR_HARDWARE_FAILURE,
+        _ => Ctap2StatusCode::CTAP1_ERR_OTHER,
+    }
+}

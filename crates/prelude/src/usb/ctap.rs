@@ -19,6 +19,7 @@ use core::cell::Cell;
 
 use wasefire_applet_api::usb::ctap as api;
 
+pub use self::api::Event;
 use crate::{Error, convert_bool, convert_unit};
 
 /// Reads a CTAP HID packet without blocking.
@@ -32,7 +33,7 @@ pub fn read(packet: &mut [u8; 64]) -> Result<bool, Error> {
 /// Writes a CTAP HID packet without blocking.
 ///
 /// Returns whether the packet was written (and thus read from the buffer).
-pub fn write(packet: &[u8]) -> Result<bool, Error> {
+pub fn write(packet: &[u8; 64]) -> Result<bool, Error> {
     let params = api::write::Params { ptr: packet.as_ptr() };
     convert_bool(unsafe { api::write(params) })
 }
