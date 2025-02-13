@@ -26,8 +26,7 @@ pub struct SideTableView<'m> {
 
 impl<'m> SideTableView<'m> {
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        let num_functions =
-            bytemuck::pod_read_unaligned::<u16>(bytemuck::cast_slice(&binary[0 .. 2])) as usize;
+        let num_functions = u16::from_le_bytes(binary[.. 2].try_into().unwrap()) as usize;
         let indices_end = 2 + (num_functions + 1) * 2;
         Ok(SideTableView {
             func_idx: 0,
@@ -38,10 +37,14 @@ impl<'m> SideTableView<'m> {
 
     pub fn metadata(&self, func_idx: usize) -> Metadata<'m> {
         Metadata(
-            &self.metadata
-                [self.indices[func_idx * 2] as usize .. self.indices[(func_idx + 1) * 2] as usize],
+            &self.metadata[parse_u16(self.indices, func_idx * 2) as usize
+                .. parse_u16(self.indices, (func_idx + 1) * 2) as usize],
         )
     }
+}
+
+fn parse_u16(data: &[u8], offset: usize) -> u16 {
+    u16::from_le_bytes(data[offset ..][.. 2].try_into().unwrap())
 }
 
 #[derive(Default, Copy, Clone)]
@@ -49,7 +52,7 @@ pub struct Metadata<'m>(&'m [u8]);
 
 impl<'m> Metadata<'m> {
     pub fn type_idx(&self) -> usize {
-        bytemuck::pod_read_unaligned::<u16>(bytemuck::cast_slice(&self.0[0 .. 2])) as usize
+        u16::from_le_bytes(self.0[.. 2].try_into().unwrap()) as usize
     }
 
     #[allow(dead_code)]
@@ -66,7 +69,7 @@ impl<'m> Metadata<'m> {
     }
 
     fn read_u32(&self, idx: usize) -> usize {
-        bytemuck::pod_read_unaligned::<u32>(bytemuck::cast_slice(&self.0[idx .. idx + 4])) as usize
+        u32::from_le_bytes(self.0[idx .. idx + 4].try_into().unwrap()) as usize
     }
 }
 
