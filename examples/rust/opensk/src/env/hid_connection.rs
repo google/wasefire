@@ -14,15 +14,34 @@
 
 use opensk_lib::api::connection::{HidConnection, RecvStatus, UsbEndpoint};
 use opensk_lib::ctap::status_code::CtapResult;
+use wasefire::scheduling;
+use wasefire::usb::ctap;
 
-use crate::env::WasefireEnv;
+use crate::env::{WasefireEnv, convert_error};
 
 impl HidConnection for WasefireEnv {
-    fn send(&mut self, _buf: &[u8; 64], _endpoint: UsbEndpoint) -> CtapResult<()> {
-        todo!()
+    fn send(&mut self, packet: &[u8; 64], endpoint: UsbEndpoint) -> CtapResult<()> {
+        match endpoint {
+            UsbEndpoint::MainHid => (),
+        }
+        let mut listener = ctap::Listener::new(ctap::Event::Write);
+        while !ctap::write(packet).map_err(convert_error)? {
+            scheduling::wait_until(|| listener.is_notified());
+        }
+        Ok(())
     }
 
-    fn recv(&mut self, _buf: &mut [u8; 64], _timeout_ms: usize) -> CtapResult<RecvStatus> {
-        todo!()
+    fn recv(&mut self, packet: &mut [u8; 64], timeout_ms: usize) -> CtapResult<RecvStatus> {
+        let mut listener = ctap::Listener::new(ctap::Event::Read);
+        let timeout = wasefire::timer::Timeout::new_ms(timeout_ms);
+        loop {
+            if ctap::read(packet).map_err(convert_error)? {
+                return Ok(RecvStatus::Received(UsbEndpoint::MainHid));
+            }
+            scheduling::wait_until(|| timeout.is_over() || listener.is_notified());
+            if timeout.is_over() {
+                return Ok(RecvStatus::Timeout);
+            }
+        }
     }
 }
