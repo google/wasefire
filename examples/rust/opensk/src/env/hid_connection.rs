@@ -21,9 +21,7 @@ use crate::env::{WasefireEnv, convert_error};
 
 impl HidConnection for WasefireEnv {
     fn send(&mut self, packet: &[u8; 64], endpoint: UsbEndpoint) -> CtapResult<()> {
-        match endpoint {
-            UsbEndpoint::MainHid => (),
-        }
+        let UsbEndpoint::MainHid = endpoint;
         let mut listener = ctap::Listener::new(ctap::Event::Write);
         while !ctap::write(packet).map_err(convert_error)? {
             scheduling::wait_until(|| listener.is_notified());
