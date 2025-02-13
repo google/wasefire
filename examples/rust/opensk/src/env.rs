@@ -72,7 +72,8 @@ impl Env for WasefireEnv {
     }
 
     fn boots_after_soft_reset(&self) -> bool {
-        todo!()
+        // TODO: The applet needs to know if the platform did a cold boot.
+        false
     }
 }
 

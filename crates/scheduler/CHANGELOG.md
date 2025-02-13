@@ -13,6 +13,7 @@
 
 ### Patch
 
+- Add warning when applet fails to start after install
 - Fix clippy lints
 - Update dependencies
 
