@@ -26,6 +26,7 @@ mod storage;
 #[cfg(feature = "debug")]
 mod systick;
 
+use alloc::vec::Vec;
 use core::cell::RefCell;
 use core::mem::MaybeUninit;
 
@@ -47,14 +48,22 @@ use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 use panic_abort as _;
 #[cfg(feature = "debug")]
 use panic_probe as _;
+#[cfg(feature = "radio-ble")]
 use rubble::link::MIN_PDU_BUF;
+#[cfg(feature = "radio-ble")]
 use rubble_nrf5x::radio::{BleRadio, PacketBuffer};
+use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidPid};
+#[cfg(feature = "usb-ctap")]
 use usbd_hid::descriptor::{CtapReport, SerializedDescriptor};
+#[cfg(feature = "usb-ctap")]
 use usbd_hid::hid_class::HIDClass;
+#[cfg(feature = "usb-serial")]
 use usbd_serial::SerialPort;
+#[cfg(feature = "usb-ctap")]
 use wasefire_board_api::usb::ctap::Ctap;
+#[cfg(feature = "usb-serial")]
 use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Id, Support};
 #[cfg(feature = "wasm")]
@@ -65,6 +74,7 @@ use wasefire_scheduler::Scheduler;
 
 use crate::board::button::{Button, channel};
 use crate::board::gpio::Gpio;
+#[cfg(feature = "radio-ble")]
 use crate::board::radio::ble::Ble;
 use crate::board::timer::Timers;
 use crate::board::uart::Uarts;
@@ -89,9 +99,12 @@ struct State {
     buttons: [Button; <button::Impl as Support<usize>>::SUPPORT],
     gpiote: Gpiote,
     protocol: wasefire_protocol_usb::Rpc<'static, Usb>,
+    #[cfg(feature = "usb-ctap")]
     ctap: Ctap<'static, Usb>,
+    #[cfg(feature = "usb-serial")]
     serial: Serial<'static, Usb>,
     timers: Timers,
+    #[cfg(feature = "radio-ble")]
     ble: Ble,
     ccm: Ccm,
     gpios: [Gpio; <board::gpio::Impl as Support<usize>>::SUPPORT],
@@ -115,7 +128,9 @@ fn main() -> ! {
     static mut CLOCKS: MaybeUninit<Clocks> = MaybeUninit::uninit();
     static mut USB_BUS: MaybeUninit<UsbBusAllocator<Usb>> = MaybeUninit::uninit();
     // TX buffer is mandatory even when we only listen.
+    #[cfg(feature = "radio-ble")]
     static mut BLE_TX: MaybeUninit<PacketBuffer> = MaybeUninit::uninit();
+    #[cfg(feature = "radio-ble")]
     static mut BLE_RX: MaybeUninit<PacketBuffer> = MaybeUninit::uninit();
 
     #[cfg(feature = "debug")]
@@ -158,18 +173,22 @@ fn main() -> ! {
     let usb_bus = UsbBusAllocator::new(Usbd::new(UsbPeripheral::new(p.USBD, clocks)));
     let usb_bus = USB_BUS.write(usb_bus);
     let protocol = wasefire_protocol_usb::Rpc::new(usb_bus);
+    #[cfg(feature = "usb-ctap")]
     let ctap = Ctap::new(HIDClass::new(usb_bus, CtapReport::desc(), 255));
+    #[cfg(feature = "usb-serial")]
     let serial = Serial::new(SerialPort::new(usb_bus));
     let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x16c0, 0x27dd))
         .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Wasefire")])
         .unwrap()
         .build();
+    #[cfg(feature = "radio-ble")]
     let radio = BleRadio::new(
         p.RADIO,
         &ficr,
         BLE_TX.write([0; MIN_PDU_BUF]),
         BLE_RX.write([0; MIN_PDU_BUF]),
     );
+    #[cfg(feature = "radio-ble")]
     let ble = Ble::new(radio, p.TIMER0);
     let rng = Rng::new(p.RNG);
     let ccm = Ccm::init(p.CCM, p.AAR, DataRate::_1Mbit);
@@ -187,9 +206,12 @@ fn main() -> ! {
         buttons,
         gpiote,
         protocol,
+        #[cfg(feature = "usb-ctap")]
         ctap,
+        #[cfg(feature = "usb-serial")]
         serial,
         timers,
+        #[cfg(feature = "radio-ble")]
         ble,
         ccm,
         gpios,
@@ -210,9 +232,10 @@ fn main() -> ! {
 }
 
 macro_rules! interrupts {
-    ($($name:ident = $func:ident($($arg:expr),*$(,)?)),*$(,)?) => {
-        const INTERRUPTS: &[Interrupt] = &[$(Interrupt::$name),*];
+    ($($(#[$meta:meta])* $name:ident = $func:ident($($arg:expr),*$(,)?)),*$(,)?) => {
+        const INTERRUPTS: &[Interrupt] = &[$($(#[$meta])* Interrupt::$name),*];
         $(
+            $(#[$meta])*
             #[interrupt]
             fn $name() {
                 $func($($arg),*);
@@ -223,7 +246,9 @@ macro_rules! interrupts {
 
 interrupts! {
     GPIOTE = gpiote(),
+    #[cfg(feature = "radio-ble")]
     RADIO = radio(),
+    #[cfg(feature = "radio-ble")]
     TIMER0 = radio_timer(),
     TIMER1 = timer(0),
     TIMER2 = timer(1),
@@ -247,10 +272,12 @@ fn gpiote() {
     });
 }
 
+#[cfg(feature = "radio-ble")]
 fn radio() {
     with_state(|state| state.ble.tick(|event| state.events.push(event.into())))
 }
 
+#[cfg(feature = "radio-ble")]
 fn radio_timer() {
     with_state(|state| state.ble.tick_timer())
 }
@@ -272,10 +299,18 @@ fn uarte(uarte: usize) {
 
 fn usbd() {
     with_state(|state| {
-        let polled =
-            state.usb_dev.poll(&mut [&mut state.protocol, state.ctap.class(), state.serial.port()]);
+        let mut classes = Vec::<&mut dyn UsbClass<_>>::new();
+        classes.push(&mut state.protocol);
+        #[cfg(feature = "usb-ctap")]
+        classes.push(state.ctap.class());
+        #[cfg(feature = "usb-serial")]
+        classes.push(state.serial.port());
+        #[cfg_attr(not(feature = "usb-serial"), allow(unused_variables))]
+        let polled = state.usb_dev.poll(&mut classes);
         state.protocol.tick(|event| state.events.push(event.into()));
+        #[cfg(feature = "usb-ctap")]
         state.ctap.tick(|event| state.events.push(event.into()));
+        #[cfg(feature = "usb-serial")]
         state.serial.tick(polled, |event| state.events.push(event.into()));
     });
 }

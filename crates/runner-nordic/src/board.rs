@@ -25,6 +25,7 @@ mod debug;
 pub mod gpio;
 pub mod led;
 pub mod platform;
+#[cfg(feature = "radio-ble")]
 pub mod radio;
 mod rng;
 pub mod timer;
@@ -61,11 +62,13 @@ impl board::Api for Board {
     type Gpio = gpio::Impl;
     type Led = led::Impl;
     type Platform = platform::Impl;
+    #[cfg(feature = "radio-ble")]
     type Radio = radio::Impl;
     type Rng = rng::Impl;
     type Storage = crate::storage::Storage;
     type Timer = timer::Impl;
     type Uart = uart::Impl;
+    #[cfg(feature = "_usb")]
     type Usb = usb::Impl;
 }
 
