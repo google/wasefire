@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.use opensk_lib::api::clock::Clock;
 
-use opensk_lib::api::crypto::software_crypto::SoftwareCrypto;
 use opensk_lib::api::customization::{CustomizationImpl, DEFAULT_CUSTOMIZATION};
 use opensk_lib::ctap::status_code::Ctap2StatusCode;
 use opensk_lib::env::Env;
@@ -20,6 +19,7 @@ use wasefire::Error;
 use wasefire::error::Space;
 
 mod clock;
+mod crypto;
 mod hid_connection;
 mod persist;
 mod rng;
@@ -37,7 +37,7 @@ impl Env for WasefireEnv {
     type Customization = CustomizationImpl;
     type HidConnection = Self;
     type Clock = Self;
-    type Crypto = SoftwareCrypto; // TODO: Use wasefire.
+    type Crypto = Self;
 
     fn rng(&mut self) -> &mut Self::Rng {
         self
