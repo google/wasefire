@@ -22,26 +22,29 @@ use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::StringDescriptors;
 use usb_device::prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
+use usbd_hid::descriptor::{CtapReport, SerializedDescriptor};
+use usbd_hid::hid_class::HIDClass;
 use usbd_serial::SerialPort;
 use usbip_device::UsbIpBus;
 use wasefire_board_api::usb::Api;
-use wasefire_board_api::usb::serial::Serial;
+use wasefire_board_api::usb::ctap::{Ctap, HasHid, WithHid};
+use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
 use wasefire_cli_tools::cmd;
 use wasefire_error::{Code, Error};
 use wasefire_protocol_usb::Rpc;
 
 use crate::with_state;
 
-mod serial;
-
 pub enum Impl {}
 
 impl Api for Impl {
-    type Serial = serial::Impl;
+    type Ctap = WithHid<Impl>;
+    type Serial = WithSerial<Impl>;
 }
 
 pub struct State {
     protocol: Option<Rpc<'static, UsbIpBus>>,
+    ctap: Option<Ctap<'static, UsbIpBus>>,
     serial: Option<Serial<'static, UsbIpBus>>,
     // Some iff at least one class is Some.
     usb_dev: Option<UsbDevice<'static, UsbIpBus>>,
@@ -72,9 +75,14 @@ pub async fn init() -> Result<()> {
             tokio::time::sleep(Duration::from_millis(1)).await;
             with_state(|state| {
                 let polled = state.usb.poll();
-                let crate::board::State { sender, usb: State { protocol, serial, .. }, .. } = state;
+                let crate::board::State {
+                    sender, usb: State { protocol, ctap, serial, .. }, ..
+                } = state;
                 if let Some(protocol) = protocol {
                     protocol.tick(|event| drop(sender.try_send(event.into())));
+                }
+                if let Some(ctap) = ctap {
+                    ctap.tick(|event| drop(sender.try_send(event.into())));
                 }
                 if let Some(serial) = serial {
                     let has_serial =
@@ -88,14 +96,17 @@ pub async fn init() -> Result<()> {
 }
 
 impl State {
-    pub fn new(vid_pid: &str, protocol: bool, serial: bool) -> Self {
-        let mut state = State { protocol: None, serial: None, usb_dev: None };
+    pub fn new(vid_pid: &str, protocol: bool, ctap: bool, serial: bool) -> Self {
+        let mut state = State { protocol: None, ctap: None, serial: None, usb_dev: None };
         if !protocol && !serial {
             return state;
         }
         let usb_bus = Box::leak(Box::new(UsbBusAllocator::new(UsbIpBus::new())));
         if protocol {
             state.protocol = Some(Rpc::new(usb_bus));
+        }
+        if ctap {
+            state.ctap = Some(Ctap::new(HIDClass::new(usb_bus, CtapReport::desc(), 255)));
         }
         if serial {
             state.serial = Some(Serial::new(SerialPort::new(usb_bus)));
@@ -116,16 +127,37 @@ impl State {
         self.protocol.as_mut().unwrap()
     }
 
+    pub fn ctap(&mut self) -> Result<&mut Ctap<'static, UsbIpBus>, Error> {
+        self.ctap.as_mut().ok_or(Error::world(Code::NotImplemented))
+    }
+
     pub fn serial(&mut self) -> Result<&mut Serial<'static, UsbIpBus>, Error> {
         self.serial.as_mut().ok_or(Error::world(Code::NotImplemented))
     }
 
     fn poll(&mut self) -> bool {
         let usb_dev = self.usb_dev.as_mut().unwrap();
-        let mut classes = Vec::<&mut dyn UsbClass<_>>::with_capacity(2);
+        let mut classes = Vec::<&mut dyn UsbClass<_>>::new();
         classes.extend(self.protocol.as_mut().map(|x| x as &mut dyn UsbClass<_>));
+        classes.extend(self.ctap.as_mut().map(|x| x.class() as &mut dyn UsbClass<_>));
         classes.extend(self.serial.as_mut().map(|x| x.port() as &mut dyn UsbClass<_>));
         usb_dev.poll(&mut classes)
+    }
+}
+
+impl HasHid for Impl {
+    type UsbBus = UsbIpBus;
+
+    fn with_hid<R>(f: impl FnOnce(&mut Ctap<Self::UsbBus>) -> R) -> R {
+        with_state(|state| f(state.usb.ctap().unwrap()))
+    }
+}
+
+impl HasSerial for Impl {
+    type UsbBus = UsbIpBus;
+
+    fn with_serial<R>(f: impl FnOnce(&mut Serial<Self::UsbBus>) -> R) -> R {
+        with_state(|state| f(state.usb.serial().unwrap()))
     }
 }
 

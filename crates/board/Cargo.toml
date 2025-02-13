@@ -33,11 +33,14 @@ sha2 = { version = "0.10.8", default-features = false, optional = true }
 signature = { version = "2.2.0", default-features = false, optional = true }
 typenum = { version = "1.17.0", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false, optional = true }
+usbd-hid = { version = "0.8.2", default-features = false, optional = true }
 usbd-serial = { version = "0.2.2", default-features = false, optional = true }
 wasefire-error = { version = "0.1.3-git", path = "../error" }
 wasefire-logger = { version = "0.1.7-git", path = "../logger" }
 wasefire-protocol = { version = "0.2.1-git", path = "../protocol" }
 wasefire-store = { version = "0.3.1-git", path = "../store", optional = true }
+# TODO(usbd-hid > 0.8.2): Remove
+ssmarshal = { version = "1.0.0", default-features = false, optional = true }
 
 [dependencies.wasefire-applet-api]
 version = "0.7.1-git"
@@ -46,9 +49,9 @@ features = ["host"]
 optional = true
 
 [features]
-std = ["wasefire-store?/std"]
+std = ["ssmarshal?/std", "wasefire-store?/std"]
 # Logging features (enable at most one).
-defmt = ["dep:defmt", "wasefire-error/defmt", "wasefire-logger/defmt"]
+defmt = ["dep:defmt", "usbd-hid?/defmt", "wasefire-error/defmt", "wasefire-logger/defmt"]
 log = ["wasefire-logger/log"]
 # API features. DO NOT enable those features if you also depend on the
 # scheduler. Instead, enable the `board-api` features of the scheduler.
@@ -68,7 +71,7 @@ api-rng = []
 api-storage = ["dep:wasefire-store"]
 api-timer = []
 api-uart = []
-api-usb-ctap = ["internal-api-usb"]
+api-usb-ctap = ["dep:ssmarshal", "dep:usb-device", "dep:usbd-hid", "internal-api-usb"]
 api-usb-serial = ["dep:usb-device", "dep:usbd-serial", "internal-api-usb"]
 # Enables all API features (unstable).
 full-api = [

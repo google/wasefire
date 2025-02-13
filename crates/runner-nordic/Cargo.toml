@@ -22,6 +22,7 @@ panic-abort = { version = "0.3.2", optional = true }
 panic-probe = { version = "0.3.2", features = ["print-defmt"], optional = true }
 typenum = { version = "1.17.0", default-features = false }
 usb-device = "0.3.2"
+usbd-hid = "0.8.2"
 usbd-serial = "0.2.2"
 wasefire-applet-api = { path = "../api" }
 wasefire-board-api = { path = "../board" }
@@ -57,6 +58,7 @@ features = [
   "board-api-storage",
   "board-api-timer",
   "board-api-uart",
+  "board-api-usb-ctap",
   "board-api-usb-serial",
 ]
 
@@ -70,6 +72,7 @@ debug = [
   "dep:defmt",
   "dep:defmt-rtt",
   "dep:panic-probe",
+  "usbd-hid/defmt",
   "wasefire-board-api/defmt",
   "wasefire-error/defmt",
   "wasefire-logger/defmt",

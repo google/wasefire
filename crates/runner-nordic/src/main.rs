@@ -51,7 +51,10 @@ use rubble::link::MIN_PDU_BUF;
 use rubble_nrf5x::radio::{BleRadio, PacketBuffer};
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidPid};
+use usbd_hid::descriptor::{CtapReport, SerializedDescriptor};
+use usbd_hid::hid_class::HIDClass;
 use usbd_serial::SerialPort;
+use wasefire_board_api::usb::ctap::Ctap;
 use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Id, Support};
 #[cfg(feature = "wasm")]
@@ -86,6 +89,7 @@ struct State {
     buttons: [Button; <button::Impl as Support<usize>>::SUPPORT],
     gpiote: Gpiote,
     protocol: wasefire_protocol_usb::Rpc<'static, Usb>,
+    ctap: Ctap<'static, Usb>,
     serial: Serial<'static, Usb>,
     timers: Timers,
     ble: Ble,
@@ -154,6 +158,7 @@ fn main() -> ! {
     let usb_bus = UsbBusAllocator::new(Usbd::new(UsbPeripheral::new(p.USBD, clocks)));
     let usb_bus = USB_BUS.write(usb_bus);
     let protocol = wasefire_protocol_usb::Rpc::new(usb_bus);
+    let ctap = Ctap::new(HIDClass::new(usb_bus, CtapReport::desc(), 255));
     let serial = Serial::new(SerialPort::new(usb_bus));
     let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x16c0, 0x27dd))
         .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Wasefire")])
@@ -182,6 +187,7 @@ fn main() -> ! {
         buttons,
         gpiote,
         protocol,
+        ctap,
         serial,
         timers,
         ble,
@@ -266,8 +272,10 @@ fn uarte(uarte: usize) {
 
 fn usbd() {
     with_state(|state| {
-        let polled = state.usb_dev.poll(&mut [&mut state.protocol, state.serial.port()]);
+        let polled =
+            state.usb_dev.poll(&mut [&mut state.protocol, state.ctap.class(), state.serial.port()]);
         state.protocol.tick(|event| state.events.push(event.into()));
+        state.ctap.tick(|event| state.events.push(event.into()));
         state.serial.tick(polled, |event| state.events.push(event.into()));
     });
 }
