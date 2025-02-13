@@ -22,9 +22,9 @@ panic-abort = { version = "0.3.2", optional = true }
 panic-probe = { version = "0.3.2", features = ["print-defmt"], optional = true }
 typenum = { version = "1.17.0", default-features = false }
 usb-device = "0.3.2"
-usbd-hid = "0.8.2"
-usbd-serial = "0.2.2"
-wasefire-applet-api = { path = "../api" }
+usbd-hid = { version = "0.8.2", optional = true }
+usbd-serial = { version = "0.2.2", optional = true }
+wasefire-applet-api = { path = "../api", optional = true }
 wasefire-board-api = { path = "../board" }
 wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
@@ -37,11 +37,13 @@ wasefire-sync = { path = "../sync" }
 [dependencies.rubble]
 git = "https://github.com/jmichelp/rubble.git"
 rev = "d545f4f598d081c0177f38500792e353a7d932a3"
+optional = true
 
 [dependencies.rubble-nrf5x]
 git = "https://github.com/jmichelp/rubble.git"
 rev = "d545f4f598d081c0177f38500792e353a7d932a3"
 features = ["52840"]
+optional = true
 
 [dependencies.wasefire-scheduler]
 path = "../scheduler"
@@ -53,16 +55,21 @@ features = [
   "board-api-crypto-aes128-ccm",
   "board-api-gpio",
   "board-api-led",
-  "board-api-radio-ble",
   "board-api-rng",
   "board-api-storage",
   "board-api-timer",
   "board-api-uart",
-  "board-api-usb-ctap",
-  "board-api-usb-serial",
 ]
 
 [features]
+radio-ble = [
+  "dep:rubble",
+  "dep:rubble-nrf5x",
+  "dep:wasefire-applet-api",
+  "wasefire-scheduler/board-api-radio-ble",
+]
+usb-ctap = ["_usb", "dep:usbd-hid", "wasefire-scheduler/board-api-usb-ctap"]
+usb-serial = ["_usb", "dep:usbd-serial", "wasefire-scheduler/board-api-usb-serial"]
 # Software crypto features.
 software-crypto-aes256-gcm = ["wasefire-scheduler/software-crypto-aes256-gcm"]
 software-crypto-p256 = ["software-crypto-sha256", "wasefire-scheduler/software-crypto-p256"]
@@ -72,7 +79,7 @@ debug = [
   "dep:defmt",
   "dep:defmt-rtt",
   "dep:panic-probe",
-  "usbd-hid/defmt",
+  "usbd-hid?/defmt",
   "wasefire-board-api/defmt",
   "wasefire-error/defmt",
   "wasefire-logger/defmt",
@@ -85,6 +92,7 @@ native = ["wasefire-scheduler/native"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
 # Internal features.
 _software-crypto = ["software-crypto-aes256-gcm", "software-crypto-p256", "software-crypto-sha256"]
+_usb = []
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"

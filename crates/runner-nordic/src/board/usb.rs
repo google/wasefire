@@ -15,8 +15,11 @@
 use alloc::boxed::Box;
 
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
+#[cfg(feature = "_usb")]
 use wasefire_board_api::usb::Api;
+#[cfg(feature = "usb-ctap")]
 use wasefire_board_api::usb::ctap::{Ctap, HasHid, WithHid};
+#[cfg(feature = "usb-serial")]
 use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
 use wasefire_error::{Code, Error};
 use wasefire_protocol_usb::{HasRpc, Rpc};
@@ -29,8 +32,11 @@ pub enum Impl {}
 
 pub type ProtocolImpl = wasefire_protocol_usb::Impl<'static, Usb, crate::board::usb::Impl>;
 
+#[cfg(feature = "_usb")]
 impl Api for Impl {
+    #[cfg(feature = "usb-ctap")]
     type Ctap = WithHid<Impl>;
+    #[cfg(feature = "usb-serial")]
     type Serial = WithSerial<Impl>;
 }
 
@@ -57,6 +63,7 @@ impl HasRpc<'static, Usb> for Impl {
     }
 }
 
+#[cfg(feature = "usb-ctap")]
 impl HasHid for Impl {
     type UsbBus = Usb;
 
@@ -65,6 +72,7 @@ impl HasHid for Impl {
     }
 }
 
+#[cfg(feature = "usb-serial")]
 impl HasSerial for Impl {
     type UsbBus = Usb;
 
