@@ -14,6 +14,8 @@
 
 use crate::*;
 
+#[cfg(feature = "api-crypto-cbc")]
+mod cbc;
 #[cfg(feature = "api-crypto-ccm")]
 mod ccm;
 #[cfg(feature = "api-crypto-ec")]
@@ -29,6 +31,8 @@ pub(crate) fn new() -> Item {
     };
     let name = "crypto".into();
     let items = vec![
+        #[cfg(feature = "api-crypto-cbc")]
+        cbc::new(),
         #[cfg(feature = "api-crypto-ccm")]
         ccm::new(),
         #[cfg(feature = "api-crypto-ec")]

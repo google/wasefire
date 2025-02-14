@@ -24,7 +24,7 @@ mod hmac256;
 mod sha256;
 
 impl Crypto for WasefireEnv {
-    type Aes256 = Self;
+    type Aes256 = aes256::Impl;
     type Ecdh = Self;
     type Ecdsa = Self;
     type Sha256 = sha256::Impl;

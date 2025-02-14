@@ -98,7 +98,7 @@ pub async fn init() -> Result<()> {
 impl State {
     pub fn new(vid_pid: &str, protocol: bool, ctap: bool, serial: bool) -> Self {
         let mut state = State { protocol: None, ctap: None, serial: None, usb_dev: None };
-        if !protocol && !serial {
+        if !protocol && !ctap && !serial {
             return state;
         }
         let usb_bus = Box::leak(Box::new(UsbBusAllocator::new(UsbIpBus::new())));

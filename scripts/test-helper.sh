@@ -163,6 +163,7 @@ _test_min() { { echo "$1"; echo "$2"; } | sort | head -n1; }
 
 _TEST_APPLET_API='
 button
+crypto-cbc
 crypto-ccm
 crypto-ec
 crypto-gcm
@@ -187,6 +188,7 @@ usb-serial
 _TEST_BOARD_API='
 button
 crypto-aes128-ccm
+crypto-aes256-cbc
 crypto-aes256-gcm
 crypto-hmac-sha256
 crypto-hmac-sha384
@@ -207,6 +209,7 @@ usb-serial
 
 _TEST_SOFTWARE_CRYPTO='
 aes128-ccm
+aes256-cbc
 aes256-gcm
 hmac-sha256
 hmac-sha384

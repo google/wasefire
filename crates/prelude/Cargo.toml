@@ -34,6 +34,7 @@ zeroize = { version = "1.7.0", default-features = false, features = ["derive"], 
 default = ["full-api"]
 # API features.
 api-button = ["wasefire-applet-api/api-button"]
+api-crypto-cbc = ["internal-api-crypto", "wasefire-applet-api/api-crypto-cbc"]
 api-crypto-ccm = ["internal-api-crypto", "wasefire-applet-api/api-crypto-ccm"]
 api-crypto-ec = [
   "dep:crypto-common",
@@ -66,6 +67,7 @@ api-usb-serial = ["internal-api-usb", "internal-serial", "wasefire-applet-api/ap
 # Enables all API features.
 full-api = [
   "api-button",
+  "api-crypto-cbc",
   "api-crypto-ccm",
   "api-crypto-ec",
   "api-crypto-gcm",

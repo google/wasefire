@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `crypto::cbc` module for AES-256-CBC
 - Add `timer::Timeout` helper for timer used for timeouts only
 - Add `usb::ctap` module for CTAP HID
 - Support the new behavior of the scheduler (not allocating if the size is zero)
