@@ -59,7 +59,7 @@ impl<'m> Metadata<'m> {
     }
 
     pub fn branch_table(&self) -> &[BranchTableEntry] {
-        let entry_size = 6;
+        let entry_size = size_of::<BranchTableEntry>();
         assert_eq!(
             self.0.len() % entry_size,
             0,
