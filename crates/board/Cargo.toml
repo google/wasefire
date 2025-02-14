@@ -18,7 +18,7 @@ features = ["full-api", "std"]
 aead = { version = "0.5.2", default-features = false, optional = true }
 aes = { version = "0.8.4", default-features = false, optional = true }
 aes-gcm = { version = "0.10.3", default-features = false, optional = true }
-bytemuck = { version = "1.16.0", default-features = false, optional = true }
+bytemuck = { version = "1.21.0", default-features = false, optional = true }
 ccm = { version = "0.5.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.6", default-features = false, optional = true }
 defmt = { version = "0.3.8", default-features = false, optional = true }
@@ -162,6 +162,5 @@ clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.missing-docs = "warn"
-rust.unexpected_cfgs = { level = "allow", check-cfg = ["cfg(target_arch, values(\"spirv\"))"] }
 rust.unreachable-pub = "warn"
 rust.unused-crate-dependencies = "warn"

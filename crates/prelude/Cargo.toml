@@ -17,7 +17,7 @@ features = ["full-api", "rust-crypto"]
 
 [dependencies]
 aead = { version = "0.5.2", default-features = false, features = ["alloc"], optional = true }
-bytemuck = { version = "1.16.0", default-features = false }
+bytemuck = { version = "1.21.0", default-features = false }
 const-default = { version = "1.0.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.6", default-features = false, optional = true }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
