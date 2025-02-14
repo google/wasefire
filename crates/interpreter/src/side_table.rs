@@ -61,14 +61,14 @@ impl<'m> Metadata<'m> {
     pub fn branch_table(&self) -> &[BranchTableEntry] {
         let entry_size = size_of::<BranchTableEntry>();
         assert_eq!(
-            self.0.len() % entry_size,
+            (self.0.len() - 10) % entry_size,
             0,
-            "Metadata length must be divisible by {} bytes",
+            "Metadata length for branch table must be divisible by {} bytes",
             entry_size
         );
         unsafe {
             core::slice::from_raw_parts(
-                self.0.as_ptr() as *const BranchTableEntry,
+                self.0[10 ..].as_ptr() as *const BranchTableEntry,
                 self.0.len() / entry_size,
             )
         }
