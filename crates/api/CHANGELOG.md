@@ -10,6 +10,10 @@
 - Provide `bytemuck::Pod` for `ArrayU32`
 - Implement `bytemuck::Pod` for `U32<T>`
 
+### Patch
+
+- Update dependencies
+
 ## 0.7.0
 
 ### Major
