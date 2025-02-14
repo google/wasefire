@@ -20,43 +20,37 @@ use crate::module::Parser;
 
 pub struct SideTableView<'m> {
     pub func_idx: usize,
-    pub indices: &'m [u16], // including 0 and the length of metadata_array
-    pub metadata: &'m [u16],
+    pub indices: &'m [u8], // including 0 and the length of metadata_array
+    pub metadata: &'m [u8],
 }
 
 impl<'m> SideTableView<'m> {
-    pub fn new(parser: &mut crate::valid::Parser<'m>) -> Result<Self, Error> {
+    pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
+        let num_functions = parse_u16(binary, 0) as usize;
+        let indices_end = 2 + (num_functions + 1) * 2;
         Ok(SideTableView {
             func_idx: 0,
-            indices: parse_side_table_field(parser)?,
-            metadata: parse_side_table_field(parser)?,
+            indices: &binary[2 .. indices_end],
+            metadata: &binary[indices_end ..],
         })
     }
 
+    // TODO(dev/fast-interp): Make it generic since it will be used in both `Check` and `Use` modes.
+    // (Returns `MResult<Metadata<'m>, M>` instead.)
     pub fn metadata(&self, func_idx: usize) -> Metadata<'m> {
         Metadata(
-            &self.metadata[self.indices[func_idx] as usize .. self.indices[func_idx + 1] as usize],
+            &self.metadata[parse_u16(self.indices, func_idx * 2) as usize
+                .. parse_u16(self.indices, (func_idx + 1) * 2) as usize],
         )
     }
 }
 
-fn parse_u16(data: &[u8]) -> u16 {
-    bytemuck::pod_read_unaligned::<u16>(bytemuck::cast_slice(&data[0 .. 2]))
-}
-
-fn parse_side_table_field<'m>(parser: &mut crate::valid::Parser<'m>) -> Result<&'m [u16], Error> {
-    let len = parse_u16(parser.save()) as usize;
-    let parser = parser.split_at(len)?;
-    let bytes = parser.save().get(0 .. len * 2).unwrap();
-    Ok(bytemuck::cast_slice::<_, u16>(bytes))
-}
-
 #[derive(Default, Copy, Clone)]
-pub struct Metadata<'m>(&'m [u16]);
+pub struct Metadata<'m>(&'m [u8]);
 
 impl<'m> Metadata<'m> {
     pub fn type_idx(&self) -> usize {
-        self.0[0] as usize
+        parse_u16(self.0, 0) as usize
     }
 
     #[allow(dead_code)]
@@ -65,15 +59,23 @@ impl<'m> Metadata<'m> {
     }
 
     pub fn branch_table(&self) -> &[BranchTableEntry] {
-        bytemuck::cast_slice(&self.0[5 ..])
+        let entry_size = size_of::<BranchTableEntry>();
+        assert_eq!(
+            (self.0.len() - 10) % entry_size,
+            0,
+            "Metadata length for branch table must be divisible by {} bytes",
+            entry_size
+        );
+        unsafe {
+            core::slice::from_raw_parts(
+                self.0[10 ..].as_ptr() as *const BranchTableEntry,
+                self.0.len() / entry_size,
+            )
+        }
     }
 
     pub fn parser_range(&self) -> Range<usize> {
-        self.read_u32(1) .. self.read_u32(3)
-    }
-
-    fn read_u32(&self, idx: usize) -> usize {
-        bytemuck::pod_read_unaligned::<u32>(bytemuck::cast_slice(&self.0[idx .. idx + 2])) as usize
+        parse_u32(self.0, 2) as usize .. parse_u32(self.0, 6) as usize
     }
 }
 
@@ -84,9 +86,9 @@ pub struct MetadataEntry {
     pub branch_table: Vec<BranchTableEntry>,
 }
 
-#[derive(Copy, Clone, Debug, bytemuck::AnyBitPattern)]
+#[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
-pub struct BranchTableEntry([u16; 3]);
+pub struct BranchTableEntry([u8; 6]);
 
 pub struct BranchTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
@@ -105,27 +107,42 @@ impl BranchTableEntry {
         debug_assert!((i16::MIN as i32 .. i16::MAX as i32).contains(&view.delta_stp));
         debug_assert!(view.val_cnt <= 0xf);
         debug_assert!(view.pop_cnt <= 0xfff);
+        let delta_ip_bytes = (view.delta_ip as u16).to_le_bytes();
+        let delta_stp_bytes = (view.delta_stp as u16).to_le_bytes();
+        let pop_val_counts_bytes = (((view.pop_cnt << 4) | view.val_cnt) as u16).to_le_bytes();
         Ok(BranchTableEntry([
-            view.delta_ip as u16,
-            view.delta_stp as u16,
-            ((view.pop_cnt << 4) | view.val_cnt) as u16,
+            delta_ip_bytes[0],
+            delta_ip_bytes[1],
+            delta_stp_bytes[0],
+            delta_stp_bytes[1],
+            pop_val_counts_bytes[0],
+            pop_val_counts_bytes[1],
         ]))
     }
 
     pub fn view(self) -> BranchTableEntryView {
+        let pop_val_counts = parse_u16(&self.0, 4);
         BranchTableEntryView {
-            delta_ip: (self.0[0] as i16) as i32,
-            delta_stp: (self.0[1] as i16) as i32,
-            val_cnt: (self.0[2] & 0xf) as u32,
-            pop_cnt: (self.0[2] >> 4) as u32,
+            delta_ip: (parse_u16(&self.0, 0) as i16) as i32,
+            delta_stp: (parse_u16(&self.0, 2) as i16) as i32,
+            val_cnt: (pop_val_counts & 0xf) as u32,
+            pop_cnt: (pop_val_counts >> 4) as u32,
         }
     }
 
     pub fn is_invalid(self) -> bool {
-        self.0 == [0; 3]
+        self.0 == [0; 6]
     }
 
     pub fn invalid() -> Self {
-        BranchTableEntry([0; 3])
+        BranchTableEntry([0; 6])
     }
+}
+
+fn parse_u16(data: &[u8], offset: usize) -> u16 {
+    u16::from_le_bytes(data[offset ..][.. 2].try_into().unwrap())
+}
+
+fn parse_u32(data: &[u8], offset: usize) -> u32 {
+    u32::from_le_bytes(data[offset ..][.. 4].try_into().unwrap())
 }

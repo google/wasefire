@@ -28,7 +28,8 @@ use crate::*;
 pub struct Module<'m> {
     binary: &'m [u8],
     types: Vec<FuncType<'m>>,
-    // TODO(dev/fast-interp): Use a shallow (unstructured) view in the flash.
+    // TODO(dev/fast-interp): Change the type to `SideTableView` which will be parsed by
+    // `new_unchecked()`.
     side_table: &'m [MetadataEntry],
 }
 
