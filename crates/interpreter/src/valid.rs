@@ -132,7 +132,7 @@ impl<'m> BranchTableApi<'m> for &mut Vec<BranchTableEntry> {
     }
 }
 
-pub struct MetadataView<'m> {
+struct MetadataView<'m> {
     metadata: Metadata<'m>,
     branch_idx: usize,
 }
