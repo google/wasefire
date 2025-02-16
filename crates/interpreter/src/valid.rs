@@ -132,13 +132,18 @@ impl<'m> BranchTableApi<'m> for &mut Vec<BranchTableEntry> {
     }
 }
 
+pub struct MetadataView<'m> {
+    metadata: Metadata<'m>,
+    branch_idx: usize,
+}
+
 #[derive(Default)]
 struct Verify;
 impl ValidMode for Verify {
     /// Contains at most one _target_ branch. Source branches are eagerly patched to
     /// their target branch using the branch table.
     type Branches<'m> = Option<SideTableBranch<'m>>;
-    type BranchTable<'a, 'm> = Metadata<'m>;
+    type BranchTable<'a, 'm> = MetadataView<'m>;
     type SideTable<'m> = SideTableView<'m>;
     type Result = ();
 
@@ -152,11 +157,11 @@ impl ValidMode for Verify {
     fn next_branch_table<'a, 'm>(
         side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
     ) -> Result<Self::BranchTable<'a, 'm>, Error> {
-        let branch_table = side_table.metadata(side_table.func_idx);
+        let metadata = side_table.metadata(side_table.func_idx);
         side_table.func_idx += 1;
-        check(branch_table.type_idx() == type_idx)?;
-        check(branch_table.parser_range() == parser_range)?;
-        Ok(branch_table)
+        check(metadata.type_idx() == type_idx)?;
+        check(metadata.parser_range() == parser_range)?;
+        Ok(MetadataView { metadata, branch_idx: 0 })
     }
 
     fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result {
@@ -170,7 +175,7 @@ impl<'m> BranchesApi<'m> for Option<SideTableBranch<'m>> {
     }
 }
 
-impl<'m> BranchTableApi<'m> for Metadata<'m> {
+impl<'m> BranchTableApi<'m> for MetadataView<'m> {
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult {
@@ -178,7 +183,8 @@ impl<'m> BranchTableApi<'m> for Metadata<'m> {
     }
 
     fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
-        let entry = self.branch_table()[source.branch_table].view();
+        source.branch_table = self.branch_idx;
+        let entry = self.metadata.branch_table()[source.branch_table].view();
         offset_front(source.parser, entry.delta_ip as isize);
         source.branch_table += entry.delta_stp as usize;
         source.result = entry.val_cnt as usize;
@@ -186,10 +192,12 @@ impl<'m> BranchTableApi<'m> for Metadata<'m> {
         Ok(source)
     }
 
-    fn allocate_branch(&mut self) {}
+    fn allocate_branch(&mut self) {
+        self.branch_idx += 1;
+    }
 
     fn next_index(&self) -> usize {
-        0
+        self.branch_idx
     }
 }
 
