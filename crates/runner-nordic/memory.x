@@ -7,9 +7,9 @@ RAM:
 
 Flash:
 - 0x00000000 bootloader (64KiB)
-- 0x00010000 platform A (320KiB)
-- 0x00060000 platform B (320KiB)
-- 0x000b0000 applet (256KiB)
+- 0x00010000 platform A (320KiB + 128KiB)
+- 0x00060000 platform B (320KiB + 128KiB)
+- 0x000b0000 applet (256KiB - 256KiB)
 - 0x000f0000 persistent storage (64KiB)
 - 0x00100000
 
@@ -17,9 +17,8 @@ Flash:
 
 /* Keep those values in sync with the header crate used by the bootloader. */
 __bootloader_size = 0x00010000;
-__platform_size = 0x00050000;
-__applet_size = 0x00040000;
-ASSERT(__bootloader_size + __platform_size == 0x00060000, "bad layout");
+__platform_size = 0x00050000 + RUNNER_NATIVE * 0x00020000;
+__applet_size = (1 - RUNNER_NATIVE) * 0x00040000;
 ASSERT(__bootloader_size + 2 * __platform_size + __applet_size == 0x000f0000, "bad layout");
 __header_origin = __bootloader_size + RUNNER_SIDE * __platform_size;
 __header_length = 0x00000100;
