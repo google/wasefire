@@ -20,7 +20,7 @@ header = { path = "crates/header", features = ["alloc"] }
 nrf52840-hal = { version = "0.18.0", features = ["embedded-hal-02"] }
 panic-abort = { version = "0.3.2", optional = true }
 panic-probe = { version = "0.3.2", features = ["print-defmt"], optional = true }
-typenum = { version = "1.17.0", default-features = false }
+typenum = { version = "1.17.0", default-features = false, optional = true }
 usb-device = "0.3.2"
 usbd-hid = { version = "0.8.2", optional = true }
 usbd-serial = { version = "0.2.2", optional = true }
@@ -52,32 +52,32 @@ features = [
   "applet-api-platform-protocol",
   "applet-api-platform-update",
   "board-api-button",
-  "board-api-crypto-aes128-ccm",
-  "board-api-gpio",
   "board-api-led",
   "board-api-rng",
   "board-api-storage",
   "board-api-timer",
-  "board-api-uart",
 ]
 
 [features]
+aes128-ccm = ["_crypto", "dep:typenum", "wasefire-scheduler/board-api-crypto-aes128-ccm"]
+gpio = ["wasefire-scheduler/board-api-gpio"]
 radio-ble = [
   "dep:rubble",
   "dep:rubble-nrf5x",
   "dep:wasefire-applet-api",
   "wasefire-scheduler/board-api-radio-ble",
 ]
+uart = ["wasefire-scheduler/board-api-uart"]
 usb-ctap = ["_usb", "dep:usbd-hid", "wasefire-scheduler/board-api-usb-ctap"]
 usb-serial = ["_usb", "dep:usbd-serial", "wasefire-scheduler/board-api-usb-serial"]
 # Software crypto features.
-software-crypto-aes256-gcm = ["wasefire-scheduler/software-crypto-aes256-gcm"]
+software-crypto-aes256-gcm = ["_crypto", "wasefire-scheduler/software-crypto-aes256-gcm"]
 software-crypto-hmac-sha256 = [
   "software-crypto-sha256",
   "wasefire-scheduler/software-crypto-hmac-sha256",
 ]
 software-crypto-p256 = ["software-crypto-sha256", "wasefire-scheduler/software-crypto-p256"]
-software-crypto-sha256 = ["wasefire-scheduler/software-crypto-sha256"]
+software-crypto-sha256 = ["_crypto", "wasefire-scheduler/software-crypto-sha256"]
 # Exactly one is enabled by xtask.
 debug = [
   "dep:defmt",
@@ -95,7 +95,8 @@ release = ["dep:panic-abort"]
 native = ["wasefire-scheduler/native"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
 # Internal features.
-_full = ["_software-crypto", "radio-ble", "usb-ctap", "usb-serial"]
+_crypto = []
+_full = ["_software-crypto", "aes128-ccm", "gpio", "radio-ble", "uart", "usb-ctap", "usb-serial"]
 _software-crypto = [
   "software-crypto-aes256-gcm",
   "software-crypto-hmac-sha256",
