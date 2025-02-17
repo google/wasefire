@@ -22,6 +22,8 @@ impl crypto::Api for Impl {
     type Aes128Ccm = ccm::Impl;
     #[cfg(feature = "software-crypto-aes256-gcm")]
     type Aes256Gcm = crypto::SoftwareAes256Gcm;
+    #[cfg(feature = "software-crypto-hmac-sha256")]
+    type HmacSha256 = crypto::SoftwareHmacSha256<Self>;
     #[cfg(feature = "software-crypto-p256")]
     type P256 = crypto::SoftwareP256<Impl>;
     #[cfg(feature = "software-crypto-sha256")]
