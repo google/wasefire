@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `clock` module for monotonic wall-time
 - Add `crypto::cbc` module for AES-256-CBC
 - Add `timer::Timeout` helper for timer used for timeouts only
 - Add `usb::ctap` module for CTAP HID

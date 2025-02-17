@@ -163,6 +163,7 @@ _test_min() { { echo "$1"; echo "$2"; } | sort | head -n1; }
 
 _TEST_APPLET_API='
 button
+clock
 crypto-cbc
 crypto-ccm
 crypto-ec
@@ -187,6 +188,7 @@ usb-serial
 
 _TEST_BOARD_API='
 button
+clock
 crypto-aes128-ccm
 crypto-aes256-cbc
 crypto-aes256-gcm

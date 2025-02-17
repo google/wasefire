@@ -20,6 +20,7 @@ use crate::{Board, with_state};
 
 pub mod applet;
 pub mod button;
+mod clock;
 #[cfg(feature = "_crypto")]
 mod crypto;
 mod debug;
@@ -61,6 +62,7 @@ impl board::Api for Board {
 
     type Applet = applet::Impl;
     type Button = button::Impl;
+    type Clock = clock::Impl;
     #[cfg(feature = "_crypto")]
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;

@@ -130,6 +130,18 @@
   ): i32
 // END OF MODULE button
 
+// START OF MODULE clock
+// Clock operations.
+  // Returns the time spent since some initial event, in micro-seconds.
+  //
+  // The initial event may be the first time this function is called.
+  @external("env", "clk")
+  export declare function clock_uptime_us(
+    // Pointer to the 64-bits time.
+    ptr: usize,
+  ): i32
+// END OF MODULE clock
+
 // START OF MODULE crypto
 // Cryptographic operations.
   // START OF MODULE crypto_cbc

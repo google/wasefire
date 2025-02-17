@@ -57,6 +57,7 @@ log = ["wasefire-logger/log"]
 # API features. DO NOT enable those features if you also depend on the
 # scheduler. Instead, enable the `board-api` features of the scheduler.
 api-button = []
+api-clock = []
 api-crypto-aes128-ccm = ["internal-api-crypto-aead"]
 api-crypto-aes256-cbc = ["internal-api-crypto-cbc"]
 api-crypto-aes256-gcm = ["internal-api-crypto-aead"]
@@ -78,6 +79,7 @@ api-usb-serial = ["dep:usb-device", "dep:usbd-serial", "internal-api-usb"]
 # Enables all API features (unstable).
 full-api = [
   "api-button",
+  "api-clock",
   "api-crypto-aes128-ccm",
   "api-crypto-aes256-cbc",
   "api-crypto-aes256-gcm",

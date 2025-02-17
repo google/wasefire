@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support the `api-clock` feature
 - Support the `api-crypto-cbc` feature
 - Support the `api-usb-ctap` feature
 - Improve safety documentation

@@ -17,6 +17,7 @@ use core::sync::atomic::{AtomicU32, Ordering};
 use cortex_m::peripheral::SYST;
 use cortex_m_rt::exception;
 
+#[cfg(feature = "debug")]
 defmt::timestamp!("{=u32:us}", uptime_us() as u32);
 
 /// Returns the time in micro-seconds since [`init()`] was called.

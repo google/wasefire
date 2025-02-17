@@ -10,29 +10,16 @@
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
-// limitations under the License.use opensk_lib::api::clock::Clock;
+// limitations under the License.
 
-use opensk_lib::api::clock::Clock;
+//! Clock interface.
 
-use crate::env::WasefireEnv;
+use crate::Error;
 
-impl Clock for WasefireEnv {
-    type Timer = u64;
-
-    fn make_timer(&mut self, ms: usize) -> Self::Timer {
-        now_us() + 1000 * ms as u64
-    }
-
-    fn is_elapsed(&mut self, timer: &Self::Timer) -> bool {
-        now_us() <= *timer
-    }
-
-    #[cfg(feature = "debug")]
-    fn timestamp_us(&mut self) -> usize {
-        now_us() as usize
-    }
-}
-
-fn now_us() -> u64 {
-    wasefire::clock::uptime_us().unwrap()
+/// Clock interface.
+pub trait Api: Send {
+    /// Returns the time spent since some initial event, in micro-seconds.
+    ///
+    /// The initial event may be the first time this function is called.
+    fn uptime_us() -> Result<u64, Error>;
 }

@@ -138,6 +138,7 @@ async fn main() -> Result<()> {
         };
         cleanup::shutdown(128 + signal.as_raw_value());
     });
+    board::clock::init();
     wasefire_cli_tools::fs::create_dir_all(&FLAGS.dir).await?;
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
     let storage = Some(FileStorage::new(&FLAGS.dir.join("storage.bin"), options)?);

@@ -14,6 +14,7 @@
 
 pub mod applet;
 pub mod button;
+pub mod clock;
 mod crypto;
 mod debug;
 mod led;
@@ -64,6 +65,7 @@ impl Api for Board {
 
     type Applet = applet::Impl;
     type Button = button::Impl;
+    type Clock = clock::Impl;
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;
     type Led = led::Impl;
