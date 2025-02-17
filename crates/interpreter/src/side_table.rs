@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::vec;
 use alloc::vec::Vec;
 use core::ops::Range;
 
 use crate::error::*;
 use crate::module::Parser;
+use crate::util::leb128;
 
 pub struct SideTableView<'m> {
     pub func_idx: usize,
@@ -26,7 +28,8 @@ pub struct SideTableView<'m> {
 
 impl<'m> SideTableView<'m> {
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        let num_functions = parse_u16(binary, 0) as usize;
+        let mut parser = unsafe { Parser::new(binary) };
+        let num_functions = parser.parse_u16().unwrap() as usize;
         let indices_end = 2 + (num_functions + 1) * 2;
         Ok(SideTableView {
             func_idx: 0,
@@ -84,6 +87,24 @@ pub struct MetadataEntry {
     pub type_idx: usize,
     pub parser_range: Range<usize>,
     pub branch_table: Vec<BranchTableEntry>,
+}
+
+pub fn serialize(side_table: &[MetadataEntry]) -> Vec<u8> {
+    let mut res = vec![];
+    leb128(side_table.len(), &mut res);
+    let offset = res.len();
+    let mut indices = vec![0];
+    for entry in side_table {
+        res.extend_from_slice(&(entry.type_idx as u16).to_le_bytes());
+        res.extend_from_slice(&(entry.parser_range.start as u32).to_le_bytes());
+        res.extend_from_slice(&(entry.parser_range.end as u32).to_le_bytes());
+        for branch in &entry.branch_table {
+            res.extend_from_slice(&branch.0);
+        }
+        indices.extend_from_slice(&(res.len() as u16 - offset as u16).to_le_bytes());
+    }
+    res.splice(offset .. offset, indices);
+    res
 }
 
 #[derive(Copy, Clone, Debug)]

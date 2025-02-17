@@ -157,3 +157,4 @@ pub use syntax::{
     FuncType, GlobalType, ImportDesc, Limits, Mut, RefType, ResultType, TableType, ValType,
 };
 pub use valid::prepare;
+pub use valid::merge;

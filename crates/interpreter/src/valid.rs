@@ -31,6 +31,17 @@ pub fn prepare(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
     validate::<Prepare>(binary)
 }
 
+pub fn merge(binary: &[u8], side_table: Vec<MetadataEntry>) -> Vec<u8> {
+    let mut wasm = vec![];
+    wasm.extend_from_slice(&binary[0 .. 8]);
+    wasm.push(0);
+    let name = "wasefire-sidetable";
+    leb128(name.len(), &mut wasm);
+    wasm.extend_from_slice(name.as_bytes());
+    wasm.extend_from_slice(serialize(side_table.as_slice()).as_slice());
+    wasm
+}
+
 #[allow(dead_code)]
 #[allow(unused_variables)]
 /// Checks whether a WASM module with the side table in binary format is valid.
