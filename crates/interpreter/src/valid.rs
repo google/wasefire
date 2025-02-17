@@ -712,11 +712,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
                         let result = self.label().type_.results.len();
                         let mut target = self.branch_target(result);
                         target.branch_table += 1;
-                        M::BranchTable::stitch_branch(
-                            self.branch_table.as_mut().unwrap(),
-                            source,
-                            target,
-                        )?;
+                        self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
                     }
                     _ => Err(invalid())?,
                 }
@@ -983,14 +979,14 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
             let results_len = self.label().type_.results.len();
             let mut target = self.branch_target(results_len);
             for source in branches {
-                M::BranchTable::stitch_branch(self.branch_table.as_mut().unwrap(), source, target)?;
+                self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
             }
             let label = self.label();
             if let LabelKind::If(source) = label.kind {
                 check(label.type_.params == label.type_.results)?;
                 // SAFETY: This function is only called after parsing an End instruction.
                 target.parser = offset_front(target.parser, -1);
-                M::BranchTable::stitch_branch(self.branch_table.as_mut().unwrap(), source, target)?;
+                self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
             }
         }
         let results = self.label().type_.results;
@@ -1007,15 +1003,15 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
         let n = self.labels.len();
         check(l < n)?;
         let source = self.branch_source();
-        let source = M::BranchTable::patch_branch(self.branch_table.as_ref().unwrap(), source)?;
+        let source = self.branch_table.as_ref().unwrap().patch_branch(source)?;
         let label = &mut self.labels[n - l - 1];
         Ok(match label.kind {
             LabelKind::Block | LabelKind::If(_) => {
-                M::Branches::push_branch(&mut label.branches, source)?;
+                label.branches.push_branch(source)?;
                 label.type_.results
             }
             LabelKind::Loop(target) => {
-                M::BranchTable::stitch_branch(self.branch_table.as_mut().unwrap(), source, target)?;
+                self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
                 label.type_.params
             }
         })
