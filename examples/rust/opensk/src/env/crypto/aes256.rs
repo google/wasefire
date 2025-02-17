@@ -15,26 +15,31 @@
 use opensk_lib::api::crypto::aes256::Aes256;
 use opensk_lib::api::crypto::{AES_BLOCK_SIZE, AES_KEY_SIZE};
 
-use crate::env::WasefireEnv;
+pub struct Impl {
+    // TODO: Zeroize.
+    key: [u8; 32],
+}
 
-impl Aes256 for WasefireEnv {
-    fn new(_key: &[u8; AES_KEY_SIZE]) -> Self {
-        todo!()
+impl Aes256 for Impl {
+    fn new(key: &[u8; AES_KEY_SIZE]) -> Self {
+        Impl { key: *key }
     }
 
-    fn encrypt_block(&self, _block: &mut [u8; AES_BLOCK_SIZE]) {
-        todo!()
+    fn encrypt_block(&self, block: &mut [u8; AES_BLOCK_SIZE]) {
+        wasefire::crypto::cbc::encrypt(&self.key, &ZERO_IV, block).unwrap()
     }
 
-    fn decrypt_block(&self, _block: &mut [u8; AES_BLOCK_SIZE]) {
-        todo!()
+    fn decrypt_block(&self, block: &mut [u8; AES_BLOCK_SIZE]) {
+        wasefire::crypto::cbc::decrypt(&self.key, &ZERO_IV, block).unwrap()
     }
 
-    fn encrypt_cbc(&self, _iv: &[u8; AES_BLOCK_SIZE], _plaintext: &mut [u8]) {
-        todo!()
+    fn encrypt_cbc(&self, iv: &[u8; AES_BLOCK_SIZE], blocks: &mut [u8]) {
+        wasefire::crypto::cbc::encrypt(&self.key, iv, blocks).unwrap()
     }
 
-    fn decrypt_cbc(&self, _iv: &[u8; AES_BLOCK_SIZE], _ciphertext: &mut [u8]) {
-        todo!()
+    fn decrypt_cbc(&self, iv: &[u8; AES_BLOCK_SIZE], blocks: &mut [u8]) {
+        wasefire::crypto::cbc::decrypt(&self.key, iv, blocks).unwrap()
     }
 }
+
+const ZERO_IV: [u8; 16] = [0; 16];

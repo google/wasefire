@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support `crypto::cbc` module
 - Support `usb::ctap` module
 - Use Rust edition 2024
 

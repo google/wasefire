@@ -19,6 +19,7 @@ aead = { version = "0.5.2", default-features = false, optional = true }
 aes = { version = "0.8.4", default-features = false, optional = true }
 aes-gcm = { version = "0.10.3", default-features = false, optional = true }
 bytemuck = { version = "1.21.0", default-features = false, optional = true }
+cbc = { version = "0.1.2", default-features = false, optional = true }
 ccm = { version = "0.5.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.6", default-features = false, optional = true }
 defmt = { version = "0.3.8", default-features = false, optional = true }
@@ -57,6 +58,7 @@ log = ["wasefire-logger/log"]
 # scheduler. Instead, enable the `board-api` features of the scheduler.
 api-button = []
 api-crypto-aes128-ccm = ["internal-api-crypto-aead"]
+api-crypto-aes256-cbc = ["internal-api-crypto-cbc"]
 api-crypto-aes256-gcm = ["internal-api-crypto-aead"]
 api-crypto-hmac-sha256 = ["internal-api-crypto-hmac"]
 api-crypto-hmac-sha384 = ["internal-api-crypto-hmac"]
@@ -77,6 +79,7 @@ api-usb-serial = ["dep:usb-device", "dep:usbd-serial", "internal-api-usb"]
 full-api = [
   "api-button",
   "api-crypto-aes128-ccm",
+  "api-crypto-aes256-cbc",
   "api-crypto-aes256-gcm",
   "api-crypto-hmac-sha256",
   "api-crypto-hmac-sha384",
@@ -102,6 +105,7 @@ software-crypto-aes128-ccm = [
   "dep:ccm",
   "internal-software-crypto-aead",
 ]
+software-crypto-aes256-cbc = ["api-crypto-aes256-cbc", "dep:aes", "internal-software-crypto-cbc"]
 software-crypto-aes256-gcm = [
   "aes-gcm?/aes",
   "api-crypto-aes256-gcm",
@@ -137,6 +141,7 @@ software-crypto-sha384 = ["api-crypto-sha384", "dep:sha2"]
 # Internal features.
 internal-api-crypto = []
 internal-api-crypto-aead = ["dep:crypto-common", "dep:typenum", "internal-api-crypto"]
+internal-api-crypto-cbc = ["dep:crypto-common", "dep:typenum", "internal-api-crypto"]
 internal-api-crypto-ecc = ["dep:crypto-common", "dep:typenum", "internal-api-crypto"]
 internal-api-crypto-hash = ["dep:crypto-common", "dep:digest", "dep:typenum", "internal-api-crypto"]
 internal-api-crypto-hmac = ["dep:crypto-common", "dep:typenum", "digest/mac", "internal-api-crypto"]
@@ -144,6 +149,7 @@ internal-api-radio = []
 internal-api-usb = []
 internal-software-crypto = [
   "software-crypto-aes128-ccm",
+  "software-crypto-aes256-cbc",
   "software-crypto-aes256-gcm",
   "software-crypto-hmac-sha256",
   "software-crypto-hmac-sha384",
@@ -153,6 +159,7 @@ internal-software-crypto = [
   "software-crypto-sha384",
 ]
 internal-software-crypto-aead = ["dep:aead"]
+internal-software-crypto-cbc = ["dep:cbc"]
 internal-software-crypto-ecc = [
   "dep:ecdsa",
   "dep:elliptic-curve",

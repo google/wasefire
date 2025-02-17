@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `crypto::Api::Aes256Cbc` for AES-256-CBC
 - Add `usb::Api::Ctap` for CTAP HID
 - Use Rust edition 2024
 

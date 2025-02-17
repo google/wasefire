@@ -132,6 +132,50 @@
 
 // START OF MODULE crypto
 // Cryptographic operations.
+  // START OF MODULE crypto_cbc
+  // AES-256-CBC.
+    // Whether AES-256-CBC is supported.
+    @external("env", "cbs")
+    export declare function crypto_cbc_is_supported(
+    ): i32
+
+    // Encrypts a sequence of blocks given a key and IV.
+    @external("env", "cbe")
+    export declare function crypto_cbc_encrypt(
+      // The 32 bytes key to encrypt with.
+      key: usize,
+
+      // The 16 bytes IV to encrypt with.
+      iv: usize,
+
+      // Address of the sequence of blocks.
+      ptr: usize,
+
+      // Length in bytes of the sequence of blocks.
+      //
+      // This length must be dividable by 16.
+      len: usize,
+    ): i32
+
+    // Decrypts a sequence of blocks given a key and IV.
+    @external("env", "cbd")
+    export declare function crypto_cbc_decrypt(
+      // The 32 bytes key to decrypt with.
+      key: usize,
+
+      // The 16 bytes IV to decrypt with.
+      iv: usize,
+
+      // Address of the sequence of blocks.
+      ptr: usize,
+
+      // Length in bytes of the sequence of blocks.
+      //
+      // This length must be dividable by 16.
+      len: usize,
+    ): i32
+  // END OF MODULE crypto_cbc
+
   // START OF MODULE crypto_ccm
   // AES-CCM according to Bluetooth.
     // Whether AES-CCM is supported.
@@ -168,10 +212,10 @@
     // Decrypts a cipher text given a key and IV.
     @external("env", "ccd")
     export declare function crypto_ccm_decrypt(
-      // The 16 bytes key to encrypt with.
+      // The 16 bytes key to decrypt with.
       key: usize,
 
-      // The 8 bytes IV to encrypt with.
+      // The 8 bytes IV to decrypt with.
       iv: usize,
 
       // Length in bytes of the `clear` text.
@@ -180,12 +224,12 @@
       // this value.
       len: usize,
 
-      // The cipher text to encrypt from.
+      // The cipher text to decrypt from.
       //
       // Its length must be `len + 4` bytes.
       cipher: usize,
 
-      // The clear text to encrypt to.
+      // The clear text to decrypt to.
       //
       // Its length must be provided in the `len` field.
       clear: usize,

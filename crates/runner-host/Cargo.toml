@@ -43,6 +43,7 @@ features = [
   "board-api-usb-ctap",
   "board-api-usb-serial",
   "software-crypto-aes128-ccm",
+  "software-crypto-aes256-cbc",
   "software-crypto-aes256-gcm",
   "software-crypto-hmac-sha256",
   "software-crypto-hmac-sha384",

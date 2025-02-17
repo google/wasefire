@@ -34,6 +34,8 @@ use crate::{Error, Support};
 
 #[cfg(feature = "internal-api-crypto-aead")]
 pub mod aead;
+#[cfg(feature = "internal-api-crypto-cbc")]
+pub mod cbc;
 #[cfg(feature = "internal-api-crypto-ecc")]
 pub mod ecc;
 
@@ -42,6 +44,10 @@ pub trait Api: Send {
     /// AES-128-CCM interface.
     #[cfg(feature = "api-crypto-aes128-ccm")]
     type Aes128Ccm: aead::Api<typenum::U16, typenum::U13, Tag = typenum::U4>;
+
+    /// AES-256-CBC interface.
+    #[cfg(feature = "api-crypto-aes256-cbc")]
+    type Aes256Cbc: cbc::Api<typenum::U32, typenum::U16>;
 
     /// AES-256-GCM interface.
     #[cfg(feature = "api-crypto-aes256-gcm")]
@@ -126,6 +132,10 @@ impl<T: NoError> WithError for T {
 #[cfg(feature = "api-crypto-aes128-ccm")]
 pub type Aes128Ccm<B> = <super::Crypto<B> as Api>::Aes128Ccm;
 
+/// AES-256-CBC interface.
+#[cfg(feature = "api-crypto-aes256-cbc")]
+pub type Aes256Cbc<B> = <super::Crypto<B> as Api>::Aes256Cbc;
+
 /// AES-256-GCM interface.
 #[cfg(feature = "api-crypto-aes256-gcm")]
 pub type Aes256Gcm<B> = <super::Crypto<B> as Api>::Aes256Gcm;
@@ -157,6 +167,10 @@ pub type Sha384<B> = <super::Crypto<B> as Api>::Sha384;
 /// AES-128-CCM interface.
 #[cfg(feature = "software-crypto-aes128-ccm")]
 pub type SoftwareAes128Ccm = ccm::Ccm<aes::Aes128, typenum::U4, typenum::U13>;
+
+/// AES-256-CBC interface.
+#[cfg(feature = "software-crypto-aes256-cbc")]
+pub type SoftwareAes256Cbc = cbc::Software<aes::Aes256>;
 
 /// AES-256-GCM interface.
 #[cfg(feature = "software-crypto-aes256-gcm")]

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(feature = "applet-api-crypto-cbc")]
+mod cbc;
 #[cfg(feature = "applet-api-crypto-ccm")]
 mod ccm;
 #[cfg(feature = "applet-api-crypto-ec")]
@@ -28,6 +30,8 @@ use crate::DispatchSchedulerCall;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
+        #[cfg(feature = "applet-api-crypto-cbc")]
+        Api::Cbc(call) => cbc::process(call),
         #[cfg(feature = "applet-api-crypto-ccm")]
         Api::Ccm(call) => ccm::process(call),
         #[cfg(feature = "applet-api-crypto-ec")]
