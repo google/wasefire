@@ -108,8 +108,16 @@ software-crypto-aes256-gcm = [
   "dep:aes-gcm",
   "internal-software-crypto-aead",
 ]
-software-crypto-hmac-sha256 = ["api-crypto-hmac-sha256", "internal-software-crypto-hmac"]
-software-crypto-hmac-sha384 = ["api-crypto-hmac-sha384", "internal-software-crypto-hmac"]
+software-crypto-hmac-sha256 = [
+  "api-crypto-hmac-sha256",
+  "api-crypto-sha256",
+  "internal-software-crypto-hmac",
+]
+software-crypto-hmac-sha384 = [
+  "api-crypto-hmac-sha384",
+  "api-crypto-sha384",
+  "internal-software-crypto-hmac",
+]
 software-crypto-p256 = [
   "api-crypto-p256",
   "dep:p256",

@@ -72,6 +72,10 @@ usb-ctap = ["_usb", "dep:usbd-hid", "wasefire-scheduler/board-api-usb-ctap"]
 usb-serial = ["_usb", "dep:usbd-serial", "wasefire-scheduler/board-api-usb-serial"]
 # Software crypto features.
 software-crypto-aes256-gcm = ["wasefire-scheduler/software-crypto-aes256-gcm"]
+software-crypto-hmac-sha256 = [
+  "software-crypto-sha256",
+  "wasefire-scheduler/software-crypto-hmac-sha256",
+]
 software-crypto-p256 = ["software-crypto-sha256", "wasefire-scheduler/software-crypto-p256"]
 software-crypto-sha256 = ["wasefire-scheduler/software-crypto-sha256"]
 # Exactly one is enabled by xtask.
@@ -91,7 +95,13 @@ release = ["dep:panic-abort"]
 native = ["wasefire-scheduler/native"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
 # Internal features.
-_software-crypto = ["software-crypto-aes256-gcm", "software-crypto-p256", "software-crypto-sha256"]
+_full = ["_software-crypto", "radio-ble", "usb-ctap", "usb-serial"]
+_software-crypto = [
+  "software-crypto-aes256-gcm",
+  "software-crypto-hmac-sha256",
+  "software-crypto-p256",
+  "software-crypto-sha256",
+]
 _usb = []
 
 [lints]

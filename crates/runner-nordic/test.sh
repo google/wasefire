@@ -19,13 +19,15 @@ set -e
 
 ensure_applet
 
+for feature in $(package_features); do
+  case $feature in _*|debug|release|native|wasm) continue ;; esac
+  x cargo clippy --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug,$feature
+done
+
 test_helper
 
+cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug,_full
 cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug
-cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug,radio-ble
-cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug,usb-ctap
-cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug,usb-serial
-cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug,_software-crypto
 DEFMT_LOG=trace cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug
 cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,release
 cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=native,release
