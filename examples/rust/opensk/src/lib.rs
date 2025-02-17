@@ -23,7 +23,7 @@ use opensk_lib::env::Env as _;
 mod env;
 
 fn main() -> ! {
-    let mut opensk_ctap = opensk_lib::Ctap::new(env::WasefireEnv);
+    let mut opensk_ctap = opensk_lib::Ctap::new(env::init());
     let mut ctap_listener = usb::ctap::Listener::new(usb::ctap::Event::Read);
     let transport = opensk_lib::Transport::MainHid;
     let endpoint = opensk_lib::api::connection::UsbEndpoint::MainHid;
@@ -33,9 +33,7 @@ fn main() -> ! {
         while !usb::ctap::read(&mut packet).unwrap() {
             scheduling::wait_until(|| ctap_listener.is_notified());
         }
-        debug!("Received packet {packet:02x?}");
         for packet in opensk_ctap.process_hid_packet(&packet, transport) {
-            debug!("Sending packet {packet:02x?}");
             opensk_ctap.env().hid_connection().send(&packet, endpoint).unwrap();
         }
     }
