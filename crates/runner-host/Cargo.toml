@@ -57,6 +57,7 @@ features = [
 # Exactly one is enabled by xtask.
 debug = [
   "dep:env_logger",
+  "wasefire-interpreter/debug",
   "wasefire-logger/log",
   "wasefire-protocol-tokio/log",
   "wasefire-protocol-usb/log",
