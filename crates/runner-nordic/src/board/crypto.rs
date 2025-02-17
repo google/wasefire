@@ -14,11 +14,13 @@
 
 use wasefire_board_api::crypto;
 
+#[cfg(feature = "aes128-ccm")]
 mod ccm;
 
 pub enum Impl {}
 
 impl crypto::Api for Impl {
+    #[cfg(feature = "aes128-ccm")]
     type Aes128Ccm = ccm::Impl;
     #[cfg(feature = "software-crypto-aes256-gcm")]
     type Aes256Gcm = crypto::SoftwareAes256Gcm;
