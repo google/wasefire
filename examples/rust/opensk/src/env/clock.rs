@@ -20,14 +20,19 @@ impl Clock for WasefireEnv {
     type Timer = u64;
 
     fn make_timer(&mut self, ms: usize) -> Self::Timer {
-        now() + ms as u64
+        now_us() + 1000 * ms as u64
     }
 
     fn is_elapsed(&mut self, timer: &Self::Timer) -> bool {
-        now() <= *timer
+        now_us() <= *timer
+    }
+
+    #[cfg(feature = "debug")]
+    fn timestamp_us(&mut self) -> usize {
+        now_us() as usize
     }
 }
 
-fn now() -> u64 {
+fn now_us() -> u64 {
     wasefire::debug::time().unwrap()
 }

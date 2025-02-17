@@ -14,6 +14,10 @@ path = "../../../third_party/google/OpenSK/libraries/opensk"
 package = "opensk"
 default-features = false
 
+[features]
+debug = ["opensk-lib/debug_ctap"]
+test = ["opensk-lib/std", "wasefire/test"]
+
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"

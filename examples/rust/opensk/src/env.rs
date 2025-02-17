@@ -26,11 +26,17 @@ mod rng;
 mod user_presence;
 mod write;
 
-pub struct WasefireEnv;
+pub fn init() -> WasefireEnv {
+    WasefireEnv { user_presence: user_presence::init() }
+}
+
+pub struct WasefireEnv {
+    user_presence: user_presence::Impl,
+}
 
 impl Env for WasefireEnv {
     type Rng = Self;
-    type UserPresence = Self;
+    type UserPresence = user_presence::Impl;
     type Persist = Self;
     type KeyStore = Self;
     type Write = write::Impl;
@@ -44,7 +50,7 @@ impl Env for WasefireEnv {
     }
 
     fn user_presence(&mut self) -> &mut Self::UserPresence {
-        self
+        &mut self.user_presence
     }
 
     fn persist(&mut self) -> &mut Self::Persist {
