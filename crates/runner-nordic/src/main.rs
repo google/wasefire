@@ -179,7 +179,8 @@ fn main() -> ! {
     let ctap = Ctap::new(HIDClass::new(usb_bus, CtapReport::desc(), 255));
     #[cfg(feature = "usb-serial")]
     let serial = Serial::new(SerialPort::new(usb_bus));
-    let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x16c0, 0x27dd))
+    const VID_PID: UsbVidPid = vid_pid();
+    let usb_dev = UsbDeviceBuilder::new(usb_bus, VID_PID)
         .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Wasefire")])
         .unwrap()
         .build();
@@ -325,4 +326,31 @@ fn usbd() {
         #[cfg(feature = "usb-serial")]
         state.serial.tick(polled, |event| state.events.push(event.into()));
     });
+}
+
+const fn vid_pid() -> UsbVidPid {
+    let vidpid = match option_env!("RUNNER_VIDPID") {
+        None => b"16c0:27dd",
+        Some(x) => x.as_bytes(),
+    };
+    assert!(vidpid.len() == 9);
+    assert!(vidpid[4] == b':');
+    let vid = u16_from_hex(vidpid, 0);
+    let pid = u16_from_hex(vidpid, 5);
+    UsbVidPid(vid, pid)
+}
+
+const fn u16_from_hex(x: &[u8], mut i: usize) -> u16 {
+    let mut r = 0;
+    let n = i + 4;
+    while i < n {
+        r *= 16;
+        r += match x[i] {
+            b'0' ..= b'9' => (x[i] - b'0') as u16,
+            b'a' ..= b'f' => 10 + (x[i] - b'a') as u16,
+            _ => panic!(),
+        };
+        i += 1;
+    }
+    r
 }
