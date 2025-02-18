@@ -12,12 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fs::File;
-use std::io::Write;
-use std::path::PathBuf;
-
 fn main() {
-    let out = PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
     let target = if std::env::var_os("CARGO_FEATURE_TARGET_LINUX").is_some() {
         Target::Linux
     } else if std::env::var_os("CARGO_FEATURE_TARGET_NORDIC").is_some() {
@@ -38,27 +33,29 @@ fn main() {
     } else {
         panic!("one of runtime-{{base,wasm3,wasmi,wasmtime}} must be enabled")
     };
+    let out = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
     let memory = match target {
         Target::Linux => None,
-        Target::Nordic => Some(include_bytes!("memory-nordic.x").as_slice()),
-        Target::Riscv => Some(include_bytes!("memory-riscv.x").as_slice()),
+        Target::Nordic => Some("memory-nordic.x"),
+        Target::Riscv => Some("memory-riscv.x"),
     };
     if let Some(memory) = memory {
+        println!("cargo:rerun-if-changed={memory}");
+        std::fs::copy(memory, out.join("memory.x")).unwrap();
         println!("cargo:rustc-link-search={}", out.display());
-        File::create(out.join("memory.x")).unwrap().write_all(memory).unwrap();
     }
-    let module = if runtime == Runtime::Wasmtime && target.is_embedded() {
+    const PATH: &str = "../../third_party/wasm3/wasm-coremark/coremark-minimal.wasm";
+    println!("cargo:rerun-if-changed={PATH}");
+    let mut module = std::fs::read(PATH).unwrap();
+    if runtime == Runtime::Wasmtime && target.is_embedded() {
         let mut config = wasmtime::Config::new();
         config.target("pulley32").unwrap();
         let engine = wasmtime::Engine::new(&config).unwrap();
-        &engine.precompile_module(WASM).unwrap()
-    } else {
-        WASM
-    };
-    std::fs::write(out.join("module.bin"), module).unwrap();
+        module = engine.precompile_module(&module).unwrap();
+    }
+    println!("cargo:warning=module size is {} bytes", module.len());
+    std::fs::write(out.join("module.bin"), &module).unwrap();
 }
-
-const WASM: &[u8] = include_bytes!("../../third_party/wasm3/wasm-coremark/coremark-minimal.wasm");
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Target {

@@ -31,6 +31,12 @@ case "$2" in
   *) e "Unsupported runtime: $2" ;;
 esac
 
+case "$3" in
+  perf) PROFILE=--release ;;
+  size) PROFILE=--profile=release-size ;;
+  *) e "Unsupported profile: $3" ;;
+esac
+
 # See test.sh for supported (and tested) combinations.
 case $1-$2 in
   *-base|linux-*|nordic-wasmi|nordic-wasmtime) ;;
@@ -38,8 +44,12 @@ case $1-$2 in
 esac
 
 FEATURES=--features=target-$1,runtime-$2
-shift 2
-set -- --release $TARGET $FEATURES "$@"
+BUILD_STD='-Zbuild-std=core,alloc -Zbuild-std-features=panic_immediate_abort'
+[ $3 = size ] && BUILD_STD="$BUILD_STD,optimize_for_size"
+shift 3
+set -- $PROFILE $BUILD_STD $TARGET $FEATURES "$@"
 
+WASEFIRE_WRAPPER_EXEC=n ../../scripts/wrapper.sh probe-rs
+WASEFIRE_WRAPPER_EXEC=n ../../scripts/wrapper.sh cargo-size
 [ -z "$TARGET" ] || x ../../scripts/wrapper.sh cargo-size "$@"
 x cargo run "$@"
