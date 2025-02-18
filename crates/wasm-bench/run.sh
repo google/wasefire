@@ -33,11 +33,13 @@ esac
 
 # See test.sh for supported (and tested) combinations.
 case $1-$2 in
-  *-base|nordic-wasmi) ;;
+  *-base|linux-*|nordic-wasmi|nordic-wasmtime) ;;
   *) e "Unsupported combination: $1 $2" ;;
 esac
 
 FEATURES=--features=target-$1,runtime-$2
 shift 2
+set -- --release $TARGET $FEATURES "$@"
 
-x cargo run --release $TARGET $FEATURES "$@"
+[ -z "$TARGET" ] || x ../../scripts/wrapper.sh cargo-size "$@"
+x cargo run "$@"
