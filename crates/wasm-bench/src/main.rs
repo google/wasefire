@@ -13,13 +13,13 @@
 // limitations under the License.
 
 #![no_std]
-#![cfg_attr(any(feature = "target-nordic", feature = "target-riscv"), no_main)]
+#![cfg_attr(not(feature = "target-linux"), no_main)]
 
 extern crate alloc;
 #[cfg(feature = "target-linux")]
 extern crate std;
 
-#[cfg(any(feature = "target-nordic", feature = "target-riscv"))]
+#[cfg(not(feature = "target-linux"))]
 mod allocator;
 #[cfg_attr(feature = "runtime-base", path = "runtime/base.rs")]
 #[cfg_attr(feature = "runtime-wasm3", path = "runtime/wasm3.rs")]
@@ -31,13 +31,12 @@ mod runtime;
 #[cfg_attr(feature = "target-riscv", path = "target/riscv.rs")]
 mod target;
 
-const WASM: &[u8] =
-    include_bytes!("../../../third_party/wasm3/wasm-coremark/coremark-minimal.wasm");
+const MODULE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/module.bin"));
 
 fn main() {
     println!("Running CoreMark measurement...");
     let start = target::clock_ms();
-    let result = runtime::run(WASM);
+    let result = runtime::run(MODULE);
     let duration = target::clock_ms() - start;
     println!("CoreMark result: {} (in {}s)", result, duration as f32 / 1000.);
 }

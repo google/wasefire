@@ -33,7 +33,7 @@ esac
 
 # See test.sh for supported (and tested) combinations.
 case $1-$2 in
-  *-base|nordic-wasmi) ;;
+  *-base|linux-*|nordic-wasmi|nordic-wasmtime) ;;
   *) e "Unsupported combination: $1 $2" ;;
 esac
 
