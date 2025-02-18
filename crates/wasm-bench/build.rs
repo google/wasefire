@@ -47,7 +47,7 @@ fn main() {
         println!("cargo:rustc-link-search={}", out.display());
         File::create(out.join("memory.x")).unwrap().write_all(memory).unwrap();
     }
-    let module = if runtime == Runtime::Wasmtime && target != Target::Linux {
+    let module = if runtime == Runtime::Wasmtime && target.is_embedded() {
         let mut config = wasmtime::Config::new();
         config.target("pulley32").unwrap();
         let engine = wasmtime::Engine::new(&config).unwrap();
@@ -73,4 +73,14 @@ enum Runtime {
     Wasm3,
     Wasmi,
     Wasmtime,
+}
+
+impl Target {
+    fn is_embedded(self) -> bool {
+        match self {
+            Target::Linux => false,
+            Target::Nordic => true,
+            Target::Riscv => true,
+        }
+    }
 }

@@ -16,9 +16,9 @@ use wasmtime::*;
 
 pub(crate) fn run(wasm: &[u8]) -> f32 {
     let engine = Engine::default();
-    #[cfg(not(feature = "target-linux"))]
+    #[cfg(feature = "_target-embedded")]
     let module = unsafe { Module::deserialize(&engine, wasm) }.unwrap();
-    #[cfg(feature = "target-linux")]
+    #[cfg(not(feature = "_target-embedded"))]
     let module = Module::new(&engine, wasm).unwrap();
     let mut store = Store::new(&engine, ());
     let mut linker = Linker::new(&engine);
@@ -30,14 +30,17 @@ pub(crate) fn run(wasm: &[u8]) -> f32 {
     func.call(&mut store, ()).unwrap()
 }
 
-#[unsafe(no_mangle)]
-extern "C" fn wasmtime_tls_get() -> *mut u8 {
-    unsafe { TLS_PTR }
-}
+#[cfg(feature = "_target-embedded")]
+mod emdedded {
+    #[unsafe(no_mangle)]
+    extern "C" fn wasmtime_tls_get() -> *mut u8 {
+        unsafe { TLS_PTR }
+    }
 
-#[unsafe(no_mangle)]
-extern "C" fn wasmtime_tls_set(ptr: *mut u8) {
-    unsafe { TLS_PTR = ptr }
-}
+    #[unsafe(no_mangle)]
+    extern "C" fn wasmtime_tls_set(ptr: *mut u8) {
+        unsafe { TLS_PTR = ptr }
+    }
 
-static mut TLS_PTR: *mut u8 = core::ptr::null_mut();
+    static mut TLS_PTR: *mut u8 = core::ptr::null_mut();
+}

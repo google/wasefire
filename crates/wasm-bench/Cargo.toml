@@ -41,21 +41,21 @@ git = "https://github.com/bytecodealliance/wasmtime.git"
 features = ["pulley"]
 
 [features]
-_embedded-target = ["dep:embedded-alloc", "wasmtime?/pulley"]
+_target-embedded = ["dep:embedded-alloc", "wasmtime?/pulley"]
 runtime-base = ["dep:wasefire-interpreter"]
 runtime-wasm3 = ["dep:wasm3"]
 runtime-wasmi = ["dep:wasmi"]
 runtime-wasmtime = ["dep:wasmtime"]
 target-linux = ["wasmtime?/cranelift"]
 target-nordic = [
-  "_embedded-target",
+  "_target-embedded",
   "dep:cortex-m",
   "dep:cortex-m-rt",
   "dep:nrf52840-hal",
   "dep:panic-rtt-target",
   "dep:rtt-target",
 ]
-target-riscv = ["_embedded-target", "dep:portable-atomic", "dep:riscv", "dep:riscv-rt"]
+target-riscv = ["_target-embedded", "dep:portable-atomic", "dep:riscv", "dep:riscv-rt"]
 
 [profile.release]
 codegen-units = 1

@@ -39,5 +39,7 @@ esac
 
 FEATURES=--features=target-$1,runtime-$2
 shift 2
+set -- --release $TARGET $FEATURES "$@"
 
-x cargo run --release $TARGET $FEATURES "$@"
+[ -z "$TARGET" ] || x ../../scripts/wrapper.sh cargo-size "$@"
+x cargo run "$@"

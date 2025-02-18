@@ -13,13 +13,13 @@
 // limitations under the License.
 
 #![no_std]
-#![cfg_attr(not(feature = "target-linux"), no_main)]
+#![cfg_attr(feature = "_target-embedded", no_main)]
 
 extern crate alloc;
-#[cfg(feature = "target-linux")]
+#[cfg(not(feature = "_target-embedded"))]
 extern crate std;
 
-#[cfg(not(feature = "target-linux"))]
+#[cfg(feature = "_target-embedded")]
 mod allocator;
 #[cfg_attr(feature = "runtime-base", path = "runtime/base.rs")]
 #[cfg_attr(feature = "runtime-wasm3", path = "runtime/wasm3.rs")]
