@@ -35,6 +35,7 @@ features = [
   "applet-api-platform",
   "applet-api-platform-protocol",
   "board-api-button",
+  "board-api-clock",
   "board-api-led",
   "board-api-rng",
   "board-api-storage",

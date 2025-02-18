@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,23 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use {wasefire_board_api as board, wasefire_logger as log};
+use wasefire_board_api::Error;
+use wasefire_board_api::clock::Api;
 
 pub enum Impl {}
 
-impl board::debug::Api for Impl {
-    const MAX_TIME: u64 = u64::MAX;
-
-    fn println(line: &str) {
-        let time = Self::time();
-        let timestamp = format!("{}.{:06}", time / 1000000, time % 1000000);
-        crate::with_state(|state| match &state.web {
-            Some(x) => x.println(timestamp, line.to_string()),
-            None => log::println!("{timestamp}: {line}"),
-        })
-    }
-
-    fn time() -> u64 {
-        crate::board::clock::uptime_us()
+impl Api for Impl {
+    fn uptime_us() -> Result<u64, Error> {
+        Ok(crate::systick::uptime_us())
     }
 }

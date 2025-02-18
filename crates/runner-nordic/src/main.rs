@@ -23,7 +23,6 @@ extern crate alloc;
 mod allocator;
 mod board;
 mod storage;
-#[cfg(feature = "debug")]
 mod systick;
 
 use alloc::vec::Vec;
@@ -133,9 +132,7 @@ fn main() -> ! {
     static mut CLOCKS: MaybeUninit<Clocks> = MaybeUninit::uninit();
     static mut USB_BUS: MaybeUninit<UsbBusAllocator<Usb>> = MaybeUninit::uninit();
 
-    #[cfg(feature = "debug")]
     let c = nrf52840_hal::pac::CorePeripherals::take().unwrap();
-    #[cfg(feature = "debug")]
     systick::init(c.SYST);
     allocator::init();
     log::debug!("Runner starts.");

@@ -33,6 +33,8 @@ pub use wasefire_error::Error;
 pub mod applet;
 #[cfg(feature = "api-button")]
 pub mod button;
+#[cfg(feature = "api-clock")]
+pub mod clock;
 #[cfg(feature = "internal-api-crypto")]
 pub mod crypto;
 pub mod debug;
@@ -84,6 +86,10 @@ pub trait Api: Send + 'static {
     /// Button interface.
     #[cfg(feature = "api-button")]
     type Button: button::Api;
+
+    /// Clock interface.
+    #[cfg(feature = "api-clock")]
+    type Clock: clock::Api;
 
     /// Cryptography interface.
     #[cfg(feature = "internal-api-crypto")]
@@ -209,6 +215,10 @@ pub type Applet<B> = <B as Api>::Applet;
 /// Button interface.
 #[cfg(feature = "api-button")]
 pub type Button<B> = <B as Api>::Button;
+
+/// Clock interface.
+#[cfg(feature = "api-clock")]
+pub type Clock<B> = <B as Api>::Clock;
 
 /// Cryptography interface.
 #[cfg(feature = "internal-api-crypto")]

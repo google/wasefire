@@ -19,6 +19,7 @@ wasefire-applet-api-desc = { version = "=0.2.2-git", path = "../api-desc" }
 
 [features]
 api-button = ["wasefire-applet-api-desc/api-button"]
+api-clock = ["wasefire-applet-api-desc/api-clock"]
 api-crypto-cbc = ["wasefire-applet-api-desc/api-crypto-cbc"]
 api-crypto-ccm = ["wasefire-applet-api-desc/api-crypto-ccm"]
 api-crypto-ec = ["wasefire-applet-api-desc/api-crypto-ec"]

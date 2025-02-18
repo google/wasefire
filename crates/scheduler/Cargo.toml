@@ -50,6 +50,7 @@ defmt = [
 log = ["internal-debug", "wasefire-board-api/log", "wasefire-logger/log"]
 # Applet API features (automatically enabled by board API features).
 applet-api-button = ["wasefire-applet-api/api-button"]
+applet-api-clock = ["wasefire-applet-api/api-clock"]
 applet-api-crypto-cbc = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-cbc"]
 applet-api-crypto-ccm = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ccm"]
 applet-api-crypto-ec = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ec"]
@@ -87,6 +88,7 @@ applet-api-usb-serial = ["internal-applet-api-usb", "wasefire-applet-api/api-usb
 # Board API features. Enabling a board API feature automatically enables all
 # applet API features that would be implemented.
 board-api-button = ["applet-api-button", "wasefire-board-api/api-button"]
+board-api-clock = ["applet-api-clock", "wasefire-board-api/api-clock"]
 board-api-crypto-aes128-ccm = [
   "applet-api-crypto-ccm",
   "dep:typenum",
@@ -152,6 +154,7 @@ full-api = ["full-applet-api", "full-board-api"]
 # Enables all applet API features (unstable).
 full-applet-api = [
   "applet-api-button",
+  "applet-api-clock",
   "applet-api-crypto-cbc",
   "applet-api-crypto-ccm",
   "applet-api-crypto-ec",
@@ -176,6 +179,7 @@ full-applet-api = [
 # Enables all board API features (unstable).
 full-board-api = [
   "board-api-button",
+  "board-api-clock",
   "board-api-crypto-aes128-ccm",
   "board-api-crypto-aes256-cbc",
   "board-api-crypto-aes256-gcm",

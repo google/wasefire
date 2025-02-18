@@ -21,6 +21,7 @@ syn = { version = "2.0.0", default-features = false, features = ["printing"] }
 [features]
 # API features.
 api-button = []
+api-clock = []
 api-crypto-cbc = ["internal-api-crypto"]
 api-crypto-ccm = ["internal-api-crypto"]
 api-crypto-ec = ["internal-api-crypto"]
@@ -44,6 +45,7 @@ api-usb-serial = ["internal-api-usb"]
 # Enables all API features.
 full-api = [
   "api-button",
+  "api-clock",
   "api-crypto-cbc",
   "api-crypto-ccm",
   "api-crypto-ec",
