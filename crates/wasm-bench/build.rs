@@ -40,12 +40,12 @@ fn main() {
         Target::Riscv => Some("memory-riscv.x"),
     };
     if let Some(memory) = memory {
-        println!("cargo:rerun-if-changed={memory}");
+        println!("cargo::rerun-if-changed={memory}");
         std::fs::copy(memory, out.join("memory.x")).unwrap();
-        println!("cargo:rustc-link-search={}", out.display());
+        println!("cargo::rustc-link-search={}", out.display());
     }
     const PATH: &str = "../../third_party/wasm3/wasm-coremark/coremark-minimal.wasm";
-    println!("cargo:rerun-if-changed={PATH}");
+    println!("cargo::rerun-if-changed={PATH}");
     let mut module = std::fs::read(PATH).unwrap();
     if runtime == Runtime::Wasmtime && target.is_embedded() {
         let mut config = wasmtime::Config::new();
@@ -53,7 +53,7 @@ fn main() {
         let engine = wasmtime::Engine::new(&config).unwrap();
         module = engine.precompile_module(&module).unwrap();
     }
-    println!("cargo:warning=module size is {} bytes", module.len());
+    println!("cargo::warning=module size is {} bytes", module.len());
     std::fs::write(out.join("module.bin"), &module).unwrap();
 }
 

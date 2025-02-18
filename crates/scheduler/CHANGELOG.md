@@ -15,6 +15,7 @@
 
 ### Patch
 
+- Use `cargo::` instead of `cargo:` for build script instructions
 - Add warning when applet fails to start after install
 - Fix clippy lints
 - Update dependencies

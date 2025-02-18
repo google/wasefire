@@ -15,8 +15,8 @@
 fn main() {
     if std::env::var_os("CARGO_FEATURE_NATIVE").is_some() {
         let src = std::fs::canonicalize("../../target/wasefire/libapplet.a").unwrap();
-        println!("cargo:rustc-link-search={}", src.parent().unwrap().display());
-        println!("cargo:rustc-link-lib=applet");
-        println!("cargo:rerun-if-changed={}", src.display());
+        println!("cargo::rustc-link-search={}", src.parent().unwrap().display());
+        println!("cargo::rustc-link-lib=applet");
+        println!("cargo::rerun-if-changed={}", src.display());
     }
 }
