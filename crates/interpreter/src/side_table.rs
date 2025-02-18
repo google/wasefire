@@ -89,22 +89,43 @@ pub struct MetadataEntry {
     pub branch_table: Vec<BranchTableEntry>,
 }
 
-pub fn serialize(side_table: &[MetadataEntry]) -> Vec<u8> {
+pub fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
     let mut res = vec![];
     leb128(side_table.len(), &mut res);
-    let offset = res.len();
-    let mut indices = vec![0];
+    let mut index = 0;
+    res.extend_from_slice(&(index as u16).to_le_bytes());
     for entry in side_table {
-        res.extend_from_slice(&(entry.type_idx as u16).to_le_bytes());
-        res.extend_from_slice(&(entry.parser_range.start as u32).to_le_bytes());
-        res.extend_from_slice(&(entry.parser_range.end as u32).to_le_bytes());
+        index = u16::try_from(index + 10 + 6 * entry.branch_table.len()).map_err(|_| {
+            #[cfg(feature = "debug")]
+            eprintln!("index of MetadataEntry overflow");
+            unsupported(if_debug!(Unsupported::SideTable))
+        })? as usize;
+        res.extend_from_slice(&(index as u16).to_le_bytes());
+    }
+    for entry in side_table {
+        let type_idx = u16::try_from(entry.type_idx).map_err(|_| {
+            #[cfg(feature = "debug")]
+            eprintln!("MetadataEntry::type_idx overflow");
+            unsupported(if_debug!(Unsupported::SideTable))
+        })?;
+        res.extend_from_slice(&type_idx.to_le_bytes());
+        let range_start = u32::try_from(entry.parser_range.start).map_err(|_| {
+            #[cfg(feature = "debug")]
+            eprintln!("MetadataEntry::parser_range start overflow");
+            unsupported(if_debug!(Unsupported::SideTable))
+        })?;
+        res.extend_from_slice(&range_start.to_le_bytes());
+        let range_end = u32::try_from(entry.parser_range.end).map_err(|_| {
+            #[cfg(feature = "debug")]
+            eprintln!("MetadataEntry::parser_range end overflow");
+            unsupported(if_debug!(Unsupported::SideTable))
+        })?;
+        res.extend_from_slice(&range_end.to_le_bytes());
         for branch in &entry.branch_table {
             res.extend_from_slice(&branch.0);
         }
-        indices.extend_from_slice(&(res.len() as u16 - offset as u16).to_le_bytes());
     }
-    res.splice(offset .. offset, indices);
-    res
+    Ok(res)
 }
 
 #[derive(Copy, Clone, Debug)]
