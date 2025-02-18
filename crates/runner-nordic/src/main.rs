@@ -327,7 +327,7 @@ fn usbd() {
 
 const fn vid_pid() -> UsbVidPid {
     let vidpid = match option_env!("RUNNER_VIDPID") {
-        None => b"16c0:27dd",
+        None => b"1915:521f",
         Some(x) => x.as_bytes(),
     };
     assert!(vidpid.len() == 9);
