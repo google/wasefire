@@ -103,7 +103,12 @@ fn process_event_<B: Board>(
             use wasefire_board_api::platform::Api as _;
             reply::<B, service::PlatformInfo>(service::platform::Info {
                 serial: &board::Platform::<B>::serial(),
-                version: &board::Platform::<B>::version(),
+                running_side: board::Platform::<B>::running_side(),
+                running_version: &board::Platform::<B>::running_version(),
+                opposite_version: match &board::Platform::<B>::opposite_version() {
+                    Ok(x) => Ok(x),
+                    Err(e) => Err(*e),
+                },
             });
         }
         Api::PlatformVendor(request) => {
@@ -111,12 +116,7 @@ fn process_event_<B: Board>(
             let response = board::platform::Protocol::<B>::vendor(request)?;
             reply::<B, service::PlatformVendor>(&response);
         }
-        Api::PlatformUpdateMetadata(()) => {
-            use wasefire_board_api::platform::update::Api as _;
-            let response = board::platform::Update::<B>::metadata()?;
-            reply::<B, service::PlatformUpdateMetadata>(&response);
-        }
-        Api::PlatformUpdateTransfer(request) => process_update::<B>(scheduler, request)?,
+        Api::PlatformUpdate(request) => process_update::<B>(scheduler, request)?,
         #[cfg(feature = "native")]
         Api::AppletInstall(_) | Api::AppletUninstall(_) => {
             return Err(Error::world(Code::NotImplemented));
@@ -200,7 +200,7 @@ fn process_update<B: Board>(
             *scheduler.protocol.0.update() = TransferState::Ready;
         }
     }
-    reply::<B, service::PlatformUpdateTransfer>(());
+    reply::<B, service::PlatformUpdate>(());
     Ok(())
 }
 

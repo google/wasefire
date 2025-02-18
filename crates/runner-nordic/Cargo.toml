@@ -26,6 +26,7 @@ usbd-hid = { version = "0.8.2", optional = true }
 usbd-serial = { version = "0.2.2", optional = true }
 wasefire-applet-api = { path = "../api", optional = true }
 wasefire-board-api = { path = "../board" }
+wasefire-common = { path = "../common" }
 wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }

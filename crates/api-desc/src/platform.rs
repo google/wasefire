@@ -41,10 +41,19 @@ pub(crate) fn new() -> Item {
         },
         #[cfg(feature = "api-platform")]
         item! {
+            /// Returns whether the running side of the platform is B.
+            fn running_side "pb" {
+            } -> bool
+        },
+        #[cfg(feature = "api-platform")]
+        item! {
             /// Reads the version of the platform.
             ///
             /// This is an [allocating function](crate#allocating-memory) returning the length.
             fn version "pv" {
+                /// Whether to return the version of the running side (1) or opposite side (0).
+                running: u32,
+
                 /// Where to write the version.
                 ptr: *mut *mut u8,
             } -> usize

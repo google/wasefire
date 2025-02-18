@@ -1,9 +1,17 @@
 # Changelog
 
-## 0.2.1-git
+## 0.3.0-git
+
+### Major
+
+- Deprecate `platform::Info` to `platform::Info0`
+- Deprecate `Api::PlatformInfo` to `Api::_PlatformInfo0`
+- Deprecate `Api::PlatformUpdateMetadata` to `Api::_PlatformUpdateMetadata`
+- Rename `Api::PlatformUpdateTransfer` to `Api::PlatformUpdate`
 
 ### Minor
 
+- Add `platform::Info` to support A/B platform update
 - Use Rust edition 2024
 
 ### Patch

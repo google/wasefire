@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.7.1-git
+## 0.8.0-git
+
+### Major
+
+- Support changes to `platform` modules for A/B platform update
 
 ### Minor
 

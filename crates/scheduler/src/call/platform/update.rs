@@ -22,7 +22,6 @@ use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::IsSupported(call) => is_supported(call),
-        Api::Metadata(call) => metadata(call),
         Api::Initialize(call) => initialize(call),
         Api::Process(call) => process_(call),
         Api::Finalize(call) => finalize(call),
@@ -33,15 +32,6 @@ fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
     let api::is_supported::Params {} = call.read();
     let supported = board::platform::Update::<B>::SUPPORT as u32;
     call.reply(Ok(supported))
-}
-
-fn metadata<B: Board>(mut call: SchedulerCall<B, api::metadata::Sig>) {
-    let api::metadata::Params { ptr: ptr_ptr, len: len_ptr } = call.read();
-    let result = try {
-        let metadata = board::platform::Update::<B>::metadata()?;
-        call.memory().alloc_copy(*ptr_ptr, Some(*len_ptr), &metadata)?;
-    };
-    call.reply(result);
 }
 
 fn initialize<B: Board>(call: SchedulerCall<B, api::initialize::Sig>) {

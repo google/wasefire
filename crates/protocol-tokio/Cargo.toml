@@ -26,13 +26,13 @@ default-features = false
 features = ["io-util", "macros", "net", "rt", "sync"]
 
 [dependencies.wasefire-board-api]
-version = "0.8.1-git"
+version = "0.9.0-git"
 path = "../board"
 features = ["std"]
 optional = true
 
 [dependencies.wasefire-protocol]
-version = "0.2.1-git"
+version = "0.3.0-git"
 path = "../protocol"
 features = ["host"]
 optional = true

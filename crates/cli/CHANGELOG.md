@@ -1,9 +1,14 @@
 # Changelog
 
-## 0.2.1-git
+## 0.3.0-git
+
+### Major
+
+- Remove `platform-update-{metadata,transfer}` in favor of `platform-update`
 
 ### Minor
 
+- Add `platform-update` for A/B platform update
 - Use Rust edition 2024
 - Add `self-update` to download and install the latest CLI
 

@@ -866,10 +866,18 @@ dependencies = [
  "usbd-hid",
  "usbd-serial",
  "wasefire-applet-api",
+ "wasefire-common",
  "wasefire-error",
  "wasefire-logger",
  "wasefire-protocol",
  "wasefire-store",
+]
+
+[[package]]
+name = "wasefire-common"
+version = "0.1.0-git"
+dependencies = [
+ "wasefire-error",
 ]
 
 [[package]]
@@ -896,6 +904,7 @@ version = "0.1.1-git"
 name = "wasefire-protocol"
 version = "0.2.1-git"
 dependencies = [
+ "wasefire-common",
  "wasefire-error",
  "wasefire-wire",
 ]
@@ -911,6 +920,7 @@ dependencies = [
 name = "wasefire-wire"
 version = "0.1.2-git"
 dependencies = [
+ "wasefire-common",
  "wasefire-error",
  "wasefire-wire-derive",
 ]

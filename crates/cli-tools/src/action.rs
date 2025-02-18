@@ -16,7 +16,7 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use anyhow::{Result, bail, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use clap::{ValueEnum, ValueHint};
 use rusb::GlobalContext;
 use tokio::process::Command;
@@ -303,19 +303,20 @@ impl PlatformList {
     }
 }
 
-/// Prints the informations of a platform.
+/// Returns information about a platform.
 #[derive(clap::Args)]
 pub struct PlatformInfo {}
 
 impl PlatformInfo {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn print(self, connection: &mut dyn Connection) -> Result<()> {
+        Ok(print!("{}", self.run(connection).await?.get()))
+    }
+
+    pub async fn run(
+        self, connection: &mut dyn Connection,
+    ) -> Result<Yoke<service::platform::Info<'static>>> {
         let PlatformInfo {} = self;
-        let info = connection.call::<service::PlatformInfo>(()).await?;
-        let serial = protocol::Hex(info.get().serial.to_vec());
-        let version = protocol::Hex(info.get().version.to_vec());
-        println!(" serial: {serial}");
-        println!("version: {version}");
-        Ok(())
+        connection.call::<service::PlatformInfo>(()).await
     }
 }
 
@@ -324,21 +325,17 @@ impl PlatformInfo {
 pub struct PlatformUpdate {
     /// Path to the new platform.
     #[arg(value_hint = ValueHint::FilePath)]
-    platform: PathBuf,
+    pub platform: PathBuf,
 
     #[clap(flatten)]
-    transfer: Transfer,
+    pub transfer: Transfer,
 }
 
 impl PlatformUpdate {
-    pub async fn metadata(connection: &mut dyn Connection) -> Result<Yoke<&'static [u8]>> {
-        connection.call::<service::PlatformUpdateMetadata>(()).await
-    }
-
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let PlatformUpdate { platform, transfer } = self;
         transfer
-            .run::<service::PlatformUpdateTransfer>(
+            .run::<service::PlatformUpdate>(
                 connection,
                 platform,
                 "Updated",
@@ -392,7 +389,9 @@ impl Transfer {
         }
         progress.set_message("Finishing");
         match (dry_run, finish) {
-            (false, Some(finish)) => final_call::<S>(connection, Request::Finish, finish).await?,
+            (false, Some(finish)) => {
+                final_call::<S>(connection, Request::Finish, finish).await.context("x1")?
+            }
             _ => *connection.call::<S>(Request::Finish).await?.get(),
         }
         progress.finish_with_message(message);
@@ -404,13 +403,13 @@ async fn final_call<S: service::Service>(
     connection: &mut dyn Connection, request: S::Request<'_>,
     proof: impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>,
 ) -> Result<()> {
-    connection.send(&S::request(request)).await?;
+    connection.send(&S::request(request)).await.context("x2")?;
     match connection.receive::<S>().await {
-        Ok(x) => proof(x)?,
+        Ok(x) => proof(x).context("x3")?,
         Err(e) => {
             if root_cause_is::<rusb::Error>(&e, |x| {
                 use rusb::Error::*;
-                matches!(x, NoDevice | Pipe)
+                matches!(x, NoDevice | Pipe | Io)
             }) {
                 return Ok(());
             }
@@ -420,6 +419,7 @@ async fn final_call<S: service::Service>(
             }) {
                 return Ok(());
             }
+            eprintln!("x4 {e:?}");
             Err(e)
         }
     }

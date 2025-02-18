@@ -14,6 +14,7 @@
 
 #![feature(try_blocks)]
 
+use std::borrow::Cow;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::ffi::OsString;
@@ -23,6 +24,7 @@ use std::time::Duration;
 
 use anyhow::{Context, Result, bail, ensure};
 use clap::Parser;
+use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use probe_rs::config::TargetSelector;
 use probe_rs::{Permissions, Session, flashing};
 use rustc_demangle::demangle;
@@ -79,6 +81,10 @@ struct MainOptions {
     /// The key is a space-separated list of strings.
     #[clap(long)]
     footprint: Option<String>,
+
+    /// Whether to run setsid before spawning processes.
+    #[clap(long)]
+    setsid: bool,
 }
 
 #[derive(clap::Subcommand)]
@@ -174,10 +180,10 @@ struct RunnerOptions {
     /// Runner name.
     name: String,
 
-    /// Platform version.
+    /// Platform version (big-endian hexadecimal number).
     ///
-    /// How the version string is interpreted is up to the runner. For Nordic, it must be a u32
-    /// smaller than u32::MAX. For the host, it must be an hexadecimal byte sequence.
+    /// For the nordic runner, it must be a u32 smaller than u32::MAX. There are no restrictions
+    /// for the host runner.
     #[clap(long)]
     version: Option<String>,
 
@@ -201,10 +207,6 @@ struct RunnerOptions {
     /// Cargo features.
     #[clap(long)]
     features: Vec<String>,
-
-    /// Runner arguments.
-    #[clap(long)]
-    arg: Vec<String>,
 
     /// Optimization level (0, 1, 2, 3, s, z).
     #[clap(long, short = 'O')]
@@ -237,6 +239,14 @@ struct RunnerOptions {
 
 #[derive(clap::Subcommand)]
 enum RunnerCommand {
+    /// Updates the runner.
+    Update {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        transfer: action::Transfer,
+    },
+
     /// Flashes the runner.
     Flash(Flash),
 
@@ -250,9 +260,11 @@ struct Flash {
     #[clap(long)]
     reset_flash: bool,
 
-    /// Additional flags for `probe-rs run`.
-    #[clap(long)]
-    probe_rs: Vec<String>,
+    /// Arguments to forward to the runner.
+    ///
+    /// This can be `probe-rs run` for non-host runners.
+    #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+    args: Vec<String>,
 }
 
 #[derive(clap::Args)]
@@ -287,6 +299,9 @@ enum ChangelogCommand {
 
 impl Flags {
     async fn execute(self) -> Result<()> {
+        if self.options.setsid {
+            unsafe { libc::setsid() };
+        }
         match self.command {
             MainCommand::Applet(applet) => applet.execute(&self.options).await,
             MainCommand::Runner(runner) => runner.execute(&self.options).await,
@@ -428,21 +443,39 @@ impl AppletCommand {
 }
 
 impl Runner {
-    async fn execute(&self, main: &MainOptions) -> Result<()> {
-        self.options.execute(main, 0, &self.command).await?;
+    async fn execute(self, main: &MainOptions) -> Result<()> {
+        self.options.execute(main, 0, self.command).await?;
         Ok(())
     }
 }
 
 impl RunnerOptions {
     async fn execute(
-        &self, main: &MainOptions, step: usize, cmd: &Option<RunnerCommand>,
+        self, main: &MainOptions, mut step: usize, cmd: Option<RunnerCommand>,
     ) -> Result<()> {
-        let flash = match cmd {
-            Some(RunnerCommand::Flash(x)) => Some(x),
-            Some(RunnerCommand::Bundle) => None,
-            None => None,
+        let (mut update, flash) = match &cmd {
+            Some(RunnerCommand::Update { options, .. }) => (Some(options.connect().await?), None),
+            Some(RunnerCommand::Flash(x)) => (None, Some(x)),
+            Some(RunnerCommand::Bundle) => (None, None),
+            None => (None, None),
         };
+        let mut version = self.version.as_deref().map(Cow::Borrowed);
+        if let Some(connection) = &mut update {
+            let action = action::PlatformInfo {};
+            let info = action.run(connection).await?;
+            let info = info.get();
+            if version.is_none() {
+                let mut next_version = info.running_version.to_vec();
+                for byte in next_version.iter_mut().rev() {
+                    *byte = byte.wrapping_add(1);
+                    if 0 < *byte {
+                        break;
+                    }
+                }
+                version = Some(Cow::Owned(HEX.encode(&next_version)));
+            }
+            step = info.running_side.opposite() as usize;
+        }
         let mut cargo = Command::new("cargo");
         let mut rustflags = Vec::new();
         let mut features = self.features.clone();
@@ -458,14 +491,8 @@ impl RunnerOptions {
             "host" => (None, 0),
             _ => unimplemented!(),
         };
-        let side = match side {
-            None => "",
-            Some(0) => "_a",
-            Some(1) => "_b",
-            _ => unimplemented!(),
-        };
         if self.name == "host" {
-            if let Some(version) = &self.version {
+            if let Some(version) = version.as_deref() {
                 cargo.env("WASEFIRE_HOST_VERSION", version);
             }
             if let Some(serial) = &self.serial {
@@ -484,11 +511,10 @@ impl RunnerOptions {
             if let Some(vidpid) = &self.vid_pid {
                 cargo.env("RUNNER_VIDPID", vidpid);
             }
-            let version = match &self.version {
-                Some(x) => x.parse()?,
-                None => 0,
-            };
-            ensure!(version < u32::MAX, "--version must be smaller than u32::MAX");
+            let version = version.as_deref().unwrap_or("00000000");
+            ensure!(version.len() == 8, "--version must be a big-endian hexadecimal u32");
+            ensure!(version != "ffffffff", "--version must be smaller than u32::MAX");
+            let version = u32::from_be_bytes(HEX.decode(version.as_bytes())?[..].try_into()?);
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_VERSION={version}"));
             rustflags.push("-C link-arg=-Tlink.x".to_string());
             if main.release {
@@ -542,21 +568,31 @@ impl RunnerOptions {
         }
         cargo.current_dir(format!("crates/runner-{}", self.name));
         if flash.is_some() && self.name == "host" {
-            if flash.unwrap().reset_flash {
+            let flash = flash.unwrap();
+            const HOST: &str = "target/wasefire/host";
+            if flash.reset_flash {
                 for file in ["applet.bin", "storage.bin"] {
-                    let path = format!("target/wasefire/{file}");
+                    let path = format!("{HOST}/{file}");
                     if fs::exists(&path).await {
                         fs::remove_file(&path).await?;
                     }
                 }
             }
-            cargo.args(["--", "../../target/wasefire"]);
-            if std::env::var_os("CODESPACES").is_some() {
-                log::warn!("Assuming runner --arg=--protocol=unix when running in a codespace.");
-                cargo.arg("--protocol=unix");
+            cargo.arg("--");
+            cargo.arg(format!("../../{HOST}"));
+            loop {
+                if std::env::var_os("CODESPACES").is_some() {
+                    log::warn!("Assuming --protocol=unix when running in a codespace.");
+                    cargo.arg("--protocol=unix");
+                }
+                cargo.args(&flash.args);
+                cmd::exit_status(&mut cargo).await?;
+                cargo = Command::new(format!("{HOST}/platform.bin"));
+                cargo.arg(HOST);
+                if let Some(log) = &self.log {
+                    cargo.env(self.log_env(), log);
+                }
             }
-            cargo.args(&self.arg);
-            cmd::replace(cargo);
         } else {
             cmd::execute(&mut cargo).await?;
         }
@@ -616,23 +652,21 @@ impl RunnerOptions {
                 println!("{:#010x}\t{}\t{}", address, stack, demangle(name));
             }
         }
-        if matches!(cmd, Some(RunnerCommand::Bundle)) {
-            let bundle = format!("target/wasefire/platform{side}.bin");
-            if self.name == "host" {
-                fs::copy(elf, bundle).await?;
-            } else {
-                let mut objcopy = wrap_command().await?;
-                objcopy.args(["rust-objcopy", "-O", "binary", &elf, &bundle]);
-                cmd::execute(&mut objcopy).await?;
+        let Some(cmd) = cmd else { return Ok(()) };
+        let flash = match cmd {
+            RunnerCommand::Update { transfer, .. } => {
+                let platform = self.bundle(&elf, side).await?.into();
+                let action = action::PlatformUpdate { platform, transfer };
+                return action.run(&mut update.unwrap()).await;
             }
-            if step < max_step {
-                return Box::pin(self.execute(main, step + 1, cmd)).await;
+            RunnerCommand::Flash(x) => x,
+            RunnerCommand::Bundle => {
+                self.bundle(&elf, side).await?;
+                if step < max_step {
+                    return Box::pin(self.execute(main, step + 1, Some(cmd))).await;
+                }
+                return Ok(());
             }
-            return Ok(());
-        }
-        let flash = match flash {
-            Some(x) => x,
-            None => return Ok(()),
         };
         let chip = match self.name.as_str() {
             "nordic" => "nRF52840_xxAA",
@@ -647,7 +681,6 @@ impl RunnerOptions {
         })));
         if flash.reset_flash {
             println!("Erasing the flash.");
-            // Keep those values in sync with crates/runner-nordic/memory.x.
             tokio::task::spawn_blocking({
                 let session = session.clone();
                 move || {
@@ -682,13 +715,37 @@ impl RunnerOptions {
             println!("JLinkGDBServer -device {chip} -if swd -speed 4000 -port 2331");
             println!("gdb-multiarch -ex 'file {elf}' -ex 'target remote localhost:2331'");
         }
-        let mut probe_rs = wrap_command().await?;
-        probe_rs.args(["probe-rs", "run"]);
-        probe_rs.arg(format!("--chip={chip}"));
-        probe_rs.args(&flash.probe_rs);
-        probe_rs.arg(elf);
-        println!("Replace `run` with `attach` in the following command to rerun:");
-        cmd::replace(probe_rs);
+        let mut cmd = "run";
+        loop {
+            let mut probe_rs = wrap_command().await?;
+            probe_rs.args(["probe-rs", cmd, "--catch-reset"]);
+            probe_rs.arg(format!("--chip={chip}"));
+            probe_rs.args(&flash.args);
+            probe_rs.arg(&elf);
+            if cmd == "run" {
+                cmd = "attach";
+                println!("Replace `run` with `attach` in the following command to rerun:");
+            }
+            cmd::status(&mut probe_rs).await?;
+        }
+    }
+
+    async fn bundle(&self, elf: &str, side: Option<usize>) -> Result<String> {
+        let side = match side {
+            None => "",
+            Some(0) => "_a",
+            Some(1) => "_b",
+            _ => unimplemented!(),
+        };
+        let bundle = format!("target/wasefire/platform{side}.bin");
+        if self.name == "host" {
+            fs::copy(elf, &bundle).await?;
+        } else {
+            let mut objcopy = wrap_command().await?;
+            objcopy.args(["rust-objcopy", "-O", "binary", elf, &bundle]);
+            cmd::execute(&mut objcopy).await?;
+        }
+        Ok(bundle)
     }
 
     async fn target(&self) -> &'static str {

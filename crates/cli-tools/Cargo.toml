@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-cli-tools"
-version = "0.2.1-git"
+version = "0.3.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -17,7 +17,7 @@ all-features = true
 [dependencies]
 anyhow = { version = "1.0.86", default-features = false, features = ["std"] }
 cargo_metadata = { version = "0.19.1", default-features = false, optional = true }
-data-encoding = { version = "2.6.0", default-features = false, features = ["std"], optional = true }
+data-encoding = { version = "2.8.0", default-features = false, features = ["std"], optional = true }
 flate2 = { version = "1.0.34", default-features = false, features = ["rust_backend"] }
 humantime = { version = "2.1.0", default-features = false, optional = true }
 indicatif = { version = "0.17.8", default-features = false, optional = true }
@@ -42,7 +42,7 @@ default-features = false
 features = ["fs", "io-std", "io-util", "macros", "process", "rt"]
 
 [dependencies.wasefire-protocol]
-version = "0.2.1-git"
+version = "0.3.0-git"
 path = "../protocol"
 features = ["host"]
 optional = true

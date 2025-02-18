@@ -1,9 +1,18 @@
 # Changelog
 
-## 0.2.1-git
+## 0.3.0-git
+
+### Major
+
+- Remove `action::PlatformUpdate::metadata()` which is now vendor-specific
+- Change `action::PlatformInfo::run()` to return the platform information instead of printing
 
 ### Minor
 
+- Add `cmd::status()` to execute a command and return its error code
+- Add `cmd::exit_status()` to execute a command and exit with its error code in case of error
+- Make `action::PlatformUpdate` fields public
+- Add `action::PlatformInfo::print()` to print the platform information
 - Add `--allow=unused-crate-dependencies` to `RUSTFLAGS` when building prod applets to work around a
   `-Zbuild-std` [issue](https://github.com/rust-lang/rust/issues/122105) with that lint
 - Use Rust edition 2024

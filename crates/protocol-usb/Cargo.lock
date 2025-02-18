@@ -51,6 +51,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "data-encoding"
+version = "2.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "575f75dfd25738df5b91b8e43e14d44bda14637a58fae779fd2b064f8bf3e010"
+
+[[package]]
 name = "defmt"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -388,16 +394,24 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.8.1-git"
+version = "0.9.0-git"
 dependencies = [
  "defmt",
  "derive-where",
  "ssmarshal",
  "usbd-hid",
+ "wasefire-common",
  "wasefire-error",
  "wasefire-logger",
  "wasefire-protocol",
  "wasefire-store",
+]
+
+[[package]]
+name = "wasefire-common"
+version = "0.1.0-git"
+dependencies = [
+ "wasefire-error",
 ]
 
 [[package]]
@@ -422,9 +436,11 @@ version = "0.1.1-git"
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.2.1-git"
+version = "0.3.0-git"
 dependencies = [
  "anyhow",
+ "data-encoding",
+ "wasefire-common",
  "wasefire-error",
  "wasefire-wire",
 ]
@@ -455,6 +471,7 @@ dependencies = [
 name = "wasefire-wire"
 version = "0.1.2-git"
 dependencies = [
+ "wasefire-common",
  "wasefire-error",
  "wasefire-wire-derive",
 ]

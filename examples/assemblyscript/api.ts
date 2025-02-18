@@ -853,21 +853,6 @@
     export declare function platform_update_is_supported(
     ): i32
 
-    // Reads the metadata of the platform.
-    //
-    // The metadata typically contains the version and side (A or B) of the running
-    // platform.
-    //
-    // This is an [allocating function](crate#allocating-memory).
-    @external("env", "pum")
-    export declare function platform_update_metadata(
-      // Where to write the allocated metadata.
-      ptr: usize,
-
-      // Where to write the metadata length.
-      len: usize,
-    ): i32
-
     // Starts a platform update process.
     @external("env", "pui")
     export declare function platform_update_initialize(
@@ -906,11 +891,19 @@
     ptr: usize,
   ): i32
 
+  // Returns whether the running side of the platform is B.
+  @external("env", "pb")
+  export declare function platform_running_side(
+  ): i32
+
   // Reads the version of the platform.
   //
   // This is an [allocating function](crate#allocating-memory) returning the length.
   @external("env", "pv")
   export declare function platform_version(
+    // Whether to return the version of the running side (1) or opposite side (0).
+    running: u32,
+
     // Where to write the version.
     ptr: usize,
   ): i32
