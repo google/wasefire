@@ -13,6 +13,9 @@
 // limitations under the License.
 
 //! Example applet running OpenSK.
+//!
+//! The Nordic runner needs the usb-ctap, software-crypto-aes256-cbc, software-crypto-p256, and
+//! software-crypto-hmac-sha256 features.
 
 #![no_std]
 wasefire::applet!();
