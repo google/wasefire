@@ -35,12 +35,12 @@ pub fn merge(binary: &[u8], side_table: Vec<MetadataEntry>) -> Result<Vec<u8>, E
     let mut wasm = vec![];
     wasm.extend_from_slice(&binary[0 .. 8]);
     wasm.push(0);
-    let side_table_slice = serialize(side_table.as_slice())?;
-    leb128(side_table_slice.len(), &mut wasm);
+    let side_table = serialize(&side_table)?;
+    leb128(side_table.len(), &mut wasm);
     let name = "wasefire-sidetable";
     leb128(name.len(), &mut wasm);
     wasm.extend_from_slice(name.as_bytes());
-    wasm.extend_from_slice(side_table_slice.as_slice());
+    wasm.extend_from_slice(&side_table);
     wasm.extend_from_slice(&binary[8 ..]);
     Ok(wasm)
 }
