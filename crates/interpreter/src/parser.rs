@@ -102,10 +102,6 @@ impl<'m, M: Mode> Parser<'m, M> {
         Ok(self.parse_leb128(false, 32)? as u32)
     }
 
-    pub fn parse_u16(&mut self) -> MResult<u16, M> {
-        Ok(self.parse_leb128(false, 16)? as u16)
-    }
-
     pub fn parse_s32(&mut self) -> MResult<i32, M> {
         Ok(self.parse_leb128(true, 32)? as i32)
     }
