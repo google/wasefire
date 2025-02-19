@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,10 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO(dev/fast-interp): Add debug asserts when `off` is positive and negative, and `toctou`
-// support.
-pub fn offset_front<T>(cur: &[T], off: isize) -> &[T] {
-    unsafe {
-        core::slice::from_raw_parts(cur.as_ptr().offset(off), (cur.len() as isize - off) as usize)
+use alloc::vec::Vec;
+
+pub fn leb128(mut x: usize, wasm: &mut Vec<u8>) {
+    assert!(x <= u32::MAX as usize);
+    while x > 127 {
+        wasm.push(0x80 | (x & 0x7f) as u8);
+        x >>= 7;
     }
+    wasm.push(x as u8);
+}
+
+pub fn section(wasm: &mut Vec<u8>, id: u8, content: &[u8], name: Option<&str>) {
+    assert!(id <= 12);
+    wasm.push(id);
+    leb128(content.len(), wasm);
+    if let Some(name) = name {
+        leb128(name.len(), wasm);
+        wasm.extend_from_slice(name.as_bytes());
+    }
+    wasm.extend_from_slice(content);
 }

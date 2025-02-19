@@ -20,6 +20,7 @@ use core::marker::PhantomData;
 use core::ops::Range;
 
 use crate::error::*;
+use crate::format::section;
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
@@ -34,13 +35,8 @@ pub fn prepare(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
 pub fn merge(binary: &[u8], side_table: Vec<MetadataEntry>) -> Result<Vec<u8>, Error> {
     let mut wasm = vec![];
     wasm.extend_from_slice(&binary[0 .. 8]);
-    wasm.push(0);
     let side_table = serialize(&side_table)?;
-    leb128(side_table.len(), &mut wasm);
-    let name = "wasefire-sidetable";
-    leb128(name.len(), &mut wasm);
-    wasm.extend_from_slice(name.as_bytes());
-    wasm.extend_from_slice(&side_table);
+    section(&mut wasm, 0, &side_table, Some("wasefire-sidetable"));
     wasm.extend_from_slice(&binary[8 ..]);
     Ok(wasm)
 }
