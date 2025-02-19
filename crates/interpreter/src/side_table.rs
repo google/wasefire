@@ -95,31 +95,18 @@ pub fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
     let mut index = 0;
     res.extend_from_slice(&(index as u16).to_le_bytes());
     for entry in side_table {
-        index = u16::try_from(index + 10 + 6 * entry.branch_table.len()).map_err(|_| {
-            #[cfg(feature = "debug")]
-            eprintln!("index of MetadataEntry overflow");
-            unsupported(if_debug!(Unsupported::SideTable))
-        })? as usize;
+        index =
+            try_from::<u16>("index of MetadataEntry", index + 10 + 6 * entry.branch_table.len())?
+                as usize;
         res.extend_from_slice(&(index as u16).to_le_bytes());
     }
     for entry in side_table {
-        let type_idx = u16::try_from(entry.type_idx).map_err(|_| {
-            #[cfg(feature = "debug")]
-            eprintln!("MetadataEntry::type_idx overflow");
-            unsupported(if_debug!(Unsupported::SideTable))
-        })?;
+        let type_idx = try_from::<u16>("MetadataEntry::type_idx", entry.type_idx)?;
         res.extend_from_slice(&type_idx.to_le_bytes());
-        let range_start = u32::try_from(entry.parser_range.start).map_err(|_| {
-            #[cfg(feature = "debug")]
-            eprintln!("MetadataEntry::parser_range start overflow");
-            unsupported(if_debug!(Unsupported::SideTable))
-        })?;
+        let range_start =
+            try_from::<u32>("MetadataEntry::parser_range start", entry.parser_range.start)?;
         res.extend_from_slice(&range_start.to_le_bytes());
-        let range_end = u32::try_from(entry.parser_range.end).map_err(|_| {
-            #[cfg(feature = "debug")]
-            eprintln!("MetadataEntry::parser_range end overflow");
-            unsupported(if_debug!(Unsupported::SideTable))
-        })?;
+        let range_end = try_from::<u32>("MetadataEntry::parser_range end", entry.parser_range.end)?;
         res.extend_from_slice(&range_end.to_le_bytes());
         for branch in &entry.branch_table {
             res.extend_from_slice(&branch.0);
@@ -187,4 +174,13 @@ fn parse_u16(data: &[u8], offset: usize) -> u16 {
 
 fn parse_u32(data: &[u8], offset: usize) -> u32 {
     u32::from_le_bytes(data[offset ..][.. 4].try_into().unwrap())
+}
+
+#[allow(unused_variables)]
+fn try_from<T: TryFrom<usize>>(msg: &str, val: usize) -> Result<T, Error> {
+    T::try_from(val).map_err(|_| {
+        #[cfg(feature = "debug")]
+        eprintln!("{msg} overflow");
+        unsupported(if_debug!(Unsupported::SideTable))
+    })
 }
