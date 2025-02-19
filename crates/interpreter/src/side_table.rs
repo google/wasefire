@@ -18,7 +18,6 @@ use core::ops::Range;
 
 use crate::error::*;
 use crate::module::Parser;
-use crate::util::leb128;
 
 pub struct SideTableView<'m> {
     pub func_idx: usize,
@@ -28,8 +27,7 @@ pub struct SideTableView<'m> {
 
 impl<'m> SideTableView<'m> {
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        let mut parser = unsafe { Parser::new(binary) };
-        let num_functions = parser.parse_u16().unwrap() as usize;
+        let num_functions = parse_u16(binary, 0) as usize;
         let indices_end = 2 + (num_functions + 1) * 2;
         Ok(SideTableView {
             func_idx: 0,
@@ -91,7 +89,7 @@ pub struct MetadataEntry {
 
 pub fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
     let mut res = vec![];
-    leb128(side_table.len(), &mut res);
+    res.extend_from_slice(&(side_table.len() as u16).to_le_bytes());
     let mut index = 0;
     res.extend_from_slice(&(index as u16).to_le_bytes());
     for entry in side_table {
