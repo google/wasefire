@@ -34,7 +34,7 @@ install() {
           cc) set build-essential ;;
           curl) set curl ;;
           mdl) set markdownlint ;;
-          npm) _system_nodejs_setup ; set nodejs ;;
+          npm) set npm ;;
           pkg-config) set pkgconf ;;
           socat) set socat ;;
           usbip)
@@ -59,29 +59,6 @@ install() {
   else
     e "Unsupported system. Install $1 '$2' and rerun the command."
   fi
-}
-
-# AssemblyScript needs Node 16 or later.
-_SYSTEM_NODEJS_MIN_VERSION=16
-_system_nodejs_setup() {
-  [ "$(_system_nodejs_version)" -ge $_SYSTEM_NODEJS_MIN_VERSION ] && return
-  # See https://github.com/nodesource/distributions#installation-instructions
-  ensure apt ca-certificates
-  ensure apt curl
-  ensure apt gnupg
-  ( set -x
-    sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
-      | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] \
-https://deb.nodesource.com/node_$_SYSTEM_NODEJS_MIN_VERSION.x nodistro main" \
-      | sudo tee /etc/apt/sources.list.d/nodesource.list
-    sudo apt-get update
-  )
-}
-
-_system_nodejs_version() {
-  apt-cache show nodejs | sed -n 's/^Version: \([0-9]\+\)\..*$/\1/p;T;q'
 }
 
 _system_dist_id() { lsb_release -is; }
