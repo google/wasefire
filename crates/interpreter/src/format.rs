@@ -14,7 +14,7 @@
 
 use alloc::vec::Vec;
 
-pub fn leb128(mut x: usize, wasm: &mut Vec<u8>) {
+pub fn leb128(wasm: &mut Vec<u8>, mut x: usize) {
     assert!(x <= u32::MAX as usize);
     while x > 127 {
         wasm.push(0x80 | (x & 0x7f) as u8);
@@ -26,9 +26,9 @@ pub fn leb128(mut x: usize, wasm: &mut Vec<u8>) {
 pub fn section(wasm: &mut Vec<u8>, id: u8, content: &[u8], name: Option<&str>) {
     assert!(id <= 12);
     wasm.push(id);
-    leb128(content.len(), wasm);
+    leb128(wasm, content.len());
     if let Some(name) = name {
-        leb128(name.len(), wasm);
+        leb128(wasm, name.len());
         wasm.extend_from_slice(name.as_bytes());
     }
     wasm.extend_from_slice(content);
