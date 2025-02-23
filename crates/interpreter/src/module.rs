@@ -72,8 +72,10 @@ impl<'m> Module<'m> {
             }
         }
         if let Some(mut parser) = module.section(SectionId::Custom) {
-            let side_table_view = SideTableView::new(parser.save()).unwrap();
-            module.side_table = side_table_view;
+            if parser.parse_name().into_ok() == "wasefire-sidetable" {
+                let side_table_view = SideTableView::new(parser.save()).unwrap();
+                module.side_table = side_table_view;
+            }
         }
         module
     }

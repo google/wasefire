@@ -23,13 +23,12 @@ pub fn leb128(wasm: &mut Vec<u8>, mut x: usize) {
     wasm.push(x as u8);
 }
 
-pub fn section(wasm: &mut Vec<u8>, id: u8, content: &[u8], name: Option<&str>) {
+pub fn section(wasm: &mut Vec<u8>, id: u8, content: &[u8], name: &str) {
     assert!(id <= 12);
     wasm.push(id);
-    leb128(wasm, content.len());
-    if let Some(name) = name {
-        leb128(wasm, name.len());
-        wasm.extend_from_slice(name.as_bytes());
-    }
+    let name_bytes = name.as_bytes();
+    leb128(wasm, 1 + name_bytes.len() + content.len());
+    leb128(wasm, name_bytes.len());
+    wasm.extend_from_slice(name.as_bytes());
     wasm.extend_from_slice(content);
 }

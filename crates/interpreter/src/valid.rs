@@ -33,7 +33,7 @@ pub fn prepare(binary: &[u8]) -> Result<Vec<u8>, Error> {
     wasm.extend_from_slice(&binary[0 .. 8]);
     let side_table = validate::<Prepare>(binary)?;
     let serialized_side_table = serialize(&side_table)?;
-    section(&mut wasm, 0, &serialized_side_table, Some("wasefire-sidetable"));
+    section(&mut wasm, 0, &serialized_side_table, "wasefire-sidetable");
     wasm.extend_from_slice(&binary[8 ..]);
     Ok(wasm)
 }
