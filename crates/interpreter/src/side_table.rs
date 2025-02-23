@@ -19,6 +19,7 @@ use core::ops::Range;
 use crate::error::*;
 use crate::module::Parser;
 
+#[derive(Debug, Default)]
 pub struct SideTableView<'m> {
     pub func_idx: usize,
     pub indices: &'m [u8], // including 0 and the length of metadata_array

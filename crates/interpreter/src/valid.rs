@@ -28,15 +28,12 @@ use crate::util::*;
 use crate::*;
 
 /// Checks whether a WASM module in binary format is valid, and returns the side table.
-pub fn prepare(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
-    validate::<Prepare>(binary)
-}
-
-pub fn merge(binary: &[u8], side_table: Vec<MetadataEntry>) -> Result<Vec<u8>, Error> {
+pub fn prepare(binary: &[u8]) -> Result<Vec<u8>, Error> {
     let mut wasm = vec![];
     wasm.extend_from_slice(&binary[0 .. 8]);
-    let side_table = serialize(&side_table)?;
-    section(&mut wasm, 0, &side_table, Some("wasefire-sidetable"));
+    let side_table = validate::<Prepare>(binary)?;
+    let serialized_side_table = serialize(&side_table)?;
+    section(&mut wasm, 0, &serialized_side_table, Some("wasefire-sidetable"));
     wasm.extend_from_slice(&binary[8 ..]);
     Ok(wasm)
 }

@@ -20,7 +20,6 @@ use crate::parser::{SkipData, SkipElem};
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
-use crate::valid::prepare;
 use crate::*;
 
 /// Valid module.
@@ -30,7 +29,7 @@ pub struct Module<'m> {
     types: Vec<FuncType<'m>>,
     // TODO(dev/fast-interp): Change the type to `SideTableView` which will be parsed by
     // `new_unchecked()`.
-    side_table: &'m [MetadataEntry],
+    side_table: SideTableView<'m>,
 }
 
 impl<'m> Import<'m> {
@@ -53,10 +52,7 @@ impl ImportDesc {
 impl<'m> Module<'m> {
     /// Validates a WASM module in binary format.
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        let side_table = prepare(binary)?;
-        let mut module = unsafe { Self::new_unchecked(binary) };
-        // TODO(dev/fast-interp): We should take a buffer as argument to write to.
-        module.side_table = Box::leak(Box::new(side_table));
+        let module = unsafe { Self::new_unchecked(&binary) };
         Ok(module)
     }
 
@@ -76,6 +72,10 @@ impl<'m> Module<'m> {
             for _ in 0 .. parser.parse_vec().into_ok() {
                 module.types.push(parser.parse_functype().into_ok());
             }
+        }
+        if let Some(mut parser) = module.section(SectionId::Custom) {
+            let side_table_view = SideTableView::new(parser.save()).unwrap();
+            module.side_table = side_table_view;
         }
         module
     }
@@ -109,9 +109,6 @@ impl<'m> Module<'m> {
             }
             let actual_id = parser.parse_section_id().into_ok();
             let section = parser.split_section().into_ok();
-            if actual_id == SectionId::Custom {
-                continue;
-            }
             break match actual_id.order().cmp(&expected_id.order()) {
                 Ordering::Less => continue,
                 Ordering::Equal => Some(section),
@@ -121,7 +118,7 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func_type(&self, x: FuncIdx) -> FuncType<'m> {
-        self.types[self.side_table[x as usize].type_idx]
+        self.types[self.side_table.metadata(x as usize).type_idx()]
     }
 
     pub(crate) fn table_type(&self, x: TableIdx) -> TableType {
@@ -182,8 +179,11 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
-        let MetadataEntry { parser_range, branch_table, .. } = &self.side_table[x as usize];
-        (unsafe { Parser::new(&self.binary[parser_range.clone()]) }, branch_table)
+        let metadata = Box::leak(Box::new(self.side_table.metadata(x as usize)));
+        (
+            unsafe { Parser::new(&self.binary[metadata.parser_range().clone()]) },
+            metadata.branch_table(),
+        )
     }
 
     pub(crate) fn data(&self, x: DataIdx) -> Parser<'m> {
