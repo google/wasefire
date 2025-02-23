@@ -27,8 +27,6 @@ use crate::*;
 pub struct Module<'m> {
     binary: &'m [u8],
     types: Vec<FuncType<'m>>,
-    // TODO(dev/fast-interp): Change the type to `SideTableView` which will be parsed by
-    // `new_unchecked()`.
     side_table: SideTableView<'m>,
 }
 
