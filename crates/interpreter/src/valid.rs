@@ -30,8 +30,8 @@ use crate::*;
 /// Checks whether a WASM module in binary format is valid, and returns the side table.
 pub fn prepare(binary: &[u8]) -> Result<Vec<u8>, Error> {
     let mut wasm = vec![];
-    wasm.extend_from_slice(&binary[0 .. 8]);
     let side_table = validate::<Prepare>(binary)?;
+    wasm.extend_from_slice(&binary[0 .. 8]);
     let serialized_side_table = serialize(&side_table)?;
     section(&mut wasm, 0, &serialized_side_table, "wasefire-sidetable");
     wasm.extend_from_slice(&binary[8 ..]);
