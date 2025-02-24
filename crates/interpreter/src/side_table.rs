@@ -71,7 +71,7 @@ impl<'m> Metadata<'m> {
         unsafe {
             core::slice::from_raw_parts(
                 self.0[10 ..].as_ptr() as *const BranchTableEntry,
-                self.0.len() / entry_size,
+                self.0.len() / entry_size - 1,
             )
         }
     }

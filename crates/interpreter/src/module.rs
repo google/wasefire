@@ -72,9 +72,12 @@ impl<'m> Module<'m> {
             }
         }
         if let Some(mut parser) = module.section(SectionId::Custom) {
-            if parser.parse_name().into_ok() == "wasefire-sidetable" {
+            let section_name = "wasefire-sidetable";
+            if parser.parse_name().into_ok() == section_name {
                 let side_table_view = SideTableView::new(parser.save()).unwrap();
                 module.side_table = side_table_view;
+                let len = 3 + section_name.as_bytes().len() + parser.save().len();
+                module.binary = &binary[8 + len ..];
             }
         }
         module
