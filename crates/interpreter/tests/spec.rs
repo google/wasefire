@@ -339,13 +339,13 @@ fn assert_invoke(env: &mut Env, invoke: WastInvoke) {
 
 fn assert_malformed(env: &mut Env, mut wat: QuoteWat) {
     if let Ok(wasm) = wat.encode() {
-        assert_eq!(only_sup!(env, Module::new(&wasm)).err(), Some(Error::Invalid));
+        assert_eq!(only_sup!(env, prepare(&wasm)).err(), Some(Error::Invalid));
     }
 }
 
 fn assert_invalid(env: &mut Env, mut wat: QuoteWat) {
     let wasm = wat.encode().unwrap();
-    assert_eq!(only_sup!(env, Module::new(&wasm)).err(), Some(Error::Invalid));
+    assert_eq!(only_sup!(env, prepare(&wasm)).err(), Some(Error::Invalid));
 }
 
 fn assert_exhaustion(env: &mut Env, call: WastInvoke) {
