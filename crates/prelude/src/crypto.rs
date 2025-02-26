@@ -14,6 +14,8 @@
 
 //! Provides API for cryptography.
 
+#[cfg(feature = "api-crypto-cbc")]
+pub mod cbc;
 #[cfg(feature = "api-crypto-ccm")]
 pub mod ccm;
 #[cfg(feature = "api-crypto-ec")]

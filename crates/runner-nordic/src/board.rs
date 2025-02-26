@@ -20,14 +20,19 @@ use crate::{Board, with_state};
 
 pub mod applet;
 pub mod button;
+mod clock;
+#[cfg(feature = "_crypto")]
 mod crypto;
 mod debug;
+#[cfg(feature = "gpio")]
 pub mod gpio;
 pub mod led;
 pub mod platform;
+#[cfg(feature = "radio-ble")]
 pub mod radio;
 mod rng;
 pub mod timer;
+#[cfg(feature = "uart")]
 pub mod uart;
 pub mod usb;
 
@@ -49,6 +54,7 @@ impl board::Api for Board {
         match (x1, x2, x3, x4) {
             // The syscall_test example relies on this.
             (0, 0, 0, x) => Some(Error::decode(x as i32)),
+            #[cfg(feature = "gpio")]
             (0x80000000, x, y, z) => Some(gpio::syscall(x, y, z)),
             _ => None,
         }
@@ -56,16 +62,22 @@ impl board::Api for Board {
 
     type Applet = applet::Impl;
     type Button = button::Impl;
+    type Clock = clock::Impl;
+    #[cfg(feature = "_crypto")]
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;
+    #[cfg(feature = "gpio")]
     type Gpio = gpio::Impl;
     type Led = led::Impl;
     type Platform = platform::Impl;
+    #[cfg(feature = "radio-ble")]
     type Radio = radio::Impl;
     type Rng = rng::Impl;
     type Storage = crate::storage::Storage;
     type Timer = timer::Impl;
+    #[cfg(feature = "uart")]
     type Uart = uart::Impl;
+    #[cfg(feature = "_usb")]
     type Usb = usb::Impl;
 }
 

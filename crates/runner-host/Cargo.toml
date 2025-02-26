@@ -14,6 +14,7 @@ env_logger = { version = "0.11.3", optional = true }
 rand = "0.8.5"
 tokio = { version = "1.40.0", features = ["full"] }
 usb-device = "0.3.2"
+usbd-hid = "0.8.2"
 usbd-serial = "0.2.2"
 usbip-device = "0.2.0"
 wasefire-board-api = { path = "../board", features = ["std"] }
@@ -34,13 +35,16 @@ features = [
   "applet-api-platform",
   "applet-api-platform-protocol",
   "board-api-button",
+  "board-api-clock",
   "board-api-led",
   "board-api-rng",
   "board-api-storage",
   "board-api-timer",
   "board-api-uart",
+  "board-api-usb-ctap",
   "board-api-usb-serial",
   "software-crypto-aes128-ccm",
+  "software-crypto-aes256-cbc",
   "software-crypto-aes256-gcm",
   "software-crypto-hmac-sha256",
   "software-crypto-hmac-sha384",
@@ -55,6 +59,7 @@ features = [
 # Exactly one is enabled by xtask.
 debug = [
   "dep:env_logger",
+  "wasefire-interpreter/debug",
   "wasefire-logger/log",
   "wasefire-protocol-tokio/log",
   "wasefire-protocol-usb/log",

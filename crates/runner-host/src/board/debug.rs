@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::OnceLock;
-use std::time::Instant;
-
 use {wasefire_board_api as board, wasefire_logger as log};
 
 pub enum Impl {}
@@ -32,9 +29,6 @@ impl board::debug::Api for Impl {
     }
 
     fn time() -> u64 {
-        static ORIGIN: OnceLock<Instant> = OnceLock::new();
-        let now = Instant::now();
-        let origin = ORIGIN.get_or_init(|| now);
-        now.duration_since(*origin).as_micros() as u64
+        crate::board::clock::uptime_us()
     }
 }

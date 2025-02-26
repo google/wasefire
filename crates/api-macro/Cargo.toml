@@ -19,6 +19,8 @@ wasefire-applet-api-desc = { version = "=0.2.2-git", path = "../api-desc" }
 
 [features]
 api-button = ["wasefire-applet-api-desc/api-button"]
+api-clock = ["wasefire-applet-api-desc/api-clock"]
+api-crypto-cbc = ["wasefire-applet-api-desc/api-crypto-cbc"]
 api-crypto-ccm = ["wasefire-applet-api-desc/api-crypto-ccm"]
 api-crypto-ec = ["wasefire-applet-api-desc/api-crypto-ec"]
 api-crypto-gcm = ["wasefire-applet-api-desc/api-crypto-gcm"]
@@ -36,6 +38,7 @@ api-store = ["wasefire-applet-api-desc/api-store"]
 api-store-fragment = ["wasefire-applet-api-desc/api-store-fragment"]
 api-timer = ["wasefire-applet-api-desc/api-timer"]
 api-uart = ["wasefire-applet-api-desc/api-uart"]
+api-usb-ctap = ["wasefire-applet-api-desc/api-usb-ctap"]
 api-usb-serial = ["wasefire-applet-api-desc/api-usb-serial"]
 
 [lints]

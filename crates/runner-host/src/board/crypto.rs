@@ -18,6 +18,7 @@ pub enum Impl {}
 
 impl Api for Impl {
     type Aes128Ccm = crypto::SoftwareAes128Ccm;
+    type Aes256Cbc = crypto::SoftwareAes256Cbc;
     type Aes256Gcm = crypto::SoftwareAes256Gcm;
     type HmacSha256 = crypto::SoftwareHmacSha256<Self>;
     type HmacSha384 = crypto::SoftwareHmacSha384<Self>;

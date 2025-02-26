@@ -17,6 +17,8 @@
 #![no_std]
 wasefire::applet!();
 
+use wasefire::error::Code;
+
 fn main() {
     test_non_constant();
     scheduling::exit();
@@ -24,6 +26,10 @@ fn main() {
 
 fn test_non_constant() {
     debug!("test_non_constant(): This should generate 5 different buffers.");
+    if rng::fill_bytes(&mut []) == Err(Error::world(Code::NotImplemented)) {
+        debug!("- not supported");
+        return;
+    }
     let mut buffers = [[0; 8]; 5];
     for buffer in buffers.iter_mut() {
         rng::fill_bytes(buffer).unwrap();

@@ -16,7 +16,7 @@ default-target = "wasm32-unknown-unknown"
 features = ["full-api", "wasm"]
 
 [dependencies]
-bytemuck = { version = "1.16.0", default-features = false, features = ["derive"] }
+bytemuck = { version = "1.21.0", default-features = false, features = ["derive"] }
 sealed = { version = "0.6.0", default-features = false, optional = true }
 wasefire-applet-api-macro = { version = "0.8.0-git", path = "../api-macro" }
 wasefire-error = { version = "0.1.3-git", path = "../error" }
@@ -35,6 +35,8 @@ host = ["dep:derive-where", "dep:sealed"]
 wasm = []
 # API features.
 api-button = ["wasefire-applet-api-macro/api-button"]
+api-clock = ["wasefire-applet-api-macro/api-clock"]
+api-crypto-cbc = ["wasefire-applet-api-macro/api-crypto-cbc"]
 api-crypto-ccm = ["wasefire-applet-api-macro/api-crypto-ccm"]
 api-crypto-ec = ["wasefire-applet-api-macro/api-crypto-ec"]
 api-crypto-gcm = ["wasefire-applet-api-macro/api-crypto-gcm"]
@@ -52,10 +54,13 @@ api-store = ["wasefire-applet-api-macro/api-store"]
 api-store-fragment = ["wasefire-applet-api-macro/api-store-fragment"]
 api-timer = ["wasefire-applet-api-macro/api-timer"]
 api-uart = ["wasefire-applet-api-macro/api-uart"]
+api-usb-ctap = ["wasefire-applet-api-macro/api-usb-ctap"]
 api-usb-serial = ["wasefire-applet-api-macro/api-usb-serial"]
 # Enables all API features (unstable for host).
 full-api = [
   "api-button",
+  "api-clock",
+  "api-crypto-cbc",
   "api-crypto-ccm",
   "api-crypto-ec",
   "api-crypto-gcm",
@@ -73,6 +78,7 @@ full-api = [
   "api-store-fragment",
   "api-timer",
   "api-uart",
+  "api-usb-ctap",
   "api-usb-serial",
 ]
 # Implements the API with weak symbols to permit custom definitions (only

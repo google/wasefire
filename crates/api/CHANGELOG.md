@@ -4,10 +4,17 @@
 
 ### Minor
 
+- Support the `api-clock` feature
+- Support the `api-crypto-cbc` feature
+- Support the `api-usb-ctap` feature
 - Improve safety documentation
 - Use Rust edition 2024
 - Provide `bytemuck::Pod` for `ArrayU32`
 - Implement `bytemuck::Pod` for `U32<T>`
+
+### Patch
+
+- Update dependencies
 
 ## 0.7.0
 

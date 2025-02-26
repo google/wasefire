@@ -21,6 +21,8 @@ use quote::{format_ident, quote};
 
 #[cfg(feature = "api-button")]
 mod button;
+#[cfg(feature = "api-clock")]
+mod clock;
 #[cfg(feature = "internal-api-crypto")]
 mod crypto;
 mod debug;
@@ -56,6 +58,8 @@ impl Default for Api {
         Api(vec![
             #[cfg(feature = "api-button")]
             button::new(),
+            #[cfg(feature = "api-clock")]
+            clock::new(),
             #[cfg(feature = "internal-api-crypto")]
             crypto::new(),
             debug::new(),

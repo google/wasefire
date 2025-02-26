@@ -17,16 +17,12 @@ use wasmi::*;
 pub(crate) fn run(wasm: &[u8]) -> f32 {
     let engine = Engine::default();
     let module = Module::new(&engine, wasm).unwrap();
-
     let mut store = Store::new(&engine, ());
     let mut linker = Linker::<()>::new(&engine);
-
     let clock_ms =
         Func::wrap(&mut store, move |_: Caller<'_, ()>| -> u64 { crate::target::clock_ms() });
     linker.define("env", "clock_ms", clock_ms).unwrap();
-
     let instance = linker.instantiate(&mut store, &module).unwrap().start(&mut store).unwrap();
-
     let func = instance.get_typed_func::<(), f32>(&store, "run").unwrap();
     func.call(&mut store, ()).unwrap()
 }

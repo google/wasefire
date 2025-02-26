@@ -16,7 +16,7 @@ categories = ["embedded", "no-std", "wasm"]
 features = ["std", "wasm"]
 
 [dependencies]
-bytemuck = { version = "1.16.0", default-features = false }
+bytemuck = { version = "1.21.0", default-features = false }
 defmt = { version = "0.3.8", default-features = false, optional = true }
 derive-where = { version = "1.2.7", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
@@ -32,7 +32,7 @@ wasefire-store = { version = "0.3.1-git", path = "../store", optional = true }
 wasefire-sync = { version = "0.1.2-git", path = "../sync", optional = true }
 
 [dependencies.wasefire-interpreter]
-version = "0.3.2-git"
+version = "0.4.0-git"
 path = "../interpreter"
 features = ["toctou"]
 optional = true
@@ -50,6 +50,8 @@ defmt = [
 log = ["internal-debug", "wasefire-board-api/log", "wasefire-logger/log"]
 # Applet API features (automatically enabled by board API features).
 applet-api-button = ["wasefire-applet-api/api-button"]
+applet-api-clock = ["wasefire-applet-api/api-clock"]
+applet-api-crypto-cbc = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-cbc"]
 applet-api-crypto-ccm = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ccm"]
 applet-api-crypto-ec = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ec"]
 applet-api-crypto-gcm = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-gcm"]
@@ -81,15 +83,18 @@ applet-api-store = ["internal-applet-api-store", "wasefire-applet-api/api-store"
 applet-api-store-fragment = ["internal-applet-api-store", "wasefire-applet-api/api-store-fragment"]
 applet-api-timer = ["wasefire-applet-api/api-timer"]
 applet-api-uart = ["wasefire-applet-api/api-uart"]
+applet-api-usb-ctap = ["internal-applet-api-usb", "wasefire-applet-api/api-usb-ctap"]
 applet-api-usb-serial = ["internal-applet-api-usb", "wasefire-applet-api/api-usb-serial"]
 # Board API features. Enabling a board API feature automatically enables all
 # applet API features that would be implemented.
 board-api-button = ["applet-api-button", "wasefire-board-api/api-button"]
+board-api-clock = ["applet-api-clock", "wasefire-board-api/api-clock"]
 board-api-crypto-aes128-ccm = [
   "applet-api-crypto-ccm",
   "dep:typenum",
   "wasefire-board-api/api-crypto-aes128-ccm",
 ]
+board-api-crypto-aes256-cbc = ["applet-api-crypto-cbc", "wasefire-board-api/api-crypto-aes256-cbc"]
 board-api-crypto-aes256-gcm = [
   "applet-api-crypto-gcm",
   "dep:typenum",
@@ -134,6 +139,11 @@ board-api-storage = [
 ]
 board-api-timer = ["applet-api-timer", "wasefire-board-api/api-timer"]
 board-api-uart = ["applet-api-uart", "wasefire-board-api/api-uart"]
+board-api-usb-ctap = [
+  "applet-api-usb-ctap",
+  "internal-board-api-usb",
+  "wasefire-board-api/api-usb-ctap",
+]
 board-api-usb-serial = [
   "applet-api-usb-serial",
   "internal-board-api-usb",
@@ -144,6 +154,8 @@ full-api = ["full-applet-api", "full-board-api"]
 # Enables all applet API features (unstable).
 full-applet-api = [
   "applet-api-button",
+  "applet-api-clock",
+  "applet-api-crypto-cbc",
   "applet-api-crypto-ccm",
   "applet-api-crypto-ec",
   "applet-api-crypto-gcm",
@@ -161,12 +173,15 @@ full-applet-api = [
   "applet-api-store-fragment",
   "applet-api-timer",
   "applet-api-uart",
+  "applet-api-usb-ctap",
   "applet-api-usb-serial",
 ]
 # Enables all board API features (unstable).
 full-board-api = [
   "board-api-button",
+  "board-api-clock",
   "board-api-crypto-aes128-ccm",
+  "board-api-crypto-aes256-cbc",
   "board-api-crypto-aes256-gcm",
   "board-api-crypto-hmac-sha256",
   "board-api-crypto-hmac-sha384",
@@ -181,6 +196,7 @@ full-board-api = [
   "board-api-storage",
   "board-api-timer",
   "board-api-uart",
+  "board-api-usb-ctap",
   "board-api-usb-serial",
 ]
 # Software crypto features. Enabling a software crypto feature automatically
@@ -188,6 +204,10 @@ full-board-api = [
 software-crypto-aes128-ccm = [
   "board-api-crypto-aes128-ccm",
   "wasefire-board-api/software-crypto-aes128-ccm",
+]
+software-crypto-aes256-cbc = [
+  "board-api-crypto-aes256-cbc",
+  "wasefire-board-api/software-crypto-aes256-cbc",
 ]
 software-crypto-aes256-gcm = [
   "board-api-crypto-aes256-gcm",

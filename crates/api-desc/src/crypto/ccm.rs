@@ -53,10 +53,10 @@ pub(crate) fn new() -> Item {
         item! {
             /// Decrypts a cipher text given a key and IV.
             fn decrypt "ccd" {
-                /// The 16 bytes key to encrypt with.
+                /// The 16 bytes key to decrypt with.
                 key: *const u8,
 
-                /// The 8 bytes IV to encrypt with.
+                /// The 8 bytes IV to decrypt with.
                 iv: *const u8,
 
                 /// Length in bytes of the `clear` text.
@@ -65,12 +65,12 @@ pub(crate) fn new() -> Item {
                 /// this value.
                 len: usize,
 
-                /// The cipher text to encrypt from.
+                /// The cipher text to decrypt from.
                 ///
                 /// Its length must be `len + 4` bytes.
                 cipher: *const u8,
 
-                /// The clear text to encrypt to.
+                /// The clear text to decrypt to.
                 ///
                 /// Its length must be provided in the `len` field.
                 clear: *mut u8,

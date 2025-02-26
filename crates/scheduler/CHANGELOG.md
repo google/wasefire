@@ -8,10 +8,15 @@
 
 ### Minor
 
+- Support `clock` module
+- Support `crypto::cbc` module
+- Support `usb::ctap` module
 - Use Rust edition 2024
 
 ### Patch
 
+- Use `cargo::` instead of `cargo:` for build script instructions
+- Add warning when applet fails to start after install
 - Fix clippy lints
 - Update dependencies
 
@@ -186,4 +191,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 3 -->
+<!-- Increment to skip CHANGELOG.md test: 6 -->

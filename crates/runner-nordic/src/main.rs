@@ -23,9 +23,9 @@ extern crate alloc;
 mod allocator;
 mod board;
 mod storage;
-#[cfg(feature = "debug")]
 mod systick;
 
+use alloc::vec::Vec;
 use core::cell::RefCell;
 use core::mem::MaybeUninit;
 
@@ -35,10 +35,10 @@ use critical_section::Mutex;
 #[cfg(feature = "debug")]
 use defmt_rtt as _;
 use embedded_hal::digital::InputPin;
+#[cfg(feature = "aes128-ccm")]
 use nrf52840_hal::ccm::{Ccm, DataRate};
 use nrf52840_hal::clocks::{self, ExternalOscillator, Internal, LfOscStopped};
-use nrf52840_hal::gpio;
-use nrf52840_hal::gpio::{Level, Output, Pin, PushPull};
+use nrf52840_hal::gpio::{self, Level, Output, Pin, PushPull};
 use nrf52840_hal::gpiote::Gpiote;
 use nrf52840_hal::pac::{FICR, Interrupt, interrupt};
 use nrf52840_hal::rng::Rng;
@@ -47,11 +47,22 @@ use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 use panic_abort as _;
 #[cfg(feature = "debug")]
 use panic_probe as _;
+#[cfg(feature = "radio-ble")]
 use rubble::link::MIN_PDU_BUF;
-use rubble_nrf5x::radio::{BleRadio, PacketBuffer};
+#[cfg(feature = "radio-ble")]
+use rubble_nrf5x::radio::BleRadio;
+use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidPid};
+#[cfg(feature = "usb-ctap")]
+use usbd_hid::descriptor::{CtapReport, SerializedDescriptor};
+#[cfg(feature = "usb-ctap")]
+use usbd_hid::hid_class::HIDClass;
+#[cfg(feature = "usb-serial")]
 use usbd_serial::SerialPort;
+#[cfg(feature = "usb-ctap")]
+use wasefire_board_api::usb::ctap::Ctap;
+#[cfg(feature = "usb-serial")]
 use wasefire_board_api::usb::serial::Serial;
 use wasefire_board_api::{Id, Support};
 #[cfg(feature = "wasm")]
@@ -61,9 +72,12 @@ use wasefire_one_of::exactly_one_of;
 use wasefire_scheduler::Scheduler;
 
 use crate::board::button::{Button, channel};
+#[cfg(feature = "gpio")]
 use crate::board::gpio::Gpio;
+#[cfg(feature = "radio-ble")]
 use crate::board::radio::ble::Ble;
 use crate::board::timer::Timers;
+#[cfg(feature = "uart")]
 use crate::board::uart::Uarts;
 use crate::board::usb::Usb;
 use crate::board::{Events, button, led};
@@ -86,14 +100,21 @@ struct State {
     buttons: [Button; <button::Impl as Support<usize>>::SUPPORT],
     gpiote: Gpiote,
     protocol: wasefire_protocol_usb::Rpc<'static, Usb>,
+    #[cfg(feature = "usb-ctap")]
+    ctap: Ctap<'static, Usb>,
+    #[cfg(feature = "usb-serial")]
     serial: Serial<'static, Usb>,
     timers: Timers,
+    #[cfg(feature = "radio-ble")]
     ble: Ble,
+    #[cfg(feature = "aes128-ccm")]
     ccm: Ccm,
+    #[cfg(feature = "gpio")]
     gpios: [Gpio; <board::gpio::Impl as Support<usize>>::SUPPORT],
     leds: [Pin<Output<PushPull>>; <led::Impl as Support<usize>>::SUPPORT],
     rng: Rng,
     storage: Option<Storage>,
+    #[cfg(feature = "uart")]
     uarts: Uarts,
     usb_dev: UsbDevice<'static, Usb>,
 }
@@ -110,19 +131,15 @@ fn with_state<R>(f: impl FnOnce(&mut State) -> R) -> R {
 fn main() -> ! {
     static mut CLOCKS: MaybeUninit<Clocks> = MaybeUninit::uninit();
     static mut USB_BUS: MaybeUninit<UsbBusAllocator<Usb>> = MaybeUninit::uninit();
-    // TX buffer is mandatory even when we only listen.
-    static mut BLE_TX: MaybeUninit<PacketBuffer> = MaybeUninit::uninit();
-    static mut BLE_RX: MaybeUninit<PacketBuffer> = MaybeUninit::uninit();
 
-    #[cfg(feature = "debug")]
     let c = nrf52840_hal::pac::CorePeripherals::take().unwrap();
-    #[cfg(feature = "debug")]
     systick::init(c.SYST);
     allocator::init();
     log::debug!("Runner starts.");
     let p = nrf52840_hal::pac::Peripherals::take().unwrap();
     let ficr = p.FICR;
     let port0 = gpio::p0::Parts::new(p.P0);
+    #[cfg(feature = "gpio")]
     let port1 = gpio::p1::Parts::new(p.P1);
     let buttons = [
         Button::new(port0.p0_11.into_pullup_input().degrade()),
@@ -136,6 +153,7 @@ fn main() -> ! {
         port0.p0_15.into_push_pull_output(Level::High).degrade(),
         port0.p0_16.into_push_pull_output(Level::High).degrade(),
     ];
+    #[cfg(feature = "gpio")]
     let gpios = [
         Gpio::new(port1.p1_01.degrade(), 1, 1),
         Gpio::new(port1.p1_02.degrade(), 1, 2),
@@ -154,27 +172,37 @@ fn main() -> ! {
     let usb_bus = UsbBusAllocator::new(Usbd::new(UsbPeripheral::new(p.USBD, clocks)));
     let usb_bus = USB_BUS.write(usb_bus);
     let protocol = wasefire_protocol_usb::Rpc::new(usb_bus);
+    #[cfg(feature = "usb-ctap")]
+    let ctap = Ctap::new(HIDClass::new(usb_bus, CtapReport::desc(), 255));
+    #[cfg(feature = "usb-serial")]
     let serial = Serial::new(SerialPort::new(usb_bus));
-    let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x16c0, 0x27dd))
+    const VID_PID: UsbVidPid = vid_pid();
+    let usb_dev = UsbDeviceBuilder::new(usb_bus, VID_PID)
         .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Wasefire")])
         .unwrap()
         .build();
-    let radio = BleRadio::new(
-        p.RADIO,
-        &ficr,
-        BLE_TX.write([0; MIN_PDU_BUF]),
-        BLE_RX.write([0; MIN_PDU_BUF]),
-    );
-    let ble = Ble::new(radio, p.TIMER0);
+    #[cfg(feature = "radio-ble")]
+    let ble = {
+        use alloc::boxed::Box;
+        // TX buffer is mandatory even when we only listen.
+        let ble_tx = Box::leak(Box::new([0; MIN_PDU_BUF]));
+        let ble_rx = Box::leak(Box::new([0; MIN_PDU_BUF]));
+        let radio = BleRadio::new(p.RADIO, &ficr, ble_tx, ble_rx);
+        Ble::new(radio, p.TIMER0)
+    };
     let rng = Rng::new(p.RNG);
+    #[cfg(feature = "aes128-ccm")]
     let ccm = Ccm::init(p.CCM, p.AAR, DataRate::_1Mbit);
     storage::init(p.NVMC);
     let storage = Some(Storage::new_store());
     crate::board::platform::update::init(Storage::new_other());
     crate::board::applet::init(Storage::new_applet());
-    let uart_rx = port0.p0_28.into_floating_input().degrade();
-    let uart_tx = port0.p0_29.into_push_pull_output(gpio::Level::High).degrade();
-    let uarts = Uarts::new(p.UARTE0, uart_rx, uart_tx, p.UARTE1);
+    #[cfg(feature = "uart")]
+    let uarts = {
+        let uart_rx = port0.p0_28.into_floating_input().degrade();
+        let uart_tx = port0.p0_29.into_push_pull_output(gpio::Level::High).degrade();
+        Uarts::new(p.UARTE0, uart_rx, uart_tx, p.UARTE1)
+    };
     let events = Events::default();
     let state = State {
         events,
@@ -182,14 +210,21 @@ fn main() -> ! {
         buttons,
         gpiote,
         protocol,
+        #[cfg(feature = "usb-ctap")]
+        ctap,
+        #[cfg(feature = "usb-serial")]
         serial,
         timers,
+        #[cfg(feature = "radio-ble")]
         ble,
+        #[cfg(feature = "aes128-ccm")]
         ccm,
+        #[cfg(feature = "gpio")]
         gpios,
         leds,
         rng,
         storage,
+        #[cfg(feature = "uart")]
         uarts,
         usb_dev,
     };
@@ -204,9 +239,10 @@ fn main() -> ! {
 }
 
 macro_rules! interrupts {
-    ($($name:ident = $func:ident($($arg:expr),*$(,)?)),*$(,)?) => {
-        const INTERRUPTS: &[Interrupt] = &[$(Interrupt::$name),*];
+    ($($(#[$meta:meta])* $name:ident = $func:ident($($arg:expr),*$(,)?)),*$(,)?) => {
+        const INTERRUPTS: &[Interrupt] = &[$($(#[$meta])* Interrupt::$name),*];
         $(
+            $(#[$meta])*
             #[interrupt]
             fn $name() {
                 $func($($arg),*);
@@ -217,13 +253,17 @@ macro_rules! interrupts {
 
 interrupts! {
     GPIOTE = gpiote(),
+    #[cfg(feature = "radio-ble")]
     RADIO = radio(),
+    #[cfg(feature = "radio-ble")]
     TIMER0 = radio_timer(),
     TIMER1 = timer(0),
     TIMER2 = timer(1),
     TIMER3 = timer(2),
     TIMER4 = timer(3),
+    #[cfg(feature = "uart")]
     UARTE0_UART0 = uarte(0),
+    #[cfg(feature = "uart")]
     UARTE1 = uarte(1),
     USBD = usbd(),
 }
@@ -241,10 +281,12 @@ fn gpiote() {
     });
 }
 
+#[cfg(feature = "radio-ble")]
 fn radio() {
     with_state(|state| state.ble.tick(|event| state.events.push(event.into())))
 }
 
+#[cfg(feature = "radio-ble")]
 fn radio_timer() {
     with_state(|state| state.ble.tick_timer())
 }
@@ -257,6 +299,7 @@ fn timer(timer: usize) {
     })
 }
 
+#[cfg(feature = "uart")]
 fn uarte(uarte: usize) {
     let uart = Id::new(uarte).unwrap();
     with_state(|state| {
@@ -266,8 +309,45 @@ fn uarte(uarte: usize) {
 
 fn usbd() {
     with_state(|state| {
-        let polled = state.usb_dev.poll(&mut [&mut state.protocol, state.serial.port()]);
+        let mut classes = Vec::<&mut dyn UsbClass<_>>::new();
+        classes.push(&mut state.protocol);
+        #[cfg(feature = "usb-ctap")]
+        classes.push(state.ctap.class());
+        #[cfg(feature = "usb-serial")]
+        classes.push(state.serial.port());
+        #[cfg_attr(not(feature = "usb-serial"), allow(unused_variables))]
+        let polled = state.usb_dev.poll(&mut classes);
         state.protocol.tick(|event| state.events.push(event.into()));
+        #[cfg(feature = "usb-ctap")]
+        state.ctap.tick(|event| state.events.push(event.into()));
+        #[cfg(feature = "usb-serial")]
         state.serial.tick(polled, |event| state.events.push(event.into()));
     });
+}
+
+const fn vid_pid() -> UsbVidPid {
+    let vidpid = match option_env!("RUNNER_VIDPID") {
+        None => b"1915:521f",
+        Some(x) => x.as_bytes(),
+    };
+    assert!(vidpid.len() == 9);
+    assert!(vidpid[4] == b':');
+    let vid = u16_from_hex(vidpid, 0);
+    let pid = u16_from_hex(vidpid, 5);
+    UsbVidPid(vid, pid)
+}
+
+const fn u16_from_hex(x: &[u8], mut i: usize) -> u16 {
+    let mut r = 0;
+    let n = i + 4;
+    while i < n {
+        r *= 16;
+        r += match x[i] {
+            b'0' ..= b'9' => (x[i] - b'0') as u16,
+            b'a' ..= b'f' => 10 + (x[i] - b'a') as u16,
+            _ => panic!(),
+        };
+        i += 1;
+    }
+    r
 }

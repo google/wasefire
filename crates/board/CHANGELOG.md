@@ -4,10 +4,14 @@
 
 ### Minor
 
+- Add `Api::Clock` for monotonic wall-time
+- Add `crypto::Api::Aes256Cbc` for AES-256-CBC
+- Add `usb::Api::Ctap` for CTAP HID
 - Use Rust edition 2024
 
 ### Patch
 
+- Enable `api-crypto-sha{256,384}` when `api-crypto-hmac-sha{256,384}` is enabled
 - Update dependencies
 
 ## 0.8.0
@@ -171,4 +175,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 3 -->
+<!-- Increment to skip CHANGELOG.md test: 6 -->

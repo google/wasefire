@@ -4,6 +4,9 @@
 
 ### Minor
 
+- Add `clock` module for monotonic wall-time
+- Add `crypto::cbc` module for AES-256-CBC
+- Add `usb::ctap` module for CTAP HID
 - Improve safety documentation
 - Add `Api::wasm_markdown()` for top-level documentation
 - Use Rust edition 2024

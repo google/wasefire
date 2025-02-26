@@ -17,7 +17,7 @@ features = ["full-api", "rust-crypto"]
 
 [dependencies]
 aead = { version = "0.5.2", default-features = false, features = ["alloc"], optional = true }
-bytemuck = { version = "1.16.0", default-features = false }
+bytemuck = { version = "1.21.0", default-features = false }
 const-default = { version = "1.0.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.6", default-features = false, optional = true }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
@@ -34,6 +34,8 @@ zeroize = { version = "1.7.0", default-features = false, features = ["derive"], 
 default = ["full-api"]
 # API features.
 api-button = ["wasefire-applet-api/api-button"]
+api-clock = ["wasefire-applet-api/api-clock"]
+api-crypto-cbc = ["internal-api-crypto", "wasefire-applet-api/api-crypto-cbc"]
 api-crypto-ccm = ["internal-api-crypto", "wasefire-applet-api/api-crypto-ccm"]
 api-crypto-ec = [
   "dep:crypto-common",
@@ -61,10 +63,13 @@ api-store = ["internal-api-store", "wasefire-applet-api/api-store"]
 api-store-fragment = ["internal-api-store", "wasefire-applet-api/api-store-fragment"]
 api-timer = ["wasefire-applet-api/api-timer"]
 api-uart = ["internal-serial", "wasefire-applet-api/api-uart"]
+api-usb-ctap = ["internal-api-usb", "wasefire-applet-api/api-usb-ctap"]
 api-usb-serial = ["internal-api-usb", "internal-serial", "wasefire-applet-api/api-usb-serial"]
 # Enables all API features.
 full-api = [
   "api-button",
+  "api-clock",
+  "api-crypto-cbc",
   "api-crypto-ccm",
   "api-crypto-ec",
   "api-crypto-gcm",
@@ -82,6 +87,7 @@ full-api = [
   "api-store-fragment",
   "api-timer",
   "api-uart",
+  "api-usb-ctap",
   "api-usb-serial",
 ]
 # Implements RustCrypto traits.

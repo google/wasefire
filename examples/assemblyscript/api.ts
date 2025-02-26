@@ -130,8 +130,64 @@
   ): i32
 // END OF MODULE button
 
+// START OF MODULE clock
+// Clock operations.
+  // Returns the time spent since some initial event, in micro-seconds.
+  //
+  // The initial event may be the first time this function is called.
+  @external("env", "clk")
+  export declare function clock_uptime_us(
+    // Pointer to the 64-bits time.
+    ptr: usize,
+  ): i32
+// END OF MODULE clock
+
 // START OF MODULE crypto
 // Cryptographic operations.
+  // START OF MODULE crypto_cbc
+  // AES-256-CBC.
+    // Whether AES-256-CBC is supported.
+    @external("env", "cbs")
+    export declare function crypto_cbc_is_supported(
+    ): i32
+
+    // Encrypts a sequence of blocks given a key and IV.
+    @external("env", "cbe")
+    export declare function crypto_cbc_encrypt(
+      // The 32 bytes key to encrypt with.
+      key: usize,
+
+      // The 16 bytes IV to encrypt with.
+      iv: usize,
+
+      // Address of the sequence of blocks.
+      ptr: usize,
+
+      // Length in bytes of the sequence of blocks.
+      //
+      // This length must be dividable by 16.
+      len: usize,
+    ): i32
+
+    // Decrypts a sequence of blocks given a key and IV.
+    @external("env", "cbd")
+    export declare function crypto_cbc_decrypt(
+      // The 32 bytes key to decrypt with.
+      key: usize,
+
+      // The 16 bytes IV to decrypt with.
+      iv: usize,
+
+      // Address of the sequence of blocks.
+      ptr: usize,
+
+      // Length in bytes of the sequence of blocks.
+      //
+      // This length must be dividable by 16.
+      len: usize,
+    ): i32
+  // END OF MODULE crypto_cbc
+
   // START OF MODULE crypto_ccm
   // AES-CCM according to Bluetooth.
     // Whether AES-CCM is supported.
@@ -168,10 +224,10 @@
     // Decrypts a cipher text given a key and IV.
     @external("env", "ccd")
     export declare function crypto_ccm_decrypt(
-      // The 16 bytes key to encrypt with.
+      // The 16 bytes key to decrypt with.
       key: usize,
 
-      // The 8 bytes IV to encrypt with.
+      // The 8 bytes IV to decrypt with.
       iv: usize,
 
       // Length in bytes of the `clear` text.
@@ -180,12 +236,12 @@
       // this value.
       len: usize,
 
-      // The cipher text to encrypt from.
+      // The cipher text to decrypt from.
       //
       // Its length must be `len + 4` bytes.
       cipher: usize,
 
-      // The clear text to encrypt to.
+      // The clear text to decrypt to.
       //
       // Its length must be provided in the `len` field.
       clear: usize,
@@ -1242,6 +1298,54 @@
 
 // START OF MODULE usb
 // USB operations.
+  // START OF MODULE usb_ctap
+    // Reads from CTAP HID into a buffer.
+    //
+    // This function does not block and returns whether a packet was read.
+    @external("env", "ucr")
+    export declare function usb_ctap_read(
+      // Address of the 64-bytes buffer.
+      ptr: usize,
+    ): i32
+
+    // Writes to CTAP HID from a buffer.
+    //
+    // This function does not block and returns if the packet was written.
+    @external("env", "ucw")
+    export declare function usb_ctap_write(
+      // Address of the 64-bytes buffer.
+      ptr: usize,
+    ): i32
+
+    // CTAP HID events.
+    enum usb_ctap_Event {
+      // Ready for read.
+      Read = 0,
+
+      // Ready for write.
+      Write = 1,
+    }
+
+    // Registers a callback when CTAP HID is ready.
+    //
+    // It is possible that the callback is spuriously called. The callback is only
+    // guaranteed to be called after the associated operation returned false.
+    @external("env", "uce")
+    export declare function usb_ctap_register(
+      event: usize,
+
+      handler_func: usize,
+
+      handler_data: usize,
+    ): i32
+
+    // Unregisters a callback.
+    @external("env", "ucd")
+    export declare function usb_ctap_unregister(
+      event: usize,
+    ): i32
+  // END OF MODULE usb_ctap
+
   // START OF MODULE usb_serial
     // Reads from USB serial into a buffer.
     //

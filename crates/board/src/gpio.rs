@@ -14,9 +14,6 @@
 
 //! Low-level GPIO interface.
 
-// TODO(bytemuck_derive > 1.6.0): Remove once released.
-#![allow(missing_docs)]
-
 use crate::{Error, Id, Support};
 
 /// Input GPIO configuration.

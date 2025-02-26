@@ -1,0 +1,25 @@
+[package]
+name = "opensk"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>", "Surya Midatala <suryamidatala@google.com>"]
+license = "Apache-2.0"
+edition = "2024"
+
+[dependencies]
+rand_core = "0.6.4"
+wasefire = { path = "../../../crates/prelude" }
+
+[dependencies.opensk-lib]
+path = "../../../third_party/google/OpenSK/libraries/opensk"
+package = "opensk"
+default-features = false
+
+[features]
+debug = ["opensk-lib/debug_ctap"]
+test = ["opensk-lib/std", "wasefire/test"]
+
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.unit-arg = "allow"
+rust.unused-crate-dependencies = "warn"

@@ -71,10 +71,14 @@ struct Flags {
 
     /// The VID:PID to use for the USB device.
     ///
-    /// A USB device is used when --protocol=usb or --usb-serial (ignored otherwise). Note that USB
-    /// requires sudo.
+    /// A USB device is used when --protocol=usb, --usb-ctap, or --usb-serial (ignored otherwise).
+    /// Note that USB requires sudo.
     #[arg(long, default_value = "16c0:27dd")]
     usb_vid_pid: String,
+
+    /// Whether to enable CTAP HID.
+    #[arg(long)]
+    usb_ctap: bool,
 
     /// Whether to enable USB serial.
     #[arg(long)]
@@ -134,6 +138,7 @@ async fn main() -> Result<()> {
         };
         cleanup::shutdown(128 + signal.as_raw_value());
     });
+    board::clock::init();
     wasefire_cli_tools::fs::create_dir_all(&FLAGS.dir).await?;
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
     let storage = Some(FileStorage::new(&FLAGS.dir.join("storage.bin"), options)?);
@@ -161,6 +166,7 @@ async fn main() -> Result<()> {
     let usb = board::usb::State::new(
         &FLAGS.usb_vid_pid,
         matches!(protocol, ProtocolState::Usb),
+        FLAGS.usb_ctap,
         FLAGS.usb_serial,
     );
     *STATE.lock().unwrap() = Some(board::State {

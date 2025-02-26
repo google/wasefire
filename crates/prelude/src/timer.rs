@@ -138,3 +138,40 @@ pub fn sleep_ms(duration_ms: usize) {
 pub fn sleep(duration: Duration) {
     sleep_ms(duration.as_millis() as usize)
 }
+
+/// Simple interface for timeouts.
+pub struct Timeout {
+    _timer: Timer<TimeoutHandler>,
+    handler: TimeoutHandler,
+}
+
+impl Timeout {
+    /// Creates and starts a new timeout.
+    pub fn new_ms(timeout_ms: usize) -> Self {
+        let handler = TimeoutHandler { elapsed: Rc::new(Cell::new(false)) };
+        let timer = Timer::new(handler.clone());
+        timer.start_ms(Oneshot, timeout_ms);
+        Timeout { _timer: timer, handler }
+    }
+
+    /// Creates and starts a new timeout.
+    pub fn new(timeout: Duration) -> Self {
+        Self::new_ms(timeout.as_millis() as usize)
+    }
+
+    /// Returns whether the timeout is over.
+    pub fn is_over(&self) -> bool {
+        self.handler.elapsed.get()
+    }
+}
+
+#[derive(Clone)]
+struct TimeoutHandler {
+    elapsed: Rc<Cell<bool>>,
+}
+
+impl Handler for TimeoutHandler {
+    fn event(&self) {
+        self.elapsed.set(true);
+    }
+}

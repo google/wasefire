@@ -31,31 +31,40 @@ features = ["build-bindgen", "use-32bit-slots"]
 optional = true
 
 [dependencies.wasmtime]
-version = "28.0.0"
+git = "https://github.com/bytecodealliance/wasmtime.git"
 default-features = false
-features = ["cranelift", "runtime"]
+features = ["runtime"]
 optional = true
 
+[build-dependencies.wasmtime]
+git = "https://github.com/bytecodealliance/wasmtime.git"
+features = ["pulley"]
+
 [features]
+_target-embedded = ["dep:embedded-alloc", "wasmtime?/pulley"]
 runtime-base = ["dep:wasefire-interpreter"]
 runtime-wasm3 = ["dep:wasm3"]
 runtime-wasmi = ["dep:wasmi"]
 runtime-wasmtime = ["dep:wasmtime"]
-target-linux = []
+target-linux = ["wasmtime?/cranelift"]
 target-nordic = [
+  "_target-embedded",
   "dep:cortex-m",
   "dep:cortex-m-rt",
-  "dep:embedded-alloc",
   "dep:nrf52840-hal",
   "dep:panic-rtt-target",
   "dep:rtt-target",
 ]
-target-riscv = ["dep:embedded-alloc", "dep:portable-atomic", "dep:riscv", "dep:riscv-rt"]
+target-riscv = ["_target-embedded", "dep:portable-atomic", "dep:riscv", "dep:riscv-rt"]
 
 [profile.release]
 codegen-units = 1
 lto = true
 panic = "abort"
+
+[profile.release-size]
+inherits = "release"
+opt-level = "z"
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"

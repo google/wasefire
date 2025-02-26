@@ -50,6 +50,8 @@ macro_rules! trap_use {
 
 #[cfg(feature = "applet-api-button")]
 mod button;
+#[cfg(feature = "applet-api-clock")]
+mod clock;
 #[cfg(feature = "internal-applet-api-crypto")]
 mod crypto;
 mod debug;
@@ -77,6 +79,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         #[cfg(feature = "applet-api-button")]
         Api::Button(call) => button::process(call),
+        #[cfg(feature = "applet-api-clock")]
+        Api::Clock(call) => clock::process(call),
         #[cfg(feature = "internal-applet-api-crypto")]
         Api::Crypto(call) => crypto::process(call),
         Api::Debug(call) => debug::process(call),

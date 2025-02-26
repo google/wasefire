@@ -52,6 +52,8 @@ mod allocator;
 #[cfg(feature = "api-button")]
 pub mod button;
 mod callback;
+#[cfg(feature = "api-clock")]
+pub mod clock;
 #[cfg(feature = "internal-api-crypto")]
 pub mod crypto;
 pub mod debug;

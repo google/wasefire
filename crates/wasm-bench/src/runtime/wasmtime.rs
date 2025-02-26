@@ -16,17 +16,31 @@ use wasmtime::*;
 
 pub(crate) fn run(wasm: &[u8]) -> f32 {
     let engine = Engine::default();
+    #[cfg(feature = "_target-embedded")]
+    let module = unsafe { Module::deserialize(&engine, wasm) }.unwrap();
+    #[cfg(not(feature = "_target-embedded"))]
     let module = Module::new(&engine, wasm).unwrap();
-
     let mut store = Store::new(&engine, ());
     let mut linker = Linker::new(&engine);
-
     let clock_ms =
         Func::wrap(&mut store, move |_: Caller<'_, ()>| -> u64 { crate::target::clock_ms() });
     linker.define(&mut store, "env", "clock_ms", clock_ms).unwrap();
-
     let instance = linker.instantiate(&mut store, &module).unwrap();
-
     let func = instance.get_typed_func::<(), f32>(&mut store, "run").unwrap();
     func.call(&mut store, ()).unwrap()
+}
+
+#[cfg(feature = "_target-embedded")]
+mod emdedded {
+    #[unsafe(no_mangle)]
+    extern "C" fn wasmtime_tls_get() -> *mut u8 {
+        unsafe { TLS_PTR }
+    }
+
+    #[unsafe(no_mangle)]
+    extern "C" fn wasmtime_tls_set(ptr: *mut u8) {
+        unsafe { TLS_PTR = ptr }
+    }
+
+    static mut TLS_PTR: *mut u8 = core::ptr::null_mut();
 }

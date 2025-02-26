@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.3.2-git
+## 0.4.0-git
+
+### Major
+
+- Remove `Default` implementation for `Module`
 
 ### Minor
 
@@ -94,4 +98,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 3 -->
+<!-- Increment to skip CHANGELOG.md test: 4 -->

@@ -120,8 +120,7 @@ impl<'m> Store<'m> {
         &mut self, module: Module<'m>, memory: &'m mut [u8],
     ) -> Result<InstId, Error> {
         let inst_id = self.insts.len();
-        self.insts.push(Instance::default());
-        self.last_inst().module = module;
+        self.insts.push(Instance::new(module));
         for import in self.last_inst().module.imports() {
             let type_ = import.type_(&self.last_inst().module);
             let id = self.resolve(&import, type_)?;
@@ -441,7 +440,7 @@ impl Val {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Instance<'m> {
     // TODO: Make sure names are unique. Empty name means exports are not linked.
     name: &'m str,
@@ -620,6 +619,21 @@ impl<'m> Store<'m> {
         }
         let (ptr, ext_type_) = found.ok_or_else(not_found)?;
         if ext_type_.matches(&imp_type_) { Ok(ptr) } else { Err(not_found()) }
+    }
+}
+
+impl<'m> Instance<'m> {
+    fn new(module: Module<'m>) -> Self {
+        Instance {
+            name: "",
+            module,
+            funcs: Component::default(),
+            tables: Component::default(),
+            mems: Component::default(),
+            globals: Component::default(),
+            elems: Vec::new(),
+            datas: Vec::new(),
+        }
     }
 }
 

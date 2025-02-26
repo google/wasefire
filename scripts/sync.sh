@@ -42,11 +42,6 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   case $crate in
     board|one-of|prelude) add_lint $file warn rust.missing-docs ;;
   esac
-  # TODO(bytemuck > 1.20.0): Remove.
-  case $crate in
-    board) echo 'rust.unexpected_cfgs = { level = "allow", check-cfg = '\
-'["cfg(target_arch, values(\"spirv\"))"] }' >> $file ;;
-  esac
   # TODO: Enable for all crates.
   case $crate in
     interpreter|runner-*|scheduler|xtask|*/fuzz) ;;
@@ -100,6 +95,7 @@ book_example store store
 GIT_MODULES='
 SchemaStore/schemastore
 WebAssembly/spec
+google/OpenSK
 rust-lang/rustup
 wasm3/wasm-coremark
 '
