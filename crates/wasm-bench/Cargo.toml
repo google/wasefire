@@ -26,19 +26,22 @@ optional = true
 
 [dependencies.wasm3]
 git = "https://github.com/wasm3/wasm3-rs.git"
+rev = "df74c2a17ed8831595de43db98c406da4633e32a"
 default-features = false
 features = ["build-bindgen", "use-32bit-slots"]
 optional = true
 
 [dependencies.wasmtime]
-git = "https://github.com/bytecodealliance/wasmtime.git"
+version = "30.0.2"
 default-features = false
 features = ["runtime"]
 optional = true
 
 [build-dependencies.wasmtime]
-git = "https://github.com/bytecodealliance/wasmtime.git"
-features = ["pulley"]
+version = "30.0.2"
+default-features = false
+features = ["cranelift", "pulley"]
+optional = true
 
 [features]
 _target-embedded = ["dep:embedded-alloc", "wasmtime?/pulley"]
