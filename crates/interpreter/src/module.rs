@@ -69,9 +69,12 @@ impl<'m> Module<'m> {
     ///
     /// The module must be valid.
     pub unsafe fn new_unchecked(binary: &'m [u8]) -> Self {
-        // Only keep the sections (i.e. skip the header).
-        let mut module =
-            Module { binary: &binary[8 ..], types: Vec::new(), cache: Cache::unbounded() };
+        let mut module = Module {
+            // Only keep the sections (i.e. skip the header).
+            binary: &binary[8 ..],
+            types: Vec::new(),
+            cache: Cache::unbounded(),
+        };
         if let Some(mut parser) = module.section(SectionId::Type) {
             for _ in 0 .. parser.parse_vec().into_ok() {
                 module.types.push(parser.parse_functype().into_ok());
