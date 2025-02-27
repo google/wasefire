@@ -22,6 +22,7 @@ fn main() {
     } else {
         panic!("one of target-{{linux,nordic,riscv}} must be enabled")
     };
+    #[cfg(feature = "runtime-wasmtime")]
     let runtime = if std::env::var_os("CARGO_FEATURE_RUNTIME_BASE").is_some() {
         Runtime::Base
     } else if std::env::var_os("CARGO_FEATURE_RUNTIME_WASM3").is_some() {
@@ -46,7 +47,9 @@ fn main() {
     }
     const PATH: &str = "../../third_party/wasm3/wasm-coremark/coremark-minimal.wasm";
     println!("cargo::rerun-if-changed={PATH}");
+    #[cfg_attr(not(feature = "runtime-wasmtime"), allow(unused_mut))]
     let mut module = std::fs::read(PATH).unwrap();
+    #[cfg(feature = "runtime-wasmtime")]
     if runtime == Runtime::Wasmtime && target.is_embedded() {
         let mut config = wasmtime::Config::new();
         config.target("pulley32").unwrap();
@@ -64,6 +67,7 @@ enum Target {
     Riscv,
 }
 
+#[cfg(feature = "runtime-wasmtime")]
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Runtime {
     Base,
@@ -72,6 +76,7 @@ enum Runtime {
     Wasmtime,
 }
 
+#[cfg(feature = "runtime-wasmtime")]
 impl Target {
     fn is_embedded(self) -> bool {
         match self {
