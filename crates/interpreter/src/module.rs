@@ -64,7 +64,7 @@ impl<'m> Module<'m> {
             // Only keep the sections (i.e. skip the header).
             binary: &binary[8 ..],
             types: Vec::new(),
-            side_table: &[], // TODO(dev/fast-interp): Parse from binary.
+            side_table: SideTableView::default(),
         };
         if let Some(mut parser) = module.section(SectionId::Type) {
             for _ in 0 .. parser.parse_vec().into_ok() {
@@ -183,10 +183,7 @@ impl<'m> Module<'m> {
 
     pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
         let metadata = Box::leak(Box::new(self.side_table.metadata(x as usize)));
-        (
-            unsafe { Parser::new(&self.binary[metadata.parser_range().clone()]) },
-            metadata.branch_table(),
-        )
+        (unsafe { Parser::new(&self.binary[metadata.parser_range()]) }, metadata.branch_table())
     }
 
     pub(crate) fn data(&self, x: DataIdx) -> Parser<'m> {
