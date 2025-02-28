@@ -50,7 +50,7 @@ case "$1" in
     esac
     ;;
   mdbook) ensure_cargo mdbook 0.4.43 ;;
-  probe-rs) ensure_cargo probe-rs-tools 0.25.0 ;;
+  probe-rs) ensure_cargo probe-rs-tools 0.27.0 ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
   taplo) ensure_cargo taplo-cli 0.9.3 ;;
   trunk) ensure_cargo trunk 0.21.5 ;;
