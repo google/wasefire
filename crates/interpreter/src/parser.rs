@@ -15,6 +15,7 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
+use crate::error::check;
 #[cfg(feature = "debug")]
 use crate::error::*;
 use crate::side_table::{SECTION_NAME, SideTableView};
