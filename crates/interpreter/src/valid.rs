@@ -189,7 +189,7 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
     }
 
     fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
-        source.branch_table = self.branch_idx;
+        source.branch_table = self.branch_idx - 1;
         let entry = self.metadata.branch_table()[source.branch_table].view();
         offset_front(source.parser, entry.delta_ip as isize);
         source.branch_table += entry.delta_stp as usize;
