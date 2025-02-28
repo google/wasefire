@@ -19,7 +19,9 @@ use core::ops::Range;
 use crate::error::*;
 use crate::module::Parser;
 
-#[derive(Debug, Default)]
+pub const SECTION_NAME: &str = "wasefire-sidetable";
+
+#[derive(Debug)]
 pub struct SideTableView<'m> {
     pub func_idx: usize,
     pub indices: &'m [u8], // including 0 and the length of metadata_array
@@ -60,18 +62,14 @@ impl<'m> Metadata<'m> {
         unsafe { Parser::new(&module[self.parser_range()]) }
     }
 
-    pub fn branch_table(&self) -> &[BranchTableEntry] {
+    pub fn branch_table(&self) -> &'m [BranchTableEntry] {
         let entry_size = size_of::<BranchTableEntry>();
-        assert_eq!(
-            (self.0.len() - 10) % entry_size,
-            0,
-            "Metadata length for branch table must be divisible by {} bytes",
-            entry_size
-        );
+        let branch_table = &self.0[10 ..];
+        assert_eq!(branch_table.len() % entry_size, 0);
         unsafe {
             core::slice::from_raw_parts(
-                self.0[10 ..].as_ptr() as *const BranchTableEntry,
-                (self.0.len() - 10) / entry_size,
+                branch_table.as_ptr().cast(),
+                branch_table.len() / entry_size,
             )
         }
     }
@@ -91,13 +89,14 @@ pub struct MetadataEntry {
 pub fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
     let mut res = vec![];
     res.extend_from_slice(&(side_table.len() as u16).to_le_bytes());
-    let mut index = 0;
-    res.extend_from_slice(&(index as u16).to_le_bytes());
+    let mut index = 0u16;
+    res.extend_from_slice(&index.to_le_bytes());
     for entry in side_table {
-        index =
-            try_from::<u16>("index of MetadataEntry", index + 10 + 6 * entry.branch_table.len())?
-                as usize;
-        res.extend_from_slice(&(index as u16).to_le_bytes());
+        index = try_from::<u16>(
+            "index of MetadataEntry",
+            index as usize + 10 + 6 * entry.branch_table.len(),
+        )?;
+        res.extend_from_slice(&index.to_le_bytes());
     }
     for entry in side_table {
         let type_idx = try_from::<u16>("MetadataEntry::type_idx", entry.type_idx)?;

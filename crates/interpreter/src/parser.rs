@@ -17,6 +17,7 @@ use core::marker::PhantomData;
 
 #[cfg(feature = "debug")]
 use crate::error::*;
+use crate::side_table::{SECTION_NAME, SideTableView};
 use crate::syntax::*;
 use crate::toctou::*;
 
@@ -55,6 +56,13 @@ impl<'m, M: Mode> Parser<'m, M> {
 
     pub fn check_len(&self, len: usize) -> MResult<(), M> {
         M::check(|| len <= self.data.len())
+    }
+
+    pub fn parse_side_table(&mut self) -> MResult<SideTableView<'m>, M> {
+        check(self.parse_section_id()? == SectionId::Custom).unwrap();
+        let mut section = self.split_section()?;
+        check(section.parse_name()? == SECTION_NAME).unwrap();
+        Ok(SideTableView::new(self.save()).unwrap())
     }
 
     pub fn parse_bytes(&mut self, len: usize) -> MResult<&'m [u8], M> {

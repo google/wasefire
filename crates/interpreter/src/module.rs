@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
@@ -20,10 +19,11 @@ use crate::parser::{SkipData, SkipElem};
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
+use crate::valid::verify;
 use crate::*;
 
 /// Valid module.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Module<'m> {
     binary: &'m [u8],
     types: Vec<FuncType<'m>>,
@@ -50,6 +50,7 @@ impl ImportDesc {
 impl<'m> Module<'m> {
     /// Validates a WASM module in binary format.
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
+        verify(binary)?;
         let module = unsafe { Self::new_unchecked(&binary) };
         Ok(module)
     }
@@ -60,24 +61,16 @@ impl<'m> Module<'m> {
     ///
     /// The module must be valid.
     pub unsafe fn new_unchecked(binary: &'m [u8]) -> Self {
+        let mut parser = unsafe { Parser::new(&binary[8 ..]) };
         let mut module = Module {
             // Only keep the sections (i.e. skip the header).
             binary: &binary[8 ..],
             types: Vec::new(),
-            side_table: SideTableView::default(),
+            side_table: parser.parse_side_table().unwrap(),
         };
         if let Some(mut parser) = module.section(SectionId::Type) {
             for _ in 0 .. parser.parse_vec().into_ok() {
                 module.types.push(parser.parse_functype().into_ok());
-            }
-        }
-        if let Some(mut parser) = module.section(SectionId::Custom) {
-            let section_name = "wasefire-sidetable";
-            if parser.parse_name().into_ok() == section_name {
-                let side_table_view = SideTableView::new(parser.save()).unwrap();
-                module.side_table = side_table_view;
-                let len = 3 + section_name.as_bytes().len() + parser.save().len();
-                module.binary = &binary[8 + len ..];
             }
         }
         module
@@ -112,6 +105,9 @@ impl<'m> Module<'m> {
             }
             let actual_id = parser.parse_section_id().into_ok();
             let section = parser.split_section().into_ok();
+            if actual_id == SectionId::Custom {
+                continue;
+            }
             break match actual_id.order().cmp(&expected_id.order()) {
                 Ordering::Less => continue,
                 Ordering::Equal => Some(section),
@@ -182,7 +178,7 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
-        let metadata = Box::leak(Box::new(self.side_table.metadata(x as usize)));
+        let metadata = self.side_table.metadata(x as usize);
         (unsafe { Parser::new(&self.binary[metadata.parser_range()]) }, metadata.branch_table())
     }
 

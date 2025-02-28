@@ -20,7 +20,7 @@ use core::marker::PhantomData;
 use core::ops::Range;
 
 use crate::error::*;
-use crate::format::section;
+use crate::format::custom_section;
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
@@ -33,13 +33,11 @@ pub fn prepare(binary: &[u8]) -> Result<Vec<u8>, Error> {
     let side_table = validate::<Prepare>(binary)?;
     wasm.extend_from_slice(&binary[0 .. 8]);
     let serialized_side_table = serialize(&side_table)?;
-    section(&mut wasm, 0, &serialized_side_table, "wasefire-sidetable");
+    custom_section(&mut wasm, 0, SECTION_NAME, &serialized_side_table);
     wasm.extend_from_slice(&binary[8 ..]);
     Ok(wasm)
 }
 
-#[allow(dead_code)]
-#[allow(unused_variables)]
 /// Checks whether a WASM module with the side table in binary format is valid.
 pub fn verify(binary: &[u8]) -> Result<(), Error> {
     validate::<Verify>(binary)
@@ -145,7 +143,7 @@ struct MetadataView<'m> {
 }
 
 #[derive(Default)]
-struct Verify;
+pub struct Verify;
 impl ValidMode for Verify {
     /// Contains at most one _target_ branch. Source branches are eagerly patched to
     /// their target branch using the branch table.
@@ -155,10 +153,7 @@ impl ValidMode for Verify {
     type Result = ();
 
     fn parse_side_table<'m>(parser: &mut Parser<'m>) -> Result<Self::SideTable<'m>, Error> {
-        check(parser.parse_section_id()? == SectionId::Custom)?;
-        let mut section = parser.split_section()?;
-        check(section.parse_name()? == "wasefire-sidetable")?;
-        SideTableView::new(parser.save())
+        parser.parse_side_table()
     }
 
     fn next_branch_table<'a, 'm>(
