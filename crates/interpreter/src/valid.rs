@@ -27,13 +27,13 @@ use crate::toctou::*;
 use crate::util::*;
 use crate::*;
 
-/// Checks whether a WASM module in binary format is valid, and returns the side table.
+/// Checks whether a WASM module in binary format is valid, and returns it with its side table.
 pub fn prepare(binary: &[u8]) -> Result<Vec<u8>, Error> {
-    let mut wasm = vec![];
     let side_table = validate::<Prepare>(binary)?;
+    let mut wasm = vec![];
     wasm.extend_from_slice(&binary[0 .. 8]);
-    let serialized_side_table = serialize(&side_table)?;
-    custom_section(&mut wasm, 0, SECTION_NAME, &serialized_side_table);
+    let side_table = serialize(&side_table)?;
+    custom_section(&mut wasm, SECTION_NAME, &side_table);
     wasm.extend_from_slice(&binary[8 ..]);
     Ok(wasm)
 }
@@ -57,7 +57,7 @@ trait ValidMode: Default {
     fn next_branch_table<'a, 'm>(
         side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
     ) -> Result<Self::BranchTable<'a, 'm>, Error>;
-    fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result;
+    fn side_table_result(side_table: Self::SideTable<'_>) -> Result<Self::Result, Error>;
 }
 
 trait BranchesApi<'m>: Default + IntoIterator<Item = SideTableBranch<'m>> {
@@ -94,8 +94,8 @@ impl ValidMode for Prepare {
         Ok(&mut side_tables.last_mut().unwrap().branch_table)
     }
 
-    fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result {
-        side_table
+    fn side_table_result(side_table: Self::SideTable<'_>) -> Result<Self::Result, Error> {
+        Ok(side_table)
     }
 }
 
@@ -143,12 +143,14 @@ struct MetadataView<'m> {
 }
 
 #[derive(Default)]
-pub struct Verify;
+struct Verify;
 impl ValidMode for Verify {
     /// Contains at most one _target_ branch. Source branches are eagerly patched to
     /// their target branch using the branch table.
     type Branches<'m> = Option<SideTableBranch<'m>>;
     type BranchTable<'a, 'm> = MetadataView<'m>;
+    // TODO(dev/fast-interp): We should use a different view for verification to avoid having
+    // func_idx in SideTableView.
     type SideTable<'m> = SideTableView<'m>;
     type Result = ();
 
@@ -166,8 +168,8 @@ impl ValidMode for Verify {
         Ok(MetadataView { metadata, branch_idx: 0 })
     }
 
-    fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result {
-        check((side_table.func_idx + 1) * 2 == side_table.indices.len()).unwrap()
+    fn side_table_result(side_table: Self::SideTable<'_>) -> Result<Self::Result, Error> {
+        check((side_table.func_idx + 1) * 2 == side_table.indices.len())
     }
 }
 
@@ -332,7 +334,7 @@ impl<'m, M: ValidMode> Context<'m, M> {
         }
         self.check_section(parser, SectionId::Custom)?;
         check(parser.is_empty())?;
-        Ok(M::side_table_result(side_table))
+        M::side_table_result(side_table)
     }
 
     fn check_section(

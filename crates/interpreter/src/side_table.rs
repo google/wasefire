@@ -29,16 +29,6 @@ pub struct SideTableView<'m> {
 }
 
 impl<'m> SideTableView<'m> {
-    pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        let num_functions = parse_u16(binary, 0) as usize;
-        let indices_end = 2 + (num_functions + 1) * 2;
-        Ok(SideTableView {
-            func_idx: 0,
-            indices: &binary[2 .. indices_end],
-            metadata: &binary[indices_end ..],
-        })
-    }
-
     // TODO(dev/fast-interp): Make it generic since it will be used in both `Check` and `Use` modes.
     // (Returns `MResult<Metadata<'m>, M>` instead.)
     pub fn metadata(&self, func_idx: usize) -> Metadata<'m> {
@@ -88,7 +78,8 @@ pub struct MetadataEntry {
 
 pub fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
     let mut res = vec![];
-    res.extend_from_slice(&(side_table.len() as u16).to_le_bytes());
+    let num_funcs = try_from::<u16>("length of MetadataEntry", side_table.len())?;
+    res.extend_from_slice(&num_funcs.to_le_bytes());
     let mut index = 0u16;
     res.extend_from_slice(&index.to_le_bytes());
     for entry in side_table {

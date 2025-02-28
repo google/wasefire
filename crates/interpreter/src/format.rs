@@ -23,12 +23,11 @@ pub fn leb128(wasm: &mut Vec<u8>, mut x: usize) {
     wasm.push(x as u8);
 }
 
-pub fn custom_section(wasm: &mut Vec<u8>, id: u8, name: &str, content: &[u8]) {
-    assert!(id <= 12);
-    wasm.push(id);
+pub fn custom_section(wasm: &mut Vec<u8>, name: &str, content: &[u8]) {
     assert!(name.len() < 128);
+    wasm.push(0);
     leb128(wasm, 1 + name.len() + content.len());
-    leb128(wasm, name.len());
+    wasm.push(name.len() as u8);
     wasm.extend_from_slice(name.as_bytes());
     wasm.extend_from_slice(content);
 }

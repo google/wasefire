@@ -19,7 +19,6 @@ use crate::parser::{SkipData, SkipElem};
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
-use crate::valid::verify;
 use crate::*;
 
 /// Valid module.
@@ -50,9 +49,8 @@ impl ImportDesc {
 impl<'m> Module<'m> {
     /// Validates a WASM module in binary format.
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        verify(binary)?;
-        let module = unsafe { Self::new_unchecked(&binary) };
-        Ok(module)
+        crate::valid::verify(binary)?;
+        Ok(unsafe { Self::new_unchecked(&binary) })
     }
 
     /// Creates a valid module from binary format.
@@ -61,13 +59,10 @@ impl<'m> Module<'m> {
     ///
     /// The module must be valid.
     pub unsafe fn new_unchecked(binary: &'m [u8]) -> Self {
-        let mut parser = unsafe { Parser::new(&binary[8 ..]) };
-        let mut module = Module {
-            // Only keep the sections (i.e. skip the header).
-            binary: &binary[8 ..],
-            types: Vec::new(),
-            side_table: parser.parse_side_table().unwrap(),
-        };
+        // Only keep the sections (i.e. skip the header).
+        let binary = &binary[8 ..];
+        let side_table = unsafe { Parser::new(binary) }.parse_side_table().into_ok();
+        let mut module = Module { binary, types: Vec::new(), side_table };
         if let Some(mut parser) = module.section(SectionId::Type) {
             for _ in 0 .. parser.parse_vec().into_ok() {
                 module.types.push(parser.parse_functype().into_ok());

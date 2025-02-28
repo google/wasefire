@@ -15,10 +15,9 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
-use crate::error::check;
 #[cfg(feature = "debug")]
 use crate::error::*;
-use crate::side_table::{SECTION_NAME, SideTableView};
+use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
 
@@ -57,13 +56,6 @@ impl<'m, M: Mode> Parser<'m, M> {
 
     pub fn check_len(&self, len: usize) -> MResult<(), M> {
         M::check(|| len <= self.data.len())
-    }
-
-    pub fn parse_side_table(&mut self) -> MResult<SideTableView<'m>, M> {
-        check(self.parse_section_id()? == SectionId::Custom).unwrap();
-        let mut section = self.split_section()?;
-        check(section.parse_name()? == SECTION_NAME).unwrap();
-        Ok(SideTableView::new(section.save()).unwrap())
     }
 
     pub fn parse_bytes(&mut self, len: usize) -> MResult<&'m [u8], M> {
@@ -558,6 +550,19 @@ impl<'m, M: Mode> Parser<'m, M> {
         // D: We parse the init.
         let len = self.parse_u32()? as usize;
         user.init(self.parse_bytes(len)?)
+    }
+
+    pub fn parse_side_table(&mut self) -> MResult<SideTableView<'m>, M> {
+        let id = self.parse_section_id()?;
+        M::check(|| id == SectionId::Custom)?;
+        let mut parser = self.split_section()?;
+        let name = parser.parse_name()?;
+        M::check(|| name == SECTION_NAME)?;
+        let num_funcs = try_into::<M, [u8; 2], _>(parser.parse_bytes(2)?)?;
+        let num_funcs = u16::from_le_bytes(num_funcs) as usize;
+        let indices = parser.parse_bytes((num_funcs + 1) * 2)?;
+        let metadata = parser.save();
+        Ok(SideTableView { func_idx: 0, indices, metadata })
     }
 
     pub fn skip_to_end(&mut self, l: LabelIdx) -> MResult<(), M> {
