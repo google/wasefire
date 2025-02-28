@@ -39,7 +39,7 @@ impl<'m> SideTableView<'m> {
     }
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Metadata<'m>(&'m [u8]);
 
 impl<'m> Metadata<'m> {

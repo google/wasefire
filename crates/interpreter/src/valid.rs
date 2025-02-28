@@ -16,6 +16,7 @@ use alloc::collections::BTreeSet;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
+use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ops::Range;
 
@@ -50,8 +51,8 @@ fn validate<M: ValidMode>(binary: &[u8]) -> Result<M::Result, Error> {
 trait ValidMode: Default {
     type Branches<'m>: BranchesApi<'m>;
     type BranchTable<'a, 'm>: BranchTableApi<'m>;
-    type SideTable<'m>;
-    type Result;
+    type SideTable<'m>: Debug;
+    type Result: Debug;
 
     fn parse_side_table<'m>(parser: &mut Parser<'m>) -> Result<Self::SideTable<'m>, Error>;
     fn next_branch_table<'a, 'm>(
@@ -60,11 +61,11 @@ trait ValidMode: Default {
     fn side_table_result(side_table: Self::SideTable<'_>) -> Result<Self::Result, Error>;
 }
 
-trait BranchesApi<'m>: Default + IntoIterator<Item = SideTableBranch<'m>> {
+trait BranchesApi<'m>: Debug + Default + IntoIterator<Item = SideTableBranch<'m>> {
     fn push_branch(&mut self, branch: SideTableBranch<'m>) -> CheckResult;
 }
 
-trait BranchTableApi<'m> {
+trait BranchTableApi<'m>: Debug {
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult;
@@ -137,6 +138,7 @@ impl<'m> BranchTableApi<'m> for &mut Vec<BranchTableEntry> {
     }
 }
 
+#[derive(Debug)]
 struct MetadataView<'m> {
     metadata: Metadata<'m>,
     branch_idx: usize,
