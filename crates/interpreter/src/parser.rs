@@ -63,7 +63,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         check(self.parse_section_id()? == SectionId::Custom).unwrap();
         let mut section = self.split_section()?;
         check(section.parse_name()? == SECTION_NAME).unwrap();
-        Ok(SideTableView::new(self.save()).unwrap())
+        Ok(SideTableView::new(section.save()).unwrap())
     }
 
     pub fn parse_bytes(&mut self, len: usize) -> MResult<&'m [u8], M> {
