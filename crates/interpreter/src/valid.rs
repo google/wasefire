@@ -167,7 +167,7 @@ impl ValidMode for Verify {
     }
 
     fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result {
-        check(side_table.func_idx == side_table.indices.len()).unwrap()
+        check((side_table.func_idx + 1) * 2 == side_table.indices.len()).unwrap()
     }
 }
 
