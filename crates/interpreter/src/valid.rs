@@ -177,7 +177,11 @@ impl ValidMode for Verify {
 
 impl<'m> BranchesApi<'m> for Option<SideTableBranch<'m>> {
     fn push_branch(&mut self, branch: SideTableBranch<'m>) -> CheckResult {
-        check(self.replace(branch).is_none_or(|x| x == branch))
+        check(self.replace(branch).is_none_or(|x| {
+            x.parser == branch.parser
+                && x.branch_table == branch.branch_table
+                && x.result == branch.result
+        }))
     }
 }
 
