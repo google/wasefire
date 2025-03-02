@@ -4,6 +4,8 @@
 
 ### Minor
 
+- Add `--allow=unused-crate-dependencies` to `RUSTFLAGS` when building prod applets to work around a
+  `-Zbuild-std` [issue](https://github.com/rust-lang/rust/issues/122105) with that lint
 - Use Rust edition 2024
 - Add `fs::targz_{list,extract}()` to manipulate tarballs
 - Add `fs::download()` for download files

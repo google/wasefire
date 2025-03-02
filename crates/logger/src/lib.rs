@@ -14,9 +14,6 @@
 
 #![cfg_attr(not(any(test, feature = "log")), no_std)]
 
-// TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
-extern crate alloc;
-
 #[cfg(not(feature = "defmt"))]
 mod no_defmt {
     use core::fmt::{Debug, Display, Formatter, Result};

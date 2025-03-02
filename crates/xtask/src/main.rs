@@ -493,6 +493,8 @@ impl RunnerOptions {
             rustflags.push("-C link-arg=-Tlink.x".to_string());
             if main.release {
                 cargo.arg("-Zbuild-std=core,alloc");
+                // TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
+                rustflags.push("--allow=unused-crate-dependencies".to_string());
                 let mut features = "-Zbuild-std-features=panic_immediate_abort".to_string();
                 if self.opt_level.is_some_and(action::OptLevel::optimize_for_size) {
                     features.push_str(",optimize_for_size");
@@ -663,6 +665,8 @@ impl RunnerOptions {
             cargo.current_dir("crates/runner-nordic/crates/bootloader");
             cargo.args(["build", "--release", "--target=thumbv7em-none-eabi"]);
             cargo.args(["-Zbuild-std=core", "-Zbuild-std-features=panic_immediate_abort"]);
+            // TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
+            cargo.env("RUSTFLAGS", "--allow=unused-crate-dependencies");
             cmd::execute(&mut cargo).await?;
             tokio::task::spawn_blocking(move || {
                 anyhow::Ok(flashing::download_file(

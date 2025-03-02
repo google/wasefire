@@ -572,6 +572,8 @@ impl RustAppletBuild {
         cargo.args(&self.cargo);
         if self.prod {
             cargo.arg("-Zbuild-std=core,alloc");
+            // TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
+            rustflags.push("--allow=unused-crate-dependencies".to_string());
             let mut features = "-Zbuild-std-features=panic_immediate_abort".to_string();
             if self.opt_level.is_some_and(OptLevel::optimize_for_size) {
                 features.push_str(",optimize_for_size");
