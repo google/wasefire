@@ -1591,7 +1591,7 @@ fn append_locals(parser: &mut Parser, locals: &mut Vec<Val>) {
     for _ in 0 .. parser.parse_vec().into_ok() {
         let len = parser.parse_u32().into_ok() as usize;
         let val = parser.parse_valtype().into_ok().default();
-        locals.extend(core::iter::repeat(val).take(len));
+        locals.extend(core::iter::repeat_n(val, len));
     }
 }
 
