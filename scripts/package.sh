@@ -14,6 +14,7 @@
 
 package_name() { _package_string name; }
 package_version() { _package_string version; }
+package_edition() { _package_string edition; }
 package_publish() { _package_raw publish; }
 package_include() { _package_raw include; }
 package_exclude() { _package_raw exclude; }
