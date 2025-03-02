@@ -173,8 +173,10 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
+        let mut parser = unsafe { Parser::new(self.binary) };
+        parser.parse_side_table().unwrap();
         let metadata = self.side_table.metadata(x as usize);
-        (unsafe { Parser::new(&self.binary[metadata.parser_range()]) }, metadata.branch_table())
+        (unsafe { Parser::new(&parser.save()[metadata.parser_range()]) }, metadata.branch_table())
     }
 
     pub(crate) fn data(&self, x: DataIdx) -> Parser<'m> {
