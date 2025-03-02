@@ -185,11 +185,15 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult {
-        check(source == target)
+        check(
+            source.parser == target.parser
+                && source.result == target.result
+                && source.branch_table == target.branch_table
+                && source.stack <= target.stack,
+        )
     }
 
     fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
-        debug_assert!(source.branch_table == self.branch_idx - 1);
         let entry = self.metadata.branch_table()[source.branch_table].view();
         source.parser = offset_front(source.parser, entry.delta_ip as isize);
         source.branch_table = source.branch_table.saturating_add_signed(entry.delta_stp as isize);
