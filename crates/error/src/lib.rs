@@ -16,8 +16,6 @@
 
 #![no_std]
 
-// TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
-extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 

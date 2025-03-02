@@ -14,9 +14,6 @@
 
 #![no_std]
 
-#[cfg(feature = "alloc")]
-extern crate alloc;
-
 use core::ptr::addr_of;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
