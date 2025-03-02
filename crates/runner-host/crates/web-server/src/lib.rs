@@ -120,9 +120,10 @@ async fn handle(mut ws: WebSocket, client: ClientInput) {
     });
     cmd_sender.send(Command::Connected).await.unwrap();
     let board_config = Command::BoardConfig {
-        components: vec![Component::Button { id: BUTTON_ID }, Component::MonochromeLed {
-            id: LED_ID,
-        }],
+        components: vec![
+            Component::Button { id: BUTTON_ID },
+            Component::MonochromeLed { id: LED_ID },
+        ],
     };
     cmd_sender.send(board_config).await.unwrap();
     let board_ready = ws_receiver.next().await.unwrap().unwrap();

@@ -80,7 +80,7 @@ macro_rules! impl_varint {
     ($u:tt $i:tt) => {
         impl Varint for $u {
             const BITS: usize = $u::BITS as usize;
-            type Buffer = [u8; ($u::BITS as usize + 6) / 7];
+            type Buffer = [u8; ($u::BITS as usize).div_ceil(7)];
             fn encode(&mut self) -> u8 {
                 let x = (*self & 0x7f) as u8;
                 *self >>= 7;
@@ -123,7 +123,7 @@ pub(crate) fn encode_varint<T: Varint>(mut value: T, writer: &mut Writer) {
 
 pub(crate) fn decode_varint<T: Varint>(reader: &mut Reader) -> Result<T, Error> {
     let mut output = T::default();
-    let max_len = (T::BITS + 6) / 7;
+    let max_len = T::BITS.div_ceil(7);
     let last_mask = u8::MAX << (T::BITS - (max_len - 1) * 7);
     for count in 0 .. max_len {
         let byte = reader.get(1)?[0];

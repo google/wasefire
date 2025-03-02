@@ -107,7 +107,7 @@ impl Iterator for Encoder<'_> {
     type Item = [u8; 64];
 
     fn next(&mut self) -> Option<[u8; 64]> {
-        let total = core::cmp::max(2, (self.message.len() + 62) / 63);
+        let total = core::cmp::max(2, self.message.len().div_ceil(63));
         ensure(self.count < total)?;
         let first = self.count == 0;
         let start = core::cmp::min(self.message.len(), 63 * self.count);
