@@ -191,7 +191,7 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
     fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
         debug_assert!(source.branch_table == self.branch_idx - 1);
         let entry = self.metadata.branch_table()[source.branch_table].view();
-        offset_front(source.parser, entry.delta_ip as isize);
+        source.parser = offset_front(source.parser, entry.delta_ip as isize);
         source.branch_table += entry.delta_stp as usize;
         source.result = entry.val_cnt as usize;
         source.stack -= entry.pop_cnt as usize;
@@ -715,6 +715,10 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
             Else => {
                 match core::mem::replace(&mut self.label().kind, LabelKind::Block) {
                     LabelKind::If(source) => {
+                        let source = M::BranchTable::patch_branch(
+                            self.branch_table.as_ref().unwrap(),
+                            source,
+                        )?;
                         let result = self.label().type_.results.len();
                         let mut target = self.branch_target(result);
                         target.branch_table += 1;
@@ -990,6 +994,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
             let label = self.label();
             if let LabelKind::If(source) = label.kind {
                 check(label.type_.params == label.type_.results)?;
+                let source = self.branch_table.as_ref().unwrap().patch_branch(source)?;
                 // SAFETY: This function is only called after parsing an End instruction.
                 target.parser = offset_front(target.parser, -1);
                 self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
