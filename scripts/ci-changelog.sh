@@ -27,13 +27,13 @@ INCLUDE='["/LICENSE", "/src/"]'
 LICENSE="$(readlink -f LICENSE)"
 for dir in $(find crates examples/rust -name Cargo.toml -printf '%h\n' | sort); do
   ( cd $dir
-    publish="$(package_publish)"
     edition="$(package_edition)"
     [ -n "$edition" ] || e "Cargo.toml for $dir should specify edition"
     [ $edition -eq 2024 ] || e "Cargo.toml for $dir should use edition 2024"
     [ ${dir#examples/rust/exercises/part-} = $dir ] || exit 0
     [ -e test.sh ] || e "test.sh for $dir is missing"
     [ ${dir#examples/rust} = $dir ] || exit 0
+    publish="$(package_publish)"
     [ -n "$publish" ] || e "Cargo.toml for $dir is missing the publish field"
     if ! $publish; then
       [ "$(package_version)" = 0.1.0 ] || e "Unpublished $dir should have version 0.1.0"
