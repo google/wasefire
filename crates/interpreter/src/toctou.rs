@@ -126,6 +126,11 @@ pub fn byte_enum<M: Mode, T: Copy + TryFromByte + UnsafeFromByte>(x: u8) -> MRes
     M::choose(|| T::try_from_byte(x), || unsafe { T::from_byte_unchecked(x) })
 }
 
+pub fn try_into<M: Mode, T: Copy, S: TryInto<T>>(x: S) -> MResult<T, M> {
+    let y = S::try_into(x).ok();
+    M::choose(|| y, || unsafe { y.unwrap_unchecked() })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

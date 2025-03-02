@@ -16,23 +16,29 @@ use alloc::collections::BTreeSet;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
+use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ops::Range;
 
 use crate::error::*;
+use crate::format::custom_section;
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
 use crate::util::*;
 use crate::*;
 
-/// Checks whether a WASM module in binary format is valid, and returns the side table.
-pub fn prepare(binary: &[u8]) -> Result<Vec<MetadataEntry>, Error> {
-    validate::<Prepare>(binary)
+/// Checks whether a WASM module in binary format is valid, and returns it with its side table.
+pub fn prepare(binary: &[u8]) -> Result<Vec<u8>, Error> {
+    let side_table = validate::<Prepare>(binary)?;
+    let mut wasm = vec![];
+    wasm.extend_from_slice(&binary[0 .. 8]);
+    let side_table = serialize(&side_table)?;
+    custom_section(&mut wasm, SECTION_NAME, &side_table);
+    wasm.extend_from_slice(&binary[8 ..]);
+    Ok(wasm)
 }
 
-#[allow(dead_code)]
-#[allow(unused_variables)]
 /// Checks whether a WASM module with the side table in binary format is valid.
 pub fn verify(binary: &[u8]) -> Result<(), Error> {
     validate::<Verify>(binary)
@@ -45,21 +51,21 @@ fn validate<M: ValidMode>(binary: &[u8]) -> Result<M::Result, Error> {
 trait ValidMode: Default {
     type Branches<'m>: BranchesApi<'m>;
     type BranchTable<'a, 'm>: BranchTableApi<'m>;
-    type SideTable<'m>;
-    type Result;
+    type SideTable<'m>: Debug;
+    type Result: Debug;
 
     fn parse_side_table<'m>(parser: &mut Parser<'m>) -> Result<Self::SideTable<'m>, Error>;
     fn next_branch_table<'a, 'm>(
         side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
     ) -> Result<Self::BranchTable<'a, 'm>, Error>;
-    fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result;
+    fn side_table_result(side_table: Self::SideTable<'_>) -> Result<Self::Result, Error>;
 }
 
-trait BranchesApi<'m>: Default + IntoIterator<Item = SideTableBranch<'m>> {
+trait BranchesApi<'m>: Debug + Default + IntoIterator<Item = SideTableBranch<'m>> {
     fn push_branch(&mut self, branch: SideTableBranch<'m>) -> CheckResult;
 }
 
-trait BranchTableApi<'m> {
+trait BranchTableApi<'m>: Debug {
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult;
@@ -89,8 +95,8 @@ impl ValidMode for Prepare {
         Ok(&mut side_tables.last_mut().unwrap().branch_table)
     }
 
-    fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result {
-        side_table
+    fn side_table_result(side_table: Self::SideTable<'_>) -> Result<Self::Result, Error> {
+        Ok(side_table)
     }
 }
 
@@ -132,6 +138,7 @@ impl<'m> BranchTableApi<'m> for &mut Vec<BranchTableEntry> {
     }
 }
 
+#[derive(Debug)]
 struct MetadataView<'m> {
     metadata: Metadata<'m>,
     branch_idx: usize,
@@ -144,14 +151,13 @@ impl ValidMode for Verify {
     /// their target branch using the branch table.
     type Branches<'m> = Option<SideTableBranch<'m>>;
     type BranchTable<'a, 'm> = MetadataView<'m>;
+    // TODO(dev/fast-interp): We should use a different view for verification to avoid having
+    // func_idx in SideTableView.
     type SideTable<'m> = SideTableView<'m>;
     type Result = ();
 
     fn parse_side_table<'m>(parser: &mut Parser<'m>) -> Result<Self::SideTable<'m>, Error> {
-        check(parser.parse_section_id()? == SectionId::Custom)?;
-        let mut section = parser.split_section()?;
-        check(section.parse_name()? == "wasefire-sidetable")?;
-        SideTableView::new(parser.save())
+        parser.parse_side_table()
     }
 
     fn next_branch_table<'a, 'm>(
@@ -164,8 +170,8 @@ impl ValidMode for Verify {
         Ok(MetadataView { metadata, branch_idx: 0 })
     }
 
-    fn side_table_result(side_table: Self::SideTable<'_>) -> Self::Result {
-        check(side_table.func_idx == side_table.indices.len()).unwrap()
+    fn side_table_result(side_table: Self::SideTable<'_>) -> Result<Self::Result, Error> {
+        check((side_table.func_idx + 1) * 2 == side_table.indices.len())
     }
 }
 
@@ -179,14 +185,18 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult {
-        check(source == target)
+        check(
+            source.parser == target.parser
+                && source.result == target.result
+                && source.branch_table == target.branch_table
+                && source.stack <= target.stack,
+        )
     }
 
     fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
-        source.branch_table = self.branch_idx;
         let entry = self.metadata.branch_table()[source.branch_table].view();
-        offset_front(source.parser, entry.delta_ip as isize);
-        source.branch_table += entry.delta_stp as usize;
+        source.parser = offset_front(source.parser, entry.delta_ip as isize);
+        source.branch_table = source.branch_table.saturating_add_signed(entry.delta_stp as isize);
         source.result = entry.val_cnt as usize;
         source.stack -= entry.pop_cnt as usize;
         Ok(source)
@@ -330,7 +340,7 @@ impl<'m, M: ValidMode> Context<'m, M> {
         }
         self.check_section(parser, SectionId::Custom)?;
         check(parser.is_empty())?;
-        Ok(M::side_table_result(side_table))
+        M::side_table_result(side_table)
     }
 
     fn check_section(
@@ -709,6 +719,10 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
             Else => {
                 match core::mem::replace(&mut self.label().kind, LabelKind::Block) {
                     LabelKind::If(source) => {
+                        let source = M::BranchTable::patch_branch(
+                            self.branch_table.as_ref().unwrap(),
+                            source,
+                        )?;
                         let result = self.label().type_.results.len();
                         let mut target = self.branch_target(result);
                         target.branch_table += 1;
@@ -984,6 +998,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
             let label = self.label();
             if let LabelKind::If(source) = label.kind {
                 check(label.type_.params == label.type_.results)?;
+                let source = self.branch_table.as_ref().unwrap().patch_branch(source)?;
                 // SAFETY: This function is only called after parsing an End instruction.
                 target.parser = offset_front(target.parser, -1);
                 self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;

@@ -141,6 +141,7 @@ macro_rules! support_if {
 
 mod error;
 mod exec;
+mod format;
 mod id;
 mod module;
 mod parser;
