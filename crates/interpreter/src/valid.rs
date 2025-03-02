@@ -192,7 +192,7 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
         debug_assert!(source.branch_table == self.branch_idx - 1);
         let entry = self.metadata.branch_table()[source.branch_table].view();
         source.parser = offset_front(source.parser, entry.delta_ip as isize);
-        source.branch_table += entry.delta_stp as usize;
+        source.branch_table = source.branch_table.saturating_add_signed(entry.delta_stp as isize);
         source.result = entry.val_cnt as usize;
         source.stack -= entry.pop_cnt as usize;
         Ok(source)
