@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Remove dummy alloc dependency
 - Fix clippy lints
 - Add clippy lint
 
