@@ -18,6 +18,9 @@ use core::ops::Range;
 use crate::error::*;
 use crate::module::Parser;
 
+pub const SECTION_NAME: &str = "wasefire-sidetable";
+
+#[derive(Debug)]
 pub struct SideTableView<'m> {
     pub func_idx: usize,
     pub indices: &'m [u8], // including 0 and the length of metadata_array
@@ -25,16 +28,6 @@ pub struct SideTableView<'m> {
 }
 
 impl<'m> SideTableView<'m> {
-    pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        let num_functions = parse_u16(binary, 0) as usize;
-        let indices_end = 2 + (num_functions + 1) * 2;
-        Ok(SideTableView {
-            func_idx: 0,
-            indices: &binary[2 .. indices_end],
-            metadata: &binary[indices_end ..],
-        })
-    }
-
     // TODO(dev/fast-interp): Make it generic since it will be used in both `Check` and `Use` modes.
     // (Returns `MResult<Metadata<'m>, M>` instead.)
     pub fn metadata(&self, func_idx: usize) -> Metadata<'m> {
@@ -45,7 +38,7 @@ impl<'m> SideTableView<'m> {
     }
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Metadata<'m>(&'m [u8]);
 
 impl<'m> Metadata<'m> {
@@ -58,18 +51,14 @@ impl<'m> Metadata<'m> {
         unsafe { Parser::new(&module[self.parser_range()]) }
     }
 
-    pub fn branch_table(&self) -> &[BranchTableEntry] {
+    pub fn branch_table(&self) -> &'m [BranchTableEntry] {
         let entry_size = size_of::<BranchTableEntry>();
-        assert_eq!(
-            (self.0.len() - 10) % entry_size,
-            0,
-            "Metadata length for branch table must be divisible by {} bytes",
-            entry_size
-        );
+        let branch_table = &self.0[10 ..];
+        assert_eq!(branch_table.len() % entry_size, 0);
         unsafe {
             core::slice::from_raw_parts(
-                self.0[10 ..].as_ptr() as *const BranchTableEntry,
-                self.0.len() / entry_size,
+                branch_table.as_ptr().cast(),
+                branch_table.len() / entry_size,
             )
         }
     }
@@ -84,6 +73,34 @@ pub struct MetadataEntry {
     pub type_idx: usize,
     pub parser_range: Range<usize>,
     pub branch_table: Vec<BranchTableEntry>,
+}
+
+pub fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
+    let mut res = Vec::new();
+    let num_funcs = try_from::<u16>("length of MetadataEntry", side_table.len())?;
+    res.extend_from_slice(&num_funcs.to_le_bytes());
+    let mut index = 0u16;
+    res.extend_from_slice(&index.to_le_bytes());
+    for entry in side_table {
+        index = try_from::<u16>(
+            "index of MetadataEntry",
+            index as usize + 10 + 6 * entry.branch_table.len(),
+        )?;
+        res.extend_from_slice(&index.to_le_bytes());
+    }
+    for entry in side_table {
+        let type_idx = try_from::<u16>("MetadataEntry::type_idx", entry.type_idx)?;
+        res.extend_from_slice(&type_idx.to_le_bytes());
+        let range_start =
+            try_from::<u32>("MetadataEntry::parser_range start", entry.parser_range.start)?;
+        res.extend_from_slice(&range_start.to_le_bytes());
+        let range_end = try_from::<u32>("MetadataEntry::parser_range end", entry.parser_range.end)?;
+        res.extend_from_slice(&range_end.to_le_bytes());
+        for branch in &entry.branch_table {
+            res.extend_from_slice(&branch.0);
+        }
+    }
+    Ok(res)
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -145,4 +162,13 @@ fn parse_u16(data: &[u8], offset: usize) -> u16 {
 
 fn parse_u32(data: &[u8], offset: usize) -> u32 {
     u32::from_le_bytes(data[offset ..][.. 4].try_into().unwrap())
+}
+
+#[allow(unused_variables)]
+fn try_from<T: TryFrom<usize>>(msg: &str, val: usize) -> Result<T, Error> {
+    T::try_from(val).map_err(|_| {
+        #[cfg(feature = "debug")]
+        eprintln!("{msg} overflow");
+        unsupported(if_debug!(Unsupported::SideTable))
+    })
 }
