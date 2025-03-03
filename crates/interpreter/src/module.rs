@@ -50,7 +50,7 @@ impl<'m> Module<'m> {
     /// Validates a WASM module in binary format.
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
         crate::valid::verify(binary)?;
-        Ok(unsafe { Self::new_unchecked(&binary) })
+        Ok(unsafe { Self::new_unchecked(binary) })
     }
 
     /// Creates a valid module from binary format.

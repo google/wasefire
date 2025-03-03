@@ -177,6 +177,8 @@ impl ValidMode for Verify {
 
 impl<'m> BranchesApi<'m> for Option<SideTableBranch<'m>> {
     fn push_branch(&mut self, branch: SideTableBranch<'m>) -> CheckResult {
+        // TODO(dev/fast-interp): This should be `is_none_or(|x| x == branch)` once pop_cnt is
+        // figured out.
         check(self.replace(branch).is_none_or(|x| {
             x.parser == branch.parser
                 && x.branch_table == branch.branch_table
@@ -189,6 +191,7 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult {
+        // TODO(dev/fast-interp): This should be `source == target)` once pop_cnt is figured out.
         check(
             source.parser == target.parser
                 && source.result == target.result
@@ -200,6 +203,8 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
     fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
         let entry = self.metadata.branch_table()[source.branch_table].view();
         source.parser = offset_front(source.parser, entry.delta_ip as isize);
+        // TODO(dev/fast-interp): This should wrapping_add_signed for performance and
+        // strict_add_signed for debugging/safety.
         source.branch_table = source.branch_table.saturating_add_signed(entry.delta_stp as isize);
         source.result = entry.val_cnt as usize;
         source.stack -= entry.pop_cnt as usize;
@@ -1046,6 +1051,9 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
     fn branch_target(&self, result: usize) -> SideTableBranch<'m> {
         let mut branch = self.branch();
         branch.result = result;
+        // TODO(dev/fast-interp): Figure out if there are not cases (like Loop or Else) where we
+        // want to add `self.stack().len()`. Also adding result here should purely be a convention
+        // with pop_cnt, and we should be able to do the opposite choice (to be considered).
         branch.stack += result;
         branch
     }
@@ -1141,6 +1149,8 @@ fn delta(
 
 fn pop_cnt(source: SideTableBranch, target: SideTableBranch) -> MResult<u32, Check> {
     let source = source.stack;
+    // TODO(dev/fast-interp): Figure out why we can't simply source.stack - target.stack and
+    // document it.
     let target_without_result = target.stack - target.result;
     let Some(delta) = source.checked_sub(target_without_result) else {
         #[cfg(feature = "debug")]

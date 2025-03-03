@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloc::vec;
 use alloc::vec::Vec;
 use core::ops::Range;
 
@@ -77,7 +76,7 @@ pub struct MetadataEntry {
 }
 
 pub fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
-    let mut res = vec![];
+    let mut res = Vec::new();
     let num_funcs = try_from::<u16>("length of MetadataEntry", side_table.len())?;
     res.extend_from_slice(&num_funcs.to_le_bytes());
     let mut index = 0u16;
