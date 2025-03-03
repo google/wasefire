@@ -31,7 +31,7 @@ pub fn bytes(len: usize) -> Result<Box<[u8]>, Error> {
 
 /// Returns an array of random bytes.
 pub fn bytes_array<const N: usize>() -> Result<[u8; N], Error> {
-    let mut buf = MaybeUninit::uninit_array();
+    let mut buf = [MaybeUninit::uninit(); N];
     fill_uninit_bytes(&mut buf)?;
     // SAFETY: `fill_uninit_bytes()` only succeeds if all bytes are initialized.
     Ok(unsafe { MaybeUninit::array_assume_init(buf) })

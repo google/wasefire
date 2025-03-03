@@ -476,7 +476,7 @@ impl<'m, M: Mode> Parser<'m, M> {
             total = M::open(|| total.checked_add(len))?;
             let val = self.parse_valtype()?;
             if total <= MAX_LOCALS {
-                locals.extend(core::iter::repeat(val).take(len as usize));
+                locals.extend(core::iter::repeat_n(val, len as usize));
             }
         }
         if total <= MAX_LOCALS { Ok(()) } else { M::unsupported(if_debug!(Unsupported::MaxLocals)) }

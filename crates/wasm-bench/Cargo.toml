@@ -12,8 +12,8 @@ cortex-m-rt = { version = "0.7.3", optional = true }
 embedded-alloc = { version = "0.6.0", optional = true }
 nrf52840-hal = { version = "0.18.0", optional = true }
 panic-rtt-target = { version = "0.2.0", optional = true }
-riscv = { version = "0.12.1", features = ["critical-section-single-hart"], optional = true }
-riscv-rt = { version = "0.13.0", optional = true }
+riscv = { version = "0.13.0", features = ["critical-section-single-hart"], optional = true }
+riscv-rt = { version = "0.14.0", optional = true }
 rtt-target = { version = "0.6.1", optional = true }
 wasefire-interpreter = { path = "../interpreter", features = ["float-types"], optional = true }
 wasmi = { version = "0.40.0", default-features = false, optional = true }
@@ -26,19 +26,22 @@ optional = true
 
 [dependencies.wasm3]
 git = "https://github.com/wasm3/wasm3-rs.git"
+rev = "df74c2a17ed8831595de43db98c406da4633e32a"
 default-features = false
 features = ["build-bindgen", "use-32bit-slots"]
 optional = true
 
 [dependencies.wasmtime]
-git = "https://github.com/bytecodealliance/wasmtime.git"
+version = "30.0.2"
 default-features = false
 features = ["runtime"]
 optional = true
 
 [build-dependencies.wasmtime]
-git = "https://github.com/bytecodealliance/wasmtime.git"
-features = ["pulley"]
+version = "30.0.2"
+default-features = false
+features = ["cranelift", "pulley"]
+optional = true
 
 [features]
 _target-embedded = ["dep:embedded-alloc", "wasmtime?/pulley"]
