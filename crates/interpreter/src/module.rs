@@ -60,9 +60,9 @@ impl<'m> Module<'m> {
     /// The module must be valid.
     pub unsafe fn new_unchecked(binary: &'m [u8]) -> Self {
         // Only keep the sections (i.e. skip the header).
-        let binary = &binary[8 ..];
-        let side_table = unsafe { Parser::new(binary) }.parse_side_table().into_ok();
-        let mut module = Module { binary, types: Vec::new(), side_table };
+        let mut parser = unsafe { Parser::new(&binary[8 ..]) };
+        let side_table = parser.parse_side_table().into_ok();
+        let mut module = Module { binary: parser.save(), types: Vec::new(), side_table };
         if let Some(mut parser) = module.section(SectionId::Type) {
             for _ in 0 .. parser.parse_vec().into_ok() {
                 module.types.push(parser.parse_functype().into_ok());
@@ -173,10 +173,8 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
-        let mut parser = unsafe { Parser::new(self.binary) };
-        parser.parse_side_table().unwrap();
         let metadata = self.side_table.metadata(x as usize);
-        (unsafe { Parser::new(&parser.save()[metadata.parser_range()]) }, metadata.branch_table())
+        (unsafe { Parser::new(&self.binary[metadata.parser_range()]) }, metadata.branch_table())
     }
 
     pub(crate) fn data(&self, x: DataIdx) -> Parser<'m> {
