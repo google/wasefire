@@ -2561,6 +2561,7 @@ dependencies = [
  "tar",
  "tokio",
  "toml",
+ "wasefire-common",
  "wasefire-protocol",
  "wasefire-protocol-tokio",
  "wasefire-protocol-usb",

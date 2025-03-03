@@ -28,6 +28,7 @@ semver = { version = "1.0.23", default-features = false, optional = true }
 serde = { version = "1.0.202", default-features = false, features = ["derive"] }
 tar = { version = "0.4.43", default-features = false }
 toml = { version = "0.8.13", default-features = false, features = ["display", "parse"] }
+wasefire-common = { version = "0.1.0-git", path = "../common", optional = true }
 wasefire-wire = { version = "0.1.2-git", path = "../wire", optional = true }
 
 [dependencies.clap]
@@ -67,6 +68,7 @@ action = [
   "dep:humantime",
   "dep:indicatif",
   "dep:rusb",
+  "dep:wasefire-common",
   "dep:wasefire-protocol",
   "dep:wasefire-protocol-tokio",
   "dep:wasefire-protocol-usb",

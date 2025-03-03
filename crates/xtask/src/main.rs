@@ -655,8 +655,8 @@ impl RunnerOptions {
         let Some(cmd) = cmd else { return Ok(()) };
         let flash = match cmd {
             RunnerCommand::Update { transfer, .. } => {
-                let platform = self.bundle(&elf, side).await?.into();
-                let action = action::PlatformUpdate { platform, transfer };
+                let platform_a = self.bundle(&elf, side).await?.into();
+                let action = action::PlatformUpdate { platform_a, platform_b: None, transfer };
                 return action.run(&mut update.unwrap()).await;
             }
             RunnerCommand::Flash(x) => x,

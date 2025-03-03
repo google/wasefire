@@ -16,10 +16,11 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use anyhow::{Context, Result, bail, ensure};
+use anyhow::{Result, bail, ensure};
 use clap::{ValueEnum, ValueHint};
 use rusb::GlobalContext;
 use tokio::process::Command;
+use wasefire_common::platform::Side;
 use wasefire_protocol::{self as service, Connection, ConnectionExt, applet};
 use wasefire_wire::{self as wire, Yoke};
 
@@ -323,9 +324,18 @@ impl PlatformInfo {
 /// Updates a platform.
 #[derive(clap::Args)]
 pub struct PlatformUpdate {
-    /// Path to the new platform.
+    /// Path to the A side of the new platform.
+    ///
+    /// If only this file is provided, it is used without checking the running side. In particular,
+    /// it can be the B side of the new platform.
     #[arg(value_hint = ValueHint::FilePath)]
-    pub platform: PathBuf,
+    pub platform_a: PathBuf,
+
+    /// Path to the B side of the new platform.
+    ///
+    /// If this file is not provided, [`Self::platform_a`] is used regardless of the running side.
+    #[arg(value_hint = ValueHint::FilePath)]
+    pub platform_b: Option<PathBuf>,
 
     #[clap(flatten)]
     pub transfer: Transfer,
@@ -333,7 +343,14 @@ pub struct PlatformUpdate {
 
 impl PlatformUpdate {
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
-        let PlatformUpdate { platform, transfer } = self;
+        let PlatformUpdate { platform_a, platform_b, transfer } = self;
+        let platform = match platform_b {
+            Some(platform_b) => match (PlatformInfo {}).run(connection).await?.get().running_side {
+                Side::A => platform_b,
+                Side::B => platform_a,
+            },
+            None => platform_a,
+        };
         transfer
             .run::<service::PlatformUpdate>(
                 connection,
@@ -389,9 +406,7 @@ impl Transfer {
         }
         progress.set_message("Finishing");
         match (dry_run, finish) {
-            (false, Some(finish)) => {
-                final_call::<S>(connection, Request::Finish, finish).await.context("x1")?
-            }
+            (false, Some(finish)) => final_call::<S>(connection, Request::Finish, finish).await?,
             _ => *connection.call::<S>(Request::Finish).await?.get(),
         }
         progress.finish_with_message(message);
@@ -403,9 +418,9 @@ async fn final_call<S: service::Service>(
     connection: &mut dyn Connection, request: S::Request<'_>,
     proof: impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>,
 ) -> Result<()> {
-    connection.send(&S::request(request)).await.context("x2")?;
+    connection.send(&S::request(request)).await?;
     match connection.receive::<S>().await {
-        Ok(x) => proof(x).context("x3")?,
+        Ok(x) => proof(x)?,
         Err(e) => {
             if root_cause_is::<rusb::Error>(&e, |x| {
                 use rusb::Error::*;
@@ -419,7 +434,6 @@ async fn final_call<S: service::Service>(
             }) {
                 return Ok(());
             }
-            eprintln!("x4 {e:?}");
             Err(e)
         }
     }

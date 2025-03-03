@@ -31,10 +31,14 @@ impl core::fmt::Display for Info<'_> {
         writeln!(f, "  serial: {}", HEX.encode_display(self.serial))?;
         writeln!(f, "    side: {}", self.running_side)?;
         writeln!(f, " version: {}", HEX.encode_display(self.running_version))?;
-        writeln!(f, "opposite: {}", match self.opposite_version {
-            Ok(x) => HEX.encode(x),
-            Err(e) => alloc::format!("{e}"),
-        })
+        writeln!(
+            f,
+            "opposite: {}",
+            match self.opposite_version {
+                Ok(x) => HEX.encode(x),
+                Err(e) => alloc::format!("{e}"),
+            }
+        )
     }
 }
 

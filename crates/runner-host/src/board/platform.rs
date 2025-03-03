@@ -45,7 +45,7 @@ impl Api for Impl {
     }
 
     fn opposite_version() -> Result<Cow<'static, [u8]>, Error> {
-        Err(Error::world(Code::NotFound))
+        Err(Error::world(Code::NotEnough))
     }
 
     fn reboot() -> Result<!, Error> {
