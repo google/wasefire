@@ -20,6 +20,8 @@ use wasefire_board_api as board;
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "applet-api-platform")]
 use wasefire_board_api::platform::Api as _;
+#[cfg(feature = "applet-api-platform")]
+use wasefire_error::{Code, Error};
 
 use crate::DispatchSchedulerCall;
 #[cfg(feature = "applet-api-platform")]
@@ -39,6 +41,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         #[cfg(feature = "applet-api-platform-update")]
         Api::Update(call) => update::process(call),
         #[cfg(feature = "applet-api-platform")]
+        Api::RunningSide(call) => running_side(call),
+        #[cfg(feature = "applet-api-platform")]
         Api::Serial(call) => serial(call),
         #[cfg(feature = "applet-api-platform")]
         Api::Version(call) => version(call),
@@ -55,9 +59,22 @@ fn serial<B: Board>(mut call: SchedulerCall<B, api::serial::Sig>) {
 }
 
 #[cfg(feature = "applet-api-platform")]
+fn running_side<B: Board>(call: SchedulerCall<B, api::running_side::Sig>) {
+    let api::running_side::Params {} = call.read();
+    call.reply(Ok(board::Platform::<B>::running_side() == wasefire_common::platform::Side::B));
+}
+
+#[cfg(feature = "applet-api-platform")]
 fn version<B: Board>(mut call: SchedulerCall<B, api::version::Sig>) {
-    let api::version::Params { ptr } = call.read();
-    let result = try { call.memory().alloc_copy(*ptr, None, &board::Platform::<B>::version())? };
+    let api::version::Params { running, ptr } = call.read();
+    let result = try {
+        let version = match running {
+            1 => board::Platform::<B>::running_version(),
+            0 => board::Platform::<B>::opposite_version()?,
+            _ => Err(Error::user(Code::InvalidArgument))?,
+        };
+        call.memory().alloc_copy(*ptr, None, &version)?
+    };
     call.reply(result);
 }
 

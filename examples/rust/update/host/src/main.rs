@@ -47,7 +47,7 @@ impl Serial {
         for info in serialport::available_ports()? {
             let path = info.port_name;
             if let SerialPortType::UsbPort(info) = info.port_type {
-                if info.vid == 0x16c0 && info.pid == 0x27dd {
+                if info.vid == 0x1915 && info.pid == 0x521f {
                     return Ok(Serial(
                         serialport::new(path, 19200).timeout(Duration::from_millis(1000)).open()?,
                     ));

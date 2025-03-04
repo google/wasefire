@@ -49,6 +49,7 @@ use alloc::vec::Vec;
 use core::convert::Infallible;
 use core::mem::{ManuallyDrop, MaybeUninit};
 
+use wasefire_common::platform::Side;
 use wasefire_error::{Code, Error};
 pub use wasefire_wire_derive::Wire;
 use wasefire_wire_derive::internal_wire;
@@ -372,6 +373,13 @@ enum Option<T> {
 enum Result<T, E> {
     Ok(T),
     Err(E),
+}
+
+#[internal_wire]
+#[wire(crate = crate)]
+enum Side {
+    A,
+    B,
 }
 
 #[cfg(test)]

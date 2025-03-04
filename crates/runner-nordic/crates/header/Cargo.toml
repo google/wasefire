@@ -6,6 +6,9 @@ license = "Apache-2.0"
 publish = false
 edition = "2024"
 
+[dependencies]
+wasefire-common = { path = "../../../common" }
+
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"

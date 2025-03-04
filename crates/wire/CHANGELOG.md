@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Implement `Wire` for `wasefire_common::Side`
 - Use Rust edition 2024
 
 ### Patch

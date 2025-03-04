@@ -34,6 +34,7 @@ one-of
 logger
 wire-derive
 error
+common
 wire
 wire/fuzz
 sync
