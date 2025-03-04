@@ -20,8 +20,17 @@ use interface::{Request, Response};
 use p256::ecdsa::signature::hazmat::PrehashVerifier;
 use p256::ecdsa::{Signature, VerifyingKey};
 use rand::RngCore;
+use wasefire_cli_tools::action::usb_serial::ConnectionOptions;
 
 #[derive(Parser)]
+struct Flags {
+    #[command(flatten)]
+    options: ConnectionOptions,
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(clap::Subcommand)]
 enum Command {
     /// Sends a Register request and stores the public key.
     Register {
@@ -46,7 +55,8 @@ enum Command {
 }
 
 fn main() {
-    let request = match Command::parse() {
+    let flags = Flags::parse();
+    let request = match flags.command {
         Command::Register { name } => Request::Register { name },
         Command::Authenticate { name } => {
             let mut challenge = [0; 32];
@@ -56,7 +66,7 @@ fn main() {
         Command::List => Request::List,
         Command::Delete { name } => Request::Delete { name },
     };
-    let mut serial = connect();
+    let mut serial = connect(&flags.options);
     eprintln!("Sending {request:02x?}.");
     serial.write_all(&interface::serialize(&request)).unwrap();
     let response = interface::deserialize::<Result<Response, String>>(&mut receive(&mut serial));
@@ -120,23 +130,14 @@ fn receive(serial: &mut Serial) -> Vec<u8> {
 }
 
 #[cfg(feature = "usb")]
-fn connect() -> Serial {
-    for info in serialport::available_ports().unwrap() {
-        let path = info.port_name;
-        if let serialport::SerialPortType::UsbPort(info) = info.port_type {
-            if info.vid == 0x16c0 && info.pid == 0x27dd {
-                let mut serial =
-                    serialport::new(path, 19200).timeout(Duration::from_secs(1)).open().unwrap();
-                serial.set_timeout(Duration::from_secs(10)).unwrap();
-                return serial;
-            }
-        }
-    }
-    panic!("no available port");
+fn connect(options: &ConnectionOptions) -> Serial {
+    let mut serial = options.connect().unwrap();
+    serial.set_timeout(Duration::from_secs(10)).unwrap();
+    serial
 }
 
 #[cfg(not(feature = "usb"))]
-fn connect() -> Serial {
+fn connect(_: &ConnectionOptions) -> Serial {
     let serial = Serial::connect("wasefire/host/uart0").unwrap();
     serial.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
     serial

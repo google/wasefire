@@ -19,7 +19,7 @@
 
 pub use mutex::{Mutex, MutexGuard};
 pub use portable_atomic::*;
-pub use spin::Lazy;
+pub use spin::{Lazy, Once};
 pub use take::TakeCell;
 
 mod mutex;

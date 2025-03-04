@@ -25,5 +25,8 @@ for part in part-*; do
     [ ${part%-sol} = $part ] && exit
     cargo fmt -- --check
     cargo clippy --target=wasm32-unknown-unknown -- --deny=warnings
+    if [ $part = part-7-sol ]; then
+      cargo clippy --target=wasm32-unknown-unknown --features=usb -- --deny=warnings
+    fi
   )
 done

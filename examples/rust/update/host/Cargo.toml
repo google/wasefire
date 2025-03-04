@@ -11,3 +11,4 @@ clap = { version = "4.5.4", features = ["derive"] }
 env_logger = "0.11.3"
 log = "0.4.21"
 serialport = "4.3.0"
+wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["action"] }

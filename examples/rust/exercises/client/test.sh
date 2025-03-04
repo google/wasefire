@@ -20,3 +20,4 @@ set -e
 test_helper
 
 cargo test --bin=client
+cargo test --bin=client --features=usb
