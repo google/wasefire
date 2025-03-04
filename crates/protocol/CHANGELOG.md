@@ -4,7 +4,7 @@
 
 ### Major
 
-- Deprecate `platform::Info` to `platform::Info0`
+- Deprecate `platform::Info` to `platform::_Info0`
 - Deprecate `Api::PlatformInfo` to `Api::_PlatformInfo0`
 - Deprecate `Api::PlatformUpdateMetadata` to `Api::_PlatformUpdateMetadata`
 - Rename `Api::PlatformUpdateTransfer` to `Api::PlatformUpdate`

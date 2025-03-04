@@ -234,7 +234,7 @@ api! {
     /// (deprecated) Returns platform information (e.g. serial and version).
     ///
     /// This message is deprecated in favor of [`PlatformInfo`].
-    5 [1 - 4] _PlatformInfo0: () => platform::Info0<'a>,
+    5 [1 - 4] _PlatformInfo0: () => platform::_Info0<'a>,
 
     /// Calls a vendor-specific platform command.
     6 [2 -] PlatformVendor: &'a [u8] => &'a [u8],

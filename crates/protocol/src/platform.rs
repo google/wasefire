@@ -43,7 +43,7 @@ impl core::fmt::Display for Info<'_> {
 }
 
 #[derive(Debug, Wire)]
-pub struct Info0<'a> {
+pub struct _Info0<'a> {
     pub serial: &'a [u8],
     pub version: &'a [u8],
 }
