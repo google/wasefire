@@ -27,9 +27,9 @@ impl Ecdsa for WasefireEnv {
     type Signature = Signature;
 }
 
-pub struct SecretKey(EcdsaPrivate<P256>);
-pub struct PublicKey(EcdsaPublic<P256>);
-pub struct Signature(EcdsaSignature<P256>);
+pub(crate) struct SecretKey(EcdsaPrivate<P256>);
+pub(crate) struct PublicKey(EcdsaPublic<P256>);
+pub(crate) struct Signature(EcdsaSignature<P256>);
 
 impl ecdsa::SecretKey for SecretKey {
     type PublicKey = PublicKey;

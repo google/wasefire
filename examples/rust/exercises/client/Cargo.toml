@@ -15,3 +15,10 @@ wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["actio
 
 [features]
 usb = ["dep:serialport"] # Use USB serial instead of UART.
+
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unused-crate-dependencies = "warn"

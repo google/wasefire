@@ -13,3 +13,10 @@ env_logger = "0.11.3"
 log = "0.4.21"
 serialport = "4.3.0"
 wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["action"] }
+
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unused-crate-dependencies = "warn"

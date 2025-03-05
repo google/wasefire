@@ -8,3 +8,10 @@ edition = "2024"
 [dependencies]
 postcard = { version = "1.0.8", default-features = false, features = ["alloc"] }
 serde = { version = "1.0.202", default-features = false, features = ["alloc", "derive"] }
+
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unused-crate-dependencies = "warn"

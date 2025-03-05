@@ -7,3 +7,9 @@ edition = "2024"
 
 [dependencies]
 wasefire = { path = "../../../../crates/prelude" }
+
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.unit-arg = "allow"
+rust.unused-crate-dependencies = "warn"

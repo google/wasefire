@@ -15,7 +15,7 @@
 use opensk_lib::api::crypto::aes256::Aes256;
 use opensk_lib::api::crypto::{AES_BLOCK_SIZE, AES_KEY_SIZE};
 
-pub struct Impl {
+pub(crate) struct Impl {
     // TODO: Zeroize.
     key: [u8; 32],
 }

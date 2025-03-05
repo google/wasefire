@@ -16,7 +16,7 @@ use opensk_lib::api::crypto::HASH_SIZE;
 use opensk_lib::api::crypto::sha256::Sha256;
 use wasefire::crypto::hash::{Algorithm, Digest};
 
-pub struct Impl(Digest);
+pub(crate) struct Impl(Digest);
 
 impl Sha256 for Impl {
     fn new() -> Self {
