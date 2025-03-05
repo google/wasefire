@@ -22,7 +22,6 @@ pub const SECTION_NAME: &str = "wasefire-sidetable";
 
 #[derive(Debug)]
 pub struct SideTableView<'m> {
-    pub func_idx: usize,
     pub indices: &'m [u8], // including 0 and the length of metadata_array
     pub metadata: &'m [u8],
 }
