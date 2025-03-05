@@ -1152,21 +1152,12 @@ fn delta(
 }
 
 fn pop_cnt(source: SideTableBranch, target: SideTableBranch) -> MResult<u32, Check> {
-    let source = source.stack;
     // TODO(dev/fast-interp): Figure out why we can't simply source.stack - target.stack and
-    // document it.
-    let target_without_result = target.stack - target.result;
-    let Some(delta) = source.checked_sub(target_without_result) else {
+    // document it. We're losing information by saturating.
+    let res = source.stack.saturating_sub(target.stack);
+    u32::try_from(res).map_err(|_| {
         #[cfg(feature = "debug")]
-        eprintln!("side-table negative stack delta {source} - {target_without_result}");
-        return Err(unsupported(if_debug!(Unsupported::SideTable)));
-    };
-    if delta < target.result {
-        return Ok(0);
-    }
-    u32::try_from(delta - target.result).map_err(|_| {
-        #[cfg(feature = "debug")]
-        eprintln!("side-table pop_cnt overflow {delta}");
+        eprintln!("side-table pop_cnt overflow {res}");
         unsupported(if_debug!(Unsupported::SideTable))
     })
 }
