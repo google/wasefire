@@ -1148,10 +1148,9 @@ fn delta(
 }
 
 fn pop_cnt(source: SideTableBranch, target: SideTableBranch) -> MResult<u32, Check> {
-    if source.stack < target.stack {
-        return Ok(0);
-    }
-    let res = source.stack - target.stack;
+    // TODO(dev/fast-interp): Figure out why we can't simply source.stack - target.stack and
+    // document it. We're losing information by saturating.
+    let res = source.stack.saturating_sub(target.stack);
     u32::try_from(res).map_err(|_| {
         #[cfg(feature = "debug")]
         eprintln!("side-table pop_cnt overflow {res}");
