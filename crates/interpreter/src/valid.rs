@@ -1121,19 +1121,13 @@ fn delta(
 }
 
 fn pop_cnt(source: SideTableBranch, target: SideTableBranch) -> MResult<u32, Check> {
-    let source = source.stack;
-    let target_without_result = target.stack - target.result;
-    let Some(delta) = source.checked_sub(target_without_result) else {
-        #[cfg(feature = "debug")]
-        eprintln!("side-table negative stack delta {source} - {target_without_result}");
-        return Err(unsupported(if_debug!(Unsupported::SideTable)));
-    };
-    if delta < target.result {
+    if source.stack < target.stack {
         return Ok(0);
     }
-    u32::try_from(delta - target.result).map_err(|_| {
+    let res = source.stack - target.stack;
+    u32::try_from(res).map_err(|_| {
         #[cfg(feature = "debug")]
-        eprintln!("side-table pop_cnt overflow {delta}");
+        eprintln!("side-table pop_cnt overflow {res}");
         unsupported(if_debug!(Unsupported::SideTable))
     })
 }
