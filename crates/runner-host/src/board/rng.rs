@@ -20,7 +20,7 @@ pub enum Impl {}
 
 impl Api for Impl {
     fn fill_bytes(buffer: &mut [u8]) -> Result<(), Error> {
-        rand::thread_rng().fill_bytes(buffer);
+        rand::rng().fill_bytes(buffer);
         Ok(())
     }
 }

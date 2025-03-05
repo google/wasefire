@@ -50,7 +50,7 @@ fn main() {
         Command::Register { name } => Request::Register { name },
         Command::Authenticate { name } => {
             let mut challenge = [0; 32];
-            rand::thread_rng().fill_bytes(&mut challenge);
+            rand::rng().fill_bytes(&mut challenge);
             Request::Authenticate { name, challenge }
         }
         Command::List => Request::List,

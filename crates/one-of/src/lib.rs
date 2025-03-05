@@ -16,9 +16,6 @@
 
 #![no_std]
 
-// TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
-extern crate alloc;
-
 /// Makes sure exactly one of the provided feature is enabled.
 ///
 /// For example, `exactly_one_of!["a", "b", "c"]` will expand to:

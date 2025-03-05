@@ -25,7 +25,9 @@ for submodule in $(git submodule status | cut -d' ' -f3); do
   i "Upgrade $submodule"
   ( cd $submodule
     git fetch -p origin
-    git checkout refs/remotes/origin/HEAD
+    head=refs/remotes/origin/HEAD
+    [ $submodule = third_party/google/OpenSK ] && head=refs/remotes/origin/develop
+    git checkout $head
   )
 done
 

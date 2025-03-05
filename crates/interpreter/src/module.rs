@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
@@ -20,17 +19,14 @@ use crate::parser::{SkipData, SkipElem};
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
-use crate::valid::prepare;
 use crate::*;
 
 /// Valid module.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Module<'m> {
     binary: &'m [u8],
     types: Vec<FuncType<'m>>,
-    // TODO(dev/fast-interp): Change the type to `SideTableView` which will be parsed by
-    // `new_unchecked()`.
-    side_table: &'m [MetadataEntry],
+    side_table: SideTableView<'m>,
 }
 
 impl<'m> Import<'m> {
@@ -53,11 +49,8 @@ impl ImportDesc {
 impl<'m> Module<'m> {
     /// Validates a WASM module in binary format.
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        let side_table = prepare(binary)?;
-        let mut module = unsafe { Self::new_unchecked(binary) };
-        // TODO(dev/fast-interp): We should take a buffer as argument to write to.
-        module.side_table = Box::leak(Box::new(side_table));
-        Ok(module)
+        crate::valid::verify(binary)?;
+        Ok(unsafe { Self::new_unchecked(binary) })
     }
 
     /// Creates a valid module from binary format.
@@ -66,12 +59,10 @@ impl<'m> Module<'m> {
     ///
     /// The module must be valid.
     pub unsafe fn new_unchecked(binary: &'m [u8]) -> Self {
-        let mut module = Module {
-            // Only keep the sections (i.e. skip the header).
-            binary: &binary[8 ..],
-            types: Vec::new(),
-            side_table: &[], // TODO(dev/fast-interp): Parse from binary.
-        };
+        // Only keep the sections (i.e. skip the header).
+        let mut parser = unsafe { Parser::new(&binary[8 ..]) };
+        let side_table = parser.parse_side_table().into_ok();
+        let mut module = Module { binary: parser.save(), types: Vec::new(), side_table };
         if let Some(mut parser) = module.section(SectionId::Type) {
             for _ in 0 .. parser.parse_vec().into_ok() {
                 module.types.push(parser.parse_functype().into_ok());
@@ -121,7 +112,7 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func_type(&self, x: FuncIdx) -> FuncType<'m> {
-        self.types[self.side_table[x as usize].type_idx]
+        self.types[self.side_table.metadata(x as usize).type_idx()]
     }
 
     pub(crate) fn table_type(&self, x: TableIdx) -> TableType {
@@ -182,8 +173,8 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
-        let MetadataEntry { parser_range, branch_table, .. } = &self.side_table[x as usize];
-        (unsafe { Parser::new(&self.binary[parser_range.clone()]) }, branch_table)
+        let metadata = self.side_table.metadata(x as usize);
+        (unsafe { Parser::new(&self.binary[metadata.parser_range()]) }, metadata.branch_table())
     }
 
     pub(crate) fn data(&self, x: DataIdx) -> Parser<'m> {
