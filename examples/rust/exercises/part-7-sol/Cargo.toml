@@ -11,3 +11,9 @@ wasefire = { path = "../../../../crates/prelude" }
 
 [features]
 usb = [] # Use USB serial instead of UART.
+
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.unit-arg = "allow"
+rust.unused-crate-dependencies = "warn"

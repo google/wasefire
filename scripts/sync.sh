@@ -27,7 +27,7 @@ update_api() {
 update_api assemblyscript ts
 
 add_lint() { echo "$3 = \"$2\"" >> $1; }
-for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
+for dir in $(find crates examples/rust -name Cargo.toml -printf '%h\n' | sort); do
   file=$dir/Cargo.toml
   crate=${dir#crates/}
   grep -q '^\[lints\.' $file && e "unexpected [lints.*] section in $file"
@@ -45,6 +45,7 @@ for dir in $(find crates -name Cargo.toml -printf '%h\n' | sort); do
   # TODO: Enable for all crates.
   case $crate in
     interpreter|runner-*|scheduler|xtask|*/fuzz) ;;
+    examples/rust/exercises/part-*) ;;
     *) add_lint $file warn rust.unreachable-pub ;;
   esac
   case $crate in

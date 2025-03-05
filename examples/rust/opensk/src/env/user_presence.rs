@@ -20,11 +20,11 @@ use opensk_lib::api::user_presence::{UserPresence, UserPresenceError, UserPresen
 use opensk_lib::ctap::status_code::Ctap2StatusCode;
 use wasefire::{button, led, scheduling, timer, usb};
 
-pub fn init() -> Impl {
+pub(crate) fn init() -> Impl {
     Impl(None)
 }
 
-pub struct Impl(Option<State>);
+pub(crate) struct Impl(Option<State>);
 
 struct State {
     presence: Rc<Cell<bool>>,

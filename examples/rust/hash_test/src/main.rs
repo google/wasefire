@@ -17,3 +17,6 @@ use wasefire_stub as _;
 fn main() {
     hash_test::main();
 }
+
+// TODO(https://github.com/rust-lang/rust/issues/95513): Remove when fixed.
+use wasefire as _;

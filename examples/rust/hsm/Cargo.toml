@@ -6,5 +6,12 @@ license = "Apache-2.0"
 edition = "2024"
 
 [dependencies]
-common = { path = "common", features = ["api"] }
+common = { path = "common" }
 wasefire = { path = "../../../crates/prelude" }
+
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unused-crate-dependencies = "warn"

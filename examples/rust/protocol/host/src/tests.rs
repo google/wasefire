@@ -19,7 +19,7 @@ use rusb::{Error, GlobalContext};
 use wasefire_protocol::{Api, Connection as _, Request, applet};
 use wasefire_protocol_usb::Connection;
 
-pub async fn main(mut connection: Connection<GlobalContext>) -> Result<()> {
+pub(crate) async fn main(mut connection: Connection<GlobalContext>) -> Result<()> {
     connection.set_timeout(Duration::from_millis(200));
     let connection = &mut connection;
     println!("Enter tunnel.");
