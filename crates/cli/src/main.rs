@@ -18,7 +18,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result, bail, ensure};
+use anyhow::{Result, bail, ensure};
 use clap::{CommandFactory, Parser, ValueHint};
 use clap_complete::Shell;
 use tokio::process::Command;
@@ -100,13 +100,8 @@ enum Action {
 
     PlatformList(action::PlatformList),
 
-    /// Prints the platform update metadata (possibly binary output).
-    PlatformUpdateMetadata {
-        #[command(flatten)]
-        options: action::ConnectionOptions,
-    },
-
-    PlatformUpdateTransfer {
+    #[group(id = "Action::PlatformUpdate")]
+    PlatformUpdate {
         #[command(flatten)]
         options: action::ConnectionOptions,
         #[command(flatten)]
@@ -211,10 +206,7 @@ impl Host {
             let mut host = Command::new(&bin);
             host.arg(&self.dir);
             host.args(&self.args);
-            let code = cmd::spawn(&mut host)?.wait().await?.code().context("no error code")?;
-            if code != 0 {
-                std::process::exit(code);
-            }
+            cmd::exit_status(&mut host).await?;
         }
     }
 }
@@ -279,13 +271,11 @@ async fn main() -> Result<()> {
         }
         Action::AppletRpc { options, action } => action.run(&mut options.connect().await?).await,
         Action::Host(x) => x.run().await?,
-        Action::PlatformInfo { options, action } => action.run(&mut options.connect().await?).await,
-        Action::PlatformList(x) => x.run().await,
-        Action::PlatformUpdateMetadata { options } => {
-            let metadata = action::PlatformUpdate::metadata(&mut options.connect().await?).await?;
-            fs::write_stdout(metadata.get()).await
+        Action::PlatformInfo { options, action } => {
+            action.print(&mut options.connect().await?).await
         }
-        Action::PlatformUpdateTransfer { options, action } => {
+        Action::PlatformList(x) => x.run().await,
+        Action::PlatformUpdate { options, action } => {
             action.run(&mut options.connect().await?).await
         }
         Action::PlatformReboot { options, action } => {

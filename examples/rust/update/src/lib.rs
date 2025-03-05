@@ -17,8 +17,9 @@ wasefire::applet!();
 
 fn main() {
     assert!(platform::update::is_supported());
-    let metadata = platform::update::metadata().unwrap();
-    debug!("{metadata:02x?}");
+    debug!(" running    side: {}", platform::running_side());
+    debug!(" running version: {:02x?}", platform::running_version());
+    debug!("opposite version: {:02x?}", platform::opposite_version());
     let serial = usb::serial::UsbSerial;
     let mut length = [0; 4];
     serial::read_all(&serial, &mut length).unwrap();

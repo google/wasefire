@@ -4,10 +4,14 @@
 
 ### Major
 
+- Remove `platform::update::metadata()` which is now vendor-specific
+- Rename `platform::version()` to `platform::running_version()`
 - Make `syscall()` unsafe to call
 
 ### Minor
 
+- Add `platform::running_side()` function for the platform running side
+- Add `platform::opposite_version()` function for the platform version of the non-running side
 - Add `clock` module for monotonic wall-time
 - Add `crypto::cbc` module for AES-256-CBC
 - Add `timer::Timeout` helper for timer used for timeouts only

@@ -26,10 +26,24 @@ pub fn spawn(command: &mut Command) -> Result<Child> {
     command.spawn().with_context(|| context(command))
 }
 
+/// Executes a command returning its error code.
+pub async fn status(command: &mut Command) -> Result<i32> {
+    let status = spawn(command)?.wait().await.with_context(|| context(command))?;
+    status.code().context("no error code")
+}
+
+/// Executes a command exiting with the same error code on error.
+pub async fn exit_status(command: &mut Command) -> Result<()> {
+    let code = status(command).await?;
+    if code != 0 {
+        std::process::exit(code);
+    }
+    Ok(())
+}
+
 /// Executes a command making sure it's successful.
 pub async fn execute(command: &mut Command) -> Result<()> {
-    let status = spawn(command)?.wait().await.with_context(|| context(command))?;
-    let code = status.code().context("no error code")?;
+    let code = status(command).await?;
     ensure!(code == 0, "failed with code {code}");
     Ok(())
 }

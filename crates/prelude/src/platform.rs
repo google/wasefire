@@ -15,12 +15,19 @@
 //! Provides API to interact with the platform.
 
 #[cfg(feature = "api-platform")]
+use alloc::boxed::Box;
+
+#[cfg(feature = "api-platform")]
 use wasefire_applet_api::platform as api;
+#[cfg(feature = "api-platform")]
+pub use wasefire_common::platform::Side;
+#[cfg(feature = "api-platform")]
+use wasefire_error::Error;
 #[cfg(feature = "api-platform")]
 use wasefire_sync::Lazy;
 
 #[cfg(feature = "api-platform")]
-use crate::{convert, convert_never};
+use crate::{convert, convert_bool, convert_never};
 
 #[cfg(feature = "api-platform-protocol")]
 pub mod protocol;
@@ -43,22 +50,38 @@ pub fn serial() -> &'static [u8] {
     &SERIAL
 }
 
-/// Returns the version of the platform.
+/// Returns the running side of the platform.
 #[cfg(feature = "api-platform")]
-pub fn version() -> &'static [u8] {
-    fn init() -> &'static [u8] {
-        let mut ptr = core::ptr::null_mut();
-        let params = api::version::Params { ptr: &mut ptr };
-        let len = convert(unsafe { api::version(params) }).unwrap();
-        // SAFETY: Similar as in `serial()` above.
-        if len == 0 { &[] } else { unsafe { core::slice::from_raw_parts(ptr, len) } }
-    }
-    static VERSION: Lazy<&'static [u8]> = Lazy::new(init);
+pub fn running_side() -> Side {
+    let is_b = convert_bool(unsafe { api::running_side() }).unwrap();
+    if is_b { Side::B } else { Side::A }
+}
+
+/// Returns the running version of the platform.
+#[cfg(feature = "api-platform")]
+pub fn running_version() -> &'static [u8] {
+    static VERSION: Lazy<&'static [u8]> = Lazy::new(|| Box::leak(version(true).unwrap()));
     &VERSION
+}
+
+/// Returns the opposite version of the platform.
+#[cfg(feature = "api-platform")]
+pub fn opposite_version() -> Result<Box<[u8]>, Error> {
+    version(false)
 }
 
 /// Reboots the device (thus platform and applets).
 #[cfg(feature = "api-platform")]
 pub fn reboot() -> ! {
     convert_never(unsafe { api::reboot() }).unwrap();
+}
+
+#[cfg(feature = "api-platform")]
+fn version(running: bool) -> Result<Box<[u8]>, Error> {
+    let mut ptr = core::ptr::null_mut();
+    let params = api::version::Params { running: running as u32, ptr: &mut ptr };
+    let len = convert(unsafe { api::version(params) })?;
+    let ptr = core::ptr::slice_from_raw_parts_mut(ptr, len);
+    // SAFETY: Similar as in `serial()` above.
+    Ok(if len == 0 { Box::new([]) } else { unsafe { Box::from_raw(ptr) } })
 }

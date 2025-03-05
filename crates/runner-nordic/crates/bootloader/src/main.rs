@@ -18,10 +18,11 @@
 use cortex_m::asm;
 use cortex_m_rt::entry;
 use embedded_storage::nor_flash::NorFlash;
-use header::{Header, Side};
+use header::Header;
 use nrf52840_hal::nvmc::Nvmc;
 use nrf52840_hal::pac::{NVMC, Peripherals};
 use panic_abort as _;
+use wasefire_common::platform::Side;
 
 #[entry]
 fn main() -> ! {

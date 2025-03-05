@@ -29,21 +29,6 @@ pub(crate) fn new() -> Item {
             fn is_supported "pus" {} -> bool
         },
         item! {
-            /// Reads the metadata of the platform.
-            ///
-            /// The metadata typically contains the version and side (A or B) of the running
-            /// platform.
-            ///
-            /// This is an [allocating function](crate#allocating-memory).
-            fn metadata "pum" {
-                /// Where to write the allocated metadata.
-                ptr: *mut *mut u8,
-
-                /// Where to write the metadata length.
-                len: *mut usize,
-            } -> ()
-        },
-        item! {
             /// Starts a platform update process.
             fn initialize "pui" {
                 /// Zero for normal operation. One for dry-run.
