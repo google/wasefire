@@ -26,10 +26,6 @@ pub enum Impl {}
 impl Supported for Impl {}
 
 impl Api for Impl {
-    fn metadata() -> Result<Box<[u8]>, Error> {
-        Ok(Box::new([]))
-    }
-
     fn initialize(dry_run: bool) -> Result<(), Error> {
         Ok(*STATE.lock().unwrap() = Some(State { dry_run, buffer: Vec::new() }))
     }

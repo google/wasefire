@@ -32,52 +32,50 @@ features() {
   package_features | grep -v -e human -e test
 }
 
-# <protocol> {,--release} [<runner..>]
+# <protocol> {,--release} [<runner>]
 run() {
   local protocol=$1 release=$2
+  local runner=$3
   local name feature runner
-  shift 2
   for name in $(list); do
-    [ $# -gt 0 ] || x cargo xtask $release applet rust $name install $protocol wait
+    [ -n "$runner" ] || x cargo xtask $release applet rust $name install $protocol wait
     for feature in $(cd examples/rust/$name && features); do
       if [ $feature = native ]; then
-        [ $# -gt 0 ] || continue
-        y cargo xtask $release --native \
+        [ -n "$runner" ] || continue
+        x cargo xtask $release --native \
           applet rust $name --features=native \
-          runner "$@" flash --reset-flash
-        runner=$!
+          runner $runner $RUNNER_ARGS update $protocol
         x cargo xtask wait-applet $protocol
-        x cargo wasefire platform-lock $protocol
-        x kill $runner
       else
-        [ $# -gt 0 ] && continue
+        [ -z "$runner" ] || continue
         x cargo xtask $release applet rust $name --features=$feature install $protocol wait
       fi
     done
   done
 }
 
-# <protocol> <runner..>
+# <protocol> <runner>
 full() {
   local protocol=--protocol=$1
-  local release
-  shift
+  local runner=$2
+  local release pid
   trap "trap 'exit 1' TERM && kill -- -$$" EXIT
-  cargo wasefire platform-lock $protocol 2>/dev/null || true
+  cargo wasefire platform-lock --timeout=200ms $protocol 2>/dev/null || true
   for release in '' --release; do
-    y cargo xtask $release runner "$@" flash --reset-flash
-    runner=$!
+    y cargo xtask --setsid $release runner $runner $RUNNER_ARGS flash --reset-flash $FLASH_ARGS
+    pid=$!
     x cargo xtask wait-platform $protocol
     run $protocol "$release"
+    [ $runner = host ] || run $protocol "$release" $runner
     x cargo wasefire platform-lock $protocol
-    x kill $runner
-    [ $1 = host ] || run $protocol "$release" "$@"
+    x kill -TERM -$pid
+    sleep 1 # for the OS to cleanup probe-rs resources (claimed USB interface)
   done
   trap - EXIT
 }
 
 case $1 in
-  host) full unix host --arg=--protocol=unix ;;
+  host) FLASH_ARGS=--protocol=unix full unix host ;;
   # P1.01, P1.02, and P1.03 must be connected together (gpio_test).
   nordic) full usb nordic ;;
   *) run --protocol=${1:-usb} "$2" ;;

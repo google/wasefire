@@ -12,8 +12,8 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-data-encoding = { version = "2.6.0", default-features = false }
-data-encoding-macro = { version = "0.1.15", default-features = false }
+data-encoding = { version = "2.8.0", default-features = false }
+data-encoding-macro = { version = "0.1.17", default-features = false }
 proc-macro2 = { version = "1.0.0", default-features = false }
 quote = { version = "1.0.0", default-features = false }
 syn = { version = "2.0.0", default-features = false, features = ["printing"] }

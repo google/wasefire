@@ -16,6 +16,8 @@
 
 use core::ptr::addr_of;
 
+use wasefire_common::platform::Side;
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Header(u32);
 
@@ -46,7 +48,7 @@ impl Header {
     }
 
     pub fn side(self) -> Side {
-        Side::new(self.addr()).unwrap()
+        new_side(self.addr()).unwrap()
     }
 
     pub fn firmware(&self) -> u32 {
@@ -54,37 +56,18 @@ impl Header {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Side {
-    A,
-    B,
+pub fn running_side() -> Option<Side> {
+    unsafe extern "C" {
+        static mut __header_origin: u32;
+    }
+    new_side(addr_of!(__header_origin) as u32)
 }
 
-impl Side {
-    pub fn current() -> Option<Self> {
-        unsafe extern "C" {
-            static mut __header_origin: u32;
-        }
-        Self::new(addr_of!(__header_origin) as u32)
-    }
-
-    fn new(addr: u32) -> Option<Self> {
-        match addr {
-            FIRMWARE_A => Some(Side::A),
-            FIRMWARE_B => Some(Side::B),
-            _ => None,
-        }
-    }
-}
-
-impl core::ops::Not for Side {
-    type Output = Self;
-
-    fn not(self) -> Self {
-        match self {
-            Side::A => Side::B,
-            Side::B => Side::A,
-        }
+fn new_side(addr: u32) -> Option<Side> {
+    match addr {
+        FIRMWARE_A => Some(Side::A),
+        FIRMWARE_B => Some(Side::B),
+        _ => None,
     }
 }
 

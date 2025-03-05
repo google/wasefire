@@ -20,6 +20,7 @@ use anyhow::{Result, bail, ensure};
 use clap::{ValueEnum, ValueHint};
 use rusb::GlobalContext;
 use tokio::process::Command;
+use wasefire_common::platform::Side;
 use wasefire_protocol::{self as service, Connection, ConnectionExt, applet};
 use wasefire_wire::{self as wire, Yoke};
 
@@ -303,42 +304,55 @@ impl PlatformList {
     }
 }
 
-/// Prints the informations of a platform.
+/// Returns information about a platform.
 #[derive(clap::Args)]
 pub struct PlatformInfo {}
 
 impl PlatformInfo {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn print(self, connection: &mut dyn Connection) -> Result<()> {
+        Ok(print!("{}", self.run(connection).await?.get()))
+    }
+
+    pub async fn run(
+        self, connection: &mut dyn Connection,
+    ) -> Result<Yoke<service::platform::Info<'static>>> {
         let PlatformInfo {} = self;
-        let info = connection.call::<service::PlatformInfo>(()).await?;
-        let serial = protocol::Hex(info.get().serial.to_vec());
-        let version = protocol::Hex(info.get().version.to_vec());
-        println!(" serial: {serial}");
-        println!("version: {version}");
-        Ok(())
+        connection.call::<service::PlatformInfo>(()).await
     }
 }
 
 /// Updates a platform.
 #[derive(clap::Args)]
 pub struct PlatformUpdate {
-    /// Path to the new platform.
+    /// Path to the A side of the new platform.
+    ///
+    /// If only this file is provided, it is used without checking the running side. In particular,
+    /// it can be the B side of the new platform.
     #[arg(value_hint = ValueHint::FilePath)]
-    platform: PathBuf,
+    pub platform_a: PathBuf,
+
+    /// Path to the B side of the new platform.
+    ///
+    /// If this file is not provided, [`Self::platform_a`] is used regardless of the running side.
+    #[arg(value_hint = ValueHint::FilePath)]
+    pub platform_b: Option<PathBuf>,
 
     #[clap(flatten)]
-    transfer: Transfer,
+    pub transfer: Transfer,
 }
 
 impl PlatformUpdate {
-    pub async fn metadata(connection: &mut dyn Connection) -> Result<Yoke<&'static [u8]>> {
-        connection.call::<service::PlatformUpdateMetadata>(()).await
-    }
-
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
-        let PlatformUpdate { platform, transfer } = self;
+        let PlatformUpdate { platform_a, platform_b, transfer } = self;
+        let platform = match platform_b {
+            Some(platform_b) => match (PlatformInfo {}).run(connection).await?.get().running_side {
+                Side::A => platform_b,
+                Side::B => platform_a,
+            },
+            None => platform_a,
+        };
         transfer
-            .run::<service::PlatformUpdateTransfer>(
+            .run::<service::PlatformUpdate>(
                 connection,
                 platform,
                 "Updated",
@@ -410,7 +424,7 @@ async fn final_call<S: service::Service>(
         Err(e) => {
             if root_cause_is::<rusb::Error>(&e, |x| {
                 use rusb::Error::*;
-                matches!(x, NoDevice | Pipe)
+                matches!(x, NoDevice | Pipe | Io)
             }) {
                 return Ok(());
             }
