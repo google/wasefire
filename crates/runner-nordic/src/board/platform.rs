@@ -15,9 +15,11 @@
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
 
-use header::{Header, Side};
+use header::Header;
 use wasefire_board_api::Error;
 use wasefire_board_api::platform::Api;
+use wasefire_common::platform::Side;
+use wasefire_error::Code;
 
 use crate::with_state;
 
@@ -41,10 +43,24 @@ impl Api for Impl {
         })
     }
 
-    fn version() -> Cow<'static, [u8]> {
-        let side = Side::current().unwrap();
+    fn running_side() -> Side {
+        header::running_side().unwrap()
+    }
+
+    fn running_version() -> Cow<'static, [u8]> {
+        let side = Self::running_side();
         let header = Header::new(side);
         header.timestamp().to_be_bytes().to_vec().into()
+    }
+
+    fn opposite_version() -> Result<Cow<'static, [u8]>, Error> {
+        let side = Self::running_side().opposite();
+        let header = Header::new(side);
+        if header.has_firmware() {
+            Ok(header.timestamp().to_be_bytes().to_vec().into())
+        } else {
+            Err(Error::world(Code::NotFound))
+        }
     }
 
     fn reboot() -> Result<!, Error> {

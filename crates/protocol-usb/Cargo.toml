@@ -24,12 +24,12 @@ wasefire-logger = { version = "0.1.7-git", path = "../logger" }
 wasefire-one-of = { version = "0.1.1-git", path = "../one-of" }
 
 [dependencies.wasefire-board-api]
-version = "0.8.1-git"
+version = "0.9.0-git"
 path = "../board"
 optional = true
 
 [dependencies.wasefire-protocol]
-version = "0.2.1-git"
+version = "0.3.0-git"
 path = "../protocol"
 features = ["host"]
 optional = true

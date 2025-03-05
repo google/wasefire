@@ -24,7 +24,8 @@ digest = { version = "0.10.7", default-features = false, features = ["mac"], opt
 rlsf = { version = "0.2.1", default-features = false, optional = true }
 sealed = { version = "0.6.0", default-features = false, optional = true }
 typenum = { version = "1.17.0", default-features = false, optional = true }
-wasefire-applet-api = { version = "0.7.1-git", path = "../api", features = ["wasm"] }
+wasefire-applet-api = { version = "0.8.0-git", path = "../api", features = ["wasm"] }
+wasefire-common = { version = "0.1.0-git", path = "../common", optional = true }
 wasefire-error = { version = "0.1.3-git", path = "../error" }
 wasefire-one-of = { version = "0.1.1-git", path = "../one-of" }
 wasefire-sync = { version = "0.1.2-git", path = "../sync" }
@@ -50,7 +51,7 @@ api-crypto-hkdf = ["api-crypto-hmac", "wasefire-applet-api/api-crypto-hkdf"]
 api-crypto-hmac = ["internal-api-crypto-hash", "wasefire-applet-api/api-crypto-hmac"]
 api-gpio = ["wasefire-applet-api/api-gpio"]
 api-led = ["wasefire-applet-api/api-led"]
-api-platform = ["internal-api-platform", "wasefire-applet-api/api-platform"]
+api-platform = ["dep:wasefire-common", "internal-api-platform", "wasefire-applet-api/api-platform"]
 api-platform-protocol = [
   "internal-api-platform",
   "internal-rpc",

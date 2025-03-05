@@ -17,6 +17,8 @@ use std::borrow::Cow;
 use data_encoding::HEXLOWER_PERMISSIVE;
 use wasefire_board_api::Error;
 use wasefire_board_api::platform::Api;
+use wasefire_common::platform::Side;
+use wasefire_error::Code;
 
 use crate::FLAGS;
 
@@ -34,8 +36,16 @@ impl Api for Impl {
         from_hex(FLAGS.serial.as_deref())
     }
 
-    fn version() -> Cow<'static, [u8]> {
+    fn running_side() -> Side {
+        Side::B
+    }
+
+    fn running_version() -> Cow<'static, [u8]> {
         from_hex(FLAGS.version.as_deref())
+    }
+
+    fn opposite_version() -> Result<Cow<'static, [u8]>, Error> {
+        Err(Error::world(Code::NotEnough))
     }
 
     fn reboot() -> Result<!, Error> {

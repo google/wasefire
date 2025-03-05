@@ -19,5 +19,5 @@ wasefire::applet!();
 
 fn main() {
     debug!("serial: {:02x?}", platform::serial());
-    debug!("version: {:02x?}", platform::version());
+    debug!("version: {:02x?}", platform::running_version());
 }

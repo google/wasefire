@@ -4,6 +4,9 @@
 
 ### Minor
 
+- Remove `platform::update::metadata()` function
+- Add `running` parameter to `platform::version()` function
+- Add `platform::running_side()` function for A/B platform update
 - Add `clock` module for monotonic wall-time
 - Add `crypto::cbc` module for AES-256-CBC
 - Add `usb::ctap` module for CTAP HID

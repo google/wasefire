@@ -14,8 +14,6 @@
 
 //! Provides API for to update the platform.
 
-use alloc::boxed::Box;
-
 use wasefire_applet_api::platform::update as api;
 
 use crate::{Error, convert_bool, convert_unit};
@@ -23,20 +21,6 @@ use crate::{Error, convert_bool, convert_unit};
 /// Returns whether platform update is supported.
 pub fn is_supported() -> bool {
     convert_bool(unsafe { api::is_supported() }).unwrap_or(false)
-}
-
-/// Returns the metadata of the platform.
-///
-/// This typically contains the version and side (A or B) of the running platform.
-pub fn metadata() -> Result<Box<[u8]>, Error> {
-    let mut ptr = core::ptr::null_mut();
-    let mut len = 0;
-    let params = api::metadata::Params { ptr: &mut ptr, len: &mut len };
-    convert_unit(unsafe { api::metadata(params) })?;
-    let ptr = core::ptr::slice_from_raw_parts_mut(ptr, len);
-    // SAFETY: If `len` is non-zero then `api::metadata()` allocated. The rest is similar as in
-    // `crate::platform::serial()`.
-    Ok(if len == 0 { Box::new([]) } else { unsafe { Box::from_raw(ptr) } })
 }
 
 /// Starts a platform update process.

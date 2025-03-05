@@ -231,17 +231,22 @@ api! {
     /// Starts a direct tunnel with an applet.
     4 [0 -] AppletTunnel: applet::Tunnel<'a> => (),
 
-    /// Returns platform information (e.g. serial and version).
-    5 [1 -] PlatformInfo: () => platform::Info<'a>,
+    /// (deprecated) Returns platform information (e.g. serial and version).
+    ///
+    /// This message is deprecated in favor of [`PlatformInfo`].
+    5 [1 - 4] _PlatformInfo0: () => platform::_Info0<'a>,
 
     /// Calls a vendor-specific platform command.
     6 [2 -] PlatformVendor: &'a [u8] => &'a [u8],
 
-    /// Returns the metadata for platform update.
-    7 [3 -] PlatformUpdateMetadata: () => &'a [u8],
+    /// (deprecated) Returns the metadata for platform update.
+    ///
+    /// This message is deprecated in favor of [`PlatformVendor`], which is the message for
+    /// vendor-specific messages.
+    7 [3 - 4] _PlatformUpdateMetadata: () => &'a [u8],
 
     /// Updates the platform.
-    8 [3 -] PlatformUpdateTransfer: transfer::Request<'a> => (),
+    8 [3 -] PlatformUpdate: transfer::Request<'a> => (),
 
     /// Installs an applet.
     9 [4 -] AppletInstall: transfer::Request<'a> => (),
@@ -257,5 +262,8 @@ api! {
     /// This is useful for testing purposes by locking a platform before flashing a new one.
     12 [4 -] PlatformLock: () => (),
 
-    next 13 [5 -]
+    /// Returns platform information (serial, version, running side, opposite version, etc).
+    13 [5 -] PlatformInfo: () => platform::Info<'a>,
+
+    next 14 [6 -]
 }

@@ -14,17 +14,10 @@
 
 //! Platform update interface.
 
-use alloc::boxed::Box;
-
 use crate::{Error, Support};
 
 /// Platform update interface.
 pub trait Api: Support<bool> + Send {
-    /// Returns the metadata of the platform.
-    ///
-    /// This typically contains the version and side (A or B) of the running platform.
-    fn metadata() -> Result<Box<[u8]>, Error>;
-
     /// Starts a platform update process.
     ///
     /// During a dry-run, any mutable operation is skipped and only checks are performed.

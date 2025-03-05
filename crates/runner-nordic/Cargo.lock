@@ -280,15 +280,15 @@ dependencies = [
 
 [[package]]
 name = "data-encoding"
-version = "2.6.0"
+version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8566979429cf69b49a5c740c60791108e86440e8be149bbea4fe54d2c32d6e2"
+checksum = "575f75dfd25738df5b91b8e43e14d44bda14637a58fae779fd2b064f8bf3e010"
 
 [[package]]
 name = "data-encoding-macro"
-version = "0.1.15"
+version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1559b6cba622276d6d63706db152618eeb15b89b3e4041446b05876e352e639"
+checksum = "9f9724adfcf41f45bf652b3995837669d73c4d49a1b5ac1ff82905ac7d9b5558"
 dependencies = [
  "data-encoding",
  "data-encoding-macro-internal",
@@ -296,12 +296,12 @@ dependencies = [
 
 [[package]]
 name = "data-encoding-macro-internal"
-version = "0.1.13"
+version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "332d754c0af53bc87c108fed664d121ecf59207ec4196041f04d6ab9002ad33f"
+checksum = "18e4fdb82bd54a12e42fb58a800dcae6b9e13982238ce2296dc3570b92148e1f"
 dependencies = [
  "data-encoding",
- "syn 1.0.109",
+ "syn 2.0.66",
 ]
 
 [[package]]
@@ -574,6 +574,9 @@ dependencies = [
 [[package]]
 name = "header"
 version = "0.1.0"
+dependencies = [
+ "wasefire-common",
+]
 
 [[package]]
 name = "heapless"
@@ -926,6 +929,7 @@ dependencies = [
  "usbd-serial",
  "wasefire-applet-api",
  "wasefire-board-api",
+ "wasefire-common",
  "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
@@ -1251,7 +1255,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.7.1-git"
+version = "0.8.0-git"
 dependencies = [
  "bytemuck",
  "derive-where",
@@ -1281,7 +1285,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.8.1-git"
+version = "0.9.0-git"
 dependencies = [
  "aead",
  "aes",
@@ -1304,10 +1308,18 @@ dependencies = [
  "usbd-hid",
  "usbd-serial",
  "wasefire-applet-api",
+ "wasefire-common",
  "wasefire-error",
  "wasefire-logger",
  "wasefire-protocol",
  "wasefire-store",
+]
+
+[[package]]
+name = "wasefire-common"
+version = "0.1.0-git"
+dependencies = [
+ "wasefire-error",
 ]
 
 [[package]]
@@ -1341,8 +1353,9 @@ version = "0.1.1-git"
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.2.1-git"
+version = "0.3.0-git"
 dependencies = [
+ "wasefire-common",
  "wasefire-error",
  "wasefire-wire",
 ]
@@ -1371,6 +1384,7 @@ dependencies = [
  "typenum",
  "wasefire-applet-api",
  "wasefire-board-api",
+ "wasefire-common",
  "wasefire-error",
  "wasefire-interpreter",
  "wasefire-logger",
@@ -1399,6 +1413,7 @@ dependencies = [
 name = "wasefire-wire"
 version = "0.1.2-git"
 dependencies = [
+ "wasefire-common",
  "wasefire-error",
  "wasefire-wire-derive",
 ]

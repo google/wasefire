@@ -1,9 +1,15 @@
 # Changelog
 
-## 0.8.1-git
+## 0.9.0-git
+
+### Major
+
+- Rename `platform::Api::version()` to `platform::Api::running_version()`
+- Remove `platform::update::Api::metadata()` which is a vendor-specific functionality
 
 ### Minor
 
+- Add `platform::Api::running_side()` and `platform::Api::opposite_version()`
 - Add `Api::Clock` for monotonic wall-time
 - Add `crypto::Api::Aes256Cbc` for AES-256-CBC
 - Add `usb::Api::Ctap` for CTAP HID

@@ -489,9 +489,9 @@ dependencies = [
 
 [[package]]
 name = "data-encoding"
-version = "2.6.0"
+version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8566979429cf69b49a5c740c60791108e86440e8be149bbea4fe54d2c32d6e2"
+checksum = "575f75dfd25738df5b91b8e43e14d44bda14637a58fae779fd2b064f8bf3e010"
 
 [[package]]
 name = "deku"
@@ -2531,10 +2531,11 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.8.1-git"
+version = "0.9.0-git"
 dependencies = [
  "derive-where",
  "ssmarshal",
+ "wasefire-common",
  "wasefire-error",
  "wasefire-logger",
  "wasefire-protocol",
@@ -2543,7 +2544,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-cli-tools"
-version = "0.2.1-git"
+version = "0.3.0-git"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -2560,10 +2561,18 @@ dependencies = [
  "tar",
  "tokio",
  "toml",
+ "wasefire-common",
  "wasefire-protocol",
  "wasefire-protocol-tokio",
  "wasefire-protocol-usb",
  "wasefire-wire",
+]
+
+[[package]]
+name = "wasefire-common"
+version = "0.1.0-git"
+dependencies = [
+ "wasefire-error",
 ]
 
 [[package]]
@@ -2586,9 +2595,11 @@ version = "0.1.1-git"
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.2.1-git"
+version = "0.3.0-git"
 dependencies = [
  "anyhow",
+ "data-encoding",
+ "wasefire-common",
  "wasefire-error",
  "wasefire-wire",
 ]
@@ -2628,6 +2639,7 @@ dependencies = [
 name = "wasefire-wire"
 version = "0.1.2-git"
 dependencies = [
+ "wasefire-common",
  "wasefire-error",
  "wasefire-wire-derive",
 ]
@@ -2975,7 +2987,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "data-encoding",
  "env_logger",
+ "libc",
  "log",
  "probe-rs",
  "rustc-demangle",

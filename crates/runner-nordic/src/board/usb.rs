@@ -13,6 +13,8 @@
 // limitations under the License.
 
 use alloc::boxed::Box;
+use alloc::string::String;
+use core::fmt::Write;
 
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 #[cfg(feature = "_usb")]
@@ -57,6 +59,20 @@ impl HasRpc<'static, Usb> for Impl {
                 }
             }
             Ok(response)
+        } else if request == b"info\n" {
+            let mut response = String::new();
+            let running = header::running_side().unwrap();
+            for side in wasefire_common::platform::Side::LIST {
+                let header = header::Header::new(side);
+                let timestamp = header.timestamp();
+                let running = if side == running { "*" } else { " " };
+                write!(&mut response, "{running} {side} {timestamp:08x} ").unwrap();
+                for i in 0 .. 3 {
+                    write!(&mut response, "{}", header.attempt(i).free() as u8).unwrap();
+                }
+                writeln!(&mut response).unwrap();
+            }
+            Ok(response.into_bytes().into_boxed_slice())
         } else {
             Err(Error::user(Code::InvalidArgument))
         }
