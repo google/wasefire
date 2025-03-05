@@ -144,6 +144,12 @@ struct MetadataView<'m> {
     branch_idx: usize,
 }
 
+#[derive(Debug)]
+struct SideTableVerifyView<'m> {
+    side_table_view: SideTableView<'m>,
+    func_idx: usize,
+}
+
 #[derive(Default)]
 struct Verify;
 impl ValidMode for Verify {
@@ -151,19 +157,17 @@ impl ValidMode for Verify {
     /// their target branch using the branch table.
     type Branches<'m> = Option<SideTableBranch<'m>>;
     type BranchTable<'a, 'm> = MetadataView<'m>;
-    // TODO(dev/fast-interp): We should use a different view for verification to avoid having
-    // func_idx in SideTableView.
-    type SideTable<'m> = SideTableView<'m>;
+    type SideTable<'m> = SideTableVerifyView<'m>;
     type Result = ();
 
     fn parse_side_table<'m>(parser: &mut Parser<'m>) -> Result<Self::SideTable<'m>, Error> {
-        parser.parse_side_table()
+        Ok(SideTableVerifyView { side_table_view: parser.parse_side_table()?, func_idx: 0 })
     }
 
     fn next_branch_table<'a, 'm>(
         side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
     ) -> Result<Self::BranchTable<'a, 'm>, Error> {
-        let metadata = side_table.metadata(side_table.func_idx);
+        let metadata = side_table.side_table_view.metadata(side_table.func_idx);
         side_table.func_idx += 1;
         check(metadata.type_idx() == type_idx)?;
         check(metadata.parser_range() == parser_range)?;
@@ -171,7 +175,7 @@ impl ValidMode for Verify {
     }
 
     fn side_table_result(side_table: Self::SideTable<'_>) -> Result<Self::Result, Error> {
-        check((side_table.func_idx + 1) * 2 == side_table.indices.len())
+        check((side_table.func_idx + 1) * 2 == side_table.side_table_view.indices.len())
     }
 }
 

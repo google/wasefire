@@ -562,7 +562,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         let num_funcs = u16::from_le_bytes(num_funcs) as usize;
         let indices = parser.parse_bytes((num_funcs + 1) * 2)?;
         let metadata = parser.save();
-        Ok(SideTableView { func_idx: 0, indices, metadata })
+        Ok(SideTableView { indices, metadata })
     }
 
     pub fn skip_to_end(&mut self, l: LabelIdx) -> MResult<(), M> {
