@@ -9,6 +9,7 @@
 
 ### Minor
 
+- Add `platform::usb_device()` to create a Wasefire USB device from a USB bus
 - Add `platform::Api::running_side()` and `platform::Api::opposite_version()`
 - Add `Api::Clock` for monotonic wall-time
 - Add `crypto::Api::Aes256Cbc` for AES-256-CBC

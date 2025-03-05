@@ -26,6 +26,7 @@ reqwest = { version = "0.12.9", default-features = false, features = ["default-t
 rusb = { version = "0.9.4", default-features = false, optional = true }
 semver = { version = "1.0.23", default-features = false, optional = true }
 serde = { version = "1.0.202", default-features = false, features = ["derive"] }
+serialport = { version = "4.3.0", default-features = false, optional = true }
 tar = { version = "0.4.43", default-features = false }
 toml = { version = "0.8.13", default-features = false, features = ["display", "parse"] }
 wasefire-common = { version = "0.1.0-git", path = "../common", optional = true }
@@ -55,7 +56,7 @@ features = ["host", "log"]
 optional = true
 
 [dependencies.wasefire-protocol-usb]
-version = "0.2.1-git"
+version = "0.3.0-git"
 path = "../protocol-usb"
 features = ["host", "log"]
 optional = true
@@ -68,6 +69,7 @@ action = [
   "dep:humantime",
   "dep:indicatif",
   "dep:rusb",
+  "dep:serialport",
   "dep:wasefire-common",
   "dep:wasefire-protocol",
   "dep:wasefire-protocol-tokio",

@@ -865,6 +865,7 @@ dependencies = [
  "cbc",
  "ccm",
  "crypto-common",
+ "data-encoding",
  "defmt",
  "derive-where",
  "digest",

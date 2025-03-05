@@ -193,13 +193,6 @@ struct RunnerOptions {
     #[clap(long)]
     serial: Option<String>,
 
-    /// Nordic platform VID:PID.
-    ///
-    /// This is only used for the nordic runner. It must be 8 hexadecimal bytes with a colon in the
-    /// middle, e.g. `--vid-pid=1915:521f`.
-    #[clap(long)]
-    vid_pid: Option<String>,
-
     /// Cargo no-default-features.
     #[clap(long)]
     no_default_features: bool,
@@ -508,9 +501,6 @@ impl RunnerOptions {
             let native = main.is_native() as u8;
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_NATIVE={native}"));
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
-            if let Some(vidpid) = &self.vid_pid {
-                cargo.env("RUNNER_VIDPID", vidpid);
-            }
             let version = version.as_deref().unwrap_or("00000000");
             ensure!(version.len() == 8, "--version must be a big-endian hexadecimal u32");
             ensure!(version != "ffffffff", "--version must be smaller than u32::MAX");

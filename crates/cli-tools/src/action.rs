@@ -29,6 +29,7 @@ use crate::error::root_cause_is;
 use crate::{cmd, fs};
 
 mod protocol;
+pub mod usb_serial;
 
 /// Options to connect to a platform.
 #[derive(Clone, clap::Args)]
@@ -293,8 +294,7 @@ impl PlatformList {
         println!("There are {} connected platforms on USB:", candidates.len());
         for candidate in candidates {
             let mut connection = candidate.connect(*timeout)?;
-            let info = connection.call::<service::PlatformInfo>(()).await?;
-            let serial = protocol::ProtocolUsb::Serial(protocol::Hex(info.get().serial.to_vec()));
+            let serial = protocol::ProtocolUsb::Serial(protocol::serial(&mut connection).await?);
             let bus = connection.device().bus_number();
             let dev = connection.device().address();
             let busdev = protocol::ProtocolUsb::BusDev { bus, dev };
