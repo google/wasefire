@@ -145,8 +145,8 @@ struct MetadataView<'m> {
 }
 
 #[derive(Debug)]
-struct SideTableVerifyView<'m> {
-    side_table_view: SideTableView<'m>,
+struct SideTableVerify<'m> {
+    view: SideTableView<'m>,
     func_idx: usize,
 }
 
@@ -157,17 +157,17 @@ impl ValidMode for Verify {
     /// their target branch using the branch table.
     type Branches<'m> = Option<SideTableBranch<'m>>;
     type BranchTable<'a, 'm> = MetadataView<'m>;
-    type SideTable<'m> = SideTableVerifyView<'m>;
+    type SideTable<'m> = SideTableVerify<'m>;
     type Result = ();
 
     fn parse_side_table<'m>(parser: &mut Parser<'m>) -> Result<Self::SideTable<'m>, Error> {
-        Ok(SideTableVerifyView { side_table_view: parser.parse_side_table()?, func_idx: 0 })
+        Ok(SideTableVerify { view: parser.parse_side_table()?, func_idx: 0 })
     }
 
     fn next_branch_table<'a, 'm>(
         side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
     ) -> Result<Self::BranchTable<'a, 'm>, Error> {
-        let metadata = side_table.side_table_view.metadata(side_table.func_idx);
+        let metadata = side_table.view.metadata(side_table.func_idx);
         side_table.func_idx += 1;
         check(metadata.type_idx() == type_idx)?;
         check(metadata.parser_range() == parser_range)?;
@@ -175,7 +175,7 @@ impl ValidMode for Verify {
     }
 
     fn side_table_result(side_table: Self::SideTable<'_>) -> Result<Self::Result, Error> {
-        check((side_table.func_idx + 1) * 2 == side_table.side_table_view.indices.len())
+        check((side_table.func_idx + 1) * 2 == side_table.view.indices.len())
     }
 }
 
