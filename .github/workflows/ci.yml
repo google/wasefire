@@ -44,7 +44,7 @@ jobs:
           x     tests-1  pull_request  push  schedule
           x     tests-2  pull_request  push  schedule
           x     tests-3  pull_request  push  schedule
-          # x     hw-host  pull_request  push  schedule
+          x     hw-host  pull_request  push  schedule
           x        book  pull_request  push  schedule
           x   footprint  pull_request  push
           echo "checks=[$CHECKS]" >> $GITHUB_OUTPUT
