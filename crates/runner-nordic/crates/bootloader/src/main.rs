@@ -31,6 +31,11 @@ fn main() -> ! {
     if new.timestamp() < old.timestamp() {
         core::mem::swap(&mut new, &mut old);
     }
+    // We always try to mark the newest side (or side A in case of equality). The user can make sure
+    // the new firmware works before updating the other side. If it doesn't, it suffices to reboot
+    // the device a few times to boot in the previous version. Eventually and after a successful
+    // update, both sides have the same timestamp and side B is running, because side A has consumed
+    // all its attempts.
     let cur = if mark(new) { new } else { old };
     unsafe { asm::bootload(cur.firmware() as *const u32) };
 }
