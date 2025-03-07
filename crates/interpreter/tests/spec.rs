@@ -26,7 +26,8 @@ use wast::{QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, Wast
 
 fn test(repo: &str, name: &str, skip: usize) {
     let path = format!("../../third_party/WebAssembly/{repo}/test/core/{name}.wast");
-    let content = std::fs::read_to_string(path).unwrap();
+    let mut content = std::fs::read_to_string(path).unwrap();
+    patch_content(name, &mut content);
     let mut lexer = Lexer::new(&content);
     lexer.allow_confusing_unicode(true);
     let buffer = parser::ParseBuffer::new_with_lexer(lexer).unwrap();
@@ -59,6 +60,23 @@ fn test(repo: &str, name: &str, skip: usize) {
         }
     }
     assert_eq!(env.skip, skip, "actual vs expected number of unsupported (and skipped) tests");
+}
+
+fn patch_content(name: &str, content: &mut String) {
+    match name {
+        "br_table" => {
+            // This is a corner-case we don't want to support.
+            replace_with(content, "\n  (func (export \"large\")", "\n  )\n", "");
+            replace_with(content, "\n(assert_return (invoke \"large\" ", "\n\n", "\n");
+        }
+        _ => (),
+    }
+}
+
+fn replace_with(content: &mut String, prefix: &str, suffix: &str, replace: &str) {
+    let start = content.find(prefix).unwrap();
+    let length = content[start ..].find(suffix).unwrap() + suffix.len();
+    content.replace_range(start .. start + length, replace);
 }
 
 fn pool_size(name: &str) -> usize {
@@ -442,8 +460,7 @@ test!(binary_leb128, "binary-leb128");
 test!(block);
 test!(br);
 test!(br_if);
-// TODO(dev/fast-interp): Don't skip tests we want to support.
-test!(br_table; 149);
+test!(br_table);
 test!(bulk);
 test!(call);
 test!(call_indirect);
