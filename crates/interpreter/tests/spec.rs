@@ -63,13 +63,10 @@ fn test(repo: &str, name: &str, skip: usize) {
 }
 
 fn patch_content(name: &str, content: &mut String) {
-    match name {
-        "br_table" => {
-            // This is a corner-case we don't want to support.
-            replace_with(content, "\n  (func (export \"large\")", "\n  )\n", "");
-            replace_with(content, "\n(assert_return (invoke \"large\" ", "\n\n", "\n");
-        }
-        _ => (),
+    if name == "br_table" {
+        // This is a corner-case we don't want to support.
+        replace_with(content, "\n  (func (export \"large\")", "\n  )\n", "");
+        replace_with(content, "\n(assert_return (invoke \"large\" ", "\n\n", "\n");
     }
 }
 
