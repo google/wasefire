@@ -14,30 +14,44 @@
 
 //! Example applet running OpenSK.
 //!
-//! The Nordic runner needs the usb-ctap, software-crypto-aes256-cbc, software-crypto-p256, and
-//! software-crypto-hmac-sha256 features.
+//! To build a native applet for the Nordic runner:
+//!
+//! ```shell
+//! cargo xtask --release --native \
+//!   applet rust opensk --opt-level=z \
+//!   runner nordic --opt-level=z --log=info \
+//!     --features=usb-ctap --features=software-crypto-aes256-cbc \
+//!     --features=software-crypto-p256,software-crypto-hmac-sha256 \
+//!   flash --reset-flash
+//! ```
 
 #![no_std]
 wasefire::applet!();
 
-use opensk_lib::api::connection::HidConnection as _;
+use opensk_lib::Transport;
+use opensk_lib::api::connection::{HidConnection as _, RecvStatus, UsbEndpoint};
 use opensk_lib::env::Env as _;
 
+mod blink;
 mod env;
 
 fn main() -> ! {
     let mut opensk_ctap = opensk_lib::Ctap::new(env::init());
-    let mut ctap_listener = usb::ctap::Listener::new(usb::ctap::Event::Read);
-    let transport = opensk_lib::Transport::MainHid;
-    let endpoint = opensk_lib::api::connection::UsbEndpoint::MainHid;
+    let mut wink: Option<blink::Blink> = None;
     debug!("OpenSK initialized");
     loop {
-        let mut packet = [0; 64];
-        while !usb::ctap::read(&mut packet).unwrap() {
-            scheduling::wait_until(|| ctap_listener.is_notified());
+        match (wink.is_some(), opensk_ctap.should_wink()) {
+            (true, true) | (false, false) => (),
+            (false, true) => wink = Some(blink::Blink::new_ms(100)),
+            (true, false) => wink = None,
         }
-        for packet in opensk_ctap.process_hid_packet(&packet, transport) {
-            opensk_ctap.env().hid_connection().send(&packet, endpoint).unwrap();
+        let mut packet = [0; 64];
+        match opensk_ctap.env().hid_connection().recv(&mut packet, 100).unwrap() {
+            RecvStatus::Timeout => continue,
+            RecvStatus::Received(endpoint) => assert_eq!(endpoint, UsbEndpoint::MainHid),
+        }
+        for packet in opensk_ctap.process_hid_packet(&packet, Transport::MainHid) {
+            opensk_ctap.env().hid_connection().send(&packet, UsbEndpoint::MainHid).unwrap();
         }
     }
 }

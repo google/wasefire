@@ -18,7 +18,7 @@ use core::cell::Cell;
 use opensk_lib::api::connection::RecvStatus;
 use opensk_lib::api::user_presence::{UserPresence, UserPresenceError, UserPresenceWaitResult};
 use opensk_lib::ctap::status_code::Ctap2StatusCode;
-use wasefire::{button, led, scheduling, timer, usb};
+use wasefire::{button, scheduling, timer, usb};
 
 pub(crate) fn init() -> Impl {
     Impl(None)
@@ -29,17 +29,15 @@ pub(crate) struct Impl(Option<State>);
 struct State {
     presence: Rc<Cell<bool>>,
     _button: button::Listener<ButtonHandler>,
-    blink: timer::Timer<BlinkHandler>,
+    _blink: crate::blink::Blink,
 }
 
 impl UserPresence for Impl {
     fn check_init(&mut self) {
         let presence = Rc::new(Cell::new(false));
         let button = button::Listener::new(0, ButtonHandler::new(&presence)).unwrap();
-        let blink = timer::Timer::new(BlinkHandler);
-        led::set(0, led::On);
-        blink.start_ms(timer::Mode::Periodic, 500);
-        self.0 = Some(State { presence, _button: button, blink });
+        let blink = crate::blink::Blink::new_ms(500);
+        self.0 = Some(State { presence, _button: button, _blink: blink });
     }
 
     fn wait_with_timeout(
@@ -67,9 +65,7 @@ impl UserPresence for Impl {
     }
 
     fn check_complete(&mut self) {
-        let Some(state) = self.0.take() else { return };
-        state.blink.stop();
-        led::set(0, led::Off);
+        self.0 = None;
     }
 }
 
@@ -89,13 +85,5 @@ impl button::Handler for ButtonHandler {
             button::State::Released => (),
             button::State::Pressed => self.presence.set(true),
         }
-    }
-}
-
-struct BlinkHandler;
-
-impl timer::Handler for BlinkHandler {
-    fn event(&self) {
-        led::set(0, !led::get(0));
     }
 }
