@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,27 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.use opensk_lib::api::clock::Clock;
 
-use opensk_lib::api::clock::Clock;
+use wasefire::{led, timer};
 
-use crate::env::WasefireEnv;
+pub(crate) struct Blink {
+    timer: timer::Timer<BlinkHandler>,
+}
 
-impl Clock for WasefireEnv {
-    type Timer = u64;
-
-    fn make_timer(&mut self, timeout_ms: usize) -> Self::Timer {
-        now_us() + 1000 * timeout_ms as u64
-    }
-
-    fn is_elapsed(&mut self, deadline: &Self::Timer) -> bool {
-        *deadline < now_us()
-    }
-
-    #[cfg(feature = "debug")]
-    fn timestamp_us(&mut self) -> usize {
-        now_us() as usize
+impl Blink {
+    pub(crate) fn new_ms(period_ms: usize) -> Self {
+        let timer = timer::Timer::new(BlinkHandler);
+        led::set(0, led::On);
+        timer.start_ms(timer::Mode::Periodic, period_ms);
+        Blink { timer }
     }
 }
 
-fn now_us() -> u64 {
-    wasefire::clock::uptime_us().unwrap()
+impl Drop for Blink {
+    fn drop(&mut self) {
+        self.timer.stop();
+        led::set(0, led::Off);
+    }
+}
+
+struct BlinkHandler;
+
+impl timer::Handler for BlinkHandler {
+    fn event(&self) {
+        led::set(0, !led::get(0));
+    }
 }
