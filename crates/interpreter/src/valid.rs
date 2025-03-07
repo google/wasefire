@@ -143,7 +143,7 @@ struct MetadataView<'m> {
 
 #[derive(Debug)]
 struct SideTableVerify<'m> {
-    view: SideTableView<'m>,
+    view: SideTableView<'m, Check>,
     func_idx: usize,
 }
 
@@ -164,7 +164,7 @@ impl ValidMode for Verify {
     fn next_branch_table<'a, 'm>(
         side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
     ) -> Result<Self::BranchTable<'a, 'm>, Error> {
-        let metadata = side_table.view.metadata(side_table.func_idx);
+        let metadata = side_table.view.metadata(side_table.func_idx)?;
         side_table.func_idx += 1;
         check(metadata.type_idx() == type_idx)?;
         check(metadata.parser_range() == parser_range)?;
