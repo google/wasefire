@@ -9,6 +9,7 @@
 
 ### Minor
 
+- Enable `wasefire/unsafe-assume-single-core` feature when building a native applet for RISC-V
 - Add `action::usb_serial` module to connect to the USB serial of a platform
 - Add `cmd::status()` to execute a command and return its error code
 - Add `cmd::exit_status()` to execute a command and exit with its error code in case of error
