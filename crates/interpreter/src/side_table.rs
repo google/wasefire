@@ -106,6 +106,7 @@ pub fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
 #[repr(transparent)]
 pub struct BranchTableEntry([u8; 6]);
 
+#[derive(Debug)]
 pub struct BranchTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
     pub delta_ip: i32,

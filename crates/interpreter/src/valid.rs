@@ -113,12 +113,9 @@ impl<'m> BranchTableApi<'m> for &mut Vec<BranchTableEntry> {
     ) -> CheckResult {
         let delta_ip = delta(source, target, |x| x.parser.as_ptr() as isize)?;
         let delta_stp = delta(source, target, |x| x.branch_table as isize)?;
-        let val_cnt = u32::try_from(target.result).map_err(|_| {
-            #[cfg(feature = "debug")]
-            eprintln!("side-table val_cnt overflow {0}", target.result);
-            unsupported(if_debug!(Unsupported::SideTable))
-        })?;
-        let pop_cnt = pop_cnt(source, target)?;
+        let val_cnt = u32::try_from(target.values).map_err(|_| side_table_unsupported())?;
+        let pop_cnt = source.stack.checked_sub(target.stack).ok_or_else(invalid)?;
+        let pop_cnt = u32::try_from(pop_cnt).map_err(|_| side_table_unsupported())?;
         debug_assert!(self[source.branch_table].is_invalid());
         self[source.branch_table] =
             BranchTableEntry::new(BranchTableEntryView { delta_ip, delta_stp, val_cnt, pop_cnt })?;
@@ -181,13 +178,7 @@ impl ValidMode for Verify {
 
 impl<'m> BranchesApi<'m> for Option<SideTableBranch<'m>> {
     fn push_branch(&mut self, branch: SideTableBranch<'m>) -> CheckResult {
-        // TODO(dev/fast-interp): This should be `is_none_or(|x| x == branch)` once pop_cnt is
-        // figured out.
-        check(self.replace(branch).is_none_or(|x| {
-            x.parser == branch.parser
-                && x.branch_table == branch.branch_table
-                && x.result == branch.result
-        }))
+        check(self.replace(branch).is_none_or(|x| x == branch))
     }
 }
 
@@ -195,23 +186,17 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult {
-        // TODO(dev/fast-interp): This should be `source == target)` once pop_cnt is figured out.
-        check(
-            source.parser == target.parser
-                && source.result == target.result
-                && source.branch_table == target.branch_table
-                && source.stack <= target.stack,
-        )
+        check(source == target)
     }
 
     fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
         let entry = self.metadata.branch_table()[source.branch_table].view();
+        // TODO(dev/fast-interp): We want a safe version of offset_front.
         source.parser = offset_front(source.parser, entry.delta_ip as isize);
-        // TODO(dev/fast-interp): This should wrapping_add_signed for performance and
-        // strict_add_signed for debugging/safety.
-        source.branch_table = source.branch_table.saturating_add_signed(entry.delta_stp as isize);
-        source.result = entry.val_cnt as usize;
+        source.branch_table =
+            source.branch_table.checked_add_signed(entry.delta_stp as isize).ok_or_else(invalid)?;
         source.stack -= entry.pop_cnt as usize;
+        source.values = entry.val_cnt as usize;
         Ok(source)
     }
 
@@ -619,8 +604,10 @@ struct Expr<'a, 'm, M: ValidMode> {
 struct SideTableBranch<'m> {
     parser: &'m [u8],
     branch_table: usize,
+    /// Function stack length (including branch values).
     stack: usize,
-    result: usize, // unused (zero) for source branches
+    /// Branch values (only for target branches, zero for source branches).
+    values: usize,
 }
 
 #[derive(Debug, Default)]
@@ -632,7 +619,7 @@ struct Label<'m, M: ValidMode> {
     polymorphic: bool,
     stack: Vec<OpdType>,
     branches: M::Branches<'m>,
-    /// Total stack length of the labels in this function up to this label.
+    /// Function stack length up to this label (excluding branch values).
     prev_stack: usize,
 }
 
@@ -641,7 +628,7 @@ enum LabelKind<'m> {
     #[default]
     Block,
     Loop(SideTableBranch<'m>),
-    If(SideTableBranch<'m>),
+    If(Option<SideTableBranch<'m>>),
 }
 
 impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
@@ -722,6 +709,8 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
                 let type_ = self.blocktype(&b)?;
                 let mut target = self.branch_target(type_.params.len());
                 target.parser = saved;
+                target.stack +=
+                    self.stack().len().checked_sub(target.values).ok_or_else(invalid)?;
                 self.push_label(type_, LabelKind::Loop(target))?
             }
             If(b) => {
@@ -730,25 +719,24 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
                 self.push_label(self.blocktype(&b)?, LabelKind::If(branch))?;
             }
             Else => {
-                match core::mem::replace(&mut self.label().kind, LabelKind::Block) {
-                    LabelKind::If(source) => {
-                        let source = M::BranchTable::patch_branch(
-                            self.branch_table.as_ref().unwrap(),
-                            source,
-                        )?;
-                        let result = self.label().type_.results.len();
-                        let mut target = self.branch_target(result);
-                        target.branch_table += 1;
-                        self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
-                    }
-                    _ => Err(invalid())?,
-                }
+                self.br_label(0)?;
                 let FuncType { params, results } = self.label().type_;
                 self.pops(results)?;
                 check(self.stack().is_empty())?;
                 self.label().polymorphic = false;
                 self.pushs(params);
-                self.br_label(0)?;
+                match core::mem::replace(&mut self.label().kind, LabelKind::Block) {
+                    LabelKind::If(None) => (),
+                    LabelKind::If(Some(source)) => {
+                        let source = M::BranchTable::patch_branch(
+                            self.branch_table.as_ref().unwrap(),
+                            source,
+                        )?;
+                        let target = self.branch_target(params.len());
+                        self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
+                    }
+                    _ => Err(invalid())?,
+                }
             }
             End => unreachable!(),
             Br(l) => {
@@ -1011,10 +999,12 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
             let label = self.label();
             if let LabelKind::If(source) = label.kind {
                 check(label.type_.params == label.type_.results)?;
-                let source = self.branch_table.as_ref().unwrap().patch_branch(source)?;
-                // SAFETY: This function is only called after parsing an End instruction.
-                target.parser = offset_front(target.parser, -1);
-                self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
+                if let Some(source) = source {
+                    let source = self.branch_table.as_ref().unwrap().patch_branch(source)?;
+                    // SAFETY: This function is only called after parsing an End instruction.
+                    target.parser = offset_front(target.parser, -1);
+                    self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
+                }
             }
         }
         let results = self.label().type_.results;
@@ -1030,35 +1020,42 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
         let l = l as usize;
         let n = self.labels.len();
         check(l < n)?;
-        let source = self.branch_source();
-        let source = self.branch_table.as_ref().unwrap().patch_branch(source)?;
+        let source = match self.branch_source() {
+            None => None,
+            Some(x) => Some(self.branch_table.as_ref().unwrap().patch_branch(x)?),
+        };
         let label = &mut self.labels[n - l - 1];
         Ok(match label.kind {
             LabelKind::Block | LabelKind::If(_) => {
-                label.branches.push_branch(source)?;
+                if let Some(source) = source {
+                    label.branches.push_branch(source)?;
+                }
                 label.type_.results
             }
             LabelKind::Loop(target) => {
-                self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
+                if let Some(source) = source {
+                    self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
+                }
                 label.type_.params
             }
         })
     }
 
-    fn branch_source(&mut self) -> SideTableBranch<'m> {
+    fn branch_source(&mut self) -> Option<SideTableBranch<'m>> {
+        if self.label().polymorphic {
+            // We don't need a branch table entry for unreachable code.
+            return None;
+        }
         let mut branch = self.branch();
         branch.stack += self.stack().len();
         self.branch_table.as_mut().unwrap().allocate_branch();
-        branch
+        Some(branch)
     }
 
-    fn branch_target(&self, result: usize) -> SideTableBranch<'m> {
+    fn branch_target(&self, values: usize) -> SideTableBranch<'m> {
         let mut branch = self.branch();
-        branch.result = result;
-        // TODO(dev/fast-interp): Figure out if there are not cases (like Loop or Else) where we
-        // want to add `self.stack().len()`. Also adding result here should purely be a convention
-        // with pop_cnt, and we should be able to do the opposite choice (to be considered).
-        branch.stack += result;
+        branch.stack += values;
+        branch.values = values;
         branch
     }
 
@@ -1067,7 +1064,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
             parser: self.parser.save(),
             branch_table: self.branch_table.as_ref().unwrap().next_index(),
             stack: self.immutable_label().prev_stack,
-            result: 0,
+            values: 0,
         }
     }
 
@@ -1137,27 +1134,10 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
 fn delta(
     source: SideTableBranch, target: SideTableBranch, field: fn(SideTableBranch) -> isize,
 ) -> MResult<i32, Check> {
-    let source = field(source);
-    let target = field(target);
-    let Some(delta) = target.checked_sub(source) else {
-        #[cfg(feature = "debug")]
-        eprintln!("side-table subtraction overflow {target} - {source}");
-        return Err(unsupported(if_debug!(Unsupported::SideTable)));
-    };
-    i32::try_from(delta).map_err(|_| {
-        #[cfg(feature = "debug")]
-        eprintln!("side-table conversion overflow {delta}");
-        unsupported(if_debug!(Unsupported::SideTable))
-    })
+    let delta = field(target).checked_sub(field(source)).ok_or_else(side_table_unsupported)?;
+    i32::try_from(delta).map_err(|_| side_table_unsupported())
 }
 
-fn pop_cnt(source: SideTableBranch, target: SideTableBranch) -> MResult<u32, Check> {
-    // TODO(dev/fast-interp): Figure out why we can't simply source.stack - target.stack and
-    // document it. We're losing information by saturating.
-    let res = source.stack.saturating_sub(target.stack);
-    u32::try_from(res).map_err(|_| {
-        #[cfg(feature = "debug")]
-        eprintln!("side-table pop_cnt overflow {res}");
-        unsupported(if_debug!(Unsupported::SideTable))
-    })
+fn side_table_unsupported() -> Error {
+    unsupported(if_debug!(Unsupported::SideTable))
 }
