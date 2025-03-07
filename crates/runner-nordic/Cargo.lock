@@ -1293,6 +1293,7 @@ dependencies = [
  "bytemuck",
  "cbc",
  "crypto-common",
+ "data-encoding",
  "defmt",
  "derive-where",
  "digest",
@@ -1362,7 +1363,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol-usb"
-version = "0.2.1-git"
+version = "0.3.0-git"
 dependencies = [
  "defmt",
  "usb-device",

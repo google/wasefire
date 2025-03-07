@@ -872,10 +872,12 @@ const HKDF_SHA384_VECTORS: &[HkdfVector] = &[
     },
 ];
 
+// TODO(https://github.com/rust-lang/rust/issues/95513): Remove when fixed.
+#[cfg(feature = "test")]
+use wasefire_stub as _;
+
 #[cfg(test)]
 mod tests {
-    use wasefire_stub as _;
-
     use super::*;
 
     #[test]

@@ -1,9 +1,15 @@
 # Changelog
 
-## 0.2.1-git
+## 0.3.0-git
+
+### Major
+
+- Remove `choose_device()` with feature `host` in favor of `wasefire-cli-tools`
 
 ### Minor
 
+- Add `Connection::handle()` function to access the USB handle
+- Use `18d1:0239` as the expected `VID:PID` for USB interface
 - Use Rust edition 2024
 
 ### Patch

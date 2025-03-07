@@ -20,8 +20,7 @@ use tokio::process::{Child, Command};
 use usb_device::UsbError;
 use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
-use usb_device::device::StringDescriptors;
-use usb_device::prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
+use usb_device::prelude::UsbDevice;
 use usbd_hid::descriptor::{CtapReport, SerializedDescriptor};
 use usbd_hid::hid_class::HIDClass;
 use usbd_serial::SerialPort;
@@ -96,7 +95,7 @@ pub async fn init() -> Result<()> {
 }
 
 impl State {
-    pub fn new(vid_pid: &str, protocol: bool, ctap: bool, serial: bool) -> Self {
+    pub fn new(protocol: bool, ctap: bool, serial: bool) -> Self {
         let mut state = State { protocol: None, ctap: None, serial: None, usb_dev: None };
         if !protocol && !ctap && !serial {
             return state;
@@ -111,15 +110,7 @@ impl State {
         if serial {
             state.serial = Some(Serial::new(SerialPort::new(usb_bus)));
         }
-        let (vid, pid) = vid_pid.split_once(':').expect("--usb-vid-pid must be VID:PID");
-        let vid = u16::from_str_radix(vid, 16).expect("invalid VID");
-        let pid = u16::from_str_radix(pid, 16).expect("invalid PID");
-        state.usb_dev = Some(
-            UsbDeviceBuilder::new(usb_bus, UsbVidPid(vid, pid))
-                .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Wasefire")])
-                .unwrap()
-                .build(),
-        );
+        state.usb_dev = Some(wasefire_board_api::platform::usb_device::<_, crate::Board>(usb_bus));
         state
     }
 

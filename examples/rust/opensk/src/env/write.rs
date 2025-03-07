@@ -15,7 +15,7 @@
 use alloc::string::String;
 
 #[derive(Default)]
-pub struct Impl {
+pub(crate) struct Impl {
     output: String,
 }
 

@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add `Any` bound to `Connection`
 - Deprecate `platform::Info` to `platform::_Info0`
 - Deprecate `Api::PlatformInfo` to `Api::_PlatformInfo0`
 - Deprecate `Api::PlatformUpdateMetadata` to `Api::_PlatformUpdateMetadata`

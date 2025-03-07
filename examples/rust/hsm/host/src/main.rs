@@ -14,15 +14,18 @@
 
 use std::io::{Read, Write};
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
 use common::{Deserialize, Deserializer, Error, Request, Response, Serialize, Serializer};
-use serialport::{SerialPort, SerialPortType};
+use serialport::SerialPort;
+use wasefire_cli_tools::action::usb_serial::ConnectionOptions;
 
 #[derive(Parser)]
 struct Flags {
+    #[command(flatten)]
+    options: ConnectionOptions,
     #[clap(subcommand)]
     command: Command,
 }
@@ -168,22 +171,6 @@ impl Output {
 
 struct Serial(Box<dyn SerialPort>);
 
-impl Serial {
-    fn new() -> Result<Self> {
-        for info in serialport::available_ports()? {
-            let path = info.port_name;
-            if let SerialPortType::UsbPort(info) = info.port_type {
-                if info.vid == 0x16c0 && info.pid == 0x27dd {
-                    return Ok(Serial(
-                        serialport::new(path, 19200).timeout(Duration::from_millis(1000)).open()?,
-                    ));
-                }
-            }
-        }
-        panic!("no available port");
-    }
-}
-
 impl Serializer for Serial {
     fn write_all(&mut self, data: &[u8]) -> Result<(), Error> {
         log::info!("Write {:02x?}", data);
@@ -207,7 +194,7 @@ impl Deserializer for Serial {
 fn main() -> Result<()> {
     env_logger::init();
     let flags = Flags::parse();
-    let mut serial = Serial::new()?;
+    let mut serial = Serial(flags.options.connect()?);
     log::info!("Connected to serial port.");
     let start = Instant::now();
     flags.command.request()?.serialize(&mut serial)?;

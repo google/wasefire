@@ -2503,6 +2503,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "usb-device"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98816b1accafbb09085168b90f27e93d790b4bfa19d883466b5e53315b5f06a6"
+dependencies = [
+ "heapless",
+ "portable-atomic",
+]
+
+[[package]]
 name = "utf8parse"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2533,8 +2543,10 @@ dependencies = [
 name = "wasefire-board-api"
 version = "0.9.0-git"
 dependencies = [
+ "data-encoding",
  "derive-where",
  "ssmarshal",
+ "usb-device",
  "wasefire-common",
  "wasefire-error",
  "wasefire-logger",
@@ -2558,6 +2570,7 @@ dependencies = [
  "rusb",
  "semver",
  "serde",
+ "serialport",
  "tar",
  "tokio",
  "toml",
@@ -2618,7 +2631,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol-usb"
-version = "0.2.1-git"
+version = "0.3.0-git"
 dependencies = [
  "anyhow",
  "rusb",

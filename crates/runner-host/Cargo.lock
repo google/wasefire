@@ -2487,6 +2487,7 @@ dependencies = [
  "cbc",
  "ccm",
  "crypto-common",
+ "data-encoding",
  "derive-where",
  "digest",
  "ecdsa",
@@ -2581,7 +2582,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol-usb"
-version = "0.2.1-git"
+version = "0.3.0-git"
 dependencies = [
  "usb-device",
  "wasefire-board-api",

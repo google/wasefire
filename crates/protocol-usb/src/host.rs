@@ -13,46 +13,16 @@
 // limitations under the License.
 
 use alloc::boxed::Box;
-use alloc::string::String;
 use alloc::vec::Vec;
 use core::fmt::{Debug, Display};
-use std::io::Write;
 use std::time::Duration;
 
-use anyhow::{Context, anyhow, ensure};
+use anyhow::Context;
 use rusb::{Device, DeviceHandle, Error, TransferType, UsbContext};
 use wasefire_logger as log;
 use wasefire_protocol::DynFuture;
 
 use crate::common::{Decoder, Encoder};
-
-/// Returns the only supported device.
-///
-/// If there are multiple supported device, asks the user to select one.
-///
-/// The context may be `rusb::GlobalContext::default()`.
-pub fn choose_device<T: UsbContext>(context: &T) -> anyhow::Result<Candidate<T>> {
-    let mut candidates = list(context)?;
-    let candidate = candidates.pop().ok_or_else(|| anyhow!("no device found"))?;
-    if candidates.is_empty() {
-        log::info!("Using the only candidate found: {candidate}");
-        return Ok(candidate);
-    }
-    candidates.push(candidate);
-    std::println!("Found multiple devices:");
-    for (index, candidate) in candidates.iter().enumerate() {
-        // TODO: We should connect to each using the platform protocol to ask for the serial.
-        std::println!("[{index}] {candidate}");
-    }
-    std::print!("Type the device index: ");
-    std::io::stdout().flush()?;
-    let mut line = String::new();
-    std::io::stdin().read_line(&mut line)?;
-    assert_eq!(line.pop(), Some('\n'));
-    let index = line.parse()?;
-    ensure!(index < candidates.len(), "index out of bounds");
-    Ok(candidates.swap_remove(index))
-}
 
 /// Returns the list of supported devices.
 ///
@@ -60,8 +30,10 @@ pub fn choose_device<T: UsbContext>(context: &T) -> anyhow::Result<Candidate<T>>
 pub fn list<T: UsbContext>(context: &T) -> anyhow::Result<Vec<Candidate<T>>> {
     let mut candidates = Vec::new();
     for device in context.devices()?.iter() {
-        match is_wasefire(device.clone()) {
-            Ok(Some(candidate)) => candidates.push(candidate),
+        match is_wasefire(&device) {
+            Ok(Some((configuration, interface))) => {
+                candidates.push(Candidate { device, configuration, interface })
+            }
             Ok(None) => (),
             Err(error) => log::error!("{:?}: {:?}", device, error),
         }
@@ -69,8 +41,12 @@ pub fn list<T: UsbContext>(context: &T) -> anyhow::Result<Vec<Candidate<T>>> {
     Ok(candidates)
 }
 
-fn is_wasefire<T: UsbContext>(device: Device<T>) -> anyhow::Result<Option<Candidate<T>>> {
+fn is_wasefire<T: UsbContext>(device: &Device<T>) -> anyhow::Result<Option<(u8, u8)>> {
     let device_descriptor = device.device_descriptor().context("device desc")?;
+    // Wasefire uses 18d1:0239 as VID:PID on USB.
+    if device_descriptor.vendor_id() != 0x18d1 || device_descriptor.product_id() != 0x0239 {
+        return Ok(None);
+    }
     // Wasefire defines the class at interface-level, not device-level.
     if device_descriptor.class_code() != 0 {
         return Ok(None);
@@ -108,7 +84,7 @@ fn is_wasefire<T: UsbContext>(device: Device<T>) -> anyhow::Result<Option<Candid
                 }
                 let configuration = config_descriptor.number();
                 let interface = descriptor.interface_number();
-                return Ok(Some(Candidate { device, configuration, interface }));
+                return Ok(Some((configuration, interface)));
             }
         }
     }
@@ -155,7 +131,7 @@ If you are running Linux and are in the plugdev group, you can copy/paste the fo
 add a udev rule for USB devices that look like Wasefire platforms:
 
 sudo tee /etc/udev/rules.d/99-wasefire.rules << EOF
-SUBSYSTEM=="usb", ATTR{{product}}=="Wasefire", ENV{{ID_USB_INTERFACES}}=="*:ff5801:*", MODE="0664", GROUP="plugdev"
+SUBSYSTEM=="usb", ATTR{{idVendor}}=="18d1", ATTR{{idProduct}}=="0239", MODE="0664", GROUP="plugdev"
 EOF
 sudo udevadm control --reload
 
@@ -199,6 +175,11 @@ impl<T: UsbContext> Connection<T> {
         &self.device
     }
 
+    /// Provides access to the USB handle.
+    pub fn handle(&self) -> &DeviceHandle<T> {
+        &self.handle
+    }
+
     /// Sets the timeout for subsequent send and receive operations.
     ///
     /// The default timeout is 1 second.
@@ -217,7 +198,7 @@ impl<T: UsbContext> Connection<T> {
     }
 }
 
-impl<T: UsbContext> wasefire_protocol::Connection for Connection<T> {
+impl<T: UsbContext + 'static> wasefire_protocol::Connection for Connection<T> {
     fn write<'a>(&'a mut self, request: &'a [u8]) -> DynFuture<'a, ()> {
         Box::pin(async move {
             for packet in Encoder::new(request) {

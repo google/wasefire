@@ -41,7 +41,9 @@ impl Connection<TcpStream> {
     }
 }
 
-impl<T: AsyncRead + AsyncWrite + Send + Unpin> wasefire_protocol::Connection for Connection<T> {
+impl<T: AsyncRead + AsyncWrite + Send + Unpin + 'static> wasefire_protocol::Connection
+    for Connection<T>
+{
     fn read(&mut self) -> DynFuture<Box<[u8]>> {
         Box::pin(async move { Ok(read(&mut self.stream).await?) })
     }

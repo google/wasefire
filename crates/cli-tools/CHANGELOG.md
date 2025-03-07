@@ -9,6 +9,7 @@
 
 ### Minor
 
+- Add `action::usb_serial` module to connect to the USB serial of a platform
 - Add `cmd::status()` to execute a command and return its error code
 - Add `cmd::exit_status()` to execute a command and exit with its error code in case of error
 - Add an optional file to `action::PlatformUpdate` for A/B platform update

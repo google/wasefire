@@ -14,15 +14,18 @@
 
 use std::io::Read;
 use std::path::PathBuf;
-use std::time::Duration;
 
 use anyhow::Result;
 use clap::Parser;
-use serialport::{SerialPort, SerialPortType};
+use serialport::SerialPort;
+use wasefire_cli_tools::action::usb_serial::ConnectionOptions;
 
 /// Updates a firmware through USB serial.
 #[derive(Parser)]
 struct Flags {
+    #[command(flatten)]
+    options: ConnectionOptions,
+
     /// The firmware file in binary format (defaults to stdin).
     input: Option<PathBuf>,
 }
@@ -43,20 +46,6 @@ impl Flags {
 struct Serial(Box<dyn SerialPort>);
 
 impl Serial {
-    fn new() -> Result<Self> {
-        for info in serialport::available_ports()? {
-            let path = info.port_name;
-            if let SerialPortType::UsbPort(info) = info.port_type {
-                if info.vid == 0x1915 && info.pid == 0x521f {
-                    return Ok(Serial(
-                        serialport::new(path, 19200).timeout(Duration::from_millis(1000)).open()?,
-                    ));
-                }
-            }
-        }
-        panic!("no available port");
-    }
-
     fn write(&mut self, data: &[u8]) -> Result<()> {
         Ok(self.0.write_all(data)?)
     }
@@ -65,7 +54,7 @@ impl Serial {
 fn main() -> Result<()> {
     env_logger::init();
     let flags = Flags::parse();
-    let mut serial = Serial::new()?;
+    let mut serial = Serial(flags.options.connect()?);
     log::info!("Connected to serial port.");
     let firmware = flags.read()?;
     let length = firmware.len() as u32;

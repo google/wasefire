@@ -40,7 +40,7 @@ use nrf52840_hal::ccm::{Ccm, DataRate};
 use nrf52840_hal::clocks::{self, ExternalOscillator, Internal, LfOscStopped};
 use nrf52840_hal::gpio::{self, Level, Output, Pin, PushPull};
 use nrf52840_hal::gpiote::Gpiote;
-use nrf52840_hal::pac::{FICR, Interrupt, interrupt};
+use nrf52840_hal::pac::{Interrupt, interrupt};
 use nrf52840_hal::rng::Rng;
 use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 #[cfg(feature = "release")]
@@ -53,7 +53,7 @@ use rubble::link::MIN_PDU_BUF;
 use rubble_nrf5x::radio::BleRadio;
 use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
-use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidPid};
+use usb_device::device::UsbDevice;
 #[cfg(feature = "usb-ctap")]
 use usbd_hid::descriptor::{CtapReport, SerializedDescriptor};
 #[cfg(feature = "usb-ctap")]
@@ -96,7 +96,6 @@ type Clocks = clocks::Clocks<ExternalOscillator, Internal, LfOscStopped>;
 
 struct State {
     events: Events,
-    ficr: FICR,
     buttons: [Button; <button::Impl as Support<usize>>::SUPPORT],
     gpiote: Gpiote,
     protocol: wasefire_protocol_usb::Rpc<'static, Usb>,
@@ -137,7 +136,6 @@ fn main() -> ! {
     allocator::init();
     log::debug!("Runner starts.");
     let p = nrf52840_hal::pac::Peripherals::take().unwrap();
-    let ficr = p.FICR;
     let port0 = gpio::p0::Parts::new(p.P0);
     #[cfg(feature = "gpio")]
     let port1 = gpio::p1::Parts::new(p.P1);
@@ -176,18 +174,15 @@ fn main() -> ! {
     let ctap = Ctap::new(HIDClass::new(usb_bus, CtapReport::desc(), 255));
     #[cfg(feature = "usb-serial")]
     let serial = Serial::new(SerialPort::new(usb_bus));
-    const VID_PID: UsbVidPid = vid_pid();
-    let usb_dev = UsbDeviceBuilder::new(usb_bus, VID_PID)
-        .strings(&[StringDescriptors::new(usb_device::LangID::EN).product("Wasefire")])
-        .unwrap()
-        .build();
+    board::platform::init_serial(&p.FICR);
+    let usb_dev = wasefire_board_api::platform::usb_device::<_, Board>(usb_bus);
     #[cfg(feature = "radio-ble")]
     let ble = {
         use alloc::boxed::Box;
         // TX buffer is mandatory even when we only listen.
         let ble_tx = Box::leak(Box::new([0; MIN_PDU_BUF]));
         let ble_rx = Box::leak(Box::new([0; MIN_PDU_BUF]));
-        let radio = BleRadio::new(p.RADIO, &ficr, ble_tx, ble_rx);
+        let radio = BleRadio::new(p.RADIO, &p.FICR, ble_tx, ble_rx);
         Ble::new(radio, p.TIMER0)
     };
     let rng = Rng::new(p.RNG);
@@ -206,7 +201,6 @@ fn main() -> ! {
     let events = Events::default();
     let state = State {
         events,
-        ficr,
         buttons,
         gpiote,
         protocol,
@@ -323,31 +317,4 @@ fn usbd() {
         #[cfg(feature = "usb-serial")]
         state.serial.tick(polled, |event| state.events.push(event.into()));
     });
-}
-
-const fn vid_pid() -> UsbVidPid {
-    let vidpid = match option_env!("RUNNER_VIDPID") {
-        None => b"1915:521f",
-        Some(x) => x.as_bytes(),
-    };
-    assert!(vidpid.len() == 9);
-    assert!(vidpid[4] == b':');
-    let vid = u16_from_hex(vidpid, 0);
-    let pid = u16_from_hex(vidpid, 5);
-    UsbVidPid(vid, pid)
-}
-
-const fn u16_from_hex(x: &[u8], mut i: usize) -> u16 {
-    let mut r = 0;
-    let n = i + 4;
-    while i < n {
-        r *= 16;
-        r += match x[i] {
-            b'0' ..= b'9' => (x[i] - b'0') as u16,
-            b'a' ..= b'f' => 10 + (x[i] - b'a') as u16,
-            _ => panic!(),
-        };
-        i += 1;
-    }
-    r
 }

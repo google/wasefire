@@ -25,9 +25,9 @@ impl Ecdh for WasefireEnv {
     type SharedSecret = SharedSecret;
 }
 
-pub struct SecretKey(EcdhPrivate<P256>);
-pub struct PublicKey(EcdhPublic<P256>);
-pub struct SharedSecret(EcdhShared<P256>);
+pub(crate) struct SecretKey(EcdhPrivate<P256>);
+pub(crate) struct PublicKey(EcdhPublic<P256>);
+pub(crate) struct SharedSecret(EcdhShared<P256>);
 
 impl ecdh::SecretKey for SecretKey {
     type PublicKey = PublicKey;

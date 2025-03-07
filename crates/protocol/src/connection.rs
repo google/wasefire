@@ -14,6 +14,7 @@
 
 use alloc::boxed::Box;
 use alloc::format;
+use core::any::Any;
 use core::future::Future;
 use core::pin::Pin;
 
@@ -24,7 +25,7 @@ use crate::{Api, ApiResult, Request, Service};
 
 pub type DynFuture<'a, T> = Pin<Box<dyn Future<Output = anyhow::Result<T>> + 'a>>;
 
-pub trait Connection: Send {
+pub trait Connection: Any + Send {
     /// Receives a raw response (possibly tunneled) from the device.
     fn read(&mut self) -> DynFuture<Box<[u8]>>;
 

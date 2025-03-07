@@ -26,11 +26,11 @@ mod rng;
 mod user_presence;
 mod write;
 
-pub fn init() -> WasefireEnv {
+pub(crate) fn init() -> WasefireEnv {
     WasefireEnv { user_presence: user_presence::init() }
 }
 
-pub struct WasefireEnv {
+pub(crate) struct WasefireEnv {
     user_presence: user_presence::Impl,
 }
 

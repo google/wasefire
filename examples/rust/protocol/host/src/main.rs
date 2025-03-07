@@ -12,21 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::any::Any;
 use std::io::Read;
-use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::Parser;
 use rusb::GlobalContext;
 use wasefire_protocol::applet::{self, AppletId};
 use wasefire_protocol::{self as service, Api, Connection as _, ConnectionExt, Request, Service};
-use wasefire_protocol_usb::{self as rpc, Connection};
+use wasefire_protocol_usb::Connection;
 use wasefire_wire::Yoke;
 
 mod tests;
 
 #[derive(Parser)]
-enum Flags {
+struct Flags {
+    #[command(flatten)]
+    options: wasefire_cli_tools::action::ConnectionOptions,
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(clap::Subcommand)]
+enum Command {
     /// Starts a request/response call with an applet.
     Call,
 
@@ -44,12 +52,13 @@ enum Flags {
 async fn main() -> Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let flags = Flags::parse();
-    let context = GlobalContext::default();
-    let candidate = rpc::choose_device(&context).context("choosing device")?;
-    let mut connection =
-        candidate.connect(Duration::from_secs(1)).context("connecting to the device")?;
-    match flags {
-        Flags::Call => {
+    let connection = flags.options.connect().await? as Box<dyn Any>;
+    let mut connection = match connection.downcast::<Connection<GlobalContext>>() {
+        Ok(x) => *x,
+        Err(_) => bail!("only usb protocol is supported"),
+    };
+    match flags.command {
+        Command::Call => {
             let mut request = Vec::new();
             std::io::stdin().read_to_end(&mut request)?;
             let request = applet::Request { applet_id: AppletId, request: &request };
@@ -62,7 +71,7 @@ async fn main() -> Result<()> {
                 }
             }
         }
-        Flags::Tunnel { delimiter } => {
+        Command::Tunnel { delimiter } => {
             let delimiter = delimiter.as_bytes();
             let tunnel = applet::Tunnel { applet_id: applet::AppletId, delimiter };
             send(&mut connection, &Api::<Request>::AppletTunnel(tunnel)).await?;
@@ -79,7 +88,7 @@ async fn main() -> Result<()> {
             connection.write(delimiter).await?;
             read_tunnel(&mut connection).await
         }
-        Flags::Test => tests::main(connection).await,
+        Command::Test => tests::main(connection).await,
     }
 }
 

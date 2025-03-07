@@ -13,15 +13,14 @@
 // limitations under the License.
 
 use alloc::borrow::Cow;
-use alloc::vec::Vec;
 
 use header::Header;
+use nrf52840_hal::pac::FICR;
 use wasefire_board_api::Error;
 use wasefire_board_api::platform::Api;
 use wasefire_common::platform::Side;
 use wasefire_error::Code;
-
-use crate::with_state;
+use wasefire_sync::Once;
 
 pub mod update;
 
@@ -33,14 +32,7 @@ impl Api for Impl {
     type Update = update::Impl;
 
     fn serial() -> Cow<'static, [u8]> {
-        with_state(|state| {
-            let low = state.ficr.deviceid[0].read().deviceid().bits();
-            let high = state.ficr.deviceid[1].read().deviceid().bits();
-            let mut serial = Vec::with_capacity(8);
-            serial.extend_from_slice(&high.to_be_bytes());
-            serial.extend_from_slice(&low.to_be_bytes());
-            serial.into()
-        })
+        serial().into()
     }
 
     fn running_side() -> Side {
@@ -72,3 +64,18 @@ pub fn reboot() -> ! {
     wasefire_logger::flush();
     nrf52840_hal::pac::SCB::sys_reset()
 }
+
+pub fn init_serial(ficr: &FICR) {
+    let low = ficr.deviceid[0].read().deviceid().bits();
+    let high = ficr.deviceid[1].read().deviceid().bits();
+    let mut serial = [0; 8];
+    serial[.. 4].copy_from_slice(&high.to_be_bytes());
+    serial[4 ..].copy_from_slice(&low.to_be_bytes());
+    SERIAL.call_once(|| serial);
+}
+
+pub fn serial() -> &'static [u8; 8] {
+    SERIAL.get().unwrap()
+}
+
+static SERIAL: Once<[u8; 8]> = Once::new();
