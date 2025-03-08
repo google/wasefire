@@ -139,7 +139,7 @@ impl BranchTableEntry {
     }
 
     pub fn view<M: Mode>(self) -> MResult<BranchTableEntryView, M> {
-        let pop_val_counts = parse_u16::<Use>(&self.0, 4).unwrap();
+        let pop_val_counts = parse_u16::<M>(&self.0, 4)?;
         Ok(BranchTableEntryView {
             delta_ip: (parse_u16::<M>(&self.0, 0)? as i16) as i32,
             delta_stp: (parse_u16::<M>(&self.0, 2)? as i16) as i32,
