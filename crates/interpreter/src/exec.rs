@@ -1408,14 +1408,19 @@ impl<'m> Frame<'m> {
     }
 
     fn skip_jump(&mut self) {
-        self.side_table = offset_front(self.side_table, 1);
+        self.side_table = offset_front::<BranchTableEntry, Use>(self.side_table, 1).unwrap();
     }
 
     fn take_jump(&mut self, parser_pos: &'m [u8], offset: usize) -> Parser<'m> {
-        self.side_table = offset_front(self.side_table, offset as isize);
+        self.side_table =
+            offset_front::<BranchTableEntry, Use>(self.side_table, offset as isize).unwrap();
         let entry = self.side_table[0].view();
-        self.side_table = offset_front(self.side_table, entry.delta_stp as isize);
-        unsafe { Parser::new(offset_front(parser_pos, entry.delta_ip as isize)) }
+        self.side_table =
+            offset_front::<BranchTableEntry, Use>(self.side_table, entry.delta_stp as isize)
+                .unwrap();
+        unsafe {
+            Parser::new(offset_front::<u8, Use>(parser_pos, entry.delta_ip as isize).unwrap())
+        }
     }
 }
 

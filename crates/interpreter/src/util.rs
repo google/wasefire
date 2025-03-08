@@ -12,10 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO(dev/fast-interp): Add debug asserts when `off` is positive and negative, and `toctou`
-// support.
-pub fn offset_front<T>(cur: &[T], off: isize) -> &[T] {
-    unsafe {
-        core::slice::from_raw_parts(cur.as_ptr().offset(off), (cur.len() as isize - off) as usize)
-    }
+use crate::toctou::*;
+
+// TODO(dev/fast-interp): Add debug asserts when `off` is positive and negative.
+pub fn offset_front<T, M: Mode>(cur: &[T], off: isize) -> MResult<&[T], M> {
+    M::choose(
+        || unsafe {
+            Option::from(core::slice::from_raw_parts(
+                cur.as_ptr().offset(off),
+                (cur.len() as isize - off) as usize,
+            ))
+        },
+        || unsafe {
+            core::slice::from_raw_parts(
+                cur.as_ptr().offset(off),
+                (cur.len() as isize - off) as usize,
+            )
+        },
+    )
 }

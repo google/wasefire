@@ -192,7 +192,7 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
     fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
         let entry = self.metadata.branch_table()[source.branch_table].view();
         // TODO(dev/fast-interp): We want a safe version of offset_front.
-        source.parser = offset_front(source.parser, entry.delta_ip as isize);
+        source.parser = offset_front::<u8, Check>(source.parser, entry.delta_ip as isize)?;
         source.branch_table =
             source.branch_table.checked_add_signed(entry.delta_stp as isize).ok_or_else(invalid)?;
         source.stack -= entry.pop_cnt as usize;
@@ -1002,7 +1002,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
                 if let Some(source) = source {
                     let source = self.branch_table.as_ref().unwrap().patch_branch(source)?;
                     // SAFETY: This function is only called after parsing an End instruction.
-                    target.parser = offset_front(target.parser, -1);
+                    target.parser = offset_front::<u8, Check>(target.parser, -1)?;
                     self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
                 }
             }
