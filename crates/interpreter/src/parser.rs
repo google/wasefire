@@ -552,7 +552,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         user.init(self.parse_bytes(len)?)
     }
 
-    pub fn parse_side_table(&mut self) -> MResult<SideTableView<'m, M>, M> {
+    pub fn parse_side_table(&mut self) -> MResult<SideTableView<'m>, M> {
         let id = self.parse_section_id()?;
         M::check(|| id == SectionId::Custom)?;
         let mut parser = self.split_section()?;
@@ -562,7 +562,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         let num_funcs = u16::from_le_bytes(num_funcs) as usize;
         let indices = parser.parse_bytes((num_funcs + 1) * 2)?;
         let metadata = parser.save();
-        Ok(SideTableView { indices, metadata, mode: PhantomData })
+        Ok(SideTableView { indices, metadata })
     }
 
     pub fn skip_to_end(&mut self, l: LabelIdx) -> MResult<(), M> {
