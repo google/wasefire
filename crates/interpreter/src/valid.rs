@@ -164,7 +164,7 @@ impl ValidMode for Verify {
     fn next_branch_table<'a, 'm>(
         side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
     ) -> Result<Self::BranchTable<'a, 'm>, Error> {
-        let metadata = side_table.view.metadata(side_table.func_idx);
+        let metadata = side_table.view.metadata::<Check>(side_table.func_idx)?;
         side_table.func_idx += 1;
         check(metadata.type_idx() == type_idx)?;
         check(metadata.parser_range() == parser_range)?;
@@ -190,7 +190,7 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
     }
 
     fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
-        let entry = self.metadata.branch_table()[source.branch_table].view();
+        let entry = self.metadata.branch_table()[source.branch_table].view::<Check>()?;
         // TODO(dev/fast-interp): We want a safe version of offset_front.
         source.parser = offset_front(source.parser, entry.delta_ip as isize);
         source.branch_table =

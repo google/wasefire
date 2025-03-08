@@ -1045,7 +1045,8 @@ impl<'m> Thread<'m> {
             return self.exit_frame();
         }
         frame.labels_cnt = i;
-        let BranchTableEntryView { val_cnt, pop_cnt, .. } = frame.side_table[offset].view();
+        let Ok(BranchTableEntryView { val_cnt, pop_cnt, .. }) =
+            frame.side_table[offset].view::<Use>();
         let val_pos = self.values().len() - val_cnt as usize;
         self.values().drain(val_pos - pop_cnt as usize .. val_pos);
         self.take_jump(offset);
@@ -1413,7 +1414,7 @@ impl<'m> Frame<'m> {
 
     fn take_jump(&mut self, parser_pos: &'m [u8], offset: usize) -> Parser<'m> {
         self.side_table = offset_front(self.side_table, offset as isize);
-        let entry = self.side_table[0].view();
+        let entry = self.side_table[0].view::<Use>().into_ok();
         self.side_table = offset_front(self.side_table, entry.delta_stp as isize);
         unsafe { Parser::new(offset_front(parser_pos, entry.delta_ip as isize)) }
     }
