@@ -97,6 +97,7 @@ GIT_MODULES='
 SchemaStore/schemastore
 WebAssembly/spec
 google/OpenSK
+lowRISC/opentitan
 rust-lang/rustup
 wasm3/wasm-coremark
 '

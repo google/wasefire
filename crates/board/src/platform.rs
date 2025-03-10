@@ -82,7 +82,7 @@ pub type Update<B> = <super::Platform<B> as Api>::Update;
 pub fn usb_device<U: UsbBus, B: crate::Api>(usb_bus: &UsbBusAllocator<U>) -> UsbDevice<'_, U> {
     let serial = data_encoding::HEXLOWER.encode(&B::Platform::serial());
     UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x18d1, 0x0239))
-        .strings(&[StringDescriptors::new(usb_device::LangID::EN)
+        .strings(&[StringDescriptors::new(usb_device::LangID::EN_US)
             .manufacturer("Google Inc.")
             .product("Wasefire")
             .serial_number(Box::leak(Box::new(serial)))])
