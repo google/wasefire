@@ -16,7 +16,7 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use anyhow::{Result, bail, ensure};
+use anyhow::{Result, anyhow, bail, ensure};
 use clap::{ValueEnum, ValueHint};
 use rusb::GlobalContext;
 use tokio::process::Command;
@@ -696,6 +696,8 @@ impl Display for OptLevel {
 }
 
 /// Strips and optimizes a WASM applet.
+///
+/// This also computes the side-table and inserts it as the first section.
 pub async fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> Result<()> {
     let mut strip = Command::new("wasm-strip");
     strip.arg(applet.as_ref());
@@ -710,6 +712,11 @@ pub async fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>
     opt.arg("-o");
     opt.arg(applet.as_ref());
     cmd::execute(&mut opt).await?;
+    // Compute the side-table.
+    let wasm = fs::read(applet.as_ref()).await?;
+    let wasm = wasefire_interpreter::prepare(&wasm)
+        .map_err(|_| anyhow!("failed to compute side-table"))?;
+    fs::write(applet.as_ref(), &wasm).await?;
     Ok(())
 }
 
