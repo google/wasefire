@@ -31,6 +31,7 @@ done
 [ -z "$GITHUB_BASE_REF" ] && exit
 expected=$(date +%Y)
 for file in $(git diff "origin/$GITHUB_BASE_REF" --summary | grep '^ create ' | cut -f5 -d' '); do
+  [ -d $file ] && continue
   actual=$(sed -n 'N;s/^.*Copyright \(....\).*$/\1/p;q' "$file")
   [ -n "$actual" ] || continue
   line=$(grep -n Copyright $file | cut -f1 -d:)
