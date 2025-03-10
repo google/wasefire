@@ -41,7 +41,7 @@ ensure_cargo() {
 }
 
 IS_CARGO=y
-# This list is read and modified by scripts/upgrade.sh.
+# This list is read and modified by scripts/upgrade.sh. It is also read by scripts/ci-cache.sh.
 case "$1" in
   cargo)
     case "$2" in

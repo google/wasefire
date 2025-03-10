@@ -1,7 +1,7 @@
 [alias]
-update-api = "run --manifest-path ./crates/api-desc/crates/update/Cargo.toml"
-wasefire = "run --manifest-path ./crates/cli/Cargo.toml --features=_dev --"
-xtask = "run --manifest-path ./crates/xtask/Cargo.toml --"
+update-api = "run --manifest-path=crates/api-desc/crates/update/Cargo.toml"
+wasefire = "run --manifest-path=crates/cli/Cargo.toml --features=_dev --"
+xtask = "run --manifest-path=crates/xtask/Cargo.toml --"
 
 [build]
 target-dir = "target"
