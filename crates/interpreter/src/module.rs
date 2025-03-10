@@ -112,7 +112,7 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func_type(&self, x: FuncIdx) -> FuncType<'m> {
-        self.types[self.side_table.metadata(x as usize).type_idx()]
+        self.types[self.side_table.metadata::<Use>(x as usize).into_ok().type_idx()]
     }
 
     pub(crate) fn table_type(&self, x: TableIdx) -> TableType {
@@ -173,7 +173,7 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
-        let metadata = self.side_table.metadata(x as usize);
+        let metadata = self.side_table.metadata::<Use>(x as usize).into_ok();
         (unsafe { Parser::new(&self.binary[metadata.parser_range()]) }, metadata.branch_table())
     }
 

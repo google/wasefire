@@ -16,7 +16,7 @@ use alloc::vec::Vec;
 use core::ops::Range;
 
 use crate::error::*;
-use crate::module::Parser;
+use crate::toctou::*;
 
 pub const SECTION_NAME: &str = "wasefire-sidetable";
 
@@ -27,13 +27,12 @@ pub struct SideTableView<'m> {
 }
 
 impl<'m> SideTableView<'m> {
-    // TODO(dev/fast-interp): Make it generic since it will be used in both `Check` and `Use` modes.
-    // (Returns `MResult<Metadata<'m>, M>` instead.)
-    pub fn metadata(&self, func_idx: usize) -> Metadata<'m> {
-        Metadata(
-            &self.metadata[parse_u16(self.indices, func_idx * 2) as usize
-                .. parse_u16(self.indices, (func_idx + 1) * 2) as usize],
-        )
+    pub fn metadata<M: Mode>(&self, func_idx: usize) -> MResult<Metadata<'m>, M> {
+        let start_idx = M::open(|| func_idx.checked_mul(2))?;
+        let end_idx = M::open(|| start_idx.checked_add(2))?;
+        let start = parse_u16::<M>(self.indices, start_idx)? as usize;
+        let end = parse_u16::<M>(self.indices, end_idx)? as usize;
+        Ok(Metadata(M::open(|| self.metadata.get(start .. end))?))
     }
 }
 
@@ -42,12 +41,7 @@ pub struct Metadata<'m>(&'m [u8]);
 
 impl<'m> Metadata<'m> {
     pub fn type_idx(&self) -> usize {
-        parse_u16(self.0, 0) as usize
-    }
-
-    #[allow(dead_code)]
-    pub fn parser(&self, module: &'m [u8]) -> Parser<'m> {
-        unsafe { Parser::new(&module[self.parser_range()]) }
+        parse_u16::<Use>(self.0, 0).into_ok() as usize
     }
 
     pub fn branch_table(&self) -> &'m [BranchTableEntry] {
@@ -137,14 +131,14 @@ impl BranchTableEntry {
         ]))
     }
 
-    pub fn view(self) -> BranchTableEntryView {
-        let pop_val_counts = parse_u16(&self.0, 4);
-        BranchTableEntryView {
-            delta_ip: (parse_u16(&self.0, 0) as i16) as i32,
-            delta_stp: (parse_u16(&self.0, 2) as i16) as i32,
+    pub fn view<M: Mode>(self) -> MResult<BranchTableEntryView, M> {
+        let pop_val_counts = parse_u16::<M>(&self.0, 4)?;
+        Ok(BranchTableEntryView {
+            delta_ip: (parse_u16::<M>(&self.0, 0)? as i16) as i32,
+            delta_stp: (parse_u16::<M>(&self.0, 2)? as i16) as i32,
             val_cnt: (pop_val_counts & 0xf) as u32,
             pop_cnt: (pop_val_counts >> 4) as u32,
-        }
+        })
     }
 
     pub fn is_invalid(self) -> bool {
@@ -156,8 +150,9 @@ impl BranchTableEntry {
     }
 }
 
-fn parse_u16(data: &[u8], offset: usize) -> u16 {
-    u16::from_le_bytes(data[offset ..][.. 2].try_into().unwrap())
+fn parse_u16<M: Mode>(data: &[u8], offset: usize) -> MResult<u16, M> {
+    let bytes = M::open(|| try { data.get(offset .. offset.checked_add(2)?)? })?;
+    Ok(u16::from_le_bytes(bytes.try_into().unwrap()))
 }
 
 fn parse_u32(data: &[u8], offset: usize) -> u32 {
