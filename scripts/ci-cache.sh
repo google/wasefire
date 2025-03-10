@@ -18,6 +18,8 @@ set -e
 
 # This script builds the CI cache.
 
+./scripts/setup.sh
+
 x cargo build --manifest-path=crates/xtask/Cargo.toml
 
 build() {
