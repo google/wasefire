@@ -51,16 +51,19 @@ runs:
       run: ./scripts/ci-runners.sh
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-0') }}
-      run: ./scripts/ci-tests.sh 0 4
+      run: ./scripts/ci-tests.sh 0 5
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-1') }}
-      run: ./scripts/ci-tests.sh 1 4
+      run: ./scripts/ci-tests.sh 1 5
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-2') }}
-      run: ./scripts/ci-tests.sh 2 4
+      run: ./scripts/ci-tests.sh 2 5
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-3') }}
-      run: ./scripts/ci-tests.sh 3 4
+      run: ./scripts/ci-tests.sh 3 5
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'tests-4') }}
+      run: ./scripts/ci-tests.sh 4 5
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'hw-host') }}
       run: ./scripts/hwci.sh host
