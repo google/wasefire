@@ -16,7 +16,6 @@ use alloc::vec::Vec;
 use core::ops::Range;
 
 use crate::error::*;
-use crate::module::Parser;
 use crate::toctou::*;
 
 pub const SECTION_NAME: &str = "wasefire-sidetable";
@@ -29,11 +28,10 @@ pub struct SideTableView<'m> {
 
 impl<'m> SideTableView<'m> {
     pub fn metadata<M: Mode>(&self, func_idx: usize) -> MResult<Metadata<'m>, M> {
-        let start = parse_u16::<M>(self.indices, M::open(|| func_idx.checked_mul(2))?)? as usize;
-        let end = parse_u16::<M>(
-            self.indices,
-            M::open(|| func_idx.checked_add(1).and_then(|x| x.checked_mul(2)))?,
-        )? as usize;
+        let start_idx = M::open(|| func_idx.checked_mul(2))?;
+        let end_idx = M::open(|| start_idx.checked_add(2))?;
+        let start = parse_u16::<M>(self.indices, start_idx)? as usize;
+        let end = parse_u16::<M>(self.indices, end_idx)? as usize;
         Ok(Metadata(M::open(|| self.metadata.get(start .. end))?))
     }
 }
@@ -44,11 +42,6 @@ pub struct Metadata<'m>(&'m [u8]);
 impl<'m> Metadata<'m> {
     pub fn type_idx(&self) -> usize {
         parse_u16::<Use>(self.0, 0).into_ok() as usize
-    }
-
-    #[allow(dead_code)]
-    pub fn parser(&self, module: &'m [u8]) -> Parser<'m> {
-        unsafe { Parser::new(&module[self.parser_range()]) }
     }
 
     pub fn branch_table(&self) -> &'m [BranchTableEntry] {
@@ -158,8 +151,7 @@ impl BranchTableEntry {
 }
 
 fn parse_u16<M: Mode>(data: &[u8], offset: usize) -> MResult<u16, M> {
-    let bytes = data.get(offset .. M::open(|| offset.checked_add(2))?);
-    let bytes = M::open(|| bytes)?;
+    let bytes = M::open(|| try { data.get(offset .. offset.checked_add(2)?)? })?;
     Ok(u16::from_le_bytes(bytes.try_into().unwrap()))
 }
 
