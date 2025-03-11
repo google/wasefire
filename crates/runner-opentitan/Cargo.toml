@@ -41,7 +41,12 @@ features = ["single-hart", "v-trap"]
 
 [dependencies.wasefire-scheduler]
 path = "../scheduler"
-features = ["board-api-crypto-sha256", "board-api-storage", "board-api-timer"]
+features = [
+  "board-api-crypto-hmac-sha256",
+  "board-api-crypto-sha256",
+  "board-api-storage",
+  "board-api-timer",
+]
 
 [features]
 # Implements vendor APIs for testing.

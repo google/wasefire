@@ -19,5 +19,6 @@ mod hmac;
 pub enum Impl {}
 
 impl crypto::Api for Impl {
+    type HmacSha256 = hmac::HmacSha256;
     type Sha256 = hmac::Sha256;
 }
