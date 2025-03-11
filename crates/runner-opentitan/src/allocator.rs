@@ -18,11 +18,10 @@ use crate::symbol_addr;
 
 #[global_allocator]
 static ALLOCATOR: Heap = Heap::empty();
-const _: () = assert!(core::mem::size_of::<Heap>() == 4232);
 
 pub fn init() {
     let heap_start = riscv_rt::heap_start() as usize;
     let heap_size = symbol_addr!(_heap_size) as usize;
-    // Unsafe: Called only once before any allocation.
+    // SAFETY: Called only once before any allocation.
     unsafe { ALLOCATOR.init(heap_start, heap_size) }
 }

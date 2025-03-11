@@ -94,8 +94,6 @@ fn write(bytes: &[u8]) {
     }
 }
 
-// C reference: sw/device/silicon_creator/lib/drivers/uart.c
-
 fn putchar(byte: u8) {
     while UART[0].status().read().txfull() {}
     UART[0].wdata().write_raw(byte as u32);

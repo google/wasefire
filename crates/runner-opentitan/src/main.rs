@@ -72,7 +72,7 @@ fn main() -> ! {
     time::init();
     flash::init();
     board::init();
-    // Interrupts may assume the board in initialized, so this must be last.
+    // Interrupts may assume the board is initialized, so this must be last.
     plic::init();
     log::debug!("Runner is initialized.");
     Scheduler::<board::Board>::run();

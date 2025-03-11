@@ -27,6 +27,6 @@ pub fn init() {
     let sheap = addr_of_mut!(__sheap) as usize;
     let eheap = addr_of_mut!(__eheap) as usize;
     assert!(sheap < eheap);
-    // Unsafe: Called only once before any allocation.
+    // SAFETY: Called only once before any allocation.
     unsafe { ALLOCATOR.init(sheap, eheap - sheap) }
 }
