@@ -14,7 +14,7 @@ A board is supported if it has a Runner.
 
 - [x] Linux (for testing without hardware)
 - [x] nRF52840
-- [ ] OpenTitan
+- [x] OpenTitan
 
 ## Supported applet languages
 
@@ -67,8 +67,7 @@ to be written in the same language to inter-operate.
 
 ## Platform side-channel attack testing and resistance
 
-- [ ] Crypto hardware accelerators are leveraged when available (board specific).
-   - [x] AES CCM (Bluetooth spec) on nRF52840
+- [x] Crypto hardware accelerators are leveraged when available (board specific).
 - [x] Software crypto primitives are provided as fallback.
 - [ ] Both of those implementations are side-channel attack resilient.
 

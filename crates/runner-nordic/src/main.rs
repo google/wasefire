@@ -129,9 +129,9 @@ fn main() -> ! {
     static mut CLOCKS: MaybeUninit<Clocks> = MaybeUninit::uninit();
     static mut USB_BUS: MaybeUninit<UsbBusAllocator<Usb>> = MaybeUninit::uninit();
 
+    allocator::init();
     let c = nrf52840_hal::pac::CorePeripherals::take().unwrap();
     systick::init(c.SYST);
-    allocator::init();
     log::debug!("Runner starts.");
     let p = nrf52840_hal::pac::Peripherals::take().unwrap();
     let port0 = gpio::p0::Parts::new(p.P0);
