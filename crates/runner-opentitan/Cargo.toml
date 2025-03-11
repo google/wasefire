@@ -55,6 +55,7 @@ test-vendor = []
 debug = [
   "dep:defmt",
   "usb-device/defmt",
+  "wasefire-common/defmt",
   "wasefire-logger/defmt",
   "wasefire-protocol-usb/defmt",
   "wasefire-scheduler/defmt",
