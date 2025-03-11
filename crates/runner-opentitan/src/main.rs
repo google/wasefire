@@ -14,6 +14,7 @@
 
 #![no_std]
 #![no_main]
+#![feature(array_chunks)]
 #![feature(never_type)]
 
 extern crate alloc;
@@ -32,6 +33,7 @@ mod allocator;
 mod board;
 mod error;
 mod flash;
+mod hmac;
 mod manifest;
 mod multibit;
 mod plic;

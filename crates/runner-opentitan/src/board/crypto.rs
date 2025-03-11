@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,18 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_error::SpaceParam;
+use wasefire_board_api::crypto;
 
-#[repr(u8)]
-pub enum Space {
-    Flash = 0x81,
-    Hmac = 0x82,
+mod hmac;
+
+pub enum Impl {}
+
+impl crypto::Api for Impl {
+    type Sha256 = hmac::Sha256;
 }
-
-impl From<Space> for u8 {
-    fn from(value: Space) -> Self {
-        value as u8
-    }
-}
-
-impl SpaceParam for Space {}
