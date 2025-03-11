@@ -20,12 +20,12 @@ use crypto_common::BlockSizeUser;
 use crypto_common::Output;
 #[cfg(feature = "internal-api-crypto-hmac")]
 use crypto_common::{InvalidLength, KeyInit};
-#[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
-use digest::Update;
-#[cfg(feature = "internal-api-crypto-hmac")]
-use digest::{FixedOutput, MacMarker};
 #[cfg(feature = "internal-api-crypto-hash")]
-use digest::{FixedOutputReset, HashMarker};
+use digest::HashMarker;
+#[cfg(feature = "internal-api-crypto-hmac")]
+use digest::MacMarker;
+#[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
+use digest::{FixedOutput, Update};
 #[cfg(feature = "internal-api-crypto-hmac")]
 use wasefire_error::Code;
 
@@ -81,7 +81,7 @@ pub trait Api: Send {
 /// Hash interface.
 #[cfg(feature = "internal-api-crypto-hash")]
 pub trait Hash:
-    Support<bool> + Send + Default + BlockSizeUser + Update + FixedOutputReset + HashMarker + WithError
+    Support<bool> + Send + Default + BlockSizeUser + Update + FixedOutput + HashMarker + WithError
 {
 }
 /// HMAC interface.
@@ -97,7 +97,7 @@ impl<T> Hash for T where T: Support<bool>
         + Default
         + BlockSizeUser
         + Update
-        + FixedOutputReset
+        + FixedOutput
         + HashMarker
         + WithError
 {
