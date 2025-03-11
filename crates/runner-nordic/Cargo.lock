@@ -1314,6 +1314,7 @@ dependencies = [
  "wasefire-logger",
  "wasefire-protocol",
  "wasefire-store",
+ "wasefire-sync",
 ]
 
 [[package]]

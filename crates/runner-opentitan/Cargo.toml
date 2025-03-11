@@ -28,14 +28,12 @@ wasefire-sync = { path = "../sync", features = ["unsafe-assume-single-core"] }
 [dependencies.riscv]
 git = "https://github.com/rust-embedded/riscv.git"
 rev = "dc769e41acb930c0eea4893c657b03cb1d1fda5a"
-# version = "0.13.0"
 features = ["critical-section-single-hart"]
 
 # TODO(https://github.com/rust-embedded/riscv/issues/247): See above.
 [dependencies.riscv-rt]
 git = "https://github.com/rust-embedded/riscv.git"
 rev = "dc769e41acb930c0eea4893c657b03cb1d1fda5a"
-# version = "0.14.0"
 features = ["single-hart", "v-trap"]
 
 [dependencies.wasefire-scheduler]
