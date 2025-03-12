@@ -16,15 +16,15 @@ name = "wasefire"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = { version = "1.0.86", default-features = false }
-clap = { version = "4.5.4", default-features = false, features = ["default", "derive", "env"] }
-clap_complete = { version = "4.5.2", default-features = false }
-env_logger = { version = "0.11.3", default-features = false, features = ["default"] }
+anyhow = { version = "1.0.97", default-features = false }
+clap = { version = "4.5.32", default-features = false, features = ["default", "derive", "env"] }
+clap_complete = { version = "4.5.46", default-features = false }
+env_logger = { version = "0.11.7", default-features = false, features = ["default"] }
 wasefire-cli-tools = { version = "0.3.0-git", path = "../cli-tools", features = ["action"] }
 wasefire-one-of = { version = "0.1.1-git", path = "../one-of" }
 
 [dependencies.tokio]
-version = "1.40.0"
+version = "1.44.0"
 default-features = false
 features = ["macros", "parking_lot", "rt", "rt-multi-thread"]
 

@@ -1,0 +1,72 @@
+[package]
+name = "runner-opentitan"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2024"
+
+[dependencies]
+critical-section = "1.2.0"
+crypto-common = { version = "0.1.6", default-features = false }
+defmt = { version = "0.3.10", optional = true }
+digest = { version = "0.10.7", default-features = false }
+earlgrey = { path = "crates/earlgrey" }
+embedded-alloc = "0.6.0"
+typenum = { version = "1.18.0", default-features = false }
+usb-device = { version = "0.3.2", default-features = false }
+wasefire-board-api = { path = "../board" }
+wasefire-common = { path = "../common" }
+wasefire-error = { path = "../error" }
+wasefire-interpreter = { path = "../interpreter", optional = true }
+wasefire-logger = { path = "../logger" }
+wasefire-one-of = { path = "../one-of" }
+wasefire-protocol-usb = { path = "../protocol-usb", features = ["device"] }
+wasefire-store = { path = "../store" }
+wasefire-sync = { path = "../sync", features = ["unsafe-assume-single-core"] }
+
+# TODO(https://github.com/rust-embedded/riscv/issues/247):
+# - Change commit hash once merged (reachable from master).
+# - Use crates.io version once released.
+[dependencies.riscv]
+git = "https://github.com/rust-embedded/riscv.git"
+rev = "dc769e41acb930c0eea4893c657b03cb1d1fda5a"
+features = ["critical-section-single-hart"]
+
+# TODO(https://github.com/rust-embedded/riscv/issues/247): See above.
+[dependencies.riscv-rt]
+git = "https://github.com/rust-embedded/riscv.git"
+rev = "dc769e41acb930c0eea4893c657b03cb1d1fda5a"
+features = ["single-hart", "v-trap"]
+
+[dependencies.wasefire-scheduler]
+path = "../scheduler"
+features = [
+  "board-api-crypto-hmac-sha256",
+  "board-api-crypto-sha256",
+  "board-api-storage",
+  "board-api-timer",
+]
+
+[features]
+# Implements vendor APIs for testing.
+test-vendor = []
+# Exactly one is enabled by xtask.
+debug = [
+  "dep:defmt",
+  "usb-device/defmt",
+  "wasefire-common/defmt",
+  "wasefire-logger/defmt",
+  "wasefire-protocol-usb/defmt",
+  "wasefire-scheduler/defmt",
+]
+release = []
+# Exactly one is enabled by xtask.
+native = ["wasefire-scheduler/native"]
+wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
+
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.unit-arg = "allow"
+rust.unused-crate-dependencies = "warn"

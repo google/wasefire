@@ -4,6 +4,7 @@
 
 ### Major
 
+- Change `crypto::Hash` bound from `FixedOutputReset` to `FixedOutput`
 - Rename `platform::Api::version()` to `platform::Api::running_version()`
 - Remove `platform::update::Api::metadata()` which is a vendor-specific functionality
 
@@ -182,4 +183,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 6 -->
+<!-- Increment to skip CHANGELOG.md test: 8 -->

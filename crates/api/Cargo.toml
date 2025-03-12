@@ -16,7 +16,7 @@ default-target = "wasm32-unknown-unknown"
 features = ["full-api", "wasm"]
 
 [dependencies]
-bytemuck = { version = "1.21.0", default-features = false, features = ["derive"] }
+bytemuck = { version = "1.22.0", default-features = false, features = ["derive"] }
 sealed = { version = "0.6.0", default-features = false, optional = true }
 wasefire-applet-api-macro = { version = "0.8.0-git", path = "../api-macro" }
 wasefire-error = { version = "0.1.3-git", path = "../error" }

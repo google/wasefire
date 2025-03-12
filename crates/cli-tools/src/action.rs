@@ -576,6 +576,9 @@ impl RustAppletBuild {
             Some(target) => {
                 cargo.args(["--crate-type=staticlib", &format!("--target={target}")]);
                 wasefire_feature(package, "native", &mut cargo)?;
+                if target == "riscv32imc-unknown-none-elf" {
+                    wasefire_feature(package, "unsafe-assume-single-core", &mut cargo)?;
+                }
             }
         }
         let profile = &self.profile;

@@ -63,6 +63,10 @@ runner-host
 runner-nordic/crates/header
 runner-nordic
 runner-nordic/crates/bootloader
+runner-opentitan/crates/register
+runner-opentitan/crates/earlgrey
+runner-opentitan
+runner-opentitan/crates/earlgrey/crates/generate
 wasm-bench
 '
 

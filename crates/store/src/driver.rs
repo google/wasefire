@@ -16,6 +16,8 @@
 //!
 //! [`StoreDriver`] wraps a [`Store`] and compares its behavior with its associated [`StoreModel`].
 
+#![allow(clippy::result_large_err)]
+
 use wasefire_error::Error;
 
 #[cfg(feature = "std")]

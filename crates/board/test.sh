@@ -26,4 +26,5 @@ cargo test --lib --features=full-api,std
 cargo check --lib --target=thumbv7em-none-eabi --features=full-api
 cargo check --lib --target=thumbv7em-none-eabi --features=full-api,defmt
 cargo check --lib --target=thumbv7em-none-eabi --features=full-api,internal-software-crypto
-cargo check --lib --target=riscv32imc-unknown-none-elf --features=full-api
+cargo check --lib --target=riscv32imc-unknown-none-elf --features=full-api \
+--features=wasefire-sync/unsafe-assume-single-core

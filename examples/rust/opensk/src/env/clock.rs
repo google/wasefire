@@ -19,12 +19,12 @@ use crate::env::WasefireEnv;
 impl Clock for WasefireEnv {
     type Timer = u64;
 
-    fn make_timer(&mut self, ms: usize) -> Self::Timer {
-        now_us() + 1000 * ms as u64
+    fn make_timer(&mut self, timeout_ms: usize) -> Self::Timer {
+        now_us() + 1000 * timeout_ms as u64
     }
 
-    fn is_elapsed(&mut self, timer: &Self::Timer) -> bool {
-        now_us() <= *timer
+    fn is_elapsed(&mut self, deadline: &Self::Timer) -> bool {
+        *deadline < now_us()
     }
 
     #[cfg(feature = "debug")]

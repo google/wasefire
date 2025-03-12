@@ -14,10 +14,11 @@
 
 //! Platform interface.
 
-use alloc::boxed::Box;
+use alloc::string::String;
 
 use usb_device::bus::{UsbBus, UsbBusAllocator};
 use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidPid};
+use wasefire_sync::Once;
 
 use crate::Error;
 
@@ -80,12 +81,13 @@ pub type Update<B> = <super::Platform<B> as Api>::Update;
 ///
 /// The USB bus should have the Wasefire protocol registered. It may have additional USB classes.
 pub fn usb_device<U: UsbBus, B: crate::Api>(usb_bus: &UsbBusAllocator<U>) -> UsbDevice<'_, U> {
-    let serial = data_encoding::HEXLOWER.encode(&B::Platform::serial());
+    static SERIAL: Once<String> = Once::new();
+    let serial = SERIAL.call_once(|| data_encoding::HEXLOWER.encode(&B::Platform::serial()));
     UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x18d1, 0x0239))
-        .strings(&[StringDescriptors::new(usb_device::LangID::EN)
+        .strings(&[StringDescriptors::new(usb_device::LangID::EN_US)
             .manufacturer("Google Inc.")
             .product("Wasefire")
-            .serial_number(Box::leak(Box::new(serial)))])
+            .serial_number(serial)])
         .unwrap()
         .build()
 }

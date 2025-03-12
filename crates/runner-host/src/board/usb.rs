@@ -21,7 +21,6 @@ use usb_device::UsbError;
 use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::prelude::UsbDevice;
-use usbd_hid::descriptor::{CtapReport, SerializedDescriptor};
 use usbd_hid::hid_class::HIDClass;
 use usbd_serial::SerialPort;
 use usbip_device::UsbIpBus;
@@ -105,7 +104,12 @@ impl State {
             state.protocol = Some(Rpc::new(usb_bus));
         }
         if ctap {
-            state.ctap = Some(Ctap::new(HIDClass::new(usb_bus, CtapReport::desc(), 255)));
+            const CTAP_REPORT_DESCRIPTOR: &[u8] = &[
+                0x06, 0xd0, 0xf1, 0x09, 0x01, 0xa1, 0x01, 0x09, 0x20, 0x15, 0x00, 0x26, 0xff, 0x00,
+                0x75, 0x08, 0x95, 0x40, 0x81, 0x02, 0x09, 0x21, 0x15, 0x00, 0x26, 0xff, 0x00, 0x75,
+                0x08, 0x95, 0x40, 0x91, 0x02, 0xc0,
+            ];
+            state.ctap = Some(Ctap::new(HIDClass::new(usb_bus, CTAP_REPORT_DESCRIPTOR, 5)));
         }
         if serial {
             state.serial = Some(Serial::new(SerialPort::new(usb_bus)));

@@ -55,8 +55,6 @@ use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::device::UsbDevice;
 #[cfg(feature = "usb-ctap")]
-use usbd_hid::descriptor::{CtapReport, SerializedDescriptor};
-#[cfg(feature = "usb-ctap")]
 use usbd_hid::hid_class::HIDClass;
 #[cfg(feature = "usb-serial")]
 use usbd_serial::SerialPort;
@@ -131,9 +129,9 @@ fn main() -> ! {
     static mut CLOCKS: MaybeUninit<Clocks> = MaybeUninit::uninit();
     static mut USB_BUS: MaybeUninit<UsbBusAllocator<Usb>> = MaybeUninit::uninit();
 
+    allocator::init();
     let c = nrf52840_hal::pac::CorePeripherals::take().unwrap();
     systick::init(c.SYST);
-    allocator::init();
     log::debug!("Runner starts.");
     let p = nrf52840_hal::pac::Peripherals::take().unwrap();
     let port0 = gpio::p0::Parts::new(p.P0);
@@ -171,7 +169,13 @@ fn main() -> ! {
     let usb_bus = USB_BUS.write(usb_bus);
     let protocol = wasefire_protocol_usb::Rpc::new(usb_bus);
     #[cfg(feature = "usb-ctap")]
-    let ctap = Ctap::new(HIDClass::new(usb_bus, CtapReport::desc(), 255));
+    const CTAP_REPORT_DESCRIPTOR: &[u8] = &[
+        0x06, 0xd0, 0xf1, 0x09, 0x01, 0xa1, 0x01, 0x09, 0x20, 0x15, 0x00, 0x26, 0xff, 0x00, 0x75,
+        0x08, 0x95, 0x40, 0x81, 0x02, 0x09, 0x21, 0x15, 0x00, 0x26, 0xff, 0x00, 0x75, 0x08, 0x95,
+        0x40, 0x91, 0x02, 0xc0,
+    ];
+    #[cfg(feature = "usb-ctap")]
+    let ctap = Ctap::new(HIDClass::new(usb_bus, CTAP_REPORT_DESCRIPTOR, 5));
     #[cfg(feature = "usb-serial")]
     let serial = Serial::new(SerialPort::new(usb_bus));
     board::platform::init_serial(&p.FICR);

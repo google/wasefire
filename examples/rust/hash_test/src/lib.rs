@@ -87,7 +87,14 @@ fn test_hmac(name: &str, algorithm: Algorithm, vectors: &[HmacVector]) {
         #[cfg(not(feature = "rust-crypto"))]
         let mac_ = {
             let mut mac = vec![0; algorithm.digest_len()];
-            Hmac::hmac(algorithm, key, msg, &mut mac).unwrap();
+            match Hmac::hmac(algorithm, key, msg, &mut mac) {
+                // TODO: Remove this corner case once using OpenTitan A1 (instead of Z1).
+                Err(e) if e == Error::user(error::Code::InvalidLength) => {
+                    debug!("  unsupported");
+                    continue;
+                }
+                x => x.unwrap(),
+            }
             mac
         };
         assert_eq!(mac_[..], mac[..]);
