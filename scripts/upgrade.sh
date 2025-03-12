@@ -40,18 +40,8 @@ for crate in $(get_crates); do
   update_crate "$crate" "$(cargo_info_version "$crate")"
 done
 
-# TODO(https://github.com/rust-lang/cargo/issues/10307): Remove the loop and inline.
-update_breaking() {
-  while ! x cargo -Z unstable-options update --manifest-path=$1 --breaking; do
-    t 'Manually fix the issue with `cargo update <spec>` and hit ENTER'
-    read garbage
-  done
-}
-for crate in $TOPOLOGICAL_ORDER; do
-  update_breaking crates/$crate/Cargo.toml
-done
 for path in $(git ls-files '*/Cargo.toml'); do
-  update_breaking $path
+  ./scripts/wrapper.sh cargo upgrade --manifest-path=$path --incompatible=allow
 done
 
 ( cd examples/assemblyscript
