@@ -12,8 +12,8 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-defmt = { version = "0.3.8", default-features = false, optional = true }
-log = { version = "0.4.21", default-features = false, optional = true }
+defmt = { version = "0.3.10", default-features = false, optional = true }
+log = { version = "0.4.26", default-features = false, optional = true }
 
 [features]
 defmt = ["dep:defmt"]

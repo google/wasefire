@@ -6,7 +6,6 @@ license = "Apache-2.0"
 edition = "2024"
 
 [dependencies]
-rand_core = "0.6.4"
 wasefire = { path = "../../../crates/prelude" }
 
 [dependencies.opensk-lib]
