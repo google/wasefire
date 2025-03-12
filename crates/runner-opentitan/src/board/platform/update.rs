@@ -75,7 +75,7 @@ fn reboot() -> ! {
     let mut hash = crate::hmac::Hmac::start(None).unwrap();
     hash.update(&msg[32 .. 52]);
     hash.finalize((&mut msg[.. 32]).try_into().unwrap()).unwrap();
-    msg[..32].reverse();
+    msg[.. 32].reverse();
     for (addr, &word) in (0x40600008 ..).step_by(4).zip(msg.array_chunks()) {
         unsafe { (addr as *mut u32).write_volatile(u32::from_le_bytes(word)) };
     }
