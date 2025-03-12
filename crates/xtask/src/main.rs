@@ -596,8 +596,7 @@ impl RunnerOptions {
             }
             cmd::execute(Command::new("make").current_dir("crates/runner-host/crates/web-client"))
                 .await?;
-        }
-        if matches!(self.name, RunnerName::Nordic | RunnerName::OpenTitan) {
+        } else {
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
             if self.name == RunnerName::Nordic {
                 let version = version.as_deref().unwrap_or("00000000");
@@ -761,11 +760,10 @@ impl RunnerOptions {
                 return Ok(());
             }
         };
-        let chip = match self.name {
-            RunnerName::Host => unreachable!(),
-            RunnerName::OpenTitan => opentitan::execute(main, &flash.attach, &elf).await?,
-            _ => self.name.chip(),
-        };
+        if self.name == RunnerName::OpenTitan {
+            opentitan::execute(main, &flash.attach, &elf).await?;
+        }
+        let chip = self.name.chip();
         let session = Arc::new(Mutex::new(lazy::Lazy::new(|| {
             Ok(Session::auto_attach(
                 TargetSelector::Unspecified(chip.to_string()),
