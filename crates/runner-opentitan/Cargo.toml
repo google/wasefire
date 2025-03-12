@@ -8,9 +8,12 @@ edition = "2024"
 
 [dependencies]
 critical-section = "1.2.0"
+crypto-common = { version = "0.1.6", default-features = false }
 defmt = { version = "0.3.5", optional = true }
+digest = { version = "0.10.7", default-features = false }
 earlgrey = { path = "crates/earlgrey" }
 embedded-alloc = "0.6.0"
+typenum = { version = "1.17.0", default-features = false }
 usb-device = { version = "0.3.2", default-features = false }
 wasefire-board-api = { path = "../board" }
 wasefire-common = { path = "../common" }
@@ -38,7 +41,7 @@ features = ["single-hart", "v-trap"]
 
 [dependencies.wasefire-scheduler]
 path = "../scheduler"
-features = ["board-api-storage", "board-api-timer"]
+features = ["board-api-crypto-sha256", "board-api-storage", "board-api-timer"]
 
 [features]
 # Implements vendor APIs for testing.

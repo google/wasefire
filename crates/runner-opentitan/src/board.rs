@@ -20,6 +20,7 @@ use wasefire_error::Error;
 use wasefire_scheduler as scheduler;
 
 mod applet;
+mod crypto;
 mod debug;
 mod platform;
 mod storage;
@@ -79,6 +80,7 @@ impl board::Api for Board {
     }
 
     type Applet = applet::Impl;
+    type Crypto = crypto::Impl;
     type Debug = debug::Impl;
     type Platform = platform::Impl;
     type Storage = storage::Impl;
