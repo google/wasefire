@@ -25,7 +25,7 @@ pub struct ConnectionOptions {
 
     /// Timeout to send or receive with the USB serial.
     #[arg(long, default_value = "1s")]
-    timeout: humantime::Duration,
+    timeout: cyborgtime::Duration,
 }
 
 impl ConnectionOptions {
