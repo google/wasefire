@@ -19,4 +19,7 @@ fn main() {
 }
 
 // TODO(https://github.com/rust-lang/rust/issues/95513): Remove when fixed.
+#[cfg(feature = "rust-crypto")]
+use digest as _;
+// TODO(https://github.com/rust-lang/rust/issues/95513): Remove when fixed.
 use wasefire as _;

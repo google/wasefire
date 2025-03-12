@@ -337,7 +337,12 @@ mod rust_crypto {
         }
 
         fn new_from_slice(key: &[u8]) -> Result<Self, crypto_common::InvalidLength> {
-            Ok(Self(Hmac::new(Algorithm::Sha256, key).unwrap()))
+            match Hmac::new(Algorithm::Sha256, key) {
+                Err(e) if e == Error::user(Code::InvalidLength) => {
+                    Err(crypto_common::InvalidLength)
+                }
+                x => Ok(Self(x.unwrap())),
+            }
         }
     }
 

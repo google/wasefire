@@ -597,6 +597,8 @@ impl RunnerOptions {
             cmd::execute(Command::new("make").current_dir("crates/runner-host/crates/web-client"))
                 .await?;
         } else {
+            let native = main.is_native() as u8;
+            rustflags.push(format!("-C link-arg=--defsym=RUNNER_NATIVE={native}"));
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
             if self.name == RunnerName::Nordic {
                 let version = version.as_deref().unwrap_or("00000000");

@@ -71,12 +71,17 @@ fn test_hmac(name: &str, algorithm: Algorithm, vectors: &[HmacVector]) {
         debug!("- {count}");
         #[cfg(feature = "rust-crypto")]
         let mac_ = match algorithm {
-            Algorithm::Sha256 => HmacSha256::new_from_slice(key)
-                .unwrap()
-                .chain_update(msg)
-                .finalize()
-                .into_bytes()
-                .to_vec(),
+            Algorithm::Sha256 => {
+                let hmac = match HmacSha256::new_from_slice(key) {
+                    // TODO: Remove this corner case once using OpenTitan A1 (instead of Z1).
+                    Err(digest::InvalidLength) => {
+                        debug!("  unsupported");
+                        continue;
+                    }
+                    x => x.unwrap(),
+                };
+                hmac.chain_update(msg).finalize().into_bytes().to_vec()
+            }
             Algorithm::Sha384 => HmacSha384::new_from_slice(key)
                 .unwrap()
                 .chain_update(msg)
@@ -879,6 +884,9 @@ const HKDF_SHA384_VECTORS: &[HkdfVector] = &[
     },
 ];
 
+// TODO(https://github.com/rust-lang/rust/issues/95513): Remove when fixed.
+#[cfg(all(feature = "test", feature = "rust-crypto"))]
+use digest as _;
 // TODO(https://github.com/rust-lang/rust/issues/95513): Remove when fixed.
 #[cfg(feature = "test")]
 use wasefire_stub as _;
