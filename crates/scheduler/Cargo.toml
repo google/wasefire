@@ -16,12 +16,12 @@ categories = ["embedded", "no-std", "wasm"]
 features = ["std", "wasm"]
 
 [dependencies]
-bytemuck = { version = "1.21.0", default-features = false }
-defmt = { version = "0.3.8", default-features = false, optional = true }
+bytemuck = { version = "1.22.0", default-features = false }
+defmt = { version = "0.3.10", default-features = false, optional = true }
 derive-where = { version = "1.2.7", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
 generic-array = { version = "=0.14.7", default-features = false, optional = true }
-typenum = { version = "1.17.0", default-features = false, optional = true }
+typenum = { version = "1.18.0", default-features = false, optional = true }
 wasefire-applet-api = { version = "0.8.0-git", path = "../api", features = ["host"] }
 wasefire-board-api = { version = "0.9.0-git", path = "../board" }
 wasefire-common = { version = "0.1.0-git", path = "../common", optional = true }

@@ -6,7 +6,7 @@ license = "Apache-2.0"
 edition = "2024"
 
 [dependencies]
-thiserror = { version = "2.0.4", optional = true }
+thiserror = { version = "2.0.12", optional = true }
 
 [features]
 std = ["dep:thiserror"]

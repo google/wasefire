@@ -15,7 +15,7 @@
 use core::num::NonZeroU32;
 
 use opensk_lib::api::rng::Rng;
-use rand_core::{CryptoRng, RngCore, impls};
+use opensk_lib::api::rng::rand_core::{CryptoRng, Error, RngCore, impls};
 
 use crate::env::WasefireEnv;
 
@@ -36,7 +36,7 @@ impl RngCore for WasefireEnv {
         self.try_fill_bytes(dest).unwrap()
     }
 
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
         wasefire::rng::fill_bytes(dest).map_err(|_| NonZeroU32::new(1).unwrap().into())
     }
 }

@@ -9,8 +9,8 @@ edition = "2024"
 [dependencies]
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
 cortex-m-rt = { version = "0.7.5", features = ["set-vtor"] }
-critical-section = "1.1.2"
-defmt = { version = "0.3.8", features = ["avoid-default-panic"], optional = true }
+critical-section = "1.2.0"
+defmt = { version = "0.3.10", features = ["avoid-default-panic"], optional = true }
 defmt-rtt = { version = "0.4.1", optional = true }
 embedded-alloc = "0.6.0"
 embedded-hal = "1.0.0"
@@ -20,7 +20,7 @@ header = { path = "crates/header" }
 nrf52840-hal = { version = "0.18.0", features = ["embedded-hal-02"] }
 panic-abort = { version = "0.3.2", optional = true }
 panic-probe = { version = "0.3.2", features = ["print-defmt"], optional = true }
-typenum = { version = "1.17.0", default-features = false, optional = true }
+typenum = { version = "1.18.0", default-features = false, optional = true }
 usb-device = "0.3.2"
 usbd-hid = { version = "0.8.2", optional = true }
 usbd-serial = { version = "0.2.2", optional = true }

@@ -12,8 +12,8 @@ keywords = ["embedded", "framework", "no-std"]
 categories = ["embedded", "no-std"]
 
 [dependencies]
-defmt = { version = "0.3.8", default-features = false, optional = true }
-num_enum = { version = "0.7.2", default-features = false }
+defmt = { version = "0.3.10", default-features = false, optional = true }
+num_enum = { version = "0.7.3", default-features = false }
 
 [features]
 defmt = ["dep:defmt"]

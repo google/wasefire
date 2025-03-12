@@ -7,7 +7,7 @@ publish = false
 edition = "2024"
 
 [dependencies]
-bytemuck = { version = "1.16.0", default-features = false, features = ["derive"] }
+bytemuck = { version = "1.22.0", default-features = false, features = ["derive"] }
 derive-where = { version = "1.2.7", default-features = false, features = ["nightly"] }
 
 [lints]

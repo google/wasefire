@@ -7,7 +7,7 @@ publish = false
 edition = "2024"
 
 [dependencies]
-anyhow = "1.0.86"
+anyhow = "1.0.97"
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
