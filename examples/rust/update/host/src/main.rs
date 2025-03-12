@@ -17,8 +17,8 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Parser;
-use wasefire_cli_tools::action::usb_serial::serialport::SerialPort;
 use wasefire_cli_tools::action::usb_serial::ConnectionOptions;
+use wasefire_cli_tools::action::usb_serial::serialport::SerialPort;
 
 /// Updates a firmware through USB serial.
 #[derive(Parser)]
