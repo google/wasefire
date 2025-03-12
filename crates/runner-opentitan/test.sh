@@ -21,7 +21,8 @@ ensure_applet
 
 test_helper
 
-cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf --features=wasm,debug
+DEFMT_LOG=trace cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf \
+--features=wasm,debug
 cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf --features=wasm,release
 cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf --features=native,debug
 cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf --features=native,release

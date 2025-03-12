@@ -674,6 +674,7 @@ dependencies = [
 name = "wasefire-common"
 version = "0.1.0-git"
 dependencies = [
+ "defmt",
  "wasefire-error",
 ]
 
