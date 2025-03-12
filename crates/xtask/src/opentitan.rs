@@ -16,12 +16,13 @@ use std::process::Stdio;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
+use serialport::SerialPort;
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use tokio::process::{ChildStdin, Command};
 use wasefire_cli_tools::cmd;
 
-use crate::{Flash, MainOptions, ensure_command, wrap_command};
+use crate::{AttachOptions, MainOptions, ensure_command, wrap_command};
 
 pub async fn build(elf: &str) -> Result<String> {
     // Copy ELF to binary.
@@ -99,37 +100,46 @@ pub async fn truncate(img_path: &str) -> Result<()> {
     Ok(())
 }
 
-pub async fn execute(main: &MainOptions, flash: &Flash, elf: &str) -> Result<!> {
-    // Fail early missing HYPERDEBUG_SERIAL or defmt-print.
-    let serial = std::env::var("HYPERDEBUG_SERIAL")
-        .context("HYPERDEBUG_SERIAL must be set to a HyperDebug serial")?;
-    ensure_command(&["defmt-print"]).await?;
-
+pub async fn execute(main: &MainOptions, attach_options: &AttachOptions, elf: &str) -> Result<!> {
     // Build the image.
     let img = build(elf).await?;
 
-    // Connect to serial.
-    let port = format!("/dev/serial/by-id/usb-Google_LLC_HyperDebug_CMSIS-DAP_{serial}-if03-port0");
-    let mut input = serialport::new(&port, 115200).timeout(Duration::from_secs(3600)).open()?;
+    // Connect to serial (to not miss anything).
+    let input = connect().await?;
 
     // Bootstrap the image.
     let mut opentitan = Command::new("opentitantool");
     opentitan.args(["--interface=teacup", "--exec=transport init", "bootstrap", &img]);
     cmd::execute(&mut opentitan).await?;
 
-    // Discard everything until we recognize the ROM_EXT initial message.
-    const PATTERN: &str = "Starting ROM_EXT";
-    let mut pos = 0;
-    while pos < PATTERN.len() {
-        let mut byte = 0;
-        input.read_exact(std::slice::from_mut(&mut byte))?;
-        if byte == PATTERN.as_bytes()[pos] {
-            pos += 1;
-        } else {
-            pos = 0;
+    // Read the serial.
+    attach(Some(input), main, attach_options, elf).await
+}
+
+pub async fn attach(
+    input: Option<Box<dyn SerialPort>>, main: &MainOptions, options: &AttachOptions, elf: &str,
+) -> Result<!> {
+    let (wait, mut input) = match input {
+        Some(x) => (true, x),
+        None => (false, connect().await?),
+    };
+    println!("Listening on OpenTitan serial.");
+
+    if wait {
+        // Discard everything until we recognize the ROM_EXT initial message.
+        const PATTERN: &str = "Starting ROM_EXT";
+        let mut pos = 0;
+        while pos < PATTERN.len() {
+            let mut byte = 0;
+            input.read_exact(std::slice::from_mut(&mut byte))?;
+            if byte == PATTERN.as_bytes()[pos] {
+                pos += 1;
+            } else {
+                pos = 0;
+            }
         }
+        print!("{PATTERN}");
     }
-    print!("{PATTERN}");
 
     // Print with defmt.
     let mut defmt: Option<ChildStdin> = match main.release {
@@ -137,7 +147,7 @@ pub async fn execute(main: &MainOptions, flash: &Flash, elf: &str) -> Result<!> 
         false => {
             let mut defmt = wrap_command().await?;
             defmt.arg("defmt-print");
-            defmt.args(&flash.defmt_print);
+            defmt.args(&options.defmt_print);
             defmt.args(["-e", elf]).stdin(Stdio::piped());
             Some(defmt.spawn()?.stdin.take().unwrap())
         }
@@ -150,7 +160,7 @@ pub async fn execute(main: &MainOptions, flash: &Flash, elf: &str) -> Result<!> 
         Defmt,
     }
     use State::*;
-    let mut state = Stdout;
+    let mut state = if wait { Stdout } else { Control };
     loop {
         let mut byte = 0;
         input.read_exact(std::slice::from_mut(&mut byte))?;
@@ -181,4 +191,12 @@ pub async fn execute(main: &MainOptions, flash: &Flash, elf: &str) -> Result<!> 
             (Stdout | Defmt, _) => (),
         }
     }
+}
+
+async fn connect() -> Result<Box<dyn SerialPort>> {
+    let serial = std::env::var("HYPERDEBUG_SERIAL")
+        .context("HYPERDEBUG_SERIAL must be set to a HyperDebug serial")?;
+    let port = format!("/dev/serial/by-id/usb-Google_LLC_HyperDebug_CMSIS-DAP_{serial}-if03-port0");
+    ensure_command(&["defmt-print"]).await?;
+    Ok(serialport::new(&port, 115200).timeout(Duration::from_secs(3600)).open()?)
 }

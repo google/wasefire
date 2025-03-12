@@ -24,7 +24,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::{Context, Result, bail, ensure};
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use probe_rs::config::TargetSelector;
 use probe_rs::{Permissions, Session, flashing};
@@ -97,6 +97,9 @@ enum MainCommand {
     /// Compiles a runner.
     Runner(Runner),
 
+    /// Attaches to a runner.
+    Attach(Attach),
+
     /// Waits for an applet to exit.
     WaitApplet(Wait),
 
@@ -168,6 +171,70 @@ enum AppletCommand {
     },
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
+enum RunnerName {
+    #[value(name = "host")]
+    Host,
+    #[value(name = "nordic")]
+    Nordic,
+    #[value(name = "opentitan")]
+    OpenTitan,
+}
+
+impl std::fmt::Display for RunnerName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            RunnerName::Host => "host",
+            RunnerName::Nordic => "nordic",
+            RunnerName::OpenTitan => "opentitan",
+        };
+        write!(f, "{name}")
+    }
+}
+
+impl RunnerName {
+    fn chip(self) -> &'static str {
+        match self {
+            RunnerName::Host => unreachable!(),
+            RunnerName::Nordic => "nRF52840_xxAA",
+            RunnerName::OpenTitan => unreachable!(),
+        }
+    }
+
+    fn log_env(self) -> &'static str {
+        match self {
+            RunnerName::Host => "RUST_LOG",
+            RunnerName::Nordic => "DEFMT_LOG",
+            RunnerName::OpenTitan => "DEFMT_LOG",
+        }
+    }
+
+    async fn target(self) -> &'static str {
+        // Each time we specify RUSTFLAGS, we want to specify --target. This is because if --target
+        // is not specified then RUSTFLAGS applies to all compiler invocations (including build
+        // scripts and proc macros). This leads to recompilation when RUSTFLAGS changes. See
+        // https://github.com/rust-lang/cargo/issues/8716.
+        static HOST_TARGET: OnceCell<String> = OnceCell::const_new();
+        match self {
+            RunnerName::Host => {
+                HOST_TARGET
+                    .get_or_init(|| async {
+                        let mut sh = Command::new("sh");
+                        sh.args(["-c", "rustc -vV | sed -n 's/^host: //p'"]);
+                        cmd::output_line(&mut sh).await.unwrap()
+                    })
+                    .await
+            }
+            RunnerName::Nordic => "thumbv7em-none-eabi",
+            RunnerName::OpenTitan => "riscv32imc-unknown-none-elf",
+        }
+    }
+
+    async fn elf(self) -> String {
+        format!("target/{}/release/runner-{}", self.target().await, self)
+    }
+}
+
 #[derive(clap::Args)]
 struct Runner {
     #[clap(flatten)]
@@ -177,10 +244,10 @@ struct Runner {
     command: Option<RunnerCommand>,
 }
 
-#[derive(Default, clap::Args)]
+#[derive(clap::Args)]
 struct RunnerOptions {
     /// Runner name.
-    name: String,
+    name: RunnerName,
 
     /// Platform version (big-endian hexadecimal number).
     ///
@@ -215,7 +282,7 @@ struct RunnerOptions {
     #[clap(long)]
     gdb: bool,
 
-    /// Defmt log filter.
+    /// Defmt or log filter.
     #[clap(long)]
     log: Option<String>,
 
@@ -259,6 +326,27 @@ struct Flash {
     #[clap(long)]
     reset_flash: bool,
 
+    #[clap(flatten)]
+    attach: AttachOptions,
+}
+
+#[derive(clap::Args)]
+struct Attach {
+    /// Runner name.
+    name: RunnerName,
+
+    /// Log filter for Host runner.
+    ///
+    /// This is for host only, because the defmt filter is used at compile-time.
+    #[clap(long)]
+    log: Option<String>,
+
+    #[clap(flatten)]
+    options: AttachOptions,
+}
+
+#[derive(Default, clap::Args)]
+struct AttachOptions {
     /// Additional flags for `defmt-print run`.
     ///
     /// This is only for the OpenTitan runner so far.
@@ -310,6 +398,7 @@ impl Flags {
         match self.command {
             MainCommand::Applet(applet) => applet.execute(&self.options).await,
             MainCommand::Runner(runner) => runner.execute(&self.options).await,
+            MainCommand::Attach(attach) => attach.execute(&self.options).await?,
             MainCommand::WaitApplet(wait) => wait.execute(true).await,
             MainCommand::WaitPlatform(wait) => wait.execute(false).await,
             MainCommand::Footprint { output } => footprint::compare(&output).await,
@@ -364,13 +453,13 @@ impl AppletOptions {
             (_, Some(target), command) => {
                 if let Some(AppletCommand::Runner(x)) = command {
                     ensure!(
-                        target == x.options.target().await,
+                        target == x.options.name.target().await,
                         "--native-target must match runner"
                     );
                 }
                 Some(target.as_str())
             }
-            (true, None, Some(AppletCommand::Runner(x))) => Some(x.options.target().await),
+            (true, None, Some(AppletCommand::Runner(x))) => Some(x.options.name.target().await),
             (true, None, _) => bail!("--native requires runner"),
             (false, _, _) => None,
         };
@@ -484,19 +573,18 @@ impl RunnerOptions {
         let mut cargo = Command::new("cargo");
         let mut rustflags = Vec::new();
         let mut features = self.features.clone();
-        if flash.is_some() && self.name == "host" {
+        if flash.is_some() && self.name == RunnerName::Host {
             cargo.arg("run");
         } else {
             cargo.arg("build");
         }
         cargo.arg("--release");
-        cargo.arg(format!("--target={}", self.target().await));
-        let (side, max_step) = match self.name.as_str() {
-            "nordic" | "opentitan" => (Some(step), 1),
-            "host" => (None, 0),
-            _ => unimplemented!(),
+        cargo.arg(format!("--target={}", self.name.target().await));
+        let (side, max_step) = match self.name {
+            RunnerName::Host => (None, 0),
+            RunnerName::Nordic | RunnerName::OpenTitan => (Some(step), 1),
         };
-        if self.name == "host" {
+        if self.name == RunnerName::Host {
             if let Some(version) = version.as_deref() {
                 cargo.env("WASEFIRE_HOST_VERSION", version);
             }
@@ -509,16 +597,16 @@ impl RunnerOptions {
             cmd::execute(Command::new("make").current_dir("crates/runner-host/crates/web-client"))
                 .await?;
         }
-        if matches!(self.name.as_str(), "nordic" | "opentitan") {
+        if matches!(self.name, RunnerName::Nordic | RunnerName::OpenTitan) {
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
-            if self.name == "nordic" {
+            if self.name == RunnerName::Nordic {
                 let version = version.as_deref().unwrap_or("00000000");
                 ensure!(version.len() == 8, "--version must be a big-endian hexadecimal u32");
                 ensure!(version != "ffffffff", "--version must be smaller than u32::MAX");
                 let version = u32::from_be_bytes(HEX.decode(version.as_bytes())?[..].try_into()?);
                 rustflags.push(format!("-C link-arg=--defsym=RUNNER_VERSION={version}"));
             }
-            if self.name == "opentitan" {
+            if self.name == RunnerName::OpenTitan {
                 let version = match version {
                     Some(x) => HEX.decode(x.as_bytes())?,
                     None => vec![0; 20],
@@ -561,7 +649,7 @@ impl RunnerOptions {
             cargo.arg("--no-default-features");
         }
         if let Some(log) = &self.log {
-            cargo.env(self.log_env(), log);
+            cargo.env(self.name.log_env(), log);
         }
         if self.stack_sizes.is_some() {
             rustflags.push("-Z emit-stack-sizes".to_string());
@@ -583,8 +671,8 @@ impl RunnerOptions {
             cargo.env("RUSTFLAGS", rustflags.join(" "));
         }
         cargo.current_dir(format!("crates/runner-{}", self.name));
-        if flash.is_some() && self.name == "host" {
-            let flash = flash.unwrap();
+        if flash.is_some() && self.name == RunnerName::Host {
+            let Some(RunnerCommand::Flash(flash)) = cmd else { unreachable!() };
             const HOST: &str = "target/wasefire/host";
             if flash.reset_flash {
                 for file in ["applet.bin", "storage.bin"] {
@@ -596,19 +684,8 @@ impl RunnerOptions {
             }
             cargo.arg("--");
             cargo.arg(format!("../../{HOST}"));
-            loop {
-                if std::env::var_os("CODESPACES").is_some() {
-                    log::warn!("Assuming --protocol=unix when running in a codespace.");
-                    cargo.arg("--protocol=unix");
-                }
-                cargo.args(&flash.args);
-                cmd::exit_status(&mut cargo).await?;
-                cargo = Command::new(format!("{HOST}/platform.bin"));
-                cargo.arg(HOST);
-                if let Some(log) = &self.log {
-                    cargo.env(self.log_env(), log);
-                }
-            }
+            let attach = Attach { name: self.name, log: self.log, options: flash.attach };
+            attach.execute_host(Some(cargo)).await?;
         } else {
             cmd::execute(&mut cargo).await?;
         }
@@ -635,7 +712,7 @@ impl RunnerOptions {
             bloat.args(["--crates", "--split-std"]);
             cmd::execute(&mut bloat).await?;
         }
-        let elf = self.board_target().await;
+        let elf = self.name.elf().await;
         if main.size {
             let mut size = wrap_command().await?;
             size.arg("rust-size");
@@ -684,11 +761,10 @@ impl RunnerOptions {
                 return Ok(());
             }
         };
-        let chip = match self.name.as_str() {
-            "nordic" => "nRF52840_xxAA",
-            "opentitan" => opentitan::execute(main, &flash, &elf).await?,
-            "host" => unreachable!(),
-            _ => unimplemented!(),
+        let chip = match self.name {
+            RunnerName::Host => unreachable!(),
+            RunnerName::OpenTitan => opentitan::execute(main, &flash.attach, &elf).await?,
+            _ => self.name.chip(),
         };
         let session = Arc::new(Mutex::new(lazy::Lazy::new(|| {
             Ok(Session::auto_attach(
@@ -710,7 +786,7 @@ impl RunnerOptions {
             })
             .await??;
         }
-        if self.name == "nordic" {
+        if self.name == RunnerName::Nordic {
             let mut cargo = Command::new("cargo");
             cargo.current_dir("crates/runner-nordic/crates/bootloader");
             cargo.args(["build", "--release", "--target=thumbv7em-none-eabi"]);
@@ -732,19 +808,8 @@ impl RunnerOptions {
             println!("JLinkGDBServer -device {chip} -if swd -speed 4000 -port 2331");
             println!("gdb-multiarch -ex 'file {elf}' -ex 'target remote localhost:2331'");
         }
-        let mut cmd = "run";
-        loop {
-            let mut probe_rs = wrap_command().await?;
-            probe_rs.args(["probe-rs", cmd, "--catch-reset"]);
-            probe_rs.arg(format!("--chip={chip}"));
-            probe_rs.args(&flash.args);
-            probe_rs.arg(&elf);
-            if cmd == "run" {
-                cmd = "attach";
-                println!("Replace `run` with `attach` in the following command to rerun:");
-            }
-            cmd::status(&mut probe_rs).await?;
-        }
+        let attach = Attach { name: self.name, log: None, options: flash.attach };
+        attach.execute_probe_rs("run").await?
     }
 
     async fn bundle(&self, elf: &str, side: Option<usize>) -> Result<String> {
@@ -755,9 +820,9 @@ impl RunnerOptions {
             _ => unimplemented!(),
         };
         let bundle = format!("target/wasefire/platform{side}.bin");
-        match self.name.as_str() {
-            "host" => drop(fs::copy(elf, &bundle).await?),
-            "opentitan" => {
+        match self.name {
+            RunnerName::Host => drop(fs::copy(elf, &bundle).await?),
+            RunnerName::OpenTitan => {
                 let signed = format!("{elf}.appkey_prod_0.signed.bin");
                 opentitan::build(elf).await?;
                 opentitan::truncate(&signed).await?;
@@ -771,40 +836,51 @@ impl RunnerOptions {
         }
         Ok(bundle)
     }
+}
 
-    async fn target(&self) -> &'static str {
-        // Each time we specify RUSTFLAGS, we want to specify --target. This is because if --target
-        // is not specified then RUSTFLAGS applies to all compiler invocations (including build
-        // scripts and proc macros). This leads to recompilation when RUSTFLAGS changes. See
-        // https://github.com/rust-lang/cargo/issues/8716.
-        static HOST_TARGET: OnceCell<String> = OnceCell::const_new();
-        match self.name.as_str() {
-            "nordic" => "thumbv7em-none-eabi",
-            "opentitan" => "riscv32imc-unknown-none-elf",
-            "host" => {
-                HOST_TARGET
-                    .get_or_init(|| async {
-                        let mut sh = Command::new("sh");
-                        sh.args(["-c", "rustc -vV | sed -n 's/^host: //p'"]);
-                        cmd::output_line(&mut sh).await.unwrap()
-                    })
-                    .await
+impl Attach {
+    async fn execute(self, main: &MainOptions) -> Result<!> {
+        match self.name {
+            RunnerName::Host => self.execute_host(None).await,
+            RunnerName::Nordic => self.execute_probe_rs("attach").await,
+            RunnerName::OpenTitan => {
+                opentitan::attach(None, main, &self.options, &self.name.elf().await).await
             }
-            _ => unimplemented!(),
         }
     }
 
-    fn log_env(&self) -> &'static str {
-        match self.name.as_str() {
-            "nordic" => "DEFMT_LOG",
-            "opentitan" => "DEFMT_LOG",
-            "host" => "RUST_LOG",
-            _ => unimplemented!(),
+    async fn execute_host(self, mut cargo: Option<Command>) -> Result<!> {
+        const HOST: &str = "target/wasefire/host";
+        loop {
+            let mut cargo = cargo.take().unwrap_or_else(|| {
+                let mut cargo = Command::new(format!("{HOST}/platform.bin"));
+                cargo.arg(HOST);
+                if let Some(log) = &self.log {
+                    cargo.env("RUST_LOG", log);
+                }
+                cargo
+            });
+            if std::env::var_os("CODESPACES").is_some() {
+                log::warn!("Assuming --protocol=unix when running in a codespace.");
+                cargo.arg("--protocol=unix");
+            }
+            cargo.args(&self.options.args);
+            cmd::exit_status(&mut cargo).await?;
         }
     }
 
-    async fn board_target(&self) -> String {
-        format!("target/{}/release/runner-{}", self.target().await, self.name)
+    async fn execute_probe_rs(self, mut cmd: &'static str) -> Result<!> {
+        let chip = self.name.chip();
+        let elf = self.name.elf().await;
+        loop {
+            let mut probe_rs = wrap_command().await?;
+            probe_rs.args(["probe-rs", cmd, "--catch-reset"]);
+            probe_rs.arg(format!("--chip={chip}"));
+            probe_rs.args(&self.options.args);
+            probe_rs.arg(&elf);
+            cmd::status(&mut probe_rs).await?;
+            cmd = "attach";
+        }
     }
 }
 
