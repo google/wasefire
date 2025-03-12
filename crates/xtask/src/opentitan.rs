@@ -15,12 +15,12 @@
 use std::process::Stdio;
 use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, ensure};
 use serialport::SerialPort;
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use tokio::process::{ChildStdin, Command};
-use wasefire_cli_tools::cmd;
+use wasefire_cli_tools::{cmd, fs};
 
 use crate::{AttachOptions, MainOptions, ensure_command, wrap_command};
 
@@ -197,6 +197,7 @@ async fn connect() -> Result<Box<dyn SerialPort>> {
     let serial = std::env::var("HYPERDEBUG_SERIAL")
         .context("HYPERDEBUG_SERIAL must be set to a HyperDebug serial")?;
     let port = format!("/dev/serial/by-id/usb-Google_LLC_HyperDebug_CMSIS-DAP_{serial}-if03-port0");
+    ensure!(fs::exists(&port).await, "HyperDebug {serial} not found. Is it connected?");
     ensure_command(&["defmt-print"]).await?;
     Ok(serialport::new(&port, 115200).timeout(Duration::from_secs(3600)).open()?)
 }

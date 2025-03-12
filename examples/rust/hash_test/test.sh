@@ -20,5 +20,8 @@ set -e
 test_helper
 
 cargo check --lib --target=wasm32-unknown-unknown
+cargo check --lib --target=wasm32-unknown-unknown --features=rust-crypto
 cargo test --lib --features=test
+cargo test --lib --features=test,rust-crypto
 WASEFIRE_DEBUG=1 cargo run --bin=hash_test --features=test
+WASEFIRE_DEBUG=1 cargo run --bin=hash_test --features=test,rust-crypto
