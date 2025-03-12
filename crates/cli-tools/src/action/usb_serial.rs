@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use anyhow::{Result, bail};
+pub use serialport;
 use serialport::{SerialPort, SerialPortType};
 
 /// Options to connect to a USB serial.

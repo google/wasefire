@@ -104,7 +104,7 @@ fn main() {
 }
 
 #[cfg(feature = "usb")]
-type Serial = Box<dyn serialport::SerialPort>;
+type Serial = Box<dyn wasefire_cli_tools::action::usb_serial::serialport::SerialPort>;
 #[cfg(not(feature = "usb"))]
 type Serial = std::os::unix::net::UnixStream;
 
