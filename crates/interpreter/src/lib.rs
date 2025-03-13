@@ -110,6 +110,8 @@
 #![feature(float_minimum_maximum)]
 #![feature(never_type)]
 #![feature(pointer_is_aligned_to)]
+#![feature(strict_overflow_ops)]
+#![feature(substr_range)]
 #![feature(try_blocks)]
 #![feature(unwrap_infallible)]
 
