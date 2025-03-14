@@ -31,6 +31,16 @@ pub fn offset_front_check<'a, T>(beg: &'a [T], cur: &'a [T], off: isize) -> Resu
 }
 
 #[allow(dead_code)]
+pub fn offset_front_use<'a, T>(
+    #[cfg(feature = "toctou")] beg: &'a [T], cur: &'a [T], off: isize,
+) -> &'a [T] {
+    #[cfg(not(feature = "toctou"))]
+    return _offset_front(cur, off);
+    #[cfg(feature = "toctou")]
+    _offset_front(beg, cur, off)
+}
+
+#[allow(dead_code)]
 #[cfg(feature = "toctou")]
 fn _offset_front<'a, T>(beg: &'a [T], cur: &'a [T], off: isize) -> &'a [T] {
     let mut range = beg.subslice_range(cur).unwrap();
