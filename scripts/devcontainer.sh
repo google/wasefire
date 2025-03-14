@@ -34,6 +34,6 @@ echo 'export WASEFIRE_PROTOCOL=unix' >> ~/.bashrc
 sudo apt-get update
 sudo apt-get install -y binaryen wabt
 
-# TODO(rustup >= 1.28.0): Use `rustup toolchain install` instead.
-rustup show
+rustup self update
+rustup toolchain install
 rustup default $(rustup show active-toolchain | sed 's/ .*//')
