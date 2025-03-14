@@ -20,14 +20,17 @@ set -e
 ensure_applet
 
 for feature in $(package_features); do
-  case $feature in _*|debug|release|native|wasm) continue ;; esac
-  x cargo clippy --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug,$feature
+  case $feature in _*|board-*|debug|release|native|wasm) continue ;; esac
+  x cargo clippy --bin=runner-nordic --target=thumbv7em-none-eabi \
+--features=wasm,debug,board-devkit,$feature
 done
 
 test_helper
 
-cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug,_full
-cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug
-DEFMT_LOG=trace cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug
-cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,release
-cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=native,release
+cargo check --bin=runner-nordic --target=thumbv7em-none-eabi \
+--features=wasm,debug,board-devkit,_full
+cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug,board-devkit
+DEFMT_LOG=trace cargo check --bin=runner-nordic --target=thumbv7em-none-eabi \
+--features=wasm,debug,board-devkit
+cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,release,board-dongle
+cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=native,release,board-dongle

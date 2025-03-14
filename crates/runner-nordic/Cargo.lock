@@ -576,6 +576,7 @@ name = "header"
 version = "0.1.0"
 dependencies = [
  "wasefire-common",
+ "wasefire-one-of",
 ]
 
 [[package]]

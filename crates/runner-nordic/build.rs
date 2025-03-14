@@ -13,5 +13,15 @@
 // limitations under the License.
 
 fn main() {
-    println!("cargo::rerun-if-changed=memory.x");
+    let out = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+    let board = if std::env::var_os("CARGO_FEATURE_BOARD_DEVKIT").is_some() {
+        "devkit"
+    } else if std::env::var_os("CARGO_FEATURE_BOARD_DONGLE").is_some() {
+        "dongle"
+    } else {
+        panic!("one of board-{{devkit,dongle}} must be enabled")
+    };
+    std::fs::copy(format!("board-{board}.x"), out.join("board.x")).unwrap();
+    println!("cargo::rerun-if-changed=board-{board}.x");
+    println!("cargo::rustc-link-search={}", out.display());
 }

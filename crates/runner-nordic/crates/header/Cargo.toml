@@ -8,6 +8,12 @@ edition = "2024"
 
 [dependencies]
 wasefire-common = { path = "../../../common" }
+wasefire-one-of = { path = "../../../one-of" }
+
+[features]
+# Exactly one is enabled by xtask.
+board-devkit = []
+board-dongle = []
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"

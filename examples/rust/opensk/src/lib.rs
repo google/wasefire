@@ -14,12 +14,12 @@
 
 //! Example applet running OpenSK.
 //!
-//! To build a native applet for the Nordic runner:
+//! To build a native applet for the nRF52840 dongle:
 //!
 //! ```shell
 //! cargo xtask --release --native \
 //!   applet rust opensk --opt-level=z \
-//!   runner nordic --opt-level=z --log=info \
+//!   runner nordic --board=dongle --opt-level=z --log=info \
 //!     --features=usb-ctap --features=software-crypto-aes256-cbc \
 //!     --features=software-crypto-p256,software-crypto-hmac-sha256 \
 //!   flash --reset-flash
