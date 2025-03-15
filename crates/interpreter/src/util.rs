@@ -22,7 +22,6 @@ pub fn offset_front<T>(cur: &[T], off: isize) -> &[T] {
     }
 }
 
-#[allow(dead_code)]
 pub fn offset_front_check<'a, T>(beg: &'a [T], cur: &'a [T], off: isize) -> Result<&'a [T], Error> {
     let range = beg.subslice_range(cur).ok_or_else(invalid)?;
     check(range.end == beg.len())?;
