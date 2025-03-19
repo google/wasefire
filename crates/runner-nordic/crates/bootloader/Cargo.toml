@@ -20,6 +20,7 @@ wasefire-one-of = { path = "../../../one-of" }
 # Exactly one is enabled by xtask.
 board-devkit = ["header/board-devkit"]
 board-dongle = ["header/board-dongle"]
+board-makerdiary = ["header/board-makerdiary"]
 
 [profile.release]
 codegen-units = 1

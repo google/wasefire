@@ -53,6 +53,7 @@ impl board::Api for Board {
     fn syscall(x1: u32, x2: u32, x3: u32, x4: u32) -> Option<Result<u32, Error>> {
         match (x1, x2, x3, x4) {
             // The syscall_test example relies on this.
+            #[cfg(feature = "test-vendor")]
             (0, 0, 0, x) => Some(Error::decode(x as i32)),
             #[cfg(feature = "gpio")]
             (0x80000000, x, y, z) => Some(gpio::syscall(x, y, z)),

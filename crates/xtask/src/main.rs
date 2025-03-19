@@ -290,7 +290,7 @@ struct RunnerOptions {
     ///
     /// Each runner supports its own set of boards:
     /// - Host doesn't have a notion of board.
-    /// - Nordic supports `devkit` (default) and `dongle`.
+    /// - Nordic supports devkit (default), dongle, and makerdiary.
     /// - OpenTitan doesn't have a notion of board yet.
     #[clap(long)]
     board: Option<String>,
@@ -340,6 +340,9 @@ enum RunnerCommand {
 #[derive(clap::Args)]
 struct Flash {
     /// Resets the flash before running.
+    ///
+    /// This is not supported by the following boards:
+    /// - Nordic: dongle and makerdiary
     #[clap(long)]
     reset_flash: bool,
 
@@ -803,14 +806,14 @@ impl RunnerOptions {
             // TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
             cargo.env("RUSTFLAGS", "--allow=unused-crate-dependencies");
             cmd::execute(&mut cargo).await?;
-            if board == "dongle" {
+            if matches!(board, "dongle" | "makerdiary") {
                 let runner = self.bundle(&elf, side).await?;
                 let bootloader = "target/thumbv7em-none-eabi/release/bootloader";
                 let mut objcopy = wrap_command().await?;
                 objcopy.args(["rust-objcopy", bootloader]);
                 objcopy.arg(format!("--update-section=.runner={runner}"));
                 cmd::execute(&mut objcopy).await?;
-                if flash.dongle_update_support {
+                if board == "dongle" && flash.dongle_update_support {
                     let mut nrfdfu = wrap_command().await?;
                     nrfdfu.args(["nrfdfu", bootloader]);
                     cmd::execute(&mut nrfdfu).await?;
@@ -823,9 +826,18 @@ impl RunnerOptions {
                     objcopy.arg("--remove-section=.runner");
                     cmd::execute(&mut objcopy).await?;
                 }
-                let mut nrfdfu = wrap_command().await?;
-                nrfdfu.args(["nrfdfu", bootloader]);
-                cmd::replace(nrfdfu);
+                let mut flash = wrap_command().await?;
+                if board == "dongle" {
+                    flash.args(["nrfdfu", bootloader]);
+                } else {
+                    assert_eq!(board, "makerdiary");
+                    let hex = format!("{bootloader}.hex");
+                    let mut objcopy = wrap_command().await?;
+                    objcopy.args(["rust-objcopy", "--output-target=ihex", bootloader, &hex]);
+                    cmd::execute(&mut objcopy).await?;
+                    flash.args(["uf2conv.py", "--family=0xADA52840", &hex]);
+                }
+                cmd::replace(flash);
             }
         }
         if self.name == RunnerName::OpenTitan {

@@ -83,7 +83,7 @@ use crate::storage::Storage;
 
 exactly_one_of!["debug", "release"];
 exactly_one_of!["native", "wasm"];
-exactly_one_of!["board-devkit", "board-dongle"];
+exactly_one_of!["board-devkit", "board-dongle", "board-makerdiary"];
 
 #[cfg(feature = "debug")]
 #[defmt::panic_handler]
@@ -147,6 +147,8 @@ fn main() -> ! {
     ];
     #[cfg(feature = "board-dongle")]
     let buttons = [Button::new(port1.p1_06.into_pullup_input().degrade())];
+    #[cfg(feature = "board-makerdiary")]
+    let buttons = [Button::new(port0.p0_18.into_pullup_input().degrade())];
     #[cfg(feature = "board-devkit")]
     let leds = [
         port0.p0_13.into_push_pull_output(Level::High).degrade(),
@@ -160,6 +162,12 @@ fn main() -> ! {
         port0.p0_08.into_push_pull_output(Level::High).degrade(),
         port1.p1_09.into_push_pull_output(Level::High).degrade(),
         port0.p0_12.into_push_pull_output(Level::High).degrade(),
+    ];
+    #[cfg(feature = "board-makerdiary")]
+    let leds = [
+        port0.p0_23.into_push_pull_output(Level::High).degrade(),
+        port0.p0_22.into_push_pull_output(Level::High).degrade(),
+        port0.p0_24.into_push_pull_output(Level::High).degrade(),
     ];
     #[cfg(feature = "gpio")]
     let gpios = [
