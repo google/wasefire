@@ -77,7 +77,7 @@ full() {
 case $1 in
   host) FLASH_ARGS=--protocol=unix full unix host ;;
   # P1.01, P1.02, and P1.03 must be connected together (gpio_test).
-  nordic) full usb nordic ;;
+  nordic) full usb nordic --features=test-vendor ;;
   opentitan) full usb opentitan --features=test-vendor ;;
   *) run --protocol=${1:-usb} "$2" ;;
 esac
