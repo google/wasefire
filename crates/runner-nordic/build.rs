@@ -23,5 +23,6 @@ fn main() {
     };
     std::fs::copy(format!("board-{board}.x"), out.join("board.x")).unwrap();
     println!("cargo::rerun-if-changed=board-{board}.x");
+    println!("cargo::rerun-if-changed=memory.x");
     println!("cargo::rustc-link-search={}", out.display());
 }
