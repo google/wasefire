@@ -345,10 +345,11 @@ struct Flash {
 
     /// Make sure the Nordic dongle bootloader doesn't check the runner CRC.
     ///
-    /// This is for the Nordic dongle only. This option will first flash the Wasefire bootloader and
-    /// runner together, then flash the Wasefire bootloader alone, such that the Nordic bootloader
-    /// only checks the CRC of the Wasefire bootloader. This permits updating the platform without
-    /// invalidating the CRC. This requires a user interaction during the DFU process.
+    /// This is for the Nordic dongle only. This option will first flash the Wasefire bootloader
+    /// and runner together, then flash the Wasefire bootloader alone, such that the Nordic
+    /// bootloader only checks the CRC of the Wasefire bootloader. This permits updating the
+    /// platform without invalidating the CRC. This requires a user interaction during the DFU
+    /// process.
     #[clap(long)]
     dongle_update_support: bool,
 
