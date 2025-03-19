@@ -22,7 +22,10 @@ use crate::with_state;
 pub enum Impl {}
 
 impl Support<usize> for Impl {
+    #[cfg(feature = "board-devkit")]
     const SUPPORT: usize = 4;
+    #[cfg(feature = "board-dongle")]
+    const SUPPORT: usize = 1;
 }
 
 impl Api for Impl {

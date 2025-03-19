@@ -34,6 +34,7 @@ dependencies = [
  "nrf52840-hal",
  "panic-abort",
  "wasefire-common",
+ "wasefire-one-of",
 ]
 
 [[package]]
@@ -177,6 +178,7 @@ name = "header"
 version = "0.1.0"
 dependencies = [
  "wasefire-common",
+ "wasefire-one-of",
 ]
 
 [[package]]
@@ -412,3 +414,7 @@ version = "0.1.3-git"
 dependencies = [
  "num_enum",
 ]
+
+[[package]]
+name = "wasefire-one-of"
+version = "0.1.1-git"

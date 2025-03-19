@@ -28,7 +28,7 @@ pub async fn build(elf: &str) -> Result<String> {
     // Copy ELF to binary.
     let bin = format!("{elf}.bin");
     let mut objcopy = wrap_command().await?;
-    objcopy.args(["rust-objcopy", "--output-target", "binary", elf, &bin]);
+    objcopy.args(["rust-objcopy", "--output-target=binary", elf, &bin]);
     cmd::execute(&mut objcopy).await?;
 
     // Prepare the pre-signing artifact.

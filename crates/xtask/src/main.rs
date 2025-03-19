@@ -193,6 +193,14 @@ impl std::fmt::Display for RunnerName {
 }
 
 impl RunnerName {
+    fn default_board(self) -> Option<&'static str> {
+        match self {
+            RunnerName::Host => None,
+            RunnerName::Nordic => Some("devkit"),
+            RunnerName::OpenTitan => None,
+        }
+    }
+
     fn chip(self) -> &'static str {
         match self {
             RunnerName::Host => unreachable!(),
@@ -278,6 +286,15 @@ struct RunnerOptions {
     #[clap(long, short = 'O')]
     opt_level: Option<action::OptLevel>,
 
+    /// Board selection.
+    ///
+    /// Each runner supports its own set of boards:
+    /// - Host doesn't have a notion of board.
+    /// - Nordic supports `devkit` (default) and `dongle`.
+    /// - OpenTitan doesn't have a notion of board yet.
+    #[clap(long)]
+    board: Option<String>,
+
     /// Prints the command lines to use GDB.
     #[clap(long)]
     gdb: bool,
@@ -325,6 +342,16 @@ struct Flash {
     /// Resets the flash before running.
     #[clap(long)]
     reset_flash: bool,
+
+    /// Make sure the Nordic dongle bootloader doesn't check the runner CRC.
+    ///
+    /// This is for the Nordic dongle only. This option will first flash the Wasefire bootloader
+    /// and runner together, then flash the Wasefire bootloader alone, such that the Nordic
+    /// bootloader only checks the CRC of the Wasefire bootloader. This permits updating the
+    /// platform without invalidating the CRC. This requires a user interaction during the DFU
+    /// process.
+    #[clap(long)]
+    dongle_update_support: bool,
 
     #[clap(flatten)]
     attach: AttachOptions,
@@ -661,6 +688,10 @@ impl RunnerOptions {
         } else {
             features.push("wasm".to_string());
         }
+        let board = self.name.default_board().map(|x| self.board.as_deref().unwrap_or(x));
+        if let Some(board) = board {
+            features.push(format!("board-{board}"));
+        }
         if !features.is_empty() {
             cargo.arg(format!("--features={}", features.join(",")));
         }
@@ -762,6 +793,41 @@ impl RunnerOptions {
                 return Ok(());
             }
         };
+        if self.name == RunnerName::Nordic {
+            let board = board.unwrap();
+            let mut cargo = Command::new("cargo");
+            cargo.current_dir("crates/runner-nordic/crates/bootloader");
+            cargo.args(["build", "--release", "--target=thumbv7em-none-eabi"]);
+            cargo.arg(format!("--features=board-{board}"));
+            cargo.args(["-Zbuild-std=core", "-Zbuild-std-features=panic_immediate_abort"]);
+            // TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
+            cargo.env("RUSTFLAGS", "--allow=unused-crate-dependencies");
+            cmd::execute(&mut cargo).await?;
+            if board == "dongle" {
+                let runner = self.bundle(&elf, side).await?;
+                let bootloader = "target/thumbv7em-none-eabi/release/bootloader";
+                let mut objcopy = wrap_command().await?;
+                objcopy.args(["rust-objcopy", bootloader]);
+                objcopy.arg(format!("--update-section=.runner={runner}"));
+                cmd::execute(&mut objcopy).await?;
+                if flash.dongle_update_support {
+                    let mut nrfdfu = wrap_command().await?;
+                    nrfdfu.args(["nrfdfu", bootloader]);
+                    cmd::execute(&mut nrfdfu).await?;
+                    println!(
+                        "Press the RESET button on the dongle to enter DFU mode, then hit ENTER."
+                    );
+                    std::io::stdin().read_line(&mut String::new())?;
+                    let mut objcopy = wrap_command().await?;
+                    objcopy.args(["rust-objcopy", bootloader]);
+                    objcopy.arg("--remove-section=.runner");
+                    cmd::execute(&mut objcopy).await?;
+                }
+                let mut nrfdfu = wrap_command().await?;
+                nrfdfu.args(["nrfdfu", bootloader]);
+                cmd::replace(nrfdfu);
+            }
+        }
         if self.name == RunnerName::OpenTitan {
             opentitan::execute(main, &flash.attach, &elf).await?;
         }
@@ -787,13 +853,6 @@ impl RunnerOptions {
             .await??;
         }
         if self.name == RunnerName::Nordic {
-            let mut cargo = Command::new("cargo");
-            cargo.current_dir("crates/runner-nordic/crates/bootloader");
-            cargo.args(["build", "--release", "--target=thumbv7em-none-eabi"]);
-            cargo.args(["-Zbuild-std=core", "-Zbuild-std-features=panic_immediate_abort"]);
-            // TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
-            cargo.env("RUSTFLAGS", "--allow=unused-crate-dependencies");
-            cmd::execute(&mut cargo).await?;
             tokio::task::spawn_blocking(move || {
                 anyhow::Ok(flashing::download_file(
                     session.lock().unwrap().get()?,
@@ -830,7 +889,7 @@ impl RunnerOptions {
             }
             _ => {
                 let mut objcopy = wrap_command().await?;
-                objcopy.args(["rust-objcopy", "-O", "binary", elf, &bundle]);
+                objcopy.args(["rust-objcopy", "--output-target=binary", elf, &bundle]);
                 cmd::execute(&mut objcopy).await?;
             }
         }

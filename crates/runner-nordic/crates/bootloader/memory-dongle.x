@@ -1,0 +1,14 @@
+/* nrf52840-dongle */
+
+MEMORY {
+  FLASH  : ORIGIN = 0x00001000, LENGTH = 0x00007000
+  RUNNER : ORIGIN = 0x00008000, LENGTH = 0x00048000
+  RAM    : ORIGIN = 0x20000008, LENGTH = 0x0000fff8
+}
+
+SECTIONS {
+  .runner : {
+    FILL(0xffffffff);
+    . = ORIGIN(RUNNER) + LENGTH(RUNNER);
+  } > RUNNER
+}
