@@ -9,6 +9,8 @@
 
 ### Minor
 
+- Change `action::optimize_wasm()` (and thus `action::RustAppletBuild`) to also compute the
+  side-table trading applet footprint for performance
 - Enable `wasefire/unsafe-assume-single-core` feature when building a native applet for RISC-V
 - Add `action::usb_serial` module to connect to the USB serial of a platform
 - Add `cmd::status()` to execute a command and return its error code

@@ -558,7 +558,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         let mut parser = self.split_section()?;
         let name = parser.parse_name()?;
         M::check(|| name == SECTION_NAME)?;
-        let num_funcs = try_into::<M, [u8; 2], _>(parser.parse_bytes(2)?)?;
+        let num_funcs = parser.parse_bytes(2)?.try_into().unwrap();
         let num_funcs = u16::from_le_bytes(num_funcs) as usize;
         let indices = parser.parse_bytes((num_funcs + 1) * 2)?;
         let metadata = parser.save();

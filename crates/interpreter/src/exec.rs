@@ -810,11 +810,12 @@ impl<'m> Thread<'m> {
                 self.frame().skip_jump();
             }
             BrTable(ls, ln) => {
-                // In validation for BrTable, the side table entry for the last label index is
-                // created at first.
                 let i = self.pop_value().unwrap_i32() as usize;
-                return Ok(self
-                    .pop_label(ls.get(i).cloned().unwrap_or(ln), ls.get(i).map_or(0, |_| i + 1)));
+                let (l, offset) = match ls.get(i) {
+                    None => (ln, 0),
+                    Some(&li) => (li, i + 1),
+                };
+                return Ok(self.pop_label(l, offset));
             }
             Return => return Ok(self.exit_frame()),
             Call(x) => return self.invoke(store, store.func_ptr(inst_id, x)),
@@ -1032,10 +1033,6 @@ impl<'m> Thread<'m> {
     }
 
     fn pop_values(&mut self, n: usize) -> Vec<Val> {
-        self.only_pop_values(n)
-    }
-
-    fn only_pop_values(&mut self, n: usize) -> Vec<Val> {
         let len = self.values().len() - n;
         self.values().split_off(len)
     }
@@ -1061,12 +1058,11 @@ impl<'m> Thread<'m> {
 
     fn exit_label(mut self) -> ThreadResult<'m> {
         let frame = self.frame();
-        let arity = frame.arity;
         frame.labels_cnt -= 1;
         if frame.labels_cnt == 0 {
-            let values = self.only_pop_values(arity);
+            let arity = frame.arity;
+            let values = self.pop_values(arity);
             let frame = self.frames.pop().unwrap();
-            debug_assert_eq!(values.len(), arity);
             if self.frames.is_empty() {
                 return ThreadResult::Done(values);
             }
