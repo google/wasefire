@@ -57,7 +57,6 @@ trait ValidMode: Default {
     fn parse_side_table<'m>(parser: &mut Parser<'m>) -> Result<Self::SideTable<'m>, Error>;
     fn next_branch_table<'a, 'm>(
         side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
-        func_body: &'m [u8],
     ) -> Result<Self::BranchTable<'a, 'm>, Error>;
     fn side_table_result(side_table: Self::SideTable<'_>) -> Result<Self::Result, Error>;
 }
@@ -70,7 +69,9 @@ trait BranchTableApi<'m>: Debug {
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult;
-    fn patch_branch(&self, source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error>;
+    fn patch_branch(
+        &self, source: SideTableBranch<'m>, func_body: &'m [u8],
+    ) -> Result<SideTableBranch<'m>, Error>;
     fn allocate_branch(&mut self);
     fn next_index(&self) -> usize;
 }
@@ -91,7 +92,6 @@ impl ValidMode for Prepare {
 
     fn next_branch_table<'a, 'm>(
         side_tables: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
-        _func_body: &'m [u8],
     ) -> Result<Self::BranchTable<'a, 'm>, Error> {
         side_tables.push(MetadataEntry { type_idx, parser_range, branch_table: vec![] });
         Ok(&mut side_tables.last_mut().unwrap().branch_table)
@@ -124,7 +124,9 @@ impl<'m> BranchTableApi<'m> for &mut Vec<BranchTableEntry> {
         Ok(())
     }
 
-    fn patch_branch(&self, source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
+    fn patch_branch(
+        &self, source: SideTableBranch<'m>, _func_body: &'m [u8],
+    ) -> Result<SideTableBranch<'m>, Error> {
         Ok(source)
     }
 
@@ -141,7 +143,6 @@ impl<'m> BranchTableApi<'m> for &mut Vec<BranchTableEntry> {
 struct MetadataView<'m> {
     metadata: Metadata<'m>,
     branch_idx: usize,
-    func_body: &'m [u8],
 }
 
 #[derive(Debug)]
@@ -166,13 +167,12 @@ impl ValidMode for Verify {
 
     fn next_branch_table<'a, 'm>(
         side_table: &'a mut Self::SideTable<'m>, type_idx: usize, parser_range: Range<usize>,
-        func_body: &'m [u8],
     ) -> Result<Self::BranchTable<'a, 'm>, Error> {
         let metadata = side_table.view.metadata::<Check>(side_table.func_idx)?;
         side_table.func_idx += 1;
         check(metadata.type_idx() == type_idx)?;
         check(metadata.parser_range() == parser_range)?;
-        Ok(MetadataView { metadata, branch_idx: 0, func_body })
+        Ok(MetadataView { metadata, branch_idx: 0 })
     }
 
     fn side_table_result(side_table: Self::SideTable<'_>) -> Result<Self::Result, Error> {
@@ -193,9 +193,11 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
         check(source == target)
     }
 
-    fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
+    fn patch_branch(
+        &self, mut source: SideTableBranch<'m>, func_body: &'m [u8],
+    ) -> Result<SideTableBranch<'m>, Error> {
         let entry = self.metadata.branch_table()[source.branch_table].view::<Check>()?;
-        source.parser = offset_front_check(self.func_body, source.parser, entry.delta_ip as isize)?;
+        source.parser = offset_front_check(func_body, source.parser, entry.delta_ip as isize)?;
         source.branch_table =
             source.branch_table.checked_add_signed(entry.delta_stp as isize).ok_or_else(invalid)?;
         source.stack -= entry.pop_cnt as usize;
@@ -224,7 +226,6 @@ struct Context<'m, M: ValidMode> {
     globals: Vec<GlobalType>,
     elems: Vec<RefType>,
     datas: Option<usize>,
-    func_body: &'m [u8],
     mode: PhantomData<M>,
 }
 
@@ -316,19 +317,13 @@ impl<'m, M: ValidMode> Context<'m, M> {
             for x in imported_funcs .. self.funcs.len() {
                 let size = parser.parse_u32()? as usize;
                 let mut parser = parser.split_at(size)?;
-                let func_body = parser.save();
-                self.func_body = func_body;
-                let parser_start = func_body.as_ptr() as usize - module_start;
-                let parser_range = Range { start: parser_start, end: parser_start + size };
+                let parser_start = parser.save().as_ptr() as usize - module_start;
                 let t = self.functype(x as FuncIdx).unwrap();
                 let mut locals = t.params.to_vec();
                 parser.parse_locals(&mut locals)?;
-                let branch_table = M::next_branch_table(
-                    &mut side_table,
-                    self.funcs[x] as usize,
-                    parser_range,
-                    func_body,
-                )?;
+                let parser_range = Range { start: parser_start, end: parser_start + size };
+                let branch_table =
+                    M::next_branch_table(&mut side_table, self.funcs[x] as usize, parser_range)?;
                 Expr::check_body(self, &mut parser, &refs, locals, t.results, branch_table)?;
                 check(parser.is_empty())?;
             }
@@ -600,6 +595,7 @@ impl OpdType {
 
 struct Expr<'a, 'm, M: ValidMode> {
     context: &'a Context<'m, M>,
+    func_body: &'m [u8],
     parser: &'a mut Parser<'m>,
     globals_len: usize,
     /// Whether the expression is const and the function references.
@@ -648,6 +644,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
     ) -> Self {
         Self {
             context,
+            func_body: parser.save(),
             parser,
             globals_len: context.globals.len(),
             is_const,
@@ -741,6 +738,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
                         let source = M::BranchTable::patch_branch(
                             self.branch_table.as_ref().unwrap(),
                             source,
+                            self.func_body,
                         )?;
                         let target = self.branch_target(params.len());
                         self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
@@ -1010,9 +1008,15 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
             if let LabelKind::If(source) = label.kind {
                 check(label.type_.params == label.type_.results)?;
                 if let Some(source) = source {
-                    let source = self.branch_table.as_ref().unwrap().patch_branch(source)?;
+                    let source =
+                        self.branch_table.as_ref().unwrap().patch_branch(source, self.func_body)?;
                     // This function is only called after parsing an End instruction.
-                    target.parser = offset_front_check(self.context.func_body, target.parser, -1)?;
+                    target.parser = offset_front(
+                        #[cfg(feature = "toctou")]
+                        self.func_body,
+                        target.parser,
+                        -1,
+                    );
                     self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
                 }
             }
@@ -1032,7 +1036,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
         check(l < n)?;
         let source = match self.branch_source() {
             None => None,
-            Some(x) => Some(self.branch_table.as_ref().unwrap().patch_branch(x)?),
+            Some(x) => Some(self.branch_table.as_ref().unwrap().patch_branch(x, self.func_body)?),
         };
         let label = &mut self.labels[n - l - 1];
         Ok(match label.kind {
