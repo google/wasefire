@@ -739,6 +739,12 @@ enum ThreadResult<'m> {
 
 impl<'m> Thread<'m> {
     fn new(parser: Parser<'m>, frame: Frame<'m>) -> Thread<'m> {
+        #[cfg(feature = "toctou")]
+        let frame = {
+            let mut frame = frame;
+            frame.func_body = parser.save();
+            frame
+        };
         Thread { parser, frames: vec![frame], values: vec![] }
     }
 
@@ -1360,7 +1366,14 @@ impl<'m> Thread<'m> {
         let ret = self.parser.save();
         self.parser = parser;
         let prev_stack = self.values().len();
-        self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals, side_table, prev_stack));
+        let frame = Frame::new(inst_id, t.results.len(), ret, locals, side_table, prev_stack);
+        #[cfg(feature = "toctou")]
+        let frame = {
+            let mut frame = frame;
+            frame.func_body = self.parser.save();
+            frame
+        };
+        self.frames.push(frame);
         Ok(ThreadResult::Continue(self))
     }
 }
@@ -1398,6 +1411,10 @@ struct Frame<'m> {
     /// Total length of the value stack in the thread prior to this frame.
     prev_stack: usize,
     labels_cnt: usize,
+    #[cfg(feature = "toctou")]
+    func_body: &'m [u8],
+    #[cfg(feature = "toctou")]
+    const_side_table: &'m [BranchTableEntry],
 }
 
 impl<'m> Frame<'m> {
@@ -1405,18 +1422,52 @@ impl<'m> Frame<'m> {
         inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>,
         side_table: &'m [BranchTableEntry], prev_stack: usize,
     ) -> Self {
-        Frame { inst_id, arity, ret, locals, side_table, prev_stack, labels_cnt: 1 }
+        Frame {
+            inst_id,
+            arity,
+            ret,
+            locals,
+            side_table,
+            prev_stack,
+            labels_cnt: 1,
+            #[cfg(feature = "toctou")]
+            func_body: &[],
+            #[cfg(feature = "toctou")]
+            const_side_table: side_table,
+        }
     }
 
     fn skip_jump(&mut self) {
-        self.side_table = offset_front(self.side_table, 1);
+        self.side_table = offset_front(
+            #[cfg(feature = "toctou")]
+            self.const_side_table,
+            self.side_table,
+            1,
+        );
     }
 
     fn take_jump(&mut self, parser_pos: &'m [u8], offset: usize) -> Parser<'m> {
-        self.side_table = offset_front(self.side_table, offset as isize);
+        self.side_table = offset_front(
+            #[cfg(feature = "toctou")]
+            self.const_side_table,
+            self.side_table,
+            offset as isize,
+        );
         let entry = self.side_table[0].view::<Use>().into_ok();
-        self.side_table = offset_front(self.side_table, entry.delta_stp as isize);
-        unsafe { Parser::new(offset_front(parser_pos, entry.delta_ip as isize)) }
+        self.side_table = offset_front(
+            #[cfg(feature = "toctou")]
+            self.const_side_table,
+            self.side_table,
+            entry.delta_stp as isize,
+        );
+        unsafe {
+            Parser::new(offset_front(
+                #[cfg(feature = "toctou")]
+                self.func_body,
+                parser_pos,
+                entry.delta_ip as isize,
+            ))
+        }
     }
 }
 

@@ -69,7 +69,9 @@ trait BranchTableApi<'m>: Debug {
     fn stitch_branch(
         &mut self, source: SideTableBranch<'m>, target: SideTableBranch<'m>,
     ) -> CheckResult;
-    fn patch_branch(&self, source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error>;
+    fn patch_branch(
+        &self, source: SideTableBranch<'m>, func_body: &'m [u8],
+    ) -> Result<SideTableBranch<'m>, Error>;
     fn allocate_branch(&mut self);
     fn next_index(&self) -> usize;
 }
@@ -122,7 +124,9 @@ impl<'m> BranchTableApi<'m> for &mut Vec<BranchTableEntry> {
         Ok(())
     }
 
-    fn patch_branch(&self, source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
+    fn patch_branch(
+        &self, source: SideTableBranch<'m>, _func_body: &'m [u8],
+    ) -> Result<SideTableBranch<'m>, Error> {
         Ok(source)
     }
 
@@ -189,10 +193,11 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
         check(source == target)
     }
 
-    fn patch_branch(&self, mut source: SideTableBranch<'m>) -> Result<SideTableBranch<'m>, Error> {
+    fn patch_branch(
+        &self, mut source: SideTableBranch<'m>, func_body: &'m [u8],
+    ) -> Result<SideTableBranch<'m>, Error> {
         let entry = self.metadata.branch_table()[source.branch_table].view::<Check>()?;
-        // TODO(dev/fast-interp): We want a safe version of offset_front.
-        source.parser = offset_front(source.parser, entry.delta_ip as isize);
+        source.parser = offset_front_check(func_body, source.parser, entry.delta_ip as isize)?;
         source.branch_table =
             source.branch_table.checked_add_signed(entry.delta_stp as isize).ok_or_else(invalid)?;
         source.stack -= entry.pop_cnt as usize;
@@ -590,6 +595,7 @@ impl OpdType {
 
 struct Expr<'a, 'm, M: ValidMode> {
     context: &'a Context<'m, M>,
+    func_body: &'m [u8],
     parser: &'a mut Parser<'m>,
     globals_len: usize,
     /// Whether the expression is const and the function references.
@@ -638,6 +644,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
     ) -> Self {
         Self {
             context,
+            func_body: parser.save(),
             parser,
             globals_len: context.globals.len(),
             is_const,
@@ -731,6 +738,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
                         let source = M::BranchTable::patch_branch(
                             self.branch_table.as_ref().unwrap(),
                             source,
+                            self.func_body,
                         )?;
                         let target = self.branch_target(params.len());
                         self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
@@ -1000,9 +1008,15 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
             if let LabelKind::If(source) = label.kind {
                 check(label.type_.params == label.type_.results)?;
                 if let Some(source) = source {
-                    let source = self.branch_table.as_ref().unwrap().patch_branch(source)?;
-                    // SAFETY: This function is only called after parsing an End instruction.
-                    target.parser = offset_front(target.parser, -1);
+                    let source =
+                        self.branch_table.as_ref().unwrap().patch_branch(source, self.func_body)?;
+                    // This function is only called after parsing an End instruction.
+                    target.parser = offset_front(
+                        #[cfg(feature = "toctou")]
+                        self.func_body,
+                        target.parser,
+                        -1,
+                    );
                     self.branch_table.as_mut().unwrap().stitch_branch(source, target)?;
                 }
             }
@@ -1022,7 +1036,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
         check(l < n)?;
         let source = match self.branch_source() {
             None => None,
-            Some(x) => Some(self.branch_table.as_ref().unwrap().patch_branch(x)?),
+            Some(x) => Some(self.branch_table.as_ref().unwrap().patch_branch(x, self.func_body)?),
         };
         let label = &mut self.labels[n - l - 1];
         Ok(match label.kind {
