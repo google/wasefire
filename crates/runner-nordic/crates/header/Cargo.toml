@@ -14,6 +14,7 @@ wasefire-one-of = { path = "../../../one-of" }
 # Exactly one must be enabled.
 board-devkit = []
 board-dongle = []
+board-makerdiary = []
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"

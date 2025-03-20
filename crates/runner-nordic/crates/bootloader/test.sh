@@ -22,3 +22,4 @@ test_helper
 cargo check --bin=bootloader --target=thumbv7em-none-eabi --features=board-devkit
 cargo check --bin=bootloader --target=thumbv7em-none-eabi --features=board-devkit --release
 cargo check --bin=bootloader --target=thumbv7em-none-eabi --features=board-dongle --release
+cargo check --bin=bootloader --target=thumbv7em-none-eabi --features=board-makerdiary --release

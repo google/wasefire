@@ -28,9 +28,11 @@ done
 test_helper
 
 cargo check --bin=runner-nordic --target=thumbv7em-none-eabi \
---features=wasm,debug,board-devkit,_full
+--features=wasm,debug,board-devkit,test-vendor,_full
 cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug,board-devkit
 DEFMT_LOG=trace cargo check --bin=runner-nordic --target=thumbv7em-none-eabi \
 --features=wasm,debug,board-devkit
 cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,release,board-dongle
 cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=native,release,board-dongle
+cargo check --bin=runner-nordic --target=thumbv7em-none-eabi \
+--features=native,release,board-makerdiary

@@ -33,6 +33,17 @@ run() {
   exec "$@"
 }
 
+if [ "$1" = uf2conv.py ]; then
+  if [ ! -e "$CARGO_ROOT/bin/uf2conv.py" ]; then
+    x curl https://raw.githubusercontent.com/microsoft/uf2/refs/heads/master/utils/uf2conv.py \
+      -o "$CARGO_ROOT/bin/uf2conv.py"
+    chmod +x "$CARGO_ROOT/bin/uf2conv.py"
+    x curl https://raw.githubusercontent.com/microsoft/uf2/refs/heads/master/utils/uf2families.json \
+      -o "$CARGO_ROOT/bin/uf2families.json"
+  fi
+  run "$@"
+fi
+
 ensure_cargo() {
   local flags="$1@$2"
   { cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2:\$"; } && return

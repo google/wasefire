@@ -24,7 +24,7 @@ pub enum Impl {}
 impl Support<usize> for Impl {
     #[cfg(feature = "board-devkit")]
     const SUPPORT: usize = 4;
-    #[cfg(feature = "board-dongle")]
+    #[cfg(any(feature = "board-dongle", feature = "board-makerdiary"))]
     const SUPPORT: usize = 1;
 }
 
