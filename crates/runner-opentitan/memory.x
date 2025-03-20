@@ -1,7 +1,7 @@
 /* RAM */
 _rcritic = 0x10000000; /* static critical (8 KiB) */
-_rdata   = 0x10002000; /* 88 KiB */
-_rheap   = 0x10018000; /* 16 KiB */
+_rdata   = 0x10002000; /* 88 KiB - 64KiB in native */
+_rheap   = 0x10018000 - RUNNER_NATIVE * 0x10000; /* 16 KiB + 64KiB in native */
 _rstack  = 0x1001c000; /* 16 KiB - 128 B */
 _rlimit  = 0x1001ff80; /* exception frame (128 B) */
 

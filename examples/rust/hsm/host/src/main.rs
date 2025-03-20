@@ -19,8 +19,8 @@ use std::time::Instant;
 use anyhow::{Result, anyhow};
 use clap::Parser;
 use common::{Deserialize, Deserializer, Error, Request, Response, Serialize, Serializer};
-use serialport::SerialPort;
 use wasefire_cli_tools::action::usb_serial::ConnectionOptions;
+use wasefire_cli_tools::action::usb_serial::serialport::SerialPort;
 
 #[derive(Parser)]
 struct Flags {

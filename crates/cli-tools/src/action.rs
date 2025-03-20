@@ -47,7 +47,7 @@ pub struct ConnectionOptions {
 
     /// Timeout to send or receive with the USB protocol.
     #[arg(long, default_value = "0s")]
-    timeout: humantime::Duration,
+    timeout: cyborgtime::Duration,
 }
 
 impl ConnectionOptions {
@@ -238,7 +238,7 @@ pub struct Wait {
     ///
     /// The command doesn't return `None` in that case.
     #[arg(long, conflicts_with = "wait")]
-    period: Option<humantime::Duration>,
+    period: Option<cyborgtime::Duration>,
 }
 
 impl Wait {
@@ -283,7 +283,7 @@ impl Wait {
 pub struct PlatformList {
     /// Timeout to send or receive on the platform protocol.
     #[arg(long, default_value = "1s")]
-    timeout: humantime::Duration,
+    timeout: cyborgtime::Duration,
 }
 
 impl PlatformList {

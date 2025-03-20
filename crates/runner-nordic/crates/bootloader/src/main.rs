@@ -23,6 +23,9 @@ use nrf52840_hal::nvmc::Nvmc;
 use nrf52840_hal::pac::{NVMC, Peripherals};
 use panic_abort as _;
 use wasefire_common::platform::Side;
+use wasefire_one_of::exactly_one_of;
+
+exactly_one_of!["board-devkit", "board-dongle", "board-makerdiary"];
 
 #[entry]
 fn main() -> ! {

@@ -13,6 +13,18 @@
 // limitations under the License.
 
 fn main() {
+    let out = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+    let board = if std::env::var_os("CARGO_FEATURE_BOARD_DEVKIT").is_some() {
+        "devkit"
+    } else if std::env::var_os("CARGO_FEATURE_BOARD_DONGLE").is_some()
+        || std::env::var_os("CARGO_FEATURE_BOARD_MAKERDIARY").is_some()
+    {
+        "dongle"
+    } else {
+        panic!("one of board-{{devkit,dongle,makerdiary}} must be enabled")
+    };
+    std::fs::copy(format!("memory-{board}.x"), out.join("memory.x")).unwrap();
+    println!("cargo::rerun-if-changed=memory-{board}.x");
+    println!("cargo::rustc-link-search={}", out.display());
     println!("cargo::rustc-link-arg=-Tlink.x");
-    println!("cargo::rerun-if-changed=memory.x");
 }

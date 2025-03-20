@@ -22,6 +22,7 @@
 
 ### Patch
 
+- Fix `HmacSha256::new_from_slice()` to forward the `InvalidLength` error with `rust-crypto`
 - Fix clippy lints
 - Update dependencies
 

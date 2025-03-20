@@ -69,6 +69,7 @@ radio-ble = [
   "dep:wasefire-applet-api",
   "wasefire-scheduler/board-api-radio-ble",
 ]
+test-vendor = []
 uart = ["wasefire-scheduler/board-api-uart"]
 usb-ctap = ["_usb", "dep:usbd-hid", "wasefire-scheduler/board-api-usb-ctap"]
 usb-serial = ["_usb", "dep:usbd-serial", "wasefire-scheduler/board-api-usb-serial"]
@@ -81,6 +82,10 @@ software-crypto-hmac-sha256 = [
 ]
 software-crypto-p256 = ["software-crypto-sha256", "wasefire-scheduler/software-crypto-p256"]
 software-crypto-sha256 = ["_crypto", "wasefire-scheduler/software-crypto-sha256"]
+# Exactly one is enabled by xtask.
+board-devkit = ["header/board-devkit"]
+board-dongle = ["header/board-dongle"]
+board-makerdiary = ["header/board-makerdiary"]
 # Exactly one is enabled by xtask.
 debug = [
   "dep:defmt",

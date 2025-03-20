@@ -33,6 +33,17 @@ run() {
   exec "$@"
 }
 
+if [ "$1" = uf2conv.py ]; then
+  if [ ! -e "$CARGO_ROOT/bin/uf2conv.py" ]; then
+    x curl https://raw.githubusercontent.com/microsoft/uf2/refs/heads/master/utils/uf2conv.py \
+      -o "$CARGO_ROOT/bin/uf2conv.py"
+    chmod +x "$CARGO_ROOT/bin/uf2conv.py"
+    x curl https://raw.githubusercontent.com/microsoft/uf2/refs/heads/master/utils/uf2families.json \
+      -o "$CARGO_ROOT/bin/uf2families.json"
+  fi
+  run "$@"
+fi
+
 ensure_cargo() {
   local flags="$1@$2"
   { cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2:\$"; } && return
@@ -52,6 +63,7 @@ case "$1" in
     ;;
   defmt-print) ensure_cargo defmt-print 1.0.0-rc.1 ;;
   mdbook) ensure_cargo mdbook 0.4.47 ;;
+  nrfdfu) ensure_cargo nrfdfu 0.1.3 ;;
   probe-rs) ensure_cargo probe-rs-tools 0.27.0 ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
   taplo) ensure_cargo taplo-cli 0.9.3 ;;

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use anyhow::{Result, bail};
+pub use serialport;
 use serialport::{SerialPort, SerialPortType};
 
 /// Options to connect to a USB serial.
@@ -24,7 +25,7 @@ pub struct ConnectionOptions {
 
     /// Timeout to send or receive with the USB serial.
     #[arg(long, default_value = "1s")]
-    timeout: humantime::Duration,
+    timeout: cyborgtime::Duration,
 }
 
 impl ConnectionOptions {

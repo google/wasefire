@@ -83,6 +83,7 @@ use crate::storage::Storage;
 
 exactly_one_of!["debug", "release"];
 exactly_one_of!["native", "wasm"];
+exactly_one_of!["board-devkit", "board-dongle", "board-makerdiary"];
 
 #[cfg(feature = "debug")]
 #[defmt::panic_handler]
@@ -135,19 +136,38 @@ fn main() -> ! {
     log::debug!("Runner starts.");
     let p = nrf52840_hal::pac::Peripherals::take().unwrap();
     let port0 = gpio::p0::Parts::new(p.P0);
-    #[cfg(feature = "gpio")]
+    #[cfg(any(feature = "gpio", feature = "board-dongle"))]
     let port1 = gpio::p1::Parts::new(p.P1);
+    #[cfg(feature = "board-devkit")]
     let buttons = [
         Button::new(port0.p0_11.into_pullup_input().degrade()),
         Button::new(port0.p0_12.into_pullup_input().degrade()),
         Button::new(port0.p0_24.into_pullup_input().degrade()),
         Button::new(port0.p0_25.into_pullup_input().degrade()),
     ];
+    #[cfg(feature = "board-dongle")]
+    let buttons = [Button::new(port1.p1_06.into_pullup_input().degrade())];
+    #[cfg(feature = "board-makerdiary")]
+    let buttons = [Button::new(port0.p0_18.into_pullup_input().degrade())];
+    #[cfg(feature = "board-devkit")]
     let leds = [
         port0.p0_13.into_push_pull_output(Level::High).degrade(),
         port0.p0_14.into_push_pull_output(Level::High).degrade(),
         port0.p0_15.into_push_pull_output(Level::High).degrade(),
         port0.p0_16.into_push_pull_output(Level::High).degrade(),
+    ];
+    #[cfg(feature = "board-dongle")]
+    let leds = [
+        port0.p0_06.into_push_pull_output(Level::High).degrade(),
+        port0.p0_08.into_push_pull_output(Level::High).degrade(),
+        port1.p1_09.into_push_pull_output(Level::High).degrade(),
+        port0.p0_12.into_push_pull_output(Level::High).degrade(),
+    ];
+    #[cfg(feature = "board-makerdiary")]
+    let leds = [
+        port0.p0_23.into_push_pull_output(Level::High).degrade(),
+        port0.p0_22.into_push_pull_output(Level::High).degrade(),
+        port0.p0_24.into_push_pull_output(Level::High).degrade(),
     ];
     #[cfg(feature = "gpio")]
     let gpios = [
