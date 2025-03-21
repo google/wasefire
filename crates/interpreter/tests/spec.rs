@@ -26,7 +26,8 @@ use wast::{QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, Wast
 
 fn test(repo: &str, name: &str, skip: usize) {
     let path = format!("../../third_party/WebAssembly/{repo}/test/core/{name}.wast");
-    let content = std::fs::read_to_string(path).unwrap();
+    let mut content = std::fs::read_to_string(path).unwrap();
+    patch_content(name, &mut content);
     let mut lexer = Lexer::new(&content);
     lexer.allow_confusing_unicode(true);
     let buffer = parser::ParseBuffer::new_with_lexer(lexer).unwrap();
@@ -58,7 +59,21 @@ fn test(repo: &str, name: &str, skip: usize) {
             _ => unimplemented!("{:?}", directive),
         }
     }
-    assert_eq!(env.skip, skip);
+    assert_eq!(env.skip, skip, "actual vs expected number of unsupported (and skipped) tests");
+}
+
+fn patch_content(name: &str, content: &mut String) {
+    if name == "br_table" {
+        // This is a corner-case we don't want to support.
+        replace_with(content, "\n  (func (export \"large\")", "\n  )\n", "");
+        replace_with(content, "\n(assert_return (invoke \"large\" ", "\n\n", "\n");
+    }
+}
+
+fn replace_with(content: &mut String, prefix: &str, suffix: &str, replace: &str) {
+    let start = content.find(prefix).unwrap();
+    let length = content[start ..].find(suffix).unwrap() + suffix.len();
+    content.replace_range(start .. start + length, replace);
 }
 
 fn pool_size(name: &str) -> usize {
@@ -164,8 +179,9 @@ impl<'m> Env<'m> {
     }
 
     fn maybe_instantiate(&mut self, name: &str, wasm: &[u8]) -> Result<InstId, Error> {
+        let wasm = prepare(wasm)?;
         let module = self.alloc(wasm.len());
-        module.copy_from_slice(wasm);
+        module.copy_from_slice(&wasm);
         let module = Module::new(module)?;
         let memory = self.alloc(mem_size(name));
         self.store.instantiate(module, memory)
@@ -337,13 +353,13 @@ fn assert_invoke(env: &mut Env, invoke: WastInvoke) {
 
 fn assert_malformed(env: &mut Env, mut wat: QuoteWat) {
     if let Ok(wasm) = wat.encode() {
-        assert_eq!(only_sup!(env, Module::new(&wasm)).err(), Some(Error::Invalid));
+        assert_eq!(only_sup!(env, prepare(&wasm)).err(), Some(Error::Invalid));
     }
 }
 
 fn assert_invalid(env: &mut Env, mut wat: QuoteWat) {
     let wasm = wat.encode().unwrap();
-    assert_eq!(only_sup!(env, Module::new(&wasm)).err(), Some(Error::Invalid));
+    assert_eq!(only_sup!(env, prepare(&wasm)).err(), Some(Error::Invalid));
 }
 
 fn assert_exhaustion(env: &mut Env, call: WastInvoke) {

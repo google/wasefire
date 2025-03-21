@@ -53,6 +53,7 @@ pub enum Unsupported {
     Opcode(u8),
     OpcodeFc(u32),
     MaxLocals,
+    SideTable,
 }
 
 #[cfg(feature = "debug")]
