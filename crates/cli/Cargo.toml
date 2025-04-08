@@ -24,7 +24,7 @@ wasefire-cli-tools = { version = "0.3.0-git", path = "../cli-tools", features = 
 wasefire-one-of = { version = "0.1.1-git", path = "../one-of" }
 
 [dependencies.tokio]
-version = "1.44.0"
+version = "1.44.2"
 default-features = false
 features = ["macros", "parking_lot", "rt", "rt-multi-thread"]
 
