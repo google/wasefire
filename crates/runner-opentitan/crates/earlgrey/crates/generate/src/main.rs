@@ -43,10 +43,19 @@ fn main() -> Result<()> {
     let mut bazel = Command::new("bazel");
     bazel.current_dir(OPENTITAN);
     bazel.arg("build");
+    bazel.arg("//sw/device/silicon_owner:manifest");
     for name in IP_BLOCKS {
         bazel.arg(IpPath::build(&ip_name(name).to_lowercase()));
     }
     bazel.status()?.exit_ok()?;
+
+    // Copy manifest.json with terminating newline.
+    let mut manifest =
+        std::fs::read(format!("{OPENTITAN}/{FASTBUILD}/sw/device/silicon_owner/manifest.json"))?;
+    if manifest.last().is_none_or(|&x| x != b'\n') {
+        manifest.push(b'\n');
+    }
+    std::fs::write("../../../../manifest.json", &manifest)?;
 
     // Create output file with copyright notice (taken from this file).
     let mut output = File::create("../../src/lib.rs")?;
@@ -698,17 +707,19 @@ impl IpPath {
 
     fn build(lname: &str) -> String {
         let mut result = match Self::new(lname) {
-            IpPath::TopAuto => "//hw/top_earlgrey".to_string(),
+            _ if lname == "rv_plic" => "//hw/top_earlgrey".to_string(),
+            IpPath::TopAuto => format!("//hw/top_earlgrey/ip_autogen/{lname}"),
             IpPath::Top => format!("//hw/top_earlgrey/ip/{lname}/data/autogen"),
             IpPath::Ip => format!("//hw/ip/{lname}/data"),
         };
-        write!(result, ":{lname}_regs").unwrap();
+        write!(result, ":{lname}_c_regs").unwrap();
         result
     }
 
     fn header(lname: &str) -> String {
         let mut result = match Self::new(lname) {
-            IpPath::TopAuto => "hw/top_earlgrey".to_string(),
+            _ if lname == "rv_plic" => "hw/top_earlgrey".to_string(),
+            IpPath::TopAuto => format!("hw/top_earlgrey/ip_autogen/{lname}"),
             IpPath::Top => format!("hw/top_earlgrey/ip/{lname}/data/autogen"),
             IpPath::Ip => format!("hw/ip/{lname}/data"),
         };
