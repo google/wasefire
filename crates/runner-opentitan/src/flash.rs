@@ -20,12 +20,15 @@ use wasefire_logger as log;
 use crate::multibit::BOOL4_FALSE;
 
 pub fn init() {
+    #[cfg(any())]
+    dump_regions();
+
     // After ROM_EXT on bank A, the flash regions look like this:
     // 0: 09669966 00000000-0000ffff RD            SCRAMBLE ECC    LOCKED
     // 1: 09666666 00080000-0008ffff RD PROG ERASE SCRAMBLE ECC    LOCKED
     // 2: 09669966 00010000-00076fff RD            SCRAMBLE ECC    LOCKED
-    // 3: 09666666 00090000-000f6fff RD PROG ERASE SCRAMBLE ECC    LOCKED
-    // 4: 06696666 00077000-0007ffff RD PROG ERASE          ECC HE
+    // 3: 06696666 00077000-0007ffff RD PROG ERASE          ECC HE
+    // 4: 09666666 00090000-000f6fff RD PROG ERASE SCRAMBLE ECC    LOCKED
     // 5: 06696666 000f7000-000ff7ff RD PROG ERASE          ECC HE
     // 6: 09669966 000ff800-000fffff RD            SCRAMBLE ECC    LOCKED
     // 7: 09999999 00000000-ffffffff -
@@ -33,7 +36,7 @@ pub fn init() {
     // We disable ECC for the storage since we need to write multiple times to the same word. We
     // keep HE because it permits 100k erase cycles instead of 10k to the price of slower
     // operations.
-    FLASH_CTRL.mp_region_cfg(4).modify().ecc_en(BOOL4_FALSE).reg.write();
+    FLASH_CTRL.mp_region_cfg(3).modify().ecc_en(BOOL4_FALSE).reg.write();
     FLASH_CTRL.mp_region_cfg(5).modify().ecc_en(BOOL4_FALSE).reg.write();
 }
 
@@ -148,3 +151,15 @@ impl From<Code> for u16 {
 }
 
 impl CodeParam for Code {}
+
+#[cfg(any())]
+fn dump_regions() {
+    for i in 0 .. 8 {
+        let cfg = FLASH_CTRL.mp_region_cfg(i).read_raw();
+        let lock = !FLASH_CTRL.region_cfg_regwen(i).read().region() as u32;
+        let reg = FLASH_CTRL.mp_region(i).read();
+        let start = reg.base() * PAGE_SIZE as u32;
+        let limit = start + reg.size() * PAGE_SIZE as u32 - 1;
+        log::info!("{}: {:08x} {} {:08x}-{:08x}", i, cfg, lock, start, limit);
+    }
+}

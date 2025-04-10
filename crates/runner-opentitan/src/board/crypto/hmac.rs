@@ -83,13 +83,12 @@ impl KeyInit for HmacSha256 {
     fn new_from_slice(key: &[u8]) -> Result<Self, digest::InvalidLength> {
         fn aux(key: &[u8]) -> Result<Option<Hmac>, Error> {
             let mut key_ = [0; 64];
-            match key.len() {
-                0 ..= 64 => key_[.. key.len()].copy_from_slice(key),
-                _ => {
-                    let mut hash = Hmac::start(None)?;
-                    hash.update(key);
-                    hash.finalize(key_.first_chunk_mut().unwrap())?;
-                }
+            if key.len() <= 64 {
+                key_[.. key.len()].copy_from_slice(key);
+            } else {
+                let mut hash = Hmac::start(None)?;
+                hash.update(key);
+                hash.finalize(key_.first_chunk_mut().unwrap())?;
             }
             Ok(Some(Hmac::start(Some(&key_))?))
         }

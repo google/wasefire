@@ -73,7 +73,7 @@ impl defmt::Format for Format {
 
         defmt::write!(fmt, "boot_svc {} 0x{:x}", Ascii(read_word(0)), read_word(1));
         let length = read_word(12);
-        if length < 32 || 224 < length {
+        if !(32 ..= 224).contains(&length) {
             defmt::write!(fmt, " invalid length 0x{:08x}", length);
             return;
         }
