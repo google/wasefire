@@ -110,6 +110,8 @@
 #![feature(float_minimum_maximum)]
 #![feature(never_type)]
 #![feature(pointer_is_aligned_to)]
+#![feature(strict_overflow_ops)]
+#![feature(substr_range)]
 #![feature(try_blocks)]
 #![feature(unwrap_infallible)]
 
@@ -139,14 +141,16 @@ macro_rules! support_if {
     }};
 }
 
-mod cache;
 mod error;
 mod exec;
+mod format;
 mod id;
 mod module;
 mod parser;
+mod side_table;
 mod syntax;
 mod toctou;
+mod util;
 mod valid;
 
 pub use error::{Error, TRAP_CODE, Unsupported};
@@ -155,4 +159,4 @@ pub use module::Module;
 pub use syntax::{
     FuncType, GlobalType, ImportDesc, Limits, Mut, RefType, ResultType, TableType, ValType,
 };
-pub use valid::validate;
+pub use valid::prepare;
