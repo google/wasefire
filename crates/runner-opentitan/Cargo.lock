@@ -342,7 +342,7 @@ dependencies = [
 [[package]]
 name = "riscv"
 version = "0.13.0"
-source = "git+https://github.com/rust-embedded/riscv.git?rev=dc769e41acb930c0eea4893c657b03cb1d1fda5a#dc769e41acb930c0eea4893c657b03cb1d1fda5a"
+source = "git+https://github.com/rust-embedded/riscv.git?rev=23be2d1dd22773906c57584830bdd0afbf83f0e3#23be2d1dd22773906c57584830bdd0afbf83f0e3"
 dependencies = [
  "critical-section",
  "embedded-hal",
@@ -354,7 +354,7 @@ dependencies = [
 [[package]]
 name = "riscv-macros"
 version = "0.2.0"
-source = "git+https://github.com/rust-embedded/riscv.git?rev=dc769e41acb930c0eea4893c657b03cb1d1fda5a#dc769e41acb930c0eea4893c657b03cb1d1fda5a"
+source = "git+https://github.com/rust-embedded/riscv.git?rev=23be2d1dd22773906c57584830bdd0afbf83f0e3#23be2d1dd22773906c57584830bdd0afbf83f0e3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -364,12 +364,12 @@ dependencies = [
 [[package]]
 name = "riscv-pac"
 version = "0.2.0"
-source = "git+https://github.com/rust-embedded/riscv.git?rev=dc769e41acb930c0eea4893c657b03cb1d1fda5a#dc769e41acb930c0eea4893c657b03cb1d1fda5a"
+source = "git+https://github.com/rust-embedded/riscv.git?rev=23be2d1dd22773906c57584830bdd0afbf83f0e3#23be2d1dd22773906c57584830bdd0afbf83f0e3"
 
 [[package]]
 name = "riscv-rt"
 version = "0.14.0"
-source = "git+https://github.com/rust-embedded/riscv.git?rev=dc769e41acb930c0eea4893c657b03cb1d1fda5a#dc769e41acb930c0eea4893c657b03cb1d1fda5a"
+source = "git+https://github.com/rust-embedded/riscv.git?rev=23be2d1dd22773906c57584830bdd0afbf83f0e3#23be2d1dd22773906c57584830bdd0afbf83f0e3"
 dependencies = [
  "riscv",
  "riscv-pac",
@@ -380,7 +380,7 @@ dependencies = [
 [[package]]
 name = "riscv-rt-macros"
 version = "0.4.0"
-source = "git+https://github.com/rust-embedded/riscv.git?rev=dc769e41acb930c0eea4893c657b03cb1d1fda5a#dc769e41acb930c0eea4893c657b03cb1d1fda5a"
+source = "git+https://github.com/rust-embedded/riscv.git?rev=23be2d1dd22773906c57584830bdd0afbf83f0e3#23be2d1dd22773906c57584830bdd0afbf83f0e3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -389,8 +389,8 @@ dependencies = [
 
 [[package]]
 name = "riscv-target-parser"
-version = "0.1.0"
-source = "git+https://github.com/rust-embedded/riscv.git?rev=dc769e41acb930c0eea4893c657b03cb1d1fda5a#dc769e41acb930c0eea4893c657b03cb1d1fda5a"
+version = "0.1.1"
+source = "git+https://github.com/rust-embedded/riscv.git?rev=23be2d1dd22773906c57584830bdd0afbf83f0e3#23be2d1dd22773906c57584830bdd0afbf83f0e3"
 
 [[package]]
 name = "rlsf"

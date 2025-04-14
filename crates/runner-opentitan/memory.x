@@ -55,9 +55,7 @@ SECTIONS {
     LONG(RUNNER_VERSION_THG); /* timestamp high */
     . = ORIGIN(MANIF) + 892;
     LONG(ADDR(.text) - ORIGIN(MANIF)); /* code start */
-    /* TODO(riscv-rt > 0.13.0): Use SIZEOF(.text) directly. */
-    __sizeof_text = (SIZEOF(.text) + 3) & ~3;
-    LONG(ADDR(.text) + __sizeof_text - ORIGIN(MANIF)); /* code end */
+    LONG(ADDR(.text) + SIZEOF(.text) - ORIGIN(MANIF)); /* code end */
     LONG(_start - ORIGIN(MANIF)); /* entry point */
     . = ORIGIN(MANIF) + LENGTH(MANIF);
   } > MANIF
