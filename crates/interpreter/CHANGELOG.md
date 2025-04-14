@@ -4,10 +4,15 @@
 
 ### Major
 
+- TODO side-table
+- Change `Module::new{,_unchecked}()` to expect a module with side-table
+- Remove `validate()` in favor of `prepare()`
+- Remove `cache` feature in favor of side-table pre-computation
 - Remove `Default` implementation for `Module`
 
 ### Minor
 
+- Add `prepare()` to validate and prefix the module with a custom section containing the side-table
 - Use Rust edition 2024
 
 ### Patch

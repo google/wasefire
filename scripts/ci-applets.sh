@@ -20,13 +20,12 @@ set -e
 
 # This script runs the continuous integration tests for applets.
 
-ensure_submodule third_party/google/OpenSK
-
 for lang in $(ls examples); do
   for name in $(ls examples/$lang); do
     [ $lang = assemblyscript -a $name = node_modules ] && continue
     [ $lang = assemblyscript -a $name = api.ts ] && continue
     [ $lang = rust -a $name = exercises ] && continue
+    [ $lang = rust -a $name = opensk ] && continue
     x cargo xtask applet $lang $name
     x cargo xtask --release applet $lang $name
   done

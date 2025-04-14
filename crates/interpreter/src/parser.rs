@@ -17,6 +17,7 @@ use core::marker::PhantomData;
 
 #[cfg(feature = "debug")]
 use crate::error::*;
+use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
 
@@ -551,23 +552,17 @@ impl<'m, M: Mode> Parser<'m, M> {
         user.init(self.parse_bytes(len)?)
     }
 
-    pub fn skip_to_else(&mut self) -> MResult<(), M> {
-        let mut depth = 0;
-        loop {
-            let saved = self.save();
-            match self.parse_instr()? {
-                Instr::Block(_) => depth += 1,
-                Instr::Loop(_) => depth += 1,
-                Instr::If(_) => depth += 1,
-                Instr::End if depth == 0 => {
-                    unsafe { self.restore(saved) };
-                    return Ok(());
-                }
-                Instr::End => depth -= 1,
-                Instr::Else if depth == 0 => return Ok(()),
-                _ => (),
-            }
-        }
+    pub fn parse_side_table(&mut self) -> MResult<SideTableView<'m>, M> {
+        let id = self.parse_section_id()?;
+        M::check(|| id == SectionId::Custom)?;
+        let mut parser = self.split_section()?;
+        let name = parser.parse_name()?;
+        M::check(|| name == SECTION_NAME)?;
+        let num_funcs = parser.parse_bytes(2)?.try_into().unwrap();
+        let num_funcs = u16::from_le_bytes(num_funcs) as usize;
+        let indices = parser.parse_bytes((num_funcs + 1) * 2)?;
+        let metadata = parser.save();
+        Ok(SideTableView { indices, metadata })
     }
 
     pub fn skip_to_end(&mut self, l: LabelIdx) -> MResult<(), M> {
