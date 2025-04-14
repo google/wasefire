@@ -25,18 +25,16 @@ wasefire-protocol-usb = { path = "../protocol-usb", features = ["device"] }
 wasefire-store = { path = "../store" }
 wasefire-sync = { path = "../sync", features = ["unsafe-assume-single-core"] }
 
-# TODO(https://github.com/rust-embedded/riscv/issues/247):
-# - Change commit hash once merged (reachable from master).
-# - Use crates.io version once released.
+# TODO(riscv > 0.13.0): Use crates.io
 [dependencies.riscv]
 git = "https://github.com/rust-embedded/riscv.git"
-rev = "dc769e41acb930c0eea4893c657b03cb1d1fda5a"
+rev = "23be2d1dd22773906c57584830bdd0afbf83f0e3"
 features = ["critical-section-single-hart"]
 
-# TODO(https://github.com/rust-embedded/riscv/issues/247): See above.
+# TODO(riscv-rt > 0.14.0): Use crates.io
 [dependencies.riscv-rt]
 git = "https://github.com/rust-embedded/riscv.git"
-rev = "dc769e41acb930c0eea4893c657b03cb1d1fda5a"
+rev = "23be2d1dd22773906c57584830bdd0afbf83f0e3"
 features = ["single-hart", "v-trap"]
 
 [dependencies.wasefire-scheduler]
