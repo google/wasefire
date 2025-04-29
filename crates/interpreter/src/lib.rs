@@ -106,12 +106,10 @@
 
 #![cfg_attr(not(feature = "debug"), no_std)]
 #![cfg_attr(test, allow(unused_crate_dependencies))]
-#![feature(concat_idents)]
 #![feature(float_minimum_maximum)]
 #![feature(never_type)]
 #![feature(pointer_is_aligned_to)]
 #![feature(strict_overflow_ops)]
-#![feature(substr_range)]
 #![feature(try_blocks)]
 #![feature(unwrap_infallible)]
 
@@ -141,6 +139,7 @@ macro_rules! support_if {
     }};
 }
 
+mod cursor;
 mod error;
 mod exec;
 mod format;
@@ -150,7 +149,6 @@ mod parser;
 mod side_table;
 mod syntax;
 mod toctou;
-mod util;
 mod valid;
 
 pub use error::{Error, TRAP_CODE, Unsupported};

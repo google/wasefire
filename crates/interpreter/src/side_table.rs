@@ -13,8 +13,8 @@
 // limitations under the License.
 
 use alloc::vec::Vec;
-use core::ops::Range;
 
+use crate::cursor::*;
 use crate::error::*;
 use crate::toctou::*;
 
@@ -40,31 +40,33 @@ impl<'m> SideTableView<'m> {
 pub struct Metadata<'m>(&'m [u8]);
 
 impl<'m> Metadata<'m> {
-    pub fn type_idx(&self) -> usize {
-        parse_u16::<Use>(self.0, 0).into_ok() as usize
+    pub fn type_idx<M: Mode>(&self) -> MResult<usize, M> {
+        parse_u16::<M>(self.0, 0).map(|x| x as usize)
     }
 
-    pub fn branch_table(&self) -> &'m [BranchTableEntry] {
+    pub fn branch_table<M: Mode>(&self) -> MResult<&'m [BranchTableEntry], M> {
         let entry_size = size_of::<BranchTableEntry>();
-        let branch_table = &self.0[10 ..];
-        assert_eq!(branch_table.len() % entry_size, 0);
-        unsafe {
+        let branch_table = M::open(|| self.0.get(10 ..))?;
+        M::check(|| branch_table.len() % entry_size == 0)?;
+        Ok(unsafe {
             core::slice::from_raw_parts(
                 branch_table.as_ptr().cast(),
                 branch_table.len() / entry_size,
             )
-        }
+        })
     }
 
-    pub fn parser_range(&self) -> Range<usize> {
-        parse_u32(self.0, 2) as usize .. parse_u32(self.0, 6) as usize
+    pub fn parser_state<M: Mode>(&self) -> MResult<CursorState, M> {
+        let start = parse_u32::<M>(self.0, 2).map(|x| x as usize)?;
+        let end = parse_u32::<M>(self.0, 6).map(|x| x as usize)?;
+        Ok(CursorState::from_range(start .. end))
     }
 }
 
 #[derive(Default, Debug)]
 pub struct MetadataEntry {
     pub type_idx: usize,
-    pub parser_range: Range<usize>,
+    pub parser_state: CursorState,
     pub branch_table: Vec<BranchTableEntry>,
 }
 
@@ -85,9 +87,10 @@ pub fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
         let type_idx = try_from::<u16>("MetadataEntry::type_idx", entry.type_idx)?;
         res.extend_from_slice(&type_idx.to_le_bytes());
         let range_start =
-            try_from::<u32>("MetadataEntry::parser_range start", entry.parser_range.start)?;
+            try_from::<u32>("MetadataEntry::parser_state start", entry.parser_state.start())?;
         res.extend_from_slice(&range_start.to_le_bytes());
-        let range_end = try_from::<u32>("MetadataEntry::parser_range end", entry.parser_range.end)?;
+        let range_end =
+            try_from::<u32>("MetadataEntry::parser_state end", entry.parser_state.end())?;
         res.extend_from_slice(&range_end.to_le_bytes());
         for branch in &entry.branch_table {
             res.extend_from_slice(&branch.0);
@@ -155,8 +158,9 @@ fn parse_u16<M: Mode>(data: &[u8], offset: usize) -> MResult<u16, M> {
     Ok(u16::from_le_bytes(bytes.try_into().unwrap()))
 }
 
-fn parse_u32(data: &[u8], offset: usize) -> u32 {
-    u32::from_le_bytes(data[offset ..][.. 4].try_into().unwrap())
+fn parse_u32<M: Mode>(data: &[u8], offset: usize) -> MResult<u32, M> {
+    let bytes = M::open(|| try { data.get(offset .. offset.checked_add(4)?)? })?;
+    Ok(u32::from_le_bytes(bytes.try_into().unwrap()))
 }
 
 #[allow(unused_variables)]

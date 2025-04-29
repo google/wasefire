@@ -1938,6 +1938,7 @@ dependencies = [
 name = "wasefire-interpreter"
 version = "0.4.0-git"
 dependencies = [
+ "derive-where",
  "num_enum",
  "paste",
  "portable-atomic",

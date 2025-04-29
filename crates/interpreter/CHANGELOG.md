@@ -4,7 +4,7 @@
 
 ### Major
 
-- TODO side-table
+- TODO 1 side-table
 - Change `Module::new{,_unchecked}()` to expect a module with side-table
 - Remove `validate()` in favor of `prepare()`
 - Remove `cache` feature in favor of side-table pre-computation

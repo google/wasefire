@@ -16,12 +16,12 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
+use crate::cursor::*;
 use crate::error::*;
 use crate::module::*;
 use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
-use crate::util::*;
 use crate::*;
 
 pub const MEMORY_ALIGN: usize = 16;
@@ -196,7 +196,8 @@ impl<'m> Store<'m> {
             let (mut parser, side_table) = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals, side_table, 0));
+            let ret = Parser::default();
+            let thread = Thread::new(parser, Frame::new(inst_id, 0, ret, locals, side_table, 0));
             let result = thread.run(self)?;
             assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
         }
@@ -225,7 +226,8 @@ impl<'m> Store<'m> {
         check_types(&t.params, &args)?;
         let mut locals = args;
         append_locals(&mut parser, &mut locals);
-        let frame = Frame::new(inst_id, t.results.len(), &[], locals, side_table, 0);
+        let ret = Parser::default();
+        let frame = Frame::new(inst_id, t.results.len(), ret, locals, side_table, 0);
         Thread::new(parser, frame).run(self)
     }
 
@@ -739,27 +741,23 @@ enum ThreadResult<'m> {
 
 impl<'m> Thread<'m> {
     fn new(parser: Parser<'m>, frame: Frame<'m>) -> Thread<'m> {
-        #[cfg(feature = "toctou")]
-        let frame = {
-            let mut frame = frame;
-            frame.func_body = parser.save();
-            frame
-        };
         Thread { parser, frames: vec![frame], values: vec![] }
     }
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
-        let parser = mut_parser.clone();
-        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new(), &[], 0));
-        let (parser, results) = loop {
-            let p = thread.parser.save();
+        let mut thread = Thread::new(
+            mut_parser.clone(),
+            Frame::new(inst_id, 1, Parser::default(), Vec::new(), Cursor::default(), 0),
+        );
+        let (state, results) = loop {
+            let s = thread.parser.save();
             match thread.step(store).unwrap() {
                 ThreadResult::Continue(x) => thread = x,
-                ThreadResult::Done(x) => break (p, x),
+                ThreadResult::Done(x) => break (s, x),
                 ThreadResult::Host => unreachable!(),
             }
         };
-        unsafe { mut_parser.restore(parser) };
+        unsafe { mut_parser.restore(state) };
         let instr = mut_parser.parse_instr().into_ok();
         debug_assert_eq!(instr, Instr::End);
         debug_assert_eq!(results.len(), 1);
@@ -1049,7 +1047,7 @@ impl<'m> Thread<'m> {
         }
         frame.labels_cnt = i;
         let Ok(BranchTableEntryView { val_cnt, pop_cnt, .. }) =
-            frame.side_table[offset].view::<Use>();
+            frame.side_table.get(offset).view::<Use>();
         let val_pos = self.values().len() - val_cnt as usize;
         self.values().drain(val_pos - pop_cnt as usize .. val_pos);
         self.take_jump(offset);
@@ -1066,7 +1064,7 @@ impl<'m> Thread<'m> {
             if self.frames.is_empty() {
                 return ThreadResult::Done(values);
             }
-            unsafe { self.parser.restore(frame.ret) };
+            self.parser = frame.ret;
             self.values().extend(values);
         }
         ThreadResult::Continue(self)
@@ -1081,14 +1079,14 @@ impl<'m> Thread<'m> {
             values.drain(0 .. mid);
             return ThreadResult::Done(values);
         }
-        unsafe { self.parser.restore(frame.ret) };
+        self.parser = frame.ret;
         self.values().extend_from_slice(&values[mid ..]);
         ThreadResult::Continue(self)
     }
 
     fn take_jump(&mut self, offset: usize) {
-        let parser_pos = self.parser.save();
-        self.parser = self.frame().take_jump(parser_pos, offset);
+        let offset = self.frame().take_jump(offset);
+        self.parser.update(offset);
     }
 
     fn mem_slice<'a>(
@@ -1359,16 +1357,10 @@ impl<'m> Thread<'m> {
         let (mut parser, side_table) = store.insts[inst_id].module.func(ptr.index());
         let mut locals = self.pop_values(t.params.len());
         append_locals(&mut parser, &mut locals);
-        let ret = self.parser.save();
+        let ret = self.parser;
         self.parser = parser;
         let prev_stack = self.values().len();
         let frame = Frame::new(inst_id, t.results.len(), ret, locals, side_table, prev_stack);
-        #[cfg(feature = "toctou")]
-        let frame = {
-            let mut frame = frame;
-            frame.func_body = self.parser.save();
-            frame
-        };
         self.frames.push(frame);
         Ok(ThreadResult::Continue(self))
     }
@@ -1401,69 +1393,32 @@ fn memory_init(d: usize, s: usize, n: usize, mem: &mut Memory, data: &[u8]) -> R
 struct Frame<'m> {
     inst_id: usize,
     arity: usize,
-    ret: &'m [u8],
+    ret: Parser<'m>,
     locals: Vec<Val>,
-    side_table: &'m [BranchTableEntry],
+    side_table: Cursor<'m, BranchTableEntry>,
     /// Total length of the value stack in the thread prior to this frame.
     prev_stack: usize,
+    // TODO: We should be able to get rid of this by using the side-table.
     labels_cnt: usize,
-    #[cfg(feature = "toctou")]
-    func_body: &'m [u8],
-    #[cfg(feature = "toctou")]
-    const_side_table: &'m [BranchTableEntry],
 }
 
 impl<'m> Frame<'m> {
     fn new(
-        inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>,
-        side_table: &'m [BranchTableEntry], prev_stack: usize,
+        inst_id: usize, arity: usize, ret: Parser<'m>, locals: Vec<Val>,
+        side_table: Cursor<'m, BranchTableEntry>, prev_stack: usize,
     ) -> Self {
-        Frame {
-            inst_id,
-            arity,
-            ret,
-            locals,
-            side_table,
-            prev_stack,
-            labels_cnt: 1,
-            #[cfg(feature = "toctou")]
-            func_body: &[],
-            #[cfg(feature = "toctou")]
-            const_side_table: side_table,
-        }
+        Frame { inst_id, arity, ret, locals, side_table, prev_stack, labels_cnt: 1 }
     }
 
     fn skip_jump(&mut self) {
-        self.side_table = offset_front(
-            #[cfg(feature = "toctou")]
-            self.const_side_table,
-            self.side_table,
-            1,
-        );
+        self.side_table.adjust_start(1);
     }
 
-    fn take_jump(&mut self, parser_pos: &'m [u8], offset: usize) -> Parser<'m> {
-        self.side_table = offset_front(
-            #[cfg(feature = "toctou")]
-            self.const_side_table,
-            self.side_table,
-            offset as isize,
-        );
-        let entry = self.side_table[0].view::<Use>().into_ok();
-        self.side_table = offset_front(
-            #[cfg(feature = "toctou")]
-            self.const_side_table,
-            self.side_table,
-            entry.delta_stp as isize,
-        );
-        unsafe {
-            Parser::new(offset_front(
-                #[cfg(feature = "toctou")]
-                self.func_body,
-                parser_pos,
-                entry.delta_ip as isize,
-            ))
-        }
+    fn take_jump(&mut self, offset: usize) -> isize {
+        self.side_table.adjust_start(offset as isize);
+        let entry = self.side_table.get(0).view::<Use>().into_ok();
+        self.side_table.adjust_start(entry.delta_stp as isize);
+        entry.delta_ip as isize
     }
 }
 

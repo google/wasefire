@@ -15,6 +15,7 @@
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
+use crate::cursor::*;
 use crate::parser::{SkipData, SkipElem};
 use crate::side_table::*;
 use crate::syntax::*;
@@ -62,7 +63,7 @@ impl<'m> Module<'m> {
         // Only keep the sections (i.e. skip the header).
         let mut parser = unsafe { Parser::new(&binary[8 ..]) };
         let side_table = parser.parse_side_table().into_ok();
-        let mut module = Module { binary: parser.save(), types: Vec::new(), side_table };
+        let mut module = Module { binary: parser.remaining(), types: Vec::new(), side_table };
         if let Some(mut parser) = module.section(SectionId::Type) {
             for _ in 0 .. parser.parse_vec().into_ok() {
                 module.types.push(parser.parse_functype().into_ok());
@@ -112,7 +113,8 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func_type(&self, x: FuncIdx) -> FuncType<'m> {
-        self.types[self.side_table.metadata::<Use>(x as usize).into_ok().type_idx()]
+        self.types
+            [self.side_table.metadata::<Use>(x as usize).into_ok().type_idx::<Use>().into_ok()]
     }
 
     pub(crate) fn table_type(&self, x: TableIdx) -> TableType {
@@ -172,9 +174,11 @@ impl<'m> Module<'m> {
         unreachable!()
     }
 
-    pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, &'m [BranchTableEntry]) {
+    pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, Cursor<'m, BranchTableEntry>) {
         let metadata = self.side_table.metadata::<Use>(x as usize).into_ok();
-        (unsafe { Parser::new(&self.binary[metadata.parser_range()]) }, metadata.branch_table())
+        let mut parser = unsafe { Parser::new(self.binary) };
+        unsafe { parser.restore(metadata.parser_state::<Use>().into_ok()) };
+        (parser, Cursor::new(metadata.branch_table::<Use>().into_ok()))
     }
 
     pub(crate) fn data(&self, x: DataIdx) -> Parser<'m> {
