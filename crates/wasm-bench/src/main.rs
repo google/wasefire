@@ -30,7 +30,15 @@ mod runtime;
 #[cfg_attr(feature = "target-riscv", path = "target/riscv.rs")]
 mod target;
 
-const MODULE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/module.bin"));
+// We need to align the module for `runtime-wasmtime` because `object` expects the ELF to be
+// aligned. We align it for all runtimes for simplicity.
+struct Module<Bytes: ?Sized> {
+    _align: [u64; 0],
+    bytes: Bytes,
+}
+static MODULE_: &Module<[u8]> =
+    &Module { _align: [], bytes: *include_bytes!(concat!(env!("OUT_DIR"), "/module.bin")) };
+const MODULE: &[u8] = &MODULE_.bytes;
 
 fn main() -> ! {
     println!("Running CoreMark measurement...");

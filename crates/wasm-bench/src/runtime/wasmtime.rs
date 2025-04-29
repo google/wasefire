@@ -15,9 +15,12 @@
 use wasmtime::*;
 
 pub(crate) fn run(wasm: &[u8]) -> f32 {
-    let engine = Engine::default();
+    let mut config = Config::new();
+    config.max_wasm_stack(64 * 1024);
+    config.memory_reservation_for_growth(0);
+    let engine = Engine::new(&config).unwrap();
     #[cfg(feature = "_target-embedded")]
-    let module = unsafe { Module::deserialize(&engine, wasm) }.unwrap();
+    let module = unsafe { Module::deserialize_raw(&engine, wasm.into()) }.unwrap();
     #[cfg(not(feature = "_target-embedded"))]
     let module = Module::new(&engine, wasm).unwrap();
     let mut store = Store::new(&engine, ());
