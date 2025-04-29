@@ -70,16 +70,16 @@ pub const r#HMAC: r#Hmac = r#Hmac { addr: 0x41110000 };
 #[rustfmt::skip]
 pub mod plic {
 pub const r#UART_MIN: u32 = 1;
-pub const r#UART_MAX: u32 = 32;
+pub const r#UART_MAX: u32 = 36;
 pub const r#UART_LEN: u32 = 4;
 pub const r#RV_TIMER_MIN: u32 = 124;
 pub const r#RV_TIMER_MAX: u32 = 124;
 pub const r#USBDEV_MIN: u32 = 135;
-pub const r#USBDEV_MAX: u32 = 151;
-pub const r#FLASH_CTRL_MIN: u32 = 159;
-pub const r#FLASH_CTRL_MAX: u32 = 164;
-pub const r#HMAC_MIN: u32 = 165;
-pub const r#HMAC_MAX: u32 = 167;
+pub const r#USBDEV_MAX: u32 = 152;
+pub const r#FLASH_CTRL_MIN: u32 = 160;
+pub const r#FLASH_CTRL_MAX: u32 = 165;
+pub const r#HMAC_MIN: u32 = 166;
+pub const r#HMAC_MAX: u32 = 168;
 }
 #[rustfmt::skip]
 pub mod r#flash_ctrl {
@@ -293,7 +293,7 @@ unsafe { register::RegAddr::new(self.addr + 0x1b4 + index * 4) }
 }
 pub enum r#IntrState {}
 impl register::RegSpec for r#IntrState {
-const DEFAULT: u32 = 0x0;
+const DEFAULT: u32 = 0x3;
 type Read = r#IntrStateRead;
 type Write = r#IntrStateWrite;
 }
@@ -2164,26 +2164,26 @@ unsafe { register::RegAddr::new(self.addr + 0x20) }
 }
 #[inline]
 pub fn r#key(self, index: u32) -> register::RegAddr<r#Key> {
-assert!(index < 8);
+assert!(index < 32);
 unsafe { register::RegAddr::new(self.addr + 0x24 + index * 4) }
 }
 #[inline]
 pub fn r#digest(self, index: u32) -> register::RegAddr<r#Digest> {
-assert!(index < 8);
-unsafe { register::RegAddr::new(self.addr + 0x44 + index * 4) }
+assert!(index < 16);
+unsafe { register::RegAddr::new(self.addr + 0xa4 + index * 4) }
 }
 #[inline]
 pub fn r#msg_length_lower(self) -> register::RegAddr<r#MsgLengthLower> {
-unsafe { register::RegAddr::new(self.addr + 0x64) }
+unsafe { register::RegAddr::new(self.addr + 0xe4) }
 }
 #[inline]
 pub fn r#msg_length_upper(self) -> register::RegAddr<r#MsgLengthUpper> {
-unsafe { register::RegAddr::new(self.addr + 0x68) }
+unsafe { register::RegAddr::new(self.addr + 0xe8) }
 }
 #[inline]
 pub fn r#msg_fifo(self, index: u32) -> register::RegAddr<r#MsgFifo> {
-assert!(index < 512);
-unsafe { register::RegAddr::new(self.addr + 0x800 + index * 4) }
+assert!(index < 1024);
+unsafe { register::RegAddr::new(self.addr + 0x1000 + index * 4) }
 }
 }
 pub enum r#IntrState {}
@@ -2316,7 +2316,7 @@ self.reg.bit(0, value); self
 }
 pub enum r#Cfg {}
 impl register::RegSpec for r#Cfg {
-const DEFAULT: u32 = 0x0;
+const DEFAULT: u32 = 0x4100;
 type Read = r#CfgRead;
 type Write = r#CfgWrite;
 }
@@ -2338,6 +2338,18 @@ self.reg.bit(2)
 pub fn r#digest_swap(self) -> bool {
 self.reg.bit(3)
 }
+#[inline]
+pub fn r#key_swap(self) -> bool {
+self.reg.bit(4)
+}
+#[inline]
+pub fn r#digest_size(self) -> u32 {
+self.reg.field(0x1e0)
+}
+#[inline]
+pub fn r#key_length(self) -> u32 {
+self.reg.field(0x7e00)
+}
 }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#CfgWrite { pub reg: register::RegWrite<r#Cfg> }
 impl r#CfgWrite {
@@ -2357,6 +2369,38 @@ self.reg.bit(2, value); self
 pub fn r#digest_swap(&mut self, value: bool) -> &mut Self {
 self.reg.bit(3, value); self
 }
+#[inline]
+pub fn r#key_swap(&mut self, value: bool) -> &mut Self {
+self.reg.bit(4, value); self
+}
+#[inline]
+pub fn r#digest_size(&mut self, value: u32) -> &mut Self {
+self.reg.field(0x1e0, value); self
+}
+#[inline]
+pub fn r#key_length(&mut self, value: u32) -> &mut Self {
+self.reg.field(0x7e00, value); self
+}
+}
+pub mod r#cfg {
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum r#DigestSize {
+r#Sha2256 = 0x1,
+r#Sha2384 = 0x2,
+r#Sha2512 = 0x4,
+r#Sha2None = 0x8,
+}
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum r#KeyLength {
+r#Key128 = 0x1,
+r#Key256 = 0x2,
+r#Key384 = 0x4,
+r#Key512 = 0x8,
+r#Key1024 = 0x10,
+r#KeyNone = 0x20,
+}
 }
 pub enum r#Cmd {}
 impl register::RegSpec for r#Cmd {
@@ -2374,6 +2418,14 @@ self.reg.bit(0)
 pub fn r#hash_process(self) -> bool {
 self.reg.bit(1)
 }
+#[inline]
+pub fn r#hash_stop(self) -> bool {
+self.reg.bit(2)
+}
+#[inline]
+pub fn r#hash_continue(self) -> bool {
+self.reg.bit(3)
+}
 }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#CmdWrite { pub reg: register::RegWrite<r#Cmd> }
 impl r#CmdWrite {
@@ -2385,41 +2437,57 @@ self.reg.bit(0, value); self
 pub fn r#hash_process(&mut self, value: bool) -> &mut Self {
 self.reg.bit(1, value); self
 }
+#[inline]
+pub fn r#hash_stop(&mut self, value: bool) -> &mut Self {
+self.reg.bit(2, value); self
+}
+#[inline]
+pub fn r#hash_continue(&mut self, value: bool) -> &mut Self {
+self.reg.bit(3, value); self
+}
 }
 pub enum r#Status {}
 impl register::RegSpec for r#Status {
-const DEFAULT: u32 = 0x1;
+const DEFAULT: u32 = 0x3;
 type Read = r#StatusRead;
 type Write = r#StatusWrite;
 }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#StatusRead { pub reg: register::RegRead<r#Status> }
 impl r#StatusRead {
 #[inline]
-pub fn r#fifo_empty(self) -> bool {
+pub fn r#hmac_idle(self) -> bool {
 self.reg.bit(0)
 }
 #[inline]
-pub fn r#fifo_full(self) -> bool {
+pub fn r#fifo_empty(self) -> bool {
 self.reg.bit(1)
 }
 #[inline]
+pub fn r#fifo_full(self) -> bool {
+self.reg.bit(2)
+}
+#[inline]
 pub fn r#fifo_depth(self) -> u32 {
-self.reg.field(0x1f0)
+self.reg.field(0x3f0)
 }
 }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#StatusWrite { pub reg: register::RegWrite<r#Status> }
 impl r#StatusWrite {
 #[inline]
-pub fn r#fifo_empty(&mut self, value: bool) -> &mut Self {
+pub fn r#hmac_idle(&mut self, value: bool) -> &mut Self {
 self.reg.bit(0, value); self
 }
 #[inline]
-pub fn r#fifo_full(&mut self, value: bool) -> &mut Self {
+pub fn r#fifo_empty(&mut self, value: bool) -> &mut Self {
 self.reg.bit(1, value); self
 }
 #[inline]
+pub fn r#fifo_full(&mut self, value: bool) -> &mut Self {
+self.reg.bit(2, value); self
+}
+#[inline]
 pub fn r#fifo_depth(&mut self, value: u32) -> &mut Self {
-self.reg.field(0x1f0, value); self
+self.reg.field(0x3f0, value); self
 }
 }
 pub enum r#ErrCode {}
@@ -3305,6 +3373,10 @@ pub fn r#od_en(self) -> bool {
 self.reg.bit(6)
 }
 #[inline]
+pub fn r#input_disable(self) -> bool {
+self.reg.bit(7)
+}
+#[inline]
 pub fn r#slew_rate(self) -> u32 {
 self.reg.field(0x30000)
 }
@@ -3342,6 +3414,10 @@ self.reg.bit(5, value); self
 #[inline]
 pub fn r#od_en(&mut self, value: bool) -> &mut Self {
 self.reg.bit(6, value); self
+}
+#[inline]
+pub fn r#input_disable(&mut self, value: bool) -> &mut Self {
+self.reg.bit(7, value); self
 }
 #[inline]
 pub fn r#slew_rate(&mut self, value: u32) -> &mut Self {
@@ -3409,6 +3485,10 @@ pub fn r#od_en(self) -> bool {
 self.reg.bit(6)
 }
 #[inline]
+pub fn r#input_disable(self) -> bool {
+self.reg.bit(7)
+}
+#[inline]
 pub fn r#slew_rate(self) -> u32 {
 self.reg.field(0x30000)
 }
@@ -3446,6 +3526,10 @@ self.reg.bit(5, value); self
 #[inline]
 pub fn r#od_en(&mut self, value: bool) -> &mut Self {
 self.reg.bit(6, value); self
+}
+#[inline]
+pub fn r#input_disable(&mut self, value: bool) -> &mut Self {
+self.reg.bit(7, value); self
 }
 #[inline]
 pub fn r#slew_rate(&mut self, value: u32) -> &mut Self {
@@ -4178,7 +4262,7 @@ pub mod r#rv_plic {
 impl super::r#RvPlic {
 #[inline]
 pub fn r#prio(self, index: u32) -> register::RegAddr<r#Prio> {
-assert!(index < 185);
+assert!(index < 186);
 unsafe { register::RegAddr::new(self.addr + 0x0 + index * 4) }
 }
 #[inline]
@@ -4629,7 +4713,7 @@ unsafe { register::RegAddr::new(self.addr + 0x30) }
 }
 pub enum r#IntrState {}
 impl register::RegSpec for r#IntrState {
-const DEFAULT: u32 = 0x0;
+const DEFAULT: u32 = 0x101;
 type Read = r#IntrStateRead;
 type Write = r#IntrStateWrite;
 }
@@ -4644,7 +4728,7 @@ pub fn r#rx_watermark(self) -> bool {
 self.reg.bit(1)
 }
 #[inline]
-pub fn r#tx_empty(self) -> bool {
+pub fn r#tx_done(self) -> bool {
 self.reg.bit(2)
 }
 #[inline]
@@ -4667,6 +4751,10 @@ self.reg.bit(6)
 pub fn r#rx_parity_err(self) -> bool {
 self.reg.bit(7)
 }
+#[inline]
+pub fn r#tx_empty(self) -> bool {
+self.reg.bit(8)
+}
 }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrStateWrite { pub reg: register::RegWrite<r#IntrState> }
 impl r#IntrStateWrite {
@@ -4679,7 +4767,7 @@ pub fn r#rx_watermark(&mut self, value: bool) -> &mut Self {
 self.reg.bit(1, value); self
 }
 #[inline]
-pub fn r#tx_empty(&mut self, value: bool) -> &mut Self {
+pub fn r#tx_done(&mut self, value: bool) -> &mut Self {
 self.reg.bit(2, value); self
 }
 #[inline]
@@ -4701,6 +4789,10 @@ self.reg.bit(6, value); self
 #[inline]
 pub fn r#rx_parity_err(&mut self, value: bool) -> &mut Self {
 self.reg.bit(7, value); self
+}
+#[inline]
+pub fn r#tx_empty(&mut self, value: bool) -> &mut Self {
+self.reg.bit(8, value); self
 }
 }
 pub enum r#IntrEnable {}
@@ -4720,7 +4812,7 @@ pub fn r#rx_watermark(self) -> bool {
 self.reg.bit(1)
 }
 #[inline]
-pub fn r#tx_empty(self) -> bool {
+pub fn r#tx_done(self) -> bool {
 self.reg.bit(2)
 }
 #[inline]
@@ -4743,6 +4835,10 @@ self.reg.bit(6)
 pub fn r#rx_parity_err(self) -> bool {
 self.reg.bit(7)
 }
+#[inline]
+pub fn r#tx_empty(self) -> bool {
+self.reg.bit(8)
+}
 }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrEnableWrite { pub reg: register::RegWrite<r#IntrEnable> }
 impl r#IntrEnableWrite {
@@ -4755,7 +4851,7 @@ pub fn r#rx_watermark(&mut self, value: bool) -> &mut Self {
 self.reg.bit(1, value); self
 }
 #[inline]
-pub fn r#tx_empty(&mut self, value: bool) -> &mut Self {
+pub fn r#tx_done(&mut self, value: bool) -> &mut Self {
 self.reg.bit(2, value); self
 }
 #[inline]
@@ -4777,6 +4873,10 @@ self.reg.bit(6, value); self
 #[inline]
 pub fn r#rx_parity_err(&mut self, value: bool) -> &mut Self {
 self.reg.bit(7, value); self
+}
+#[inline]
+pub fn r#tx_empty(&mut self, value: bool) -> &mut Self {
+self.reg.bit(8, value); self
 }
 }
 pub enum r#IntrTest {}
@@ -4796,7 +4896,7 @@ pub fn r#rx_watermark(self) -> bool {
 self.reg.bit(1)
 }
 #[inline]
-pub fn r#tx_empty(self) -> bool {
+pub fn r#tx_done(self) -> bool {
 self.reg.bit(2)
 }
 #[inline]
@@ -4819,6 +4919,10 @@ self.reg.bit(6)
 pub fn r#rx_parity_err(self) -> bool {
 self.reg.bit(7)
 }
+#[inline]
+pub fn r#tx_empty(self) -> bool {
+self.reg.bit(8)
+}
 }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrTestWrite { pub reg: register::RegWrite<r#IntrTest> }
 impl r#IntrTestWrite {
@@ -4831,7 +4935,7 @@ pub fn r#rx_watermark(&mut self, value: bool) -> &mut Self {
 self.reg.bit(1, value); self
 }
 #[inline]
-pub fn r#tx_empty(&mut self, value: bool) -> &mut Self {
+pub fn r#tx_done(&mut self, value: bool) -> &mut Self {
 self.reg.bit(2, value); self
 }
 #[inline]
@@ -4853,6 +4957,10 @@ self.reg.bit(6, value); self
 #[inline]
 pub fn r#rx_parity_err(&mut self, value: bool) -> &mut Self {
 self.reg.bit(7, value); self
+}
+#[inline]
+pub fn r#tx_empty(&mut self, value: bool) -> &mut Self {
+self.reg.bit(8, value); self
 }
 }
 pub enum r#AlertTest {}
@@ -5123,8 +5231,7 @@ r#Rxlvl4 = 0x2,
 r#Rxlvl8 = 0x3,
 r#Rxlvl16 = 0x4,
 r#Rxlvl32 = 0x5,
-r#Rxlvl64 = 0x6,
-r#Rxlvl126 = 0x7,
+r#Rxlvl62 = 0x6,
 }
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -5134,8 +5241,6 @@ r#Txlvl2 = 0x1,
 r#Txlvl4 = 0x2,
 r#Txlvl8 = 0x3,
 r#Txlvl16 = 0x4,
-r#Txlvl32 = 0x5,
-r#Txlvl64 = 0x6,
 }
 }
 pub enum r#FifoStatus {}
@@ -5279,73 +5384,101 @@ pub fn r#usbstat(self) -> register::RegAddr<r#Usbstat> {
 unsafe { register::RegAddr::new(self.addr + 0x1c) }
 }
 #[inline]
-pub fn r#avbuffer(self) -> register::RegAddr<r#Avbuffer> {
+pub fn r#avoutbuffer(self) -> register::RegAddr<r#Avoutbuffer> {
 unsafe { register::RegAddr::new(self.addr + 0x20) }
 }
 #[inline]
-pub fn r#rxfifo(self) -> register::RegAddr<r#Rxfifo> {
+pub fn r#avsetupbuffer(self) -> register::RegAddr<r#Avsetupbuffer> {
 unsafe { register::RegAddr::new(self.addr + 0x24) }
 }
 #[inline]
-pub fn r#rxenable_setup(self) -> register::RegAddr<r#RxenableSetup> {
+pub fn r#rxfifo(self) -> register::RegAddr<r#Rxfifo> {
 unsafe { register::RegAddr::new(self.addr + 0x28) }
 }
 #[inline]
-pub fn r#rxenable_out(self) -> register::RegAddr<r#RxenableOut> {
+pub fn r#rxenable_setup(self) -> register::RegAddr<r#RxenableSetup> {
 unsafe { register::RegAddr::new(self.addr + 0x2c) }
 }
 #[inline]
-pub fn r#set_nak_out(self) -> register::RegAddr<r#SetNakOut> {
+pub fn r#rxenable_out(self) -> register::RegAddr<r#RxenableOut> {
 unsafe { register::RegAddr::new(self.addr + 0x30) }
 }
 #[inline]
-pub fn r#in_sent(self) -> register::RegAddr<r#InSent> {
+pub fn r#set_nak_out(self) -> register::RegAddr<r#SetNakOut> {
 unsafe { register::RegAddr::new(self.addr + 0x34) }
 }
 #[inline]
-pub fn r#out_stall(self) -> register::RegAddr<r#OutStall> {
+pub fn r#in_sent(self) -> register::RegAddr<r#InSent> {
 unsafe { register::RegAddr::new(self.addr + 0x38) }
 }
 #[inline]
-pub fn r#in_stall(self) -> register::RegAddr<r#InStall> {
+pub fn r#out_stall(self) -> register::RegAddr<r#OutStall> {
 unsafe { register::RegAddr::new(self.addr + 0x3c) }
+}
+#[inline]
+pub fn r#in_stall(self) -> register::RegAddr<r#InStall> {
+unsafe { register::RegAddr::new(self.addr + 0x40) }
 }
 #[inline]
 pub fn r#configin(self, index: u32) -> register::RegAddr<r#Configin> {
 assert!(index < 12);
-unsafe { register::RegAddr::new(self.addr + 0x40 + index * 4) }
+unsafe { register::RegAddr::new(self.addr + 0x44 + index * 4) }
 }
 #[inline]
 pub fn r#out_iso(self) -> register::RegAddr<r#OutIso> {
-unsafe { register::RegAddr::new(self.addr + 0x70) }
-}
-#[inline]
-pub fn r#in_iso(self) -> register::RegAddr<r#InIso> {
 unsafe { register::RegAddr::new(self.addr + 0x74) }
 }
 #[inline]
-pub fn r#data_toggle_clear(self) -> register::RegAddr<r#DataToggleClear> {
+pub fn r#in_iso(self) -> register::RegAddr<r#InIso> {
 unsafe { register::RegAddr::new(self.addr + 0x78) }
 }
 #[inline]
-pub fn r#phy_pins_sense(self) -> register::RegAddr<r#PhyPinsSense> {
+pub fn r#out_data_toggle(self) -> register::RegAddr<r#OutDataToggle> {
 unsafe { register::RegAddr::new(self.addr + 0x7c) }
 }
 #[inline]
-pub fn r#phy_pins_drive(self) -> register::RegAddr<r#PhyPinsDrive> {
+pub fn r#in_data_toggle(self) -> register::RegAddr<r#InDataToggle> {
 unsafe { register::RegAddr::new(self.addr + 0x80) }
 }
 #[inline]
-pub fn r#phy_config(self) -> register::RegAddr<r#PhyConfig> {
+pub fn r#phy_pins_sense(self) -> register::RegAddr<r#PhyPinsSense> {
 unsafe { register::RegAddr::new(self.addr + 0x84) }
 }
 #[inline]
-pub fn r#wake_control(self) -> register::RegAddr<r#WakeControl> {
+pub fn r#phy_pins_drive(self) -> register::RegAddr<r#PhyPinsDrive> {
 unsafe { register::RegAddr::new(self.addr + 0x88) }
 }
 #[inline]
-pub fn r#wake_events(self) -> register::RegAddr<r#WakeEvents> {
+pub fn r#phy_config(self) -> register::RegAddr<r#PhyConfig> {
 unsafe { register::RegAddr::new(self.addr + 0x8c) }
+}
+#[inline]
+pub fn r#wake_control(self) -> register::RegAddr<r#WakeControl> {
+unsafe { register::RegAddr::new(self.addr + 0x90) }
+}
+#[inline]
+pub fn r#wake_events(self) -> register::RegAddr<r#WakeEvents> {
+unsafe { register::RegAddr::new(self.addr + 0x94) }
+}
+#[inline]
+pub fn r#fifo_ctrl(self) -> register::RegAddr<r#FifoCtrl> {
+unsafe { register::RegAddr::new(self.addr + 0x98) }
+}
+#[inline]
+pub fn r#count_out(self) -> register::RegAddr<r#CountOut> {
+unsafe { register::RegAddr::new(self.addr + 0x9c) }
+}
+#[inline]
+pub fn r#count_in(self) -> register::RegAddr<r#CountIn> {
+unsafe { register::RegAddr::new(self.addr + 0xa0) }
+}
+#[inline]
+pub fn r#count_nodata_in(self) -> register::RegAddr<r#CountNodataIn> {
+unsafe { register::RegAddr::new(self.addr + 0xa4) }
+}
+#[inline]
+pub fn r#count_errors(self) -> register::RegAddr<r#CountErrors> {
+unsafe { register::RegAddr::new(self.addr + 0xa8) }
 }
 #[inline]
 pub fn r#buffer(self, index: u32) -> register::RegAddr<r#Buffer> {
@@ -5390,7 +5523,7 @@ pub fn r#link_resume(self) -> bool {
 self.reg.bit(6)
 }
 #[inline]
-pub fn r#av_empty(self) -> bool {
+pub fn r#av_out_empty(self) -> bool {
 self.reg.bit(7)
 }
 #[inline]
@@ -5429,6 +5562,10 @@ self.reg.bit(15)
 pub fn r#link_out_err(self) -> bool {
 self.reg.bit(16)
 }
+#[inline]
+pub fn r#av_setup_empty(self) -> bool {
+self.reg.bit(17)
+}
 }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrStateWrite { pub reg: register::RegWrite<r#IntrState> }
 impl r#IntrStateWrite {
@@ -5461,7 +5598,7 @@ pub fn r#link_resume(&mut self, value: bool) -> &mut Self {
 self.reg.bit(6, value); self
 }
 #[inline]
-pub fn r#av_empty(&mut self, value: bool) -> &mut Self {
+pub fn r#av_out_empty(&mut self, value: bool) -> &mut Self {
 self.reg.bit(7, value); self
 }
 #[inline]
@@ -5499,6 +5636,10 @@ self.reg.bit(15, value); self
 #[inline]
 pub fn r#link_out_err(&mut self, value: bool) -> &mut Self {
 self.reg.bit(16, value); self
+}
+#[inline]
+pub fn r#av_setup_empty(&mut self, value: bool) -> &mut Self {
+self.reg.bit(17, value); self
 }
 }
 pub enum r#IntrEnable {}
@@ -5538,7 +5679,7 @@ pub fn r#link_resume(self) -> bool {
 self.reg.bit(6)
 }
 #[inline]
-pub fn r#av_empty(self) -> bool {
+pub fn r#av_out_empty(self) -> bool {
 self.reg.bit(7)
 }
 #[inline]
@@ -5577,6 +5718,10 @@ self.reg.bit(15)
 pub fn r#link_out_err(self) -> bool {
 self.reg.bit(16)
 }
+#[inline]
+pub fn r#av_setup_empty(self) -> bool {
+self.reg.bit(17)
+}
 }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrEnableWrite { pub reg: register::RegWrite<r#IntrEnable> }
 impl r#IntrEnableWrite {
@@ -5609,7 +5754,7 @@ pub fn r#link_resume(&mut self, value: bool) -> &mut Self {
 self.reg.bit(6, value); self
 }
 #[inline]
-pub fn r#av_empty(&mut self, value: bool) -> &mut Self {
+pub fn r#av_out_empty(&mut self, value: bool) -> &mut Self {
 self.reg.bit(7, value); self
 }
 #[inline]
@@ -5647,6 +5792,10 @@ self.reg.bit(15, value); self
 #[inline]
 pub fn r#link_out_err(&mut self, value: bool) -> &mut Self {
 self.reg.bit(16, value); self
+}
+#[inline]
+pub fn r#av_setup_empty(&mut self, value: bool) -> &mut Self {
+self.reg.bit(17, value); self
 }
 }
 pub enum r#IntrTest {}
@@ -5686,7 +5835,7 @@ pub fn r#link_resume(self) -> bool {
 self.reg.bit(6)
 }
 #[inline]
-pub fn r#av_empty(self) -> bool {
+pub fn r#av_out_empty(self) -> bool {
 self.reg.bit(7)
 }
 #[inline]
@@ -5725,6 +5874,10 @@ self.reg.bit(15)
 pub fn r#link_out_err(self) -> bool {
 self.reg.bit(16)
 }
+#[inline]
+pub fn r#av_setup_empty(self) -> bool {
+self.reg.bit(17)
+}
 }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrTestWrite { pub reg: register::RegWrite<r#IntrTest> }
 impl r#IntrTestWrite {
@@ -5757,7 +5910,7 @@ pub fn r#link_resume(&mut self, value: bool) -> &mut Self {
 self.reg.bit(6, value); self
 }
 #[inline]
-pub fn r#av_empty(&mut self, value: bool) -> &mut Self {
+pub fn r#av_out_empty(&mut self, value: bool) -> &mut Self {
 self.reg.bit(7, value); self
 }
 #[inline]
@@ -5795,6 +5948,10 @@ self.reg.bit(15, value); self
 #[inline]
 pub fn r#link_out_err(&mut self, value: bool) -> &mut Self {
 self.reg.bit(16, value); self
+}
+#[inline]
+pub fn r#av_setup_empty(&mut self, value: bool) -> &mut Self {
+self.reg.bit(17, value); self
 }
 }
 pub enum r#AlertTest {}
@@ -5922,16 +6079,24 @@ pub fn r#sense(self) -> bool {
 self.reg.bit(15)
 }
 #[inline]
-pub fn r#av_depth(self) -> u32 {
+pub fn r#av_out_depth(self) -> u32 {
 self.reg.field(0xf0000)
 }
 #[inline]
-pub fn r#av_full(self) -> bool {
+pub fn r#av_setup_depth(self) -> u32 {
+self.reg.field(0x700000)
+}
+#[inline]
+pub fn r#av_out_full(self) -> bool {
 self.reg.bit(23)
 }
 #[inline]
 pub fn r#rx_depth(self) -> u32 {
 self.reg.field(0xf000000)
+}
+#[inline]
+pub fn r#av_setup_full(self) -> bool {
+self.reg.bit(30)
 }
 #[inline]
 pub fn r#rx_empty(self) -> bool {
@@ -5957,16 +6122,24 @@ pub fn r#sense(&mut self, value: bool) -> &mut Self {
 self.reg.bit(15, value); self
 }
 #[inline]
-pub fn r#av_depth(&mut self, value: u32) -> &mut Self {
+pub fn r#av_out_depth(&mut self, value: u32) -> &mut Self {
 self.reg.field(0xf0000, value); self
 }
 #[inline]
-pub fn r#av_full(&mut self, value: bool) -> &mut Self {
+pub fn r#av_setup_depth(&mut self, value: u32) -> &mut Self {
+self.reg.field(0x700000, value); self
+}
+#[inline]
+pub fn r#av_out_full(&mut self, value: bool) -> &mut Self {
 self.reg.bit(23, value); self
 }
 #[inline]
 pub fn r#rx_depth(&mut self, value: u32) -> &mut Self {
 self.reg.field(0xf000000, value); self
+}
+#[inline]
+pub fn r#av_setup_full(&mut self, value: bool) -> &mut Self {
+self.reg.bit(30, value); self
 }
 #[inline]
 pub fn r#rx_empty(&mut self, value: bool) -> &mut Self {
@@ -5986,21 +6159,41 @@ r#ActiveNosof = 0x5,
 r#Resuming = 0x6,
 }
 }
-pub enum r#Avbuffer {}
-impl register::RegSpec for r#Avbuffer {
+pub enum r#Avoutbuffer {}
+impl register::RegSpec for r#Avoutbuffer {
 const DEFAULT: u32 = 0x0;
-type Read = r#AvbufferRead;
-type Write = r#AvbufferWrite;
+type Read = r#AvoutbufferRead;
+type Write = r#AvoutbufferWrite;
 }
-#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#AvbufferRead { pub reg: register::RegRead<r#Avbuffer> }
-impl r#AvbufferRead {
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#AvoutbufferRead { pub reg: register::RegRead<r#Avoutbuffer> }
+impl r#AvoutbufferRead {
 #[inline]
 pub fn r#buffer(self) -> u32 {
 self.reg.field(0x1f)
 }
 }
-#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#AvbufferWrite { pub reg: register::RegWrite<r#Avbuffer> }
-impl r#AvbufferWrite {
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#AvoutbufferWrite { pub reg: register::RegWrite<r#Avoutbuffer> }
+impl r#AvoutbufferWrite {
+#[inline]
+pub fn r#buffer(&mut self, value: u32) -> &mut Self {
+self.reg.field(0x1f, value); self
+}
+}
+pub enum r#Avsetupbuffer {}
+impl register::RegSpec for r#Avsetupbuffer {
+const DEFAULT: u32 = 0x0;
+type Read = r#AvsetupbufferRead;
+type Write = r#AvsetupbufferWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#AvsetupbufferRead { pub reg: register::RegRead<r#Avsetupbuffer> }
+impl r#AvsetupbufferRead {
+#[inline]
+pub fn r#buffer(self) -> u32 {
+self.reg.field(0x1f)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#AvsetupbufferWrite { pub reg: register::RegWrite<r#Avsetupbuffer> }
+impl r#AvsetupbufferWrite {
 #[inline]
 pub fn r#buffer(&mut self, value: u32) -> &mut Self {
 self.reg.field(0x1f, value); self
@@ -6199,6 +6392,10 @@ pub fn r#size(self) -> u32 {
 self.reg.field(0x7f00)
 }
 #[inline]
+pub fn r#sending(self) -> bool {
+self.reg.bit(29)
+}
+#[inline]
 pub fn r#pend(self) -> bool {
 self.reg.bit(30)
 }
@@ -6216,6 +6413,10 @@ self.reg.field(0x1f, value); self
 #[inline]
 pub fn r#size(&mut self, value: u32) -> &mut Self {
 self.reg.field(0x7f00, value); self
+}
+#[inline]
+pub fn r#sending(&mut self, value: bool) -> &mut Self {
+self.reg.bit(29, value); self
 }
 #[inline]
 pub fn r#pend(&mut self, value: bool) -> &mut Self {
@@ -6270,26 +6471,60 @@ assert!(index < 12);
 self.reg.bit(0 + index * 1, value); self
 }
 }
-pub enum r#DataToggleClear {}
-impl register::RegSpec for r#DataToggleClear {
+pub enum r#OutDataToggle {}
+impl register::RegSpec for r#OutDataToggle {
 const DEFAULT: u32 = 0x0;
-type Read = r#DataToggleClearRead;
-type Write = r#DataToggleClearWrite;
+type Read = r#OutDataToggleRead;
+type Write = r#OutDataToggleWrite;
 }
-#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#DataToggleClearRead { pub reg: register::RegRead<r#DataToggleClear> }
-impl r#DataToggleClearRead {
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#OutDataToggleRead { pub reg: register::RegRead<r#OutDataToggle> }
+impl r#OutDataToggleRead {
 #[inline]
-pub fn r#clear(self, index: u8) -> bool {
-assert!(index < 12);
-self.reg.bit(0 + index * 1)
+pub fn r#status(self) -> u32 {
+self.reg.field(0xfff)
 }
-}
-#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#DataToggleClearWrite { pub reg: register::RegWrite<r#DataToggleClear> }
-impl r#DataToggleClearWrite {
 #[inline]
-pub fn r#clear(&mut self, index: u8, value: bool) -> &mut Self {
-assert!(index < 12);
-self.reg.bit(0 + index * 1, value); self
+pub fn r#mask(self) -> u32 {
+self.reg.field(0xfff0000)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#OutDataToggleWrite { pub reg: register::RegWrite<r#OutDataToggle> }
+impl r#OutDataToggleWrite {
+#[inline]
+pub fn r#status(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xfff, value); self
+}
+#[inline]
+pub fn r#mask(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xfff0000, value); self
+}
+}
+pub enum r#InDataToggle {}
+impl register::RegSpec for r#InDataToggle {
+const DEFAULT: u32 = 0x0;
+type Read = r#InDataToggleRead;
+type Write = r#InDataToggleWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#InDataToggleRead { pub reg: register::RegRead<r#InDataToggle> }
+impl r#InDataToggleRead {
+#[inline]
+pub fn r#status(self) -> u32 {
+self.reg.field(0xfff)
+}
+#[inline]
+pub fn r#mask(self) -> u32 {
+self.reg.field(0xfff0000)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#InDataToggleWrite { pub reg: register::RegWrite<r#InDataToggle> }
+impl r#InDataToggleWrite {
+#[inline]
+pub fn r#status(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xfff, value); self
+}
+#[inline]
+pub fn r#mask(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xfff0000, value); self
 }
 }
 pub enum r#PhyPinsSense {}
@@ -6570,6 +6805,10 @@ self.reg.bit(8)
 pub fn r#bus_reset(self) -> bool {
 self.reg.bit(9)
 }
+#[inline]
+pub fn r#bus_not_idle(self) -> bool {
+self.reg.bit(10)
+}
 }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#WakeEventsWrite { pub reg: register::RegWrite<r#WakeEvents> }
 impl r#WakeEventsWrite {
@@ -6584,6 +6823,270 @@ self.reg.bit(8, value); self
 #[inline]
 pub fn r#bus_reset(&mut self, value: bool) -> &mut Self {
 self.reg.bit(9, value); self
+}
+#[inline]
+pub fn r#bus_not_idle(&mut self, value: bool) -> &mut Self {
+self.reg.bit(10, value); self
+}
+}
+pub enum r#FifoCtrl {}
+impl register::RegSpec for r#FifoCtrl {
+const DEFAULT: u32 = 0x0;
+type Read = r#FifoCtrlRead;
+type Write = r#FifoCtrlWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#FifoCtrlRead { pub reg: register::RegRead<r#FifoCtrl> }
+impl r#FifoCtrlRead {
+#[inline]
+pub fn r#avout_rst(self) -> bool {
+self.reg.bit(0)
+}
+#[inline]
+pub fn r#avsetup_rst(self) -> bool {
+self.reg.bit(1)
+}
+#[inline]
+pub fn r#rx_rst(self) -> bool {
+self.reg.bit(2)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#FifoCtrlWrite { pub reg: register::RegWrite<r#FifoCtrl> }
+impl r#FifoCtrlWrite {
+#[inline]
+pub fn r#avout_rst(&mut self, value: bool) -> &mut Self {
+self.reg.bit(0, value); self
+}
+#[inline]
+pub fn r#avsetup_rst(&mut self, value: bool) -> &mut Self {
+self.reg.bit(1, value); self
+}
+#[inline]
+pub fn r#rx_rst(&mut self, value: bool) -> &mut Self {
+self.reg.bit(2, value); self
+}
+}
+pub enum r#CountOut {}
+impl register::RegSpec for r#CountOut {
+const DEFAULT: u32 = 0x0;
+type Read = r#CountOutRead;
+type Write = r#CountOutWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#CountOutRead { pub reg: register::RegRead<r#CountOut> }
+impl r#CountOutRead {
+#[inline]
+pub fn r#count(self) -> u32 {
+self.reg.field(0xff)
+}
+#[inline]
+pub fn r#datatog_out(self) -> bool {
+self.reg.bit(12)
+}
+#[inline]
+pub fn r#drop_rx(self) -> bool {
+self.reg.bit(13)
+}
+#[inline]
+pub fn r#drop_avout(self) -> bool {
+self.reg.bit(14)
+}
+#[inline]
+pub fn r#ign_avsetup(self) -> bool {
+self.reg.bit(15)
+}
+#[inline]
+pub fn r#endpoints(self) -> u32 {
+self.reg.field(0xfff0000)
+}
+#[inline]
+pub fn r#rst(self) -> bool {
+self.reg.bit(31)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#CountOutWrite { pub reg: register::RegWrite<r#CountOut> }
+impl r#CountOutWrite {
+#[inline]
+pub fn r#count(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xff, value); self
+}
+#[inline]
+pub fn r#datatog_out(&mut self, value: bool) -> &mut Self {
+self.reg.bit(12, value); self
+}
+#[inline]
+pub fn r#drop_rx(&mut self, value: bool) -> &mut Self {
+self.reg.bit(13, value); self
+}
+#[inline]
+pub fn r#drop_avout(&mut self, value: bool) -> &mut Self {
+self.reg.bit(14, value); self
+}
+#[inline]
+pub fn r#ign_avsetup(&mut self, value: bool) -> &mut Self {
+self.reg.bit(15, value); self
+}
+#[inline]
+pub fn r#endpoints(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xfff0000, value); self
+}
+#[inline]
+pub fn r#rst(&mut self, value: bool) -> &mut Self {
+self.reg.bit(31, value); self
+}
+}
+pub enum r#CountIn {}
+impl register::RegSpec for r#CountIn {
+const DEFAULT: u32 = 0x0;
+type Read = r#CountInRead;
+type Write = r#CountInWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#CountInRead { pub reg: register::RegRead<r#CountIn> }
+impl r#CountInRead {
+#[inline]
+pub fn r#count(self) -> u32 {
+self.reg.field(0xff)
+}
+#[inline]
+pub fn r#nodata(self) -> bool {
+self.reg.bit(13)
+}
+#[inline]
+pub fn r#nak(self) -> bool {
+self.reg.bit(14)
+}
+#[inline]
+pub fn r#timeout(self) -> bool {
+self.reg.bit(15)
+}
+#[inline]
+pub fn r#endpoints(self) -> u32 {
+self.reg.field(0xfff0000)
+}
+#[inline]
+pub fn r#rst(self) -> bool {
+self.reg.bit(31)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#CountInWrite { pub reg: register::RegWrite<r#CountIn> }
+impl r#CountInWrite {
+#[inline]
+pub fn r#count(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xff, value); self
+}
+#[inline]
+pub fn r#nodata(&mut self, value: bool) -> &mut Self {
+self.reg.bit(13, value); self
+}
+#[inline]
+pub fn r#nak(&mut self, value: bool) -> &mut Self {
+self.reg.bit(14, value); self
+}
+#[inline]
+pub fn r#timeout(&mut self, value: bool) -> &mut Self {
+self.reg.bit(15, value); self
+}
+#[inline]
+pub fn r#endpoints(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xfff0000, value); self
+}
+#[inline]
+pub fn r#rst(&mut self, value: bool) -> &mut Self {
+self.reg.bit(31, value); self
+}
+}
+pub enum r#CountNodataIn {}
+impl register::RegSpec for r#CountNodataIn {
+const DEFAULT: u32 = 0x0;
+type Read = r#CountNodataInRead;
+type Write = r#CountNodataInWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#CountNodataInRead { pub reg: register::RegRead<r#CountNodataIn> }
+impl r#CountNodataInRead {
+#[inline]
+pub fn r#count(self) -> u32 {
+self.reg.field(0xff)
+}
+#[inline]
+pub fn r#endpoints(self) -> u32 {
+self.reg.field(0xfff0000)
+}
+#[inline]
+pub fn r#rst(self) -> bool {
+self.reg.bit(31)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#CountNodataInWrite { pub reg: register::RegWrite<r#CountNodataIn> }
+impl r#CountNodataInWrite {
+#[inline]
+pub fn r#count(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xff, value); self
+}
+#[inline]
+pub fn r#endpoints(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xfff0000, value); self
+}
+#[inline]
+pub fn r#rst(&mut self, value: bool) -> &mut Self {
+self.reg.bit(31, value); self
+}
+}
+pub enum r#CountErrors {}
+impl register::RegSpec for r#CountErrors {
+const DEFAULT: u32 = 0x0;
+type Read = r#CountErrorsRead;
+type Write = r#CountErrorsWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#CountErrorsRead { pub reg: register::RegRead<r#CountErrors> }
+impl r#CountErrorsRead {
+#[inline]
+pub fn r#count(self) -> u32 {
+self.reg.field(0xff)
+}
+#[inline]
+pub fn r#pid_invalid(self) -> bool {
+self.reg.bit(27)
+}
+#[inline]
+pub fn r#bitstuff(self) -> bool {
+self.reg.bit(28)
+}
+#[inline]
+pub fn r#crc16(self) -> bool {
+self.reg.bit(29)
+}
+#[inline]
+pub fn r#crc5(self) -> bool {
+self.reg.bit(30)
+}
+#[inline]
+pub fn r#rst(self) -> bool {
+self.reg.bit(31)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#CountErrorsWrite { pub reg: register::RegWrite<r#CountErrors> }
+impl r#CountErrorsWrite {
+#[inline]
+pub fn r#count(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xff, value); self
+}
+#[inline]
+pub fn r#pid_invalid(&mut self, value: bool) -> &mut Self {
+self.reg.bit(27, value); self
+}
+#[inline]
+pub fn r#bitstuff(&mut self, value: bool) -> &mut Self {
+self.reg.bit(28, value); self
+}
+#[inline]
+pub fn r#crc16(&mut self, value: bool) -> &mut Self {
+self.reg.bit(29, value); self
+}
+#[inline]
+pub fn r#crc5(&mut self, value: bool) -> &mut Self {
+self.reg.bit(30, value); self
+}
+#[inline]
+pub fn r#rst(&mut self, value: bool) -> &mut Self {
+self.reg.bit(31, value); self
 }
 }
 pub enum r#Buffer {}

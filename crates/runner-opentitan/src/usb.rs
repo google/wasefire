@@ -107,8 +107,9 @@ impl UsbBus for Usb {
         // Configure the physical interface.
         USBDEV.phy_config().reset().reg.write();
 
-        // Fill the available buffer FIFO.
-        self.fill_avbuffer();
+        // Fill the available buffer FIFOs.
+        self.fill_avbuffer(Fifo::Setup);
+        self.fill_avbuffer(Fifo::Out);
 
         // Enable reset interrupt.
         USBDEV.intr_enable().reset().link_reset(true).reg.write();
@@ -260,10 +261,10 @@ impl UsbBus for Usb {
             let mut ep_in_complete = 0;
             if state.pkt_received() {
                 while !USBDEV.usbstat().read().rx_empty() {
-                    if let Some(id) = self.alloc_buffer(cs) {
-                        self.free_buffer(cs, id);
-                    }
                     let rxfifo = USBDEV.rxfifo().read();
+                    if let Some(id) = self.alloc_buffer(cs) {
+                        self.free_buffer(cs, id, Some(Fifo::new(rxfifo.setup())));
+                    }
                     let id = rxfifo.buffer() as u8;
                     let len = rxfifo.size() as u8;
                     let ep = rxfifo.ep();
@@ -292,7 +293,7 @@ impl UsbBus for Usb {
                     if in_sent.sent(ep as u8) {
                         ep_in_complete |= 1 << ep;
                         let id = USBDEV.configin(ep).read().buffer();
-                        self.free_buffer(cs, id);
+                        self.free_buffer(cs, id, None);
                     }
                 }
                 USBDEV.in_sent().write_raw(in_sent.reg.value());
@@ -311,7 +312,7 @@ impl UsbBus for Usb {
                 } else {
                     log::error!("ignoring {} bytes on EP 0 OUT", recv.len);
                 }
-                self.free_buffer(cs, recv.id as u32);
+                self.free_buffer(cs, recv.id as u32, None);
                 ep_out &= !1;
             }
             if ep_out == 0 && ep_in_complete == 0 && ep_setup == 0 {
@@ -346,24 +347,26 @@ impl Usb {
     }
 
     /// Releases a buffer, making it free again.
-    fn free_buffer(&self, cs: CriticalSection, id: u32) {
+    fn free_buffer(&self, cs: CriticalSection, id: u32, fifo: Option<Fifo>) {
         let free = self.free_bufs.borrow(cs).get();
         if ID_COUNT <= id || free & (1 << id) != 0 {
             log::error!("invalid free buffer: {:08x} {}", free, id);
         }
-        if !USBDEV.usbstat().read().av_full() {
-            USBDEV.avbuffer().reset().buffer(id).reg.write();
+        if fifo != Some(Fifo::Out) && !Fifo::Setup.full() {
+            Fifo::Setup.push(id);
+        } else if fifo != Some(Fifo::Setup) && !Fifo::Out.full() {
+            Fifo::Out.push(id);
         } else {
             self.free_bufs.borrow(cs).set(free | (1 << id));
         }
     }
 
     /// Fills the available buffer FIFO.
-    fn fill_avbuffer(&self) {
+    fn fill_avbuffer(&self, fifo: Fifo) {
         critical_section::with(|cs| {
-            while !USBDEV.usbstat().read().av_full() {
+            while !fifo.full() {
                 let Some(id) = self.alloc_buffer(cs) else { break };
-                self.free_buffer(cs, id);
+                self.free_buffer(cs, id, Some(fifo));
             }
         })
     }
@@ -377,13 +380,13 @@ impl Usb {
             return Err(UsbError::BufferOverflow);
         }
         buffer_read(id, &mut dst[.. len]);
-        self.free_buffer(cs, id);
+        self.free_buffer(cs, id, None);
         Ok(())
     }
 
     fn clear_pending(&self, cs: CriticalSection, ep: u32, id: u32) {
         log::warn!("discarding pending IN transfer ep={} id={}", ep, id);
-        self.free_buffer(cs, id);
+        self.free_buffer(cs, id, None);
         USBDEV.configin(ep).reset().pend(true).reg.write();
     }
 }
@@ -400,5 +403,35 @@ fn buffer_write(id: u32, src: &[u8]) {
         let mut tmp = [0u8; 4];
         tmp[.. src.len()].copy_from_slice(src);
         USBDEV.buffer(dst).write_raw(u32::from_ne_bytes(tmp));
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Fifo {
+    Setup,
+    Out,
+}
+
+impl Fifo {
+    fn new(setup: bool) -> Fifo {
+        match setup {
+            true => Fifo::Setup,
+            false => Fifo::Out,
+        }
+    }
+
+    fn full(self) -> bool {
+        let usbstat = USBDEV.usbstat().read();
+        match self {
+            Fifo::Setup => usbstat.av_setup_full(),
+            Fifo::Out => usbstat.av_out_full(),
+        }
+    }
+
+    fn push(self, id: u32) {
+        match self {
+            Fifo::Setup => USBDEV.avsetupbuffer().reset().buffer(id).reg.write(),
+            Fifo::Out => USBDEV.avoutbuffer().reset().buffer(id).reg.write(),
+        }
     }
 }

@@ -40,7 +40,7 @@ features = ["derive", "env", "std"]
 optional = true
 
 [dependencies.tokio]
-version = "1.44.0"
+version = "1.44.2"
 default-features = false
 features = ["fs", "io-std", "io-util", "macros", "process", "rt"]
 

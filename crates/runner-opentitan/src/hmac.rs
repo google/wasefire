@@ -21,10 +21,14 @@ pub struct Hmac {
 }
 
 impl Hmac {
-    pub fn start(key: Option<&[u8; 32]>) -> Result<Self, Error> {
+    pub fn start(key: Option<&[u8; 64]>) -> Result<Self, Error> {
         let lock = HW.try_lock().ok_or(error(Code::Busy))?;
         let mut cfg = HMAC.cfg().reset();
         cfg.hmac_en(key.is_some()).sha_en(true).digest_swap(true);
+        if key.is_some() {
+            cfg.key_length(8); // Key_512
+        }
+        cfg.digest_size(1); // SHA2_256
         cfg.reg.write();
         if let Some(key) = key {
             for (&src, dst) in key.array_chunks().zip(0 ..) {

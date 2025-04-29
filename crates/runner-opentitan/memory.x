@@ -13,9 +13,9 @@ be written and erased.
 
 0 R--SE-L 0x20000000
 2 R--SE-L 0x20010000
-4 RWE--H- 0x20077000
+3 RWE--H- 0x20077000
 1 RWESE-L 0x20080000
-3 RWESE-L 0x20090000
+4 RWESE-L 0x20090000
 5 RWE--H- 0x200f7000
 6 R--SE-L 0x200ff800
 */
@@ -55,9 +55,7 @@ SECTIONS {
     LONG(RUNNER_VERSION_THG); /* timestamp high */
     . = ORIGIN(MANIF) + 892;
     LONG(ADDR(.text) - ORIGIN(MANIF)); /* code start */
-    /* TODO(riscv-rt > 0.13.0): Use SIZEOF(.text) directly. */
-    __sizeof_text = (SIZEOF(.text) + 3) & ~3;
-    LONG(ADDR(.text) + __sizeof_text - ORIGIN(MANIF)); /* code end */
+    LONG(ADDR(.text) + SIZEOF(.text) - ORIGIN(MANIF)); /* code end */
     LONG(_start - ORIGIN(MANIF)); /* entry point */
     . = ORIGIN(MANIF) + LENGTH(MANIF);
   } > MANIF

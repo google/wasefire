@@ -16,6 +16,7 @@
 #![no_main]
 #![feature(array_chunks)]
 #![feature(never_type)]
+#![feature(try_blocks)]
 
 extern crate alloc;
 
@@ -31,6 +32,7 @@ exactly_one_of!["native", "wasm"];
 
 mod allocator;
 mod board;
+mod bootsvc;
 mod error;
 mod flash;
 mod hmac;
@@ -72,6 +74,8 @@ defmt::timestamp!("{=u64:us}", time::uptime_us());
 fn main() -> ! {
     allocator::init();
     time::init();
+    #[cfg(feature = "debug")]
+    log::info!("{}", bootsvc::Format);
     flash::init();
     board::init();
     // Interrupts may assume the board is initialized, so this must be last.

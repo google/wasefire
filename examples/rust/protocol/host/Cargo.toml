@@ -10,7 +10,7 @@ anyhow = "1.0.97"
 clap = { version = "4.5.32", features = ["derive"] }
 env_logger = "0.11.7"
 rusb = "0.9.4"
-tokio = { version = "1.44.0", features = ["full"] }
+tokio = { version = "1.44.2", features = ["full"] }
 wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["action"] }
 wasefire-protocol = { path = "../../../../crates/protocol", features = ["host"] }
 wasefire-protocol-usb = { path = "../../../../crates/protocol-usb", features = ["host", "log"] }

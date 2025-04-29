@@ -71,17 +71,12 @@ fn test_hmac(name: &str, algorithm: Algorithm, vectors: &[HmacVector]) {
         debug!("- {count}");
         #[cfg(feature = "rust-crypto")]
         let mac_ = match algorithm {
-            Algorithm::Sha256 => {
-                let hmac = match HmacSha256::new_from_slice(key) {
-                    // TODO: Remove this corner case once using OpenTitan A1 (instead of Z1).
-                    Err(digest::InvalidLength) => {
-                        debug!("  unsupported");
-                        continue;
-                    }
-                    x => x.unwrap(),
-                };
-                hmac.chain_update(msg).finalize().into_bytes().to_vec()
-            }
+            Algorithm::Sha256 => HmacSha256::new_from_slice(key)
+                .unwrap()
+                .chain_update(msg)
+                .finalize()
+                .into_bytes()
+                .to_vec(),
             Algorithm::Sha384 => HmacSha384::new_from_slice(key)
                 .unwrap()
                 .chain_update(msg)
@@ -92,14 +87,7 @@ fn test_hmac(name: &str, algorithm: Algorithm, vectors: &[HmacVector]) {
         #[cfg(not(feature = "rust-crypto"))]
         let mac_ = {
             let mut mac = vec![0; algorithm.digest_len()];
-            match Hmac::hmac(algorithm, key, msg, &mut mac) {
-                // TODO: Remove this corner case once using OpenTitan A1 (instead of Z1).
-                Err(e) if e == Error::user(error::Code::InvalidLength) => {
-                    debug!("  unsupported");
-                    continue;
-                }
-                x => x.unwrap(),
-            }
+            Hmac::hmac(algorithm, key, msg, &mut mac).unwrap();
             mac
         };
         assert_eq!(mac_[..], mac[..]);

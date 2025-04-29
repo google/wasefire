@@ -894,7 +894,7 @@ impl RunnerOptions {
         match self.name {
             RunnerName::Host => drop(fs::copy(elf, &bundle).await?),
             RunnerName::OpenTitan => {
-                let signed = format!("{elf}.appkey_prod_0.signed.bin");
+                let signed = format!("{elf}.{}.signed.bin", opentitan::APPKEY);
                 opentitan::build(elf).await?;
                 opentitan::truncate(&signed).await?;
                 fs::copy(&signed, &bundle).await?;

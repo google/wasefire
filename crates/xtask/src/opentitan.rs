@@ -24,7 +24,12 @@ use wasefire_cli_tools::{cmd, fs};
 
 use crate::{AttachOptions, MainOptions, ensure_command, wrap_command};
 
+pub const APPKEY: &str = "gb00-app-key-prod-0";
+
 pub async fn build(elf: &str) -> Result<String> {
+    let prov_exts_dir = std::env::var("PROV_EXTS_DIR")
+        .context("PROV_EXTS_DIR must be set to ot-provisioning-google-skus/skus")?;
+
     // Copy ELF to binary.
     let bin = format!("{elf}.bin");
     let mut objcopy = wrap_command().await?;
@@ -32,19 +37,19 @@ pub async fn build(elf: &str) -> Result<String> {
     cmd::execute(&mut objcopy).await?;
 
     // Prepare the pre-signing artifact.
-    let presign = format!("{elf}.appkey_prod_0.pre-signing");
+    let presign = format!("{elf}.{APPKEY}.pre-signing");
     let mut opentitan = Command::new("opentitantool");
     opentitan.args(["--quiet", "image", "manifest", "update", &bin]);
     opentitan.arg("--manifest=crates/runner-opentitan/manifest.json");
+    opentitan.arg("--domain=None");
     opentitan.arg(format!("--output={presign}"));
-    opentitan.arg(
-        "--ecdsa-key=third_party/lowRISC/opentitan/sw/device/silicon_creator/rom_ext/prodc/keys/\
-         appkey_prod_0.der",
-    );
+    opentitan.arg(format!(
+        "--ecdsa-key={prov_exts_dir}/shared/rom_ext/gb/keys/gb00-app-key-prod-0.pub.der"
+    ));
     cmd::execute(&mut opentitan).await?;
 
     // Compute the digest of the artifact.
-    let digest = format!("{elf}.appkey_prod_0.digest");
+    let digest = format!("{elf}.{APPKEY}.digest");
     let mut opentitan = Command::new("opentitantool");
     opentitan.args(["--quiet", "image", "digest"]);
     opentitan.arg(format!("--bin={digest}"));
@@ -52,24 +57,24 @@ pub async fn build(elf: &str) -> Result<String> {
     cmd::execute(&mut opentitan).await?;
 
     // Sign the digest.
-    let ecdsasig = format!("{elf}.appkey_prod_0.ecdsa-sig");
+    let ecdsasig = format!("{elf}.{APPKEY}.ecdsa-sig");
     let mut hsmtool = Command::new("hsmtool");
     hsmtool.args([
         "--quiet",
         "--lockfile=/tmp/hsmtool.lock",
-        "--profile=earlgrey_z1_prodc",
+        "--profile=earlgrey_a1_gb_owner",
         "ecdsa",
         "sign",
         "--little-endian",
         "--format=sha256-hash",
-        "--label=appkey_prod_0",
     ]);
+    hsmtool.arg(format!("--label={APPKEY}"));
     hsmtool.arg(format!("--output={ecdsasig}"));
     hsmtool.arg(&digest);
     cmd::execute(&mut hsmtool).await?;
 
     // Attach the signature.
-    let signed = format!("{elf}.appkey_prod_0.signed.bin");
+    let signed = format!("{elf}.{APPKEY}.signed.bin");
     let mut opentitan = Command::new("opentitantool");
     opentitan.args(["--quiet", "image", "manifest", "update", "--update-length=false"]);
     opentitan.arg(format!("--output={signed}"));
@@ -82,10 +87,10 @@ pub async fn build(elf: &str) -> Result<String> {
     let mut opentitan = Command::new("opentitantool");
     opentitan.args(["image", "assemble", "--mirror=false"]);
     opentitan.arg(format!("--output={img}"));
-    opentitan.arg(
-        "third_party/lowRISC/opentitan/sw/device/silicon_creator/rom_ext/prodc/binaries/\
-         rom_ext_real_prod_signed_slot_a_silicon_creator.signed.bin@0",
-    );
+    opentitan.arg(format!(
+        "{prov_exts_dir}/shared/rom_ext/gb/binaries/\
+         rom_ext_dice_x509_prod_slot_virtual_silicon_creator.signed.bin@0"
+    ));
     opentitan.arg(format!("{signed}@0x10000"));
     cmd::execute(&mut opentitan).await?;
     Ok(img)
@@ -126,8 +131,8 @@ pub async fn attach(
     println!("Listening on OpenTitan serial.");
 
     if wait {
-        // Discard everything until we recognize the ROM_EXT initial message.
-        const PATTERN: &str = "Starting ROM_EXT";
+        // Discard everything until we recognize the OpenTitan initial message.
+        const PATTERN: &str = "OpenTitan:";
         let mut pos = 0;
         while pos < PATTERN.len() {
             let mut byte = 0;
