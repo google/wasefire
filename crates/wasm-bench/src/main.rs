@@ -32,28 +32,25 @@ mod target;
 
 const MODULE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/module.bin"));
 
-fn main() {
+fn main() -> ! {
     println!("Running CoreMark measurement...");
     let start = target::clock_ms();
     let result = runtime::run(MODULE);
     let duration = target::clock_ms() - start;
     println!("CoreMark result: {} (in {}s)", result, duration as f32 / 1000.);
+    panic!();
 }
 
 #[cfg(feature = "target-nordic")]
 #[cortex_m_rt::entry]
 fn entry() -> ! {
     target::init();
-    loop {
-        main();
-    }
+    main()
 }
 
 #[cfg(feature = "target-riscv")]
 #[riscv_rt::entry]
 fn entry() -> ! {
     target::init();
-    loop {
-        main();
-    }
+    main()
 }

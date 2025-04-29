@@ -63,10 +63,8 @@ fn ticks_low() -> u64 {
 
 #[exception]
 fn SysTick() {
-    static USAGE: AtomicU32 = AtomicU32::new(0);
-    COUNT.fetch_add(1, Ordering::Relaxed);
-    if COUNT.load(Ordering::Relaxed) & 0xf == 0 {
-        USAGE.fetch_max(crate::allocator::usage() as u32, Ordering::Relaxed);
-        println!("Peak RAM usage: {}", USAGE.load(Ordering::Relaxed));
+    const MASK: u32 = 0xf;
+    if COUNT.fetch_add(1, Ordering::Relaxed) & MASK == MASK {
+        crate::allocator::usage::print();
     }
 }
