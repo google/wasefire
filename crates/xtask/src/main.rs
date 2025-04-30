@@ -690,6 +690,7 @@ impl RunnerOptions {
             features.push("native".to_string());
         } else {
             features.push("wasm".to_string());
+            cargo.arg("--config=profile.release.package.wasefire-interpreter.opt-level=3");
         }
         let board = self.name.default_board().map(|x| self.board.as_deref().unwrap_or(x));
         if let Some(board) = board {
