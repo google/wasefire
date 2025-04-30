@@ -15,14 +15,16 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
+use crate::cursor::*;
 #[cfg(feature = "debug")]
 use crate::error::*;
+use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
 
 #[derive(Debug, Default, Clone)]
 pub struct Parser<'m, M: Mode> {
-    data: &'m [u8],
+    data: Cursor<'m, u8>,
     mode: PhantomData<M>,
 }
 
@@ -40,36 +42,42 @@ impl<'m> Parser<'m, Use> {
 }
 
 impl<'m, M: Mode> Parser<'m, M> {
-    pub fn save(&self) -> &'m [u8] {
-        self.data
+    pub fn shrink(&mut self) {
+        self.data.shrink()
+    }
+
+    pub fn remaining(self) -> &'m [u8] {
+        self.data.consume()
+    }
+
+    pub fn save(&self) -> CursorState {
+        self.data.save()
     }
 
     // Safety: The data must have been saved in a similar state.
-    pub unsafe fn restore(&mut self, data: &'m [u8]) {
-        self.data = data;
+    pub unsafe fn restore(&mut self, state: CursorState) {
+        unsafe { self.data.restore(state) };
+    }
+
+    pub fn update(&mut self, offset: isize) {
+        self.data.adjust_start(offset);
     }
 
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
 
-    pub fn check_len(&self, len: usize) -> MResult<(), M> {
-        M::check(|| len <= self.data.len())
-    }
-
     pub fn parse_bytes(&mut self, len: usize) -> MResult<&'m [u8], M> {
-        self.check_len(len)?;
-        let (result, data) = split_at(self.data, len);
-        self.data = data;
-        Ok(result)
+        Ok(self.data.split::<M>(len)?.consume())
     }
 
     pub fn split_at(&mut self, len: usize) -> MResult<Parser<'m, M>, M> {
-        Ok(Self::internal_new(self.parse_bytes(len)?))
+        let data = self.data.split::<M>(len)?;
+        Ok(Parser { data, mode: self.mode })
     }
 
     pub fn parse_byte(&mut self) -> MResult<u8, M> {
-        Ok(get(self.parse_bytes(1)?, 0))
+        Ok(self.parse_bytes(1)?[0])
     }
 
     pub fn parse_leb128(&mut self, signed: bool, bits: u8) -> MResult<u64, M> {
@@ -551,23 +559,17 @@ impl<'m, M: Mode> Parser<'m, M> {
         user.init(self.parse_bytes(len)?)
     }
 
-    pub fn skip_to_else(&mut self) -> MResult<(), M> {
-        let mut depth = 0;
-        loop {
-            let saved = self.save();
-            match self.parse_instr()? {
-                Instr::Block(_) => depth += 1,
-                Instr::Loop(_) => depth += 1,
-                Instr::If(_) => depth += 1,
-                Instr::End if depth == 0 => {
-                    unsafe { self.restore(saved) };
-                    return Ok(());
-                }
-                Instr::End => depth -= 1,
-                Instr::Else if depth == 0 => return Ok(()),
-                _ => (),
-            }
-        }
+    pub fn parse_side_table(&mut self) -> MResult<SideTableView<'m>, M> {
+        let id = self.parse_section_id()?;
+        M::check(|| id == SectionId::Custom)?;
+        let mut parser = self.split_section()?;
+        let name = parser.parse_name()?;
+        M::check(|| name == SECTION_NAME)?;
+        let num_funcs = parser.parse_bytes(2)?.try_into().unwrap();
+        let num_funcs = u16::from_le_bytes(num_funcs) as usize;
+        let indices = parser.parse_bytes((num_funcs + 1) * 2)?;
+        let metadata = parser.remaining();
+        Ok(SideTableView { indices, metadata })
     }
 
     pub fn skip_to_end(&mut self, l: LabelIdx) -> MResult<(), M> {
@@ -645,7 +647,7 @@ impl<M: Mode> ParseData<'_, M> for SkipData {}
 
 impl<'m, M: Mode> Parser<'m, M> {
     fn internal_new(data: &'m [u8]) -> Self {
-        Self { data, mode: PhantomData }
+        Self { data: Cursor::new(data), mode: PhantomData }
     }
 }
 

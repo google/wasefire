@@ -15,11 +15,11 @@
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
-use crate::cache::Cache;
+use crate::cursor::*;
 use crate::parser::{SkipData, SkipElem};
+use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
-use crate::valid::validate;
 use crate::*;
 
 /// Valid module.
@@ -27,16 +27,7 @@ use crate::*;
 pub struct Module<'m> {
     binary: &'m [u8],
     types: Vec<FuncType<'m>>,
-    cache: Cache<CacheKey, CacheValue>,
-}
-
-#[derive(Debug, PartialEq, Eq, Hash)]
-enum CacheKey {
-    Skip { ptr: *const u8, depth: LabelIdx },
-}
-
-union CacheValue {
-    skip: usize, // delta
+    side_table: SideTableView<'m>,
 }
 
 impl<'m> Import<'m> {
@@ -59,7 +50,7 @@ impl ImportDesc {
 impl<'m> Module<'m> {
     /// Validates a WASM module in binary format.
     pub fn new(binary: &'m [u8]) -> Result<Self, Error> {
-        validate(binary)?;
+        crate::valid::verify(binary)?;
         Ok(unsafe { Self::new_unchecked(binary) })
     }
 
@@ -69,12 +60,10 @@ impl<'m> Module<'m> {
     ///
     /// The module must be valid.
     pub unsafe fn new_unchecked(binary: &'m [u8]) -> Self {
-        let mut module = Module {
-            // Only keep the sections (i.e. skip the header).
-            binary: &binary[8 ..],
-            types: Vec::new(),
-            cache: Cache::unbounded(),
-        };
+        // Only keep the sections (i.e. skip the header).
+        let mut parser = unsafe { Parser::new(&binary[8 ..]) };
+        let side_table = parser.parse_side_table().into_ok();
+        let mut module = Module { binary: parser.remaining(), types: Vec::new(), side_table };
         if let Some(mut parser) = module.section(SectionId::Type) {
             for _ in 0 .. parser.parse_vec().into_ok() {
                 module.types.push(parser.parse_functype().into_ok());
@@ -124,14 +113,8 @@ impl<'m> Module<'m> {
     }
 
     pub(crate) fn func_type(&self, x: FuncIdx) -> FuncType<'m> {
-        let mut parser = self.section(SectionId::Function).unwrap();
-        for i in 0 .. parser.parse_vec().into_ok() {
-            let y = parser.parse_typeidx().into_ok();
-            if i == x as usize {
-                return self.types[y as usize];
-            }
-        }
-        unreachable!()
+        self.types
+            [self.side_table.metadata::<Use>(x as usize).into_ok().type_idx::<Use>().into_ok()]
     }
 
     pub(crate) fn table_type(&self, x: TableIdx) -> TableType {
@@ -191,16 +174,11 @@ impl<'m> Module<'m> {
         unreachable!()
     }
 
-    pub(crate) fn func(&self, x: FuncIdx) -> Parser<'m> {
-        let mut parser = self.section(SectionId::Code).unwrap();
-        for i in 0 .. parser.parse_vec().into_ok() {
-            let size = parser.parse_u32().into_ok() as usize;
-            let parser = parser.split_at(size).into_ok();
-            if i == x as usize {
-                return parser;
-            }
-        }
-        unreachable!()
+    pub(crate) fn func(&self, x: FuncIdx) -> (Parser<'m>, Cursor<'m, BranchTableEntry>) {
+        let metadata = self.side_table.metadata::<Use>(x as usize).into_ok();
+        let mut parser = unsafe { Parser::new(self.binary) };
+        unsafe { parser.restore(metadata.parser_state::<Use>().into_ok()) };
+        (parser, Cursor::new(metadata.branch_table::<Use>().into_ok()))
     }
 
     pub(crate) fn data(&self, x: DataIdx) -> Parser<'m> {
@@ -212,29 +190,5 @@ impl<'m> Module<'m> {
             parser.parse_data(&mut SkipData).into_ok();
         }
         unreachable!()
-    }
-
-    pub(crate) fn skip(
-        &mut self, parser: &mut Parser<'m>, depth: LabelIdx,
-        compute: impl Fn(&mut Parser<'m>, LabelIdx),
-    ) {
-        let saved = parser.save();
-        let key = CacheKey::Skip { ptr: saved.as_ptr(), depth };
-        match self.cache.get(&key) {
-            Some(delta) => unsafe { parser.restore(&saved[delta.skip ..]) },
-            None => {
-                compute(parser, depth);
-                let delta = saved.len() - parser.save().len();
-                self.cache.put(key, CacheValue { skip: delta });
-            }
-        }
-    }
-
-    pub(crate) fn skip_to_else(&mut self, parser: &mut Parser<'m>) {
-        self.skip(parser, 0, |p, _| p.skip_to_else().into_ok());
-    }
-
-    pub(crate) fn skip_to_end(&mut self, parser: &mut Parser<'m>, l: LabelIdx) {
-        self.skip(parser, l, |p, l| p.skip_to_end(l).into_ok());
     }
 }

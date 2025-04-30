@@ -16,8 +16,10 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
+use crate::cursor::*;
 use crate::error::*;
 use crate::module::*;
+use crate::side_table::*;
 use crate::syntax::*;
 use crate::toctou::*;
 use crate::*;
@@ -191,10 +193,11 @@ impl<'m> Store<'m> {
             let x = parser.parse_funcidx().into_ok();
             let ptr = self.func_ptr(inst_id, x);
             let inst_id = ptr.instance().unwrap_wasm();
-            let mut parser = self.insts[inst_id].module.func(ptr.index());
+            let (mut parser, side_table) = self.insts[inst_id].module.func(ptr.index());
             let mut locals = Vec::new();
             append_locals(&mut parser, &mut locals);
-            let thread = Thread::new(parser, Frame::new(inst_id, 0, &[], locals));
+            let ret = Parser::default();
+            let thread = Thread::new(parser, Frame::new(inst_id, 0, ret, locals, side_table, 0));
             let result = thread.run(self)?;
             assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
         }
@@ -219,11 +222,12 @@ impl<'m> Store<'m> {
         let inst = &self.insts[inst_id];
         let x = ptr.index();
         let t = inst.module.func_type(x);
-        let mut parser = inst.module.func(x);
+        let (mut parser, side_table) = inst.module.func(x);
         check_types(&t.params, &args)?;
         let mut locals = args;
         append_locals(&mut parser, &mut locals);
-        let frame = Frame::new(inst_id, t.results.len(), &[], locals);
+        let ret = Parser::default();
+        let frame = Frame::new(inst_id, t.results.len(), ret, locals, side_table, 0);
         Thread::new(parser, frame).run(self)
     }
 
@@ -455,6 +459,9 @@ struct Instance<'m> {
 struct Thread<'m> {
     parser: Parser<'m>,
     frames: Vec<Frame<'m>>,
+    // TODO: Consider the performance tradeoff between keeping the locals in and out of the value
+    // stack. See the comments in PR #605 for more details.
+    values: Vec<Val>,
 }
 
 /// Runtime result.
@@ -734,21 +741,23 @@ enum ThreadResult<'m> {
 
 impl<'m> Thread<'m> {
     fn new(parser: Parser<'m>, frame: Frame<'m>) -> Thread<'m> {
-        Thread { parser, frames: vec![frame] }
+        Thread { parser, frames: vec![frame], values: vec![] }
     }
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
-        let parser = mut_parser.clone();
-        let mut thread = Thread::new(parser, Frame::new(inst_id, 1, &[], Vec::new()));
-        let (parser, results) = loop {
-            let p = thread.parser.save();
+        let mut thread = Thread::new(
+            mut_parser.clone(),
+            Frame::new(inst_id, 1, Parser::default(), Vec::new(), Cursor::default(), 0),
+        );
+        let (state, results) = loop {
+            let s = thread.parser.save();
             match thread.step(store).unwrap() {
                 ThreadResult::Continue(x) => thread = x,
-                ThreadResult::Done(x) => break (p, x),
+                ThreadResult::Done(x) => break (s, x),
                 ThreadResult::Host => unreachable!(),
             }
         };
-        unsafe { mut_parser.restore(parser) };
+        unsafe { mut_parser.restore(state) };
         let instr = mut_parser.parse_instr().into_ok();
         debug_assert_eq!(instr, Instr::End);
         debug_assert_eq!(results.len(), 1);
@@ -769,35 +778,42 @@ impl<'m> Thread<'m> {
 
     fn step(mut self, store: &mut Store<'m>) -> Result<ThreadResult<'m>, Error> {
         use Instr::*;
-        let saved = self.parser.save();
         let inst_id = self.frame().inst_id;
         let inst = &mut store.insts[inst_id];
         match self.parser.parse_instr().into_ok() {
             Unreachable => return Err(trap()),
             Nop => (),
-            Block(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Block),
-            Loop(b) => self.push_label(self.blocktype(inst, &b), LabelKind::Loop(saved)),
-            If(b) => match self.pop_value().unwrap_i32() {
+            Block(_) => self.push_label(),
+            Loop(_) => self.push_label(),
+            If(_) => match self.pop_value().unwrap_i32() {
                 0 => {
-                    self.skip_to_else(inst);
-                    self.push_label(self.blocktype(inst, &b), LabelKind::Block);
+                    self.take_jump(0);
+                    self.push_label();
                 }
-                _ => self.push_label(self.blocktype(inst, &b), LabelKind::If),
+                _ => {
+                    self.frame().skip_jump();
+                    self.push_label();
+                }
             },
             Else => {
-                self.skip_to_end(inst, 0);
+                self.take_jump(0);
                 return Ok(self.exit_label());
             }
             End => return Ok(self.exit_label()),
-            Br(l) => return Ok(self.pop_label(inst, l)),
+            Br(l) => return Ok(self.pop_label(l, 0)),
             BrIf(l) => {
                 if self.pop_value().unwrap_i32() != 0 {
-                    return Ok(self.pop_label(inst, l));
+                    return Ok(self.pop_label(l, 0));
                 }
+                self.frame().skip_jump();
             }
             BrTable(ls, ln) => {
                 let i = self.pop_value().unwrap_i32() as usize;
-                return Ok(self.pop_label(inst, ls.get(i).cloned().unwrap_or(ln)));
+                let (l, offset) = match ls.get(i) {
+                    None => (ln, 0),
+                    Some(&li) => (li, i + 1),
+                };
+                return Ok(self.pop_label(l, offset));
             }
             Return => return Ok(self.exit_frame()),
             Call(x) => return self.invoke(store, store.func_ptr(inst_id, x)),
@@ -985,16 +1001,8 @@ impl<'m> Thread<'m> {
         self.frames.last_mut().unwrap()
     }
 
-    fn labels(&mut self) -> &mut Vec<Label<'m>> {
-        &mut self.frame().labels
-    }
-
-    fn label(&mut self) -> &mut Label<'m> {
-        self.labels().last_mut().unwrap()
-    }
-
     fn values(&mut self) -> &mut Vec<Val> {
-        &mut self.label().values
+        &mut self.values
     }
 
     fn peek_value(&mut self) -> Val {
@@ -1023,82 +1031,62 @@ impl<'m> Thread<'m> {
     }
 
     fn pop_values(&mut self, n: usize) -> Vec<Val> {
-        let mut values = Vec::new();
-        for _ in 0 .. n {
-            values.push(self.pop_value());
-        }
-        values.reverse();
-        values
+        let len = self.values().len() - n;
+        self.values().split_off(len)
     }
 
-    fn push_label(&mut self, type_: FuncType<'m>, kind: LabelKind<'m>) {
-        let values = self.pop_values(type_.params.len());
-        let arity = match kind {
-            LabelKind::Block | LabelKind::If => type_.results.len(),
-            LabelKind::Loop(_) => type_.params.len(),
-        };
-        let label = Label { arity, kind, values };
-        self.labels().push(label);
+    fn push_label(&mut self) {
+        self.frame().labels_cnt += 1;
     }
 
-    fn pop_label(mut self, inst: &mut Instance<'m>, l: LabelIdx) -> ThreadResult<'m> {
-        let i = self.labels().len() - l as usize - 1;
+    fn pop_label(mut self, l: LabelIdx, offset: usize) -> ThreadResult<'m> {
+        let frame = self.frame();
+        let i = frame.labels_cnt - l as usize - 1;
         if i == 0 {
             return self.exit_frame();
         }
-        let values = core::mem::take(self.values());
-        let frame = self.frame();
-        let Label { arity, kind, .. } = frame.labels.drain(i ..).next().unwrap();
-        self.values().extend_from_slice(&values[values.len() - arity ..]);
-        match kind {
-            LabelKind::Loop(pos) => unsafe { self.parser.restore(pos) },
-            LabelKind::Block | LabelKind::If => self.skip_to_end(inst, l),
-        }
+        frame.labels_cnt = i;
+        let Ok(BranchTableEntryView { val_cnt, pop_cnt, .. }) =
+            frame.side_table.get(offset).view::<Use>();
+        let val_pos = self.values().len() - val_cnt as usize;
+        self.values().drain(val_pos - pop_cnt as usize .. val_pos);
+        self.take_jump(offset);
         ThreadResult::Continue(self)
     }
 
     fn exit_label(mut self) -> ThreadResult<'m> {
         let frame = self.frame();
-        let label = frame.labels.pop().unwrap();
-        if frame.labels.is_empty() {
+        frame.labels_cnt -= 1;
+        if frame.labels_cnt == 0 {
+            let arity = frame.arity;
+            let values = self.pop_values(arity);
             let frame = self.frames.pop().unwrap();
-            debug_assert_eq!(label.values.len(), frame.arity);
             if self.frames.is_empty() {
-                return ThreadResult::Done(label.values);
+                return ThreadResult::Done(values);
             }
-            unsafe { self.parser.restore(frame.ret) };
+            self.parser = frame.ret;
+            self.values().extend(values);
         }
-        self.values().extend_from_slice(&label.values);
         ThreadResult::Continue(self)
     }
 
     fn exit_frame(mut self) -> ThreadResult<'m> {
-        let mut values = core::mem::take(self.values());
+        let prev_stack = self.frame().prev_stack;
+        let mut values = self.values().split_off(prev_stack);
         let frame = self.frames.pop().unwrap();
         let mid = values.len() - frame.arity;
         if self.frames.is_empty() {
             values.drain(0 .. mid);
             return ThreadResult::Done(values);
         }
-        unsafe { self.parser.restore(frame.ret) };
+        self.parser = frame.ret;
         self.values().extend_from_slice(&values[mid ..]);
         ThreadResult::Continue(self)
     }
 
-    fn skip_to_else(&mut self, inst: &mut Instance<'m>) {
-        inst.module.skip_to_else(&mut self.parser);
-    }
-
-    fn skip_to_end(&mut self, inst: &mut Instance<'m>, l: LabelIdx) {
-        inst.module.skip_to_end(&mut self.parser, l);
-    }
-
-    fn blocktype(&self, inst: &Instance<'m>, b: &BlockType) -> FuncType<'m> {
-        match *b {
-            BlockType::None => FuncType { params: ().into(), results: ().into() },
-            BlockType::Type(t) => FuncType { params: ().into(), results: t.into() },
-            BlockType::Index(x) => inst.module.types()[x as usize],
-        }
+    fn take_jump(&mut self, offset: usize) {
+        let offset = self.frame().take_jump(offset);
+        self.parser.update(offset);
     }
 
     fn mem_slice<'a>(
@@ -1366,12 +1354,14 @@ impl<'m> Thread<'m> {
             }
             Side::Wasm(x) => x,
         };
-        let mut parser = store.insts[inst_id].module.func(ptr.index());
+        let (mut parser, side_table) = store.insts[inst_id].module.func(ptr.index());
         let mut locals = self.pop_values(t.params.len());
         append_locals(&mut parser, &mut locals);
-        let ret = self.parser.save();
+        let ret = self.parser;
         self.parser = parser;
-        self.frames.push(Frame::new(inst_id, t.results.len(), ret, locals));
+        let prev_stack = self.values().len();
+        let frame = Frame::new(inst_id, t.results.len(), ret, locals, side_table, prev_stack);
+        self.frames.push(frame);
         Ok(ThreadResult::Continue(self))
     }
 }
@@ -1403,34 +1393,33 @@ fn memory_init(d: usize, s: usize, n: usize, mem: &mut Memory, data: &[u8]) -> R
 struct Frame<'m> {
     inst_id: usize,
     arity: usize,
-    ret: &'m [u8],
+    ret: Parser<'m>,
     locals: Vec<Val>,
-    labels: Vec<Label<'m>>,
+    side_table: Cursor<'m, BranchTableEntry>,
+    /// Total length of the value stack in the thread prior to this frame.
+    prev_stack: usize,
+    // TODO: We should be able to get rid of this by using the side-table.
+    labels_cnt: usize,
 }
 
 impl<'m> Frame<'m> {
-    fn new(inst_id: usize, arity: usize, ret: &'m [u8], locals: Vec<Val>) -> Self {
-        let label = Label { arity, kind: LabelKind::Block, values: vec![] };
-        Frame { inst_id, arity, ret, locals, labels: vec![label] }
+    fn new(
+        inst_id: usize, arity: usize, ret: Parser<'m>, locals: Vec<Val>,
+        side_table: Cursor<'m, BranchTableEntry>, prev_stack: usize,
+    ) -> Self {
+        Frame { inst_id, arity, ret, locals, side_table, prev_stack, labels_cnt: 1 }
     }
-}
 
-#[derive(Debug)]
-struct Label<'m> {
-    arity: usize,
-    kind: LabelKind<'m>,
-    values: Vec<Val>,
-}
+    fn skip_jump(&mut self) {
+        self.side_table.adjust_start(1);
+    }
 
-#[derive(Debug)]
-enum LabelKind<'m> {
-    // TODO: If and Block can be merged and then we just have Option<NonNull<u8>> which is
-    // optimized.
-    Block,
-    // TODO: Could be just NonNull<u8> since we can reuse the end of current parser since it
-    // never changes.
-    Loop(&'m [u8]),
-    If,
+    fn take_jump(&mut self, offset: usize) -> isize {
+        self.side_table.adjust_start(offset as isize);
+        let entry = self.side_table.get(0).view::<Use>().into_ok();
+        self.side_table.adjust_start(entry.delta_stp as isize);
+        entry.delta_ip as isize
+    }
 }
 
 impl Table {

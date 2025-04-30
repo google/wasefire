@@ -2778,6 +2778,7 @@ dependencies = [
  "tokio",
  "toml",
  "wasefire-common",
+ "wasefire-interpreter",
  "wasefire-protocol",
  "wasefire-protocol-tokio",
  "wasefire-protocol-usb",
@@ -2796,6 +2797,17 @@ name = "wasefire-error"
 version = "0.1.3-git"
 dependencies = [
  "num_enum",
+]
+
+[[package]]
+name = "wasefire-interpreter"
+version = "0.4.0-git"
+dependencies = [
+ "derive-where",
+ "num_enum",
+ "paste",
+ "portable-atomic",
+ "wasefire-error",
 ]
 
 [[package]]

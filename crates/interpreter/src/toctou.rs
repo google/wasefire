@@ -84,10 +84,7 @@ impl Mode for Use {
     }
 
     fn open<T>(check: impl FnOnce() -> Option<T>) -> Result<T, Self::Error> {
-        #[cfg(not(feature = "toctou"))]
-        return Ok(unsafe { check().unwrap_unchecked() });
-        #[cfg(feature = "toctou")]
-        Ok(check().unwrap())
+        Ok(unwrap(check()))
     }
 
     fn choose<T>(
@@ -108,22 +105,18 @@ impl Mode for Use {
 
 pub type MResult<T, M> = Result<T, <M as Mode>::Error>;
 
-pub fn get(xs: &[u8], i: usize) -> u8 {
-    #[cfg(not(feature = "toctou"))]
-    return unsafe { *xs.get_unchecked(i) };
-    #[cfg(feature = "toctou")]
-    xs[i]
-}
-
-pub fn split_at(xs: &[u8], mid: usize) -> (&[u8], &[u8]) {
-    #[cfg(not(feature = "toctou"))]
-    return unsafe { xs.split_at_unchecked(mid) };
-    #[cfg(feature = "toctou")]
-    xs.split_at(mid)
-}
-
 pub fn byte_enum<M: Mode, T: Copy + TryFromByte + UnsafeFromByte>(x: u8) -> MResult<T, M> {
     M::choose(|| T::try_from_byte(x), || unsafe { T::from_byte_unchecked(x) })
+}
+
+#[cfg(feature = "toctou")]
+pub fn unwrap<T>(x: Option<T>) -> T {
+    x.unwrap()
+}
+
+#[cfg(not(feature = "toctou"))]
+pub fn unwrap<T>(x: Option<T>) -> T {
+    unsafe { x.unwrap_unchecked() }
 }
 
 #[cfg(test)]

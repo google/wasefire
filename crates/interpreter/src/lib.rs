@@ -106,10 +106,10 @@
 
 #![cfg_attr(not(feature = "debug"), no_std)]
 #![cfg_attr(test, allow(unused_crate_dependencies))]
-#![feature(concat_idents)]
 #![feature(float_minimum_maximum)]
 #![feature(never_type)]
 #![feature(pointer_is_aligned_to)]
+#![feature(strict_overflow_ops)]
 #![feature(try_blocks)]
 #![feature(unwrap_infallible)]
 
@@ -139,12 +139,14 @@ macro_rules! support_if {
     }};
 }
 
-mod cache;
+mod cursor;
 mod error;
 mod exec;
+mod format;
 mod id;
 mod module;
 mod parser;
+mod side_table;
 mod syntax;
 mod toctou;
 mod valid;
@@ -155,4 +157,4 @@ pub use module::Module;
 pub use syntax::{
     FuncType, GlobalType, ImportDesc, Limits, Mut, RefType, ResultType, TableType, ValType,
 };
-pub use valid::validate;
+pub use valid::prepare;

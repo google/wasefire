@@ -24,15 +24,14 @@ list_files() {
     -maxdepth 1 -name '*.wast' -execdir basename -s .wast {} \;
 }
 list_tests() {
-  sed -n 's/^test!(.*, "\([^"]*\)".*);$/\1/p;s/^test!(\([^,]*\).*);$/\1/p' tests/spec.rs
+  sed -n 's/^test!(.*, "\([^"]*\)".*);$/\1/p;s/^test!(\([^,;]*\).*);$/\1/p' tests/spec.rs
 }
 diff_sorted tests/spec.rs "$(list_files | sort)" $(list_tests)
 
 test_helper
 
-cargo test --lib --features=toctou
+cargo test --lib --features=debug,toctou
 cargo check --lib --target=thumbv7em-none-eabi
-cargo check --lib --target=thumbv7em-none-eabi --features=cache
 cargo check --lib --target=riscv32imc-unknown-none-elf \
   --features=portable-atomic/critical-section
 RUSTFLAGS=--cfg=portable_atomic_unsafe_assume_single_core \

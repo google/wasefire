@@ -13,76 +13,32 @@
 // limitations under the License.
 
 fn main() {
-    let target = if std::env::var_os("CARGO_FEATURE_TARGET_LINUX").is_some() {
-        Target::Linux
-    } else if std::env::var_os("CARGO_FEATURE_TARGET_NORDIC").is_some() {
-        Target::Nordic
-    } else if std::env::var_os("CARGO_FEATURE_TARGET_RISCV").is_some() {
-        Target::Riscv
-    } else {
-        panic!("one of target-{{linux,nordic,riscv}} must be enabled")
-    };
-    #[cfg(feature = "runtime-wasmtime")]
-    let runtime = if std::env::var_os("CARGO_FEATURE_RUNTIME_BASE").is_some() {
-        Runtime::Base
-    } else if std::env::var_os("CARGO_FEATURE_RUNTIME_WASM3").is_some() {
-        Runtime::Wasm3
-    } else if std::env::var_os("CARGO_FEATURE_RUNTIME_WASMI").is_some() {
-        Runtime::Wasmi
-    } else if std::env::var_os("CARGO_FEATURE_RUNTIME_WASMTIME").is_some() {
-        Runtime::Wasmtime
-    } else {
-        panic!("one of runtime-{{base,wasm3,wasmi,wasmtime}} must be enabled")
-    };
     let out = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
-    let memory = match target {
-        Target::Linux => None,
-        Target::Nordic => Some("memory-nordic.x"),
-        Target::Riscv => Some("memory-riscv.x"),
+
+    let memory = match () {
+        () if cfg!(feature = "target-nordic") => Some("memory-nordic.x"),
+        () if cfg!(feature = "target-riscv") => Some("memory-riscv.x"),
+        () => None,
     };
     if let Some(memory) = memory {
         println!("cargo::rerun-if-changed={memory}");
         std::fs::copy(memory, out.join("memory.x")).unwrap();
         println!("cargo::rustc-link-search={}", out.display());
     }
+
     const PATH: &str = "../../third_party/wasm3/wasm-coremark/coremark-minimal.wasm";
     println!("cargo::rerun-if-changed={PATH}");
-    #[cfg_attr(not(feature = "runtime-wasmtime"), allow(unused_mut))]
+    #[allow(unused_mut)]
     let mut module = std::fs::read(PATH).unwrap();
     #[cfg(feature = "runtime-wasmtime")]
-    if runtime == Runtime::Wasmtime && target.is_embedded() {
+    if cfg!(feature = "_target-embedded") {
         let mut config = wasmtime::Config::new();
         config.target("pulley32").unwrap();
         let engine = wasmtime::Engine::new(&config).unwrap();
         module = engine.precompile_module(&module).unwrap();
     }
+    #[cfg(feature = "runtime-base")]
+    (module = wasefire_interpreter::prepare(&module).unwrap());
     println!("cargo::warning=module size is {} bytes", module.len());
     std::fs::write(out.join("module.bin"), &module).unwrap();
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Target {
-    Linux,
-    Nordic,
-    Riscv,
-}
-
-#[cfg(feature = "runtime-wasmtime")]
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Runtime {
-    Base,
-    Wasm3,
-    Wasmi,
-    Wasmtime,
-}
-
-#[cfg(feature = "runtime-wasmtime")]
-impl Target {
-    fn is_embedded(self) -> bool {
-        match self {
-            Target::Linux => false,
-            Target::Nordic => true,
-            Target::Riscv => true,
-        }
-    }
 }
