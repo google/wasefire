@@ -32,7 +32,6 @@ pub fn prepare(binary: &[u8]) -> Result<Vec<u8>, Error> {
     let side_table = validate::<Prepare>(binary)?;
     let mut wasm = vec![];
     wasm.extend_from_slice(&binary[0 .. 8]);
-    let side_table = serialize(&side_table)?;
     custom_section(&mut wasm, SECTION_NAME, &side_table);
     wasm.extend_from_slice(&binary[8 ..]);
     Ok(wasm)
@@ -78,8 +77,7 @@ impl ValidMode for Prepare {
     type Branches = Vec<SideTableBranch>;
     type BranchTable<'a, 'm> = &'a mut Vec<BranchTableEntry>;
     type SideTable<'m> = Vec<MetadataEntry>;
-    // TODO(dev/fast-interp): Change it to Vec<u8>.
-    type Result = Vec<MetadataEntry>;
+    type Result = Vec<u8>;
 
     fn parse_side_table<'m>(_: &mut Parser<'m>) -> Result<Self::SideTable<'m>, Error> {
         Ok(Vec::new())
@@ -93,7 +91,7 @@ impl ValidMode for Prepare {
     }
 
     fn side_table_result(side_table: Self::SideTable<'_>) -> Result<Self::Result, Error> {
-        Ok(side_table)
+        serialize(&side_table)
     }
 }
 
