@@ -56,6 +56,7 @@ fi
 # Transitive dependencies of xtask.
 ensure bin cc
 ensure lib libudev
+ensure lib openssl
 
 # Transitive dependencies of runner-host.
 ensure bin usbip
