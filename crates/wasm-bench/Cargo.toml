@@ -23,13 +23,6 @@ default-features = false
 features = ["critical-section"]
 optional = true
 
-[dependencies.wasm3]
-git = "https://github.com/wasm3/wasm3-rs.git"
-rev = "df74c2a17ed8831595de43db98c406da4633e32a"
-default-features = false
-features = ["build-bindgen", "use-32bit-slots"]
-optional = true
-
 [dependencies.wasmtime]
 version = "30.0.2"
 default-features = false
@@ -55,7 +48,6 @@ optional = true
 [features]
 _target-embedded = ["dep:embedded-alloc", "wasmtime?/pulley"]
 runtime-base = ["dep:wasefire-interpreter"]
-runtime-wasm3 = ["dep:wasm3"]
 runtime-wasmi = ["dep:wasmi"]
 runtime-wasmtime = ["dep:wasmtime"]
 target-linux = ["wasmtime?/cranelift"]

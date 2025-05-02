@@ -1,4 +1,0 @@
-[[PackageOverrides]]
-ecosystem = "crates.io"
-ignore = true
-reason = "benchmarks only"
