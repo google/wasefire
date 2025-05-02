@@ -22,7 +22,6 @@ extern crate std;
 #[cfg(feature = "_target-embedded")]
 mod allocator;
 #[cfg_attr(feature = "runtime-base", path = "runtime/base.rs")]
-#[cfg_attr(feature = "runtime-wasm3", path = "runtime/wasm3.rs")]
 #[cfg_attr(feature = "runtime-wasmi", path = "runtime/wasmi.rs")]
 #[cfg_attr(feature = "runtime-wasmtime", path = "runtime/wasmtime.rs")]
 mod runtime;
