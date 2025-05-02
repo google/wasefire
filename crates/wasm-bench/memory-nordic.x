@@ -3,4 +3,4 @@ MEMORY {
   RAM    : ORIGIN = 0x20000000, LENGTH = 0x00040000
 }
 
-__eheap = 0x20030000;
+_stack_end = 0x20030000;
