@@ -34,6 +34,9 @@ fn main() {
     if cfg!(feature = "_target-embedded") {
         let mut config = wasmtime::Config::new();
         config.target("pulley32").unwrap();
+        config.generate_address_map(false);
+        config.memory_init_cow(false);
+        config.memory_reservation(0);
         let engine = wasmtime::Engine::new(&config).unwrap();
         module = engine.precompile_module(&module).unwrap();
     }
