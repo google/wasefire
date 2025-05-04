@@ -81,7 +81,7 @@ use crate::board::{Events, button, led};
 use crate::storage::Storage;
 
 exactly_one_of!["debug", "release"];
-exactly_one_of!["native", "wasm"];
+exactly_one_of!["native", "pulley", "wasm"];
 exactly_one_of!["board-devkit", "board-dongle", "board-makerdiary"];
 at_most_one_of!["fpc2534", "gpio"]; // they are incompatible
 

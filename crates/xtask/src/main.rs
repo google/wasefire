@@ -70,6 +70,12 @@ struct MainOptions {
     #[clap(long)]
     native_target: Option<String>,
 
+    /// Compiles applets to Pulley and platforms with a Pulley interpreter.
+    ///
+    /// This experimental option improves performance for footprint.
+    #[clap(long, conflicts_with_all = ["native", "native_target"])]
+    pulley: bool,
+
     /// Prints basic size information.
     #[clap(long)]
     size: bool,
@@ -509,6 +515,7 @@ impl AppletOptions {
         let mut action = action::RustAppletBuild {
             prod: main.release,
             native: native.map(|x| x.to_string()),
+            pulley: main.pulley,
             opt_level: self.opt_level,
             stack_size: self.stack_size,
             crate_dir: dir,
@@ -527,6 +534,9 @@ impl AppletOptions {
         }
         let size = match native {
             Some(_) => footprint::rust_size("target/wasefire/libapplet.a").await?,
+            None if main.pulley => {
+                fs::metadata("target/wasefire/applet.pulley").await?.len() as usize
+            }
             None => fs::metadata("target/wasefire/applet.wasm").await?.len() as usize,
         };
         if main.size {
@@ -561,8 +571,13 @@ impl AppletOptions {
         cmd::execute(&mut asc).await?;
         let opt = "target/wasefire/applet-opt.wasm";
         action::optimize_wasm(src, self.opt_level, opt).await?;
-        let dst = "target/wasefire/applet.wasm";
-        action::compute_sidetable(opt, dst).await?;
+        if main.pulley {
+            let dst = "target/wasefire/applet.pulley";
+            action::compile_pulley(opt, dst).await?;
+        } else {
+            let dst = "target/wasefire/applet.wasm";
+            action::compute_sidetable(opt, dst).await?;
+        }
         Ok(())
     }
 }
@@ -572,7 +587,11 @@ impl AppletCommand {
         match self {
             AppletCommand::Runner(runner) => runner.execute(main).await,
             AppletCommand::Install { options, transfer, mut wait } => {
-                let applet = "target/wasefire/applet.wasm".into();
+                let applet = if main.pulley {
+                    "target/wasefire/applet.pulley".into()
+                } else {
+                    "target/wasefire/applet.wasm".into()
+                };
                 if let Some(action::AppletInstallWait::Wait { action }) = &mut wait {
                     action.ensure_exit();
                 }
@@ -734,6 +753,10 @@ impl RunnerOptions {
         }
         if main.is_native() {
             features.push("native".to_string());
+        } else if main.pulley {
+            features.push("pulley".to_string());
+            cargo.arg("--config=profile.release.package.wasmtime.opt-level=\"z\"");
+            cargo.arg("--config=profile.release.package.pulley-interpreter.opt-level=3");
         } else {
             features.push("wasm".to_string());
             cargo.arg("--config=profile.release.package.wasefire-interpreter.opt-level=3");

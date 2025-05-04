@@ -23,7 +23,7 @@ use wasefire_error::{Code, Error};
 use wasefire_logger as log;
 #[cfg(feature = "applet-api-platform-protocol")]
 use wasefire_protocol::applet::AppletId;
-#[cfg(feature = "wasm")]
+#[cfg(any(feature = "pulley", feature = "wasm"))]
 use wasefire_protocol::applet::ExitStatus;
 use wasefire_protocol::{self as service, Api, ApiResult, Request, Service, VERSION};
 
@@ -122,7 +122,7 @@ fn process_event_<B: Board>(
         }
         #[cfg(feature = "native")]
         Api::AppletInstall(_) => return Err(Error::world(Code::NotImplemented)),
-        #[cfg(feature = "wasm")]
+        #[cfg(any(feature = "pulley", feature = "wasm"))]
         Api::AppletInstall(request) => {
             process_transfer::<B, service::AppletInstall>(scheduler, request)?
         }
@@ -130,7 +130,7 @@ fn process_event_<B: Board>(
             use crate::applet::Slot;
             let service::applet::AppletId = applet_id;
             let status = match scheduler.applet {
-                #[cfg(feature = "wasm")]
+                #[cfg(any(feature = "pulley", feature = "wasm"))]
                 Slot::Empty => return Err(Error::user(Code::NotFound)),
                 Slot::Running(_) => None,
                 Slot::Exited(x) => Some(x),
@@ -201,7 +201,7 @@ impl<B: Board> TransferKind<B> for service::PlatformUpdate {
     }
 }
 
-#[cfg(feature = "wasm")]
+#[cfg(any(feature = "pulley", feature = "wasm"))]
 impl<B: Board> TransferKind<B> for service::AppletInstall {
     type Api = board::applet::Install<B>;
     fn start(scheduler: &mut Scheduler<B>) {
@@ -274,7 +274,7 @@ impl TransferState {
 enum StateImpl {
     Normal {
         update: TransferState,
-        #[cfg(feature = "wasm")]
+        #[cfg(any(feature = "pulley", feature = "wasm"))]
         install: TransferState,
     },
     Locked,
@@ -290,7 +290,7 @@ impl Default for StateImpl {
     fn default() -> Self {
         Normal {
             update: TransferState::Ready,
-            #[cfg(feature = "wasm")]
+            #[cfg(any(feature = "pulley", feature = "wasm"))]
             install: TransferState::Ready,
         }
     }
@@ -304,7 +304,7 @@ impl StateImpl {
         }
     }
 
-    #[cfg(feature = "wasm")]
+    #[cfg(any(feature = "pulley", feature = "wasm"))]
     fn install(&mut self) -> &mut TransferState {
         match self {
             Normal { install, .. } => install,

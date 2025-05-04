@@ -33,7 +33,7 @@ use crate::event::{Handler, Key};
 pub mod store;
 
 pub enum Slot<B: Board> {
-    #[cfg(feature = "wasm")]
+    #[cfg(any(feature = "pulley", feature = "wasm"))]
     Empty,
     Running(Applet<B>),
     Exited(wasefire_protocol::applet::ExitStatus),
@@ -48,7 +48,7 @@ impl<B: Board> Slot<B> {
     }
 }
 
-#[derive_where(Default)]
+#[cfg_attr(not(feature = "pulley"), derive_where(Default))]
 pub struct Applet<B: Board> {
     pub store: self::store::Store,
     pub events: Events<B>,
@@ -58,7 +58,7 @@ pub struct Applet<B: Board> {
     protocol: Protocol,
 
     /// Whether we returned from a callback.
-    #[cfg(feature = "wasm")]
+    #[cfg(any(feature = "pulley", feature = "wasm"))]
     done: bool,
 
     #[cfg(feature = "internal-hash-context")]
@@ -176,6 +176,19 @@ impl<'a, B: Board> board::applet::Handlers<board::vendor::Key<B>> for Handlers<'
 }
 
 impl<B: Board> Applet<B> {
+    #[cfg(feature = "pulley")]
+    pub fn new(store: self::store::Store) -> Self {
+        Applet {
+            store,
+            events: Events::default(),
+            #[cfg(feature = "applet-api-platform-protocol")]
+            protocol: Protocol::default(),
+            done: false,
+            #[cfg(feature = "internal-hash-context")]
+            hashes: AppletHashes::default(),
+        }
+    }
+
     pub fn store_mut(&mut self) -> &mut Store {
         &mut self.store
     }
@@ -204,7 +217,7 @@ impl<B: Board> Applet<B> {
 
     /// Returns the next event action.
     pub fn pop(&mut self) -> EventAction<B> {
-        #[cfg(feature = "wasm")]
+        #[cfg(any(feature = "pulley", feature = "wasm"))]
         if core::mem::replace(&mut self.done, false) {
             return EventAction::Reply;
         }
@@ -214,7 +227,7 @@ impl<B: Board> Applet<B> {
         }
     }
 
-    #[cfg(feature = "wasm")]
+    #[cfg(any(feature = "pulley", feature = "wasm"))]
     pub fn done(&mut self) {
         self.done = true;
     }
@@ -248,7 +261,7 @@ impl<B: Board> Applet<B> {
         self.events.handlers.get(&key)
     }
 
-    #[cfg(feature = "wasm")]
+    #[cfg(any(feature = "pulley", feature = "wasm"))]
     pub fn has_handlers(&self) -> bool {
         !self.events.handlers.is_empty()
     }
@@ -310,7 +323,7 @@ pub enum EventAction<B: Board> {
     Handle(Event<B>),
 
     /// Should resume execution (we handled at least one event).
-    #[cfg(feature = "wasm")]
+    #[cfg(any(feature = "pulley", feature = "wasm"))]
     Reply,
 
     /// Should suspend execution until an event is available.

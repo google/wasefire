@@ -15,8 +15,11 @@
 use wasefire_board_api::applet::Memory as AppletMemory;
 
 pub use self::impl_::Store;
+#[cfg(feature = "pulley")]
+pub use self::impl_::{PreStore, RunResult};
 
 #[cfg_attr(feature = "native", path = "store/native.rs")]
+#[cfg_attr(feature = "pulley", path = "store/pulley.rs")]
 #[cfg_attr(feature = "wasm", path = "store/wasm.rs")]
 mod impl_;
 

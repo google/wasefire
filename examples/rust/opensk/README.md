@@ -66,13 +66,25 @@ The applet feature `ed25519` is supported and doesn't need any platform feature.
 
 The applet feature `fingerprint` is not supported.
 
-#### Board
+#### Board: native
 
 ```shell
-cargo xtask --native \
-  applet rust opensk $APPLET_FEATURES \
-  runner host $PLATFORM_FEATURES \
-  flash --reset-flash --usb-ctap --interface=web
+cargo xtask --native applet rust opensk $APPLET_FEATURES \
+  runner host flash --reset-flash --usb-ctap --interface=web
+```
+
+#### Board: pulley
+
+Start the runner in its own terminal:
+
+```shell
+cargo xtask --pulley runner host flash --reset-flash --usb-ctap --interface=web
+```
+
+Install the applet from another terminal:
+
+```shell
+cargo xtask --pulley applet rust opensk $APPLET_FEATURES install
 ```
 
 ### nRF52840
