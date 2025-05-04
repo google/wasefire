@@ -12,11 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::boxed::Box;
+use core::pin::Pin;
+use core::task::{Context, Poll, Waker};
+
+use wasefire_sync::TakeCell;
 use wasmtime::*;
 
 pub(crate) fn run(wasm: &[u8]) -> f32 {
     let mut config = Config::new();
-    config.max_wasm_stack(64 * 1024);
+    config.async_support(true);
+    config.async_stack_size(16 * 1024);
+    config.max_wasm_stack(8 * 1024);
     config.memory_reservation_for_growth(0);
     let engine = Engine::new(&config).unwrap();
     #[cfg(feature = "_target-embedded")]
@@ -25,12 +32,37 @@ pub(crate) fn run(wasm: &[u8]) -> f32 {
     let module = Module::new(&engine, wasm).unwrap();
     let mut store = Store::new(&engine, ());
     let mut linker = Linker::new(&engine);
-    let clock_ms =
-        Func::wrap(&mut store, move |_: Caller<'_, ()>| -> u64 { crate::target::clock_ms() });
+    static CLOCK: TakeCell<u64> = TakeCell::new(None);
+    let clock_ms = Func::wrap_async(
+        &mut store,
+        |_: Caller<'_, ()>, _: ()| -> Box<dyn Future<Output = u64> + Send> {
+            Box::new(core::future::poll_fn(|_| match CLOCK.get() {
+                Some(x) => Poll::Ready(x),
+                None => Poll::Pending,
+            }))
+        },
+    );
     linker.define(&mut store, "env", "clock_ms", clock_ms).unwrap();
-    let instance = linker.instantiate(&mut store, &module).unwrap();
+    let mut context = Context::from_waker(Waker::noop());
+    let instance = {
+        let mut instance = linker.instantiate_async(&mut store, &module);
+        let instance = unsafe { Pin::new_unchecked(&mut instance) };
+        match instance.poll(&mut context) {
+            Poll::Ready(x) => x.unwrap(),
+            Poll::Pending => unreachable!(),
+        }
+    };
     let func = instance.get_typed_func::<(), f32>(&mut store, "run").unwrap();
-    func.call(&mut store, ()).unwrap()
+    let mut thread = func.call_async(&mut store, ());
+    let mut thread = unsafe { Pin::new_unchecked(&mut thread) };
+    loop {
+        match thread.as_mut().poll(&mut context) {
+            core::task::Poll::Ready(x) => break x.unwrap(),
+            core::task::Poll::Pending => {
+                assert_eq!(CLOCK.replace(crate::target::clock_ms()), None)
+            }
+        }
+    }
 }
 
 #[cfg(feature = "_target-embedded")]

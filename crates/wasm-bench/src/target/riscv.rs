@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use portable_atomic::AtomicU32;
+use riscv as _;
+use wasefire_sync::AtomicU32;
 
 pub(crate) fn clock_ms() -> u64 {
     // TODO
@@ -21,21 +22,6 @@ pub(crate) fn clock_ms() -> u64 {
 
 static _COUNT: AtomicU32 = AtomicU32::new(0);
 
-#[macro_export]
-macro_rules! println {
-    ($($x:tt)*) => {
-        let _msg = alloc::format!($($x)*);
-        // TODO
-    };
-}
-
 pub(crate) fn init() {
     crate::allocator::init();
-}
-
-#[panic_handler]
-fn panic(_: &core::panic::PanicInfo) -> ! {
-    loop {
-        unsafe { riscv::asm::ebreak() };
-    }
 }

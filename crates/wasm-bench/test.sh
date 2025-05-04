@@ -22,18 +22,13 @@ ensure_submodule third_party/wasm3/wasm-coremark
 test_helper
 
 cargo test --bin=wasm-bench --features=target-linux,runtime-base
-cargo test --bin=wasm-bench --features=target-linux,runtime-wasmi
 cargo test --bin=wasm-bench --features=target-linux,runtime-wasmtime
 
 cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-base
-cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasmi
 cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasmtime
 
 cargo check --bin=wasm-bench --target=riscv32imc-unknown-none-elf \
   --features=target-riscv,runtime-base
-# error: no method named `compare_exchange` found for struct `AtomicUsize` in the current scope
-# cargo check --bin=wasm-bench --target=riscv32imc-unknown-none-elf \
-#   --features=target-riscv,runtime-wasmi
 # error: unresolved import `alloc::sync`
 # cargo check --bin=wasm-bench --target=riscv32imc-unknown-none-elf \
 #   --features=target-riscv,runtime-wasmtime

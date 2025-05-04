@@ -16,12 +16,12 @@ use std::sync::OnceLock;
 use std::time::Instant;
 
 pub(crate) fn clock_ms() -> u64 {
-    static START: OnceLock<Instant> = OnceLock::new();
-    let start = *START.get_or_init(Instant::now);
+    let start = *START.get().unwrap();
     Instant::now().duration_since(start).as_millis() as u64
 }
 
-#[macro_export]
-macro_rules! println {
-    ($($x:tt)*) => { std::println!($($x)*) };
+pub(crate) fn init() {
+    START.set(Instant::now()).unwrap();
 }
+
+static START: OnceLock<Instant> = OnceLock::new();
