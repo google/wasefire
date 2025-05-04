@@ -632,6 +632,10 @@ pub struct RustAppletBuild {
     #[arg(long, value_name = "TARGET")]
     pub native: Option<String>,
 
+    /// Builds a pulley applet.
+    #[arg(long, conflicts_with = "native")]
+    pub pulley: bool,
+
     /// Root directory of the crate.
     #[arg(long, value_name = "DIRECTORY", default_value = ".")]
     #[arg(value_hint = ValueHint::DirPath)]
@@ -721,8 +725,13 @@ impl RustAppletBuild {
         let src = target_dir.join(format!("wasm32-unknown-unknown/{profile}/{name}.wasm"));
         let opt = self.output_dir.join("applet-opt.wasm");
         optimize_wasm(src, self.opt_level, &opt).await?;
-        let dst = self.output_dir.join("applet.wasm");
-        compute_sidetable(opt, dst).await?;
+        if self.pulley {
+            let dst = self.output_dir.join("applet.pulley");
+            compile_pulley(opt, dst).await?;
+        } else {
+            let dst = self.output_dir.join("applet.wasm");
+            compute_sidetable(opt, dst).await?;
+        }
         Ok(())
     }
 }
@@ -836,6 +845,30 @@ pub async fn optimize_wasm(
         let _ = fs::remove_file(dst).await;
     }
     result.context("optimizing wasm")
+}
+
+/// Compiles a WASM applet into a Pulley applet.
+pub async fn compile_pulley(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
+    if !fs::has_changed(src.as_ref(), dst.as_ref()).await? {
+        return Ok(());
+    }
+    let result: Result<()> = try {
+        let wasm = fs::read(src).await?;
+        let mut config = wasmtime::Config::new();
+        config.target("pulley32")?;
+        // TODO(https://github.com/bytecodealliance/wasmtime/issues/10286): Also strip symbol table.
+        config.generate_address_map(false);
+        config.memory_init_cow(false);
+        config.memory_reservation(0);
+        config.wasm_relaxed_simd(false);
+        config.wasm_simd(false);
+        let engine = wasmtime::Engine::new(&config)?;
+        fs::write(dst.as_ref(), &engine.precompile_module(&wasm)?).await?;
+    };
+    if result.is_err() {
+        let _ = fs::remove_file(dst).await;
+    }
+    result.context("compiling to pulley")
 }
 
 /// Computes the side-table and inserts it as the first section.

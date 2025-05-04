@@ -97,7 +97,7 @@ const HEADER_LEN: u32 = 0x00000100;
 #[cfg(feature = "board-devkit")]
 const FIRMWARE_A: u32 = 0x00010000;
 #[cfg(feature = "board-devkit")]
-const FIRMWARE_B: u32 = 0x00060000;
+const FIRMWARE_B: u32 = 0x00064000;
 
 #[cfg(any(feature = "board-dongle", feature = "board-makerdiary"))]
 const FIRMWARE_A: u32 = 0x00008000;
