@@ -25,11 +25,7 @@ for lang in $(ls examples); do
     [ $lang = assemblyscript -a $name = node_modules ] && continue
     [ $lang = assemblyscript -a $name = api.ts ] && continue
     [ $lang = rust -a $name = exercises ] && continue
-    if [ $lang = rust -a $name = opensk ]; then
-      x cargo xtask --native-target=thumbv7em-none-eabi applet $lang $name
-      x cargo xtask --native-target=thumbv7em-none-eabi --release applet $lang $name
-      continue
-    fi
+    [ $lang = rust -a $name = opensk ] && continue
     x cargo xtask applet $lang $name
     x cargo xtask --release applet $lang $name
   done
