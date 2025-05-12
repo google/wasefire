@@ -22,5 +22,6 @@ ensure_submodule third_party/google/OpenSK
 test_helper
 
 cargo check --lib --target=wasm32-unknown-unknown
+cargo check --lib --target=wasm32-unknown-unknown --features=ctap1
 cargo check --lib --target=wasm32-unknown-unknown --features=debug
 cargo test --lib --features=test
