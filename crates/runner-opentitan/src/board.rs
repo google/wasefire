@@ -22,6 +22,7 @@ use wasefire_scheduler as scheduler;
 mod applet;
 mod crypto;
 mod debug;
+mod led;
 mod platform;
 mod storage;
 pub mod timer;
@@ -51,6 +52,7 @@ pub fn init() {
         timer: timer::init(),
         usb: usb::init(),
     };
+    led::init();
     critical_section::with(|cs| STATE.replace(cs, Some(state)));
 }
 
@@ -82,6 +84,7 @@ impl board::Api for Board {
     type Applet = applet::Impl;
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;
+    type Led = led::Impl;
     type Platform = platform::Impl;
     type Storage = storage::Impl;
     type Timer = timer::Impl;

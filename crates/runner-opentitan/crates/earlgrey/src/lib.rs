@@ -29,6 +29,11 @@ r#Uart { addr: 0x40030000 },
 ];
 #[rustfmt::skip]
 #[derive(Clone, Copy)]
+pub struct r#Gpio { pub addr: u32 }
+#[rustfmt::skip]
+pub const r#GPIO: r#Gpio = r#Gpio { addr: 0x40040000 };
+#[rustfmt::skip]
+#[derive(Clone, Copy)]
 pub struct r#RvTimer { pub addr: u32 }
 #[rustfmt::skip]
 pub const r#RV_TIMER: r#RvTimer = r#RvTimer { addr: 0x40100000 };
@@ -72,6 +77,8 @@ pub mod plic {
 pub const r#UART_MIN: u32 = 1;
 pub const r#UART_MAX: u32 = 36;
 pub const r#UART_LEN: u32 = 4;
+pub const r#GPIO_MIN: u32 = 37;
+pub const r#GPIO_MAX: u32 = 68;
 pub const r#RV_TIMER_MIN: u32 = 124;
 pub const r#RV_TIMER_MAX: u32 = 124;
 pub const r#USBDEV_MIN: u32 = 135;
@@ -2122,6 +2129,295 @@ type Write = r#RdFifoWrite;
 }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#RdFifoRead { pub reg: register::RegRead<r#RdFifo> }
 #[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#RdFifoWrite { pub reg: register::RegWrite<r#RdFifo> }
+}
+#[rustfmt::skip]
+pub mod r#gpio {
+impl super::r#Gpio {
+#[inline]
+pub fn r#intr_state(self) -> register::RegAddr<r#IntrState> {
+unsafe { register::RegAddr::new(self.addr + 0x0) }
+}
+#[inline]
+pub fn r#intr_enable(self) -> register::RegAddr<r#IntrEnable> {
+unsafe { register::RegAddr::new(self.addr + 0x4) }
+}
+#[inline]
+pub fn r#intr_test(self) -> register::RegAddr<r#IntrTest> {
+unsafe { register::RegAddr::new(self.addr + 0x8) }
+}
+#[inline]
+pub fn r#alert_test(self) -> register::RegAddr<r#AlertTest> {
+unsafe { register::RegAddr::new(self.addr + 0xc) }
+}
+#[inline]
+pub fn r#data_in(self) -> register::RegAddr<r#DataIn> {
+unsafe { register::RegAddr::new(self.addr + 0x10) }
+}
+#[inline]
+pub fn r#direct_out(self) -> register::RegAddr<r#DirectOut> {
+unsafe { register::RegAddr::new(self.addr + 0x14) }
+}
+#[inline]
+pub fn r#masked_out_lower(self) -> register::RegAddr<r#MaskedOutLower> {
+unsafe { register::RegAddr::new(self.addr + 0x18) }
+}
+#[inline]
+pub fn r#masked_out_upper(self) -> register::RegAddr<r#MaskedOutUpper> {
+unsafe { register::RegAddr::new(self.addr + 0x1c) }
+}
+#[inline]
+pub fn r#direct_oe(self) -> register::RegAddr<r#DirectOe> {
+unsafe { register::RegAddr::new(self.addr + 0x20) }
+}
+#[inline]
+pub fn r#masked_oe_lower(self) -> register::RegAddr<r#MaskedOeLower> {
+unsafe { register::RegAddr::new(self.addr + 0x24) }
+}
+#[inline]
+pub fn r#masked_oe_upper(self) -> register::RegAddr<r#MaskedOeUpper> {
+unsafe { register::RegAddr::new(self.addr + 0x28) }
+}
+#[inline]
+pub fn r#intr_ctrl_en_rising(self) -> register::RegAddr<r#IntrCtrlEnRising> {
+unsafe { register::RegAddr::new(self.addr + 0x2c) }
+}
+#[inline]
+pub fn r#intr_ctrl_en_falling(self) -> register::RegAddr<r#IntrCtrlEnFalling> {
+unsafe { register::RegAddr::new(self.addr + 0x30) }
+}
+#[inline]
+pub fn r#intr_ctrl_en_lvlhigh(self) -> register::RegAddr<r#IntrCtrlEnLvlhigh> {
+unsafe { register::RegAddr::new(self.addr + 0x34) }
+}
+#[inline]
+pub fn r#intr_ctrl_en_lvllow(self) -> register::RegAddr<r#IntrCtrlEnLvllow> {
+unsafe { register::RegAddr::new(self.addr + 0x38) }
+}
+#[inline]
+pub fn r#ctrl_en_input_filter(self) -> register::RegAddr<r#CtrlEnInputFilter> {
+unsafe { register::RegAddr::new(self.addr + 0x3c) }
+}
+}
+pub enum r#IntrState {}
+impl register::RegSpec for r#IntrState {
+const DEFAULT: u32 = 0x0;
+type Read = r#IntrStateRead;
+type Write = r#IntrStateWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrStateRead { pub reg: register::RegRead<r#IntrState> }
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrStateWrite { pub reg: register::RegWrite<r#IntrState> }
+pub enum r#IntrEnable {}
+impl register::RegSpec for r#IntrEnable {
+const DEFAULT: u32 = 0x0;
+type Read = r#IntrEnableRead;
+type Write = r#IntrEnableWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrEnableRead { pub reg: register::RegRead<r#IntrEnable> }
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrEnableWrite { pub reg: register::RegWrite<r#IntrEnable> }
+pub enum r#IntrTest {}
+impl register::RegSpec for r#IntrTest {
+const DEFAULT: u32 = 0x0;
+type Read = r#IntrTestRead;
+type Write = r#IntrTestWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrTestRead { pub reg: register::RegRead<r#IntrTest> }
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrTestWrite { pub reg: register::RegWrite<r#IntrTest> }
+pub enum r#AlertTest {}
+impl register::RegSpec for r#AlertTest {
+const DEFAULT: u32 = 0x0;
+type Read = r#AlertTestRead;
+type Write = r#AlertTestWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#AlertTestRead { pub reg: register::RegRead<r#AlertTest> }
+impl r#AlertTestRead {
+#[inline]
+pub fn r#fatal_fault(self) -> bool {
+self.reg.bit(0)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#AlertTestWrite { pub reg: register::RegWrite<r#AlertTest> }
+impl r#AlertTestWrite {
+#[inline]
+pub fn r#fatal_fault(&mut self, value: bool) -> &mut Self {
+self.reg.bit(0, value); self
+}
+}
+pub enum r#DataIn {}
+impl register::RegSpec for r#DataIn {
+const DEFAULT: u32 = 0x0;
+type Read = r#DataInRead;
+type Write = r#DataInWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#DataInRead { pub reg: register::RegRead<r#DataIn> }
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#DataInWrite { pub reg: register::RegWrite<r#DataIn> }
+pub enum r#DirectOut {}
+impl register::RegSpec for r#DirectOut {
+const DEFAULT: u32 = 0x0;
+type Read = r#DirectOutRead;
+type Write = r#DirectOutWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#DirectOutRead { pub reg: register::RegRead<r#DirectOut> }
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#DirectOutWrite { pub reg: register::RegWrite<r#DirectOut> }
+pub enum r#MaskedOutLower {}
+impl register::RegSpec for r#MaskedOutLower {
+const DEFAULT: u32 = 0x0;
+type Read = r#MaskedOutLowerRead;
+type Write = r#MaskedOutLowerWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#MaskedOutLowerRead { pub reg: register::RegRead<r#MaskedOutLower> }
+impl r#MaskedOutLowerRead {
+#[inline]
+pub fn r#data(self) -> u32 {
+self.reg.field(0xffff)
+}
+#[inline]
+pub fn r#mask(self) -> u32 {
+self.reg.field(0xffff0000)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#MaskedOutLowerWrite { pub reg: register::RegWrite<r#MaskedOutLower> }
+impl r#MaskedOutLowerWrite {
+#[inline]
+pub fn r#data(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xffff, value); self
+}
+#[inline]
+pub fn r#mask(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xffff0000, value); self
+}
+}
+pub enum r#MaskedOutUpper {}
+impl register::RegSpec for r#MaskedOutUpper {
+const DEFAULT: u32 = 0x0;
+type Read = r#MaskedOutUpperRead;
+type Write = r#MaskedOutUpperWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#MaskedOutUpperRead { pub reg: register::RegRead<r#MaskedOutUpper> }
+impl r#MaskedOutUpperRead {
+#[inline]
+pub fn r#data(self) -> u32 {
+self.reg.field(0xffff)
+}
+#[inline]
+pub fn r#mask(self) -> u32 {
+self.reg.field(0xffff0000)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#MaskedOutUpperWrite { pub reg: register::RegWrite<r#MaskedOutUpper> }
+impl r#MaskedOutUpperWrite {
+#[inline]
+pub fn r#data(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xffff, value); self
+}
+#[inline]
+pub fn r#mask(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xffff0000, value); self
+}
+}
+pub enum r#DirectOe {}
+impl register::RegSpec for r#DirectOe {
+const DEFAULT: u32 = 0x0;
+type Read = r#DirectOeRead;
+type Write = r#DirectOeWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#DirectOeRead { pub reg: register::RegRead<r#DirectOe> }
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#DirectOeWrite { pub reg: register::RegWrite<r#DirectOe> }
+pub enum r#MaskedOeLower {}
+impl register::RegSpec for r#MaskedOeLower {
+const DEFAULT: u32 = 0x0;
+type Read = r#MaskedOeLowerRead;
+type Write = r#MaskedOeLowerWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#MaskedOeLowerRead { pub reg: register::RegRead<r#MaskedOeLower> }
+impl r#MaskedOeLowerRead {
+#[inline]
+pub fn r#data(self) -> u32 {
+self.reg.field(0xffff)
+}
+#[inline]
+pub fn r#mask(self) -> u32 {
+self.reg.field(0xffff0000)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#MaskedOeLowerWrite { pub reg: register::RegWrite<r#MaskedOeLower> }
+impl r#MaskedOeLowerWrite {
+#[inline]
+pub fn r#data(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xffff, value); self
+}
+#[inline]
+pub fn r#mask(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xffff0000, value); self
+}
+}
+pub enum r#MaskedOeUpper {}
+impl register::RegSpec for r#MaskedOeUpper {
+const DEFAULT: u32 = 0x0;
+type Read = r#MaskedOeUpperRead;
+type Write = r#MaskedOeUpperWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#MaskedOeUpperRead { pub reg: register::RegRead<r#MaskedOeUpper> }
+impl r#MaskedOeUpperRead {
+#[inline]
+pub fn r#data(self) -> u32 {
+self.reg.field(0xffff)
+}
+#[inline]
+pub fn r#mask(self) -> u32 {
+self.reg.field(0xffff0000)
+}
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#MaskedOeUpperWrite { pub reg: register::RegWrite<r#MaskedOeUpper> }
+impl r#MaskedOeUpperWrite {
+#[inline]
+pub fn r#data(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xffff, value); self
+}
+#[inline]
+pub fn r#mask(&mut self, value: u32) -> &mut Self {
+self.reg.field(0xffff0000, value); self
+}
+}
+pub enum r#IntrCtrlEnRising {}
+impl register::RegSpec for r#IntrCtrlEnRising {
+const DEFAULT: u32 = 0x0;
+type Read = r#IntrCtrlEnRisingRead;
+type Write = r#IntrCtrlEnRisingWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrCtrlEnRisingRead { pub reg: register::RegRead<r#IntrCtrlEnRising> }
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrCtrlEnRisingWrite { pub reg: register::RegWrite<r#IntrCtrlEnRising> }
+pub enum r#IntrCtrlEnFalling {}
+impl register::RegSpec for r#IntrCtrlEnFalling {
+const DEFAULT: u32 = 0x0;
+type Read = r#IntrCtrlEnFallingRead;
+type Write = r#IntrCtrlEnFallingWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrCtrlEnFallingRead { pub reg: register::RegRead<r#IntrCtrlEnFalling> }
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrCtrlEnFallingWrite { pub reg: register::RegWrite<r#IntrCtrlEnFalling> }
+pub enum r#IntrCtrlEnLvlhigh {}
+impl register::RegSpec for r#IntrCtrlEnLvlhigh {
+const DEFAULT: u32 = 0x0;
+type Read = r#IntrCtrlEnLvlhighRead;
+type Write = r#IntrCtrlEnLvlhighWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrCtrlEnLvlhighRead { pub reg: register::RegRead<r#IntrCtrlEnLvlhigh> }
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrCtrlEnLvlhighWrite { pub reg: register::RegWrite<r#IntrCtrlEnLvlhigh> }
+pub enum r#IntrCtrlEnLvllow {}
+impl register::RegSpec for r#IntrCtrlEnLvllow {
+const DEFAULT: u32 = 0x0;
+type Read = r#IntrCtrlEnLvllowRead;
+type Write = r#IntrCtrlEnLvllowWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrCtrlEnLvllowRead { pub reg: register::RegRead<r#IntrCtrlEnLvllow> }
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#IntrCtrlEnLvllowWrite { pub reg: register::RegWrite<r#IntrCtrlEnLvllow> }
+pub enum r#CtrlEnInputFilter {}
+impl register::RegSpec for r#CtrlEnInputFilter {
+const DEFAULT: u32 = 0x0;
+type Read = r#CtrlEnInputFilterRead;
+type Write = r#CtrlEnInputFilterWrite;
+}
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#CtrlEnInputFilterRead { pub reg: register::RegRead<r#CtrlEnInputFilter> }
+#[derive(Clone, Copy, bytemuck::TransparentWrapper)] #[repr(transparent)] pub struct r#CtrlEnInputFilterWrite { pub reg: register::RegWrite<r#CtrlEnInputFilter> }
 }
 #[rustfmt::skip]
 pub mod r#hmac {
