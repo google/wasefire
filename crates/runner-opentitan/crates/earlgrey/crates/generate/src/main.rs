@@ -28,6 +28,7 @@ const FASTBUILD: &str = "bazel-out/k8-fastbuild/bin";
 const IP_BLOCKS: &[&str] = &[
     // Keep sorted.
     "FLASH_CTRL_CORE",
+    "GPIO",
     "HMAC",
     "LC_CTRL",
     "PINMUX_AON",
