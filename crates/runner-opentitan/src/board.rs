@@ -20,6 +20,7 @@ use wasefire_error::Error;
 use wasefire_scheduler as scheduler;
 
 mod applet;
+pub mod button;
 mod crypto;
 mod debug;
 mod led;
@@ -31,6 +32,7 @@ pub mod usb;
 struct State {
     events: Events,
     applet: applet::State,
+    button: button::State,
     platform: platform::State,
     storage: storage::State,
     timer: timer::State,
@@ -47,6 +49,7 @@ pub fn init() {
     let state = State {
         events: Events::default(),
         applet: applet::init(),
+        button: button::init(),
         platform: platform::init(),
         storage: storage::init(),
         timer: timer::init(),
@@ -82,6 +85,7 @@ impl board::Api for Board {
     }
 
     type Applet = applet::Impl;
+    type Button = button::Impl;
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;
     type Led = led::Impl;
