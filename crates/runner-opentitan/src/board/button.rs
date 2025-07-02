@@ -15,7 +15,7 @@
 use alloc::collections::vec_deque::VecDeque;
 
 use earlgrey::{GPIO, PINMUX_AON};
-use wasefire_board_api::button::Api;
+use wasefire_board_api::button::{Api, Event};
 use wasefire_board_api::{Id, Support};
 use wasefire_error::{Code, Error};
 
@@ -36,41 +36,53 @@ pub struct State {
 
 struct Active {
     history: VecDeque<u64>,
+    sum: u64, // history.iter().sum()
     start: u64,
     touch: bool,
 }
 
+// TODO: Use top_earlgrey_muxed_pads_ior13 once it exists.
+const BUTTON_PAD: u32 = 46; // IOR13
+const BUTTON_GPIO: u32 = 1;
+const BUTTON_MASK: u32 = 1 << BUTTON_GPIO;
+
 pub fn init() -> State {
-    // TODO: Generate top_earlgrey_pinmux_{mio_out,outsel}. This should be MioOutIor13 and
-    // GpioGpio1.
-    PINMUX_AON.mio_outsel(46).reset().out(4).reg.write();
-    // TODO: Generate top_earlgrey_pinmux_{peripheral_in,insel}. This should be GpioGpio1 and
-    // MioOutIor13.
-    PINMUX_AON.mio_periph_insel(1).reset().r#in(48).reg.write();
-    GPIO.intr_enable().modify_raw(|x| x | 2);
-    GPIO.ctrl_en_input_filter().modify_raw(|x| x | 2);
-    GPIO.masked_out_lower().reset().mask(2).data(2).reg.write();
-    State { threshold: 50000, history_len: 5, active: None }
+    PINMUX_AON.mio_outsel(BUTTON_PAD).reset().out(3 + BUTTON_GPIO).reg.write();
+    PINMUX_AON.mio_periph_insel(BUTTON_GPIO).reset().r#in(2 + BUTTON_PAD).reg.write();
+    GPIO.intr_enable().modify_raw(|x| x | BUTTON_MASK);
+    GPIO.ctrl_en_input_filter().modify_raw(|x| x | BUTTON_MASK);
+    GPIO.masked_out_lower().reset().mask(BUTTON_MASK).data(BUTTON_MASK).reg.write();
+    // TODO: Add logic to use different values. The user should be able to set them and persist them
+    // in flash. It should also be possible to guess them using some calibration logic (where the
+    // user first doesn't touch the button, then touches it). It is important to make sure
+    // `history_len` is positive (e.g. by using 1 if it's 0) and to not modify it while the button
+    // is active.
+    State { threshold: 50_000, history_len: 5, active: None }
 }
 
 pub fn interrupt() {
     with_state(|state| {
-        GPIO.intr_ctrl_en_falling().modify_raw(|x| x & !2);
-        GPIO.intr_state().write_raw(2);
+        GPIO.intr_ctrl_en_falling().modify_raw(|x| x & !BUTTON_MASK);
+        GPIO.intr_state().write_raw(BUTTON_MASK);
         if let Some(active) = &mut state.button.active {
             let end = crate::time::uptime_us();
-            active.history.push_back(end - active.start);
-            if active.history.len() == state.button.history_len {
-                active.touch = active.average() < state.button.threshold;
-            }
-            while state.button.history_len < active.history.len() {
-                active.history.pop_front();
-            }
-            if (active.average() < state.button.threshold) != active.touch {
-                active.touch = !active.touch;
-                let button = Id::new(0).unwrap();
-                let pressed = active.touch;
-                state.events.push(wasefire_board_api::button::Event { button, pressed }.into());
+            let delta = end - active.start;
+            active.history.push_back(delta);
+            active.sum += delta;
+            match active.history.len().cmp(&state.button.history_len) {
+                core::cmp::Ordering::Less => (),
+                core::cmp::Ordering::Equal => {
+                    active.touch = active.average() < state.button.threshold
+                }
+                core::cmp::Ordering::Greater => {
+                    active.sum -= active.history.pop_front().unwrap();
+                    if (active.average() < state.button.threshold) != active.touch {
+                        active.touch = !active.touch;
+                        let button = Id::new(0).unwrap();
+                        let pressed = active.touch;
+                        state.events.push(Event { button, pressed }.into());
+                    }
+                }
             }
             active.start();
         }
@@ -89,12 +101,13 @@ impl Api for Impl {
             return Err(Error::user(Code::OutOfBounds));
         }
         with_state(|state| {
-            state.button.active = Some(Active {
+            let active = state.button.active.insert(Active {
                 history: VecDeque::with_capacity(state.button.history_len),
+                sum: 0,
                 start: 0,     // is set below
                 touch: false, // is set when reaching the history len
             });
-            state.button.active.as_mut().unwrap().start();
+            active.start();
             Ok(())
         })
     }
@@ -109,14 +122,14 @@ impl Api for Impl {
 
 impl Active {
     fn start(&mut self) {
-        GPIO.masked_oe_lower().reset().mask(2).data(2).reg.write();
-        GPIO.intr_state().write_raw(2);
-        GPIO.intr_ctrl_en_falling().modify_raw(|x| x | 2);
+        GPIO.masked_oe_lower().reset().mask(BUTTON_MASK).data(BUTTON_MASK).reg.write();
+        GPIO.intr_state().write_raw(BUTTON_MASK);
+        GPIO.intr_ctrl_en_falling().modify_raw(|x| x | BUTTON_MASK);
         self.start = crate::time::uptime_us();
-        GPIO.masked_oe_lower().reset().mask(2).data(0).reg.write();
+        GPIO.masked_oe_lower().reset().mask(BUTTON_MASK).data(0).reg.write();
     }
 
     fn average(&self) -> u64 {
-        self.history.iter().sum::<u64>() / (self.history.len() as u64)
+        self.sum / (self.history.len() as u64)
     }
 }
