@@ -17,6 +17,7 @@ use riscv::interrupt::{Exception, Interrupt, Trap, cause};
 use wasefire_logger as log;
 
 pub fn init() {
+    enable(plic::GPIO_MIN, plic::GPIO_MAX);
     enable(plic::RV_TIMER_MIN, plic::RV_TIMER_MAX);
     enable(plic::USBDEV_MIN, plic::USBDEV_MAX);
     RV_PLIC.threshold(0).reset().threshold(0).reg.write();
@@ -38,6 +39,7 @@ fn machine_external() {
         let source = RV_PLIC.cc(0).read().cc();
         match source {
             0 => break,
+            plic::GPIO_MIN ..= plic::GPIO_MAX => crate::board::button::interrupt(),
             plic::RV_TIMER_MIN ..= plic::RV_TIMER_MAX => crate::board::timer::interrupt(),
             plic::USBDEV_MIN ..= plic::USBDEV_MAX => crate::board::usb::interrupt(),
             _ => {

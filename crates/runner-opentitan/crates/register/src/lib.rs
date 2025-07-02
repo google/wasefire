@@ -121,6 +121,12 @@ impl<Spec: RegSpec> RegAddr<Spec> {
         // SAFETY: By `RegAddr::new()` requirement.
         unsafe { ptr.write_volatile(value) };
     }
+
+    /// Modifies a register as a u32.
+    #[inline]
+    pub fn modify_raw(self, op: impl FnOnce(u32) -> u32) {
+        self.write_raw(op(self.read_raw()));
+    }
 }
 
 impl<Spec: RegSpec> RegRead<Spec> {

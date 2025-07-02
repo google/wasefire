@@ -40,6 +40,7 @@ features = ["single-hart", "v-trap"]
 [dependencies.wasefire-scheduler]
 path = "../scheduler"
 features = [
+  "board-api-button",
   "board-api-crypto-hmac-sha256",
   "board-api-crypto-sha256",
   "board-api-led",
