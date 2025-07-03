@@ -841,28 +841,21 @@ impl RunnerOptions {
         if self.name == RunnerName::OpenTitan {
             opentitan::execute(main, &flash.attach, &elf).await?;
         }
-        let chip = self.name.chip();
+        let attach = Attach { name: self.name, log: None, options: flash.attach };
         if flash.reset_flash {
-            let mut probe_rs = wrap_command().await?;
-            probe_rs.args(["probe-rs", "erase"]);
-            probe_rs.arg(format!("--chip={chip}"));
-            probe_rs.args(&flash.attach.args);
-            cmd::execute(&mut probe_rs).await?;
+            cmd::execute(&mut attach.probe_rs("erase").await?).await?;
         }
         if self.name == RunnerName::Nordic {
-            let mut probe_rs = wrap_command().await?;
-            probe_rs.args(["probe-rs", "download"]);
-            probe_rs.arg(format!("--chip={chip}"));
-            probe_rs.args(&flash.attach.args);
+            let mut probe_rs = attach.probe_rs("download").await?;
             probe_rs.arg("target/thumbv7em-none-eabi/release/bootloader");
             cmd::execute(&mut probe_rs).await?;
         }
         if self.gdb {
+            let chip = self.name.chip();
             println!("Use the following 2 commands in different terminals:");
             println!("JLinkGDBServer -device {chip} -if swd -speed 4000 -port 2331");
             println!("gdb-multiarch -ex 'file {elf}' -ex 'target remote localhost:2331'");
         }
-        let attach = Attach { name: self.name, log: None, options: flash.attach };
         attach.execute_probe_rs("run").await?
     }
 
@@ -924,17 +917,22 @@ impl Attach {
     }
 
     async fn execute_probe_rs(self, mut cmd: &'static str) -> Result<!> {
-        let chip = self.name.chip();
         let elf = self.name.elf().await;
         loop {
-            let mut probe_rs = wrap_command().await?;
-            probe_rs.args(["probe-rs", cmd, "--catch-reset"]);
-            probe_rs.arg(format!("--chip={chip}"));
-            probe_rs.args(&self.options.args);
-            probe_rs.arg(&elf);
+            let mut probe_rs = self.probe_rs(cmd).await?;
+            probe_rs.args(["--catch-reset", &elf]);
             cmd::status(&mut probe_rs).await?;
             cmd = "attach";
         }
+    }
+
+    async fn probe_rs(&self, cmd: &'static str) -> Result<Command> {
+        let chip = self.name.chip();
+        let mut probe_rs = wrap_command().await?;
+        probe_rs.args(["probe-rs", cmd]);
+        probe_rs.arg(format!("--chip={chip}"));
+        probe_rs.args(&self.options.args);
+        Ok(probe_rs)
     }
 }
 
