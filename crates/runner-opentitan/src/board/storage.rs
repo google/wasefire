@@ -81,7 +81,7 @@ impl wasefire_store::Storage for Impl {
         65535
     }
 
-    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<[u8]>, Error> {
+    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<'_, [u8]>, Error> {
         index.range(length, self)?;
         let ptr = (self.pages[index.page] + index.byte) as *const u8;
         Ok(Cow::Borrowed(unsafe { core::slice::from_raw_parts(ptr, length) }))
@@ -89,7 +89,7 @@ impl wasefire_store::Storage for Impl {
 
     fn write_slice(&mut self, index: StorageIndex, value: &[u8]) -> Result<(), Error> {
         index.range(value.len(), self)?;
-        if index.byte % 4 != 0 || value.len() % 4 != 0 {
+        if !index.byte.is_multiple_of(4) || !value.len().is_multiple_of(4) {
             return Err(Error::user(Code::InvalidAlign));
         }
         let addr = self.pages[index.page] + index.byte;

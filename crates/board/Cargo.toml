@@ -18,20 +18,20 @@ features = ["full-api", "std"]
 aead = { version = "0.5.2", default-features = false, optional = true }
 aes = { version = "0.8.4", default-features = false, optional = true }
 aes-gcm = { version = "0.10.3", default-features = false, optional = true }
-bytemuck = { version = "1.22.0", default-features = false, optional = true }
+bytemuck = { version = "1.23.1", default-features = false, optional = true }
 cbc = { version = "0.1.2", default-features = false, optional = true }
 ccm = { version = "0.5.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.6", default-features = false, optional = true }
-data-encoding = { version = "2.8.0", default-features = false, features = ["alloc"] }
-defmt = { version = "0.3.10", default-features = false, optional = true }
-derive-where = { version = "1.2.7", default-features = false, features = ["nightly"] }
+data-encoding = { version = "2.9.0", default-features = false, features = ["alloc"] }
+defmt = { version = "1.0.1", default-features = false, optional = true }
+derive-where = { version = "1.5.0", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, optional = true }
 ecdsa = { version = "0.16.9", default-features = false, optional = true }
 elliptic-curve = { version = "0.13.8", default-features = false, optional = true }
 hmac = { version = "0.12.1", default-features = false, optional = true }
 p256 = { version = "0.13.2", default-features = false, optional = true }
 p384 = { version = "0.13.1", default-features = false, optional = true }
-sha2 = { version = "0.10.8", default-features = false, optional = true }
+sha2 = { version = "0.10.9", default-features = false, optional = true }
 signature = { version = "2.2.0", default-features = false, optional = true }
 typenum = { version = "1.18.0", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false }
@@ -180,6 +180,7 @@ internal-software-crypto-hmac = ["dep:hmac"]
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
+clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"
 rust.missing-docs = "warn"
 rust.unreachable-pub = "warn"

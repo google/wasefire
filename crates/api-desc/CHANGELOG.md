@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Do not pass structs by value in parameters (fix #815)
 - Remove `platform::update::metadata()` function
 - Add `running` parameter to `platform::version()` function
 - Add `platform::running_side()` function for A/B platform update
@@ -15,6 +16,10 @@
 - Use Rust edition 2024
 - Use C-string literals to implement dispatch for native applets
 - Implement `bytemuck::Pod` for generated `Params`
+
+### Patch
+
+- Update dependencies
 
 ## 0.2.1
 

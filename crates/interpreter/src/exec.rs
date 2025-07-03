@@ -338,7 +338,7 @@ impl<'a, 'm> Call<'a, 'm> {
         thread.run(self.store)
     }
 
-    fn cont(&self) -> &Continuation {
+    fn cont(&self) -> &Continuation<'_> {
         self.store.threads.last().unwrap()
     }
 }

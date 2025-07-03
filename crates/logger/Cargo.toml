@@ -12,8 +12,8 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-defmt = { version = "0.3.10", default-features = false, optional = true }
-log = { version = "0.4.26", default-features = false, optional = true }
+defmt = { version = "1.0.1", default-features = false, optional = true }
+log = { version = "0.4.27", default-features = false, optional = true }
 
 [features]
 defmt = ["dep:defmt"]
@@ -22,6 +22,7 @@ log = ["dep:log"]
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
+clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
 rust.unused-crate-dependencies = "warn"

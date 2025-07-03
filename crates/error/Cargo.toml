@@ -12,8 +12,8 @@ keywords = ["embedded", "framework", "no-std"]
 categories = ["embedded", "no-std"]
 
 [dependencies]
-defmt = { version = "0.3.10", default-features = false, optional = true }
-num_enum = { version = "0.7.3", default-features = false }
+defmt = { version = "1.0.1", default-features = false, optional = true }
+num_enum = { version = "0.7.4", default-features = false }
 
 [features]
 defmt = ["dep:defmt"]
@@ -22,6 +22,7 @@ std = []
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
+clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
 rust.unused-crate-dependencies = "warn"

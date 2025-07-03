@@ -356,17 +356,21 @@ impl Fn {
     fn wasm_rust(&self) -> TokenStream {
         let Fn { docs, name, link, params, result: _ } = self;
         let name = format_ident!("{name}");
+        let name_wasm = format_ident!("{name}_wasm");
         let env_link = format!("env_{link}");
         let ffi_link = syn::LitCStr::new(&CString::new(link.clone()).unwrap(), Span::call_site());
         let doc = format!("Module of [`{name}`]({name}()).");
         let params_doc = format!("Parameters of [`{name}`](super::{name}())");
         let params: Vec<_> = params.iter().map(|x| x.wasm_rust()).collect();
-        let (fn_params, let_params) = if params.is_empty() {
-            (None, quote!(let ffi_params = core::ptr::null();))
+        let names_wasm: Vec<_> = self.params.iter().map(|x| format_ident!("{}", x.name)).collect();
+        let params_wasm: Vec<_> = self.params.iter().map(|x| x.param()).collect();
+        let (fn_params, let_params, let_params_wasm) = if params.is_empty() {
+            (None, quote!(let ffi_params = core::ptr::null();), None)
         } else {
             (
                 Some(quote!(params: #name::Params)),
                 quote!(let ffi_params = &params as *const _ as *const u32;),
+                Some(quote!(let #name::Params { #(#names_wasm,)* } = params;)),
             )
         };
         quote! {
@@ -379,9 +383,14 @@ impl Fn {
             }
             #[cfg(not(feature = "native"))]
             unsafe extern "C" {
-                #(#[doc = #docs])*
                 #[link_name = #link]
-                pub unsafe fn #name(#fn_params) -> isize;
+                unsafe fn #name_wasm(#(#params_wasm,)*) -> isize;
+            }
+            #[cfg(not(feature = "native"))]
+            #(#[doc = #docs])*
+            pub unsafe fn #name(#fn_params) -> isize {
+                #let_params_wasm
+                unsafe { #name_wasm(#(#names_wasm,)*) }
             }
             #[cfg(feature = "native")]
             #[unsafe(export_name = #env_link)]

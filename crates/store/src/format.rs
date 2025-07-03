@@ -189,7 +189,7 @@ impl Format {
         let max_word_writes = usize_to_nat(storage.max_word_writes());
         let max_page_erases = usize_to_nat(storage.max_page_erases());
         word_size == WORD_SIZE
-            && page_size % word_size == 0
+            && page_size.is_multiple_of(word_size)
             && (MIN_PAGE_SIZE * word_size ..= MAX_PAGE_SIZE).contains(&page_size)
             && (MIN_NUM_PAGES ..= MAX_PAGE_INDEX + 1).contains(&num_pages)
             && max_word_writes >= 2
@@ -526,10 +526,10 @@ impl Format {
             if key > self.max_key() {
                 return None;
             }
-            if let Some(value) = update.value() {
-                if usize_to_nat(value.len()) > self.max_value_len() {
-                    return None;
-                }
+            if let Some(value) = update.value()
+                && usize_to_nat(value.len()) > self.max_value_len()
+            {
+                return None;
             }
             match sorted_keys.binary_search(&key) {
                 Ok(_) => return None,

@@ -8,7 +8,8 @@
 
 ### Patch
 
-- Fix clippy lints
+- Update dependencies
+- Fix lints
 
 ## 0.3.0
 
@@ -74,4 +75,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 4 -->
+<!-- Increment to skip CHANGELOG.md test: 5 -->

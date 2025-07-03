@@ -140,7 +140,7 @@ impl<B: Board> Applet<B> {
     }
 
     #[allow(dead_code)] // in case no API uses memory
-    pub fn memory(&mut self) -> Memory {
+    pub fn memory(&mut self) -> Memory<'_> {
         self.store.memory()
     }
 

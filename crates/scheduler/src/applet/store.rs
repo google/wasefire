@@ -33,6 +33,7 @@ pub trait StoreApi {
 #[allow(dead_code)]
 pub trait MemoryApi {
     fn get(&self, ptr: u32, len: u32) -> Result<&[u8], Trap>;
+    #[allow(clippy::mut_from_ref)]
     fn get_mut(&self, ptr: u32, len: u32) -> Result<&mut [u8], Trap>;
     fn alloc(&mut self, size: u32, align: u32) -> Result<u32, Trap>;
 

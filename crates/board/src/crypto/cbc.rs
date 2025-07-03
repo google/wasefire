@@ -73,7 +73,7 @@ mod software {
     }
 
     fn convert_blocks<N: ArrayLength<u8>>(blocks: &mut [u8]) -> Result<&mut [Array<N>], Error> {
-        if blocks.len() % N::USIZE != 0 {
+        if !blocks.len().is_multiple_of(N::USIZE) {
             return Err(Error::user(Code::InvalidLength));
         }
         let ptr = blocks.as_mut_ptr() as *mut Array<N>;

@@ -44,7 +44,8 @@ fn main() -> Result<(), Error> {
     let mut button_index = 0;
     for gpio_index in 0 .. gpio_count {
         gpio_mappings.push(
-            match (gpio_index % 2 == 0, led_index < led_count, button_index < button_count) {
+            match (gpio_index.is_multiple_of(2), led_index < led_count, button_index < button_count)
+            {
                 (true, true, _) | (false, true, false) => {
                     debug!("Mapping gpio {gpio_index} to LED {led_index}.");
                     // TODO: Add listeners on GPIOs.

@@ -7,13 +7,14 @@ publish = false
 edition = "2024"
 
 [dependencies]
-anyhow = { version = "1.0.97", default-features = false, features = ["std"] }
-clap = { version = "4.5.32", default-features = false, features = ["derive", "std"] }
+anyhow = { version = "1.0.98", default-features = false, features = ["std"] }
+clap = { version = "4.5.40", default-features = false, features = ["derive", "std"] }
 wasefire-applet-api-desc = { path = "../.." }
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
+clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
 rust.unused-crate-dependencies = "warn"

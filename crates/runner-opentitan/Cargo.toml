@@ -9,7 +9,7 @@ edition = "2024"
 [dependencies]
 critical-section = "1.2.0"
 crypto-common = { version = "0.1.6", default-features = false }
-defmt = { version = "0.3.10", optional = true }
+defmt = { version = "1.0.1", optional = true }
 digest = { version = "0.10.7", default-features = false }
 earlgrey = { path = "crates/earlgrey" }
 embedded-alloc = "0.6.0"
@@ -68,5 +68,6 @@ wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
+clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"
 rust.unused-crate-dependencies = "warn"

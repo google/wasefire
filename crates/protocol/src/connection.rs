@@ -27,14 +27,14 @@ pub type DynFuture<'a, T> = Pin<Box<dyn Future<Output = anyhow::Result<T>> + 'a>
 
 pub trait Connection: Any + Send {
     /// Receives a raw response (possibly tunneled) from the device.
-    fn read(&mut self) -> DynFuture<Box<[u8]>>;
+    fn read(&mut self) -> DynFuture<'_, Box<[u8]>>;
 
     /// Sends a raw request (possibly tunneled) to the device.
     fn write<'a>(&'a mut self, response: &'a [u8]) -> DynFuture<'a, ()>;
 }
 
 impl Connection for Box<dyn Connection> {
-    fn read(&mut self) -> DynFuture<Box<[u8]>> {
+    fn read(&mut self) -> DynFuture<'_, Box<[u8]>> {
         (**self).read()
     }
 

@@ -173,10 +173,10 @@ fn derive_enum(
         }));
         decode.push(parse_quote!(#tag => { #(#variant_decode)* }));
     }
-    if let Attr::Present(span, range) = attrs.range.take() {
-        if tags.used.len() as u32 != range || tags.used.iter().any(|x| range <= *x) {
-            return Err(syn::Error::new(span, "tags don't form a range"));
-        }
+    if let Attr::Present(span, range) = attrs.range.take()
+        && (tags.used.len() as u32 != range || tags.used.iter().any(|x| range <= *x))
+    {
+        return Err(syn::Error::new(span, "tags don't form a range"));
     }
     if cfg!(feature = "schema") {
         types.stmts(&mut schema, wire, "enum_", "variants");
@@ -437,10 +437,10 @@ impl Attrs {
             AttrsKind::Invalid => &[],
         };
         let check = |name, actual, expected: &[AttrKind]| {
-            if let Some(actual) = actual {
-                if !expected.contains(&name) {
-                    return Err(syn::Error::new(actual, "unexpected attribute"));
-                }
+            if let Some(actual) = actual
+                && !expected.contains(&name)
+            {
+                return Err(syn::Error::new(actual, "unexpected attribute"));
             }
             Ok(())
         };

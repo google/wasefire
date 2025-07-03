@@ -19,6 +19,7 @@
 
 ### Patch
 
+- Fix lints
 - Enable `api-crypto-sha{256,384}` when `api-crypto-hmac-sha{256,384}` is enabled
 - Update dependencies
 
@@ -183,4 +184,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 8 -->
+<!-- Increment to skip CHANGELOG.md test: 9 -->

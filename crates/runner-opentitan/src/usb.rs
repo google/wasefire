@@ -192,16 +192,16 @@ impl UsbBus for Usb {
         }
         critical_section::with(|cs| {
             let ep = ep_addr.index();
-            if ep == 0 {
-                if let Some(id) = self.setup_id.borrow(cs).take() {
-                    let id = id as u32;
-                    let len = 8;
-                    self.read_buffer(cs, id, len, dst).inspect_err(|_| {
-                        self.setup_id.borrow(cs).set(Some(id as u8));
-                    })?;
-                    USBDEV.rxenable_out().modify().out(ep as u8, true).reg.write();
-                    return Ok(len);
-                }
+            if ep == 0
+                && let Some(id) = self.setup_id.borrow(cs).take()
+            {
+                let id = id as u32;
+                let len = 8;
+                self.read_buffer(cs, id, len, dst).inspect_err(|_| {
+                    self.setup_id.borrow(cs).set(Some(id as u8));
+                })?;
+                USBDEV.rxenable_out().modify().out(ep as u8, true).reg.write();
+                return Ok(len);
             }
             let Some(recv) = self.recv_bufs.borrow_ref_mut(cs)[ep].take() else {
                 return Err(UsbError::WouldBlock);

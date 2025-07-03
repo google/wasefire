@@ -258,7 +258,7 @@ impl store::Storage for Storage {
         10000
     }
 
-    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<[u8]>, Error> {
+    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<'_, [u8]>, Error> {
         let offset = offset(self, length, index)?;
         let mut result = vec![0; length];
         let mut helper = Helper::new(self);

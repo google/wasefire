@@ -27,7 +27,7 @@ use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, ValueEnum};
 use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use probe_rs::config::TargetSelector;
-use probe_rs::{Permissions, Session, flashing};
+use probe_rs::{Session, SessionConfig, flashing};
 use rustc_demangle::demangle;
 use tokio::process::Command;
 use tokio::sync::OnceCell;
@@ -849,7 +849,7 @@ impl RunnerOptions {
         let session = Arc::new(Mutex::new(lazy::Lazy::new(|| {
             Ok(Session::auto_attach(
                 TargetSelector::Unspecified(chip.to_string()),
-                Permissions::default(),
+                SessionConfig::default(),
             )?)
         })));
         if flash.reset_flash {
@@ -871,7 +871,7 @@ impl RunnerOptions {
                 anyhow::Ok(flashing::download_file(
                     session.lock().unwrap().get()?,
                     "target/thumbv7em-none-eabi/release/bootloader",
-                    flashing::Format::Elf,
+                    flashing::FormatKind::Elf,
                 )?)
             })
             .await??;
@@ -995,7 +995,7 @@ async fn wrap_command() -> Result<Command> {
 }
 
 async fn ensure_assemblyscript() -> Result<()> {
-    const ASC_VERSION: &str = "0.27.35"; // scripts/upgrade.sh relies on this name
+    const ASC_VERSION: &str = "0.28.2"; // scripts/upgrade.sh relies on this name
     const BIN: &str = "examples/assemblyscript/node_modules/.bin/asc";
     const JSON: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
     if fs::exists(BIN).await && fs::exists(JSON).await {

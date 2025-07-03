@@ -12,10 +12,10 @@ keywords = ["framework", "mutex", "no-std"]
 categories = ["concurrency", "no-std"]
 
 [dependencies]
-portable-atomic = { version = "1.11.0", default-features = false }
+portable-atomic = { version = "1.11.1", default-features = false }
 
 [dependencies.spin]
-version = "0.9.8"
+version = "0.10.0"
 default-features = false
 features = ["lazy", "once", "portable_atomic", "spin_mutex"]
 
@@ -25,6 +25,7 @@ unsafe-assume-single-core = ["portable-atomic/unsafe-assume-single-core"]
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
+clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
 rust.unused-crate-dependencies = "warn"

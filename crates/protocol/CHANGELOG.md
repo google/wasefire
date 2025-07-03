@@ -12,6 +12,7 @@
 
 ### Minor
 
+- Fix lints
 - Add `platform::Info` to support A/B platform update
 - Use Rust edition 2024
 
