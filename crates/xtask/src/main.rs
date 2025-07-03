@@ -20,14 +20,11 @@ use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::ffi::OsString;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, ValueEnum};
 use data_encoding::HEXLOWER_PERMISSIVE as HEX;
-use probe_rs::config::TargetSelector;
-use probe_rs::{Session, SessionConfig, flashing};
 use rustc_demangle::demangle;
 use tokio::process::Command;
 use tokio::sync::OnceCell;
@@ -35,7 +32,6 @@ use wasefire_cli_tools::error::root_cause_is;
 use wasefire_cli_tools::{action, changelog, cmd, fs};
 
 mod footprint;
-mod lazy;
 mod opentitan;
 mod textreview;
 
@@ -846,35 +842,20 @@ impl RunnerOptions {
             opentitan::execute(main, &flash.attach, &elf).await?;
         }
         let chip = self.name.chip();
-        let session = Arc::new(Mutex::new(lazy::Lazy::new(|| {
-            Ok(Session::auto_attach(
-                TargetSelector::Unspecified(chip.to_string()),
-                SessionConfig::default(),
-            )?)
-        })));
         if flash.reset_flash {
-            println!("Erasing the flash.");
-            tokio::task::spawn_blocking({
-                let session = session.clone();
-                move || {
-                    let mut session = session.lock().unwrap();
-                    anyhow::Ok(flashing::erase_all(
-                        session.get()?,
-                        flashing::FlashProgress::empty(),
-                    )?)
-                }
-            })
-            .await??;
+            let mut probe_rs = wrap_command().await?;
+            probe_rs.args(["probe-rs", "erase"]);
+            probe_rs.arg(format!("--chip={chip}"));
+            probe_rs.args(&flash.attach.args);
+            cmd::execute(&mut probe_rs).await?;
         }
         if self.name == RunnerName::Nordic {
-            tokio::task::spawn_blocking(move || {
-                anyhow::Ok(flashing::download_file(
-                    session.lock().unwrap().get()?,
-                    "target/thumbv7em-none-eabi/release/bootloader",
-                    flashing::FormatKind::Elf,
-                )?)
-            })
-            .await??;
+            let mut probe_rs = wrap_command().await?;
+            probe_rs.args(["probe-rs", "download"]);
+            probe_rs.arg(format!("--chip={chip}"));
+            probe_rs.args(&flash.attach.args);
+            probe_rs.arg("target/thumbv7em-none-eabi/release/bootloader");
+            cmd::execute(&mut probe_rs).await?;
         }
         if self.gdb {
             println!("Use the following 2 commands in different terminals:");
