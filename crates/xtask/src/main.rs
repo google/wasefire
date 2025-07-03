@@ -20,14 +20,11 @@ use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::ffi::OsString;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, ValueEnum};
 use data_encoding::HEXLOWER_PERMISSIVE as HEX;
-use probe_rs::config::TargetSelector;
-use probe_rs::{Session, SessionConfig, flashing};
 use rustc_demangle::demangle;
 use tokio::process::Command;
 use tokio::sync::OnceCell;
@@ -35,7 +32,6 @@ use wasefire_cli_tools::error::root_cause_is;
 use wasefire_cli_tools::{action, changelog, cmd, fs};
 
 mod footprint;
-mod lazy;
 mod opentitan;
 mod textreview;
 
@@ -845,43 +841,21 @@ impl RunnerOptions {
         if self.name == RunnerName::OpenTitan {
             opentitan::execute(main, &flash.attach, &elf).await?;
         }
-        let chip = self.name.chip();
-        let session = Arc::new(Mutex::new(lazy::Lazy::new(|| {
-            Ok(Session::auto_attach(
-                TargetSelector::Unspecified(chip.to_string()),
-                SessionConfig::default(),
-            )?)
-        })));
+        let attach = Attach { name: self.name, log: None, options: flash.attach };
         if flash.reset_flash {
-            println!("Erasing the flash.");
-            tokio::task::spawn_blocking({
-                let session = session.clone();
-                move || {
-                    let mut session = session.lock().unwrap();
-                    anyhow::Ok(flashing::erase_all(
-                        session.get()?,
-                        flashing::FlashProgress::empty(),
-                    )?)
-                }
-            })
-            .await??;
+            cmd::execute(&mut attach.probe_rs("erase").await?).await?;
         }
         if self.name == RunnerName::Nordic {
-            tokio::task::spawn_blocking(move || {
-                anyhow::Ok(flashing::download_file(
-                    session.lock().unwrap().get()?,
-                    "target/thumbv7em-none-eabi/release/bootloader",
-                    flashing::FormatKind::Elf,
-                )?)
-            })
-            .await??;
+            let mut probe_rs = attach.probe_rs("download").await?;
+            probe_rs.arg("target/thumbv7em-none-eabi/release/bootloader");
+            cmd::execute(&mut probe_rs).await?;
         }
         if self.gdb {
+            let chip = self.name.chip();
             println!("Use the following 2 commands in different terminals:");
             println!("JLinkGDBServer -device {chip} -if swd -speed 4000 -port 2331");
             println!("gdb-multiarch -ex 'file {elf}' -ex 'target remote localhost:2331'");
         }
-        let attach = Attach { name: self.name, log: None, options: flash.attach };
         attach.execute_probe_rs("run").await?
     }
 
@@ -943,17 +917,22 @@ impl Attach {
     }
 
     async fn execute_probe_rs(self, mut cmd: &'static str) -> Result<!> {
-        let chip = self.name.chip();
         let elf = self.name.elf().await;
         loop {
-            let mut probe_rs = wrap_command().await?;
-            probe_rs.args(["probe-rs", cmd, "--catch-reset"]);
-            probe_rs.arg(format!("--chip={chip}"));
-            probe_rs.args(&self.options.args);
-            probe_rs.arg(&elf);
+            let mut probe_rs = self.probe_rs(cmd).await?;
+            probe_rs.args(["--catch-reset", &elf]);
             cmd::status(&mut probe_rs).await?;
             cmd = "attach";
         }
+    }
+
+    async fn probe_rs(&self, cmd: &'static str) -> Result<Command> {
+        let chip = self.name.chip();
+        let mut probe_rs = wrap_command().await?;
+        probe_rs.args(["probe-rs", cmd]);
+        probe_rs.arg(format!("--chip={chip}"));
+        probe_rs.args(&self.options.args);
+        Ok(probe_rs)
     }
 }
 
