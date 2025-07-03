@@ -52,7 +52,7 @@ pub trait Storage {
     ///
     /// Note that we use `Cow` just because it derefs to `[u8]`. We don't really need the fact that
     /// one can convert it to a `Vec`. In particular we don't do it in the store implementation.
-    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<[u8]>, Error>;
+    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<'_, [u8]>, Error>;
 
     /// Writes a word slice to the storage.
     ///

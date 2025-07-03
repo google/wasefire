@@ -102,10 +102,10 @@ pub async fn create_dir_all(path: impl AsRef<Path>) -> Result<()> {
 }
 
 pub async fn create_parent(path: impl AsRef<Path>) -> Result<()> {
-    if let Some(parent) = path.as_ref().parent() {
-        if !parent.as_os_str().is_empty() {
-            create_dir_all(parent).await?;
-        }
+    if let Some(parent) = path.as_ref().parent()
+        && !parent.as_os_str().is_empty()
+    {
+        create_dir_all(parent).await?;
     }
     Ok(())
 }

@@ -208,7 +208,7 @@ impl<S: Storage> Store<S> {
     }
 
     /// Iterates over the entries.
-    pub fn iter(&self) -> Result<StoreIter, Error> {
+    pub fn iter(&self) -> Result<StoreIter<'_>, Error> {
         let head = self.head.ok_or(INVALID_STORAGE)?;
         Ok(Box::new(self.entries.as_ref().ok_or(INVALID_STORAGE)?.iter().map(move |&offset| {
             let pos = head + offset as Nat;
@@ -1021,18 +1021,18 @@ impl<S: Storage> Store<S> {
     }
 
     /// Reads a word from the virtual storage.
-    fn read_word(&self, pos: Position) -> Cow<[u8]> {
+    fn read_word(&self, pos: Position) -> Cow<'_, [u8]> {
         self.storage_read_slice(pos.index(&self.format), self.format.word_size())
     }
 
     /// Reads a physical page.
-    fn read_page(&self, page: Nat) -> Cow<[u8]> {
+    fn read_page(&self, page: Nat) -> Cow<'_, [u8]> {
         let index = StorageIndex { page: page as usize, byte: 0 };
         self.storage_read_slice(index, self.format.page_size())
     }
 
     /// Reads a slice from the physical storage.
-    fn storage_read_slice(&self, index: StorageIndex, length: Nat) -> Cow<[u8]> {
+    fn storage_read_slice(&self, index: StorageIndex, length: Nat) -> Cow<'_, [u8]> {
         // The only possible failures are if the slice spans multiple pages.
         self.storage.read_slice(index, length as usize).unwrap()
     }
@@ -1058,7 +1058,7 @@ impl<S: Storage> Store<S> {
     /// differs from the current value).
     fn storage_write_slice(&mut self, index: StorageIndex, value: &[u8]) -> Result<(), Error> {
         let word_size = self.format.word_size();
-        debug_assert!(usize_to_nat(value.len()) % word_size == 0);
+        debug_assert!(usize_to_nat(value.len()).is_multiple_of(word_size));
         let slice = self.storage.read_slice(index, value.len()).map_err(Error::pop)?;
         // Skip as many words that don't need to be written as possible.
         for start in (0 .. usize_to_nat(value.len())).step_by(word_size as usize) {

@@ -131,7 +131,7 @@ impl Uarts {
         }
     }
 
-    fn get(&mut self, uart: Id<Impl>) -> Uart {
+    fn get(&mut self, uart: Id<Impl>) -> Uart<'_> {
         let regs: &RegisterBlock = match *uart {
             0 => &self.uarte0,
             1 => &self.uarte1,

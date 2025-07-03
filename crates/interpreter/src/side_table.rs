@@ -47,7 +47,7 @@ impl<'m> Metadata<'m> {
     pub fn branch_table<M: Mode>(&self) -> MResult<&'m [BranchTableEntry], M> {
         let entry_size = size_of::<BranchTableEntry>();
         let branch_table = M::open(|| self.0.get(10 ..))?;
-        M::check(|| branch_table.len() % entry_size == 0)?;
+        M::check(|| branch_table.len().is_multiple_of(entry_size))?;
         Ok(unsafe {
             core::slice::from_raw_parts(
                 branch_table.as_ptr().cast(),

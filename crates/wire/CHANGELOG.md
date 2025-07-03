@@ -9,6 +9,7 @@
 
 ### Patch
 
+- Allow `uninlined-format-args` clippy lint
 - Fix clippy lints
 - Update dependencies
 

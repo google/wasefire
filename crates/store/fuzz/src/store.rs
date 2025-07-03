@@ -216,10 +216,10 @@ impl<'a> Fuzzer<'a> {
             Err((store, StoreInvariant::NoLifetime)) => Err(store),
             Err((store, error)) => self.crash((store.extract_storage(), error)),
             Ok((error, driver)) => {
-                if self.debug {
-                    if let Some(error) = error {
-                        println!("{error:?}");
-                    }
+                if self.debug
+                    && let Some(error) = error
+                {
+                    println!("{error:?}");
                 }
                 Ok(driver)
             }
@@ -340,7 +340,7 @@ impl<'a> Fuzzer<'a> {
     /// Generates an interruption.
     ///
     /// The `max_delay` describes the number of storage operations.
-    fn interruption(&mut self, max_delay: Option<usize>) -> StoreInterruption {
+    fn interruption(&mut self, max_delay: Option<usize>) -> StoreInterruption<'_> {
         if self.init.is_dirty() {
             // We only test that the store can power on without crashing. If it would get
             // interrupted then it's like powering up with a different initial state, which would be

@@ -49,7 +49,7 @@ impl Storage for Impl {
         self.0.max_page_erases()
     }
 
-    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<[u8]>, Error> {
+    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<'_, [u8]>, Error> {
         self.0.read_slice(index, length)
     }
 

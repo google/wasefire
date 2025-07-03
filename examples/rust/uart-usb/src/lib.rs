@@ -37,8 +37,8 @@ struct Serial<Port> {
 
 impl<Src: serial::Serial> Serial<Src> {
     fn copy_to<Dst: serial::Serial>(&self, dst: &Serial<Dst>, buf: &mut [u8]) {
-        let mut total = 0;
-        while total % buf.len() == 0 {
+        let mut total: usize = 0;
+        while total.is_multiple_of(buf.len()) {
             let len = serial::read(&self.port, buf).unwrap();
             if len == 0 {
                 break;

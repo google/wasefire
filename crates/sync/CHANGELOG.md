@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Update dependencies
 - Add `Once` as a re-export of `spin::Once`
 - Remove dummy alloc dependency
 - Add clippy lint
@@ -26,4 +27,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 2 -->
+<!-- Increment to skip CHANGELOG.md test: 3 -->

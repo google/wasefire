@@ -7,11 +7,12 @@ publish = false
 edition = "2024"
 
 [dependencies]
-bytemuck = { version = "1.22.0", default-features = false, features = ["derive"] }
+bytemuck = { version = "1.23.1", default-features = false, features = ["derive"] }
 register = { path = "../register" }
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
+clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"
 rust.unused-crate-dependencies = "warn"

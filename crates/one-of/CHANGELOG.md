@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Allow `uninlined-format-args` clippy lint
 - Remove dummy alloc dependency
 - Add clippy lint
 

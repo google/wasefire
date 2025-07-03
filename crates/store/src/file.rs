@@ -105,7 +105,7 @@ impl Storage for FileStorage {
         u16::MAX as usize
     }
 
-    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<[u8]>, Error> {
+    fn read_slice(&self, index: StorageIndex, length: usize) -> Result<Cow<'_, [u8]>, Error> {
         let mut file = self.file.borrow_mut();
         file.seek(SeekFrom::Start(index.range(length, self)?.start as u64))?;
         let mut buf = vec![0u8; length];
@@ -145,8 +145,7 @@ mod tests {
     const OPTIONS: FileOptions = FileOptions { word_size: 4, page_size: 0x1000, num_pages: 20 };
 
     fn make_tmp_dir() -> PathBuf {
-        let tmp_dir = TempDir::new().unwrap();
-        tmp_dir.into_path()
+        TempDir::new().unwrap().keep()
     }
 
     fn remove_tmp_dir(tmp_dir: &Path) {

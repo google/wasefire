@@ -10,6 +10,10 @@
 
 - Use Rust edition 2024
 
+### Patch
+
+- Allow `uninlined-format-args` clippy lint
+
 ## 0.7.0
 
 ### Major

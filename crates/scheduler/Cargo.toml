@@ -16,9 +16,9 @@ categories = ["embedded", "no-std", "wasm"]
 features = ["std", "wasm"]
 
 [dependencies]
-bytemuck = { version = "1.22.0", default-features = false }
-defmt = { version = "0.3.10", default-features = false, optional = true }
-derive-where = { version = "1.2.7", default-features = false, features = ["nightly"] }
+bytemuck = { version = "1.23.1", default-features = false }
+defmt = { version = "1.0.1", default-features = false, optional = true }
+derive-where = { version = "1.5.0", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
 generic-array = { version = "=0.14.7", default-features = false, optional = true }
 typenum = { version = "1.18.0", default-features = false, optional = true }
@@ -253,5 +253,6 @@ internal-hash-context = []
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
+clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"
 rust.unused-crate-dependencies = "warn"

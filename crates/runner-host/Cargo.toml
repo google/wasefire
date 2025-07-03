@@ -7,12 +7,12 @@ publish = false
 edition = "2024"
 
 [dependencies]
-anyhow = "1.0.97"
-clap = { version = "4.5.32", features = ["derive", "env"] }
-data-encoding = "2.8.0"
-env_logger = { version = "0.11.7", optional = true }
-rand = "0.9.0"
-tokio = { version = "1.44.2", features = ["full"] }
+anyhow = "1.0.98"
+clap = { version = "4.5.40", features = ["derive", "env"] }
+data-encoding = "2.9.0"
+env_logger = { version = "0.11.8", optional = true }
+rand = "0.9.1"
+tokio = { version = "1.46.0", features = ["full"] }
 usb-device = "0.3.2"
 usbd-hid = "0.8.2"
 usbd-serial = "0.2.2"
@@ -75,5 +75,6 @@ wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
+clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"
 rust.unused-crate-dependencies = "warn"

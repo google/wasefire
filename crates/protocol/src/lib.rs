@@ -59,7 +59,7 @@ pub trait Service: 'static {
     type Request<'a>: Wire<'a>;
     type Response<'a>: Wire<'a>;
     #[cfg(feature = "host")]
-    fn request(x: Self::Request<'_>) -> Api<Request>;
+    fn request(x: Self::Request<'_>) -> Api<'_, Request>;
 }
 
 #[derive(Debug)]
@@ -112,7 +112,7 @@ impl<T: Service> ApiResult<'_, T> {
     }
 
     #[cfg(feature = "host")]
-    pub fn decode(data: &[u8]) -> Result<ApiResult<T>, Error> {
+    pub fn decode(data: &[u8]) -> Result<ApiResult<'_, T>, Error> {
         wasefire_wire::decode(data)
     }
 
@@ -191,7 +191,7 @@ macro_rules! api {
                 type Request<'a> = $request;
                 type Response<'a> = $response;
                 #[cfg(feature = "host")]
-                fn request(x: Self::Request<'_>) -> Api<Request> { Api::$Name(x) }
+                fn request(x: Self::Request<'_>) -> Api<'_, Request> { Api::$Name(x) }
             }
         )*
         /// Device API version (or maximum supported device API version for host).

@@ -12,11 +12,11 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-data-encoding = { version = "2.8.0", default-features = false }
-data-encoding-macro = { version = "0.1.17", default-features = false }
-proc-macro2 = { version = "1.0.94", default-features = false }
+data-encoding = { version = "2.9.0", default-features = false }
+data-encoding-macro = { version = "0.1.18", default-features = false }
+proc-macro2 = { version = "1.0.95", default-features = false }
 quote = { version = "1.0.40", default-features = false }
-syn = { version = "2.0.100", default-features = false, features = ["printing"] }
+syn = { version = "2.0.104", default-features = false, features = ["printing"] }
 
 [features]
 # API features.
@@ -78,6 +78,7 @@ internal-api-usb = []
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
+clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
 rust.unused-crate-dependencies = "warn"

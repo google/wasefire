@@ -9,6 +9,7 @@
 
 ### Patch
 
+- Fix lints
 - Update dependencies
 
 ## 0.1.0

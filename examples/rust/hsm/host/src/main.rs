@@ -173,7 +173,7 @@ struct Serial(Box<dyn SerialPort>);
 
 impl Serializer for Serial {
     fn write_all(&mut self, data: &[u8]) -> Result<(), Error> {
-        log::info!("Write {:02x?}", data);
+        log::info!("Write {data:02x?}");
         self.0.write_all(data).map_err(|_| Error::UsbError)
     }
 
@@ -186,7 +186,7 @@ impl Serializer for Serial {
 impl Deserializer for Serial {
     fn read_exact(&mut self, data: &mut [u8]) -> Result<(), Error> {
         let result = self.0.read_exact(data).map_err(|_| Error::UsbError);
-        log::info!("Read {:02x?}", data);
+        log::info!("Read {data:02x?}");
         result
     }
 }

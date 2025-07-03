@@ -66,7 +66,7 @@ struct Entropy<'a> {
 
 impl Entropy<'_> {
     /// Creates a bit-level entropy given a byte slice.
-    fn new(data: &[u8]) -> Entropy {
+    fn new(data: &[u8]) -> Entropy<'_> {
         let bit = 0;
         Entropy { data, bit }
     }

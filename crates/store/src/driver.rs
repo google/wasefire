@@ -385,10 +385,10 @@ impl StoreDriverOn {
                         },
                     ));
                 }
-                if store_result.is_ok() {
-                    if let Err(invariant) = self.check_deleted(&deleted) {
-                        return Err((self.store, invariant));
-                    }
+                if store_result.is_ok()
+                    && let Err(invariant) = self.check_deleted(&deleted)
+                {
+                    return Err((self.store, invariant));
                 }
                 (store_result.err(), StoreDriver::On(self))
             }

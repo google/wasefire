@@ -31,11 +31,11 @@ pub fn LED(Props { id, command_state }: &Props) -> Html {
     use_effect_with(command_state.clone(), {
         let lit = lit.clone();
         move |command_state| {
-            if let Some(Command::Set { component_id, state }) = &**command_state {
-                if *component_id == id {
-                    info!("Set command: component_id: {component_id} state: {state}");
-                    lit.set(*state);
-                }
+            if let Some(Command::Set { component_id, state }) = &**command_state
+                && *component_id == id
+            {
+                info!("Set command: component_id: {component_id} state: {state}");
+                lit.set(*state);
             }
         }
     });

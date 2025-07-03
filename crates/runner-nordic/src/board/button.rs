@@ -57,7 +57,7 @@ impl Button {
     }
 }
 
-pub fn channel(gpiote: &Gpiote, i: Id<Impl>) -> GpioteChannel {
+pub fn channel(gpiote: &Gpiote, i: Id<Impl>) -> GpioteChannel<'_> {
     match *i {
         0 => gpiote.channel0(),
         1 => gpiote.channel1(),

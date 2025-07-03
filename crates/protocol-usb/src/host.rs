@@ -212,7 +212,7 @@ impl<T: UsbContext + 'static> wasefire_protocol::Connection for Connection<T> {
         })
     }
 
-    fn read(&mut self) -> DynFuture<Box<[u8]>> {
+    fn read(&mut self) -> DynFuture<'_, Box<[u8]>> {
         Box::pin(async move {
             let mut decoder = Decoder::default();
             loop {
