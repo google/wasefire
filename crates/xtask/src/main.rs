@@ -343,6 +343,7 @@ struct Flash {
     ///
     /// This is not supported by the following boards:
     /// - Nordic: dongle and makerdiary
+    /// - OpenTitan
     #[clap(long)]
     reset_flash: bool,
 
