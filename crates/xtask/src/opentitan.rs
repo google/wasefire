@@ -19,7 +19,7 @@ use anyhow::{Context, Result, ensure};
 use serialport::SerialPort;
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
-use tokio::process::{ChildStdin, Command};
+use tokio::process::Command;
 use wasefire_cli_tools::{cmd, fs};
 
 use crate::{AttachOptions, MainOptions, ensure_command, wrap_command};
@@ -89,7 +89,7 @@ pub async fn build(elf: &str) -> Result<String> {
     opentitan.arg(format!("--output={img}"));
     opentitan.arg(format!(
         "{prov_exts_dir}/shared/rom_ext/gb/binaries/\
-         rom_ext_dice_x509_prod_slot_virtual_silicon_creator.signed.bin@0"
+         rom_ext_dice_x509_rescue_xmodem_prod_slot_virtual_silicon_creator.signed.bin@0"
     ));
     opentitan.arg(format!("{signed}@0x10000"));
     cmd::execute(&mut opentitan).await?;
@@ -128,7 +128,8 @@ pub async fn attach(
         Some(x) => (true, x),
         None => (false, connect().await?),
     };
-    println!("Listening on OpenTitan serial.");
+    let delimit = |msg: &str| println!("\x1b[1;35m{msg}\x1b[m");
+    delimit("Attached to OpenTitan serial.");
 
     if wait {
         // Discard everything until we recognize the OpenTitan initial message.
@@ -147,16 +148,19 @@ pub async fn attach(
     }
 
     // Print with defmt.
-    let mut defmt: Option<ChildStdin> = match main.release {
-        true => None,
-        false => {
-            let mut defmt = wrap_command().await?;
-            defmt.arg("defmt-print");
-            defmt.args(&options.defmt_print);
-            defmt.args(["-e", elf]).stdin(Stdio::piped());
-            Some(defmt.spawn()?.stdin.take().unwrap())
-        }
+    let spawn_defmt = || async {
+        anyhow::Ok(match main.release {
+            true => None,
+            false => {
+                let mut defmt = wrap_command().await?;
+                defmt.arg("defmt-print");
+                defmt.args(&options.defmt_print);
+                defmt.args(["-e", elf]).stdin(Stdio::piped());
+                Some(defmt.spawn()?.stdin.take().unwrap())
+            }
+        })
     };
+    let mut defmt = spawn_defmt().await?;
     let mut stdout = tokio::io::stdout();
     #[derive(Copy, Clone, PartialEq, Eq)]
     enum State {
@@ -183,7 +187,6 @@ pub async fn attach(
         }
         // Handle control bytes and update state.
         match (state, byte) {
-            (Control, 0 | 13) => state = Stdout, // must be a reset
             (Control, 1 | 2) => {
                 if let Some(defmt) = defmt.as_mut() {
                     defmt.flush().await?;
@@ -191,7 +194,16 @@ pub async fn attach(
                 std::process::exit((byte - 1) as i32);
             }
             (Control, 3) => state = Defmt,
-            (Control, _) => panic!("unsupported control byte {byte}"),
+            (Control, _) => {
+                // Don't print the warning when it looks like a reset.
+                if !matches!(byte, 0 | b'\r' | b'O') {
+                    log::warn!("unsupported control byte {byte:#02x}");
+                }
+                delimit("Reset detected (restarting defmt).");
+                state = Stdout;
+                stdout.write_all(&[byte]).await?;
+                defmt = spawn_defmt().await?;
+            }
             (Stdout | Defmt, 0) => state = Control,
             (Stdout | Defmt, _) => (),
         }

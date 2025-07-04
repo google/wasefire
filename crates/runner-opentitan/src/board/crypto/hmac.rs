@@ -19,15 +19,16 @@ use wasefire_board_api::crypto::WithError;
 use wasefire_error::Error;
 use wasefire_sync::TakeCell;
 
-use crate::hmac::Hmac;
+use crate::crypto::common::{BlindedKey, HashMode, KeyConfig, KeyMode};
+use crate::crypto::{hash, hmac};
 
-pub struct Sha256(Option<Hmac>);
+pub struct Sha256(Option<hash::Context>);
 
 impl Supported for Sha256 {}
 
 impl Default for Sha256 {
     fn default() -> Self {
-        Sha256(ERROR.record(Hmac::start(None)))
+        Sha256(ERROR.record(hash::Context::init(HashMode::Sha256)))
     }
 }
 
@@ -41,8 +42,10 @@ impl OutputSizeUser for Sha256 {
 
 impl Update for Sha256 {
     fn update(&mut self, data: &[u8]) {
-        if let Some(hash) = &mut self.0 {
-            hash.update(data)
+        if let Some(hash) = &mut self.0
+            && ERROR.record(hash.update(data)).is_none()
+        {
+            self.0 = None;
         }
     }
 }
@@ -50,7 +53,9 @@ impl Update for Sha256 {
 impl FixedOutput for Sha256 {
     fn finalize_into(self, out: &mut Output<Self>) {
         if let Some(hash) = self.0 {
-            ERROR.record(hash.finalize(out.as_mut()));
+            let mut digest = [0; 8];
+            ERROR.record(hash.finalize(&mut digest));
+            out.copy_from_slice(bytemuck::bytes_of(&digest));
         }
     }
 }
@@ -63,7 +68,7 @@ impl WithError for Sha256 {
     }
 }
 
-pub struct HmacSha256(Option<Hmac>);
+pub struct HmacSha256(Option<hmac::Context>);
 
 impl Supported for HmacSha256 {}
 
@@ -81,16 +86,18 @@ impl KeyInit for HmacSha256 {
     }
 
     fn new_from_slice(key: &[u8]) -> Result<Self, digest::InvalidLength> {
-        fn aux(key: &[u8]) -> Result<Option<Hmac>, Error> {
-            let mut key_ = [0; 64];
+        fn aux(key: &[u8]) -> Result<Option<hmac::Context>, Error> {
+            let mut key_ = [0u32; 16];
             if key.len() <= 64 {
-                key_[.. key.len()].copy_from_slice(key);
+                bytemuck::bytes_of_mut(&mut key_)[.. key.len()].copy_from_slice(key);
             } else {
-                let mut hash = Hmac::start(None)?;
-                hash.update(key);
-                hash.finalize(key_.first_chunk_mut().unwrap())?;
+                let mut hash = hash::Context::init(HashMode::Sha256)?;
+                hash.update(key)?;
+                hash.finalize(&mut key_[.. 8])?;
             }
-            Ok(Some(Hmac::start(Some(&key_))?))
+            let config = KeyConfig::new(KeyMode::HmacSha256);
+            let key = BlindedKey::import(config, key_[..].into(), [0u32; 16][..].into())?;
+            Ok(Some(hmac::Context::init(key)?))
         }
         match ERROR.record(aux(key)) {
             Some(Some(x)) => Ok(HmacSha256(Some(x))),
@@ -102,8 +109,10 @@ impl KeyInit for HmacSha256 {
 
 impl Update for HmacSha256 {
     fn update(&mut self, data: &[u8]) {
-        if let Some(hmac) = &mut self.0 {
-            hmac.update(data);
+        if let Some(hmac) = &mut self.0
+            && ERROR.record(hmac.update(data)).is_none()
+        {
+            self.0 = None;
         }
     }
 }
@@ -111,7 +120,9 @@ impl Update for HmacSha256 {
 impl FixedOutput for HmacSha256 {
     fn finalize_into(self, out: &mut Output<Self>) {
         if let Some(hmac) = self.0 {
-            ERROR.record(hmac.finalize(out.as_mut()));
+            let mut tag = [0; 8];
+            ERROR.record(hmac.finalize(&mut tag));
+            out.copy_from_slice(bytemuck::bytes_of(&tag));
         }
     }
 }

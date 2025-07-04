@@ -20,8 +20,15 @@ use wasefire_logger as log;
 use crate::multibit::BOOL4_FALSE;
 
 pub fn init() {
-    #[cfg(any())]
-    dump_regions();
+    #[cfg(false)] // Dump regions for debugging (e.g. new ROM_EXT).
+    for i in 0 .. 8 {
+        let cfg = FLASH_CTRL.mp_region_cfg(i).read_raw();
+        let lock = !FLASH_CTRL.region_cfg_regwen(i).read().region() as u32;
+        let reg = FLASH_CTRL.mp_region(i).read();
+        let start = reg.base() * PAGE_SIZE as u32;
+        let limit = start + reg.size() * PAGE_SIZE as u32 - 1;
+        log::info!("{}: {:08x} {} {:08x}-{:08x}", i, cfg, lock, start, limit);
+    }
 
     // After ROM_EXT on bank A, the flash regions look like this:
     // 0: 09669966 00000000-0000ffff RD            SCRAMBLE ECC    LOCKED
@@ -151,15 +158,3 @@ impl From<Code> for u16 {
 }
 
 impl CodeParam for Code {}
-
-#[cfg(any())]
-fn dump_regions() {
-    for i in 0 .. 8 {
-        let cfg = FLASH_CTRL.mp_region_cfg(i).read_raw();
-        let lock = !FLASH_CTRL.region_cfg_regwen(i).read().region() as u32;
-        let reg = FLASH_CTRL.mp_region(i).read();
-        let start = reg.base() * PAGE_SIZE as u32;
-        let limit = start + reg.size() * PAGE_SIZE as u32 - 1;
-        log::info!("{}: {:08x} {} {:08x}-{:08x}", i, cfg, lock, start, limit);
-    }
-}

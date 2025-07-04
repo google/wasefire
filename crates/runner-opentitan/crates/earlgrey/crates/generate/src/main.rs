@@ -29,7 +29,6 @@ const IP_BLOCKS: &[&str] = &[
     // Keep sorted.
     "FLASH_CTRL_CORE",
     "GPIO",
-    "HMAC",
     "LC_CTRL",
     "PINMUX_AON",
     "RSTMGR_AON",
