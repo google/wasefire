@@ -17,6 +17,7 @@ use nrf52840_hal::gpio::{
     Disconnected, Floating, Input, Level, OpenDrain, OpenDrainConfig, OpenDrainIO, Output, Pin,
     PullDown, PullUp, PushPull,
 };
+use nrf52840_hal::gpiote::{GpioteChannel, GpioteInputPin};
 use nrf52840_hal::pac;
 use nrf52840_hal::pac::generic::Reg;
 use nrf52840_hal::pac::p0::pin_cnf::PIN_CNF_SPEC;
@@ -24,6 +25,7 @@ use wasefire_board_api::gpio::{Api, Config, InputConfig, OutputConfig};
 use wasefire_board_api::{Error, Id, Support};
 use wasefire_error::Code;
 
+use crate::board::button::{Channel, channel};
 use crate::with_state;
 
 pub enum Impl {}
@@ -97,6 +99,37 @@ impl Api for Impl {
                 State::OutputOpenDrainIO(x) => x.is_set_high(),
             }
             .map_err(|_| Error::world(0))
+        })
+    }
+
+    fn enable(id: Id<Self>, falling: bool, rising: bool) -> Result<(), Error> {
+        with_state(|state| {
+            let Some(id) = state.channels.allocate(Channel::Gpio(id)) else {
+                return Err(Error::world(Code::NotEnough));
+            };
+            let channel = channel(&state.gpiote, id);
+            match &state.gpios[*id].state {
+                State::InputFloating(pin) => enable(channel, pin, falling, rising),
+                State::InputPullDown(pin) => enable(channel, pin, falling, rising),
+                State::InputPullUp(pin) => enable(channel, pin, falling, rising),
+                _ => Err(Error::user(Code::InvalidState)),
+            }
+        })
+    }
+
+    fn disable(id: Id<Self>) -> Result<(), Error> {
+        with_state(|state| {
+            let Some(id) = state.channels.deallocate(Channel::Gpio(id)) else {
+                return Err(Error::user(Code::NotFound));
+            };
+            let channel = channel(&state.gpiote, id);
+            match &state.gpios[*id].state {
+                State::InputFloating(pin) => disable(channel, pin),
+                State::InputPullDown(pin) => disable(channel, pin),
+                State::InputPullUp(pin) => disable(channel, pin),
+                _ => return Err(Error::user(Code::InvalidState)),
+            }
+            Ok(())
         })
     }
 }
@@ -204,4 +237,22 @@ fn pin_cnf(pin: &Pin<Output<OpenDrainIO>>) -> &Reg<PIN_CNF_SPEC> {
         nrf52840_hal::gpio::Port::Port1 => pac::P1::ptr(),
     };
     unsafe { &(*port).pin_cnf[pin.pin() as usize] }
+}
+
+fn enable<P: GpioteInputPin>(
+    channel: GpioteChannel, pin: &P, falling: bool, rising: bool,
+) -> Result<(), Error> {
+    let event = channel.input_pin(pin);
+    match (falling, rising) {
+        (true, true) => event.toggle(),
+        (true, false) => event.hi_to_lo(),
+        (false, true) => event.lo_to_hi(),
+        (false, false) => return Err(Error::user(Code::InvalidArgument)),
+    }
+    .enable_interrupt();
+    Ok(())
+}
+
+fn disable<P: GpioteInputPin>(channel: GpioteChannel, pin: &P) {
+    let _ = channel.input_pin(pin).disable_interrupt();
 }

@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support `gpio::{register,unregister}` functions
 - Support `clock` module
 - Support `crypto::cbc` module
 - Support `usb::ctap` module
@@ -15,6 +16,7 @@
 
 ### Patch
 
+- Return errors instead of trapping for UART
 - Use `cargo::` instead of `cargo:` for build script instructions
 - Add warning when applet fails to start after install
 - Fix lints

@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `gpio::{Event,register,unregister}` for event support
 - Do not pass structs by value in parameters (fix #815)
 - Remove `platform::update::metadata()` function
 - Add `running` parameter to `platform::version()` function

@@ -20,7 +20,7 @@ use wasefire_board_api::uart::{Api as _, Direction, Event};
 use wasefire_board_api::{self as board, Id, Support};
 
 #[cfg(feature = "board-api-uart")]
-use crate::Trap;
+use crate::Failure;
 #[cfg(feature = "board-api-uart")]
 use crate::applet::store::MemoryApi;
 #[cfg(feature = "board-api-uart")]
@@ -53,7 +53,7 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
 fn set_baudrate<B: Board>(call: SchedulerCall<B, api::set_baudrate::Sig>) {
     let api::set_baudrate::Params { uart, baudrate } = call.read();
     let result = try {
-        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
+        let uart = Id::new(*uart as usize)?;
         board::Uart::<B>::set_baudrate(uart, *baudrate as usize)?
     };
     call.reply(result);
@@ -63,7 +63,7 @@ fn set_baudrate<B: Board>(call: SchedulerCall<B, api::set_baudrate::Sig>) {
 fn start<B: Board>(call: SchedulerCall<B, api::start::Sig>) {
     let api::start::Params { uart } = call.read();
     let result = try {
-        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
+        let uart = Id::new(*uart as usize)?;
         board::Uart::<B>::start(uart)?
     };
     call.reply(result);
@@ -73,7 +73,7 @@ fn start<B: Board>(call: SchedulerCall<B, api::start::Sig>) {
 fn stop<B: Board>(call: SchedulerCall<B, api::stop::Sig>) {
     let api::stop::Params { uart } = call.read();
     let result = try {
-        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
+        let uart = Id::new(*uart as usize)?;
         board::Uart::<B>::stop(uart)?
     };
     call.reply(result);
@@ -85,7 +85,7 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let applet = call.applet();
     let memory = applet.memory();
     let result = try {
-        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
+        let uart = Id::new(*uart as usize)?;
         let output = memory.get_mut(*ptr, *len)?;
         board::Uart::<B>::read(uart, output)? as u32
     };
@@ -98,7 +98,7 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let applet = call.applet();
     let memory = applet.memory();
     let result = try {
-        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
+        let uart = Id::new(*uart as usize)?;
         let input = memory.get(*ptr, *len)?;
         board::Uart::<B>::write(uart, input)? as u32
     };
@@ -111,7 +111,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let inst = call.inst();
     let applet = call.applet();
     let result = try {
-        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
+        let uart = Id::new(*uart as usize)?;
         let event = convert_event(uart, *event)?;
         applet.enable(Handler {
             key: Key::from(&event).into(),
@@ -128,17 +128,17 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { uart, event } = call.read();
     let result = try {
-        let uart = Id::new(*uart as usize).map_err(|_| Trap)?;
+        let uart = Id::new(*uart as usize)?;
         let event = convert_event(uart, *event)?;
-        board::Uart::<B>::disable(uart, event.direction).map_err(|_| Trap)?;
+        board::Uart::<B>::disable(uart, event.direction)?;
         call.scheduler().disable_event(Key::from(&event).into())?;
     };
     call.reply(result);
 }
 
 #[cfg(feature = "board-api-uart")]
-fn convert_event<B: Board>(uart: Id<board::Uart<B>>, event: u32) -> Result<Event<B>, Trap> {
-    let direction = match api::Event::try_from(event).map_err(|_| Trap)? {
+fn convert_event<B: Board>(uart: Id<board::Uart<B>>, event: u32) -> Result<Event<B>, Failure> {
+    let direction = match api::Event::try_from(event)? {
         api::Event::Read => Direction::Read,
         api::Event::Write => Direction::Write,
     };

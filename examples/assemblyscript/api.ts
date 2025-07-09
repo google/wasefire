@@ -764,6 +764,38 @@
     // Index of the GPIO to query (must be configured as output).
     gpio: usize,
   ): i32
+
+  // GPIO events.
+  enum gpio_Event {
+    FallingEdge = 0,
+
+    RisingEdge = 1,
+
+    AnyChange = 2,
+  }
+
+  // Register a handler for gpio events.
+  @external("env", "gg")
+  export declare function gpio_register(
+    // Index of the gpio to listen to.
+    gpio: usize,
+
+    // Event to listen to.
+    event: usize,
+
+    // Function called on gpio events.
+    handler_func: usize,
+
+    // The opaque data to use when calling the handler function.
+    handler_data: usize,
+  ): i32
+
+  // Unregister handlers for gpio events.
+  @external("env", "gu")
+  export declare function gpio_unregister(
+    // Index of the gpio to stop listening to.
+    gpio: usize,
+  ): i32
 // END OF MODULE gpio
 
 // START OF MODULE led

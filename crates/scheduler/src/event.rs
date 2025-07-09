@@ -26,6 +26,8 @@ use crate::Scheduler;
 
 #[cfg(feature = "board-api-button")]
 pub mod button;
+#[cfg(feature = "board-api-gpio")]
+pub mod gpio;
 pub mod platform;
 #[cfg(feature = "internal-board-api-radio")]
 pub mod radio;
@@ -46,6 +48,8 @@ pub struct InstId;
 pub enum Key<B: Board> {
     #[cfg(feature = "board-api-button")]
     Button(button::Key<B>),
+    #[cfg(feature = "board-api-gpio")]
+    Gpio(gpio::Key<B>),
     Platform(platform::Key),
     #[cfg(feature = "internal-board-api-radio")]
     Radio(radio::Key),
@@ -75,6 +79,10 @@ impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
             #[cfg(feature = "board-api-button")]
             Event::Button(event) => {
                 or_unreachable!("applet-api-button", [event], Key::Button(event.into()))
+            }
+            #[cfg(feature = "board-api-gpio")]
+            Event::Gpio(event) => {
+                or_unreachable!("applet-api-gpio", [event], Key::Gpio(event.into()))
             }
             Event::Platform(event) => {
                 or_unreachable!(
@@ -109,6 +117,8 @@ impl<B: Board> Key<B> {
         match self {
             #[cfg(feature = "board-api-button")]
             Key::Button(x) => x.disable(),
+            #[cfg(feature = "board-api-gpio")]
+            Key::Gpio(x) => x.disable(),
             Key::Platform(x) => x.disable(),
             #[cfg(feature = "internal-board-api-radio")]
             Key::Radio(x) => x.disable::<B>(),
@@ -155,6 +165,8 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
         Event::Button(event) => {
             or_unreachable!("applet-api-button", [event], button::process(event, &mut params))
         }
+        #[cfg(feature = "board-api-gpio")]
+        Event::Gpio(_) => or_unreachable!("applet-api-gpio", [], gpio::process()),
         Event::Platform(event) => platform::process(event),
         #[cfg(feature = "internal-board-api-radio")]
         Event::Radio(event) => {

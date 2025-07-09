@@ -14,7 +14,23 @@
 
 //! Low-level GPIO interface.
 
+use derive_where::derive_where;
+
 use crate::{Error, Id, Support};
+
+/// GPIO event.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive_where(Debug, PartialEq, Eq)]
+pub struct Event<B: crate::Api + ?Sized> {
+    /// The GPIO that triggered the event.
+    pub gpio: Id<crate::Gpio<B>>,
+}
+
+impl<B: crate::Api> From<Event<B>> for crate::Event<B> {
+    fn from(event: Event<B>) -> Self {
+        crate::Event::Gpio(event)
+    }
+}
 
 /// Input GPIO configuration.
 #[derive(Debug, Copy, Clone, bytemuck::CheckedBitPattern)]
@@ -79,4 +95,10 @@ pub trait Api: Support<usize> + Send {
 
     /// Returns the last logical value written to a GPIO (must be configured as output).
     fn last_write(gpio: Id<Self>) -> Result<bool, Error>;
+
+    /// Enables an event to be triggered on the given conditions (at least one must be true).
+    fn enable(gpio: Id<Self>, falling: bool, rising: bool) -> Result<(), Error>;
+
+    /// Disables an event from being triggered on all conditions.
+    fn disable(gpio: Id<Self>) -> Result<(), Error>;
 }

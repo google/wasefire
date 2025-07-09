@@ -165,6 +165,10 @@ pub enum Event<B: Api + ?Sized> {
     #[cfg(feature = "api-button")]
     Button(button::Event<B>),
 
+    /// GPIO event.
+    #[cfg(feature = "api-gpio")]
+    Gpio(gpio::Event<B>),
+
     /// Platform event.
     Platform(platform::Event),
 
