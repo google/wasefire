@@ -16,6 +16,7 @@ use nrf52840_hal::gpio::{Input, Pin, PullUp};
 use nrf52840_hal::gpiote::{Gpiote, GpioteChannel};
 use wasefire_board_api::button::Api;
 use wasefire_board_api::{Error, Id, Support};
+use wasefire_error::Code;
 
 use crate::with_state;
 
@@ -32,6 +33,9 @@ impl Api for Impl {
     fn enable(id: Id<Self>) -> Result<(), Error> {
         with_state(|state| {
             let pin = &state.buttons[*id].pin;
+            let Some(id) = state.channels.allocate(Channel::Button(id)) else {
+                return Err(Error::world(Code::NotEnough));
+            };
             channel(&state.gpiote, id).input_pin(pin).toggle().enable_interrupt();
             Ok(())
         })
@@ -40,13 +44,15 @@ impl Api for Impl {
     fn disable(id: Id<Self>) -> Result<(), Error> {
         with_state(|state| {
             let pin = &state.buttons[*id].pin;
+            let Some(id) = state.channels.deallocate(Channel::Button(id)) else {
+                return Err(Error::user(Code::NotFound));
+            };
             channel(&state.gpiote, id).input_pin(pin).disable_interrupt();
             Ok(())
         })
     }
 }
 
-// We map channels and buttons one to one.
 pub struct Button {
     pub pin: Pin<Input<PullUp>>,
 }
@@ -57,7 +63,45 @@ impl Button {
     }
 }
 
-pub fn channel(gpiote: &Gpiote, i: Id<Impl>) -> GpioteChannel<'_> {
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Channel {
+    Button(Id<Impl>),
+    #[cfg(feature = "gpio")]
+    Gpio(Id<super::gpio::Impl>),
+}
+
+impl Support<usize> for Channel {
+    const SUPPORT: usize = 8;
+}
+
+#[derive(Default)]
+pub struct Channels(pub [Option<Channel>; <Channel as Support<usize>>::SUPPORT]);
+
+impl Channels {
+    pub fn allocate(&mut self, channel: Channel) -> Option<Id<Channel>> {
+        self.0.iter_mut().enumerate().find_map(|(i, slot)| {
+            Self::compare_and_swap(slot, None, Some(channel)).then_some(Id::new(i).unwrap())
+        })
+    }
+
+    pub fn deallocate(&mut self, channel: Channel) -> Option<Id<Channel>> {
+        self.0.iter_mut().enumerate().find_map(|(i, slot)| {
+            Self::compare_and_swap(slot, Some(channel), None).then_some(Id::new(i).unwrap())
+        })
+    }
+
+    fn compare_and_swap(
+        slot: &mut Option<Channel>, expected: Option<Channel>, replacement: Option<Channel>,
+    ) -> bool {
+        let trigger = *slot == expected;
+        if trigger {
+            *slot = replacement;
+        }
+        trigger
+    }
+}
+
+pub fn channel(gpiote: &Gpiote, i: Id<Channel>) -> GpioteChannel<'_> {
     match *i {
         0 => gpiote.channel0(),
         1 => gpiote.channel1(),

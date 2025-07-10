@@ -20,9 +20,6 @@
 #![no_std]
 wasefire::applet!();
 
-use alloc::vec::Vec;
-use core::time::Duration;
-
 use wasefire::gpio::InputConfig::Floating;
 use wasefire::gpio::OutputConfig::PushPull;
 use wasefire::gpio::{Config, Gpio};
@@ -39,47 +36,31 @@ fn main() -> Result<(), Error> {
     let input_config = Config::input(Floating);
     let output_config = Config::output(PushPull, false);
 
-    let mut gpio_mappings = Vec::new();
     let mut led_index = 0;
     let mut button_index = 0;
     for gpio_index in 0 .. gpio_count {
-        gpio_mappings.push(
-            match (gpio_index.is_multiple_of(2), led_index < led_count, button_index < button_count)
-            {
-                (true, true, _) | (false, true, false) => {
-                    debug!("Mapping gpio {gpio_index} to LED {led_index}.");
-                    // TODO: Add listeners on GPIOs.
-                    led_index += 1;
-                    (Gpio::new(gpio_index, &input_config)?, MappedTo::Led(led_index - 1))
-                }
-                (true, false, true) | (false, _, true) => {
-                    debug!("Mapping gpio {gpio_index} to button {button_index}.");
-                    button::Listener::new(button_index, {
-                        let gpio = Gpio::new(gpio_index, &output_config)?;
-                        move |state| gpio.write(matches!(state, button::State::Pressed)).unwrap()
-                    })?
-                    .leak();
-                    button_index += 1;
-                    continue;
-                }
-                (_, false, false) => break,
-            },
-        );
+        match (gpio_index.is_multiple_of(2), led_index < led_count, button_index < button_count) {
+            (true, true, _) | (false, true, false) => {
+                debug!("Mapping gpio {gpio_index} to LED {led_index}.");
+                gpio::Listener::new(gpio_index, gpio::Event::AnyChange, {
+                    let gpio = Gpio::new(gpio_index, &input_config)?;
+                    move || led::set(led_index, if gpio.read().unwrap() { On } else { Off })
+                })?
+                .leak();
+                led_index += 1;
+            }
+            (true, false, true) | (false, _, true) => {
+                debug!("Mapping gpio {gpio_index} to button {button_index}.");
+                button::Listener::new(button_index, {
+                    let gpio = Gpio::new(gpio_index, &output_config)?;
+                    move |state| gpio.write(matches!(state, button::State::Pressed)).unwrap()
+                })?
+                .leak();
+                button_index += 1;
+            }
+            (_, false, false) => break,
+        }
     }
     assert!(led_index != 0 || button_index != 0, "Nothing to do.");
-
-    loop {
-        for (gpio, mapping) in &gpio_mappings {
-            match mapping {
-                MappedTo::Led(led_index) => {
-                    led::set(*led_index, if gpio.read()? { On } else { Off })
-                }
-            }
-        }
-        timer::sleep(Duration::from_millis(100));
-    }
-}
-
-enum MappedTo {
-    Led(usize),
+    Ok(())
 }

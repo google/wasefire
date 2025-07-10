@@ -113,6 +113,37 @@ pub(crate) fn new() -> Item {
                 gpio: usize,
             } -> bool
         },
+        item! {
+            /// GPIO events.
+            enum Event {
+                FallingEdge = 0,
+                RisingEdge = 1,
+                AnyChange = 2,
+            }
+        },
+        item! {
+            /// Register a handler for gpio events.
+            fn register "gg" {
+                /// Index of the gpio to listen to.
+                gpio: usize,
+
+                /// Event to listen to.
+                event: usize,
+
+                /// Function called on gpio events.
+                handler_func: fn { data: *const void },
+
+                /// The opaque data to use when calling the handler function.
+                handler_data: *const void,
+            } -> ()
+        },
+        item! {
+            /// Unregister handlers for gpio events.
+            fn unregister "gu" {
+                /// Index of the gpio to stop listening to.
+                gpio: usize,
+            } -> ()
+        },
     ];
     Item::Mod(Mod { docs, name, items })
 }

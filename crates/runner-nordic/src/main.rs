@@ -69,7 +69,7 @@ use wasefire_logger as log;
 use wasefire_one_of::exactly_one_of;
 use wasefire_scheduler::Scheduler;
 
-use crate::board::button::{Button, channel};
+use crate::board::button::{Button, Channels};
 #[cfg(feature = "gpio")]
 use crate::board::gpio::Gpio;
 #[cfg(feature = "radio-ble")]
@@ -97,6 +97,7 @@ struct State {
     events: Events,
     buttons: [Button; <button::Impl as Support<usize>>::SUPPORT],
     gpiote: Gpiote,
+    channels: Channels,
     protocol: wasefire_protocol_usb::Rpc<'static, Usb>,
     #[cfg(feature = "usb-ctap")]
     ctap: Ctap<'static, Usb>,
@@ -227,6 +228,7 @@ fn main() -> ! {
         events,
         buttons,
         gpiote,
+        channels: Channels::default(),
         protocol,
         #[cfg(feature = "usb-ctap")]
         ctap,
@@ -288,11 +290,19 @@ interrupts! {
 
 fn gpiote() {
     with_state(|state| {
-        for (i, button) in state.buttons.iter_mut().enumerate() {
+        for (i, channel) in state.channels.0.iter().enumerate() {
             let id = Id::new(i).unwrap();
-            if channel(&state.gpiote, id).is_event_triggered() {
-                let pressed = button.pin.is_low().unwrap();
-                state.events.push(wasefire_board_api::button::Event { button: id, pressed }.into());
+            let true = button::channel(&state.gpiote, id).is_event_triggered() else { continue };
+            let Some(channel) = channel else { continue };
+            match *channel {
+                button::Channel::Button(button) => {
+                    let pressed = state.buttons[*button].pin.is_low().unwrap();
+                    state.events.push(wasefire_board_api::button::Event { button, pressed }.into());
+                }
+                #[cfg(feature = "gpio")]
+                button::Channel::Gpio(gpio) => {
+                    state.events.push(wasefire_board_api::gpio::Event { gpio }.into());
+                }
             }
         }
         state.gpiote.reset_events();

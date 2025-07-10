@@ -16,8 +16,10 @@
 //!
 //! See [`crate::button`] and [`crate::led`] for higher-level API for GPIOs.
 
+use alloc::boxed::Box;
+
 use wasefire_applet_api::gpio as api;
-pub use wasefire_applet_api::gpio::{InputConfig, OutputConfig};
+pub use wasefire_applet_api::gpio::{Event, InputConfig, OutputConfig};
 use wasefire_error::Error;
 
 use crate::{convert, convert_bool, convert_unit};
@@ -132,5 +134,84 @@ impl Gpio {
     /// Toggles the logical value of a GPIO (must be configured as output).
     pub fn toggle(&self) -> Result<(), Error> {
         self.write(!self.last_write()?)
+    }
+}
+
+/// Provides callback support for GPIO events.
+pub trait Handler: 'static {
+    /// Called when a GPIO event triggered.
+    fn event(&self);
+}
+
+impl<F: Fn() + 'static> Handler for F {
+    fn event(&self) {
+        self()
+    }
+}
+
+/// Provides listening support for GPIO events.
+#[must_use]
+pub struct Listener<H: Handler> {
+    gpio: usize,
+    // Safety: This is a `Box<H>` we own and lend the platform as a shared borrow `&'a H` where
+    // `'a` starts at `api::register()` and ends at `api::unregister()`.
+    handler: *const H,
+}
+
+impl<H: Handler> Listener<H> {
+    /// Starts listening for GPIO events.
+    ///
+    /// The `gpio` argument is the index of the button to listen events for. It must be less than
+    /// [count()]. The `handler` argument is the callback to be called on events. Note that it may
+    /// be an `Fn()` closure, see [Handler::event()] for callback documentation.
+    ///
+    /// The listener stops listening when dropped.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// Listener::new(index, Event::AnyChange, || debug!("An event triggered"))?
+    /// ```
+    pub fn new(gpio: usize, event: Event, handler: H) -> Result<Self, Error> {
+        let handler_func = Self::call;
+        let handler = Box::into_raw(Box::new(handler));
+        let handler_data = handler as *const u8;
+        let event = event as usize;
+        let params = api::register::Params { gpio, event, handler_func, handler_data };
+        convert_unit(unsafe { api::register(params) })?;
+        Ok(Listener { gpio, handler })
+    }
+
+    /// Stops listening.
+    ///
+    /// This is equivalent to calling `core::mem::drop()`.
+    pub fn stop(self) {
+        core::mem::drop(self);
+    }
+
+    /// Drops the listener but continues listening.
+    ///
+    /// This is equivalent to calling `core::mem::forget()`. This can be useful if the listener is
+    /// created deeply in the stack but the callback must continue processing events until the
+    /// applet exits or traps.
+    pub fn leak(self) {
+        core::mem::forget(self);
+    }
+
+    extern "C" fn call(data: *const u8) {
+        // SAFETY: `data` is the `&H` we lent the platform (see `Listener::handler`). We are
+        // borrowing it back for the duration of this call.
+        let handler = unsafe { &*(data as *const H) };
+        handler.event();
+    }
+}
+
+impl<H: Handler> Drop for Listener<H> {
+    fn drop(&mut self) {
+        let params = api::unregister::Params { gpio: self.gpio };
+        convert_unit(unsafe { api::unregister(params) }).unwrap();
+        // SAFETY: `self.handler` is a `Box<H>` we own back, now that the lifetime of the platform
+        // borrow is over (see `Listener::handler`).
+        drop(unsafe { Box::from_raw(self.handler as *mut H) });
     }
 }

@@ -15,12 +15,14 @@
 use wasefire_applet_api::gpio::{self as api, Api};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-gpio")]
-use wasefire_board_api::gpio::Api as _;
+use wasefire_board_api::gpio::{Api as _, Event};
 #[cfg(feature = "board-api-gpio")]
 use wasefire_board_api::{self as board, Id, Support};
 #[cfg(feature = "board-api-gpio")]
 use wasefire_error::{Code, Error};
 
+#[cfg(feature = "board-api-gpio")]
+use crate::event::{Handler, gpio::Key};
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
@@ -30,6 +32,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Read(call) => or_fail!("board-api-gpio", read(call)),
         Api::Write(call) => or_fail!("board-api-gpio", write(call)),
         Api::LastWrite(call) => or_fail!("board-api-gpio", last_write(call)),
+        Api::Register(call) => or_fail!("board-api-gpio", register(call)),
+        Api::Unregister(call) => or_fail!("board-api-gpio", unregister(call)),
     }
 }
 
@@ -85,6 +89,40 @@ fn last_write<B: Board>(call: SchedulerCall<B, api::last_write::Sig>) {
     let result = try {
         let gpio = Id::new(*gpio as usize)?;
         board::Gpio::<B>::last_write(gpio)?
+    };
+    call.reply(result);
+}
+
+#[cfg(feature = "board-api-gpio")]
+fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
+    let api::register::Params { gpio, event, handler_func, handler_data } = call.read();
+    let inst = call.inst();
+    let applet = call.applet();
+    let result = try {
+        let gpio = Id::new(*gpio as usize)?;
+        let (falling, rising) = match api::Event::try_from(*event)? {
+            api::Event::FallingEdge => (true, false),
+            api::Event::RisingEdge => (false, true),
+            api::Event::AnyChange => (true, true),
+        };
+        applet.enable(Handler {
+            key: Key::from(&Event { gpio }).into(),
+            inst,
+            func: *handler_func,
+            data: *handler_data,
+        })?;
+        board::Gpio::<B>::enable(gpio, falling, rising)?
+    };
+    call.reply(result);
+}
+
+#[cfg(feature = "board-api-gpio")]
+fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
+    let api::unregister::Params { gpio } = call.read();
+    let result = try {
+        let gpio = Id::new(*gpio as usize)?;
+        board::Gpio::<B>::disable(gpio)?;
+        call.scheduler().disable_event(Key::from(&Event { gpio }).into())?;
     };
     call.reply(result);
 }

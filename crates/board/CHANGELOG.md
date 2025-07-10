@@ -4,12 +4,14 @@
 
 ### Major
 
+- Add `gpio::Api::{enable,disable}` and `Event::Gpio` for GPIO event support
 - Change `crypto::Hash` bound from `FixedOutputReset` to `FixedOutput`
 - Rename `platform::Api::version()` to `platform::Api::running_version()`
 - Remove `platform::update::Api::metadata()` which is a vendor-specific functionality
 
 ### Minor
 
+- Add `gpio::Event` for GPIO event support
 - Add `platform::usb_device()` to create a Wasefire USB device from a USB bus
 - Add `platform::Api::running_side()` and `platform::Api::opposite_version()`
 - Add `Api::Clock` for monotonic wall-time
