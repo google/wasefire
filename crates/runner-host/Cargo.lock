@@ -2717,6 +2717,7 @@ dependencies = [
  "hmac",
  "p256",
  "p384",
+ "rand_core 0.6.4",
  "sha2",
  "signature",
  "ssmarshal",

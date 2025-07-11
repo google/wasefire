@@ -15,9 +15,8 @@
 use crypto_common::{BlockSizeUser, KeySizeUser};
 use digest::{FixedOutput, HashMarker, Key, KeyInit, MacMarker, Output, OutputSizeUser, Update};
 use wasefire_board_api::Supported;
-use wasefire_board_api::crypto::WithError;
+use wasefire_board_api::crypto::{GlobalError, WithError};
 use wasefire_error::Error;
-use wasefire_sync::TakeCell;
 
 use crate::crypto::common::{BlindedKey, HashMode, KeyConfig, KeyMode};
 use crate::crypto::{hash, hmac};
@@ -136,21 +135,3 @@ impl WithError for HmacSha256 {
 }
 
 static ERROR: GlobalError = GlobalError::new();
-
-struct GlobalError(TakeCell<Result<(), Error>>);
-
-impl GlobalError {
-    const fn new() -> Self {
-        GlobalError(TakeCell::new(None))
-    }
-
-    fn with<T>(&self, operation: impl FnOnce() -> T) -> Result<T, Error> {
-        self.0.put(Ok(()));
-        let result = operation();
-        self.0.take().map(|()| result)
-    }
-
-    fn record<T>(&self, x: Result<T, Error>) -> Option<T> {
-        x.inspect_err(|e| self.0.with(|x| *x = Err(*e))).ok()
-    }
-}

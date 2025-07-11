@@ -888,6 +888,7 @@ dependencies = [
  "hmac",
  "p256",
  "p384",
+ "rand_core",
  "sha2",
  "signature",
  "ssmarshal",

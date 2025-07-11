@@ -368,6 +368,185 @@
     ): i32
   // END OF MODULE crypto_ec
 
+  // START OF MODULE crypto_ecdsa
+  // ECDSA.
+    enum crypto_ecdsa_Curve {
+      P256 = 0,
+
+      P384 = 1,
+    }
+
+    // The kind of objects for import/export.
+    enum crypto_ecdsa_Kind {
+      // A private key.
+      Private = 0,
+
+      // A public key.
+      Public = 1,
+    }
+
+    // Whether a curve is supported.
+    @external("env", "cds")
+    export declare function crypto_ecdsa_is_supported(
+      // The enum value of the [curve][super::Curve].
+      curve: usize,
+    ): i32
+
+    // Returns the layout of an object.
+    //
+    // All pointers to such objects must have the appropriate layout.
+    @external("env", "cdl")
+    export declare function crypto_ecdsa_get_layout(
+      // The curve.
+      curve: usize,
+
+      // The kind of object.
+      kind: usize,
+
+      // The size.
+      size: usize,
+
+      // The alignment.
+      align: usize,
+    ): i32
+
+    // Returns the length of a wrapped private key.
+    @external("env", "cdk")
+    export declare function crypto_ecdsa_wrapped_length(
+      // The curve.
+      curve: usize,
+    ): i32
+
+    // Generates a private key.
+    @external("env", "cdg")
+    export declare function crypto_ecdsa_generate(
+      // The curve.
+      curve: usize,
+
+      // The private key.
+      private_: usize,
+    ): i32
+
+    // Returns the public key of a private key.
+    @external("env", "cdp")
+    export declare function crypto_ecdsa_public(
+      // The curve.
+      curve: usize,
+
+      // The private key.
+      private_: usize,
+
+      // The public key.
+      public_: usize,
+    ): i32
+
+    // Signs a pre-hashed message.
+    @external("env", "cdi")
+    export declare function crypto_ecdsa_sign(
+      // The curve.
+      curve: usize,
+
+      // The private key.
+      private_: usize,
+
+      // The pre-hashed message.
+      digest: usize,
+
+      // The first part of the signature.
+      r: usize,
+
+      // The second part of the signature.
+      s: usize,
+    ): i32
+
+    // Verifies a signature.
+    @external("env", "cdv")
+    export declare function crypto_ecdsa_verify(
+      // The curve.
+      curve: usize,
+
+      // The public key.
+      public_: usize,
+
+      // The pre-hashed message.
+      digest: usize,
+
+      // The first part of the signature.
+      r: usize,
+
+      // The second part of the signature.
+      s: usize,
+    ): i32
+
+    // Drops a private key.
+    @external("env", "cdd")
+    export declare function crypto_ecdsa_drop(
+      // The curve.
+      curve: usize,
+
+      // The private key.
+      private_: usize,
+    ): i32
+
+    // Wraps a private key.
+    @external("env", "cdw")
+    export declare function crypto_ecdsa_wrap(
+      // The curve.
+      curve: usize,
+
+      // The private key.
+      private_: usize,
+
+      // The wrapped private key.
+      wrapped: usize,
+    ): i32
+
+    // Unwraps a private key.
+    @external("env", "cdu")
+    export declare function crypto_ecdsa_unwrap(
+      // The curve.
+      curve: usize,
+
+      // The wrapped private key.
+      wrapped: usize,
+
+      // The private key.
+      private_: usize,
+    ): i32
+
+    // Exports a public key.
+    @external("env", "cde")
+    export declare function crypto_ecdsa_export(
+      // The curve.
+      curve: usize,
+
+      // The public key.
+      public_: usize,
+
+      // The x coordinate in big-endian.
+      x: usize,
+
+      // The y coordinate in big-endian.
+      y: usize,
+    ): i32
+
+    // Imports a public key.
+    @external("env", "cdm")
+    export declare function crypto_ecdsa_import(
+      // The curve.
+      curve: usize,
+
+      // The x coordinate in big-endian.
+      x: usize,
+
+      // The y coordinate in big-endian.
+      y: usize,
+
+      // The public key.
+      public_: usize,
+    ): i32
+  // END OF MODULE crypto_ecdsa
+
   // START OF MODULE crypto_gcm
   // AES-256-GCM.
     // Bit-shift for the supported bit-flags.

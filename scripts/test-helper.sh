@@ -167,6 +167,7 @@ clock
 crypto-cbc
 crypto-ccm
 crypto-ec
+crypto-ecdsa
 crypto-gcm
 crypto-hash
 crypto-hkdf
@@ -195,7 +196,9 @@ crypto-aes256-gcm
 crypto-hmac-sha256
 crypto-hmac-sha384
 crypto-p256
+crypto-p256-ecdsa
 crypto-p384
+crypto-p384-ecdsa
 crypto-sha256
 crypto-sha384
 gpio
@@ -216,7 +219,9 @@ aes256-gcm
 hmac-sha256
 hmac-sha384
 p256
+p256-ecdsa
 p384
+p384-ecdsa
 sha256
 sha384
 '

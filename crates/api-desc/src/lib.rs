@@ -559,6 +559,11 @@ impl Field {
         &self, output: &mut dyn Write, path: &Path, separator: &str,
     ) -> std::io::Result<()> {
         let Field { docs, name, type_ } = self;
+        let name = match name.as_str() {
+            "private" => "private_",
+            "public" => "public_",
+            x => x,
+        };
         let path = Path::Mod { name: "", prev: path };
         write_docs(output, docs, &path)?;
         write!(output, "{path:#}{name}: ")?;

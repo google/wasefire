@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support `crypto::ecdsa` module
 - Use Rust edition 2024
 
 ### Patch
