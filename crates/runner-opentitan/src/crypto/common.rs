@@ -35,6 +35,7 @@ impl HashMode {
 }
 
 // otcrypto_const_byte_buf_t
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct ConstByteBuf {
     pub data: *const u8,

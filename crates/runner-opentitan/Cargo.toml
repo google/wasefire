@@ -45,6 +45,7 @@ features = [
   "board-api-crypto-hmac-sha256",
   "board-api-crypto-sha256",
   "board-api-led",
+  "board-api-rng",
   "board-api-storage",
   "board-api-timer",
 ]
