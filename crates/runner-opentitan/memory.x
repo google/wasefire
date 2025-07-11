@@ -21,11 +21,11 @@ be written and erased.
 */
 _rom_ext  = 0x20000000; /* 64 KiB */
 _manifest = 0x20010000; /* 1 KiB */
-_platform = 0x20010400; /* 255 KiB */
-_appleta  = 0x20050000; /* 156 KiB */
+_platform = 0x20010400; /* 351 KiB */
+_appleta  = 0x20068000; /* 60 KiB */
 _storea   = 0x20077000; /* 36 KiB */
 _limita   = 0x20080000;
-_appletb  = 0x200d0000; /* 156 KiB */
+_appletb  = 0x200e8000; /* 60 KiB */
 _storeb   = 0x200f7000; /* 34 KiB */
 _limitb   = 0x200ff800;
 ASSERT(_appleta + 0x80000 == _appletb, "Bad applet region");

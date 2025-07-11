@@ -38,3 +38,9 @@ pub fn unwrap_status(mut x: i32) -> Result<i32, Error> {
     let code = ((x >> 16 << 5) | x & 0x1f) as u16 | 0x8000;
     Err(Error::new(space, code))
 }
+
+#[cfg(false)]
+#[unsafe(no_mangle)]
+extern "C" fn wasefire_debug_mark(mark: i32) {
+    wasefire_logger::error!("DEBUG MARK {}", mark);
+}

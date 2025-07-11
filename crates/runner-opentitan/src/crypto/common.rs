@@ -48,6 +48,20 @@ impl From<&[u8]> for ConstByteBuf {
     }
 }
 
+// otcrypto_byte_buf_t
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct ByteBuf {
+    pub data: *mut u8,
+    pub len: usize,
+}
+
+impl From<&mut [u8]> for ByteBuf {
+    fn from(value: &mut [u8]) -> Self {
+        ByteBuf { data: value.as_mut_ptr(), len: value.len() }
+    }
+}
+
 // otcrypto_const_word32_buf_t
 #[repr(C)]
 pub struct ConstWord32Buf {
@@ -85,6 +99,7 @@ pub struct HashDigest {
 // otcrypto_key_mode_t
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum KeyMode {
+    AesCbc = (KeyType::Aes.to_c() << 16 | AesKeyMode::Cbc.to_c()) as isize,
     HmacSha256 = (KeyType::Hmac.to_c() << 16 | HmacKeyMode::Sha256.to_c()) as isize,
 }
 
@@ -95,6 +110,7 @@ impl KeyMode {
 
     fn key_length(self) -> usize {
         match self {
+            KeyMode::AesCbc => 32,
             KeyMode::HmacSha256 => 64,
         }
     }
@@ -103,10 +119,23 @@ impl KeyMode {
 // otcrypto_key_type_t
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum KeyType {
+    Aes = 0x8e9,
     Hmac = 0xe3f,
 }
 
 impl KeyType {
+    const fn to_c(self) -> i32 {
+        self as i32
+    }
+}
+
+// otcrypto_aes_key_mode_t
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum AesKeyMode {
+    Cbc = 0xf3a,
+}
+
+impl AesKeyMode {
     const fn to_c(self) -> i32 {
         self as i32
     }

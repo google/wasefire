@@ -12,15 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::crypto;
+use typenum::{U16, U32};
+use wasefire_board_api::Supported;
+use wasefire_board_api::crypto::cbc::{Api, Array};
+use wasefire_error::Error;
 
-mod aes;
-mod hmac;
+use crate::crypto::aes;
 
 pub enum Impl {}
 
-impl crypto::Api for Impl {
-    type Aes256Cbc = aes::Impl;
-    type HmacSha256 = hmac::HmacSha256;
-    type Sha256 = hmac::Sha256;
+impl Supported for Impl {}
+
+impl Api<U32, U16> for Impl {
+    fn encrypt(key: &Array<U32>, iv: &Array<U16>, blocks: &mut [u8]) -> Result<(), Error> {
+        aes::encrypt_cbc(key.as_array().unwrap(), iv.as_array().unwrap(), blocks)
+    }
+
+    fn decrypt(key: &Array<U32>, iv: &Array<U16>, blocks: &mut [u8]) -> Result<(), Error> {
+        aes::decrypt_cbc(key.as_array().unwrap(), iv.as_array().unwrap(), blocks)
+    }
 }
