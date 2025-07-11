@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_error::SpaceParam;
+use wasefire_error::{Error, SpaceParam};
 
 #[repr(u8)]
 pub enum Space {
     Flash = 0x81,
     Hmac = 0x82,
+    // 0xe0 and above are used by unwrap_status() below
 }
 
 impl From<Space> for u8 {
@@ -27,3 +28,13 @@ impl From<Space> for u8 {
 }
 
 impl SpaceParam for Space {}
+
+pub fn unwrap_status(mut x: i32) -> Result<i32, Error> {
+    if 0 <= x {
+        return Ok(x);
+    }
+    x &= i32::MAX;
+    let space = (x >> 26) as u8 | 0xe0;
+    let code = ((x >> 16 << 5) | x & 0x1f) as u16 | 0x8000;
+    Err(Error::new(space, code))
+}

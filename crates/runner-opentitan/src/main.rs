@@ -33,9 +33,10 @@ exactly_one_of!["native", "wasm"];
 mod allocator;
 mod board;
 mod bootsvc;
+mod crypto;
 mod error;
 mod flash;
-mod hmac;
+mod hardened_bool;
 mod manifest;
 mod multibit;
 mod plic;
@@ -74,8 +75,6 @@ defmt::timestamp!("{=u64:us}", time::uptime_us());
 fn main() -> ! {
     allocator::init();
     time::init();
-    #[cfg(feature = "debug")]
-    log::info!("{}", bootsvc::Format);
     flash::init();
     board::init();
     // Interrupts may assume the board is initialized, so this must be last.

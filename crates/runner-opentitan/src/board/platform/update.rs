@@ -56,15 +56,18 @@ impl Api for Impl {
             let Some(writing) = state.platform.update.storage.take() else {
                 return Err(Error::user(Code::InvalidState));
             };
-            if writing.flush(&state.storage.other)?.is_some() { reboot() } else { Ok(()) }
+            if writing.flush(&state.storage.other)?.is_some() {
+                reboot()?;
+            }
+            Ok(())
         })
     }
 }
 
-fn reboot() -> ! {
+fn reboot() -> Result<!, Error> {
     let next = crate::flash::active().opposite();
     let primary = if version(true) < version(false) { next.opposite() } else { next };
     log::info!("Rebooting to side {} (primary={})", next, primary);
-    crate::bootsvc::next_boot(Some(next), Some(primary));
+    crate::bootsvc::next_boot(Some(next), Some(primary))?;
     crate::reboot();
 }

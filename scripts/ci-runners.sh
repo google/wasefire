@@ -15,12 +15,14 @@
 
 set -e
 . scripts/log.sh
+. scripts/test-helper.sh
 
 # This script runs the continuous integration tests for the runners.
 
 for crate in $(ls crates); do
   name=${crate#runner-}
   [ $crate = $name ] && continue
+  [ $name = opentitan ] && ensure_submodule third_party/lowRISC/opentitan
   x cargo xtask runner $name
   x cargo xtask --release runner $name
 done

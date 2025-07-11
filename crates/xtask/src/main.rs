@@ -635,6 +635,14 @@ impl RunnerOptions {
                 rustflags.push(format!("-C link-arg=--defsym=RUNNER_VERSION={version}"));
             }
             if self.name == RunnerName::OpenTitan {
+                const OPENTITAN: &str = "third_party/lowRISC/opentitan";
+                const CRYPTODIR: &str = "sw/device/lib/crypto";
+                let mut bazel = Command::new("bazel");
+                bazel.current_dir(OPENTITAN);
+                bazel.args(["build", &format!("//{CRYPTODIR}:otcrypto")]);
+                cmd::execute(&mut bazel).await?;
+                rustflags.push(format!("-C link-arg=-L../../{OPENTITAN}/bazel-bin/{CRYPTODIR}"));
+                rustflags.push("-C link-arg=-lotcrypto".to_string());
                 let version = match version {
                     Some(x) => HEX.decode(x.as_bytes())?,
                     None => vec![0; 20],

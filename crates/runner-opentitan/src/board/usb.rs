@@ -48,17 +48,6 @@ impl HasRpc<'static, Usb> for Impl {
 
     #[cfg(feature = "test-vendor")]
     fn vendor(request: &[u8]) -> Result<Box<[u8]>, Error> {
-        use wasefire_common::platform::Side;
-
-        fn slot(x: u8) -> Option<Option<Side>> {
-            Some(match x {
-                b'_' | b'U' => None,
-                b'A' => Some(Side::A),
-                b'B' => Some(Side::B),
-                _ => return None,
-            })
-        }
-
         if let Some(request) = request.strip_prefix(b"echo ") {
             let mut response = request.to_vec().into_boxed_slice();
             for x in &mut response {
@@ -71,6 +60,15 @@ impl HasRpc<'static, Usb> for Impl {
             }
             Ok(response)
         } else if let Some(request) = request.strip_prefix(b"next_boot ") {
+            use wasefire_common::platform::Side;
+            fn slot(x: u8) -> Option<Option<Side>> {
+                Some(match x {
+                    b'_' | b'U' => None,
+                    b'A' => Some(Side::A),
+                    b'B' => Some(Side::B),
+                    _ => return None,
+                })
+            }
             let result = try {
                 let (next, primary) = match request.trim_ascii_end() {
                     [next, b' ', primary] => (*next, *primary),
@@ -81,7 +79,7 @@ impl HasRpc<'static, Usb> for Impl {
             let Some((next, primary)) = result else {
                 return Err(Error::user(Code::InvalidArgument));
             };
-            crate::bootsvc::next_boot(next, primary);
+            crate::bootsvc::next_boot(next, primary)?;
             Ok(Box::default())
         } else {
             Err(Error::user(Code::InvalidArgument))

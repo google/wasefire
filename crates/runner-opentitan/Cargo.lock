@@ -418,6 +418,7 @@ dependencies = [
 name = "runner-opentitan"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "critical-section",
  "crypto-common",
  "defmt 1.0.1",
