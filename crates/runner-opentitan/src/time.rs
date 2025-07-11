@@ -40,3 +40,9 @@ pub fn deadline_us(deadline: u64) {
     RV_TIMER.compare_upper0(0).write_raw((deadline >> 32) as u32);
     RV_TIMER.intr_enable(0).reset().ie(true).reg.write();
 }
+
+// This function is (at least) used by cryptolib for AES-256-CBC.
+#[unsafe(no_mangle)]
+extern "C" fn to_cpu_cycles(usec: u64) -> u64 {
+    usec * 100_000_000 // 100Mhz
+}
