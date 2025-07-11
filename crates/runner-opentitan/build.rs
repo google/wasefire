@@ -14,4 +14,8 @@
 
 fn main() {
     println!("cargo:rerun-if-changed=memory.x");
+    println!(
+        "cargo:rerun-if-changed=../../third_party/lowRISC/opentitan/bazel-bin/sw/device/lib/\
+         crypto/libotcrypto.a"
+    );
 }

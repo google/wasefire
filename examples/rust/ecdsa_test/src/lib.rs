@@ -66,7 +66,7 @@ fn test<C: Curve>(name: &str, vectors: &[EcdsaVector]) {
         return;
     }
     for &EcdsaVector { x, y, m, r, s, v } in vectors {
-        debug!("- {:02x?}", &m[.. 8]);
+        debug!("- {:02x?} {v}", &m[.. 8]);
         let key = Public::<C>::import(x, y).unwrap();
         assert_eq!(key.verify(m, r, s).unwrap(), v);
         let mut pub_x = vec![0; C::SIZE];

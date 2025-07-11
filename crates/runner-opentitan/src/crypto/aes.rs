@@ -16,7 +16,9 @@
 
 use wasefire_error::{Code, Error};
 
-use crate::crypto::common::{BlindedKey, ByteBuf, ConstByteBuf, KeyConfig, KeyMode, Word32Buf};
+use crate::crypto::common::{
+    BlindedKey, ByteBuf, ConstByteBuf, KeyConfig, KeyMode, OwnedBlindedKey, Word32Buf,
+};
 use crate::error::unwrap_status;
 
 pub fn encrypt_cbc(key: &[u8; 32], iv: &[u8; 16], blocks: &mut [u8]) -> Result<(), Error> {
@@ -27,7 +29,7 @@ pub fn encrypt_cbc(key: &[u8; 32], iv: &[u8; 16], blocks: &mut [u8]) -> Result<(
     let mut iv: [u32; 4] = bytemuck::cast(*iv);
     unwrap_status(unsafe {
         otcrypto_aes(
-            key,
+            &key.0,
             (&mut iv[..]).into(),
             Mode::Cbc.to_c(),
             Operation::Encrypt.to_c(),
@@ -47,7 +49,7 @@ pub fn decrypt_cbc(key: &[u8; 32], iv: &[u8; 16], blocks: &mut [u8]) -> Result<(
     let mut iv: [u32; 4] = bytemuck::cast(*iv);
     unwrap_status(unsafe {
         otcrypto_aes(
-            key,
+            &key.0,
             (&mut iv[..]).into(),
             Mode::Cbc.to_c(),
             Operation::Decrypt.to_c(),
@@ -59,10 +61,10 @@ pub fn decrypt_cbc(key: &[u8; 32], iv: &[u8; 16], blocks: &mut [u8]) -> Result<(
     Ok(())
 }
 
-fn convert_key(key: &[u8; 32]) -> Result<BlindedKey, Error> {
+fn convert_key(key: &[u8; 32]) -> Result<OwnedBlindedKey, Error> {
     let config = KeyConfig::new(KeyMode::AesCbc);
     let key: [u32; 8] = bytemuck::cast(*key);
-    BlindedKey::import(config, key[..].into(), [0u32; 8][..].into())
+    OwnedBlindedKey::import(config, key[..].into(), [0u32; 8][..].into())
 }
 
 // otcrypto_aes_mode_t
@@ -104,7 +106,7 @@ impl Padding {
 
 unsafe extern "C" {
     fn otcrypto_aes(
-        key: BlindedKey, iv: Word32Buf, mode: i32, operation: i32, input: ConstByteBuf,
+        key: *const BlindedKey, iv: Word32Buf, mode: i32, operation: i32, input: ConstByteBuf,
         padding: i32, output: ByteBuf,
     ) -> i32;
 }

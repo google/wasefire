@@ -12,8 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use wasefire_logger as log;
+
+use crate::error::unwrap_status;
+
 pub mod aes;
 pub mod common;
 pub mod drbg;
 pub mod hash;
 pub mod hmac;
+pub mod p256;
+
+pub fn init() {
+    let _ = unwrap_status(unsafe { entropy_complex_init() })
+        .inspect_err(|e| log::error!("entropy_complex_init() failed {}", e));
+}
+
+unsafe extern "C" {
+    fn entropy_complex_init() -> i32;
+}

@@ -41,8 +41,8 @@ pub fn deadline_us(deadline: u64) {
     RV_TIMER.intr_enable(0).reset().ie(true).reg.write();
 }
 
-// This function is (at least) used by cryptolib for AES-256-CBC.
+// This function is used by cryptolib through busy_spin_micros() in keymgr_sideload_clear().
 #[unsafe(no_mangle)]
 extern "C" fn to_cpu_cycles(usec: u64) -> u64 {
-    usec * 100_000_000 // 100Mhz
+    usec * 100 // 100Mhz
 }

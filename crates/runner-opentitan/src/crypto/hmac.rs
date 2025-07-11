@@ -14,19 +14,20 @@
 
 use wasefire_error::Error;
 
-use crate::crypto::common::{BlindedKey, ConstByteBuf, Word32Buf};
+use crate::crypto::common::{BlindedKey, ConstByteBuf, OwnedBlindedKey, Word32Buf};
 use crate::error::unwrap_status;
 
 // sw/device/lib/crypto/include/hmac.h:otcrypto_hmac_context_t
+#[repr(C)]
 pub struct Context {
-    key: BlindedKey,
+    key: OwnedBlindedKey,
     data: [u32; 92],
 }
 
 impl Context {
-    pub fn init(key: BlindedKey) -> Result<Self, Error> {
+    pub fn init(key: OwnedBlindedKey) -> Result<Self, Error> {
         let mut context = Context { key, data: [0; _] };
-        let status = unsafe { otcrypto_hmac_init(context.to_c(), &context.key) };
+        let status = unsafe { otcrypto_hmac_init(context.to_c(), &context.key.0) };
         unwrap_status(status)?;
         Ok(context)
     }
