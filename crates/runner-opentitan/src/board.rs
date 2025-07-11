@@ -25,6 +25,7 @@ mod crypto;
 mod debug;
 mod led;
 mod platform;
+mod rng;
 mod storage;
 pub mod timer;
 pub mod usb;
@@ -56,6 +57,7 @@ pub fn init() {
         usb: usb::init(),
     };
     led::init();
+    rng::init();
     critical_section::with(|cs| STATE.replace(cs, Some(state)));
 }
 
@@ -90,6 +92,7 @@ impl board::Api for Board {
     type Debug = debug::Impl;
     type Led = led::Impl;
     type Platform = platform::Impl;
+    type Rng = rng::Impl;
     type Storage = storage::Impl;
     type Timer = timer::Impl;
 }

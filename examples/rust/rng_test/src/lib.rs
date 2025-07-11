@@ -40,4 +40,9 @@ fn test_non_constant() {
             assert!(buffers[j] != buffers[i]);
         }
     }
+    for len in 0 .. 10 {
+        let mut buffer = alloc::vec![0; len];
+        rng::fill_bytes(&mut buffer).unwrap();
+        debug!("- {buffer:02x?}");
+    }
 }

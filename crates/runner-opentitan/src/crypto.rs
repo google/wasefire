@@ -13,5 +13,6 @@
 // limitations under the License.
 
 pub mod common;
+pub mod drbg;
 pub mod hash;
 pub mod hmac;
