@@ -19,4 +19,4 @@ fn main() {
 }
 
 // TODO(https://github.com/rust-lang/rust/issues/95513): Remove when fixed.
-use wasefire as _;
+use {ecdh_vectors as _, ecdsa_vectors as _, wasefire as _};

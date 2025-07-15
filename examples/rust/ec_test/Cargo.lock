@@ -138,9 +138,15 @@ dependencies = [
 name = "ec_test"
 version = "0.1.0"
 dependencies = [
+ "ecdh_vectors",
+ "ecdsa_vectors",
  "wasefire",
  "wasefire-stub",
 ]
+
+[[package]]
+name = "ecdh_vectors"
+version = "0.1.0"
 
 [[package]]
 name = "ecdsa"
@@ -154,6 +160,10 @@ dependencies = [
  "rfc6979",
  "signature",
 ]
+
+[[package]]
+name = "ecdsa_vectors"
+version = "0.1.0"
 
 [[package]]
 name = "elliptic-curve"

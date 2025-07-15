@@ -1,18 +1,9 @@
 [package]
-name = "ec_test"
+name = "ecdsa_vectors"
 version = "0.1.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 edition = "2024"
-
-[dependencies]
-ecdh_vectors = { path = "crates/ecdh_vectors" }
-ecdsa_vectors = { path = "crates/ecdsa_vectors" }
-wasefire = { path = "../../../crates/prelude" }
-wasefire-stub = { path = "../../../crates/stub", optional = true }
-
-[features]
-test = ["dep:wasefire-stub", "wasefire/test"]
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
