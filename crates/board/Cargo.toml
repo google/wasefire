@@ -136,7 +136,6 @@ software-crypto-p256 = [
   "api-crypto-p256",
   "dep:p256",
   "internal-software-crypto-ecc",
-  "p256?/arithmetic",
   "p256?/ecdsa",
 ]
 software-crypto-p256-ecdsa = [
@@ -149,7 +148,6 @@ software-crypto-p384 = [
   "api-crypto-p384",
   "dep:p384",
   "internal-software-crypto-ecc",
-  "p384?/arithmetic",
   "p384?/ecdsa",
 ]
 software-crypto-p384-ecdsa = [
@@ -203,8 +201,6 @@ internal-software-crypto-ecc = [
   "dep:signature",
   "ecdsa/signing",
   "ecdsa/verifying",
-  "elliptic-curve/arithmetic",
-  "elliptic-curve/sec1",
 ]
 internal-software-crypto-ecdsa = [
   "dep:ecdsa",
