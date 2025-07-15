@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Test vectors for ECDSA.
+//! Test vectors for ECDH.
 
 #![no_std]
 
