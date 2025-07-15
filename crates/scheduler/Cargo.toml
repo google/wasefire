@@ -55,6 +55,7 @@ applet-api-clock = ["wasefire-applet-api/api-clock"]
 applet-api-crypto-cbc = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-cbc"]
 applet-api-crypto-ccm = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ccm"]
 applet-api-crypto-ec = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ec"]
+applet-api-crypto-ecdsa = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ecdsa"]
 applet-api-crypto-gcm = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-gcm"]
 applet-api-crypto-hash = [
   "internal-applet-api-crypto-hash",
@@ -120,11 +121,22 @@ board-api-crypto-p256 = [
   "internal-board-api-crypto-ecc",
   "wasefire-board-api/api-crypto-p256",
 ]
+board-api-crypto-p256-ecdsa = [
+  "applet-api-crypto-ecdsa",
+  "internal-board-api-crypto-ecdsa",
+  "wasefire-board-api/api-crypto-p256-ecdsa",
+]
 board-api-crypto-p384 = [
   "applet-api-crypto-ec",
   "generic-array/more_lengths",
   "internal-board-api-crypto-ecc",
   "wasefire-board-api/api-crypto-p384",
+]
+board-api-crypto-p384-ecdsa = [
+  "applet-api-crypto-ecdsa",
+  "generic-array/more_lengths",
+  "internal-board-api-crypto-ecdsa",
+  "wasefire-board-api/api-crypto-p384-ecdsa",
 ]
 board-api-crypto-sha256 = ["applet-api-crypto-hash", "wasefire-board-api/api-crypto-sha256"]
 board-api-crypto-sha384 = ["applet-api-crypto-hash", "wasefire-board-api/api-crypto-sha384"]
@@ -163,6 +175,7 @@ full-applet-api = [
   "applet-api-crypto-cbc",
   "applet-api-crypto-ccm",
   "applet-api-crypto-ec",
+  "applet-api-crypto-ecdsa",
   "applet-api-crypto-gcm",
   "applet-api-crypto-hash",
   "applet-api-crypto-hkdf",
@@ -191,7 +204,9 @@ full-board-api = [
   "board-api-crypto-hmac-sha256",
   "board-api-crypto-hmac-sha384",
   "board-api-crypto-p256",
+  "board-api-crypto-p256-ecdsa",
   "board-api-crypto-p384",
+  "board-api-crypto-p384-ecdsa",
   "board-api-crypto-sha256",
   "board-api-crypto-sha384",
   "board-api-gpio",
@@ -227,7 +242,15 @@ software-crypto-hmac-sha384 = [
   "wasefire-board-api/software-crypto-hmac-sha384",
 ]
 software-crypto-p256 = ["board-api-crypto-p256", "wasefire-board-api/software-crypto-p256"]
+software-crypto-p256-ecdsa = [
+  "board-api-crypto-p256-ecdsa",
+  "wasefire-board-api/software-crypto-p256-ecdsa",
+]
 software-crypto-p384 = ["board-api-crypto-p384", "wasefire-board-api/software-crypto-p384"]
+software-crypto-p384-ecdsa = [
+  "board-api-crypto-p384-ecdsa",
+  "wasefire-board-api/software-crypto-p384-ecdsa",
+]
 software-crypto-sha256 = ["board-api-crypto-sha256", "wasefire-board-api/software-crypto-sha256"]
 software-crypto-sha384 = ["board-api-crypto-sha384", "wasefire-board-api/software-crypto-sha384"]
 # Selects between Wasm applet or native applet (choose exactly one).
@@ -245,6 +268,7 @@ internal-applet-api-radio = []
 internal-applet-api-store = []
 internal-applet-api-usb = []
 internal-board-api-crypto-ecc = []
+internal-board-api-crypto-ecdsa = []
 internal-board-api-radio = []
 internal-board-api-usb = []
 internal-debug = []

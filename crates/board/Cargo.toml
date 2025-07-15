@@ -31,6 +31,7 @@ elliptic-curve = { version = "0.13.8", default-features = false, optional = true
 hmac = { version = "0.12.1", default-features = false, optional = true }
 p256 = { version = "0.13.2", default-features = false, optional = true }
 p384 = { version = "0.13.1", default-features = false, optional = true }
+rand_core = { version = "0.6.4", default-features = false, optional = true }
 sha2 = { version = "0.10.9", default-features = false, optional = true }
 signature = { version = "2.2.0", default-features = false, optional = true }
 typenum = { version = "1.18.0", default-features = false, optional = true }
@@ -67,7 +68,9 @@ api-crypto-aes256-gcm = ["internal-api-crypto-aead"]
 api-crypto-hmac-sha256 = ["internal-api-crypto-hmac"]
 api-crypto-hmac-sha384 = ["internal-api-crypto-hmac"]
 api-crypto-p256 = ["internal-api-crypto-ecc"]
+api-crypto-p256-ecdsa = ["internal-api-crypto-ecdsa"]
 api-crypto-p384 = ["internal-api-crypto-ecc"]
+api-crypto-p384-ecdsa = ["internal-api-crypto-ecdsa"]
 api-crypto-sha256 = ["internal-api-crypto-hash"]
 api-crypto-sha384 = ["internal-api-crypto-hash"]
 api-gpio = ["bytemuck/derive"]
@@ -89,7 +92,9 @@ full-api = [
   "api-crypto-hmac-sha256",
   "api-crypto-hmac-sha384",
   "api-crypto-p256",
+  "api-crypto-p256-ecdsa",
   "api-crypto-p384",
+  "api-crypto-p384-ecdsa",
   "api-crypto-sha256",
   "api-crypto-sha384",
   "api-gpio",
@@ -134,11 +139,23 @@ software-crypto-p256 = [
   "p256?/arithmetic",
   "p256?/ecdsa",
 ]
+software-crypto-p256-ecdsa = [
+  "api-crypto-p256-ecdsa",
+  "dep:p256",
+  "internal-software-crypto-ecdsa",
+  "p256?/ecdsa",
+]
 software-crypto-p384 = [
   "api-crypto-p384",
   "dep:p384",
   "internal-software-crypto-ecc",
   "p384?/arithmetic",
+  "p384?/ecdsa",
+]
+software-crypto-p384-ecdsa = [
+  "api-crypto-p384-ecdsa",
+  "dep:p384",
+  "internal-software-crypto-ecdsa",
   "p384?/ecdsa",
 ]
 software-crypto-sha256 = ["api-crypto-sha256", "dep:sha2"]
@@ -148,8 +165,21 @@ internal-api-crypto = []
 internal-api-crypto-aead = ["dep:crypto-common", "dep:typenum", "internal-api-crypto"]
 internal-api-crypto-cbc = ["dep:crypto-common", "dep:typenum", "internal-api-crypto"]
 internal-api-crypto-ecc = ["dep:crypto-common", "dep:typenum", "internal-api-crypto"]
-internal-api-crypto-hash = ["dep:crypto-common", "dep:digest", "dep:typenum", "internal-api-crypto"]
-internal-api-crypto-hmac = ["dep:crypto-common", "dep:typenum", "digest/mac", "internal-api-crypto"]
+internal-api-crypto-ecdsa = ["internal-api-crypto", "internal-with-error"]
+internal-api-crypto-hash = [
+  "dep:crypto-common",
+  "dep:digest",
+  "dep:typenum",
+  "internal-api-crypto",
+  "internal-with-error",
+]
+internal-api-crypto-hmac = [
+  "dep:crypto-common",
+  "dep:typenum",
+  "digest/mac",
+  "internal-api-crypto",
+  "internal-with-error",
+]
 internal-api-radio = []
 internal-api-usb = []
 internal-software-crypto = [
@@ -159,7 +189,9 @@ internal-software-crypto = [
   "software-crypto-hmac-sha256",
   "software-crypto-hmac-sha384",
   "software-crypto-p256",
+  "software-crypto-p256-ecdsa",
   "software-crypto-p384",
+  "software-crypto-p384-ecdsa",
   "software-crypto-sha256",
   "software-crypto-sha384",
 ]
@@ -169,13 +201,21 @@ internal-software-crypto-ecc = [
   "dep:ecdsa",
   "dep:elliptic-curve",
   "dep:signature",
-  "ecdsa?/arithmetic",
-  "ecdsa?/signing",
-  "ecdsa?/verifying",
-  "elliptic-curve?/arithmetic",
-  "elliptic-curve?/sec1",
+  "ecdsa/signing",
+  "ecdsa/verifying",
+  "elliptic-curve/arithmetic",
+  "elliptic-curve/sec1",
+]
+internal-software-crypto-ecdsa = [
+  "dep:ecdsa",
+  "dep:elliptic-curve",
+  "dep:rand_core",
+  "dep:signature",
+  "ecdsa/signing",
+  "ecdsa/verifying",
 ]
 internal-software-crypto-hmac = ["dep:hmac"]
+internal-with-error = []
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"

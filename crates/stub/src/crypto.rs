@@ -13,4 +13,5 @@
 // limitations under the License.
 
 mod ec;
+mod ecdsa;
 mod hash;

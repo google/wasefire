@@ -14,6 +14,9 @@
 
 //! Cryptography interface.
 
+#[cfg(feature = "internal-software-crypto-ecdsa")]
+use core::marker::PhantomData;
+
 #[cfg(feature = "internal-api-crypto-hash")]
 use crypto_common::BlockSizeUser;
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
@@ -28,9 +31,13 @@ use digest::MacMarker;
 use digest::{FixedOutput, Update};
 #[cfg(feature = "internal-api-crypto-hmac")]
 use wasefire_error::Code;
+#[cfg(feature = "internal-with-error")]
+use wasefire_sync::TakeCell;
 
+#[cfg(feature = "internal-with-error")]
+use crate::Error;
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
-use crate::{Error, Support};
+use crate::Support;
 
 #[cfg(feature = "internal-api-crypto-aead")]
 pub mod aead;
@@ -38,6 +45,8 @@ pub mod aead;
 pub mod cbc;
 #[cfg(feature = "internal-api-crypto-ecc")]
 pub mod ecc;
+#[cfg(feature = "internal-api-crypto-ecdsa")]
+pub mod ecdsa;
 
 /// Cryptography interface.
 pub trait Api: Send {
@@ -65,9 +74,17 @@ pub trait Api: Send {
     #[cfg(feature = "api-crypto-p256")]
     type P256: ecc::Api<typenum::U32>;
 
+    /// P-256 ECDSA interface.
+    #[cfg(feature = "api-crypto-p256-ecdsa")]
+    type P256Ecdsa: ecdsa::Api<32>;
+
     /// P-384 interface.
     #[cfg(feature = "api-crypto-p384")]
     type P384: ecc::Api<typenum::U48>;
+
+    /// P-384 ECDSA interface.
+    #[cfg(feature = "api-crypto-p384-ecdsa")]
+    type P384Ecdsa: ecdsa::Api<48>;
 
     /// SHA-256 interface.
     #[cfg(feature = "api-crypto-sha256")]
@@ -107,7 +124,7 @@ impl<T> Hmac for T where T: Support<bool> + Send + KeyInit + Update + FixedOutpu
 {}
 
 /// Adds error support to operations with an infallible signature.
-#[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
+#[cfg(feature = "internal-with-error")]
 pub trait WithError {
     /// Executes a seemingly infallible operation with error support.
     ///
@@ -118,13 +135,89 @@ pub trait WithError {
 }
 
 /// Helper trait for infaillible operations.
-#[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
+#[cfg(feature = "internal-with-error")]
 pub trait NoError {}
 
-#[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
+#[cfg(feature = "internal-with-error")]
 impl<T: NoError> WithError for T {
     fn with_error<R>(operation: impl FnOnce() -> R) -> Result<R, Error> {
         Ok(operation())
+    }
+}
+
+/// Helper struct to implement `WithError`.
+#[cfg(feature = "internal-with-error")]
+pub struct GlobalError(TakeCell<Result<(), Error>>);
+
+#[cfg(feature = "internal-with-error")]
+impl GlobalError {
+    /// Creates an empty global error.
+    #[allow(clippy::new_without_default)]
+    pub const fn new() -> Self {
+        GlobalError(TakeCell::new(None))
+    }
+
+    /// Helper to implement `with_error`.
+    ///
+    /// This will consume the global error if not empty.
+    pub fn with<T>(&self, operation: impl FnOnce() -> T) -> Result<T, Error> {
+        self.0.put(Ok(()));
+        let result = operation();
+        self.0.take().map(|()| result)
+    }
+
+    /// Records an error.
+    ///
+    /// This will overwrite any previous error that was not consumed yet.
+    pub fn record<T>(&self, x: Result<T, Error>) -> Option<T> {
+        x.inspect_err(|e| self.0.with(|x| *x = Err(*e))).ok()
+    }
+}
+
+/// Helper to use the board RNG as a cryptography-secure one.
+#[cfg(feature = "internal-software-crypto-ecdsa")]
+pub struct CryptoRng<T: crate::Api> {
+    rng: PhantomData<crate::Rng<T>>,
+}
+
+#[cfg(feature = "internal-software-crypto-ecdsa")]
+impl<T: crate::Api> Default for CryptoRng<T> {
+    fn default() -> Self {
+        CryptoRng { rng: PhantomData }
+    }
+}
+
+#[cfg(feature = "internal-software-crypto-ecdsa")]
+impl<T: crate::Api> rand_core::RngCore for CryptoRng<T> {
+    fn next_u32(&mut self) -> u32 {
+        rand_core::impls::next_u32_via_fill(self)
+    }
+
+    fn next_u64(&mut self) -> u64 {
+        rand_core::impls::next_u64_via_fill(self)
+    }
+
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        self.try_fill_bytes(dest).unwrap()
+    }
+
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+        ERROR
+            .record(<crate::Rng<T> as crate::rng::Api>::fill_bytes(dest))
+            .ok_or_else(|| core::num::NonZeroU32::new(1).unwrap().into())
+    }
+}
+
+#[cfg(feature = "internal-software-crypto-ecdsa")]
+static ERROR: GlobalError = GlobalError::new();
+
+#[cfg(feature = "internal-software-crypto-ecdsa")]
+impl<T: crate::Api> rand_core::CryptoRng for CryptoRng<T> {}
+
+#[cfg(feature = "internal-software-crypto-ecdsa")]
+impl<T: crate::Api> WithError for CryptoRng<T> {
+    fn with_error<R>(operation: impl FnOnce() -> R) -> Result<R, Error> {
+        ERROR.with(operation)
     }
 }
 
@@ -152,9 +245,17 @@ pub type HmacSha384<B> = <super::Crypto<B> as Api>::HmacSha384;
 #[cfg(feature = "api-crypto-p256")]
 pub type P256<B> = <super::Crypto<B> as Api>::P256;
 
+/// P-256 ECDSA interface.
+#[cfg(feature = "api-crypto-p256-ecdsa")]
+pub type P256Ecdsa<B> = <super::Crypto<B> as Api>::P256Ecdsa;
+
 /// P-384 interface.
 #[cfg(feature = "api-crypto-p384")]
 pub type P384<B> = <super::Crypto<B> as Api>::P384;
+
+/// P-384 ECDSA interface.
+#[cfg(feature = "api-crypto-p384-ecdsa")]
+pub type P384Ecdsa<B> = <super::Crypto<B> as Api>::P384Ecdsa;
 
 /// SHA-256 interface.
 #[cfg(feature = "api-crypto-sha256")]
@@ -188,9 +289,17 @@ pub type SoftwareHmacSha384<T> = hmac::SimpleHmac<<T as Api>::Sha384>;
 #[cfg(feature = "software-crypto-p256")]
 pub type SoftwareP256<T> = ecc::Software<p256::NistP256, <T as Api>::Sha256>;
 
+/// P-256 ECDSA interface.
+#[cfg(feature = "software-crypto-p256-ecdsa")]
+pub type SoftwareP256Ecdsa<T, R> = ecdsa::Software<p256::NistP256, <T as Api>::Sha256, R, 32>;
+
 /// P-384 interface.
 #[cfg(feature = "software-crypto-p384")]
 pub type SoftwareP384<T> = ecc::Software<p384::NistP384, <T as Api>::Sha384>;
+
+/// P-384 ECDSA interface.
+#[cfg(feature = "software-crypto-p384-ecdsa")]
+pub type SoftwareP384Ecdsa<T, R> = ecdsa::Software<p384::NistP384, <T as Api>::Sha384, R, 48>;
 
 /// SHA-256 interface.
 #[cfg(feature = "software-crypto-sha256")]

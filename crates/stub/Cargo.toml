@@ -21,6 +21,7 @@ hmac = { version = "0.12.1", default-features = false }
 p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
 p384 = { version = "0.13.1", default-features = false, features = ["ecdsa"] }
 rand = { version = "0.9.1", default-features = false, features = ["thread_rng"] }
+rand_core = { version = "0.6.4", default-features = false, features = ["getrandom"] }
 sha2 = { version = "0.10.9", default-features = false }
 signature = { version = "2.2.0", default-features = false }
 wasefire-error = { version = "0.1.3-git", path = "../error" }
