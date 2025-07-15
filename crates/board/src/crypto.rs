@@ -151,13 +151,15 @@ pub struct GlobalError(TakeCell<Result<(), Error>>);
 
 #[cfg(feature = "internal-with-error")]
 impl GlobalError {
-    /// Creates a global error that did not trigger.
+    /// Creates an empty global error.
     #[allow(clippy::new_without_default)]
     pub const fn new() -> Self {
         GlobalError(TakeCell::new(None))
     }
 
     /// Helper to implement `with_error`.
+    ///
+    /// This will consume the global error if not empty.
     pub fn with<T>(&self, operation: impl FnOnce() -> T) -> Result<T, Error> {
         self.0.put(Ok(()));
         let result = operation();
@@ -165,6 +167,8 @@ impl GlobalError {
     }
 
     /// Records an error.
+    ///
+    /// This will overwrite any previous error that was not consumed yet.
     pub fn record<T>(&self, x: Result<T, Error>) -> Option<T> {
         x.inspect_err(|e| self.0.with(|x| *x = Err(*e))).ok()
     }
