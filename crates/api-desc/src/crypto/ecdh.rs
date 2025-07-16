@@ -154,7 +154,7 @@ pub(crate) fn new() -> Item {
                 /// The curve.
                 curve: usize,
 
-                /// The public key.
+                /// The shared secret.
                 shared: *const u8,
 
                 /// The x coordinate in big-endian.

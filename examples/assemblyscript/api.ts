@@ -503,7 +503,7 @@
       // The curve.
       curve: usize,
 
-      // The public key.
+      // The shared secret.
       shared: usize,
 
       // The x coordinate in big-endian.

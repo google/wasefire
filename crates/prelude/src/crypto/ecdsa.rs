@@ -164,14 +164,14 @@ impl<C: Curve> Public<C> {
 impl<C: Curve> Private<C> {
     fn alloc() -> Result<Self, Error> {
         let layout = get_layout_(C::CURVE, api::Kind::Private)?;
-        Ok(Private { curve: PhantomData, object: Object::new(layout) })
+        Ok(Private { curve: PhantomData, object: Object::new(layout)? })
     }
 }
 
 impl<C: Curve> Public<C> {
     fn alloc() -> Result<Self, Error> {
         let layout = get_layout_(C::CURVE, api::Kind::Public)?;
-        Ok(Public { curve: PhantomData, object: Object::new(layout) })
+        Ok(Public { curve: PhantomData, object: Object::new(layout)? })
     }
 }
 
@@ -208,8 +208,10 @@ impl Drop for Object {
 }
 
 impl Object {
-    fn new(layout: Layout) -> Self {
-        Object { layout, data: unsafe { alloc(layout) } }
+    fn new(layout: Layout) -> Result<Self, Error> {
+        let data = unsafe { alloc(layout) };
+        Error::world(Code::NotEnough).check(!data.is_null())?;
+        Ok(Object { layout, data })
     }
 }
 
