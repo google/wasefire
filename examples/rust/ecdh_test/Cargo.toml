@@ -11,7 +11,6 @@ wasefire = { path = "../../../crates/prelude" }
 wasefire-stub = { path = "../../../crates/stub", optional = true }
 
 [features]
-opentitan = []
 test = ["dep:wasefire-stub", "wasefire/test"]
 
 [lints]
