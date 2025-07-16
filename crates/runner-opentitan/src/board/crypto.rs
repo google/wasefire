@@ -16,11 +16,13 @@ use wasefire_board_api::crypto;
 
 mod aes;
 mod hmac;
+mod p256;
 
 pub enum Impl {}
 
 impl crypto::Api for Impl {
     type Aes256Cbc = aes::Impl;
     type HmacSha256 = hmac::HmacSha256;
+    type P256Ecdsa = p256::Ecdsa;
     type Sha256 = hmac::Sha256;
 }

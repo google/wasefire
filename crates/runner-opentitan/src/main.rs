@@ -76,6 +76,7 @@ fn main() -> ! {
     allocator::init();
     time::init();
     flash::init();
+    crypto::init();
     board::init();
     // Interrupts may assume the board is initialized, so this must be last.
     plic::init();

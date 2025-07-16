@@ -92,14 +92,15 @@ impl From<&mut [u32]> for Word32Buf {
 #[repr(C)]
 pub struct HashDigest {
     pub mode: i32,
-    pub data: *mut u32,
-    pub len: usize,
+    pub data: *mut u32, // borrowed
+    pub len: usize,     // in 32-bit words
 }
 
 // otcrypto_key_mode_t
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum KeyMode {
     AesCbc = (KeyType::Aes.to_c() << 16 | AesKeyMode::Cbc.to_c()) as isize,
+    EcdsaP256 = (KeyType::Ecc.to_c() << 16 | EccKeyMode::EcdsaP256.to_c()) as isize,
     HmacSha256 = (KeyType::Hmac.to_c() << 16 | HmacKeyMode::Sha256.to_c()) as isize,
 }
 
@@ -108,10 +109,20 @@ impl KeyMode {
         self as i32
     }
 
-    fn key_length(self) -> usize {
+    fn key_length(self, public: bool) -> usize {
         match self {
             KeyMode::AesCbc => 32,
+            KeyMode::EcdsaP256 => 32 * (1 + public as usize),
             KeyMode::HmacSha256 => 64,
+        }
+    }
+
+    fn keyblob_length(self) -> usize {
+        let key_length = self.key_length(false);
+        match self {
+            KeyMode::AesCbc => 2 * key_length,
+            KeyMode::EcdsaP256 => 2 * (key_length + 8),
+            KeyMode::HmacSha256 => 2 * key_length,
         }
     }
 }
@@ -121,6 +132,7 @@ impl KeyMode {
 pub enum KeyType {
     Aes = 0x8e9,
     Hmac = 0xe3f,
+    Ecc = 0x15b,
 }
 
 impl KeyType {
@@ -153,6 +165,18 @@ impl HmacKeyMode {
     }
 }
 
+// otcrypto_ecc_key_mode_t
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum EccKeyMode {
+    EcdsaP256 = 0x31e,
+}
+
+impl EccKeyMode {
+    const fn to_c(self) -> i32 {
+        self as i32
+    }
+}
+
 // otcrypto_key_config_t
 #[repr(C)]
 pub struct KeyConfig {
@@ -169,7 +193,7 @@ impl KeyConfig {
         KeyConfig {
             version: 0x7f4, // Version 1
             key_mode: key_mode.to_c(),
-            key_length: key_mode.key_length(),
+            key_length: key_mode.key_length(false),
             hw_backed: hardened_bool::FALSE,
             exportable: hardened_bool::TRUE,
             security_level: SecurityLevel::Low.to_c(),
@@ -193,37 +217,125 @@ impl SecurityLevel {
     }
 }
 
+// otcrypto_unblinded_key_t
+#[repr(C)]
+pub struct UnblindedKey {
+    pub key_mode: i32,
+    pub key_length: usize, // in bytes
+    pub key: *mut u32,     // borrowed
+    pub checksum: u32,
+}
+
+unsafe impl Send for UnblindedKey {}
+
+impl UnblindedKey {
+    // Safety: The input must outlive the output. The output must not be mutated.
+    pub unsafe fn new(key_mode: KeyMode, key: &[u32]) -> Result<Self, Error> {
+        let key_length = key_mode.key_length(true);
+        Error::user(Code::InvalidLength).check(4 * key.len() == key_length)?;
+        Ok(UnblindedKey {
+            key_mode: key_mode.to_c(),
+            key_length,
+            key: key.as_ptr() as *mut u32,
+            checksum: 0,
+        })
+    }
+
+    pub fn key(&self) -> &[u32] {
+        unsafe { core::slice::from_raw_parts(self.key, self.key_length / 4) }
+    }
+
+    fn layout(key_length: usize) -> Result<Layout, Error> {
+        Layout::from_size_align(key_length, 4).map_err(|_| Error::user(Code::InvalidArgument))
+    }
+}
+
+#[repr(C)]
+pub struct OwnedUnblindedKey(pub UnblindedKey);
+
+impl Drop for OwnedUnblindedKey {
+    fn drop(&mut self) {
+        let ptr = self.0.key as *mut u8;
+        let layout = UnblindedKey::layout(self.0.key_length).unwrap();
+        unsafe { dealloc(ptr, layout) };
+    }
+}
+
+impl OwnedUnblindedKey {
+    pub fn new(key_mode: KeyMode) -> Result<Self, Error> {
+        let key_length = key_mode.key_length(true);
+        let key = unsafe { alloc(UnblindedKey::layout(key_length)?) as *mut u32 };
+        Ok(OwnedUnblindedKey(UnblindedKey {
+            key_mode: key_mode.to_c(),
+            key_length,
+            key,
+            checksum: 0,
+        }))
+    }
+}
+
 // otcrypto_blinded_key_t
 #[repr(C)]
 pub struct BlindedKey {
     pub config: KeyConfig,
-    pub keyblob_length: usize,
-    pub keyblob: *mut u32, // owned
+    pub keyblob_length: usize, // in bytes
+    pub keyblob: *mut u32,     // borrowed
     pub checksum: u32,
 }
 
 unsafe impl Send for BlindedKey {}
 
-impl Drop for BlindedKey {
-    fn drop(&mut self) {
-        unsafe { dealloc(self.keyblob as *mut u8, Self::layout(self.keyblob_length).unwrap()) };
-    }
-}
-
 impl BlindedKey {
-    pub fn import(
-        config: KeyConfig, share0: ConstWord32Buf, share1: ConstWord32Buf,
-    ) -> Result<Self, Error> {
-        let keyblob_length = 4 * (share0.len + share1.len);
-        let keyblob = unsafe { alloc(Self::layout(keyblob_length)?) as *mut u32 };
-        let mut key = BlindedKey { config, keyblob_length, keyblob, checksum: 0 };
-        let status = unsafe { otcrypto_import_blinded_key(share0, share1, &mut key) };
-        unwrap_status(status)?;
-        Ok(key)
+    // Safety: The input must outlive the output. The output must not be mutated.
+    pub unsafe fn new(key_mode: KeyMode, keyblob: &[u32]) -> Result<Self, Error> {
+        let config = KeyConfig::new(key_mode);
+        let keyblob_length = key_mode.keyblob_length();
+        Error::user(Code::InvalidLength).check(4 * keyblob.len() == keyblob_length)?;
+        Ok(BlindedKey {
+            config,
+            keyblob_length,
+            keyblob: keyblob.as_ptr() as *mut u32,
+            checksum: 0,
+        })
+    }
+
+    pub fn keyblob(&self) -> &[u32] {
+        unsafe { core::slice::from_raw_parts(self.keyblob, self.keyblob_length / 4) }
     }
 
     fn layout(keyblob_length: usize) -> Result<Layout, Error> {
         Layout::from_size_align(keyblob_length, 4).map_err(|_| Error::user(Code::InvalidArgument))
+    }
+}
+
+#[repr(C)]
+pub struct OwnedBlindedKey(pub BlindedKey);
+
+impl Drop for OwnedBlindedKey {
+    fn drop(&mut self) {
+        let ptr = self.0.keyblob as *mut u8;
+        let layout = BlindedKey::layout(self.0.keyblob_length).unwrap();
+        unsafe { dealloc(ptr, layout) };
+    }
+}
+
+impl OwnedBlindedKey {
+    pub fn new(key_mode: KeyMode) -> Result<Self, Error> {
+        let config = KeyConfig::new(key_mode);
+        let keyblob_length = key_mode.keyblob_length();
+        let keyblob = unsafe { alloc(BlindedKey::layout(keyblob_length)?) as *mut u32 };
+        Ok(OwnedBlindedKey(BlindedKey { config, keyblob_length, keyblob, checksum: 0 }))
+    }
+
+    pub fn import(
+        config: KeyConfig, share0: ConstWord32Buf, share1: ConstWord32Buf,
+    ) -> Result<Self, Error> {
+        let keyblob_length = 4 * (share0.len + share1.len);
+        let keyblob = unsafe { alloc(BlindedKey::layout(keyblob_length)?) as *mut u32 };
+        let mut key = BlindedKey { config, keyblob_length, keyblob, checksum: 0 };
+        let status = unsafe { otcrypto_import_blinded_key(share0, share1, &mut key) };
+        unwrap_status(status)?;
+        Ok(OwnedBlindedKey(key))
     }
 }
 

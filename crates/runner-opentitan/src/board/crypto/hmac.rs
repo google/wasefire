@@ -18,7 +18,7 @@ use wasefire_board_api::Supported;
 use wasefire_board_api::crypto::{GlobalError, WithError};
 use wasefire_error::Error;
 
-use crate::crypto::common::{BlindedKey, HashMode, KeyConfig, KeyMode};
+use crate::crypto::common::{HashMode, KeyConfig, KeyMode, OwnedBlindedKey};
 use crate::crypto::{hash, hmac};
 
 pub struct Sha256(Option<hash::Context>);
@@ -41,10 +41,13 @@ impl OutputSizeUser for Sha256 {
 
 impl Update for Sha256 {
     fn update(&mut self, data: &[u8]) {
-        if let Some(hash) = &mut self.0
-            && ERROR.record(hash.update(data)).is_none()
-        {
-            self.0 = None;
+        if let Some(hash) = &mut self.0 {
+            // TODO(https://github.com/rust-lang/rust-clippy/issues/13371): Remove when fixed.
+            #[allow(clippy::single_match)]
+            match ERROR.record(hash.update(data)) {
+                None => self.0 = None,
+                Some(()) => (),
+            }
         }
     }
 }
@@ -53,8 +56,9 @@ impl FixedOutput for Sha256 {
     fn finalize_into(self, out: &mut Output<Self>) {
         if let Some(hash) = self.0 {
             let mut digest = [0; 8];
-            ERROR.record(hash.finalize(&mut digest));
-            out.copy_from_slice(bytemuck::bytes_of(&digest));
+            if ERROR.record(hash.finalize(&mut digest)) == Some(()) {
+                out.copy_from_slice(bytemuck::bytes_of(&digest));
+            }
         }
     }
 }
@@ -95,7 +99,7 @@ impl KeyInit for HmacSha256 {
                 hash.finalize(&mut key_[.. 8])?;
             }
             let config = KeyConfig::new(KeyMode::HmacSha256);
-            let key = BlindedKey::import(config, key_[..].into(), [0u32; 16][..].into())?;
+            let key = OwnedBlindedKey::import(config, key_[..].into(), [0u32; 16][..].into())?;
             Ok(Some(hmac::Context::init(key)?))
         }
         match ERROR.record(aux(key)) {
@@ -108,10 +112,13 @@ impl KeyInit for HmacSha256 {
 
 impl Update for HmacSha256 {
     fn update(&mut self, data: &[u8]) {
-        if let Some(hmac) = &mut self.0
-            && ERROR.record(hmac.update(data)).is_none()
-        {
-            self.0 = None;
+        if let Some(hmac) = &mut self.0 {
+            // TODO(https://github.com/rust-lang/rust-clippy/issues/13371): Remove when fixed.
+            #[allow(clippy::single_match)]
+            match ERROR.record(hmac.update(data)) {
+                None => self.0 = None,
+                Some(()) => (),
+            }
         }
     }
 }
@@ -120,8 +127,9 @@ impl FixedOutput for HmacSha256 {
     fn finalize_into(self, out: &mut Output<Self>) {
         if let Some(hmac) = self.0 {
             let mut tag = [0; 8];
-            ERROR.record(hmac.finalize(&mut tag));
-            out.copy_from_slice(bytemuck::bytes_of(&tag));
+            if ERROR.record(hmac.finalize(&mut tag)) == Some(()) {
+                out.copy_from_slice(bytemuck::bytes_of(&tag));
+            }
         }
     }
 }
