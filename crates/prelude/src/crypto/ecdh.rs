@@ -12,29 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides ECDSA.
+//! Provides ECDH.
 
 use alloc::alloc::{alloc, dealloc};
-use alloc::boxed::Box;
 use core::alloc::Layout;
 use core::marker::PhantomData;
 
-use wasefire_applet_api::crypto::ecdsa as api;
-#[cfg(feature = "api-crypto-hash")]
-use wasefire_applet_api::crypto::hash::Algorithm;
+use wasefire_applet_api::crypto::ecdh as api;
 use wasefire_error::Code;
 
-use crate::{Error, convert, convert_bool, convert_unit};
+use crate::{Error, convert_bool, convert_unit};
 
 /// Curve API.
 #[allow(private_bounds)]
 pub trait Curve: InternalCurve {
     /// Size of a field.
     const SIZE: usize;
-
-    /// How to hash messages.
-    #[cfg(feature = "api-crypto-hash")]
-    const HASH: Algorithm;
 
     /// Returns whether the curve is supported.
     fn is_supported() -> bool;
@@ -48,9 +41,6 @@ pub enum P384 {}
 
 impl<C: InternalCurve> Curve for C {
     const SIZE: usize = Self::INTERNAL_SIZE;
-
-    #[cfg(feature = "api-crypto-hash")]
-    const HASH: Algorithm = Self::INTERNAL_HASH;
 
     fn is_supported() -> bool {
         is_supported_(Self::CURVE)
@@ -69,9 +59,21 @@ pub struct Public<C: Curve> {
     object: Object,
 }
 
+/// Shared key.
+pub struct Shared<C: Curve> {
+    curve: PhantomData<C>,
+    object: Object,
+}
+
 impl<C: Curve> Drop for Private<C> {
     fn drop(&mut self) {
-        let _ = drop_(C::CURVE, &mut self.object);
+        let _ = drop_(C::CURVE, api::Kind::Private, &mut self.object);
+    }
+}
+
+impl<C: Curve> Drop for Shared<C> {
+    fn drop(&mut self) {
+        let _ = drop_(C::CURVE, api::Kind::Shared, &mut self.object);
     }
 }
 
@@ -90,60 +92,19 @@ impl<C: Curve> Private<C> {
         Ok(public)
     }
 
-    /// Signs a message with a private key.
-    #[cfg(feature = "api-crypto-hash")]
-    pub fn sign(&self, message: &[u8], r: &mut [u8], s: &mut [u8]) -> Result<(), Error> {
-        let mut digest = alloc::vec![0; C::SIZE];
-        crate::crypto::hash::Digest::digest(C::HASH, message, &mut digest)?;
-        self.sign_prehash(&digest, r, s)
-    }
-
-    /// Signs a pre-hashed message with a private key.
-    pub fn sign_prehash(&self, digest: &[u8], r: &mut [u8], s: &mut [u8]) -> Result<(), Error> {
-        Error::user(Code::InvalidLength).check(digest.len() == C::SIZE)?;
-        Error::user(Code::InvalidLength).check(r.len() == C::SIZE)?;
-        Error::user(Code::InvalidLength).check(s.len() == C::SIZE)?;
-        sign_(C::CURVE, &self.object, digest, r, s)
-    }
-
-    /// Exports a private key.
+    /// Imports a private key for testing purposes.
     ///
-    /// This is not necessarily the scalar representing the private key. This may be a wrapped
-    /// version of the private key.
-    pub fn export(&self) -> Result<Box<[u8]>, Error> {
-        let len = wrapped_length_(C::CURVE)?;
-        let mut wrapped = alloc::vec![0; len].into_boxed_slice();
-        wrap_(C::CURVE, &self.object, &mut wrapped)?;
-        Ok(wrapped)
-    }
-
-    /// Imports a private key.
-    pub fn import(wrapped: &[u8]) -> Result<Self, Error> {
-        let len = wrapped_length_(C::CURVE)?;
-        Error::user(Code::InvalidLength).check(wrapped.len() == len)?;
+    /// The object must be in the implementation format. It is not necessarily the scalar.
+    pub fn import_testonly(object: &[u8]) -> Result<Self, Error> {
+        let layout = get_layout_(C::CURVE, api::Kind::Private)?;
+        Error::user(Code::InvalidLength).check(object.len() == layout.size())?;
         let mut private = Private::alloc()?;
-        unwrap_(C::CURVE, wrapped, &mut private.object)?;
+        private.object.bytes_mut().copy_from_slice(object);
         Ok(private)
     }
 }
 
 impl<C: Curve> Public<C> {
-    /// Verifies a message with a public key.
-    #[cfg(feature = "api-crypto-hash")]
-    pub fn verify(&self, message: &[u8], r: &[u8], s: &[u8]) -> Result<bool, Error> {
-        let mut digest = alloc::vec![0; C::SIZE];
-        crate::crypto::hash::Digest::digest(C::HASH, message, &mut digest)?;
-        self.verify_prehash(&digest, r, s)
-    }
-
-    /// Verifies a pre-hashed message with a public key.
-    pub fn verify_prehash(&self, digest: &[u8], r: &[u8], s: &[u8]) -> Result<bool, Error> {
-        Error::user(Code::InvalidLength).check(digest.len() == C::SIZE)?;
-        Error::user(Code::InvalidLength).check(r.len() == C::SIZE)?;
-        Error::user(Code::InvalidLength).check(s.len() == C::SIZE)?;
-        verify_(C::CURVE, &self.object, digest, r, s)
-    }
-
     /// Exports a public key.
     pub fn export(&self, x: &mut [u8], y: &mut [u8]) -> Result<(), Error> {
         Error::user(Code::InvalidLength).check(x.len() == C::SIZE)?;
@@ -161,6 +122,21 @@ impl<C: Curve> Public<C> {
     }
 }
 
+impl<C: Curve> Shared<C> {
+    /// Computes a shared key from a private and public key.
+    pub fn new(private: &Private<C>, public: &Public<C>) -> Result<Self, Error> {
+        let mut shared = Shared::alloc()?;
+        shared_(C::CURVE, &private.object, &public.object, &mut shared.object)?;
+        Ok(shared)
+    }
+
+    /// Exports a shared key.
+    pub fn export(&self, x: &mut [u8]) -> Result<(), Error> {
+        Error::user(Code::InvalidLength).check(x.len() == C::SIZE)?;
+        access_(C::CURVE, &self.object, x)
+    }
+}
+
 impl<C: Curve> Private<C> {
     fn alloc() -> Result<Self, Error> {
         let layout = get_layout_(C::CURVE, api::Kind::Private)?;
@@ -175,24 +151,25 @@ impl<C: Curve> Public<C> {
     }
 }
 
+impl<C: Curve> Shared<C> {
+    fn alloc() -> Result<Self, Error> {
+        let layout = get_layout_(C::CURVE, api::Kind::Shared)?;
+        Ok(Shared { curve: PhantomData, object: Object::new(layout)? })
+    }
+}
+
 trait InternalCurve {
     const INTERNAL_SIZE: usize;
-    #[cfg(feature = "api-crypto-hash")]
-    const INTERNAL_HASH: Algorithm;
     const CURVE: api::Curve;
 }
 
 impl InternalCurve for P256 {
     const INTERNAL_SIZE: usize = 32;
-    #[cfg(feature = "api-crypto-hash")]
-    const INTERNAL_HASH: Algorithm = Algorithm::Sha256;
     const CURVE: api::Curve = api::Curve::P256;
 }
 
 impl InternalCurve for P384 {
     const INTERNAL_SIZE: usize = 48;
-    #[cfg(feature = "api-crypto-hash")]
-    const INTERNAL_HASH: Algorithm = Algorithm::Sha384;
     const CURVE: api::Curve = api::Curve::P384;
 }
 
@@ -212,6 +189,10 @@ impl Object {
         let data = unsafe { alloc(layout) };
         Error::world(Code::NotEnough).check(!data.is_null())?;
         Ok(Object { layout, data })
+    }
+
+    fn bytes_mut(&mut self) -> &mut [u8] {
+        unsafe { core::slice::from_raw_parts_mut(self.data, self.layout.size()) }
     }
 }
 
@@ -233,11 +214,6 @@ fn get_layout_(curve: api::Curve, kind: api::Kind) -> Result<Layout, Error> {
     Layout::from_size_align(size as usize, align as usize).map_err(|_| Error::world(0))
 }
 
-fn wrapped_length_(curve: api::Curve) -> Result<usize, Error> {
-    let params = api::wrapped_length::Params { curve: curve as usize };
-    convert(unsafe { api::wrapped_length(params) })
-}
-
 fn generate_(curve: api::Curve, private: &mut Object) -> Result<(), Error> {
     let params = api::generate::Params { curve: curve as usize, private: private.data };
     convert_unit(unsafe { api::generate(params) })
@@ -249,53 +225,22 @@ fn public_(curve: api::Curve, private: &Object, public: &mut Object) -> Result<(
     convert_unit(unsafe { api::public(params) })
 }
 
-fn sign_(
-    curve: api::Curve, private: &Object, digest: &[u8], r: &mut [u8], s: &mut [u8],
+fn shared_(
+    curve: api::Curve, private: &Object, public: &Object, shared: &mut Object,
 ) -> Result<(), Error> {
-    let params = api::sign::Params {
+    let params = api::shared::Params {
         curve: curve as usize,
         private: private.data,
-        digest: digest.as_ptr(),
-        r: r.as_mut_ptr(),
-        s: s.as_mut_ptr(),
-    };
-    convert_unit(unsafe { api::sign(params) })
-}
-
-fn verify_(
-    curve: api::Curve, public: &Object, digest: &[u8], r: &[u8], s: &[u8],
-) -> Result<bool, Error> {
-    let params = api::verify::Params {
-        curve: curve as usize,
         public: public.data,
-        digest: digest.as_ptr(),
-        r: r.as_ptr(),
-        s: s.as_ptr(),
+        shared: shared.data,
     };
-    convert_bool(unsafe { api::verify(params) })
+    convert_unit(unsafe { api::shared(params) })
 }
 
-fn drop_(curve: api::Curve, private: &mut Object) -> Result<(), Error> {
-    let params = api::drop::Params { curve: curve as usize, private: private.data };
+fn drop_(curve: api::Curve, kind: api::Kind, object: &mut Object) -> Result<(), Error> {
+    let params =
+        api::drop::Params { curve: curve as usize, kind: kind as usize, object: object.data };
     convert_unit(unsafe { api::drop(params) })
-}
-
-fn wrap_(curve: api::Curve, private: &Object, wrapped: &mut [u8]) -> Result<(), Error> {
-    let params = api::wrap::Params {
-        curve: curve as usize,
-        private: private.data,
-        wrapped: wrapped.as_mut_ptr(),
-    };
-    convert_unit(unsafe { api::wrap(params) })
-}
-
-fn unwrap_(curve: api::Curve, wrapped: &[u8], private: &mut Object) -> Result<(), Error> {
-    let params = api::unwrap::Params {
-        curve: curve as usize,
-        wrapped: wrapped.as_ptr(),
-        private: private.data,
-    };
-    convert_unit(unsafe { api::unwrap(params) })
 }
 
 fn export_(curve: api::Curve, public: &Object, x: &mut [u8], y: &mut [u8]) -> Result<(), Error> {
@@ -316,4 +261,10 @@ fn import_(curve: api::Curve, x: &[u8], y: &[u8], public: &mut Object) -> Result
         public: public.data,
     };
     convert_unit(unsafe { api::import(params) })
+}
+
+fn access_(curve: api::Curve, shared: &Object, x: &mut [u8]) -> Result<(), Error> {
+    let params =
+        api::access::Params { curve: curve as usize, shared: shared.data, x: x.as_mut_ptr() };
+    convert_unit(unsafe { api::access(params) })
 }

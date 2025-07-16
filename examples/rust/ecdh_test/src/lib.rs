@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Tests that ECDSA is working properly.
+//! Tests that ECDH is working properly.
 
 #![no_std]
 wasefire::applet!();
 
 use alloc::vec;
-use alloc::vec::Vec;
 
-use ecdsa_vectors::{P256_VECTORS, P384_VECTORS, Vector};
-use wasefire::crypto::ecdsa::{Curve, P256, P384, Private, Public};
+use ecdh_vectors::{P256_VECTORS, P384_VECTORS, Vector};
+use wasefire::crypto::ecdh::{Curve, P256, P384, Private, Public, Shared};
 
 pub fn main() -> ! {
     test_random::<P256>("p256");
@@ -32,48 +31,39 @@ pub fn main() -> ! {
 }
 
 fn test_random<C: Curve>(name: &str) {
-    debug!("test_{name}_random(): Computes ECDSA with random private keys.");
+    debug!("test_{name}_random(): Computes ECDH with random private keys.");
     if !C::is_supported() {
         debug!("- not supported");
         return;
     }
-    let mut rs = Vec::new();
     for _ in 0 .. 5 {
-        let key = Private::<C>::generate().unwrap();
-        let pubkey = key.public();
-        let key = Private::<C>::import(&key.export().unwrap()).unwrap();
-        let mut msg = rng::bytes(257).unwrap().into_vec();
-        msg.truncate(msg[256] as usize);
-        let mut r = vec![0; C::SIZE];
-        let mut s = vec![0; C::SIZE];
-        key.sign(&msg, &mut r, &mut s).unwrap();
-        debug!("- {:02x?}{:02x?} ({} bytes message)", &r[.. 4], &s[.. 4], msg.len());
-        assert!(pubkey.unwrap().verify(&msg, &r, &s).unwrap());
-        rs.push(r);
-    }
-    // Make sure all r components are different.
-    for i in 1 .. rs.len() {
-        for j in 0 .. i {
-            assert!(rs[j] != rs[i]);
-        }
+        let k1 = Private::<C>::generate().unwrap();
+        let k2 = Private::<C>::generate().unwrap();
+        let s1 = Shared::<C>::new(&k1, &k2.public().unwrap()).unwrap();
+        let s2 = Shared::<C>::new(&k2, &k1.public().unwrap()).unwrap();
+        let mut x1 = vec![0; C::SIZE];
+        let mut x2 = vec![0; C::SIZE];
+        s1.export(&mut x1).unwrap();
+        s2.export(&mut x2).unwrap();
+        assert_eq!(x1, x2);
+        debug!("- {:02x?}", &x1[.. 8]);
     }
 }
 
 fn test<C: Curve>(name: &str, vectors: &[Vector]) {
-    debug!("test_{name}(): Verifies ECDSA signatures of test vectors.");
+    debug!("test_{name}(): Computes ECDH on the test vectors.");
     if !C::is_supported() {
         debug!("- not supported");
         return;
     }
-    for &Vector { x, y, m, r, s, v } in vectors {
-        debug!("- {:02x?} {v}", &m[.. 8]);
-        let key = Public::<C>::import(x, y).unwrap();
-        assert_eq!(key.verify(m, r, s).unwrap(), v);
-        let mut pub_x = vec![0; C::SIZE];
-        let mut pub_y = vec![0; C::SIZE];
-        key.export(&mut pub_x, &mut pub_y).unwrap();
-        assert_eq!(pub_x, x);
-        assert_eq!(pub_y, y);
+    for &Vector { tc_id, private, public_x, public_y, shared } in vectors {
+        debug!("- {tc_id}");
+        let private = Private::<C>::import_testonly(private).unwrap();
+        let public = Public::<C>::import(public_x, public_y).unwrap();
+        let shared_ = Shared::<C>::new(&private, &public).unwrap();
+        let mut actual = vec![0; C::SIZE];
+        shared_.export(&mut actual).unwrap();
+        assert_eq!(actual, shared);
     }
 }
 

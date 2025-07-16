@@ -20,6 +20,8 @@ pub mod cbc;
 pub mod ccm;
 #[cfg(feature = "api-crypto-ec")]
 pub mod ec;
+#[cfg(feature = "api-crypto-ecdh")]
+pub mod ecdh;
 #[cfg(feature = "api-crypto-ecdsa")]
 pub mod ecdsa;
 #[cfg(feature = "api-crypto-gcm")]

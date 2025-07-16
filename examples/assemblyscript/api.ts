@@ -368,6 +368,149 @@
     ): i32
   // END OF MODULE crypto_ec
 
+  // START OF MODULE crypto_ecdh
+  // ECDH.
+    enum crypto_ecdh_Curve {
+      P256 = 0,
+
+      P384 = 1,
+    }
+
+    // The kind of objects for [get_layout].
+    enum crypto_ecdh_Kind {
+      // A private key.
+      Private = 0,
+
+      // A public key.
+      Public = 1,
+
+      // A shared secret.
+      Shared = 2,
+    }
+
+    // Whether a curve is supported.
+    @external("env", "cis")
+    export declare function crypto_ecdh_is_supported(
+      // The enum value of the [curve][super::Curve].
+      curve: usize,
+    ): i32
+
+    // Returns the layout of an object.
+    //
+    // All pointers to such objects must have the appropriate layout.
+    @external("env", "cil")
+    export declare function crypto_ecdh_get_layout(
+      // The curve.
+      curve: usize,
+
+      // The kind of object.
+      kind: usize,
+
+      // The size.
+      size: usize,
+
+      // The alignment.
+      align: usize,
+    ): i32
+
+    // Generates a private key.
+    @external("env", "cig")
+    export declare function crypto_ecdh_generate(
+      // The curve.
+      curve: usize,
+
+      // The private key.
+      private_: usize,
+    ): i32
+
+    // Returns the public key of a private key.
+    @external("env", "cip")
+    export declare function crypto_ecdh_public(
+      // The curve.
+      curve: usize,
+
+      // The private key.
+      private_: usize,
+
+      // The public key.
+      public_: usize,
+    ): i32
+
+    // Computes the shared secret of a private and public key.
+    @external("env", "cia")
+    export declare function crypto_ecdh_shared(
+      // The curve.
+      curve: usize,
+
+      // The private key.
+      private_: usize,
+
+      // The public key.
+      public_: usize,
+
+      // The shared secret.
+      shared: usize,
+    ): i32
+
+    // Drops an object.
+    @external("env", "cid")
+    export declare function crypto_ecdh_drop(
+      // The curve.
+      curve: usize,
+
+      // The kind of object (private or shared).
+      kind: usize,
+
+      // The object.
+      object: usize,
+    ): i32
+
+    // Exports a public key.
+    @external("env", "cie")
+    export declare function crypto_ecdh_export(
+      // The curve.
+      curve: usize,
+
+      // The public key.
+      public_: usize,
+
+      // The x coordinate in big-endian.
+      x: usize,
+
+      // The y coordinate in big-endian.
+      y: usize,
+    ): i32
+
+    // Imports a public key.
+    @external("env", "cii")
+    export declare function crypto_ecdh_import(
+      // The curve.
+      curve: usize,
+
+      // The x coordinate in big-endian.
+      x: usize,
+
+      // The y coordinate in big-endian.
+      y: usize,
+
+      // The public key.
+      public_: usize,
+    ): i32
+
+    // Exports a shared secret.
+    @external("env", "cix")
+    export declare function crypto_ecdh_access(
+      // The curve.
+      curve: usize,
+
+      // The shared secret.
+      shared: usize,
+
+      // The x coordinate in big-endian.
+      x: usize,
+    ): i32
+  // END OF MODULE crypto_ecdh
+
   // START OF MODULE crypto_ecdsa
   // ECDSA.
     enum crypto_ecdsa_Curve {

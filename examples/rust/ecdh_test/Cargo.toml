@@ -1,0 +1,21 @@
+[package]
+name = "ecdh_test"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+edition = "2024"
+
+[dependencies]
+ecdh_vectors = { path = "../ec_test/crates/ecdh_vectors" }
+wasefire = { path = "../../../crates/prelude" }
+wasefire-stub = { path = "../../../crates/stub", optional = true }
+
+[features]
+test = ["dep:wasefire-stub", "wasefire/test"]
+
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unused-crate-dependencies = "warn"

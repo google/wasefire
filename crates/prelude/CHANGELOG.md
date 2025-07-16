@@ -10,7 +10,7 @@
 
 ### Minor
 
-- Add `crypto::ecdsa` for ECDSA
+- Add `crypto::{ecdsa,ecdh}` for ECDSA and ECDH
 - Add `gpio::{Event,Listener,Handler}` for GPIO event support
 - Add `platform::running_side()` function for the platform running side
 - Add `platform::opposite_version()` function for the platform version of the non-running side
@@ -203,4 +203,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 8 -->
+<!-- Increment to skip CHANGELOG.md test: 9 -->
