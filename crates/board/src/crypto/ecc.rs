@@ -53,7 +53,6 @@ mod software {
     use core::marker::PhantomData;
 
     use crypto_common::BlockSizeUser;
-    use digest::{Digest, FixedOutput, FixedOutputReset};
     use ecdsa::hazmat::{SignPrimitive, VerifyPrimitive};
     use ecdsa::{PrimeCurve, Signature, SignatureSize, VerifyingKey};
     use elliptic_curve::ops::MulByGenerator;
@@ -62,6 +61,7 @@ mod software {
     use elliptic_curve::{
         AffinePoint, CurveArithmetic, FieldBytesSize, ProjectivePoint, Scalar, ScalarPrimitive,
     };
+    use signature::digest::{Digest, FixedOutput, FixedOutputReset};
     use signature::hazmat::PrehashVerifier;
 
     use super::*;

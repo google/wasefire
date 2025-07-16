@@ -17,7 +17,7 @@ set -e
 
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
-check_software_crypto
+check_software_crypto --features=std,
 check_board_api api- --features=std,
 
 test_helper

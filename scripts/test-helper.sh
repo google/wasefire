@@ -41,7 +41,12 @@ ensure_submodule() {
 # <clippy-args> = "--target=wasm32-unknown-unknown"
 check_applet_api() { _test_check_api "$_TEST_APPLET_API" "$@"; }
 check_board_api() { _test_check_api "$_TEST_BOARD_API" "$@"; }
+# check_software_crypto <features> <clippy-args>..
+# <features> = "--features=" or "--features=wasm,std,"
+# <clippy-args> = "--target=wasm32-unknown-unknown"
 check_software_crypto() {
+  local features="$1"
+  shift 1
   _test_diff 'the software crypto features' "$_TEST_SOFTWARE_CRYPTO" \
     $(package_features | sed -n "s/^software-crypto-//p")
   if package_features | grep -q '^internal-software-crypto$'; then
@@ -49,6 +54,9 @@ check_software_crypto() {
       "$_TEST_SOFTWARE_CRYPTO" \
       $(_test_full_deps internal-software-crypto software-crypto-)
   fi
+  for feat in $_TEST_SOFTWARE_CRYPTO; do
+    x cargo clippy --lib "$@" "${features}software-crypto-$feat" -- --deny=warnings
+  done
 }
 
 # diff_sorted <name> <left> <right>..

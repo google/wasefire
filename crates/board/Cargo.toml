@@ -134,24 +134,28 @@ software-crypto-hmac-sha384 = [
 ]
 software-crypto-p256 = [
   "api-crypto-p256",
+  "api-crypto-sha256",
   "dep:p256",
   "internal-software-crypto-ecc",
   "p256?/ecdsa",
 ]
 software-crypto-p256-ecdsa = [
   "api-crypto-p256-ecdsa",
+  "api-crypto-sha256",
   "dep:p256",
   "internal-software-crypto-ecdsa",
   "p256?/ecdsa",
 ]
 software-crypto-p384 = [
   "api-crypto-p384",
+  "api-crypto-sha384",
   "dep:p384",
   "internal-software-crypto-ecc",
   "p384?/ecdsa",
 ]
 software-crypto-p384-ecdsa = [
   "api-crypto-p384-ecdsa",
+  "api-crypto-sha384",
   "dep:p384",
   "internal-software-crypto-ecdsa",
   "p384?/ecdsa",
@@ -173,8 +177,9 @@ internal-api-crypto-hash = [
 ]
 internal-api-crypto-hmac = [
   "dep:crypto-common",
+  "dep:digest",
   "dep:typenum",
-  "digest/mac",
+  "digest?/mac",
   "internal-api-crypto",
   "internal-with-error",
 ]
@@ -199,16 +204,18 @@ internal-software-crypto-ecc = [
   "dep:ecdsa",
   "dep:elliptic-curve",
   "dep:signature",
-  "ecdsa/signing",
-  "ecdsa/verifying",
+  "ecdsa?/signing",
+  "ecdsa?/verifying",
 ]
 internal-software-crypto-ecdsa = [
+  "api-rng",
+  "dep:crypto-common",
   "dep:ecdsa",
   "dep:elliptic-curve",
   "dep:rand_core",
   "dep:signature",
-  "ecdsa/signing",
-  "ecdsa/verifying",
+  "ecdsa?/signing",
+  "ecdsa?/verifying",
 ]
 internal-software-crypto-hmac = ["dep:hmac"]
 internal-with-error = []
