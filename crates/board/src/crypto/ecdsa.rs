@@ -93,13 +93,13 @@ mod software {
 
     use crypto_common::BlockSizeUser;
     use crypto_common::generic_array::ArrayLength;
-    use digest::{Digest, FixedOutput, FixedOutputReset};
     use ecdsa::hazmat::{SignPrimitive, VerifyPrimitive};
     use ecdsa::{EncodedPoint, PrimeCurve, Signature, SignatureSize, SigningKey, VerifyingKey};
     use elliptic_curve::sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint};
     use elliptic_curve::zeroize::Zeroize;
     use elliptic_curve::{AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, Scalar};
     use rand_core::CryptoRngCore;
+    use signature::digest::{Digest, FixedOutput, FixedOutputReset};
     use signature::hazmat::PrehashVerifier;
     use wasefire_error::Code;
 
