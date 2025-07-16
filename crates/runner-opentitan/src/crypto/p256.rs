@@ -57,6 +57,21 @@ pub fn ecdsa_verify(
     Ok(result == hardened_bool::TRUE)
 }
 
+pub fn ecdh_keygen() -> Result<(OwnedBlindedKey, OwnedUnblindedKey), Error> {
+    let mut private = OwnedBlindedKey::new(KeyMode::EcdhP256)?;
+    let mut public = OwnedUnblindedKey::new(KeyMode::EcdhP256)?;
+    unwrap_status(unsafe { otcrypto_ecdh_p256_keygen(&mut private.0, &mut public.0) })?;
+    Ok((private, public))
+}
+
+pub fn ecdh(
+    private: &BlindedKey, public: &UnblindedKey, key_mode: KeyMode,
+) -> Result<OwnedBlindedKey, Error> {
+    let mut shared = OwnedBlindedKey::new(key_mode)?;
+    unwrap_status(unsafe { otcrypto_ecdh_p256(private, public, &mut shared.0) })?;
+    Ok(shared)
+}
+
 unsafe extern "C" {
     fn otcrypto_ecdsa_p256_keygen(private: *mut BlindedKey, public: *mut UnblindedKey) -> i32;
     fn otcrypto_ecdsa_p256_sign(
@@ -65,5 +80,9 @@ unsafe extern "C" {
     fn otcrypto_ecdsa_p256_verify(
         public: *const UnblindedKey, digest: HashDigest, signature: ConstWord32Buf,
         result: *mut i32,
+    ) -> i32;
+    fn otcrypto_ecdh_p256_keygen(private: *mut BlindedKey, public: *mut UnblindedKey) -> i32;
+    fn otcrypto_ecdh_p256(
+        private: *const BlindedKey, public: *const UnblindedKey, shared: *mut BlindedKey,
     ) -> i32;
 }

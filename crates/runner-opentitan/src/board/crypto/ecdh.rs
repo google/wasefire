@@ -15,25 +15,25 @@
 use core::alloc::Layout;
 
 use wasefire_board_api::Supported;
-use wasefire_board_api::crypto::ecdsa::Api;
-use wasefire_error::{Code, Error};
+use wasefire_board_api::crypto::ecdh::Api;
+use wasefire_error::Error;
 
+use crate::board::crypto::{memshred, try_from_bytes, try_from_bytes_mut};
 use crate::crypto::common::{BlindedKey, KeyMode, UnblindedKey};
 use crate::crypto::p256;
 
-pub enum Ecdsa {}
+pub enum Impl {}
 
-impl Supported for Ecdsa {}
+impl Supported for Impl {}
 
-impl Api<32> for Ecdsa {
+impl Api<32> for Impl {
     const PRIVATE: Layout = Layout::new::<Private>();
     const PUBLIC: Layout = Layout::new::<Public>();
-    // TODO: We should use key wrapping once we figure out which key encryption key to use.
-    const WRAPPED: usize = core::mem::size_of::<Private>();
+    const SHARED: Layout = Layout::new::<Shared>();
 
     fn generate(private: &mut [u8]) -> Result<(), Error> {
         let private = try_from_bytes_mut::<Private>(private)?;
-        let (privkey, pubkey) = p256::ecdsa_keygen()?;
+        let (privkey, pubkey) = p256::ecdh_keygen()?;
         private.keyblob.copy_from_slice(privkey.0.keyblob());
         private.checksum = privkey.0.checksum;
         private.public.key.copy_from_slice(pubkey.0.key());
@@ -48,56 +48,27 @@ impl Api<32> for Ecdsa {
         Ok(())
     }
 
-    fn sign(
-        private: &[u8], digest: &[u8; 32], r: &mut [u8; 32], s: &mut [u8; 32],
-    ) -> Result<(), Error> {
+    fn shared(private: &[u8], public: &[u8], shared: &mut [u8]) -> Result<(), Error> {
         let private = try_from_bytes::<Private>(private)?;
-        let digest = align_digest(digest);
-        let mut signature = [0; 16];
-        let private = unsafe { private.borrow() }?;
-        p256::ecdsa_sign(&private, &digest, &mut signature)?;
-        let signature = bytemuck::bytes_of_mut(&mut signature);
-        signature.reverse();
-        s.copy_from_slice(&signature[.. 32]);
-        r.copy_from_slice(&signature[32 ..]);
-        Ok(())
-    }
-
-    fn verify(public: &[u8], digest: &[u8; 32], r: &[u8; 32], s: &[u8; 32]) -> Result<bool, Error> {
         let public = try_from_bytes::<Public>(public)?;
-        let digest = align_digest(digest);
-        let mut signature = [0; 16];
-        let sig = bytemuck::bytes_of_mut(&mut signature);
-        sig[.. 32].copy_from_slice(s);
-        sig[32 ..].copy_from_slice(r);
-        sig.reverse();
+        let shared = try_from_bytes_mut::<Shared>(shared)?;
+        let private = unsafe { private.borrow() }?;
         let public = unsafe { public.borrow() }?;
-        p256::ecdsa_verify(&public, &digest, &signature)
+        let secret = p256::ecdh(&private, &public, KeyMode::AesCbc)?;
+        shared.keyblob.copy_from_slice(secret.0.keyblob());
+        shared.checksum = secret.0.checksum;
+        Ok(())
     }
 
     fn drop_private(private: &mut [u8]) -> Result<(), Error> {
-        // This function is not really exposed but it exists.
-        unsafe extern "C" {
-            fn hardened_memshred(dest: *mut u32, word_len: usize);
-        }
         let private = try_from_bytes_mut::<Private>(private)?;
-        unsafe { hardened_memshred(private.keyblob.as_mut_ptr(), private.keyblob.len()) };
+        memshred(&mut private.keyblob);
         Ok(())
     }
 
-    fn export_private(private: &[u8], wrapped: &mut [u8]) -> Result<(), Error> {
-        if private.len() != wrapped.len() {
-            return Err(Error::user(Code::InvalidLength));
-        }
-        wrapped.copy_from_slice(private);
-        Ok(())
-    }
-
-    fn import_private(wrapped: &[u8], private: &mut [u8]) -> Result<(), Error> {
-        if private.len() != wrapped.len() {
-            return Err(Error::user(Code::InvalidLength));
-        }
-        private.copy_from_slice(wrapped);
+    fn drop_shared(shared: &mut [u8]) -> Result<(), Error> {
+        let shared = try_from_bytes_mut::<Shared>(shared)?;
+        memshred(&mut shared.keyblob);
         Ok(())
     }
 
@@ -117,6 +88,19 @@ impl Api<32> for Ecdsa {
         key[.. 32].copy_from_slice(y);
         key[32 ..].copy_from_slice(x);
         key.reverse();
+        public.checksum = 0;
+        Ok(())
+    }
+
+    fn export_shared(shared: &[u8], x: &mut [u8; 32]) -> Result<(), Error> {
+        let shared = try_from_bytes::<Shared>(shared)?;
+        let keyblob = bytemuck::bytes_of(&shared.keyblob);
+        let share0 = &keyblob[.. 32];
+        let share1 = &keyblob[32 ..];
+        for (x, (s0, s1)) in x.iter_mut().zip(share0.iter().zip(share1.iter())) {
+            *x = s0 ^ s1;
+        }
+        x.reverse();
         Ok(())
     }
 }
@@ -137,28 +121,21 @@ struct Private {
     public: Public,
 }
 
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+#[repr(C)]
+struct Shared {
+    keyblob: [u32; 16],
+    checksum: u32,
+}
+
 impl Public {
     unsafe fn borrow(&self) -> Result<UnblindedKey, Error> {
-        unsafe { UnblindedKey::new(KeyMode::EcdsaP256, &self.key) }
+        unsafe { UnblindedKey::new(KeyMode::EcdhP256, &self.key, self.checksum) }
     }
 }
 
 impl Private {
     unsafe fn borrow(&self) -> Result<BlindedKey, Error> {
-        unsafe { BlindedKey::new(KeyMode::EcdsaP256, &self.keyblob) }
+        unsafe { BlindedKey::new(KeyMode::EcdhP256, &self.keyblob, self.checksum) }
     }
-}
-
-fn align_digest(input: &[u8; 32]) -> [u32; 8] {
-    let mut output = [0; 8];
-    bytemuck::bytes_of_mut(&mut output).copy_from_slice(input);
-    output
-}
-
-fn try_from_bytes<T: bytemuck::Pod>(bytes: &[u8]) -> Result<&T, Error> {
-    bytemuck::try_from_bytes(bytes).map_err(|_| Error::user(Code::InvalidArgument))
-}
-
-fn try_from_bytes_mut<T: bytemuck::Pod>(bytes: &mut [u8]) -> Result<&mut T, Error> {
-    bytemuck::try_from_bytes_mut(bytes).map_err(|_| Error::user(Code::InvalidArgument))
 }

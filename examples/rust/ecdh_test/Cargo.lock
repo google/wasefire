@@ -140,6 +140,7 @@ version = "0.1.0"
 dependencies = [
  "ecdh_vectors",
  "wasefire",
+ "wasefire-one-of",
  "wasefire-stub",
 ]
 

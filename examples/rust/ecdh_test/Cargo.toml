@@ -8,9 +8,12 @@ edition = "2024"
 [dependencies]
 ecdh_vectors = { path = "../ec_test/crates/ecdh_vectors" }
 wasefire = { path = "../../../crates/prelude" }
+wasefire-one-of = { path = "../../../crates/one-of" }
 wasefire-stub = { path = "../../../crates/stub", optional = true }
 
 [features]
+runner- = []
+runner-opentitan = []
 test = ["dep:wasefire-stub", "wasefire/test"]
 
 [lints]

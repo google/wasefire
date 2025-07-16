@@ -44,6 +44,7 @@ features = [
   "board-api-button",
   "board-api-crypto-aes256-cbc",
   "board-api-crypto-hmac-sha256",
+  "board-api-crypto-p256-ecdh",
   "board-api-crypto-p256-ecdsa",
   "board-api-crypto-sha256",
   "board-api-led",

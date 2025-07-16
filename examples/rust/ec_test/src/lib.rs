@@ -42,7 +42,7 @@ fn test_ecdh<C: Curve>(name: &str, vectors: &[ecdh::Vector]) {
         debug!("- not supported");
         return;
     }
-    for &ecdh::Vector { tc_id, private, public_x, public_y, shared } in vectors {
+    for &ecdh::Vector { tc_id, private, public_x, public_y, shared, .. } in vectors {
         debug!("- {tc_id}");
         let private =
             EcdhPrivate::<C>::from_non_zero_scalar(Int::<C>::clone_from_slice(private)).unwrap();
