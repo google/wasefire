@@ -19,31 +19,30 @@ wasefire::applet!();
 
 use alloc::vec::Vec;
 
-use ecdh_vectors::{EcdhVector, P256_ECDH_VECTORS, P384_ECDH_VECTORS};
-use ecdsa_vectors::{EcdsaVector, P256_ECDSA_VECTORS, P384_ECDSA_VECTORS};
 use wasefire::crypto::ec::{
     Curve, EcdhPrivate, EcdhPublic, EcdsaPrivate, EcdsaPublic, EcdsaSignature, Int, P256, P384,
 };
+use {ecdh_vectors as ecdh, ecdsa_vectors as ecdsa};
 
 pub fn main() -> ! {
-    test_ecdh::<P256>("p256", P256_ECDH_VECTORS);
-    test_ecdh::<P384>("p384", P384_ECDH_VECTORS);
+    test_ecdh::<P256>("p256", ecdh::P256_VECTORS);
+    test_ecdh::<P384>("p384", ecdh::P384_VECTORS);
     test_ecdh_random::<P256>("p256");
     test_ecdh_random::<P384>("p384");
-    test_ecdsa::<P256>("p256", P256_ECDSA_VECTORS);
-    test_ecdsa::<P384>("p384", P384_ECDSA_VECTORS);
+    test_ecdsa::<P256>("p256", ecdsa::P256_VECTORS);
+    test_ecdsa::<P384>("p384", ecdsa::P384_VECTORS);
     test_ecdsa_random::<P256>("p256");
     test_ecdsa_random::<P384>("p384");
     scheduling::exit();
 }
 
-fn test_ecdh<C: Curve>(name: &str, vectors: &[EcdhVector]) {
+fn test_ecdh<C: Curve>(name: &str, vectors: &[ecdh::Vector]) {
     debug!("test_ecdh_{name}(): Computes ECDH on the test vectors.");
     if !C::is_supported() {
         debug!("- not supported");
         return;
     }
-    for &EcdhVector { tc_id, private, public_x, public_y, shared } in vectors {
+    for &ecdh::Vector { tc_id, private, public_x, public_y, shared } in vectors {
         debug!("- {tc_id}");
         let private =
             EcdhPrivate::<C>::from_non_zero_scalar(Int::<C>::clone_from_slice(private)).unwrap();
@@ -73,13 +72,13 @@ fn test_ecdh_random<C: Curve>(name: &str) {
     }
 }
 
-fn test_ecdsa<C: Curve>(name: &str, vectors: &[EcdsaVector]) {
+fn test_ecdsa<C: Curve>(name: &str, vectors: &[ecdsa::Vector]) {
     debug!("test_ecdsa_{name}(): Verifies ECDSA signatures of test vectors.");
     if !C::is_supported() {
         debug!("- not supported");
         return;
     }
-    for &EcdsaVector { x, y, m, r, s, v } in vectors {
+    for &ecdsa::Vector { x, y, m, r, s, v } in vectors {
         debug!("- {:02x?}", &m[.. 8]);
         let public = EcdsaPublic::<C>::from_coordinates(
             Int::<C>::clone_from_slice(x),
@@ -130,12 +129,12 @@ mod tests {
 
     #[test]
     fn test_ecdh_p256() {
-        test_ecdh::<P256>("p256", P256_ECDH_VECTORS);
+        test_ecdh::<P256>("p256", ecdh::P256_VECTORS);
     }
 
     #[test]
     fn test_ecdh_p384() {
-        test_ecdh::<P384>("p384", P384_ECDH_VECTORS);
+        test_ecdh::<P384>("p384", ecdh::P384_VECTORS);
     }
 
     #[test]
@@ -150,12 +149,12 @@ mod tests {
 
     #[test]
     fn test_ecdsa_p256() {
-        test_ecdsa::<P256>("p256", P256_ECDSA_VECTORS);
+        test_ecdsa::<P256>("p256", ecdsa::P256_VECTORS);
     }
 
     #[test]
     fn test_ecdsa_p384() {
-        test_ecdsa::<P384>("p384", P384_ECDSA_VECTORS);
+        test_ecdsa::<P384>("p384", ecdsa::P384_VECTORS);
     }
 
     #[test]

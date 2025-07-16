@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! ECDSA.
+//! ECDH.
 
 use core::alloc::Layout;
 
-#[cfg(feature = "internal-software-crypto-ecdsa")]
+#[cfg(feature = "internal-software-crypto-ecdh")]
 pub use software::*;
 use wasefire_error::Error;
 
 use crate::Support;
 
-/// ECDSA interface.
+/// ECDH interface.
 pub trait Api<const N: usize>: Support<bool> + Send {
     /// Layout of a private key.
     ///
@@ -36,10 +36,11 @@ pub trait Api<const N: usize>: Support<bool> + Send {
     /// alignment than one byte.
     const PUBLIC: Layout;
 
-    /// Length in bytes of a wrapped private key.
+    /// Layout of a shared secret.
     ///
-    /// This may be greater than `N` in case blinding is used.
-    const WRAPPED: usize;
+    /// This may be bigger than `N` in case blinding or checksum or used. This may also require
+    /// stricter alignment than one byte.
+    const SHARED: Layout;
 
     /// Generates a private key.
     fn generate(private: &mut [u8]) -> Result<(), Error>;
@@ -47,17 +48,8 @@ pub trait Api<const N: usize>: Support<bool> + Send {
     /// Returns the public key of a private key.
     fn public(private: &[u8], public: &mut [u8]) -> Result<(), Error>;
 
-    /// Signs a digest.
-    ///
-    /// The signature components `r` and `s` are in big-endian.
-    fn sign(
-        private: &[u8], digest: &[u8; N], r: &mut [u8; N], s: &mut [u8; N],
-    ) -> Result<(), Error>;
-
-    /// Verifies a signature.
-    ///
-    /// The signature components `r` and `s` are in big-endian.
-    fn verify(public: &[u8], digest: &[u8; N], r: &[u8; N], s: &[u8; N]) -> Result<bool, Error>;
+    /// Computes the shared secret of a private and public key.
+    fn shared(private: &[u8], public: &[u8], shared: &mut [u8]) -> Result<(), Error>;
 
     /// Drops a private key.
     ///
@@ -65,16 +57,11 @@ pub trait Api<const N: usize>: Support<bool> + Send {
     /// leaks. This is only security relevant.
     fn drop_private(private: &mut [u8]) -> Result<(), Error>;
 
-    /// Exports a private key.
+    /// Drops a shared secret.
     ///
-    /// The wrapped key must be `Self::WRAPPED` bytes long. Users cannot assume that the wrapped key
-    /// is the scalar representing the private key.
-    fn export_private(private: &[u8], wrapped: &mut [u8]) -> Result<(), Error>;
-
-    /// Imports a private key.
-    ///
-    /// The wrapped key must be `Self::WRAPPED` bytes long.
-    fn import_private(wrapped: &[u8], private: &mut [u8]) -> Result<(), Error>;
+    /// This may zeroize the storage for example. Implementations should not rely on this for memory
+    /// leaks. This is only security relevant.
+    fn drop_shared(shared: &mut [u8]) -> Result<(), Error>;
 
     /// Exports a public key.
     ///
@@ -85,58 +72,57 @@ pub trait Api<const N: usize>: Support<bool> + Send {
     ///
     /// The coordinates `x` and `y` are in big-endian.
     fn import_public(x: &[u8; N], y: &[u8; N], public: &mut [u8]) -> Result<(), Error>;
+
+    /// Exports a shared secret.
+    ///
+    /// The coordinate `x` is in big-endian.
+    fn export_shared(shared: &[u8], x: &mut [u8; N]) -> Result<(), Error>;
 }
 
-#[cfg(feature = "internal-software-crypto-ecdsa")]
+#[cfg(feature = "internal-software-crypto-ecdh")]
 mod software {
     use core::marker::PhantomData;
 
-    use crypto_common::BlockSizeUser;
-    use crypto_common::generic_array::ArrayLength;
-    use ecdsa::hazmat::{SignPrimitive, VerifyPrimitive};
-    use ecdsa::{EncodedPoint, PrimeCurve, Signature, SignatureSize, SigningKey, VerifyingKey};
-    use elliptic_curve::sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint};
+    use elliptic_curve::sec1::{EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint};
+    use elliptic_curve::subtle::CtOption;
     use elliptic_curve::zeroize::Zeroize;
-    use elliptic_curve::{AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, Scalar};
+    use elliptic_curve::{
+        AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, ProjectivePoint, Scalar,
+        ScalarPrimitive, SecretKey,
+    };
     use rand_core::CryptoRngCore;
-    use signature::digest::{Digest, FixedOutput, FixedOutputReset};
-    use signature::hazmat::PrehashVerifier;
     use wasefire_error::Code;
 
     use super::*;
     use crate::Supported;
     use crate::crypto::WithError;
 
-    /// ECDSA software implementation.
-    pub struct Software<C, D, R, const N: usize> {
+    /// ECDH software implementation.
+    pub struct Software<C, R, const N: usize> {
         curve: PhantomData<C>,
-        digest: PhantomData<D>,
         rng: PhantomData<R>,
     }
 
-    impl<C, D, R, const N: usize> Supported for Software<C, D, R, N> {}
+    impl<C, R, const N: usize> Supported for Software<C, R, N> {}
 
-    impl<C, D, R, const N: usize> Api<N> for Software<C, D, R, N>
+    impl<C, R, const N: usize> Api<N> for Software<C, R, N>
     where
-        C: PrimeCurve + CurveArithmetic,
-        Scalar<C>: SignPrimitive<C>,
-        SignatureSize<C>: ArrayLength<u8>,
-        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+        C: CurveArithmetic,
+        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+        ProjectivePoint<C>: FromEncodedPoint<C>,
         FieldBytesSize<C>: ModulusSize,
-        D: Support<bool> + Send,
-        D: Digest + BlockSizeUser + FixedOutput<OutputSize = FieldBytesSize<C>> + FixedOutputReset,
         R: Default + CryptoRngCore + WithError + Send,
     {
         const PRIVATE: Layout = unsafe { Layout::from_size_align_unchecked(N, 1) };
         const PUBLIC: Layout = unsafe { Layout::from_size_align_unchecked(2 * N, 1) };
-        const WRAPPED: usize = N;
+        const SHARED: Layout = unsafe { Layout::from_size_align_unchecked(N, 1) };
 
         fn generate(private: &mut [u8]) -> Result<(), Error> {
             if private.len() != N {
                 return Err(Error::user(Code::InvalidLength));
             }
             let mut rng = R::default();
-            let key = R::with_error(|| SigningKey::<C>::random(&mut rng))?;
+            let key = R::with_error(|| SecretKey::<C>::random(&mut rng))?;
             private.copy_from_slice(&key.to_bytes());
             Ok(())
         }
@@ -145,45 +131,28 @@ mod software {
             if private.len() != N || public.len() != 2 * N {
                 return Err(Error::user(Code::InvalidLength));
             }
-            let key = SigningKey::<C>::from_bytes(FieldBytes::<C>::from_slice(private))
+            let key = SecretKey::<C>::from_bytes(FieldBytes::<C>::from_slice(private))
                 .map_err(|_| Error::user(Code::InvalidArgument))?;
-            let key = key.verifying_key().as_affine().to_encoded_point(false);
+            let key = key.public_key().as_affine().to_encoded_point(false);
             let (x, y) = public.split_at_mut(N);
             x.copy_from_slice(key.x().ok_or(Error::user(0))?);
             y.copy_from_slice(key.y().ok_or(Error::user(0))?);
             Ok(())
         }
 
-        fn sign(
-            private: &[u8], digest: &[u8; N], r: &mut [u8; N], s: &mut [u8; N],
-        ) -> Result<(), Error> {
-            if private.len() != N {
+        fn shared(private: &[u8], public: &[u8], shared: &mut [u8]) -> Result<(), Error> {
+            if private.len() != N || public.len() != 2 * N || shared.len() != N {
                 return Err(Error::user(Code::InvalidLength));
             }
-            let key = SigningKey::<C>::from_bytes(FieldBytes::<C>::from_slice(private))
-                .map_err(|_| Error::user(Code::InvalidArgument))?;
-            let (sig, _) = key
-                .as_nonzero_scalar()
-                .try_sign_prehashed_rfc6979::<D>(FieldBytes::<C>::from_slice(digest), &[])
-                .map_err(|_| Error::world(0))?;
-            r.copy_from_slice(FieldBytes::<C>::from(sig.r()).as_slice());
-            s.copy_from_slice(FieldBytes::<C>::from(sig.s()).as_slice());
-            Ok(())
-        }
-
-        fn verify(
-            public: &[u8], digest: &[u8; N], r: &[u8; N], s: &[u8; N],
-        ) -> Result<bool, Error> {
-            if public.len() != 2 * N {
-                return Err(Error::user(Code::InvalidLength));
-            }
+            let private = unwrap_ct(ScalarPrimitive::<C>::from_bytes(private.into()))?;
+            let private = Scalar::<C>::from(private);
             let (x, y) = public.split_at(N);
-            let key = EncodedPoint::<C>::from_affine_coordinates(x.into(), y.into(), false);
-            let key = VerifyingKey::<C>::from_encoded_point(&key).map_err(|_| Error::user(0))?;
-            let r = FieldBytes::<C>::from_slice(r).clone();
-            let s = FieldBytes::<C>::from_slice(s).clone();
-            let sig = Signature::from_scalars(r, s).map_err(|_| Error::user(0))?;
-            Ok(key.verify_prehash(digest, &sig).is_ok())
+            let public = EncodedPoint::<C>::from_affine_coordinates(x.into(), y.into(), false);
+            let public = unwrap_ct(ProjectivePoint::<C>::from_encoded_point(&public))?;
+            let secret: AffinePoint<C> = (public * private).into();
+            let secret = secret.to_encoded_point(false);
+            shared.copy_from_slice(secret.x().ok_or(Error::user(0))?);
+            Ok(())
         }
 
         fn drop_private(private: &mut [u8]) -> Result<(), Error> {
@@ -194,19 +163,11 @@ mod software {
             Ok(())
         }
 
-        fn export_private(private: &[u8], wrapped: &mut [u8]) -> Result<(), Error> {
-            if private.len() != N || wrapped.len() != N {
+        fn drop_shared(shared: &mut [u8]) -> Result<(), Error> {
+            if shared.len() != N {
                 return Err(Error::user(Code::InvalidLength));
             }
-            wrapped.copy_from_slice(private);
-            Ok(())
-        }
-
-        fn import_private(wrapped: &[u8], private: &mut [u8]) -> Result<(), Error> {
-            if wrapped.len() != N || private.len() != N {
-                return Err(Error::user(Code::InvalidLength));
-            }
-            private.copy_from_slice(wrapped);
+            shared.zeroize();
             Ok(())
         }
 
@@ -229,5 +190,17 @@ mod software {
             pub_y.copy_from_slice(y);
             Ok(())
         }
+
+        fn export_shared(shared: &[u8], x: &mut [u8; N]) -> Result<(), Error> {
+            if shared.len() != N {
+                return Err(Error::user(Code::InvalidLength));
+            }
+            x.copy_from_slice(shared);
+            Ok(())
+        }
+    }
+
+    fn unwrap_ct<T>(x: CtOption<T>) -> Result<T, Error> {
+        Option::<T>::from(x).ok_or(Error::user(0))
     }
 }

@@ -25,8 +25,10 @@ impl Api for Impl {
     type HmacSha256 = crypto::SoftwareHmacSha256<Self>;
     type HmacSha384 = crypto::SoftwareHmacSha384<Self>;
     type P256 = crypto::SoftwareP256<Self>;
+    type P256Ecdh = crypto::SoftwareP256Ecdh<CryptoRng>;
     type P256Ecdsa = crypto::SoftwareP256Ecdsa<Self, CryptoRng>;
     type P384 = crypto::SoftwareP384<Self>;
+    type P384Ecdh = crypto::SoftwareP384Ecdh<CryptoRng>;
     type P384Ecdsa = crypto::SoftwareP384Ecdsa<Self, CryptoRng>;
     type Sha256 = crypto::SoftwareSha256;
     type Sha384 = crypto::SoftwareSha384;

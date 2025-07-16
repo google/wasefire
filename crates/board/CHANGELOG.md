@@ -14,7 +14,7 @@
 - Add `crypto::CryptoRng` as a helper to implement `rand_core::CryptoRngCore` using `rng::Api` for
   `software-crypto-p{256,384}-ecdsa`
 - Add `crypto::GlobalError` as a helper to implement `crypto::WithError`
-- Add `crypto::P{256,384}Ecdsa` for ECDSA P-256 and P-384
+- Add `crypto::P{256,384}{Ecdsa,Ecdh}` for ECDSA and ECDH for P-256 and P-384
 - Add `gpio::Event` for GPIO event support
 - Add `platform::usb_device()` to create a Wasefire USB device from a USB bus
 - Add `platform::Api::running_side()` and `platform::Api::opposite_version()`

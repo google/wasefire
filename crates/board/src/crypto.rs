@@ -45,6 +45,8 @@ pub mod aead;
 pub mod cbc;
 #[cfg(feature = "internal-api-crypto-ecc")]
 pub mod ecc;
+#[cfg(feature = "internal-api-crypto-ecdh")]
+pub mod ecdh;
 #[cfg(feature = "internal-api-crypto-ecdsa")]
 pub mod ecdsa;
 
@@ -74,6 +76,10 @@ pub trait Api: Send {
     #[cfg(feature = "api-crypto-p256")]
     type P256: ecc::Api<typenum::U32>;
 
+    /// P-256 ECDH interface.
+    #[cfg(feature = "api-crypto-p256-ecdh")]
+    type P256Ecdh: ecdh::Api<32>;
+
     /// P-256 ECDSA interface.
     #[cfg(feature = "api-crypto-p256-ecdsa")]
     type P256Ecdsa: ecdsa::Api<32>;
@@ -81,6 +87,10 @@ pub trait Api: Send {
     /// P-384 interface.
     #[cfg(feature = "api-crypto-p384")]
     type P384: ecc::Api<typenum::U48>;
+
+    /// P-384 ECDH interface.
+    #[cfg(feature = "api-crypto-p384-ecdh")]
+    type P384Ecdh: ecdh::Api<48>;
 
     /// P-384 ECDSA interface.
     #[cfg(feature = "api-crypto-p384-ecdsa")]
@@ -245,6 +255,10 @@ pub type HmacSha384<B> = <super::Crypto<B> as Api>::HmacSha384;
 #[cfg(feature = "api-crypto-p256")]
 pub type P256<B> = <super::Crypto<B> as Api>::P256;
 
+/// P-256 ECDH interface.
+#[cfg(feature = "api-crypto-p256-ecdh")]
+pub type P256Ecdh<B> = <super::Crypto<B> as Api>::P256Ecdh;
+
 /// P-256 ECDSA interface.
 #[cfg(feature = "api-crypto-p256-ecdsa")]
 pub type P256Ecdsa<B> = <super::Crypto<B> as Api>::P256Ecdsa;
@@ -252,6 +266,10 @@ pub type P256Ecdsa<B> = <super::Crypto<B> as Api>::P256Ecdsa;
 /// P-384 interface.
 #[cfg(feature = "api-crypto-p384")]
 pub type P384<B> = <super::Crypto<B> as Api>::P384;
+
+/// P-384 ECDH interface.
+#[cfg(feature = "api-crypto-p384-ecdh")]
+pub type P384Ecdh<B> = <super::Crypto<B> as Api>::P384Ecdh;
 
 /// P-384 ECDSA interface.
 #[cfg(feature = "api-crypto-p384-ecdsa")]
@@ -289,6 +307,10 @@ pub type SoftwareHmacSha384<T> = hmac::SimpleHmac<<T as Api>::Sha384>;
 #[cfg(feature = "software-crypto-p256")]
 pub type SoftwareP256<T> = ecc::Software<p256::NistP256, <T as Api>::Sha256>;
 
+/// P-256 ECDH interface.
+#[cfg(feature = "software-crypto-p256-ecdh")]
+pub type SoftwareP256Ecdh<R> = ecdh::Software<p256::NistP256, R, 32>;
+
 /// P-256 ECDSA interface.
 #[cfg(feature = "software-crypto-p256-ecdsa")]
 pub type SoftwareP256Ecdsa<T, R> = ecdsa::Software<p256::NistP256, <T as Api>::Sha256, R, 32>;
@@ -296,6 +318,10 @@ pub type SoftwareP256Ecdsa<T, R> = ecdsa::Software<p256::NistP256, <T as Api>::S
 /// P-384 interface.
 #[cfg(feature = "software-crypto-p384")]
 pub type SoftwareP384<T> = ecc::Software<p384::NistP384, <T as Api>::Sha384>;
+
+/// P-384 ECDH interface.
+#[cfg(feature = "software-crypto-p384-ecdh")]
+pub type SoftwareP384Ecdh<R> = ecdh::Software<p384::NistP384, R, 48>;
 
 /// P-384 ECDSA interface.
 #[cfg(feature = "software-crypto-p384-ecdsa")]
