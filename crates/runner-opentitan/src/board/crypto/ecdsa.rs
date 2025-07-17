@@ -18,14 +18,15 @@ use wasefire_board_api::Supported;
 use wasefire_board_api::crypto::ecdsa::Api;
 use wasefire_error::{Code, Error};
 
+use crate::board::crypto::{memshred, try_from_bytes, try_from_bytes_mut};
 use crate::crypto::common::{BlindedKey, KeyMode, UnblindedKey};
 use crate::crypto::p256;
 
-pub enum Ecdsa {}
+pub enum Impl {}
 
-impl Supported for Ecdsa {}
+impl Supported for Impl {}
 
-impl Api<32> for Ecdsa {
+impl Api<32> for Impl {
     const PRIVATE: Layout = Layout::new::<Private>();
     const PUBLIC: Layout = Layout::new::<Public>();
     // TODO: We should use key wrapping once we figure out which key encryption key to use.
@@ -76,12 +77,8 @@ impl Api<32> for Ecdsa {
     }
 
     fn drop_private(private: &mut [u8]) -> Result<(), Error> {
-        // This function is not really exposed but it exists.
-        unsafe extern "C" {
-            fn hardened_memshred(dest: *mut u32, word_len: usize);
-        }
         let private = try_from_bytes_mut::<Private>(private)?;
-        unsafe { hardened_memshred(private.keyblob.as_mut_ptr(), private.keyblob.len()) };
+        memshred(&mut private.keyblob);
         Ok(())
     }
 
@@ -117,6 +114,7 @@ impl Api<32> for Ecdsa {
         key[.. 32].copy_from_slice(y);
         key[32 ..].copy_from_slice(x);
         key.reverse();
+        public.checksum = 0;
         Ok(())
     }
 }
@@ -139,13 +137,13 @@ struct Private {
 
 impl Public {
     unsafe fn borrow(&self) -> Result<UnblindedKey, Error> {
-        unsafe { UnblindedKey::new(KeyMode::EcdsaP256, &self.key) }
+        unsafe { UnblindedKey::new(KeyMode::EcdsaP256, &self.key, self.checksum) }
     }
 }
 
 impl Private {
     unsafe fn borrow(&self) -> Result<BlindedKey, Error> {
-        unsafe { BlindedKey::new(KeyMode::EcdsaP256, &self.keyblob) }
+        unsafe { BlindedKey::new(KeyMode::EcdsaP256, &self.keyblob, self.checksum) }
     }
 }
 
@@ -153,12 +151,4 @@ fn align_digest(input: &[u8; 32]) -> [u32; 8] {
     let mut output = [0; 8];
     bytemuck::bytes_of_mut(&mut output).copy_from_slice(input);
     output
-}
-
-fn try_from_bytes<T: bytemuck::Pod>(bytes: &[u8]) -> Result<&T, Error> {
-    bytemuck::try_from_bytes(bytes).map_err(|_| Error::user(Code::InvalidArgument))
-}
-
-fn try_from_bytes_mut<T: bytemuck::Pod>(bytes: &mut [u8]) -> Result<&mut T, Error> {
-    bytemuck::try_from_bytes_mut(bytes).map_err(|_| Error::user(Code::InvalidArgument))
 }

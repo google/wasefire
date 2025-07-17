@@ -100,6 +100,7 @@ pub struct HashDigest {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum KeyMode {
     AesCbc = (KeyType::Aes.to_c() << 16 | AesKeyMode::Cbc.to_c()) as isize,
+    EcdhP256 = (KeyType::Ecc.to_c() << 16 | EccKeyMode::EcdhP256.to_c()) as isize,
     EcdsaP256 = (KeyType::Ecc.to_c() << 16 | EccKeyMode::EcdsaP256.to_c()) as isize,
     HmacSha256 = (KeyType::Hmac.to_c() << 16 | HmacKeyMode::Sha256.to_c()) as isize,
 }
@@ -112,6 +113,7 @@ impl KeyMode {
     fn key_length(self, public: bool) -> usize {
         match self {
             KeyMode::AesCbc => 32,
+            KeyMode::EcdhP256 => 32 * (1 + public as usize),
             KeyMode::EcdsaP256 => 32 * (1 + public as usize),
             KeyMode::HmacSha256 => 64,
         }
@@ -121,6 +123,7 @@ impl KeyMode {
         let key_length = self.key_length(false);
         match self {
             KeyMode::AesCbc => 2 * key_length,
+            KeyMode::EcdhP256 => 2 * (key_length + 8),
             KeyMode::EcdsaP256 => 2 * (key_length + 8),
             KeyMode::HmacSha256 => 2 * key_length,
         }
@@ -168,6 +171,7 @@ impl HmacKeyMode {
 // otcrypto_ecc_key_mode_t
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum EccKeyMode {
+    EcdhP256 = 0x5fc,
     EcdsaP256 = 0x31e,
 }
 
@@ -230,14 +234,14 @@ unsafe impl Send for UnblindedKey {}
 
 impl UnblindedKey {
     // Safety: The input must outlive the output. The output must not be mutated.
-    pub unsafe fn new(key_mode: KeyMode, key: &[u32]) -> Result<Self, Error> {
+    pub unsafe fn new(key_mode: KeyMode, key: &[u32], checksum: u32) -> Result<Self, Error> {
         let key_length = key_mode.key_length(true);
         Error::user(Code::InvalidLength).check(4 * key.len() == key_length)?;
         Ok(UnblindedKey {
             key_mode: key_mode.to_c(),
             key_length,
             key: key.as_ptr() as *mut u32,
-            checksum: 0,
+            checksum,
         })
     }
 
@@ -287,16 +291,11 @@ unsafe impl Send for BlindedKey {}
 
 impl BlindedKey {
     // Safety: The input must outlive the output. The output must not be mutated.
-    pub unsafe fn new(key_mode: KeyMode, keyblob: &[u32]) -> Result<Self, Error> {
+    pub unsafe fn new(key_mode: KeyMode, keyblob: &[u32], checksum: u32) -> Result<Self, Error> {
         let config = KeyConfig::new(key_mode);
         let keyblob_length = key_mode.keyblob_length();
         Error::user(Code::InvalidLength).check(4 * keyblob.len() == keyblob_length)?;
-        Ok(BlindedKey {
-            config,
-            keyblob_length,
-            keyblob: keyblob.as_ptr() as *mut u32,
-            checksum: 0,
-        })
+        Ok(BlindedKey { config, keyblob_length, keyblob: keyblob.as_ptr() as *mut u32, checksum })
     }
 
     pub fn keyblob(&self) -> &[u32] {

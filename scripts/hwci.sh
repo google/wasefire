@@ -19,10 +19,11 @@ set -e
 
 # This script runs the test applets and thus needs a connected platform.
 #
-# Usage: {host,nordic}
+# Usage: {host,nordic,opentitan}
 #   Runs all supported hardware tests for an xtask runner.
 # Usage: [<protocol> [--release]]
-#   Runs simple hardware tests for generic platforms.
+#   Runs simple hardware tests for generic platforms. An xtask runner can
+#   be simulated with RUNNER={host,nordic,opentitan} in the environment.
 
 list() {
   find examples/rust -maxdepth 1 -name '*_test' -printf '%P\n' | sort
@@ -35,20 +36,35 @@ features() {
 # <protocol> {,--release} [<runner..>]
 run() {
   local protocol=$1 release=$2
-  local name feature
+  local name name_flags feature features
+  local runner_specific runner_feature runner_default
   shift 2
   for name in $(list); do
-    [ $# -gt 0 ] || x cargo xtask $release applet rust $name install $protocol wait
+    runner_specific=n
+    runner_feature=
+    runner_default=n
+    features=
     for feature in $(cd examples/rust/$name && features); do
+      case $feature in
+        runner-*) runner_specific=y ;;
+        *) features="$features $feature" ;;
+      esac
+      [ $feature = runner-$RUNNER ] && runner_feature=--features=$feature
+      [ $feature = runner- ] && runner_default=y
+    done
+    [ $runner_default = y -a -z "$runner_feature" ] && runner_feature=--features=runner-
+    [ $runner_specific = y -a -z "$runner_feature" ] && continue
+    name_flags="$name $runner_feature"
+    [ $# -gt 0 ] || x cargo xtask $release applet rust $name_flags install $protocol wait
+    for feature in $features; do
+      name_flags="$name $runner_feature --features=$feature"
       if [ $feature = native ]; then
         [ $# -gt 0 ] || continue
-        x cargo xtask $release --native \
-          applet rust $name --features=native \
-          runner "$@" update $protocol
+        x cargo xtask $release --native applet rust $name_flags runner "$@" update $protocol
         x cargo xtask wait-applet $protocol
       else
         [ $# -gt 0 ] && continue
-        x cargo xtask $release applet rust $name --features=$feature install $protocol wait
+        x cargo xtask $release applet rust $name_flags install $protocol wait
       fi
     done
   done
@@ -59,6 +75,7 @@ full() {
   local protocol=--protocol=$1
   local release pid
   shift
+  RUNNER=$1
   trap "trap 'exit 1' TERM && kill -- -$$" EXIT
   cargo wasefire platform-lock --timeout=200ms $protocol 2>/dev/null || true
   for release in '' --release; do
