@@ -21,6 +21,7 @@ use wasefire_scheduler as scheduler;
 
 mod applet;
 pub mod button;
+mod clock;
 mod crypto;
 mod debug;
 mod led;
@@ -88,6 +89,7 @@ impl board::Api for Board {
 
     type Applet = applet::Impl;
     type Button = button::Impl;
+    type Clock = clock::Impl;
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;
     type Led = led::Impl;
