@@ -14,7 +14,7 @@
 
 //! Cryptography interface.
 
-#[cfg(feature = "internal-software-crypto-ecdsa")]
+#[cfg(feature = "internal-crypto-rng")]
 use core::marker::PhantomData;
 
 #[cfg(feature = "internal-api-crypto-hash")]
@@ -185,19 +185,19 @@ impl GlobalError {
 }
 
 /// Helper to use the board RNG as a cryptography-secure one.
-#[cfg(feature = "internal-software-crypto-ecdsa")]
+#[cfg(feature = "internal-crypto-rng")]
 pub struct CryptoRng<T: crate::Api> {
     rng: PhantomData<crate::Rng<T>>,
 }
 
-#[cfg(feature = "internal-software-crypto-ecdsa")]
+#[cfg(feature = "internal-crypto-rng")]
 impl<T: crate::Api> Default for CryptoRng<T> {
     fn default() -> Self {
         CryptoRng { rng: PhantomData }
     }
 }
 
-#[cfg(feature = "internal-software-crypto-ecdsa")]
+#[cfg(feature = "internal-crypto-rng")]
 impl<T: crate::Api> rand_core::RngCore for CryptoRng<T> {
     fn next_u32(&mut self) -> u32 {
         rand_core::impls::next_u32_via_fill(self)
@@ -218,13 +218,13 @@ impl<T: crate::Api> rand_core::RngCore for CryptoRng<T> {
     }
 }
 
-#[cfg(feature = "internal-software-crypto-ecdsa")]
+#[cfg(feature = "internal-crypto-rng")]
 static ERROR: GlobalError = GlobalError::new();
 
-#[cfg(feature = "internal-software-crypto-ecdsa")]
+#[cfg(feature = "internal-crypto-rng")]
 impl<T: crate::Api> rand_core::CryptoRng for CryptoRng<T> {}
 
-#[cfg(feature = "internal-software-crypto-ecdsa")]
+#[cfg(feature = "internal-crypto-rng")]
 impl<T: crate::Api> WithError for CryptoRng<T> {
     fn with_error<R>(operation: impl FnOnce() -> R) -> Result<R, Error> {
         ERROR.with(operation)
@@ -334,6 +334,54 @@ pub type SoftwareSha256 = sha2::Sha256;
 /// SHA-384 interface.
 #[cfg(feature = "software-crypto-sha384")]
 pub type SoftwareSha384 = sha2::Sha384;
+
+#[cfg(feature = "internal-test-software-crypto")]
+mod _test_software_crypto {
+    use super::*;
+
+    macro_rules! test {
+        ($Type:ident $($Param:ident)* $([$($where:tt)*])?; $Final:path) => {
+            #[allow(dead_code, non_snake_case)]
+            fn $Type<$($Param),*>() $(where $($where)*)? {
+                fn assert<T: $Final>() {}
+                assert::<$Type<$($Param),*>>();
+            }
+        };
+    }
+
+    #[cfg(feature = "software-crypto-aes128-ccm")]
+    test!(SoftwareAes128Ccm; aead::Api<typenum::U16, typenum::U13, Tag = typenum::U4>);
+    #[cfg(feature = "software-crypto-aes256-cbc")]
+    test!(SoftwareAes256Cbc; cbc::Api<typenum::U32, typenum::U16>);
+    #[cfg(feature = "software-crypto-aes256-gcm")]
+    test!(SoftwareAes256Gcm; aead::Api<typenum::U32, typenum::U12>);
+    #[cfg(feature = "software-crypto-hmac-sha256")]
+    test!(SoftwareHmacSha256 T [T: Api]; Hmac<KeySize = typenum::U64, OutputSize = typenum::U32>);
+    #[cfg(feature = "software-crypto-hmac-sha384")]
+    test!(SoftwareHmacSha384 T [T: Api]; Hmac<KeySize = typenum::U128, OutputSize = typenum::U48>);
+    #[cfg(feature = "software-crypto-p256")]
+    test!(SoftwareP256 T [T: Api, T::Sha256: digest::FixedOutputReset]; ecc::Api<typenum::U32>);
+    #[cfg(feature = "software-crypto-p256-ecdh")]
+    test!(SoftwareP256Ecdh R [R: Default + rand_core::CryptoRngCore + WithError + Send];
+          ecdh::Api<32>);
+    #[cfg(feature = "software-crypto-p256-ecdsa")]
+    test!(SoftwareP256Ecdsa T R [T: Api, T::Sha256: digest::FixedOutputReset,
+                                 R: Default + rand_core::CryptoRngCore + WithError + Send];
+          ecdsa::Api<32>);
+    #[cfg(feature = "software-crypto-p384")]
+    test!(SoftwareP384 T [T: Api, T::Sha384: digest::FixedOutputReset]; ecc::Api<typenum::U48>);
+    #[cfg(feature = "software-crypto-p384-ecdh")]
+    test!(SoftwareP384Ecdh R [R: Default + rand_core::CryptoRngCore + WithError + Send];
+          ecdh::Api<48>);
+    #[cfg(feature = "software-crypto-p384-ecdsa")]
+    test!(SoftwareP384Ecdsa T R [T: Api, T::Sha384: digest::FixedOutputReset,
+                                 R: Default + rand_core::CryptoRngCore + WithError + Send];
+          ecdsa::Api<48>);
+    #[cfg(feature = "software-crypto-sha256")]
+    test!(SoftwareSha256[]; Hash<BlockSize = typenum::U64, OutputSize = typenum::U32>);
+    #[cfg(feature = "software-crypto-sha384")]
+    test!(SoftwareSha384[]; Hash<BlockSize = typenum::U128, OutputSize = typenum::U48>);
+}
 
 #[cfg(feature = "software-crypto-sha256")]
 impl crate::Supported for sha2::Sha256 {}

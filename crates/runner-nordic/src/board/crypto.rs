@@ -30,6 +30,10 @@ impl crypto::Api for Impl {
     type HmacSha256 = crypto::SoftwareHmacSha256<Self>;
     #[cfg(feature = "software-crypto-p256")]
     type P256 = crypto::SoftwareP256<Self>;
+    #[cfg(feature = "software-crypto-p256-ecdh")]
+    type P256Ecdh = crypto::SoftwareP256Ecdh<crypto::CryptoRng<crate::Board>>;
+    #[cfg(feature = "software-crypto-p256-ecdsa")]
+    type P256Ecdsa = crypto::SoftwareP256Ecdsa<Self, crypto::CryptoRng<crate::Board>>;
     #[cfg(feature = "software-crypto-sha256")]
     type Sha256 = crypto::SoftwareSha256;
 }

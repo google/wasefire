@@ -81,6 +81,11 @@ software-crypto-hmac-sha256 = [
   "wasefire-scheduler/software-crypto-hmac-sha256",
 ]
 software-crypto-p256 = ["software-crypto-sha256", "wasefire-scheduler/software-crypto-p256"]
+software-crypto-p256-ecdh = ["_crypto", "wasefire-scheduler/software-crypto-p256-ecdh"]
+software-crypto-p256-ecdsa = [
+  "software-crypto-sha256",
+  "wasefire-scheduler/software-crypto-p256-ecdsa",
+]
 software-crypto-sha256 = ["_crypto", "wasefire-scheduler/software-crypto-sha256"]
 # Exactly one is enabled by xtask.
 board-devkit = ["header/board-devkit"]
@@ -110,6 +115,8 @@ _software-crypto = [
   "software-crypto-aes256-gcm",
   "software-crypto-hmac-sha256",
   "software-crypto-p256",
+  "software-crypto-p256-ecdh",
+  "software-crypto-p256-ecdsa",
   "software-crypto-sha256",
 ]
 _usb = []

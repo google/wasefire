@@ -143,7 +143,12 @@ software-crypto-p256 = [
   "internal-software-crypto-ecc",
   "p256?/ecdsa",
 ]
-software-crypto-p256-ecdh = ["api-crypto-p256-ecdh", "dep:p256", "internal-software-crypto-ecdh"]
+software-crypto-p256-ecdh = [
+  "api-crypto-p256-ecdh",
+  "dep:p256",
+  "internal-software-crypto-ecdh",
+  "p256?/arithmetic",
+]
 software-crypto-p256-ecdsa = [
   "api-crypto-p256-ecdsa",
   "api-crypto-sha256",
@@ -158,7 +163,12 @@ software-crypto-p384 = [
   "internal-software-crypto-ecc",
   "p384?/ecdsa",
 ]
-software-crypto-p384-ecdh = ["api-crypto-p384-ecdh", "dep:p384", "internal-software-crypto-ecdh"]
+software-crypto-p384-ecdh = [
+  "api-crypto-p384-ecdh",
+  "dep:p384",
+  "internal-software-crypto-ecdh",
+  "p384?/arithmetic",
+]
 software-crypto-p384-ecdsa = [
   "api-crypto-p384-ecdsa",
   "api-crypto-sha384",
@@ -192,6 +202,7 @@ internal-api-crypto-hmac = [
 ]
 internal-api-radio = []
 internal-api-usb = []
+internal-crypto-rng = ["api-rng"]
 internal-software-crypto = [
   "software-crypto-aes128-ccm",
   "software-crypto-aes256-cbc",
@@ -219,11 +230,10 @@ internal-software-crypto-ecc = [
 internal-software-crypto-ecdh = [
   "dep:elliptic-curve",
   "dep:rand_core",
-  "elliptic-curve?/arithmetic",
   "elliptic-curve?/sec1",
+  "internal-crypto-rng",
 ]
 internal-software-crypto-ecdsa = [
-  "api-rng",
   "dep:crypto-common",
   "dep:ecdsa",
   "dep:elliptic-curve",
@@ -231,8 +241,10 @@ internal-software-crypto-ecdsa = [
   "dep:signature",
   "ecdsa?/signing",
   "ecdsa?/verifying",
+  "internal-crypto-rng",
 ]
 internal-software-crypto-hmac = ["dep:hmac"]
+internal-test-software-crypto = []
 internal-with-error = []
 
 [lints]
