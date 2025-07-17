@@ -42,6 +42,7 @@ features = ["single-hart", "v-trap"]
 path = "../scheduler"
 features = [
   "board-api-button",
+  "board-api-clock",
   "board-api-crypto-aes256-cbc",
   "board-api-crypto-hmac-sha256",
   "board-api-crypto-p256-ecdh",
