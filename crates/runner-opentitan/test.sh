@@ -26,3 +26,5 @@ DEFMT_LOG=trace cargo check --bin=runner-opentitan --target=riscv32imc-unknown-n
 cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf --features=wasm,release
 cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf --features=native,debug
 cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf --features=native,release
+cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf \
+--features=native,release,usb-ctap

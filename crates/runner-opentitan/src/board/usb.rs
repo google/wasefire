@@ -13,9 +13,17 @@
 // limitations under the License.
 
 use alloc::boxed::Box;
+use alloc::vec::Vec;
 
 use usb_device::bus::UsbBusAllocator;
+use usb_device::class::UsbClass;
 use usb_device::device::UsbDevice;
+#[cfg(feature = "usb-ctap")]
+use usbd_hid::hid_class::HIDClass;
+#[cfg(feature = "_usb")]
+use wasefire_board_api::usb::Api;
+#[cfg(feature = "usb-ctap")]
+use wasefire_board_api::usb::ctap::{Ctap, HasHid, WithHid};
 use wasefire_error::{Code, Error};
 use wasefire_protocol_usb::{HasRpc, Rpc};
 
@@ -24,17 +32,47 @@ use crate::usb::Usb;
 
 pub struct State {
     protocol: wasefire_protocol_usb::Rpc<'static, Usb>,
+    #[cfg(feature = "usb-ctap")]
+    ctap: Ctap<'static, Usb>,
     device: UsbDevice<'static, Usb>,
 }
 
 pub fn init() -> State {
     let usb_bus = Box::leak(Box::new(UsbBusAllocator::new(Usb::new())));
     let protocol = wasefire_protocol_usb::Rpc::new(usb_bus);
+    #[cfg(feature = "usb-ctap")]
+    const CTAP_REPORT_DESCRIPTOR: &[u8] = &[
+        0x06, 0xd0, 0xf1, 0x09, 0x01, 0xa1, 0x01, 0x09, 0x20, 0x15, 0x00, 0x26, 0xff, 0x00, 0x75,
+        0x08, 0x95, 0x40, 0x81, 0x02, 0x09, 0x21, 0x15, 0x00, 0x26, 0xff, 0x00, 0x75, 0x08, 0x95,
+        0x40, 0x91, 0x02, 0xc0,
+    ];
+    #[cfg(feature = "usb-ctap")]
+    let ctap = Ctap::new(HIDClass::new(usb_bus, CTAP_REPORT_DESCRIPTOR, 5));
     let device = wasefire_board_api::platform::usb_device::<_, crate::board::Board>(usb_bus);
-    State { protocol, device }
+    State {
+        protocol,
+        #[cfg(feature = "usb-ctap")]
+        ctap,
+        device,
+    }
 }
 
 pub enum Impl {}
+
+#[cfg(feature = "_usb")]
+impl Api for Impl {
+    #[cfg(feature = "usb-ctap")]
+    type Ctap = WithHid<Impl>;
+}
+
+#[cfg(feature = "usb-ctap")]
+impl HasHid for Impl {
+    type UsbBus = Usb;
+
+    fn with_hid<R>(f: impl FnOnce(&mut Ctap<Self::UsbBus>) -> R) -> R {
+        with_state(|state| f(&mut state.usb.ctap))
+    }
+}
 
 impl HasRpc<'static, Usb> for Impl {
     fn with_rpc<R>(f: impl FnOnce(&mut Rpc<'static, Usb>) -> R) -> R {
@@ -89,8 +127,13 @@ impl HasRpc<'static, Usb> for Impl {
 
 pub fn interrupt() {
     with_state(|state| {
-        if state.usb.device.poll(&mut [&mut state.usb.protocol]) {
-            state.usb.protocol.tick(|event| state.events.push(event.into()));
-        }
+        let mut classes = Vec::<&mut dyn UsbClass<_>>::new();
+        classes.push(&mut state.usb.protocol);
+        #[cfg(feature = "usb-ctap")]
+        classes.push(state.usb.ctap.class());
+        let _polled = state.usb.device.poll(&mut classes);
+        state.usb.protocol.tick(|event| state.events.push(event.into()));
+        #[cfg(feature = "usb-ctap")]
+        state.usb.ctap.tick(|event| state.events.push(event.into()));
     });
 }
