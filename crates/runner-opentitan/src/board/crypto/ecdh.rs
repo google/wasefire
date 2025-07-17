@@ -54,6 +54,8 @@ impl Api<32> for Impl {
         let shared = try_from_bytes_mut::<Shared>(shared)?;
         let private = unsafe { private.borrow() }?;
         let public = unsafe { public.borrow() }?;
+        // We want a symmetric key of 32 bytes. The actual key mode doesn't matter (at least for
+        // now). So we just use AES-256-CBC since we already have the key mode defined.
         let secret = p256::ecdh(&private, &public, KeyMode::AesCbc)?;
         shared.keyblob.copy_from_slice(secret.0.keyblob());
         shared.checksum = secret.0.checksum;

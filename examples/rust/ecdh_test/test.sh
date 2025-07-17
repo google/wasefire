@@ -19,6 +19,6 @@ set -e
 
 test_helper
 
-cargo check --lib --target=wasm32-unknown-unknown --features=runner-
+cargo check --lib --target=wasm32-unknown-unknown
 cargo check --lib --target=wasm32-unknown-unknown --features=runner-opentitan
-cargo test --lib --features=test --features=runner-
+cargo test --lib --features=test

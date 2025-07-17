@@ -21,9 +21,9 @@ use alloc::vec;
 
 use ecdh_vectors::{P256_VECTORS, P384_VECTORS, Vector};
 use wasefire::crypto::ecdh::{Curve, P256, P384, Private, Public, Shared};
-use wasefire_one_of::exactly_one_of;
+use wasefire_one_of::at_most_one_of;
 
-exactly_one_of!["runner-opentitan", "runner-"];
+at_most_one_of!["runner-opentitan", "runner-"];
 
 pub fn main() -> ! {
     test_random::<P256>("p256");
@@ -61,10 +61,10 @@ fn test<C: Curve>(name: &str, vectors: &[Vector]) {
     }
     for &Vector { tc_id, private, otprivate, public_x, public_y, shared } in vectors {
         debug!("- {tc_id}");
-        let _ = (private, otprivate); // silence warnings
-        #[cfg(feature = "runner-opentitan")]
-        let private = Private::<C>::import_testonly(otprivate).unwrap();
-        #[cfg(feature = "runner-")]
+        let private = match () {
+            () if cfg!(feature = "runner-opentitan") => otprivate,
+            _ => private,
+        };
         let private = Private::<C>::import_testonly(private).unwrap();
         let public = Public::<C>::import(public_x, public_y).unwrap();
         let shared_ = Shared::<C>::new(&private, &public).unwrap();
