@@ -126,7 +126,7 @@ impl KeyMode {
     fn key_length(self, public: bool) -> usize {
         match self {
             KeyMode::Aes(x) => x.key_length(),
-            KeyMode::Ecc(x) => x.key_length() * (1 + public as usize),
+            KeyMode::Ecc(x) => x.key_length(public),
             KeyMode::Hmac(x) => x.key_length(),
         }
     }
@@ -206,10 +206,10 @@ impl EccKeyMode {
         self as i32
     }
 
-    fn key_length(self) -> usize {
+    fn key_length(self, public: bool) -> usize {
         match self {
-            EccKeyMode::EcdhP256 => 32,
-            EccKeyMode::EcdsaP256 => 32,
+            EccKeyMode::EcdhP256 => 32 * (1 + public as usize),
+            EccKeyMode::EcdsaP256 => 32 * (1 + public as usize),
             #[cfg(feature = "ed25519")]
             EccKeyMode::Ed25519 => 32,
         }
