@@ -45,9 +45,9 @@ wasefire-logger = { version = "0.1.7-git", path = "../logger" }
 wasefire-protocol = { version = "0.3.0-git", path = "../protocol" }
 wasefire-store = { version = "0.3.1-git", path = "../store", optional = true }
 wasefire-sync = { version = "0.1.2-git", path = "../sync" }
+zeroize = { version = "1.7.0", optional = true, default-features = false }
 # TODO(usbd-hid > 0.8.2): Remove
 ssmarshal = { version = "1.0.0", default-features = false, optional = true }
-zeroize = { version = "1.7.0", optional = true, default-features = false }
 
 [dependencies.wasefire-applet-api]
 version = "0.8.0-git"
@@ -190,7 +190,6 @@ software-crypto-p384-ecdsa = [
 software-crypto-sha256 = ["api-crypto-sha256", "dep:sha2"]
 software-crypto-sha384 = ["api-crypto-sha384", "dep:sha2"]
 # Internal features.
-ed25519-dalek = ["dep:ed25519-dalek"]
 internal-api-crypto = []
 internal-api-crypto-aead = ["dep:crypto-common", "dep:typenum", "internal-api-crypto"]
 internal-api-crypto-cbc = ["dep:crypto-common", "dep:typenum", "internal-api-crypto"]
@@ -257,7 +256,6 @@ internal-software-crypto-ecdsa = [
 internal-software-crypto-hmac = ["dep:hmac"]
 internal-test-software-crypto = []
 internal-with-error = []
-zeroize = ["dep:zeroize"]
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"

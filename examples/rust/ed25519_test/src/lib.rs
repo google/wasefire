@@ -46,7 +46,7 @@ fn test_random() {
 }
 
 fn test(vectors: &[Vector]) {
-    debug!("test(): Verifies ECDSA signatures of test vectors.");
+    debug!("test(): Verifies Ed25519 signatures of test vectors.");
     for &Vector { name, private, public, message, signature } in vectors {
         debug!("- {name}");
         let private = Private::import(private).unwrap();
