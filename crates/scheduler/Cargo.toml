@@ -57,6 +57,7 @@ applet-api-crypto-ccm = ["internal-applet-api-crypto", "wasefire-applet-api/api-
 applet-api-crypto-ec = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ec"]
 applet-api-crypto-ecdh = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ecdh"]
 applet-api-crypto-ecdsa = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ecdsa"]
+applet-api-crypto-ed25519 = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-ed25519"]
 applet-api-crypto-gcm = ["internal-applet-api-crypto", "wasefire-applet-api/api-crypto-gcm"]
 applet-api-crypto-hash = [
   "internal-applet-api-crypto-hash",
@@ -107,6 +108,7 @@ board-api-crypto-aes256-gcm = [
   "dep:typenum",
   "wasefire-board-api/api-crypto-aes256-gcm",
 ]
+board-api-crypto-ed25519 = ["applet-api-crypto-ed25519", "wasefire-board-api/api-crypto-ed25519"]
 board-api-crypto-hmac-sha256 = [
   "applet-api-crypto-hkdf",
   "applet-api-crypto-hmac",
@@ -189,6 +191,7 @@ full-applet-api = [
   "applet-api-crypto-ec",
   "applet-api-crypto-ecdh",
   "applet-api-crypto-ecdsa",
+  "applet-api-crypto-ed25519",
   "applet-api-crypto-gcm",
   "applet-api-crypto-hash",
   "applet-api-crypto-hkdf",
@@ -214,6 +217,7 @@ full-board-api = [
   "board-api-crypto-aes128-ccm",
   "board-api-crypto-aes256-cbc",
   "board-api-crypto-aes256-gcm",
+  "board-api-crypto-ed25519",
   "board-api-crypto-hmac-sha256",
   "board-api-crypto-hmac-sha384",
   "board-api-crypto-p256",
@@ -248,6 +252,7 @@ software-crypto-aes256-gcm = [
   "board-api-crypto-aes256-gcm",
   "wasefire-board-api/software-crypto-aes256-gcm",
 ]
+software-crypto-ed25519 = ["board-api-crypto-ed25519", "wasefire-board-api/software-crypto-ed25519"]
 software-crypto-hmac-sha256 = [
   "board-api-crypto-hmac-sha256",
   "wasefire-board-api/software-crypto-hmac-sha256",

@@ -22,6 +22,8 @@ mod ec;
 mod ecdh;
 #[cfg(feature = "applet-api-crypto-ecdsa")]
 mod ecdsa;
+#[cfg(feature = "applet-api-crypto-ed25519")]
+mod ed25519;
 #[cfg(feature = "applet-api-crypto-gcm")]
 mod gcm;
 #[cfg(feature = "internal-applet-api-crypto-hash")]
@@ -44,6 +46,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Ecdh(call) => ecdh::process(call),
         #[cfg(feature = "applet-api-crypto-ecdsa")]
         Api::Ecdsa(call) => ecdsa::process(call),
+        #[cfg(feature = "applet-api-crypto-ed25519")]
+        Api::Ed25519(call) => ed25519::process(call),
         #[cfg(feature = "applet-api-crypto-gcm")]
         Api::Gcm(call) => gcm::process(call),
         #[cfg(feature = "internal-applet-api-crypto-hash")]

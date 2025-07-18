@@ -177,6 +177,7 @@ crypto-ccm
 crypto-ec
 crypto-ecdh
 crypto-ecdsa
+crypto-ed25519
 crypto-gcm
 crypto-hash
 crypto-hkdf
@@ -202,6 +203,7 @@ clock
 crypto-aes128-ccm
 crypto-aes256-cbc
 crypto-aes256-gcm
+crypto-ed25519
 crypto-hmac-sha256
 crypto-hmac-sha384
 crypto-p256
@@ -227,6 +229,7 @@ _TEST_SOFTWARE_CRYPTO='
 aes128-ccm
 aes256-cbc
 aes256-gcm
+ed25519
 hmac-sha256
 hmac-sha384
 p256

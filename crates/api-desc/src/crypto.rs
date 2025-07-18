@@ -24,6 +24,8 @@ mod ec;
 mod ecdh;
 #[cfg(feature = "api-crypto-ecdsa")]
 mod ecdsa;
+#[cfg(feature = "api-crypto-ed25519")]
+mod ed25519;
 #[cfg(feature = "api-crypto-gcm")]
 mod gcm;
 #[cfg(feature = "internal-api-crypto-hash")]
@@ -45,6 +47,8 @@ pub(crate) fn new() -> Item {
         ecdh::new(),
         #[cfg(feature = "api-crypto-ecdsa")]
         ecdsa::new(),
+        #[cfg(feature = "api-crypto-ed25519")]
+        ed25519::new(),
         #[cfg(feature = "api-crypto-gcm")]
         gcm::new(),
         #[cfg(feature = "internal-api-crypto-hash")]

@@ -4,7 +4,7 @@
 
 ### Minor
 
-- Add `crypto::{ecdsa,ecdh}` module for ECDSA and ECDH
+- Add `crypto::{ecdsa,ecdh,ed25519}` module for ECDSA, ECDH, and Ed25519
 - Add `gpio::{Event,register,unregister}` for event support
 - Do not pass structs by value in parameters (fix #815)
 - Remove `platform::update::metadata()` function

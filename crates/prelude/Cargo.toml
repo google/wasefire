@@ -47,6 +47,7 @@ api-crypto-ec = [
 ]
 api-crypto-ecdh = ["internal-api-crypto", "wasefire-applet-api/api-crypto-ecdh"]
 api-crypto-ecdsa = ["internal-api-crypto", "wasefire-applet-api/api-crypto-ecdsa"]
+api-crypto-ed25519 = ["internal-api-crypto", "wasefire-applet-api/api-crypto-ed25519"]
 api-crypto-gcm = ["internal-api-crypto", "wasefire-applet-api/api-crypto-gcm"]
 api-crypto-hash = ["internal-api-crypto-hash", "wasefire-applet-api/api-crypto-hash"]
 api-crypto-hkdf = ["api-crypto-hmac", "wasefire-applet-api/api-crypto-hkdf"]
@@ -77,6 +78,7 @@ full-api = [
   "api-crypto-ec",
   "api-crypto-ecdh",
   "api-crypto-ecdsa",
+  "api-crypto-ed25519",
   "api-crypto-gcm",
   "api-crypto-hash",
   "api-crypto-hkdf",
