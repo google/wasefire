@@ -19,10 +19,19 @@
 //! ```shell
 //! cargo xtask --release --native \
 //!   applet rust opensk --opt-level=z \
-//!   runner nordic --board=dongle --opt-level=z --log=info \
+//!   runner nordic --board=dongle --opt-level=z \
 //!     --features=usb-ctap --features=software-crypto-aes256-cbc \
 //!     --features=software-crypto-p256,software-crypto-hmac-sha256 \
-//!   flash --reset-flash
+//!   flash
+//! ```
+//!
+//! To build a native applet for the OpenTitan A2 board:
+//!
+//! ```shell
+//! cargo xtask --release --native \
+//!   applet rust opensk --opt-level=z \
+//!   runner opentitan --opt-level=z --features=usb-ctap \
+//!   flash
 //! ```
 
 #![no_std]
