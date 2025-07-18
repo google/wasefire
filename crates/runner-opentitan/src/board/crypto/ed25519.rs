@@ -15,25 +15,26 @@
 use core::alloc::Layout;
 
 use wasefire_board_api::Supported;
-use wasefire_board_api::crypto::ecdh::Api;
-use wasefire_error::Error;
+use wasefire_board_api::crypto::ed25519::Api;
+use wasefire_error::{Code, Error};
 
 use crate::board::crypto::{memshred, try_from_bytes, try_from_bytes_mut};
-use crate::crypto::common::{AesKeyMode, BlindedKey, EccKeyMode, KeyMode, UnblindedKey};
-use crate::crypto::p256;
+use crate::crypto::common::{BlindedKey, EccKeyMode, KeyMode, UnblindedKey};
+use crate::crypto::ed25519;
 
 pub enum Impl {}
 
 impl Supported for Impl {}
 
-impl Api<32> for Impl {
+impl Api for Impl {
     const PRIVATE: Layout = Layout::new::<Private>();
     const PUBLIC: Layout = Layout::new::<Public>();
-    const SHARED: Layout = Layout::new::<Shared>();
+    // TODO: We should use key wrapping once we figure out which key encryption key to use.
+    const WRAPPED: usize = core::mem::size_of::<Private>();
 
     fn generate(private: &mut [u8]) -> Result<(), Error> {
         let private = try_from_bytes_mut::<Private>(private)?;
-        let (privkey, pubkey) = p256::ecdh_keygen()?;
+        let (privkey, pubkey) = ed25519::keygen()?;
         private.keyblob.copy_from_slice(privkey.0.keyblob());
         private.checksum = privkey.0.checksum;
         private.public.key.copy_from_slice(pubkey.0.key());
@@ -48,18 +49,29 @@ impl Api<32> for Impl {
         Ok(())
     }
 
-    fn shared(private: &[u8], public: &[u8], shared: &mut [u8]) -> Result<(), Error> {
+    fn sign(
+        private: &[u8], message: &[u8], r: &mut [u8; 32], s: &mut [u8; 32],
+    ) -> Result<(), Error> {
         let private = try_from_bytes::<Private>(private)?;
-        let public = try_from_bytes::<Public>(public)?;
-        let shared = try_from_bytes_mut::<Shared>(shared)?;
+        let mut signature = [0; 16];
         let private = unsafe { private.borrow() }?;
-        let public = unsafe { public.borrow() }?;
-        // We want a symmetric key of 32 bytes. The actual key mode doesn't matter (at least for
-        // now). So we just use AES-256-CBC since we already have the key mode defined.
-        let secret = p256::ecdh(&private, &public, KeyMode::Aes(AesKeyMode::Cbc))?;
-        shared.keyblob.copy_from_slice(secret.0.keyblob());
-        shared.checksum = secret.0.checksum;
+        ed25519::sign(&private, message, &mut signature)?;
+        let signature = bytemuck::bytes_of_mut(&mut signature);
+        signature.reverse();
+        s.copy_from_slice(&signature[.. 32]);
+        r.copy_from_slice(&signature[32 ..]);
         Ok(())
+    }
+
+    fn verify(public: &[u8], message: &[u8], r: &[u8; 32], s: &[u8; 32]) -> Result<bool, Error> {
+        let public = try_from_bytes::<Public>(public)?;
+        let mut signature = [0; 16];
+        let sig = bytemuck::bytes_of_mut(&mut signature);
+        sig[.. 32].copy_from_slice(s);
+        sig[32 ..].copy_from_slice(r);
+        sig.reverse();
+        let public = unsafe { public.borrow() }?;
+        ed25519::verify(&public, message, &signature)
     }
 
     fn drop_private(private: &mut [u8]) -> Result<(), Error> {
@@ -68,41 +80,36 @@ impl Api<32> for Impl {
         Ok(())
     }
 
-    fn drop_shared(shared: &mut [u8]) -> Result<(), Error> {
-        let shared = try_from_bytes_mut::<Shared>(shared)?;
-        memshred(&mut shared.keyblob);
+    fn export_private(private: &[u8], wrapped: &mut [u8]) -> Result<(), Error> {
+        if private.len() != wrapped.len() {
+            return Err(Error::user(Code::InvalidLength));
+        }
+        wrapped.copy_from_slice(private);
         Ok(())
     }
 
-    fn export_public(public: &[u8], x: &mut [u8; 32], y: &mut [u8; 32]) -> Result<(), Error> {
+    fn import_private(wrapped: &[u8], private: &mut [u8]) -> Result<(), Error> {
+        if private.len() != wrapped.len() {
+            return Err(Error::user(Code::InvalidLength));
+        }
+        private.copy_from_slice(wrapped);
+        Ok(())
+    }
+
+    fn export_public(public: &[u8], a: &mut [u8; 32]) -> Result<(), Error> {
         let public = try_from_bytes::<Public>(public)?;
         let key = bytemuck::bytes_of(&public.key);
-        x.copy_from_slice(&key[.. 32]);
-        y.copy_from_slice(&key[32 ..]);
-        x.reverse();
-        y.reverse();
+        a.copy_from_slice(key);
+        a.reverse();
         Ok(())
     }
 
-    fn import_public(x: &[u8; 32], y: &[u8; 32], public: &mut [u8]) -> Result<(), Error> {
+    fn import_public(a: &[u8; 32], public: &mut [u8]) -> Result<(), Error> {
         let public = try_from_bytes_mut::<Public>(public)?;
         let key = bytemuck::bytes_of_mut(&mut public.key);
-        key[.. 32].copy_from_slice(y);
-        key[32 ..].copy_from_slice(x);
+        key.copy_from_slice(a);
         key.reverse();
         public.checksum = 0;
-        Ok(())
-    }
-
-    fn export_shared(shared: &[u8], x: &mut [u8; 32]) -> Result<(), Error> {
-        let shared = try_from_bytes::<Shared>(shared)?;
-        let keyblob = bytemuck::bytes_of(&shared.keyblob);
-        let share0 = &keyblob[.. 32];
-        let share1 = &keyblob[32 ..];
-        for (x, (s0, s1)) in x.iter_mut().zip(share0.iter().zip(share1.iter())) {
-            *x = s0 ^ s1;
-        }
-        x.reverse();
         Ok(())
     }
 }
@@ -110,7 +117,7 @@ impl Api<32> for Impl {
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 struct Public {
-    key: [u32; 16],
+    key: [u32; 8],
     checksum: u32,
 }
 
@@ -123,21 +130,14 @@ struct Private {
     public: Public,
 }
 
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-#[repr(C)]
-struct Shared {
-    keyblob: [u32; 16],
-    checksum: u32,
-}
-
 impl Public {
     unsafe fn borrow(&self) -> Result<UnblindedKey, Error> {
-        unsafe { UnblindedKey::new(KeyMode::Ecc(EccKeyMode::EcdhP256), &self.key, self.checksum) }
+        unsafe { UnblindedKey::new(KeyMode::Ecc(EccKeyMode::Ed25519), &self.key, self.checksum) }
     }
 }
 
 impl Private {
     unsafe fn borrow(&self) -> Result<BlindedKey, Error> {
-        unsafe { BlindedKey::new(KeyMode::Ecc(EccKeyMode::EcdhP256), &self.keyblob, self.checksum) }
+        unsafe { BlindedKey::new(KeyMode::Ecc(EccKeyMode::Ed25519), &self.keyblob, self.checksum) }
     }
 }

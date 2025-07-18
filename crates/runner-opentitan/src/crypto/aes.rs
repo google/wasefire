@@ -17,7 +17,7 @@
 use wasefire_error::{Code, Error};
 
 use crate::crypto::common::{
-    BlindedKey, ByteBuf, ConstByteBuf, KeyConfig, KeyMode, OwnedBlindedKey, Word32Buf,
+    AesKeyMode, BlindedKey, ByteBuf, ConstByteBuf, KeyConfig, KeyMode, OwnedBlindedKey, Word32Buf,
 };
 use crate::error::unwrap_status;
 
@@ -62,7 +62,7 @@ pub fn decrypt_cbc(key: &[u8; 32], iv: &[u8; 16], blocks: &mut [u8]) -> Result<(
 }
 
 fn convert_key(key: &[u8; 32]) -> Result<OwnedBlindedKey, Error> {
-    let config = KeyConfig::new(KeyMode::AesCbc);
+    let config = KeyConfig::new(KeyMode::Aes(AesKeyMode::Cbc));
     let key: [u32; 8] = bytemuck::cast(*key);
     OwnedBlindedKey::import(config, key[..].into(), [0u32; 8][..].into())
 }

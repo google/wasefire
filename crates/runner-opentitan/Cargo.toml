@@ -56,6 +56,7 @@ features = [
 ]
 
 [features]
+ed25519 = ["wasefire-scheduler/board-api-crypto-ed25519"]
 usb-ctap = ["_usb", "dep:usbd-hid", "wasefire-scheduler/board-api-usb-ctap"]
 # Implements vendor APIs for testing.
 test-vendor = []
