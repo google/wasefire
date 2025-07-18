@@ -8,7 +8,7 @@
 
 ### Minor
 
-- Support `crypto::{ecdsa,ecdh}` modules
+- Support `crypto::{ecdsa,ecdh,ed25519}` modules
 - Support `gpio::{register,unregister}` functions
 - Support `clock` module
 - Support `crypto::cbc` module

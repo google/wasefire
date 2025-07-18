@@ -15,4 +15,5 @@
 mod ec;
 mod ecdh;
 mod ecdsa;
+mod ed25519;
 mod hash;

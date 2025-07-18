@@ -11,6 +11,7 @@
 
 ### Minor
 
+- Add `crypto::Ed25519` for Ed25519
 - Add `crypto::CryptoRng` as a helper to implement `rand_core::CryptoRngCore` using `rng::Api` for
   `software-crypto-p{256,384}-ecdsa`
 - Add `crypto::GlobalError` as a helper to implement `crypto::WithError`
@@ -192,4 +193,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 11 -->
+<!-- Increment to skip CHANGELOG.md test: 12 -->

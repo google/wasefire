@@ -27,6 +27,7 @@ api-crypto-ccm = ["internal-api-crypto"]
 api-crypto-ec = ["internal-api-crypto"]
 api-crypto-ecdh = ["internal-api-crypto"]
 api-crypto-ecdsa = ["internal-api-crypto"]
+api-crypto-ed25519 = ["internal-api-crypto"]
 api-crypto-gcm = ["internal-api-crypto"]
 api-crypto-hash = ["internal-api-crypto-hash"]
 api-crypto-hkdf = ["internal-api-crypto-hash"]
@@ -53,6 +54,7 @@ full-api = [
   "api-crypto-ec",
   "api-crypto-ecdh",
   "api-crypto-ecdsa",
+  "api-crypto-ed25519",
   "api-crypto-gcm",
   "api-crypto-hash",
   "api-crypto-hkdf",

@@ -49,6 +49,8 @@ pub mod ecc;
 pub mod ecdh;
 #[cfg(feature = "internal-api-crypto-ecdsa")]
 pub mod ecdsa;
+#[cfg(feature = "api-crypto-ed25519")]
+pub mod ed25519;
 
 /// Cryptography interface.
 pub trait Api: Send {
@@ -63,6 +65,10 @@ pub trait Api: Send {
     /// AES-256-GCM interface.
     #[cfg(feature = "api-crypto-aes256-gcm")]
     type Aes256Gcm: aead::Api<typenum::U32, typenum::U12>;
+
+    /// Ed25519 interface.
+    #[cfg(feature = "api-crypto-ed25519")]
+    type Ed25519: ed25519::Api;
 
     /// HMAC-SHA-256 interface.
     #[cfg(feature = "api-crypto-hmac-sha256")]
@@ -243,6 +249,10 @@ pub type Aes256Cbc<B> = <super::Crypto<B> as Api>::Aes256Cbc;
 #[cfg(feature = "api-crypto-aes256-gcm")]
 pub type Aes256Gcm<B> = <super::Crypto<B> as Api>::Aes256Gcm;
 
+/// Ed25519 interface.
+#[cfg(feature = "api-crypto-ed25519")]
+pub type Ed25519<B> = <super::Crypto<B> as Api>::Ed25519;
+
 /// HMAC-SHA-256 interface.
 #[cfg(feature = "api-crypto-hmac-sha256")]
 pub type HmacSha256<B> = <super::Crypto<B> as Api>::HmacSha256;
@@ -294,6 +304,10 @@ pub type SoftwareAes256Cbc = cbc::Software<aes::Aes256>;
 /// AES-256-GCM interface.
 #[cfg(feature = "software-crypto-aes256-gcm")]
 pub type SoftwareAes256Gcm = aes_gcm::Aes256Gcm;
+
+/// Ed25519 interface.
+#[cfg(feature = "software-crypto-ed25519")]
+pub type SoftwareEd25519<R> = ed25519::Software<R>;
 
 /// HMAC-SHA-256 interface.
 #[cfg(feature = "software-crypto-hmac-sha256")]
@@ -355,6 +369,9 @@ mod _test_software_crypto {
     test!(SoftwareAes256Cbc; cbc::Api<typenum::U32, typenum::U16>);
     #[cfg(feature = "software-crypto-aes256-gcm")]
     test!(SoftwareAes256Gcm; aead::Api<typenum::U32, typenum::U12>);
+    #[cfg(feature = "software-crypto-ed25519")]
+    test!(SoftwareEd25519 R [R: Default + rand_core::CryptoRngCore + WithError + Send];
+          ed25519::Api);
     #[cfg(feature = "software-crypto-hmac-sha256")]
     test!(SoftwareHmacSha256 T [T: Api]; Hmac<KeySize = typenum::U64, OutputSize = typenum::U32>);
     #[cfg(feature = "software-crypto-hmac-sha384")]

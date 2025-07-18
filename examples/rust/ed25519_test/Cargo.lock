@@ -161,20 +161,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ecdh_test"
-version = "0.1.0"
-dependencies = [
- "ecdh_vectors",
- "wasefire",
- "wasefire-one-of",
- "wasefire-stub",
-]
-
-[[package]]
-name = "ecdh_vectors"
-version = "0.1.0"
-
-[[package]]
 name = "ecdsa"
 version = "0.16.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -207,6 +193,14 @@ dependencies = [
  "rand_core 0.6.4",
  "sha2",
  "subtle",
+]
+
+[[package]]
+name = "ed25519_test"
+version = "0.1.0"
+dependencies = [
+ "wasefire",
+ "wasefire-stub",
 ]
 
 [[package]]

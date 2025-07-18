@@ -24,6 +24,8 @@ pub mod ec;
 pub mod ecdh;
 #[cfg(feature = "api-crypto-ecdsa")]
 pub mod ecdsa;
+#[cfg(feature = "api-crypto-ed25519")]
+pub mod ed25519;
 #[cfg(feature = "api-crypto-gcm")]
 pub mod gcm;
 #[cfg(feature = "internal-api-crypto-hash")]

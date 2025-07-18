@@ -22,6 +22,7 @@ impl Api for Impl {
     type Aes128Ccm = crypto::SoftwareAes128Ccm;
     type Aes256Cbc = crypto::SoftwareAes256Cbc;
     type Aes256Gcm = crypto::SoftwareAes256Gcm;
+    type Ed25519 = crypto::SoftwareEd25519<CryptoRng>;
     type HmacSha256 = crypto::SoftwareHmacSha256<Self>;
     type HmacSha384 = crypto::SoftwareHmacSha384<Self>;
     type P256 = crypto::SoftwareP256<Self>;

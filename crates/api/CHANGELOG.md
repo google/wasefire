@@ -8,7 +8,7 @@
 
 ### Minor
 
-- Support the `api-crypto-{ecdsa,ecdh}` features
+- Support the `api-crypto-{ecdsa,ecdh,ed25519}` features
 - Support the `api-clock` feature
 - Support the `api-crypto-cbc` feature
 - Support the `api-usb-ctap` feature

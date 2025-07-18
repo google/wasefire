@@ -690,6 +690,145 @@
     ): i32
   // END OF MODULE crypto_ecdsa
 
+  // START OF MODULE crypto_ed25519
+  // Ed25519.
+    // The kind of objects for import/export.
+    enum crypto_ed25519_Kind {
+      // A private key.
+      Private = 0,
+
+      // A public key.
+      Public = 1,
+    }
+
+    // Whether Ed25519 is supported.
+    @external("env", "c2s")
+    export declare function crypto_ed25519_is_supported(
+    ): i32
+
+    // Returns the layout of an object.
+    //
+    // All pointers to such objects must have the appropriate layout.
+    @external("env", "c2l")
+    export declare function crypto_ed25519_get_layout(
+      // The kind of object.
+      kind: usize,
+
+      // The size.
+      size: usize,
+
+      // The alignment.
+      align: usize,
+    ): i32
+
+    // Returns the length of a wrapped private key.
+    @external("env", "c2k")
+    export declare function crypto_ed25519_wrapped_length(
+    ): i32
+
+    // Generates a private key.
+    @external("env", "c2g")
+    export declare function crypto_ed25519_generate(
+      // The private key.
+      private_: usize,
+    ): i32
+
+    // Returns the public key of a private key.
+    @external("env", "c2p")
+    export declare function crypto_ed25519_public(
+      // The private key.
+      private_: usize,
+
+      // The public key.
+      public_: usize,
+    ): i32
+
+    // Signs a message.
+    @external("env", "c2i")
+    export declare function crypto_ed25519_sign(
+      // The private key.
+      private_: usize,
+
+      // The message.
+      message: usize,
+
+      // The message length (in bytes).
+      message_len: usize,
+
+      // The first part of the signature.
+      r: usize,
+
+      // The second part of the signature.
+      s: usize,
+    ): i32
+
+    // Verifies a signature.
+    @external("env", "c2v")
+    export declare function crypto_ed25519_verify(
+      // The public key.
+      public_: usize,
+
+      // The message.
+      message: usize,
+
+      // The message length (in bytes).
+      message_len: usize,
+
+      // The first part of the signature.
+      r: usize,
+
+      // The second part of the signature.
+      s: usize,
+    ): i32
+
+    // Drops a private key.
+    @external("env", "c2d")
+    export declare function crypto_ed25519_drop(
+      // The private key.
+      private_: usize,
+    ): i32
+
+    // Wraps a private key.
+    @external("env", "c2w")
+    export declare function crypto_ed25519_wrap(
+      // The private key.
+      private_: usize,
+
+      // The wrapped private key.
+      wrapped: usize,
+    ): i32
+
+    // Unwraps a private key.
+    @external("env", "c2u")
+    export declare function crypto_ed25519_unwrap(
+      // The wrapped private key.
+      wrapped: usize,
+
+      // The private key.
+      private_: usize,
+    ): i32
+
+    // Exports a public key.
+    @external("env", "c2e")
+    export declare function crypto_ed25519_export(
+      // The input public key.
+      public_: usize,
+
+      // The output public key (32 bytes).
+      a: usize,
+    ): i32
+
+    // Imports a public key.
+    @external("env", "c2m")
+    export declare function crypto_ed25519_import(
+      // The input public key (32 bytes).
+      a: usize,
+
+      // The output public key.
+      public_: usize,
+    ): i32
+  // END OF MODULE crypto_ed25519
+
   // START OF MODULE crypto_gcm
   // AES-256-GCM.
     // Bit-shift for the supported bit-flags.
