@@ -117,7 +117,7 @@ impl Api for Impl {
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 struct Public {
-    key: [u32; 16],
+    key: [u32; 8],
     checksum: u32,
 }
 
