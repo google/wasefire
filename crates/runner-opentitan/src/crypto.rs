@@ -19,6 +19,8 @@ use crate::error::unwrap_status;
 pub mod aes;
 pub mod common;
 pub mod drbg;
+#[cfg(feature = "ed25519")]
+pub mod ed25519;
 pub mod hash;
 pub mod hmac;
 pub mod p256;

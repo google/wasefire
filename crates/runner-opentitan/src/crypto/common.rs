@@ -99,34 +99,46 @@ pub struct HashDigest {
 // otcrypto_key_mode_t
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum KeyMode {
-    AesCbc = (KeyType::Aes.to_c() << 16 | AesKeyMode::Cbc.to_c()) as isize,
-    EcdhP256 = (KeyType::Ecc.to_c() << 16 | EccKeyMode::EcdhP256.to_c()) as isize,
-    EcdsaP256 = (KeyType::Ecc.to_c() << 16 | EccKeyMode::EcdsaP256.to_c()) as isize,
-    HmacSha256 = (KeyType::Hmac.to_c() << 16 | HmacKeyMode::Sha256.to_c()) as isize,
+    Aes(AesKeyMode),
+    Ecc(EccKeyMode),
+    Hmac(HmacKeyMode),
 }
 
 impl KeyMode {
     const fn to_c(self) -> i32 {
-        self as i32
+        let low = match self {
+            KeyMode::Aes(x) => x.to_c(),
+            KeyMode::Ecc(x) => x.to_c(),
+            KeyMode::Hmac(x) => x.to_c(),
+        };
+        let high = self.key_type().to_c();
+        high << 16 | low
+    }
+
+    const fn key_type(self) -> KeyType {
+        match self {
+            KeyMode::Aes(_) => KeyType::Aes,
+            KeyMode::Ecc(_) => KeyType::Ecc,
+            KeyMode::Hmac(_) => KeyType::Hmac,
+        }
     }
 
     fn key_length(self, public: bool) -> usize {
         match self {
-            KeyMode::AesCbc => 32,
-            KeyMode::EcdhP256 => 32 * (1 + public as usize),
-            KeyMode::EcdsaP256 => 32 * (1 + public as usize),
-            KeyMode::HmacSha256 => 64,
+            KeyMode::Aes(x) => x.key_length(),
+            KeyMode::Ecc(x) => x.key_length() * (1 + public as usize),
+            KeyMode::Hmac(x) => x.key_length(),
         }
     }
 
     fn keyblob_length(self) -> usize {
-        let key_length = self.key_length(false);
+        let mut key_length = self.key_length(false);
+        #[allow(clippy::single_match)]
         match self {
-            KeyMode::AesCbc => 2 * key_length,
-            KeyMode::EcdhP256 => 2 * (key_length + 8),
-            KeyMode::EcdsaP256 => 2 * (key_length + 8),
-            KeyMode::HmacSha256 => 2 * key_length,
+            KeyMode::Ecc(_) => key_length += 8,
+            _ => (),
         }
+        2 * key_length
     }
 }
 
@@ -154,6 +166,12 @@ impl AesKeyMode {
     const fn to_c(self) -> i32 {
         self as i32
     }
+
+    fn key_length(self) -> usize {
+        match self {
+            AesKeyMode::Cbc => 32,
+        }
+    }
 }
 
 // otcrypto_hmac_key_mode_t
@@ -166,6 +184,12 @@ impl HmacKeyMode {
     const fn to_c(self) -> i32 {
         self as i32
     }
+
+    fn key_length(self) -> usize {
+        match self {
+            HmacKeyMode::Sha256 => 64,
+        }
+    }
 }
 
 // otcrypto_ecc_key_mode_t
@@ -173,11 +197,22 @@ impl HmacKeyMode {
 pub enum EccKeyMode {
     EcdhP256 = 0x5fc,
     EcdsaP256 = 0x31e,
+    #[cfg(feature = "ed25519")]
+    Ed25519 = 0x663,
 }
 
 impl EccKeyMode {
     const fn to_c(self) -> i32 {
         self as i32
+    }
+
+    fn key_length(self) -> usize {
+        match self {
+            EccKeyMode::EcdhP256 => 32,
+            EccKeyMode::EcdsaP256 => 32,
+            #[cfg(feature = "ed25519")]
+            EccKeyMode::Ed25519 => 32,
+        }
     }
 }
 

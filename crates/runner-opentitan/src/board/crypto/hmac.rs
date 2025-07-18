@@ -18,7 +18,7 @@ use wasefire_board_api::Supported;
 use wasefire_board_api::crypto::{GlobalError, WithError};
 use wasefire_error::Error;
 
-use crate::crypto::common::{HashMode, KeyConfig, KeyMode, OwnedBlindedKey};
+use crate::crypto::common::{HashMode, HmacKeyMode, KeyConfig, KeyMode, OwnedBlindedKey};
 use crate::crypto::{hash, hmac};
 
 pub struct Sha256(Option<hash::Context>);
@@ -98,7 +98,7 @@ impl KeyInit for HmacSha256 {
                 hash.update(key)?;
                 hash.finalize(&mut key_[.. 8])?;
             }
-            let config = KeyConfig::new(KeyMode::HmacSha256);
+            let config = KeyConfig::new(KeyMode::Hmac(HmacKeyMode::Sha256));
             let key = OwnedBlindedKey::import(config, key_[..].into(), [0u32; 16][..].into())?;
             Ok(Some(hmac::Context::init(key)?))
         }

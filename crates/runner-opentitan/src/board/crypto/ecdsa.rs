@@ -19,7 +19,7 @@ use wasefire_board_api::crypto::ecdsa::Api;
 use wasefire_error::{Code, Error};
 
 use crate::board::crypto::{memshred, try_from_bytes, try_from_bytes_mut};
-use crate::crypto::common::{BlindedKey, KeyMode, UnblindedKey};
+use crate::crypto::common::{BlindedKey, EccKeyMode, KeyMode, UnblindedKey};
 use crate::crypto::p256;
 
 pub enum Impl {}
@@ -137,13 +137,15 @@ struct Private {
 
 impl Public {
     unsafe fn borrow(&self) -> Result<UnblindedKey, Error> {
-        unsafe { UnblindedKey::new(KeyMode::EcdsaP256, &self.key, self.checksum) }
+        unsafe { UnblindedKey::new(KeyMode::Ecc(EccKeyMode::EcdsaP256), &self.key, self.checksum) }
     }
 }
 
 impl Private {
     unsafe fn borrow(&self) -> Result<BlindedKey, Error> {
-        unsafe { BlindedKey::new(KeyMode::EcdsaP256, &self.keyblob, self.checksum) }
+        unsafe {
+            BlindedKey::new(KeyMode::Ecc(EccKeyMode::EcdsaP256), &self.keyblob, self.checksum)
+        }
     }
 }
 

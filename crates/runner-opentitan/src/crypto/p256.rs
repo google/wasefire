@@ -16,6 +16,7 @@
 
 use wasefire_error::Error;
 
+use super::common::EccKeyMode;
 use crate::crypto::common::{
     BlindedKey, ConstWord32Buf, HashDigest, HashMode, KeyMode, OwnedBlindedKey, OwnedUnblindedKey,
     UnblindedKey, Word32Buf,
@@ -24,8 +25,8 @@ use crate::error::unwrap_status;
 use crate::hardened_bool;
 
 pub fn ecdsa_keygen() -> Result<(OwnedBlindedKey, OwnedUnblindedKey), Error> {
-    let mut private = OwnedBlindedKey::new(KeyMode::EcdsaP256)?;
-    let mut public = OwnedUnblindedKey::new(KeyMode::EcdsaP256)?;
+    let mut private = OwnedBlindedKey::new(KeyMode::Ecc(EccKeyMode::EcdsaP256))?;
+    let mut public = OwnedUnblindedKey::new(KeyMode::Ecc(EccKeyMode::EcdsaP256))?;
     unwrap_status(unsafe { otcrypto_ecdsa_p256_keygen(&mut private.0, &mut public.0) })?;
     Ok((private, public))
 }
@@ -58,8 +59,8 @@ pub fn ecdsa_verify(
 }
 
 pub fn ecdh_keygen() -> Result<(OwnedBlindedKey, OwnedUnblindedKey), Error> {
-    let mut private = OwnedBlindedKey::new(KeyMode::EcdhP256)?;
-    let mut public = OwnedUnblindedKey::new(KeyMode::EcdhP256)?;
+    let mut private = OwnedBlindedKey::new(KeyMode::Ecc(EccKeyMode::EcdhP256))?;
+    let mut public = OwnedUnblindedKey::new(KeyMode::Ecc(EccKeyMode::EcdhP256))?;
     unwrap_status(unsafe { otcrypto_ecdh_p256_keygen(&mut private.0, &mut public.0) })?;
     Ok((private, public))
 }

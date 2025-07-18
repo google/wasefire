@@ -18,12 +18,16 @@ use wasefire_error::{Code, Error};
 mod aes;
 mod ecdh;
 mod ecdsa;
+#[cfg(feature = "ed25519")]
+mod ed25519;
 mod hmac;
 
 pub enum Impl {}
 
 impl crypto::Api for Impl {
     type Aes256Cbc = aes::Impl;
+    #[cfg(feature = "ed25519")]
+    type Ed25519 = ed25519::Impl;
     type HmacSha256 = hmac::HmacSha256;
     type P256Ecdh = ecdh::Impl;
     type P256Ecdsa = ecdsa::Impl;
