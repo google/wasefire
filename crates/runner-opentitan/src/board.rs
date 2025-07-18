@@ -97,6 +97,8 @@ impl board::Api for Board {
     type Rng = rng::Impl;
     type Storage = storage::Impl;
     type Timer = timer::Impl;
+    #[cfg(feature = "_usb")]
+    type Usb = usb::Impl;
 }
 
 #[derive(Default)]

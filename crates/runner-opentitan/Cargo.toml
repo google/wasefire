@@ -16,6 +16,7 @@ earlgrey = { path = "crates/earlgrey" }
 embedded-alloc = "0.6.0"
 typenum = { version = "1.18.0", default-features = false }
 usb-device = { version = "0.3.2", default-features = false }
+usbd-hid = { version = "0.8.2", optional = true }
 wasefire-board-api = { path = "../board" }
 wasefire-common = { path = "../common" }
 wasefire-error = { path = "../error" }
@@ -55,6 +56,7 @@ features = [
 ]
 
 [features]
+usb-ctap = ["_usb", "dep:usbd-hid", "wasefire-scheduler/board-api-usb-ctap"]
 # Implements vendor APIs for testing.
 test-vendor = []
 # Exactly one is enabled by xtask.
@@ -70,6 +72,8 @@ release = []
 # Exactly one is enabled by xtask.
 native = ["wasefire-scheduler/native"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
+# Internal features.
+_usb = []
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
