@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use alloc::boxed::Box;
-use alloc::vec::Vec;
 
 use usb_device::bus::UsbBusAllocator;
 use usb_device::class::UsbClass;
@@ -127,10 +126,11 @@ impl HasRpc<'static, Usb> for Impl {
 
 pub fn interrupt() {
     with_state(|state| {
-        let mut classes = Vec::<&mut dyn UsbClass<_>>::new();
-        classes.push(&mut state.usb.protocol);
-        #[cfg(feature = "usb-ctap")]
-        classes.push(state.usb.ctap.class());
+        let mut classes: [&mut dyn UsbClass<_>; _] = [
+            &mut state.usb.protocol,
+            #[cfg(feature = "usb-ctap")]
+            state.usb.ctap.class(),
+        ];
         let _polled = state.usb.device.poll(&mut classes);
         state.usb.protocol.tick(|event| state.events.push(event.into()));
         #[cfg(feature = "usb-ctap")]

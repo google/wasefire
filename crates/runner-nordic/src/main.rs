@@ -25,7 +25,6 @@ mod board;
 mod storage;
 mod systick;
 
-use alloc::vec::Vec;
 use core::cell::RefCell;
 use core::mem::MaybeUninit;
 
@@ -337,12 +336,13 @@ fn uarte(uarte: usize) {
 
 fn usbd() {
     with_state(|state| {
-        let mut classes = Vec::<&mut dyn UsbClass<_>>::new();
-        classes.push(&mut state.protocol);
-        #[cfg(feature = "usb-ctap")]
-        classes.push(state.ctap.class());
-        #[cfg(feature = "usb-serial")]
-        classes.push(state.serial.port());
+        let mut classes: [&mut dyn UsbClass<_>; _] = [
+            &mut state.protocol,
+            #[cfg(feature = "usb-ctap")]
+            state.ctap.class(),
+            #[cfg(feature = "usb-serial")]
+            state.serial.port(),
+        ];
         #[cfg_attr(not(feature = "usb-serial"), allow(unused_variables))]
         let polled = state.usb_dev.poll(&mut classes);
         state.protocol.tick(|event| state.events.push(event.into()));
