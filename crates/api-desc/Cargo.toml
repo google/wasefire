@@ -32,6 +32,8 @@ api-crypto-gcm = ["internal-api-crypto"]
 api-crypto-hash = ["internal-api-crypto-hash"]
 api-crypto-hkdf = ["internal-api-crypto-hash"]
 api-crypto-hmac = ["internal-api-crypto-hash"]
+api-fingerprint-matcher = ["internal-api-fingerprint"]
+api-fingerprint-sensor = ["internal-api-fingerprint"]
 api-gpio = []
 api-led = []
 api-platform = ["internal-api-platform"]
@@ -59,6 +61,8 @@ full-api = [
   "api-crypto-hash",
   "api-crypto-hkdf",
   "api-crypto-hmac",
+  "api-fingerprint-matcher",
+  "api-fingerprint-sensor",
   "api-gpio",
   "api-led",
   "api-platform",
@@ -76,6 +80,7 @@ full-api = [
 # Internal features.
 internal-api-crypto = []
 internal-api-crypto-hash = ["internal-api-crypto"]
+internal-api-fingerprint = []
 internal-api-platform = []
 internal-api-radio = []
 internal-api-store = []

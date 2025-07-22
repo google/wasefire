@@ -38,6 +38,8 @@ pub mod clock;
 #[cfg(feature = "internal-api-crypto")]
 pub mod crypto;
 pub mod debug;
+#[cfg(feature = "internal-api-fingerprint")]
+pub mod fingerprint;
 #[cfg(feature = "api-gpio")]
 pub mod gpio;
 #[cfg(feature = "api-led")]
@@ -97,6 +99,10 @@ pub trait Api: Send + 'static {
 
     /// Debugging and testing interface.
     type Debug: debug::Api;
+
+    /// Fingerprint interface.
+    #[cfg(feature = "internal-api-fingerprint")]
+    type Fingerprint: fingerprint::Api;
 
     /// Low-level GPIO interface.
     #[cfg(feature = "api-gpio")]
@@ -165,6 +171,10 @@ pub enum Event<B: Api + ?Sized> {
     #[cfg(feature = "api-button")]
     Button(button::Event<B>),
 
+    /// Fingerprint event.
+    #[cfg(feature = "internal-api-fingerprint")]
+    Fingerprint(fingerprint::Event),
+
     /// GPIO event.
     #[cfg(feature = "api-gpio")]
     Gpio(gpio::Event<B>),
@@ -230,6 +240,10 @@ pub type Crypto<B> = <B as Api>::Crypto;
 
 /// Debugging and testing interface.
 pub type Debug<B> = <B as Api>::Debug;
+
+/// Fingerprint interface.
+#[cfg(feature = "internal-api-fingerprint")]
+pub type Fingerprint<B> = <B as Api>::Fingerprint;
 
 /// Low-level GPIO interface.
 #[cfg(feature = "api-gpio")]

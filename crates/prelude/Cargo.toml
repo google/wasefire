@@ -52,6 +52,11 @@ api-crypto-gcm = ["internal-api-crypto", "wasefire-applet-api/api-crypto-gcm"]
 api-crypto-hash = ["internal-api-crypto-hash", "wasefire-applet-api/api-crypto-hash"]
 api-crypto-hkdf = ["api-crypto-hmac", "wasefire-applet-api/api-crypto-hkdf"]
 api-crypto-hmac = ["internal-api-crypto-hash", "wasefire-applet-api/api-crypto-hmac"]
+api-fingerprint-matcher = [
+  "internal-api-fingerprint",
+  "wasefire-applet-api/api-fingerprint-matcher",
+]
+api-fingerprint-sensor = ["internal-api-fingerprint", "wasefire-applet-api/api-fingerprint-sensor"]
 api-gpio = ["wasefire-applet-api/api-gpio"]
 api-led = ["wasefire-applet-api/api-led"]
 api-platform = ["dep:wasefire-common", "internal-api-platform", "wasefire-applet-api/api-platform"]
@@ -83,6 +88,8 @@ full-api = [
   "api-crypto-hash",
   "api-crypto-hkdf",
   "api-crypto-hmac",
+  "api-fingerprint-matcher",
+  "api-fingerprint-sensor",
   "api-gpio",
   "api-led",
   "api-platform",
@@ -108,6 +115,7 @@ unsafe-assume-single-core = ["wasefire-sync/unsafe-assume-single-core"]
 # Internal features.
 internal-api-crypto = []
 internal-api-crypto-hash = ["internal-api-crypto"]
+internal-api-fingerprint = []
 internal-api-platform = []
 internal-api-radio = []
 internal-api-store = []

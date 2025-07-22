@@ -1132,6 +1132,137 @@
   ): i32
 // END OF MODULE debug
 
+// START OF MODULE fingerprint
+// Fingerprint operations.
+  // START OF MODULE fingerprint_matcher
+    // Returns whether fingerprint matcher is supported.
+    @external("env", "fms")
+    export declare function fingerprint_matcher_is_supported(
+    ): i32
+
+    // Returns the length of a template ID.
+    //
+    // This is a constant and all template IDs have this length.
+    @external("env", "fmt")
+    export declare function fingerprint_matcher_template_length(
+    ): i32
+
+    // Starts an enrollment process.
+    //
+    // An enrollment process is over when it succeeds, fails, or is aborted.
+    @external("env", "fme")
+    export declare function fingerprint_matcher_enroll(
+      // Callback for each enrollment step.
+      //
+      // This handler may be called multiple times during the enrollment process. The
+      // argument is the estimated number of remaining steps.
+      //
+      // The handler is unregistered when the enrollment process is over.
+      handler_step_func: usize,
+
+      handler_step_data: usize,
+
+      // Callback when the enrollment process finishes.
+      //
+      // This handler is called at most once. The `template` pointer is allocated by the
+      // scheduler and contains the template ID. Ownership is transferred to the handler.
+      // In case of error (`result` is negative), the pointer is null.
+      //
+      // The handler is unregistered when the enrollment process is over. When called, it
+      // is unregistered before being called.
+      handler_func: usize,
+
+      handler_data: usize,
+    ): i32
+
+    // Aborts an enrollment process.
+    @external("env", "fmE")
+    export declare function fingerprint_matcher_abort_enroll(
+    ): i32
+
+    // Starts an identification process.
+    @external("env", "fmi")
+    export declare function fingerprint_matcher_identify(
+      // Specific template to identify against (may be null for all enrolled fingers).
+      template: usize,
+
+      // Callback when the identification process finishes.
+      //
+      // The handler is called at most once. The result of the identification is encoded
+      // as follows:
+      //
+      // - `result` is 1 for a successful identification. The `template` pointer is
+      // allocated by the scheduler and contains the template ID.
+      //
+      // - `result` is 0 for a mismatch identification. The pointer is null.
+      //
+      // - `result` is negative for errors. The pointer is null.
+      //
+      // The handler is unregistered before being called, such that the handler may
+      // trigger a following identification.
+      handler_func: usize,
+
+      handler_data: usize,
+    ): i32
+
+    // Aborts an identification process.
+    @external("env", "fmI")
+    export declare function fingerprint_matcher_abort_identify(
+    ): i32
+
+    // Deletes a template (or all templates) of enrolled fingers.
+    @external("env", "fmd")
+    export declare function fingerprint_matcher_delete_template(
+      // The template to delete (may be null for all enrolled fingers).
+      template: usize,
+    ): i32
+
+    // List the templates of enrolled fingers.
+    //
+    // Returns the number of templates.
+    @external("env", "fml")
+    export declare function fingerprint_matcher_list_templates(
+      // Pointer to the pointer to the templates.
+      //
+      // This pointer is written with a pointer allocated by the scheduler and containing
+      // the templates (concatenated one after the other).
+      templates: usize,
+    ): i32
+  // END OF MODULE fingerprint_matcher
+
+  // START OF MODULE fingerprint_sensor
+    // Returns whether fingerprint sensor is supported.
+    @external("env", "fss")
+    export declare function fingerprint_sensor_is_supported(
+    ): i32
+
+    // Starts an image capture process.
+    @external("env", "fsc")
+    export declare function fingerprint_sensor_capture(
+      // Callback when the identification process succeeded.
+      //
+      // The handler is called at most once. The result of the capture is encoded
+      // as follows:
+      //
+      // - `width` is positive for a successful capture. The pointer is allocated by the
+      // scheduler and contains the image (length is the product of width and height).
+      //
+      // - `width` is negative for errors. The pointer is null and height is zero.
+      //
+      // The handler is unregistered before being called, such that the handler may
+      // trigger another capture.
+      handler_func: usize,
+
+      handler_data: usize,
+    ): i32
+
+    // Aborts an image capture process.
+    @external("env", "fsC")
+    export declare function fingerprint_sensor_abort_capture(
+    ): i32
+  // END OF MODULE fingerprint_sensor
+// END OF MODULE fingerprint
+
 // START OF MODULE gpio
 // Low-level GPIO operations.
 //

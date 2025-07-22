@@ -78,6 +78,8 @@ api-crypto-p384-ecdh = ["internal-api-crypto-ecdh"]
 api-crypto-p384-ecdsa = ["internal-api-crypto-ecdsa"]
 api-crypto-sha256 = ["internal-api-crypto-hash"]
 api-crypto-sha384 = ["internal-api-crypto-hash"]
+api-fingerprint-matcher = ["internal-api-fingerprint"]
+api-fingerprint-sensor = ["internal-api-fingerprint"]
 api-gpio = ["bytemuck/derive"]
 api-led = []
 api-radio-ble = ["internal-api-radio", "wasefire-applet-api/api-radio-ble"]
@@ -105,6 +107,8 @@ full-api = [
   "api-crypto-p384-ecdsa",
   "api-crypto-sha256",
   "api-crypto-sha384",
+  "api-fingerprint-matcher",
+  "api-fingerprint-sensor",
   "api-gpio",
   "api-led",
   "api-radio-ble",
@@ -211,6 +215,7 @@ internal-api-crypto-hmac = [
   "internal-api-crypto",
   "internal-with-error",
 ]
+internal-api-fingerprint = []
 internal-api-radio = []
 internal-api-usb = []
 internal-crypto-rng = ["api-rng", "dep:rand_core", "internal-with-error"]

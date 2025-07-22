@@ -26,6 +26,8 @@ mod clock;
 #[cfg(feature = "internal-api-crypto")]
 mod crypto;
 mod debug;
+#[cfg(feature = "internal-api-fingerprint")]
+mod fingerprint;
 #[cfg(feature = "api-gpio")]
 mod gpio;
 mod id;
@@ -63,6 +65,8 @@ impl Default for Api {
             #[cfg(feature = "internal-api-crypto")]
             crypto::new(),
             debug::new(),
+            #[cfg(feature = "internal-api-fingerprint")]
+            fingerprint::new(),
             #[cfg(feature = "api-gpio")]
             gpio::new(),
             #[cfg(feature = "api-led")]

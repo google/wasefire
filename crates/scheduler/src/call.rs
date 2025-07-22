@@ -55,6 +55,8 @@ mod clock;
 #[cfg(feature = "internal-applet-api-crypto")]
 mod crypto;
 mod debug;
+#[cfg(feature = "internal-applet-api-fingerprint")]
+mod fingerprint;
 #[cfg(feature = "applet-api-gpio")]
 mod gpio;
 #[cfg(feature = "applet-api-led")]
@@ -84,6 +86,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         #[cfg(feature = "internal-applet-api-crypto")]
         Api::Crypto(call) => crypto::process(call),
         Api::Debug(call) => debug::process(call),
+        #[cfg(feature = "internal-applet-api-fingerprint")]
+        Api::Fingerprint(call) => fingerprint::process(call),
         #[cfg(feature = "applet-api-gpio")]
         Api::Gpio(call) => gpio::process(call),
         #[cfg(feature = "applet-api-led")]

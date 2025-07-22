@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `fingerprint::{matcher,sensor}` modules for fingerprint matchers and sensors
 - Add `crypto::{ecdsa,ecdh,ed25519}` module for ECDSA, ECDH, and Ed25519
 - Add `gpio::{Event,register,unregister}` for event support
 - Do not pass structs by value in parameters (fix #815)
