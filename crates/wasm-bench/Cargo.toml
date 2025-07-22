@@ -24,7 +24,7 @@ features = ["critical-section"]
 optional = true
 
 [dependencies.wasmtime]
-version = "34.0.1"
+version = "34.0.2"
 default-features = false
 features = ["runtime"]
 optional = true
@@ -35,7 +35,7 @@ features = ["float-types"]
 optional = true
 
 [build-dependencies.wasmtime]
-version = "34.0.1"
+version = "34.0.2"
 default-features = false
 features = ["cranelift", "pulley"]
 optional = true
