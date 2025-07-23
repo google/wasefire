@@ -14,8 +14,8 @@
 
 use alloc::vec::Vec;
 
-use opensk_lib::api::crypto::ecdsa::{self, Ecdsa};
-use opensk_lib::api::crypto::{EC_FIELD_SIZE, EC_SIGNATURE_SIZE, HASH_SIZE};
+use opensk_lib::api::crypto::EC_FIELD_SIZE;
+use opensk_lib::api::crypto::ec_signing::{EcPublicKey, EcSecretKey, EcSignature, Ecdsa};
 use opensk_lib::api::rng::Rng;
 use wasefire::crypto::ecdsa::{P256, Private, Public};
 
@@ -34,7 +34,7 @@ pub(crate) struct Signature {
     s: [u8; 32],
 }
 
-impl ecdsa::SecretKey for SecretKey {
+impl EcSecretKey for SecretKey {
     type PublicKey = PublicKey;
     type Signature = Signature;
 
@@ -62,39 +62,15 @@ impl ecdsa::SecretKey for SecretKey {
     }
 }
 
-impl ecdsa::PublicKey for PublicKey {
+impl EcPublicKey for PublicKey {
     type Signature = Signature;
-
-    fn from_coordinates(x: &[u8; EC_FIELD_SIZE], y: &[u8; EC_FIELD_SIZE]) -> Option<Self> {
-        Some(PublicKey(Public::import(x, y).ok()?))
-    }
-
-    fn verify(&self, message: &[u8], signature: &Self::Signature) -> bool {
-        self.0.verify(message, &signature.r, &signature.s).unwrap()
-    }
-
-    fn verify_prehash(&self, prehash: &[u8; HASH_SIZE], signature: &Self::Signature) -> bool {
-        self.0.verify_prehash(prehash, &signature.r, &signature.s).unwrap()
-    }
 
     fn to_coordinates(&self, x: &mut [u8; EC_FIELD_SIZE], y: &mut [u8; EC_FIELD_SIZE]) {
         self.0.export(x, y).unwrap();
     }
 }
 
-impl ecdsa::Signature for Signature {
-    fn from_slice(bytes: &[u8; EC_SIGNATURE_SIZE]) -> Option<Self> {
-        let mut signature = Signature { r: [0; 32], s: [0; 32] };
-        signature.r.copy_from_slice(&bytes[.. 32]);
-        signature.s.copy_from_slice(&bytes[32 ..]);
-        Some(signature)
-    }
-
-    fn to_slice(&self, bytes: &mut [u8; EC_SIGNATURE_SIZE]) {
-        bytes[.. 32].copy_from_slice(&self.r);
-        bytes[32 ..].copy_from_slice(&self.s);
-    }
-
+impl EcSignature for Signature {
     fn to_der(&self) -> Vec<u8> {
         let r = der_int(&self.r);
         let s = der_int(&self.s);
