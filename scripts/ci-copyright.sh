@@ -16,17 +16,34 @@
 set -e
 . scripts/log.sh
 
-# This script checks that all source files have a copyright notice in the first
-# 2 lines.
+# This script checks that all source files have a correct copyright notice in the first 2 lines.
 
+# Checks and prints the copyright notice of a file (normalizing the comment prefix).
+notice() {
+  local file="$1"
+  local start prefix
+  start=$(sed -n '/ Copyright/{1q2;2q3}' "$file" || echo $?)
+  [ -n "$start" ] || return
+  prefix="$(sed -n 's/ Copyright.*//p;T;q' "$file")"
+  case "$prefix" in
+    '//') prefix='\/\/' ;;
+  esac
+  sed -n "$start"',+12{/^\('"$prefix"'\|$\)/!d;s/^'"$prefix"'/#/;p}' "$file"
+}
+
+REFERENCE_NOTICE="$(notice $0)"
+
+i "Checking copyright notices (may take some time)"
 for file in $(git ls-files ':(attr:textreview)'); do
   case "$file" in
     *.gitignore|.git*|LICENSE|*/LICENSE) continue ;;
     *.cff|*.css|*.html|*.json|*.lock|*.md|*.scss|*.svg|*.toml|*.txt|*.x|*.yaml|*.yml) continue ;;
     crates/cli-tools/src/data/lib.rs) continue ;;
   esac
-  sed -n 'N;/Copyright/q;q1' "$file" || e "No copyright notice in $file"
+  echo -n .
+  [ "$(notice $file)" = "$REFERENCE_NOTICE" ] || e "Wrong copyright notice in $file"
 done
+echo done
 
 [ -z "$GITHUB_BASE_REF" ] && exit
 expected=$(date +%Y)
