@@ -28,6 +28,8 @@ impl crypto::Api for Impl {
     type Aes256Cbc = aes::Impl;
     #[cfg(feature = "ed25519")]
     type Ed25519 = ed25519::Impl;
+    #[cfg(feature = "software-ed25519")]
+    type Ed25519 = crypto::SoftwareEd25519<crypto::CryptoRng<super::Board>>;
     type HmacSha256 = hmac::HmacSha256;
     type P256Ecdh = ecdh::Impl;
     type P256Ecdsa = ecdsa::Impl;
