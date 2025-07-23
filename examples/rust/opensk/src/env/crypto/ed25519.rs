@@ -10,7 +10,7 @@
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
-// limitations under the License.use opensk_lib::api::clock::Clock;
+// limitations under the License.
 
 use alloc::vec::Vec;
 
@@ -72,9 +72,9 @@ impl EdPublicKey for PublicKey {
 
 impl EdSignature for Signature {
     fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = alloc::vec![0; 64];
-        bytes[.. 32].copy_from_slice(&self.r);
-        bytes[32 ..].copy_from_slice(&self.s);
+        let mut bytes = Vec::with_capacity(64);
+        bytes.extend_from_slice(&self.r);
+        bytes.extend_from_slice(&self.s);
         bytes
     }
 }
