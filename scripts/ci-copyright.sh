@@ -22,13 +22,14 @@ set -e
 notice() {
   local file="$1"
   local start prefix
-  start=$(sed -n '/ Copyright/{1q2;2q3}' "$file" || echo $?)
-  [ -n "$start" ] || return
-  prefix="$(sed -n 's/ Copyright.*//p;T;q' "$file")"
+  start=$(sed -n '/ Copyright/{=;q}' "$file")
+  [ "${start:-3}" -lt 3 ] || return
+  prefix="$(sed -n "$start"'s/ Copyright.*//p' "$file")"
   case "$prefix" in
     '//') prefix='\/\/' ;;
   esac
-  sed -n "$start"',+12{/^\('"$prefix"'\|$\)/!d;s/^'"$prefix"'/#/;p}' "$file"
+  sed -n "$start"'s/\(Copyright\) ..../\1/;'\
+"$start"',+13{/^\('"$prefix"'\|$\)/!d;s/^'"$prefix"'/#/;p}' "$file"
 }
 
 REFERENCE_NOTICE="$(notice $0)"
