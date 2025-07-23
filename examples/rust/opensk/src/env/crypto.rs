@@ -19,6 +19,8 @@ use crate::env::WasefireEnv;
 mod aes256;
 mod ecdh;
 mod ecdsa;
+#[cfg(feature = "ed25519")]
+mod ed25519;
 mod hkdf256;
 mod hmac256;
 mod sha256;
@@ -27,6 +29,8 @@ impl Crypto for WasefireEnv {
     type Aes256 = aes256::Impl;
     type Ecdh = Self;
     type Ecdsa = Self;
+    #[cfg(feature = "ed25519")]
+    type Ed25519 = Self;
     type Sha256 = sha256::Impl;
     type Hmac256 = Self;
     type Hkdf256 = Self;

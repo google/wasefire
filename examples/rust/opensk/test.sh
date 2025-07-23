@@ -24,4 +24,5 @@ test_helper
 cargo check --lib --target=wasm32-unknown-unknown
 cargo check --lib --target=wasm32-unknown-unknown --features=ctap1
 cargo check --lib --target=wasm32-unknown-unknown --features=debug
+cargo check --lib --target=wasm32-unknown-unknown --features=ed25519
 cargo test --lib --features=test

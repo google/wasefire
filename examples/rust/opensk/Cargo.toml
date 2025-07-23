@@ -16,6 +16,7 @@ default-features = false
 [features]
 ctap1 = ["opensk-lib/with_ctap1"]
 debug = ["opensk-lib/debug_ctap"]
+ed25519 = ["opensk-lib/ed25519"]
 test = ["opensk-lib/std", "wasefire/test"]
 
 [lints]
