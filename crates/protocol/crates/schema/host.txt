@@ -1,5 +1,5 @@
 result: {Ok=0:() Err=1:(space:u8 code:u16)}
-version: 5
+version: 6
 0 [0 -] ApiVersion: () -> u32
 1 [0 -] AppletRequest: (applet_id:() request:[u8]) -> ()
 2 [0 -] AppletResponse: () -> {None=0:() Some=1:[u8]}
@@ -14,3 +14,4 @@ version: 5
 11 [4 -] AppletExitStatus: () -> {None=0:() Some=1:{Exit=0:() Abort=1:() Trap=2:() Kill=3:()}}
 12 [4 -] PlatformLock: () -> ()
 13 [5 -] PlatformInfo: () -> (serial:[u8] running_side:{A=0:() B=1:()} running_version:[u8] opposite_version:{Ok=0:[u8] Err=1:(space:u8 code:u16)})
+14 [6 -] PlatformClearStore: usize -> ()

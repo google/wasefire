@@ -278,6 +278,38 @@ impl Wait {
     }
 }
 
+/// Clears the store for the platform and all applets.
+#[derive(clap::Args)]
+pub struct PlatformClearStore {
+    /// Clears all entries with a key greater or equal to this value.
+    #[arg(default_value_t = 0)]
+    min_key: usize,
+}
+
+impl PlatformClearStore {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let PlatformClearStore { min_key } = self;
+        connection.call::<service::PlatformClearStore>(min_key).await.map(|x| *x.get())
+    }
+}
+
+/// Returns information about a platform.
+#[derive(clap::Args)]
+pub struct PlatformInfo {}
+
+impl PlatformInfo {
+    pub async fn print(self, connection: &mut dyn Connection) -> Result<()> {
+        Ok(print!("{}", self.run(connection).await?.get()))
+    }
+
+    pub async fn run(
+        self, connection: &mut dyn Connection,
+    ) -> Result<Yoke<service::platform::Info<'static>>> {
+        let PlatformInfo {} = self;
+        connection.call::<service::PlatformInfo>(()).await
+    }
+}
+
 /// Lists the platforms connected on USB.
 #[derive(clap::Args)]
 pub struct PlatformList {
@@ -301,23 +333,6 @@ impl PlatformList {
             println!("- {serial} or {busdev}");
         }
         Ok(())
-    }
-}
-
-/// Returns information about a platform.
-#[derive(clap::Args)]
-pub struct PlatformInfo {}
-
-impl PlatformInfo {
-    pub async fn print(self, connection: &mut dyn Connection) -> Result<()> {
-        Ok(print!("{}", self.run(connection).await?.get()))
-    }
-
-    pub async fn run(
-        self, connection: &mut dyn Connection,
-    ) -> Result<Yoke<service::platform::Info<'static>>> {
-        let PlatformInfo {} = self;
-        connection.call::<service::PlatformInfo>(()).await
     }
 }
 

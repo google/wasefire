@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support `PlatformClearStore` protocol call
 - Support `crypto::{ecdsa,ecdh,ed25519}` modules
 - Support `gpio::{register,unregister}` functions
 - Support `clock` module

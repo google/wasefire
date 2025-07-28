@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `platform-clear-store` to clear the store
 - Change `rust-applet-build` to compute the side-table trading applet footprint for performance
 - Add `platform-update` for A/B platform update
 - Use Rust edition 2024

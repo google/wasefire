@@ -9,6 +9,7 @@
 
 ### Minor
 
+- Add `action::PlatformClearStore` to clear the store
 - Change `action::optimize_wasm()` (and thus `action::RustAppletBuild`) to also compute the
   side-table trading applet footprint for performance
 - Enable `wasefire/unsafe-assume-single-core` feature when building a native applet for RISC-V
