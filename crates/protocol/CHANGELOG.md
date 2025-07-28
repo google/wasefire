@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add `Api::PlatformClearStore` to clear the store
 - Add `Any` bound to `Connection`
 - Deprecate `platform::Info` to `platform::_Info0`
 - Deprecate `Api::PlatformInfo` to `Api::_PlatformInfo0`

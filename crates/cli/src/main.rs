@@ -90,6 +90,14 @@ enum Action {
     /// Starts a host platform.
     Host(Host),
 
+    #[group(id = "Action::PlatformClearStore")]
+    PlatformClearStore {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        action: action::PlatformClearStore,
+    },
+
     #[group(id = "Action::PlatformInfo")]
     PlatformInfo {
         #[command(flatten)]
@@ -271,6 +279,9 @@ async fn main() -> Result<()> {
         }
         Action::AppletRpc { options, action } => action.run(&mut options.connect().await?).await,
         Action::Host(x) => x.run().await?,
+        Action::PlatformClearStore { options, action } => {
+            action.run(&mut options.connect().await?).await
+        }
         Action::PlatformInfo { options, action } => {
             action.print(&mut options.connect().await?).await
         }

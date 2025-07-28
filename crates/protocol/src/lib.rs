@@ -265,5 +265,10 @@ api! {
     /// Returns platform information (serial, version, running side, opposite version, etc).
     13 [5 -] PlatformInfo: () => platform::Info<'a>,
 
-    next 14 [6 -]
+    /// Clears the store for the platform and all applets.
+    ///
+    /// The argument is the number of keys to protect. Using zero will clear all entries.
+    14 [6 -] PlatformClearStore: usize => (),
+
+    next 15 [7 -]
 }

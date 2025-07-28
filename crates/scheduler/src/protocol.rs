@@ -146,6 +146,13 @@ fn process_event_<B: Board>(
             scheduler.protocol.0 = Locked;
             reply::<B, service::PlatformLock>(());
         }
+        #[cfg(feature = "board-api-storage")]
+        Api::PlatformClearStore(min_key) => {
+            scheduler.store.clear(min_key)?;
+            reply::<B, service::PlatformClearStore>(());
+        }
+        #[cfg(not(feature = "board-api-storage"))]
+        Api::PlatformClearStore(_) => return Err(Error::world(Code::NotImplemented)),
         #[cfg(not(feature = "_test"))]
         _ => return Err(Error::internal(Code::NotImplemented)),
     }
