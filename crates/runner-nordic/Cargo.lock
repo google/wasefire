@@ -254,7 +254,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0dc92fb57ca44df6db8059111ab3af99a63d5d0f8375d9972e319a379c6bab76"
 dependencies = [
  "generic-array",
- "rand_core",
+ "rand_core 0.6.4",
  "subtle",
  "zeroize",
 ]
@@ -413,7 +413,7 @@ dependencies = [
  "ff",
  "generic-array",
  "group",
- "rand_core",
+ "rand_core 0.6.4",
  "sec1",
  "subtle",
  "zeroize",
@@ -480,7 +480,7 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ded41244b729663b1e574f1b4fb731469f69f79c17667b5d776b16cda0479449"
 dependencies = [
- "rand_core",
+ "rand_core 0.6.4",
  "subtle",
 ]
 
@@ -539,7 +539,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63"
 dependencies = [
  "ff",
- "rand_core",
+ "rand_core 0.6.4",
  "subtle",
 ]
 
@@ -675,8 +675,7 @@ checksum = "8d5439c4ad607c3c23abf66de8c8bf57ba8adcd1f129e699851a6e43935d339d"
 [[package]]
 name = "nrf-hal-common"
 version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c134de1f2f0191aed3fc24d3831da8808d1e636b06edf81a5717103095f625d"
+source = "git+https://github.com/nrf-rs/nrf-hal.git?rev=7e25fddfba533d81b28d551a485ea16c53285d5a#7e25fddfba533d81b28d551a485ea16c53285d5a"
 dependencies = [
  "cast",
  "cfg-if",
@@ -690,7 +689,7 @@ dependencies = [
  "nb 1.1.0",
  "nrf-usbd",
  "nrf52840-pac",
- "rand_core",
+ "rand_core 0.9.3",
  "void",
 ]
 
@@ -709,8 +708,7 @@ dependencies = [
 [[package]]
 name = "nrf52840-hal"
 version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "433cfd866da18dfc58376880bdebd092c130444837debc513f44edcd0d6a6558"
+source = "git+https://github.com/nrf-rs/nrf-hal.git?rev=7e25fddfba533d81b28d551a485ea16c53285d5a#7e25fddfba533d81b28d551a485ea16c53285d5a"
 dependencies = [
  "nrf-hal-common",
  "nrf52840-pac",
@@ -868,6 +866,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 
 [[package]]
+name = "rand_core"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99d9a13982dcf210057a8a78572b2217b667c3beacbf3a0d8b454f6f82837d38"
+
+[[package]]
 name = "rfc6979"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -899,7 +903,7 @@ dependencies = [
  "fugit",
  "heapless 0.7.17",
  "p256",
- "rand_core",
+ "rand_core 0.6.4",
  "sha2",
  "zerocopy 0.6.6",
 ]
@@ -917,9 +921,11 @@ dependencies = [
 name = "runner-nordic"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "cortex-m",
  "cortex-m-rt",
  "critical-section",
+ "data-encoding",
  "defmt 1.0.1",
  "defmt-rtt",
  "embedded-alloc",
@@ -1062,7 +1068,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
 dependencies = [
  "digest",
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -1324,7 +1330,7 @@ dependencies = [
  "elliptic-curve",
  "hmac",
  "p256",
- "rand_core",
+ "rand_core 0.6.4",
  "sha2",
  "signature",
  "ssmarshal",

@@ -65,7 +65,7 @@ use wasefire_board_api::{Id, Support};
 #[cfg(feature = "wasm")]
 use wasefire_interpreter as _;
 use wasefire_logger as log;
-use wasefire_one_of::exactly_one_of;
+use wasefire_one_of::{at_most_one_of, exactly_one_of};
 use wasefire_scheduler::Scheduler;
 
 use crate::board::button::{Button, Channels};
@@ -83,6 +83,7 @@ use crate::storage::Storage;
 exactly_one_of!["debug", "release"];
 exactly_one_of!["native", "wasm"];
 exactly_one_of!["board-devkit", "board-dongle", "board-makerdiary"];
+at_most_one_of!["fpc2534", "gpio"]; // they are incompatible
 
 #[cfg(feature = "debug")]
 #[defmt::panic_handler]
@@ -107,6 +108,8 @@ struct State {
     ble: Ble,
     #[cfg(feature = "aes128-ccm")]
     ccm: Ccm,
+    #[cfg(feature = "fpc2534")]
+    fpc2534: board::fpc2534::State,
     #[cfg(feature = "gpio")]
     gpios: [Gpio; <board::gpio::Impl as Support<usize>>::SUPPORT],
     leds: [Pin<Output<PushPull>>; <led::Impl as Support<usize>>::SUPPORT],
@@ -136,7 +139,7 @@ fn main() -> ! {
     log::debug!("Runner starts.");
     let p = nrf52840_hal::pac::Peripherals::take().unwrap();
     let port0 = gpio::p0::Parts::new(p.P0);
-    #[cfg(any(feature = "gpio", feature = "board-dongle"))]
+    #[cfg(feature = "_gpio_port1")]
     let port1 = gpio::p1::Parts::new(p.P1);
     #[cfg(feature = "board-devkit")]
     let buttons = [
@@ -182,6 +185,25 @@ fn main() -> ! {
     ];
     let timers = Timers::new(p.TIMER1, p.TIMER2, p.TIMER3, p.TIMER4);
     let gpiote = Gpiote::new(p.GPIOTE);
+    #[cfg_attr(not(feature = "fpc2534"), allow(unused_mut))]
+    let mut channels = Channels::default();
+    #[cfg(feature = "fpc2534")]
+    let fpc2534 = {
+        use nrf52840_hal::spi;
+        let pins = spi::Pins {
+            sck: Some(port1.p1_15.into_push_pull_output(Level::Low).degrade()),
+            mosi: Some(port1.p1_13.into_push_pull_output(Level::Low).degrade()),
+            miso: Some(port1.p1_14.into_floating_input().degrade()),
+        };
+        let frequency = spi::Frequency::M1; // SPI clock freq is 10MHz
+        let mode = nrf52840_hal::spim::MODE_0;
+        let cs = port1.p1_12.into_push_pull_output(Level::High).degrade();
+        let irq = port1.p1_03.into_floating_input().degrade();
+        let _cfg1 = port1.p1_05.into_push_pull_output(Level::Low).degrade();
+        let _cfg2 = port1.p1_06.into_push_pull_output(Level::Low).degrade();
+        let spi = spi::Spi::new(p.SPI0, pins, frequency, mode);
+        board::fpc2534::State::new(spi, cs, &gpiote, &mut channels, irq)
+    };
     // We enable all USB interrupts except STARTED and EPDATA which are feedback loops.
     p.USBD.inten.write(|w| unsafe { w.bits(0x00fffffd) });
     let clocks = CLOCKS.write(clocks::Clocks::new(p.CLOCK).enable_ext_hfosc());
@@ -219,7 +241,7 @@ fn main() -> ! {
     #[cfg(feature = "uart")]
     let uarts = {
         let uart_rx = port0.p0_28.into_floating_input().degrade();
-        let uart_tx = port0.p0_29.into_push_pull_output(gpio::Level::High).degrade();
+        let uart_tx = port0.p0_29.into_push_pull_output(Level::High).degrade();
         Uarts::new(p.UARTE0, uart_rx, uart_tx, p.UARTE1)
     };
     let events = Events::default();
@@ -227,7 +249,7 @@ fn main() -> ! {
         events,
         buttons,
         gpiote,
-        channels: Channels::default(),
+        channels,
         protocol,
         #[cfg(feature = "usb-ctap")]
         ctap,
@@ -238,6 +260,8 @@ fn main() -> ! {
         ble,
         #[cfg(feature = "aes128-ccm")]
         ccm,
+        #[cfg(feature = "fpc2534")]
+        fpc2534,
         #[cfg(feature = "gpio")]
         gpios,
         leds,
@@ -252,6 +276,16 @@ fn main() -> ! {
     critical_section::with(|cs| STATE.replace(cs, Some(state)));
     for &interrupt in INTERRUPTS {
         unsafe { NVIC::unmask(interrupt) };
+    }
+    #[cfg(feature = "fpc2534")]
+    {
+        use embedded_hal::digital::OutputPin as _;
+        log::info!("Reset FPC2534.");
+        let mut rst = port1.p1_04.into_push_pull_output(Level::High);
+        cortex_m::asm::delay(32_000);
+        rst.set_low().unwrap();
+        cortex_m::asm::delay(32_000);
+        rst.set_high().unwrap();
     }
     log::debug!("Runner is initialized.");
     Scheduler::<Board>::run();
@@ -289,22 +323,25 @@ interrupts! {
 
 fn gpiote() {
     with_state(|state| {
-        for (i, channel) in state.channels.0.iter().enumerate() {
+        for i in 0 .. state.channels.0.len() {
             let id = Id::new(i).unwrap();
-            let true = button::channel(&state.gpiote, id).is_event_triggered() else { continue };
-            let Some(channel) = channel else { continue };
-            match *channel {
+            let channel = button::channel(&state.gpiote, id);
+            let true = channel.is_event_triggered() else { continue };
+            channel.reset_events();
+            let Some(channel) = state.channels.0[i] else { continue };
+            match channel {
                 button::Channel::Button(button) => {
                     let pressed = state.buttons[*button].pin.is_low().unwrap();
                     state.events.push(wasefire_board_api::button::Event { button, pressed }.into());
                 }
+                #[cfg(feature = "fpc2534")]
+                button::Channel::Fpc2534 => board::fpc2534::interrupt(state),
                 #[cfg(feature = "gpio")]
                 button::Channel::Gpio(gpio) => {
                     state.events.push(wasefire_board_api::gpio::Event { gpio }.into());
                 }
             }
         }
-        state.gpiote.reset_events();
     });
 }
 

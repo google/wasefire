@@ -24,6 +24,8 @@ mod clock;
 #[cfg(feature = "_crypto")]
 mod crypto;
 mod debug;
+#[cfg(feature = "fpc2534")]
+pub mod fpc2534;
 #[cfg(feature = "gpio")]
 pub mod gpio;
 pub mod led;
@@ -67,6 +69,8 @@ impl board::Api for Board {
     #[cfg(feature = "_crypto")]
     type Crypto = crypto::Impl;
     type Debug = debug::Impl;
+    #[cfg(feature = "fpc2534")]
+    type Fingerprint = fpc2534::Impl;
     #[cfg(feature = "gpio")]
     type Gpio = gpio::Impl;
     type Led = led::Impl;
