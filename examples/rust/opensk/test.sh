@@ -17,8 +17,6 @@ set -e
 
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
-ensure_submodule third_party/google/OpenSK
-
 test_helper
 
 cargo check --lib --target=wasm32-unknown-unknown

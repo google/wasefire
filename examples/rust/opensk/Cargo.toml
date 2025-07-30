@@ -9,7 +9,8 @@ edition = "2024"
 wasefire = { path = "../../../crates/prelude" }
 
 [dependencies.opensk-lib]
-path = "../../../third_party/google/OpenSK/libraries/opensk"
+git = "https://github.com/google/OpenSK.git"
+rev = "8862b28b5e771f2f3eb08a8171dbac4e5f7fe115"
 package = "opensk"
 default-features = false
 
