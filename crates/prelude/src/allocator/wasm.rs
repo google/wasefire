@@ -46,7 +46,7 @@ extern "C" fn alloc(size: u32, align: u32) -> u32 {
     unsafe { ALLOCATOR.alloc(layout) as u32 }
 }
 
-struct Allocator(Mutex<Tlsf<'static, u8, u8, 8, 8>>);
+struct Allocator(Mutex<Tlsf<'static, u16, u8, 11, 8>>);
 
 #[global_allocator]
 static ALLOCATOR: Allocator = Allocator(Mutex::new(Tlsf::DEFAULT));
