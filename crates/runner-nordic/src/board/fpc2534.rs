@@ -87,11 +87,11 @@ impl matcher::Api for Impl {
     }
 
     fn read_enroll(template_id: &mut [u8]) -> Result<(), Error> {
+        Error::user(Code::InvalidLength).check(template_id.len() == 2)?;
         let id = OpResult::take_state(|x| match x {
             OpResult::Enroll(Some(id)) => Ok(id),
             x => Err(x),
         })?;
-        Error::user(Code::InvalidLength).check(template_id.len() == 2)?;
         template_id.copy_from_slice(&id.to_le_bytes());
         Ok(())
     }
@@ -105,19 +105,19 @@ impl matcher::Api for Impl {
     }
 
     fn start_identify(template_id: Option<&[u8]>) -> Result<(), Error> {
-        OpResult::set_state(OpResult::Identify(None))?;
         let mut frame = FrameBuilder::new(Cmd::Identify, 6);
         frame.push_template(template_id)?;
         frame.push(&0u16);
+        OpResult::set_state(OpResult::Identify(None))?;
         Ok(frame.send())
     }
 
     fn read_identify(template_id: &mut [u8]) -> Result<(), Error> {
+        Error::user(Code::InvalidLength).check(template_id.len() == 2)?;
         let id = OpResult::take_state(|x| match x {
             OpResult::Identify(Some(id)) => Ok(id),
             x => Err(x),
         })?;
-        Error::user(Code::InvalidLength).check(template_id.len() == 2)?;
         template_id.copy_from_slice(&id.to_le_bytes());
         Ok(())
     }
@@ -166,11 +166,13 @@ impl sensor::Api for Impl {
     }
 
     fn read_capture(image: &mut [u8]) -> Result<(), Error> {
+        Error::user(Code::InvalidLength)
+            .check(image.len() == Self::IMAGE_WIDTH * Self::IMAGE_HEIGHT)?;
         let data = OpResult::take_state(|x| match x {
             OpResult::CaptureDataGet(Some(x)) => Ok(x),
             x => Err(x),
         })?;
-        Error::user(Code::InvalidLength).check(image.len() == data.len())?;
+        Error::internal(Code::InvalidLength).check(image.len() == data.len())?;
         image.copy_from_slice(&data);
         Ok(())
     }
@@ -292,7 +294,7 @@ static WAIT: AtomicBool = AtomicBool::new(false);
 
 fn with_cs_low<T>(state: &mut crate::State, f: impl FnOnce(&mut crate::State) -> T) -> T {
     state.fpc2534.cs.set_low().unwrap();
-    cortex_m::asm::delay(64_000);
+    cortex_m::asm::delay(32_000);
     let result = f(state);
     state.fpc2534.cs.set_high().unwrap();
     result

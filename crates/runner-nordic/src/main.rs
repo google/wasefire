@@ -277,16 +277,6 @@ fn main() -> ! {
     for &interrupt in INTERRUPTS {
         unsafe { NVIC::unmask(interrupt) };
     }
-    #[cfg(feature = "fpc2534")]
-    {
-        use embedded_hal::digital::OutputPin as _;
-        log::info!("Reset FPC2534.");
-        let mut rst = port1.p1_04.into_push_pull_output(Level::High);
-        cortex_m::asm::delay(32_000);
-        rst.set_low().unwrap();
-        cortex_m::asm::delay(32_000);
-        rst.set_high().unwrap();
-    }
     log::debug!("Runner is initialized.");
     Scheduler::<Board>::run();
 }
