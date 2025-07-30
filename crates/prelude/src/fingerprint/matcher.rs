@@ -52,19 +52,30 @@ impl Drop for Enroll {
     }
 }
 
+/// Current progress of an enrollment.
+#[derive(Clone, Copy)]
+pub struct EnrollProgress {
+    /// Number of detected touches so far.
+    pub detected: usize,
+    /// Estimated number of remaining touches.
+    pub remaining: Option<usize>,
+}
+
 enum EnrollState {
-    Started,
-    Running { remaining: usize, total: usize },
+    Running(EnrollProgress),
     Done { template: *mut u8 },
     Failed { error: Error },
 }
+
+const INIT_ENROLL_STATE: EnrollState =
+    EnrollState::Running(EnrollProgress { detected: 0, remaining: None });
 
 impl Enroll {
     /// Starts the enrollment of a new finger.
     pub fn new() -> Result<Self, Error> {
         let handler_step_func = Self::step;
         let handler_func = Self::done;
-        let state = Box::into_raw(Box::new(RefCell::new(EnrollState::Started))) as *const u8;
+        let state = Box::into_raw(Box::new(RefCell::new(INIT_ENROLL_STATE))) as *const u8;
         let handler_step_data = state;
         let handler_data = state;
         let params = api::enroll::Params {
@@ -77,13 +88,12 @@ impl Enroll {
         Ok(Enroll { state, dropped: false })
     }
 
-    /// Returns the enrollment progress in percent.
+    /// Returns the enrollment progress.
     ///
     /// Returns `None` if the enrollment finished. Use `Self::result()` to access the result.
-    pub fn progress(&self) -> Option<usize> {
+    pub fn progress(&self) -> Option<EnrollProgress> {
         match *Self::state(self.state).borrow() {
-            EnrollState::Started => Some(0),
-            EnrollState::Running { remaining, total } => Some((total - remaining) * 100 / total),
+            EnrollState::Running(x) => Some(x),
             EnrollState::Done { .. } | EnrollState::Failed { .. } => None,
         }
     }
@@ -93,7 +103,7 @@ impl Enroll {
     /// In case of success, the template ID of the enrolled finger is returned.
     pub fn result(mut self) -> Result<Box<[u8]>, Error> {
         match Self::into_state(&mut self) {
-            EnrollState::Started | EnrollState::Running { .. } => {
+            EnrollState::Running(_) => {
                 let _ = self.abort();
                 Err(Error::user(Code::InvalidState))
             }
@@ -108,7 +118,7 @@ impl Enroll {
     }
 
     fn drop_state(&mut self) -> Result<(), Error> {
-        if matches!(Self::into_state(self), EnrollState::Started | EnrollState::Running { .. }) {
+        if matches!(Self::into_state(self), EnrollState::Running(_)) {
             convert_unit(unsafe { api::abort_enroll() })?;
         }
         Ok(())
@@ -117,12 +127,9 @@ impl Enroll {
     extern "C" fn step(data: *const u8, remaining: usize) {
         let mut state = Self::state(data).borrow_mut();
         match *state {
-            EnrollState::Started => {
-                *state = EnrollState::Running { remaining, total: remaining + 1 }
-            }
-            EnrollState::Running { remaining: ref mut state, ref mut total } => {
-                *state = remaining;
-                *total = core::cmp::max(*total, remaining + 1);
+            EnrollState::Running(ref mut progress) => {
+                progress.detected += 1;
+                progress.remaining = Some(remaining);
             }
             // Those should not happen, but if they do, we ignore the step.
             EnrollState::Done { .. } | EnrollState::Failed { .. } => (),

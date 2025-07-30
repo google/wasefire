@@ -30,7 +30,7 @@ use core::time::Duration;
 use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use wasefire::error::Code;
 use wasefire::fingerprint::matcher::{
-    self, Enroll, Identify, IdentifyResult, delete_template, list_templates,
+    self, Enroll, EnrollProgress, Identify, IdentifyResult, delete_template, list_templates,
 };
 use wasefire::fingerprint::sensor::{self, Capture, Image};
 use wasefire::timer::Timeout;
@@ -171,7 +171,8 @@ fn enroll() -> Result<TemplateId, Error> {
     scheduling::wait_until(|| match enroll.progress() {
         None => true,
         Some(_) if timeout.is_over() => true,
-        Some(percent) => {
+        Some(EnrollProgress { detected, remaining }) => {
+            let percent = detected * 100 / (detected + remaining.unwrap_or(1));
             debug!("Enrollment progress: {percent}%.");
             false
         }
