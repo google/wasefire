@@ -10,7 +10,7 @@ wasefire = { path = "../../../crates/prelude" }
 
 [dependencies.opensk-lib]
 git = "https://github.com/google/OpenSK.git"
-rev = "8862b28b5e771f2f3eb08a8171dbac4e5f7fe115"
+rev = "1306426f1c5c17c2534c52c7b894829dc07730f6"
 package = "opensk"
 default-features = false
 
@@ -18,6 +18,7 @@ default-features = false
 ctap1 = ["opensk-lib/with_ctap1"]
 debug = ["opensk-lib/debug_ctap"]
 ed25519 = ["opensk-lib/ed25519"]
+fingerprint = ["opensk-lib/fingerprint"]
 test = ["opensk-lib/std", "wasefire/test"]
 
 [lints]

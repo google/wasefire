@@ -20,6 +20,8 @@ use wasefire::error::Space;
 
 mod clock;
 mod crypto;
+#[cfg(feature = "fingerprint")]
+mod fingerprint;
 pub(crate) mod hid_connection;
 mod persist;
 mod rng;
@@ -27,11 +29,17 @@ mod user_presence;
 mod write;
 
 pub(crate) fn init() -> WasefireEnv {
-    WasefireEnv { user_presence: user_presence::init() }
+    WasefireEnv {
+        user_presence: user_presence::init(),
+        #[cfg(feature = "fingerprint")]
+        fingerprint: fingerprint::init(),
+    }
 }
 
 pub(crate) struct WasefireEnv {
     user_presence: user_presence::Impl,
+    #[cfg(feature = "fingerprint")]
+    fingerprint: fingerprint::Impl,
 }
 
 impl Env for WasefireEnv {
@@ -44,6 +52,8 @@ impl Env for WasefireEnv {
     type HidConnection = Self;
     type Clock = Self;
     type Crypto = Self;
+    #[cfg(feature = "fingerprint")]
+    type Fingerprint = fingerprint::Impl;
 
     fn rng(&mut self) -> &mut Self::Rng {
         self
@@ -63,6 +73,11 @@ impl Env for WasefireEnv {
 
     fn clock(&mut self) -> &mut Self::Clock {
         self
+    }
+
+    #[cfg(feature = "fingerprint")]
+    fn fingerprint(&mut self) -> &mut Self::Fingerprint {
+        &mut self.fingerprint
     }
 
     fn write(&mut self) -> Self::Write {
