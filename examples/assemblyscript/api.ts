@@ -1239,7 +1239,7 @@
     // Starts an image capture process.
     @external("env", "fsc")
     export declare function fingerprint_sensor_capture(
-      // Callback when the identification process succeeded.
+      // Callback when the capture process succeeded.
       //
       // The handler is called at most once. The result of the capture is encoded
       // as follows:

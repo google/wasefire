@@ -25,7 +25,7 @@ pub(crate) fn new() -> Item {
         item! {
             /// Starts an image capture process.
             fn capture "fsc" {
-                /// Callback when the identification process succeeded.
+                /// Callback when the capture process succeeded.
                 ///
                 /// The handler is called at most once. The result of the capture is encoded
                 /// as follows:
