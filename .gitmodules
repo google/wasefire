@@ -4,9 +4,6 @@
 [submodule "third_party/WebAssembly/spec"]
 	path = third_party/WebAssembly/spec
 	url = https://github.com/WebAssembly/spec.git
-[submodule "third_party/google/OpenSK"]
-	path = third_party/google/OpenSK
-	url = https://github.com/google/OpenSK.git
 [submodule "third_party/lowRISC/opentitan"]
 	path = third_party/lowRISC/opentitan
 	url = https://github.com/lowRISC/opentitan.git
