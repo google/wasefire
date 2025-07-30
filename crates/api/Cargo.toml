@@ -46,6 +46,8 @@ api-crypto-gcm = ["wasefire-applet-api-macro/api-crypto-gcm"]
 api-crypto-hash = ["internal-api-crypto-hash", "wasefire-applet-api-macro/api-crypto-hash"]
 api-crypto-hkdf = ["internal-api-crypto-hash", "wasefire-applet-api-macro/api-crypto-hkdf"]
 api-crypto-hmac = ["internal-api-crypto-hash", "wasefire-applet-api-macro/api-crypto-hmac"]
+api-fingerprint-matcher = ["wasefire-applet-api-macro/api-fingerprint-matcher"]
+api-fingerprint-sensor = ["wasefire-applet-api-macro/api-fingerprint-sensor"]
 api-gpio = ["wasefire-applet-api-macro/api-gpio"]
 api-led = ["wasefire-applet-api-macro/api-led"]
 api-platform = ["wasefire-applet-api-macro/api-platform"]
@@ -73,6 +75,8 @@ full-api = [
   "api-crypto-hash",
   "api-crypto-hkdf",
   "api-crypto-hmac",
+  "api-fingerprint-matcher",
+  "api-fingerprint-sensor",
   "api-gpio",
   "api-led",
   "api-platform",

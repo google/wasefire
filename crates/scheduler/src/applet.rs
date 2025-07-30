@@ -200,6 +200,13 @@ impl<B: Board> Applet<B> {
         }
     }
 
+    #[cfg_attr(not(feature = "board-api-fingerprint-matcher"), allow(dead_code))]
+    pub fn disable_noerror(&mut self, key: Key<B>) {
+        if self.disable(key).is_err() {
+            log::warn!("Failed disabling {:?}", key);
+        }
+    }
+
     pub fn free(&mut self) {
         self.events.clear();
         for &Handler { key, .. } in &self.handlers {

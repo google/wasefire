@@ -56,6 +56,8 @@ pub mod clock;
 #[cfg(feature = "internal-api-crypto")]
 pub mod crypto;
 pub mod debug;
+#[cfg(feature = "internal-api-fingerprint")]
+pub mod fingerprint;
 #[cfg(feature = "api-gpio")]
 pub mod gpio;
 #[cfg(feature = "api-led")]

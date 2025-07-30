@@ -182,6 +182,8 @@ crypto-gcm
 crypto-hash
 crypto-hkdf
 crypto-hmac
+fingerprint-matcher
+fingerprint-sensor
 gpio
 led
 platform
@@ -214,6 +216,8 @@ crypto-p384-ecdh
 crypto-p384-ecdsa
 crypto-sha256
 crypto-sha384
+fingerprint-matcher
+fingerprint-sensor
 gpio
 led
 radio-ble

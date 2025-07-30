@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support `fingerprint::{matcher,sensor}` modules
 - Support `PlatformClearStore` protocol call
 - Support `crypto::{ecdsa,ecdh,ed25519}` modules
 - Support `gpio::{register,unregister}` functions

@@ -70,6 +70,14 @@ applet-api-crypto-hmac = [
   "internal-hash-context",
   "wasefire-applet-api/api-crypto-hmac",
 ]
+applet-api-fingerprint-matcher = [
+  "internal-applet-api-fingerprint",
+  "wasefire-applet-api/api-fingerprint-matcher",
+]
+applet-api-fingerprint-sensor = [
+  "internal-applet-api-fingerprint",
+  "wasefire-applet-api/api-fingerprint-sensor",
+]
 applet-api-gpio = ["wasefire-applet-api/api-gpio"]
 applet-api-led = ["wasefire-applet-api/api-led"]
 applet-api-platform = [
@@ -154,6 +162,16 @@ board-api-crypto-p384-ecdsa = [
 ]
 board-api-crypto-sha256 = ["applet-api-crypto-hash", "wasefire-board-api/api-crypto-sha256"]
 board-api-crypto-sha384 = ["applet-api-crypto-hash", "wasefire-board-api/api-crypto-sha384"]
+board-api-fingerprint-matcher = [
+  "applet-api-fingerprint-matcher",
+  "internal-board-api-fingerprint",
+  "wasefire-board-api/api-fingerprint-matcher",
+]
+board-api-fingerprint-sensor = [
+  "applet-api-fingerprint-sensor",
+  "internal-board-api-fingerprint",
+  "wasefire-board-api/api-fingerprint-sensor",
+]
 board-api-gpio = ["applet-api-gpio", "wasefire-board-api/api-gpio"]
 board-api-led = ["applet-api-led", "wasefire-board-api/api-led"]
 board-api-radio-ble = [
@@ -196,6 +214,8 @@ full-applet-api = [
   "applet-api-crypto-hash",
   "applet-api-crypto-hkdf",
   "applet-api-crypto-hmac",
+  "applet-api-fingerprint-matcher",
+  "applet-api-fingerprint-sensor",
   "applet-api-gpio",
   "applet-api-led",
   "applet-api-platform",
@@ -228,6 +248,8 @@ full-board-api = [
   "board-api-crypto-p384-ecdsa",
   "board-api-crypto-sha256",
   "board-api-crypto-sha384",
+  "board-api-fingerprint-matcher",
+  "board-api-fingerprint-sensor",
   "board-api-gpio",
   "board-api-led",
   "board-api-radio-ble",
@@ -291,6 +313,7 @@ unsafe-skip-validation = []
 _test = ["wasefire-protocol/_exhaustive"]
 internal-applet-api-crypto = []
 internal-applet-api-crypto-hash = ["dep:digest", "dep:generic-array", "internal-applet-api-crypto"]
+internal-applet-api-fingerprint = []
 internal-applet-api-platform = []
 internal-applet-api-radio = []
 internal-applet-api-store = []
@@ -298,6 +321,7 @@ internal-applet-api-usb = []
 internal-board-api-crypto-ecc = []
 internal-board-api-crypto-ecdh = []
 internal-board-api-crypto-ecdsa = []
+internal-board-api-fingerprint = []
 internal-board-api-radio = []
 internal-board-api-usb = []
 internal-debug = []
