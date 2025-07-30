@@ -66,6 +66,8 @@ impl Button {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Channel {
     Button(Id<Impl>),
+    #[cfg(feature = "fpc2534")]
+    Fpc2534,
     #[cfg(feature = "gpio")]
     Gpio(Id<super::gpio::Impl>),
 }
