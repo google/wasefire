@@ -30,13 +30,12 @@ use core::time::Duration;
 use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use wasefire::error::Code;
 use wasefire::fingerprint::matcher::{
-    Enroll, Identify, IdentifyResult, delete_template, list_templates,
+    self, Enroll, Identify, IdentifyResult, delete_template, list_templates,
 };
-use wasefire::fingerprint::sensor::{Capture, Image};
+use wasefire::fingerprint::sensor::{self, Capture, Image};
 use wasefire::timer::Timeout;
 
 fn main() {
-    assert!(fingerprint::matcher::is_supported());
     rpc::Listener::new(&platform::protocol::RpcProtocol, handler).leak();
 }
 
@@ -85,7 +84,7 @@ Usage: identify [<template_id>]
 Usage: delete [<template_id>]
 Usage: list"
                 .to_string()),
-            Command::Capture => match capture() {
+            Command::Capture if sensor::is_supported() => match capture() {
                 Ok(image) => {
                     use core::fmt::Write as _;
                     let width = image.width;
@@ -101,20 +100,20 @@ Usage: list"
                 }
                 Err(error) => Err(format!("{error}")),
             },
-            Command::Enroll => match enroll() {
+            Command::Enroll if matcher::is_supported() => match enroll() {
                 Ok(id) => Ok(format!("Template ID: {id}")),
                 Err(error) => Err(format!("{error}")),
             },
-            Command::Identify { id } => match identify(id) {
+            Command::Identify { id } if matcher::is_supported() => match identify(id) {
                 Ok(None) => Ok("No match".to_string()),
                 Ok(Some(id)) => Ok(format!("Matched {id}")),
                 Err(error) => Err(format!("{error}")),
             },
-            Command::Delete { id } => match delete(id) {
+            Command::Delete { id } if matcher::is_supported() => match delete(id) {
                 Ok(()) => Ok("Done".to_string()),
                 Err(error) => Err(format!("{error}")),
             },
-            Command::List => match list_templates() {
+            Command::List if matcher::is_supported() => match list_templates() {
                 Ok(templates) => {
                     use core::fmt::Write as _;
                     let mut list = String::new();
@@ -126,6 +125,7 @@ Usage: list"
                 }
                 Err(error) => Err(format!("{error}")),
             },
+            _ => Err("Unsupported command".to_string()),
         }
     }
 }
