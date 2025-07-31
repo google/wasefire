@@ -19,9 +19,9 @@
 //! ```shell
 //! cargo xtask --release --native \
 //!   applet rust opensk --opt-level=z \
-//!   runner nordic --board=dongle --opt-level=z \
-//!     --features=usb-ctap --features=software-crypto-aes256-cbc \
-//!     --features=software-crypto-p256,software-crypto-hmac-sha256 \
+//!   runner nordic --board=dongle --opt-level=z --features=usb-ctap \
+//!     --features=software-crypto-aes256-cbc,software-crypto-hmac-sha256 \
+//!     --features=software-crypto-p256-ecdsa,software-crypto-p256-ecdh \
 //!   flash
 //! ```
 //!
