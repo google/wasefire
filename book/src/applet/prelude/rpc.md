@@ -44,6 +44,9 @@ standard input and write to standard output.
 helli PONG
 ```
 
+You can also use `wasefire applet-rpc --repl` to process each input line as a request and
+concatenate the responses to the output.
+
 [^mut]: Note that we don't need interior mutability here, compared to buttons for example. This is
     because the RPC handler is not re-entrant. The platform won't send a new request if the previous
     request was not responded.
