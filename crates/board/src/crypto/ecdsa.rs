@@ -98,9 +98,9 @@ mod software {
     use elliptic_curve::sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint};
     use elliptic_curve::zeroize::Zeroize;
     use elliptic_curve::{AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, Scalar};
-    use rand_core::CryptoRngCore;
     use signature::digest::{Digest, FixedOutput, FixedOutputReset};
     use signature::hazmat::PrehashVerifier;
+    use signature::rand_core::CryptoRngCore;
     use wasefire_error::Code;
 
     use super::*;

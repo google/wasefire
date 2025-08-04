@@ -90,7 +90,7 @@ mod software {
         AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, ProjectivePoint, Scalar,
         ScalarPrimitive, SecretKey,
     };
-    use rand_core::CryptoRngCore;
+    use signature::rand_core::CryptoRngCore;
     use wasefire_error::Code;
 
     use super::*;

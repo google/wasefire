@@ -76,7 +76,7 @@ mod software {
     use core::marker::PhantomData;
 
     use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
-    use rand_core::CryptoRngCore;
+    use signature::rand_core::CryptoRngCore;
     use wasefire_error::Code;
     use zeroize::Zeroize;
 

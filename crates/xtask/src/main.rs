@@ -982,7 +982,7 @@ async fn wrap_command() -> Result<Command> {
 }
 
 async fn ensure_assemblyscript() -> Result<()> {
-    const ASC_VERSION: &str = "0.28.2"; // scripts/upgrade.sh relies on this name
+    const ASC_VERSION: &str = "0.28.3"; // scripts/upgrade.sh relies on this name
     const BIN: &str = "examples/assemblyscript/node_modules/.bin/asc";
     const JSON: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
     if fs::exists(BIN).await && fs::exists(JSON).await {
