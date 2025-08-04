@@ -15,7 +15,7 @@ panic-rtt-target = { version = "0.2.0", optional = true }
 riscv = { version = "0.14.0", features = ["critical-section-single-hart"], optional = true }
 riscv-rt = { version = "0.15.0", optional = true }
 rtt-target = { version = "0.6.1", optional = true }
-wasmi = { version = "0.47.0", default-features = false, optional = true }
+wasmi = { version = "0.48.0", default-features = false, optional = true }
 
 [dependencies.portable-atomic]
 version = "1.11.1"
@@ -24,7 +24,7 @@ features = ["critical-section"]
 optional = true
 
 [dependencies.wasmtime]
-version = "34.0.2"
+version = "35.0.0"
 default-features = false
 features = ["runtime"]
 optional = true
@@ -35,7 +35,7 @@ features = ["float-types"]
 optional = true
 
 [build-dependencies.wasmtime]
-version = "34.0.2"
+version = "35.0.0"
 default-features = false
 features = ["cranelift", "pulley"]
 optional = true

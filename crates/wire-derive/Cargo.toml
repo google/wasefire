@@ -33,7 +33,7 @@ features = [
 ]
 
 [dev-dependencies]
-prettyplease = "0.2.35"
+prettyplease = "0.2.36"
 similar-asserts = "1.7.0"
 
 [features]

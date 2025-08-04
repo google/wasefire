@@ -21,7 +21,7 @@ wasefire-logger = { version = "0.1.7-git", path = "../logger", optional = true }
 wasefire-one-of = { version = "0.1.1-git", path = "../one-of" }
 
 [dependencies.tokio]
-version = "1.46.0"
+version = "1.47.1"
 default-features = false
 features = ["io-util", "macros", "net", "rt", "sync"]
 
