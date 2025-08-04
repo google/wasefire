@@ -15,7 +15,7 @@
 use wasefire_applet_api::{self as api, Api};
 use wasefire_board_api::Api as Board;
 
-use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
+use crate::{DispatchSchedulerCall, SchedulerCall};
 
 #[cfg_attr(not(feature = "applet-api-store"), allow(unused_macros))]
 macro_rules! or_fail {
@@ -23,9 +23,8 @@ macro_rules! or_fail {
         #[cfg(feature = $feature)]
         $name($call);
         #[cfg(not(feature = $feature))]
-        $call.reply_(Err(crate::Failure::Error(wasefire_error::Error::world(
-            wasefire_error::Code::NotImplemented,
-        ))));
+        $call
+            .reply_(Err(wasefire_error::Error::world(wasefire_error::Code::NotImplemented).into()));
     }};
 }
 
@@ -111,7 +110,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     }
 }
 
-fn syscall<B: Board>(call: SchedulerCall<B, api::syscall::Sig>) {
+fn syscall<B: Board>(mut call: SchedulerCall<B, api::syscall::Sig>) {
     let api::syscall::Params { x1, x2, x3, x4 } = call.read();
-    call.reply(try { B::syscall(*x1, *x2, *x3, *x4).ok_or(Trap)?? });
+    let result = B::vendor(call.memory(), *x1, *x2, *x3, *x4);
+    call.reply(result);
 }

@@ -14,13 +14,11 @@
 
 use wasefire_applet_api::fingerprint::sensor as api;
 use wasefire_applet_api::fingerprint::sensor::Api;
-#[cfg(feature = "board-api-fingerprint-sensor")]
-use wasefire_board_api as board;
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-fingerprint-sensor")]
-use wasefire_board_api::Support;
-#[cfg(feature = "board-api-fingerprint-sensor")]
 use wasefire_board_api::fingerprint::sensor::Api as _;
+#[cfg(feature = "board-api-fingerprint-sensor")]
+use wasefire_board_api::{self as board, Support};
 
 #[cfg(feature = "board-api-fingerprint-sensor")]
 use crate::event::{Handler, fingerprint::sensor::Key};

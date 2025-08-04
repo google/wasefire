@@ -77,10 +77,12 @@ pub trait Api: Send + 'static {
     /// Board-specific syscalls.
     ///
     /// Those calls are directly forwarded from the applet by the scheduler. The default
-    /// implementation traps by returning `None`. The platform will panic if `Some(Ok(x))` is
-    /// returned when `x as i32` would be negative.
-    fn syscall(_x1: u32, _x2: u32, _x3: u32, _x4: u32) -> Option<Result<u32, Error>> {
-        None
+    /// implementation always traps. The platform will panic if `Some(Ok(x))` is returned when `x as
+    /// i32` would be negative.
+    fn vendor(
+        _mem: impl AppletMemory, _x1: u32, _x2: u32, _x3: u32, _x4: u32,
+    ) -> Result<u32, Failure> {
+        Err(Failure::TRAP)
     }
 
     /// Applet interface.
@@ -317,3 +319,107 @@ impl<T: Support<usize>> Deref for Id<T> {
 impl<T: Supported> Support<bool> for T {
     const SUPPORT: bool = true;
 }
+
+/// An applet trap.
+pub struct Trap;
+
+/// An applet failure (either an error or a trap).
+#[derive(Default, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+pub struct Failure(u32);
+
+impl Failure {
+    /// The failure indicating that the applet should trap.
+    pub const TRAP: Self = Failure(0x100_0000);
+
+    /// Returns `None` for traps and `Some` for errors.
+    pub fn split(self) -> Option<Error> {
+        if self == Self::TRAP {
+            return None;
+        }
+        // SAFETY: Error is a repr(transparent) of u32. This is a private contract within Wasefire.
+        Some(unsafe { core::mem::transmute::<u32, Error>(self.0) })
+    }
+}
+
+impl From<Trap> for Failure {
+    fn from(Trap: Trap) -> Self {
+        Failure::TRAP
+    }
+}
+
+impl From<Error> for Failure {
+    fn from(value: Error) -> Self {
+        // SAFETY: Error is a repr(transparent) of u32. This is a private contract within Wasefire.
+        Failure(unsafe { core::mem::transmute::<Error, u32>(value) })
+    }
+}
+
+/// Interface to an applet memory.
+pub trait AppletMemory {
+    /// Returns a given shared slice from the applet memory.
+    fn get(&self, ptr: u32, len: u32) -> Result<&[u8], Trap>;
+
+    /// Returns a given exclusive slice from the applet memory.
+    #[allow(clippy::mut_from_ref)]
+    fn get_mut(&self, ptr: u32, len: u32) -> Result<&mut [u8], Trap>;
+
+    /// Allocates in the applet memory (traps in case of errors).
+    ///
+    /// This function always returns a valid allocated pointer. If the size is zero or there is not
+    /// enough memory, a trap is returned.
+    fn alloc(&mut self, size: u32, align: u32) -> Result<u32, Trap>;
+}
+
+/// Helper methods on top of `AppletMemory`.
+pub trait AppletMemoryExt: AppletMemory {
+    /// Returns a shared slice from the applet memory or `None` if `ptr == 0`.
+    fn get_opt(&self, ptr: u32, len: u32) -> Result<Option<&[u8]>, Trap> {
+        Ok(match ptr {
+            0 => None,
+            _ => Some(self.get(ptr, len)?),
+        })
+    }
+
+    /// Returns a shared array from the applet memory.
+    fn get_array<const LEN: usize>(&self, ptr: u32) -> Result<&[u8; LEN], Trap> {
+        self.get(ptr, LEN as u32).map(|x| x.try_into().unwrap())
+    }
+
+    /// Returns an exclusive array from the applet memory.
+    fn get_array_mut<const LEN: usize>(&self, ptr: u32) -> Result<&mut [u8; LEN], Trap> {
+        self.get_mut(ptr, LEN as u32).map(|x| x.try_into().unwrap())
+    }
+
+    /// Returns a shared object from the applet memory.
+    #[allow(clippy::wrong_self_convention)]
+    fn from_bytes<T: bytemuck::AnyBitPattern>(&self, ptr: u32) -> Result<&T, Trap> {
+        Ok(bytemuck::from_bytes(self.get(ptr, core::mem::size_of::<T>() as u32)?))
+    }
+
+    /// Returns an exclusive object from the applet memory.
+    #[allow(clippy::wrong_self_convention)]
+    fn from_bytes_mut<T: bytemuck::NoUninit + bytemuck::AnyBitPattern>(
+        &self, ptr: u32,
+    ) -> Result<&mut T, Trap> {
+        Ok(bytemuck::from_bytes_mut(self.get_mut(ptr, core::mem::size_of::<T>() as u32)?))
+    }
+
+    /// Allocates a copy of `data` unless it's empty.
+    ///
+    /// Always returns `data.len()`. Also writes it to `len_ptr` if provided.
+    fn alloc_copy(&mut self, ptr_ptr: u32, len_ptr: Option<u32>, data: &[u8]) -> Result<u32, Trap> {
+        let len = data.len() as u32;
+        if 0 < len {
+            let ptr = self.alloc(len, 1)?;
+            self.get_mut(ptr, len)?.copy_from_slice(data);
+            self.get_mut(ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
+        }
+        if let Some(len_ptr) = len_ptr {
+            self.get_mut(len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
+        }
+        Ok(len)
+    }
+}
+
+impl<T: AppletMemory> AppletMemoryExt for T {}

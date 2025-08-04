@@ -938,6 +938,7 @@ dependencies = [
  "panic-probe",
  "rubble",
  "rubble-nrf5x",
+ "syscall-test",
  "typenum",
  "usb-device",
  "usbd-hid",
@@ -1144,6 +1145,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syscall-test"
+version = "0.1.0"
+dependencies = [
+ "wasefire-board-api",
 ]
 
 [[package]]

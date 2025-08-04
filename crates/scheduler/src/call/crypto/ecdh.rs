@@ -21,11 +21,11 @@ use wasefire_board_api::Api as Board;
 #[cfg(feature = "internal-board-api-crypto-ecdh")]
 use wasefire_board_api::crypto::ecdh::Api as _;
 #[cfg(feature = "internal-board-api-crypto-ecdh")]
-use wasefire_board_api::{self as board, Support};
+use wasefire_board_api::{self as board, AppletMemory as _, AppletMemoryExt as _, Support};
 use wasefire_error::{Code, Error};
 
 #[cfg(feature = "internal-board-api-crypto-ecdh")]
-use crate::applet::store::{Memory, MemoryApi};
+use crate::applet::store::Memory;
 use crate::{DispatchSchedulerCall, Failure, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {

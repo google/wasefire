@@ -14,9 +14,8 @@
 
 use wasefire_applet_api::platform::update::{self as api, Api};
 use wasefire_board_api::transfer::Api as _;
-use wasefire_board_api::{self as board, Api as Board};
+use wasefire_board_api::{self as board, Api as Board, AppletMemory as _};
 
-use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {

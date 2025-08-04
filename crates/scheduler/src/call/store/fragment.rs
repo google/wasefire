@@ -17,13 +17,13 @@ use wasefire_applet_api::store::fragment::Api;
 use wasefire_applet_api::store::fragment::{self as api};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-storage")]
+use wasefire_board_api::{AppletMemory as _, AppletMemoryExt as _};
+#[cfg(feature = "board-api-storage")]
 use wasefire_store::fragment;
 
 use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-storage")]
 use crate::SchedulerCall;
-#[cfg(feature = "board-api-storage")]
-use crate::applet::store::MemoryApi;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {

@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use bytemuck::{AnyBitPattern, NoUninit};
+use wasefire_board_api::AppletMemory;
 
 pub use self::impl_::Store;
-use crate::Trap;
 
 #[cfg_attr(feature = "native", path = "store/native.rs")]
 #[cfg_attr(feature = "wasm", path = "store/wasm.rs")]
@@ -24,54 +23,8 @@ mod impl_;
 pub type Memory<'a> = <Store as StoreApi>::Memory<'a>;
 
 pub trait StoreApi {
-    type Memory<'a>: MemoryApi
+    type Memory<'a>: AppletMemory
     where Self: 'a;
 
     fn memory(&mut self) -> Self::Memory<'_>;
-}
-
-#[allow(dead_code)]
-pub trait MemoryApi {
-    fn get(&self, ptr: u32, len: u32) -> Result<&[u8], Trap>;
-    #[allow(clippy::mut_from_ref)]
-    fn get_mut(&self, ptr: u32, len: u32) -> Result<&mut [u8], Trap>;
-    fn alloc(&mut self, size: u32, align: u32) -> Result<u32, Trap>;
-
-    fn get_opt(&self, ptr: u32, len: u32) -> Result<Option<&[u8]>, Trap> {
-        Ok(match ptr {
-            0 => None,
-            _ => Some(self.get(ptr, len)?),
-        })
-    }
-
-    fn get_array<const LEN: usize>(&self, ptr: u32) -> Result<&[u8; LEN], Trap> {
-        self.get(ptr, LEN as u32).map(|x| x.try_into().unwrap())
-    }
-
-    fn get_array_mut<const LEN: usize>(&self, ptr: u32) -> Result<&mut [u8; LEN], Trap> {
-        self.get_mut(ptr, LEN as u32).map(|x| x.try_into().unwrap())
-    }
-
-    #[allow(clippy::wrong_self_convention)]
-    fn from_bytes<T: AnyBitPattern>(&self, ptr: u32) -> Result<&T, Trap> {
-        Ok(bytemuck::from_bytes(self.get(ptr, core::mem::size_of::<T>() as u32)?))
-    }
-
-    #[allow(clippy::wrong_self_convention)]
-    fn from_bytes_mut<T: NoUninit + AnyBitPattern>(&self, ptr: u32) -> Result<&mut T, Trap> {
-        Ok(bytemuck::from_bytes_mut(self.get_mut(ptr, core::mem::size_of::<T>() as u32)?))
-    }
-
-    fn alloc_copy(&mut self, ptr_ptr: u32, len_ptr: Option<u32>, data: &[u8]) -> Result<u32, Trap> {
-        let len = data.len() as u32;
-        if 0 < len {
-            let ptr = self.alloc(len, 1)?;
-            self.get_mut(ptr, len)?.copy_from_slice(data);
-            self.get_mut(ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
-        }
-        if let Some(len_ptr) = len_ptr {
-            self.get_mut(len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
-        }
-        Ok(len)
-    }
 }

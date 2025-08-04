@@ -18,12 +18,13 @@ use core::cell::RefCell;
 use core::marker::PhantomData;
 use core::ops::Range;
 
+use wasefire_board_api::AppletMemory;
 use wasefire_interpreter::{
     Call, Error, InstId, Module, RunResult, Store as InterpreterStore, Val,
 };
 use wasefire_logger as log;
 
-use super::{MemoryApi, StoreApi};
+use super::StoreApi;
 use crate::Trap;
 
 #[derive(Debug, Default)]
@@ -122,7 +123,7 @@ impl<'a> Memory<'a> {
     }
 }
 
-impl MemoryApi for Memory<'_> {
+impl AppletMemory for Memory<'_> {
     fn get(&self, ptr: u32, len: u32) -> Result<&[u8], Trap> {
         let ptr = ptr as usize;
         let len = len as usize;

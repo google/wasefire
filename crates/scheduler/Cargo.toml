@@ -16,7 +16,7 @@ categories = ["embedded", "no-std", "wasm"]
 features = ["std", "wasm"]
 
 [dependencies]
-bytemuck = { version = "1.23.1", default-features = false }
+bytemuck = { version = "1.23.1", default-features = false, optional = true }
 defmt = { version = "1.0.1", default-features = false, optional = true }
 derive-where = { version = "1.5.0", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
@@ -172,7 +172,7 @@ board-api-fingerprint-sensor = [
   "internal-board-api-fingerprint",
   "wasefire-board-api/api-fingerprint-sensor",
 ]
-board-api-gpio = ["applet-api-gpio", "wasefire-board-api/api-gpio"]
+board-api-gpio = ["applet-api-gpio", "dep:bytemuck", "wasefire-board-api/api-gpio"]
 board-api-led = ["applet-api-led", "wasefire-board-api/api-led"]
 board-api-radio-ble = [
   "applet-api-radio-ble",
@@ -183,6 +183,7 @@ board-api-rng = ["applet-api-rng", "wasefire-board-api/api-rng"]
 board-api-storage = [
   "applet-api-store",
   "applet-api-store-fragment",
+  "dep:bytemuck",
   "dep:wasefire-store",
   "wasefire-board-api/api-storage",
 ]
@@ -324,7 +325,7 @@ internal-board-api-crypto-ecdsa = []
 internal-board-api-fingerprint = []
 internal-board-api-radio = []
 internal-board-api-usb = []
-internal-debug = []
+internal-debug = ["dep:bytemuck"]
 internal-hash-context = []
 
 [lints]

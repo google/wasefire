@@ -15,14 +15,14 @@
 use wasefire_applet_api::crypto::ccm::{self as api, Api};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
+use wasefire_board_api::AppletMemory as _;
+#[cfg(feature = "board-api-crypto-aes128-ccm")]
 use wasefire_board_api::crypto::aead::{Api as _, Array};
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
 use wasefire_board_api::{self as board, Support};
 
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
 use crate::Trap;
-#[cfg(feature = "board-api-crypto-aes128-ccm")]
-use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {

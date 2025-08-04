@@ -33,7 +33,7 @@ use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature, U
 use wasefire_board_api::Singleton;
 #[cfg(feature = "board-api-timer")]
 use wasefire_board_api::Support;
-use wasefire_board_api::{self as board, Api as Board};
+use wasefire_board_api::{self as board, Api as Board, Failure, Trap};
 use wasefire_error::Error;
 #[cfg(feature = "wasm")]
 use wasefire_interpreter::{self as interpreter, Call, Module, RunAnswer, Val};
@@ -191,10 +191,10 @@ impl<B: Board, T: Signature> SchedulerCall<'_, B, T> {
     fn reply_(mut self, result: Result<U32<T::Result>, Failure>) {
         let result = Error::encode(match result {
             Ok(x) => Ok(*x),
-            Err(Failure::Error(e)) => Err(e),
-            Err(Failure::Trap(Trap)) => {
-                return applet_trapped::<B>(self.scheduler(), Some(T::NAME));
-            }
+            Err(e) => match e.split() {
+                Some(e) => Err(e),
+                None => return applet_trapped::<B>(self.scheduler(), Some(T::NAME)),
+            },
         });
         #[cfg(feature = "wasm")]
         {
@@ -515,25 +515,6 @@ fn applet_trapped<B: Board>(scheduler: &mut Scheduler<B>, reason: Option<&'stati
         Some("sa") => ExitStatus::Abort,
         _ => ExitStatus::Trap,
     });
-}
-
-struct Trap;
-
-enum Failure {
-    Trap(Trap),
-    Error(Error),
-}
-
-impl From<Trap> for Failure {
-    fn from(value: Trap) -> Self {
-        Self::Trap(value)
-    }
-}
-
-impl From<Error> for Failure {
-    fn from(value: Error) -> Self {
-        Self::Error(value)
-    }
 }
 
 #[cfg(feature = "wasm")]

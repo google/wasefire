@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::{self as board, Event, Singleton};
-use wasefire_error::Error;
+use wasefire_board_api::{self as board, AppletMemory, Event, Failure, Singleton};
 use wasefire_scheduler as scheduler;
 
 use crate::{Board, with_state};
@@ -52,14 +51,15 @@ impl board::Api for Board {
         }
     }
 
-    fn syscall(x1: u32, x2: u32, x3: u32, x4: u32) -> Option<Result<u32, Error>> {
+    fn vendor(mem: impl AppletMemory, x1: u32, x2: u32, x3: u32, x4: u32) -> Result<u32, Failure> {
+        #[cfg(not(feature = "test-vendor"))]
+        let _ = &mem;
         match (x1, x2, x3, x4) {
-            // The syscall_test example relies on this.
             #[cfg(feature = "test-vendor")]
-            (0, 0, 0, x) => Some(Error::decode(x as i32)),
+            (0, _, _, _) => syscall_test::process(mem, x2, x3, x4),
             #[cfg(feature = "gpio")]
-            (0x80000000, x, y, z) => Some(gpio::syscall(x, y, z)),
-            _ => None,
+            (0x80000000, x, y, z) => Ok(gpio::syscall(x, y, z)?),
+            _ => Err(Failure::TRAP),
         }
     }
 
