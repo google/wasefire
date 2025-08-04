@@ -99,16 +99,15 @@ The final code looks like this:
 
 ## Testing
 
-We can use a one-liner REPL in shell around `wasefire applet-rpc`:
+We can use the following command to interact with the applet:
 
 ```shell
-while read line; do echo "$line" | wasefire applet-rpc; done
+( echo help; cat ) | wasefire applet-rpc --repl
 ```
 
 An example interaction could look like this:
 
 ```text
-help
 Usage: insert <key>[..<key>] <value>
 Usage: find <key>[..<key>]
 Usage: remove <key>[..<key>]

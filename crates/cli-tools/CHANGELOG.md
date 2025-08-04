@@ -4,11 +4,13 @@
 
 ### Major
 
+- Make `action::Rpc` private
 - Remove `action::PlatformUpdate::metadata()` which is now vendor-specific
 - Change `action::PlatformInfo::run()` to return the platform information instead of printing
 
 ### Minor
 
+- Add `--repl` flag to enable REPL for `action::{Applet,Platform}Rpc`
 - Add `action::PlatformClearStore` to clear the store
 - Change `action::optimize_wasm()` (and thus `action::RustAppletBuild`) to also compute the
   side-table trading applet footprint for performance

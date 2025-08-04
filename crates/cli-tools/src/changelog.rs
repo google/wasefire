@@ -17,7 +17,6 @@
 //! See <https://github.com/google/wasefire/blob/main/docs/contributing/changelog.md> for a
 //! description of the changelog format.
 
-use core::str;
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::io::BufRead;

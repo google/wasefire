@@ -15,7 +15,9 @@
 //! Demonstrates simple store usage.
 //!
 //! The applet uses the platform protocol applet RPC system for its interface. It is a simple
-//! text-based interface and describes its usage when receiving "help" as a request.
+//! text-based interface and describes its usage when receiving "help" as a request:
+//!
+//!     ( echo help; cat ) | wasefire applet-rpc --repl
 
 // DO NOT EDIT MANUALLY:
 // - Edit book/src/applet/prelude/store.rs instead.

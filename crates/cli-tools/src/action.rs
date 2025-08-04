@@ -14,14 +14,17 @@
 
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::time::Duration;
 
 use anyhow::{Result, anyhow, bail, ensure};
 use clap::{ValueEnum, ValueHint};
 use rusb::GlobalContext;
+use tokio::fs::File;
+use tokio::io::{AsyncBufRead, AsyncBufReadExt as _, AsyncWrite, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use wasefire_common::platform::Side;
-use wasefire_protocol::{self as service, Connection, ConnectionExt, applet};
+use wasefire_protocol::{self as service, Connection, ConnectionExt as _, applet};
 use wasefire_wire::{self as wire, Yoke};
 
 use crate::cargo::metadata;
@@ -169,7 +172,7 @@ impl AppletExitStatus {
 
 /// Parameters for an applet or platform RPC.
 #[derive(clap::Args)]
-pub struct Rpc {
+struct Rpc {
     /// Reads the request from this file instead of standard input.
     #[arg(long, value_hint = ValueHint::FilePath)]
     input: Option<PathBuf>,
@@ -177,20 +180,64 @@ pub struct Rpc {
     /// Writes the response to this file instead of standard output.
     #[arg(long, value_hint = ValueHint::AnyPath)]
     output: Option<PathBuf>,
+
+    /// Loops reading requests as lines and concatenating responses.
+    #[arg(long)]
+    repl: bool,
+}
+
+enum RpcState {
+    One { input: Option<PathBuf>, output: Option<PathBuf>, read: bool },
+    Loop { input: Pin<Box<dyn AsyncBufRead>>, output: Pin<Box<dyn AsyncWrite>> },
 }
 
 impl Rpc {
-    async fn read(&self) -> Result<Vec<u8>> {
-        match &self.input {
-            Some(path) => fs::read(path).await,
-            None => fs::read_stdin().await,
+    async fn start(self) -> Result<RpcState> {
+        let Rpc { input, output, repl } = self;
+        if !repl {
+            return Ok(RpcState::One { input, output, read: false });
         }
+        let input: Pin<Box<dyn AsyncBufRead>> = match input {
+            None => Box::pin(BufReader::new(tokio::io::stdin())),
+            Some(path) => Box::pin(BufReader::new(File::open(path).await?)),
+        };
+        let output: Pin<Box<dyn AsyncWrite>> = match output {
+            None => Box::pin(tokio::io::stdout()),
+            Some(path) => Box::pin(File::create(path).await?),
+        };
+        Ok(RpcState::Loop { input, output })
+    }
+}
+
+impl RpcState {
+    async fn read(&mut self) -> Result<Option<Vec<u8>>> {
+        match self {
+            RpcState::One { read: x @ false, .. } => *x = true,
+            RpcState::One { .. } => return Ok(None),
+            RpcState::Loop { .. } => (),
+        }
+        Ok(Some(match self {
+            RpcState::One { input: None, .. } => fs::read_stdin().await?,
+            RpcState::One { input: Some(path), .. } => fs::read(path).await?,
+            RpcState::Loop { input, .. } => {
+                let mut line = String::new();
+                if input.read_line(&mut line).await? == 0 {
+                    return Ok(None);
+                }
+                line.into_bytes()
+            }
+        }))
     }
 
-    async fn write(&self, response: &[u8]) -> Result<()> {
-        match &self.output {
-            Some(path) => fs::write(path, response).await,
-            None => fs::write_stdout(response).await,
+    async fn write(&mut self, response: &[u8]) -> Result<()> {
+        match self {
+            RpcState::One { output: None, .. } => fs::write_stdout(response).await,
+            RpcState::One { output: Some(path), .. } => fs::write(path, response).await,
+            RpcState::Loop { output, .. } => {
+                output.write_all(response).await?;
+                output.flush().await?;
+                Ok(())
+            }
         }
     }
 }
@@ -215,13 +262,17 @@ impl AppletRpc {
             Some(_) => bail!("applet identifiers are not supported yet"),
             None => applet::AppletId,
         };
-        let request = applet::Request { applet_id, request: &rpc.read().await? };
-        connection.call::<service::AppletRequest>(request).await?.get();
         wait.ensure_wait();
-        match wait.run::<service::AppletResponse, &[u8]>(connection, applet_id).await? {
-            None => bail!("did not receive a response"),
-            Some(response) => rpc.write(response.get()).await,
+        let mut rpc = rpc.start().await?;
+        while let Some(request) = rpc.read().await? {
+            let request = applet::Request { applet_id, request: &request };
+            connection.call::<service::AppletRequest>(request).await?.get();
+            match wait.run::<service::AppletResponse, &[u8]>(connection, applet_id).await? {
+                None => bail!("did not receive a response"),
+                Some(response) => rpc.write(response.get()).await?,
+            }
         }
+        Ok(())
     }
 }
 
@@ -255,7 +306,7 @@ impl Wait {
     }
 
     pub async fn run<S, T: wire::Wire<'static>>(
-        self, connection: &mut dyn Connection, request: S::Request<'_>,
+        &self, connection: &mut dyn Connection, request: S::Request<'_>,
     ) -> Result<Option<Yoke<T::Type<'static>>>>
     where S: for<'a> service::Service<Response<'a> = Option<T::Type<'a>>> {
         let Wait { wait, period } = self;
@@ -263,7 +314,7 @@ impl Wait {
             (true, None) => Some(Duration::from_millis(100)),
             (true, Some(_)) => unreachable!(),
             (false, None) => None,
-            (false, Some(x)) => Some(*x),
+            (false, Some(x)) => Some(**x),
         };
         let request = S::request(request);
         loop {
@@ -486,9 +537,12 @@ pub struct PlatformRpc {
 impl PlatformRpc {
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let PlatformRpc { rpc } = self;
-        let request = rpc.read().await?;
-        let response = connection.call::<service::PlatformVendor>(&request).await?;
-        rpc.write(response.get()).await
+        let mut rpc = rpc.start().await?;
+        while let Some(request) = rpc.read().await? {
+            let response = connection.call::<service::PlatformVendor>(&request).await?;
+            rpc.write(response.get()).await?;
+        }
+        Ok(())
     }
 }
 
