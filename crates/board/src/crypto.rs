@@ -29,6 +29,8 @@ use digest::HashMarker;
 use digest::MacMarker;
 #[cfg(any(feature = "internal-api-crypto-hash", feature = "internal-api-crypto-hmac"))]
 use digest::{FixedOutput, Update};
+#[cfg(feature = "internal-crypto-rng")]
+use signature::rand_core;
 #[cfg(feature = "internal-api-crypto-hmac")]
 use wasefire_error::Code;
 #[cfg(feature = "internal-with-error")]

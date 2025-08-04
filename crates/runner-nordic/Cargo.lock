@@ -1330,7 +1330,6 @@ dependencies = [
  "elliptic-curve",
  "hmac",
  "p256",
- "rand_core 0.9.3",
  "sha2",
  "signature",
  "ssmarshal",

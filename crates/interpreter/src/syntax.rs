@@ -26,6 +26,7 @@ pub enum NumType {
     F64 = 0x7c,
 }
 
+#[allow(dead_code)] // TODO: Remove when we support them.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive, UnsafeFromPrimitive)]
 #[repr(u8)]
 pub enum VecType {
