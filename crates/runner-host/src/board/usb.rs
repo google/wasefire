@@ -80,7 +80,7 @@ pub async fn init() -> Result<()> {
                     protocol.tick(|event| drop(sender.try_send(event.into())));
                 }
                 if let Some(ctap) = ctap {
-                    ctap.tick(|event| drop(sender.try_send(event.into())));
+                    ctap.tick(polled, |event| drop(sender.try_send(event.into())));
                 }
                 if let Some(serial) = serial {
                     let has_serial =

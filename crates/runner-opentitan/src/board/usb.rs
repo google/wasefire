@@ -131,9 +131,10 @@ pub fn interrupt() {
             #[cfg(feature = "usb-ctap")]
             state.usb.ctap.class(),
         ];
-        let _polled = state.usb.device.poll(&mut classes);
+        #[cfg_attr(not(feature = "usb-ctap"), allow(unused_variables))]
+        let polled = state.usb.device.poll(&mut classes);
         state.usb.protocol.tick(|event| state.events.push(event.into()));
         #[cfg(feature = "usb-ctap")]
-        state.usb.ctap.tick(|event| state.events.push(event.into()));
+        state.usb.ctap.tick(polled, |event| state.events.push(event.into()));
     });
 }

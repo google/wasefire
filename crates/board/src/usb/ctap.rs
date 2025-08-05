@@ -96,8 +96,8 @@ impl<'a, T: UsbBus> Ctap<'a, T> {
     }
 
     /// Pushes events based on whether the USB serial was polled.
-    pub fn tick(&mut self, mut push: impl FnMut(Event)) {
-        if self.read_enabled {
+    pub fn tick(&mut self, polled: bool, mut push: impl FnMut(Event)) {
+        if self.read_enabled && polled {
             push(Event::Read);
         }
         if self.write_enabled {

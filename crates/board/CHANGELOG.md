@@ -4,6 +4,7 @@
 
 ### Major
 
+- Change `usb::ctap::Ctap::tick()` to take whether the class may have data available
 - Add `gpio::Api::{enable,disable}` and `Event::Gpio` for GPIO event support
 - Change `crypto::Hash` bound from `FixedOutputReset` to `FixedOutput`
 - Rename `platform::Api::version()` to `platform::Api::running_version()`
