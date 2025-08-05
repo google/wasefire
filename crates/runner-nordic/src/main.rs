@@ -374,7 +374,7 @@ fn usbd() {
         let polled = state.usb_dev.poll(&mut classes);
         state.protocol.tick(|event| state.events.push(event.into()));
         #[cfg(feature = "usb-ctap")]
-        state.ctap.tick(|event| state.events.push(event.into()));
+        state.ctap.tick(polled, |event| state.events.push(event.into()));
         #[cfg(feature = "usb-serial")]
         state.serial.tick(polled, |event| state.events.push(event.into()));
     });
