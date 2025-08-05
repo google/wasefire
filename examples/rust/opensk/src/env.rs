@@ -20,7 +20,7 @@ use wasefire::error::Space;
 
 mod clock;
 mod crypto;
-mod hid_connection;
+pub(crate) mod hid_connection;
 mod persist;
 mod rng;
 mod user_presence;

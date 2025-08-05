@@ -15,6 +15,7 @@
 use opensk_lib::api::connection::{HidConnection, RecvStatus, UsbEndpoint};
 use opensk_lib::ctap::status_code::CtapResult;
 use wasefire::scheduling;
+use wasefire::timer::Timeout;
 use wasefire::usb::ctap;
 
 use crate::env::{WasefireEnv, convert_error};
@@ -30,16 +31,21 @@ impl HidConnection for WasefireEnv {
     }
 
     fn recv(&mut self, packet: &mut [u8; 64], timeout_ms: usize) -> CtapResult<RecvStatus> {
-        let mut listener = ctap::Listener::new(ctap::Event::Read);
-        let timeout = wasefire::timer::Timeout::new_ms(timeout_ms);
-        loop {
-            if ctap::read(packet).map_err(convert_error)? {
-                return Ok(RecvStatus::Received(UsbEndpoint::MainHid));
-            }
-            scheduling::wait_until(|| timeout.is_over() || listener.is_notified());
-            if timeout.is_over() {
-                return Ok(RecvStatus::Timeout);
-            }
+        recv(packet, Some(timeout_ms))
+    }
+}
+
+pub(crate) fn recv(packet: &mut [u8; 64], timeout_ms: Option<usize>) -> CtapResult<RecvStatus> {
+    let mut listener = ctap::Listener::new(ctap::Event::Read);
+    let timeout = timeout_ms.map(Timeout::new_ms);
+    let timeout_is_over = || timeout.as_ref().is_some_and(Timeout::is_over);
+    loop {
+        if ctap::read(packet).map_err(convert_error)? {
+            return Ok(RecvStatus::Received(UsbEndpoint::MainHid));
+        }
+        scheduling::wait_until(|| timeout_is_over() || listener.is_notified());
+        if timeout_is_over() {
+            return Ok(RecvStatus::Timeout);
         }
     }
 }

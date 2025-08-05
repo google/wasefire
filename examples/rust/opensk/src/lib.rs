@@ -55,7 +55,8 @@ fn main() -> ! {
             (true, false) => wink = None,
         }
         let mut packet = [0; 64];
-        match opensk_ctap.env().hid_connection().recv(&mut packet, 100).unwrap() {
+        let timeout = wink.is_some().then_some(500);
+        match env::hid_connection::recv(&mut packet, timeout).unwrap() {
             RecvStatus::Timeout => continue,
             RecvStatus::Received(endpoint) => assert_eq!(endpoint, UsbEndpoint::MainHid),
         }
