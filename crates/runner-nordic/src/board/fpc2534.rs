@@ -140,7 +140,10 @@ impl matcher::Api for Impl {
         with_state(|state| match core::mem::take(&mut state.fpc2534.result) {
             OpResult::Delete(Some(None)) => Ok(()),
             OpResult::Delete(Some(Some(error))) => Err(error),
-            _ => Err(Error::internal(Code::InvalidState)),
+            _ => {
+                log::warn!("Invalid state in delete_template()");
+                Err(Error::internal(Code::InvalidState))
+            }
         })
     }
 
@@ -151,7 +154,10 @@ impl matcher::Api for Impl {
         while WAIT.load(Ordering::Acquire) {}
         with_state(|state| match core::mem::take(&mut state.fpc2534.result) {
             OpResult::List(Some(x)) => x,
-            _ => Err(Error::internal(Code::InvalidState)),
+            _ => {
+                log::warn!("Invalid state in list_templates()");
+                Err(Error::internal(Code::InvalidState))
+            }
         })
     }
 }
@@ -266,7 +272,10 @@ enum OpResult {
 
 impl OpResult {
     fn set(&mut self, x: Self) -> Result<(), Error> {
-        Error::user(Code::InvalidState).check(matches!(self, OpResult::Empty))?;
+        if !matches!(self, OpResult::Empty) {
+            log::warn!("OpResult::set when not empty");
+            return Err(Error::user(Code::InvalidState));
+        }
         *self = x;
         Ok(())
     }
@@ -280,6 +289,7 @@ impl OpResult {
             Ok(x) => Ok(x),
             Err(old) => {
                 *self = old;
+                log::warn!("OpResult::take returned an error");
                 Err(Error::user(Code::InvalidState))
             }
         }
@@ -402,7 +412,10 @@ fn abort_common(abort: bool) -> Result<(), Error> {
     with_state(|state| match core::mem::take(&mut state.fpc2534.result) {
         OpResult::Abort(Some(None)) => Ok(()),
         OpResult::Abort(Some(Some(error))) => Err(error),
-        _ => Err(Error::internal(Code::InvalidState)),
+        _ => {
+            log::warn!("Invalid state in abort_common()");
+            Err(Error::internal(Code::InvalidState))
+        }
     })
 }
 
@@ -466,12 +479,18 @@ fn handle_status(state: &mut crate::State, frame: &mut FrameParser) -> Result<()
             OpResult::List(None) => {
                 match error {
                     Some(error) => state.fpc2534.result = OpResult::List(Some(Err(error))),
-                    None => return Err(Error::world(Code::InvalidState)),
+                    None => {
+                        log::warn!("Non-error status response to ListTemplates");
+                        return Err(Error::world(Code::InvalidState));
+                    }
                 }
                 WAIT.store(false, Ordering::Release);
                 None
             }
-            _ => return Err(Error::world(Code::InvalidState)),
+            _ => {
+                log::warn!("Unexpected status response");
+                return Err(Error::world(Code::InvalidState));
+            }
         };
         if let Some(event) = event {
             state.fpc2534.result = OpResult::Empty;
@@ -484,7 +503,10 @@ fn handle_status(state: &mut crate::State, frame: &mut FrameParser) -> Result<()
         let event = match state.fpc2534.result {
             OpResult::Enroll(_) => matcher::Event::EnrollError { error },
             OpResult::Identify(_) => matcher::Event::IdentifyError { error },
-            _ => return Err(Error::world(Code::InvalidState)),
+            _ => {
+                log::warn!("Unexpected status event");
+                return Err(Error::world(Code::InvalidState));
+            }
         };
         state.fpc2534.result = OpResult::Empty;
         state.events.push(event.into());
@@ -548,8 +570,10 @@ fn handle_identify(state: &mut crate::State, frame: &mut FrameParser) -> Result<
     let template_type = frame.pop::<u16>()?;
     let template_id = frame.pop::<u16>()?;
     let _tag = frame.pop::<u16>()?;
-    Error::world(Code::InvalidState)
-        .check(matches!(state.fpc2534.result, OpResult::Identify(None)))?;
+    if !matches!(state.fpc2534.result, OpResult::Identify(None)) {
+        log::warn!("Unexpected identify event");
+        return Err(Error::world(Code::InvalidState));
+    }
     match result {
         0x61ec => {
             Error::world(Code::InvalidArgument).check(template_type == IdType::Specified as u16)?;
@@ -573,7 +597,10 @@ fn handle_list_templates(state: &mut crate::State, frame: &mut FrameParser) -> R
         let template = frame.pop::<u16>()?;
         templates.extend_from_slice(&template.to_le_bytes());
     }
-    Error::world(Code::InvalidState).check(matches!(state.fpc2534.result, OpResult::List(None)))?;
+    if !matches!(state.fpc2534.result, OpResult::List(None)) {
+        log::warn!("Unexpected ListTemplates response");
+        return Err(Error::world(Code::InvalidState));
+    }
     state.fpc2534.result = OpResult::List(Some(Ok(templates)));
     WAIT.store(false, Ordering::Release);
     Ok(())
@@ -587,9 +614,14 @@ fn handle_data_get(state: &mut crate::State, frame: &mut FrameParser) -> Result<
     for _ in 0 .. data_size {
         data.push(frame.pop()?);
     }
-    Error::world(Code::InvalidState).check(remaining == 0)?;
-    Error::world(Code::InvalidState)
-        .check(matches!(state.fpc2534.result, OpResult::CaptureDataGet(None)))?;
+    if remaining != 0 {
+        log::warn!("remaining={} in DataGet response", remaining);
+        return Err(Error::world(Code::InvalidState));
+    }
+    if !matches!(state.fpc2534.result, OpResult::CaptureDataGet(None)) {
+        log::warn!("Unexpected DataGet response");
+        return Err(Error::world(Code::InvalidState));
+    }
     state.fpc2534.result = OpResult::CaptureDataGet(Some(data));
     state.events.push(sensor::Event::CaptureDone.into());
     WAIT.store(false, Ordering::Release);
