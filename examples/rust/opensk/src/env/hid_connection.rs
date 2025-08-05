@@ -43,9 +43,9 @@ pub(crate) fn recv(packet: &mut [u8; 64], timeout_ms: Option<usize>) -> CtapResu
         if ctap::read(packet).map_err(convert_error)? {
             return Ok(RecvStatus::Received(UsbEndpoint::MainHid));
         }
-        scheduling::wait_until(|| timeout_is_over() || listener.is_notified());
         if timeout_is_over() {
             return Ok(RecvStatus::Timeout);
         }
+        scheduling::wait_until(|| timeout_is_over() || listener.is_notified());
     }
 }
