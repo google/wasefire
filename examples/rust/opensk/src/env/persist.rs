@@ -21,6 +21,23 @@ use wasefire::error::{Code, Error, Space};
 
 use crate::env::WasefireEnv;
 
+#[cfg(feature = "ctap1")]
+pub(crate) fn init(ctap: &mut opensk_lib::Ctap<WasefireEnv>) {
+    use opensk_lib::api::persist::Attestation;
+    use opensk_lib::api::persist::AttestationId::Batch;
+    use opensk_lib::env::Env;
+    use wasefire::crypto::ecdsa::{P256, Private};
+
+    if ctap.env().persist().get_attestation(Batch).unwrap().is_some() {
+        return;
+    }
+    let private = Private::<P256>::generate().unwrap();
+    let wrapped_private_key = private.export().unwrap().into_vec();
+    // It seems like nobody checks the certificate.
+    let attestation = Attestation { wrapped_private_key, certificate: Vec::new() };
+    ctap.env().persist().set_attestation(Batch, Some(&attestation)).unwrap();
+}
+
 impl Persist for WasefireEnv {
     fn find(&self, key: usize) -> CtapResult<Option<Vec<u8>>> {
         Ok(wasefire::store::find(key).map_err(convert)?.map(|x| x.into_vec()))

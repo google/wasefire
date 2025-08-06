@@ -10,6 +10,7 @@
 
 ### Minor
 
+- Implement `Send` for `button::Listener` and `timer::Timer`
 - Increase the maximum allocation size with the `wasm` feature
 - Add `fingerprint::{matcher,sensor}` modules for fingerprint matchers and sensors
 - Add `crypto::{ecdsa,ecdh,ed25519}` for ECDSA, ECDH, and Ed25519

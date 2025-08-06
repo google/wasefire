@@ -21,6 +21,7 @@
 use alloc::boxed::Box;
 
 use wasefire_applet_api::button as api;
+use wasefire_common::ptr::SharedPtr;
 use wasefire_error::Error;
 
 pub use self::api::State;
@@ -52,7 +53,7 @@ pub struct Listener<H: Handler> {
     button: usize,
     // Safety: This is a `Box<H>` we own and lend the platform as a shared borrow `&'a H` where
     // `'a` starts at `api::register()` and ends at `api::unregister()`.
-    handler: *const H,
+    handler: SharedPtr<H>,
 }
 
 impl<H: Handler> Listener<H> {
@@ -75,7 +76,7 @@ impl<H: Handler> Listener<H> {
         let handler_data = handler as *const u8;
         let params = api::register::Params { button, handler_func, handler_data };
         convert_unit(unsafe { api::register(params) })?;
-        Ok(Listener { button, handler })
+        Ok(Listener { button, handler: SharedPtr(handler) })
     }
 
     /// Stops listening.
@@ -109,6 +110,6 @@ impl<H: Handler> Drop for Listener<H> {
         convert_unit(unsafe { api::unregister(params) }).unwrap();
         // SAFETY: `self.handler` is a `Box<H>` we own back, now that the lifetime of the platform
         // borrow is over (see `Listener::handler`).
-        drop(unsafe { Box::from_raw(self.handler as *mut H) });
+        drop(unsafe { Box::from_raw(self.handler.0 as *mut H) });
     }
 }

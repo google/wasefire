@@ -12,23 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Common Wasefire items.
+/// Raw pointer for a reference with dynamic lifetime.
+pub struct SharedPtr<T>(pub *const T);
 
-#![no_std]
-
-pub mod platform;
-pub mod ptr;
-
-/// Extracts a value conditionally.
-///
-/// The implementation unconditionally calls `take(x)`, so the temporary default value is dropped
-/// when `None` is returned.
-pub fn take_if<T: Default, R>(x: &mut T, p: impl FnOnce(T) -> Result<R, T>) -> Option<R> {
-    match p(core::mem::take(x)) {
-        Ok(r) => Some(r),
-        Err(e) => {
-            *x = e;
-            None
-        }
-    }
-}
+unsafe impl<T: Sync> Send for SharedPtr<T> {}
+unsafe impl<T: Sync> Sync for SharedPtr<T> {}

@@ -12,31 +12,63 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use core::num::NonZero;
+
+use wasefire::sync::Mutex;
 use wasefire::{led, timer};
 
 pub(crate) struct Blink {
-    timer: timer::Timer<BlinkHandler>,
+    _private: (),
 }
 
 impl Blink {
     pub(crate) fn new_ms(period_ms: usize) -> Self {
-        let timer = timer::Timer::new(BlinkHandler);
-        led::set(0, led::On);
-        timer.start_ms(timer::Mode::Periodic, period_ms);
-        Blink { timer }
+        State::start_ms(&mut STATE.lock(), period_ms);
+        Blink { _private: () }
     }
 }
 
 impl Drop for Blink {
     fn drop(&mut self) {
-        self.timer.stop();
-        led::set(0, led::Off);
+        State::stop(&mut STATE.lock());
     }
 }
 
-struct BlinkHandler;
+static STATE: Mutex<Option<State>> = Mutex::new(None);
 
-impl timer::Handler for BlinkHandler {
+struct State {
+    count: NonZero<usize>,
+    timer: timer::Timer<Handler>,
+}
+
+impl State {
+    fn start_ms(this: &mut Option<State>, period_ms: usize) {
+        match this {
+            None => {
+                let timer = timer::Timer::new(Handler);
+                led::set(0, led::On);
+                timer.start_ms(timer::Mode::Periodic, period_ms);
+                *this = Some(State { count: NonZero::new(1).unwrap(), timer });
+            }
+            Some(state) => state.count = state.count.checked_add(1).unwrap(),
+        }
+    }
+
+    fn stop(this: &mut Option<State>) {
+        let Some(state) = this else { unreachable!() };
+        if state.count.get() == 1 {
+            state.timer.stop();
+            led::set(0, led::Off);
+            *this = None;
+        } else {
+            state.count = NonZero::new(state.count.get() - 1).unwrap();
+        }
+    }
+}
+
+struct Handler;
+
+impl timer::Handler for Handler {
     fn event(&self) {
         led::set(0, !led::get(0));
     }
