@@ -29,10 +29,12 @@ mod user_presence;
 mod write;
 
 pub(crate) fn init() -> WasefireEnv {
-    let mut customization = DEFAULT_CUSTOMIZATION;
-    customization.use_batch_attestation = true;
     WasefireEnv {
-        customization,
+        customization: CustomizationImpl {
+            #[cfg(feature = "ctap1")]
+            use_batch_attestation: true,
+            ..DEFAULT_CUSTOMIZATION
+        },
         user_presence: user_presence::init(),
         #[cfg(feature = "fingerprint")]
         fingerprint: fingerprint::init(),

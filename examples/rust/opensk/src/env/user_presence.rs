@@ -17,8 +17,6 @@ use opensk_lib::api::user_presence::{UserPresence, UserPresenceError, UserPresen
 use opensk_lib::ctap::status_code::Ctap2StatusCode;
 use wasefire::{scheduling, timer, usb};
 
-use crate::BLINK_MS;
-
 pub(crate) fn init() -> Impl {
     Impl(None)
 }
@@ -27,14 +25,12 @@ pub(crate) struct Impl(Option<State>);
 
 struct State {
     touch: crate::touch::Touch,
-    _blink: crate::blink::Blink,
 }
 
 impl UserPresence for Impl {
     fn check_init(&mut self) {
-        let touch = crate::touch::Touch::new(None);
-        let blink = crate::blink::Blink::new_ms(BLINK_MS);
-        self.0 = Some(State { touch, _blink: blink });
+        let touch = crate::touch::Touch::new();
+        self.0 = Some(State { touch });
     }
 
     fn wait_with_timeout(

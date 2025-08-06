@@ -45,10 +45,6 @@ mod blink;
 mod env;
 mod touch;
 
-const BLINK_MS: usize = 500;
-const WINK_MS: usize = 100;
-const WINK_EXPIRE_MS: usize = 5000;
-
 fn main() -> ! {
     let mut opensk_ctap = opensk_lib::Ctap::new(env::init());
     let mut wink: Option<blink::Blink> = None;
@@ -60,11 +56,11 @@ fn main() -> ! {
     loop {
         match (wink.is_some(), opensk_ctap.should_wink()) {
             (true, true) | (false, false) => (),
-            (false, true) => wink = Some(blink::Blink::new_ms(WINK_MS)),
+            (false, true) => wink = Some(blink::Blink::new_ms(100)),
             (true, false) => wink = None,
         }
         let mut packet = [0; 64];
-        let timeout = wink.is_some().then_some(WINK_EXPIRE_MS / 10);
+        let timeout = wink.is_some().then_some(500);
         match env::hid_connection::recv(&mut packet, timeout).unwrap() {
             RecvStatus::Timeout => continue,
             RecvStatus::Received(endpoint) => assert_eq!(endpoint, UsbEndpoint::MainHid),
@@ -79,8 +75,7 @@ fn main() -> ! {
         }
         #[cfg(feature = "ctap1")]
         if opensk_ctap.u2f_needs_user_presence() && u2f.is_none() {
-            let blink = blink::Blink::new_ms(BLINK_MS);
-            u2f = Some(touch::Touch::new(Some(alloc::boxed::Box::new(move || drop(blink)))));
+            u2f = Some(touch::Touch::new());
         }
     }
 }
