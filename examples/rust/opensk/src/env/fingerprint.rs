@@ -57,23 +57,17 @@ impl Impl {
     }
 
     fn take_enroll(&mut self) -> Option<EnrollState> {
-        match core::mem::take(&mut self.0) {
-            State::Enroll(x) => Some(x),
-            x => {
-                self.0 = x;
-                None
-            }
-        }
+        wasefire_common::take_if(&mut self.0, |x| match x {
+            State::Enroll(x) => Ok(x),
+            x => Err(x),
+        })
     }
 
     fn take_identify(&mut self) -> Option<IdentifyState> {
-        match core::mem::take(&mut self.0) {
-            State::Identify(x) => Some(x),
-            x => {
-                self.0 = x;
-                None
-            }
-        }
+        wasefire_common::take_if(&mut self.0, |x| match x {
+            State::Identify(x) => Ok(x),
+            x => Err(x),
+        })
     }
 }
 
@@ -136,14 +130,14 @@ impl Fingerprint for Impl {
         };
         let timeout = Timeout::new_ms(timeout_ms);
         scheduling::wait_until(|| state.identify.is_done() || timeout.is_over());
-        if timeout.is_over() {
-            Err(FingerprintCheckError::Timeout)
-        } else {
+        if state.identify.is_done() {
             let state = self.take_identify().ok_or(FingerprintCheckError::Other)?;
             match state.identify.result().map_err(|_| FingerprintCheckError::Other)? {
                 IdentifyResult::NoMatch => Err(FingerprintCheckError::NoMatch),
                 IdentifyResult::Match { .. } => Ok(()),
             }
+        } else {
+            Err(FingerprintCheckError::Timeout)
         }
     }
 

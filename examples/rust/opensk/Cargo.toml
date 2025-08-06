@@ -7,6 +7,7 @@ edition = "2024"
 
 [dependencies]
 wasefire = { path = "../../../crates/prelude" }
+wasefire-common = { path = "../../../crates/common", optional = true }
 
 [dependencies.opensk-lib]
 git = "https://github.com/google/OpenSK.git"
@@ -18,7 +19,7 @@ default-features = false
 ctap1 = ["opensk-lib/with_ctap1"]
 debug = ["opensk-lib/debug_ctap"]
 ed25519 = ["opensk-lib/ed25519"]
-fingerprint = ["opensk-lib/fingerprint"]
+fingerprint = ["dep:wasefire-common", "opensk-lib/fingerprint"]
 test = ["opensk-lib/std", "wasefire/test"]
 
 [lints]
