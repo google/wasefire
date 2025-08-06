@@ -17,3 +17,17 @@
 #![no_std]
 
 pub mod platform;
+
+/// Extracts a value conditionally.
+///
+/// The implementation unconditionally calls `take(x)`, so the temporary default value is dropped
+/// when `None` is returned.
+pub fn take_if<T: Default, R>(x: &mut T, p: impl FnOnce(T) -> Result<R, T>) -> Option<R> {
+    match p(core::mem::take(x)) {
+        Ok(r) => Some(r),
+        Err(e) => {
+            *x = e;
+            None
+        }
+    }
+}
