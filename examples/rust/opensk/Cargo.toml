@@ -6,8 +6,26 @@ license = "Apache-2.0"
 edition = "2024"
 
 [dependencies]
-wasefire = { path = "../../../crates/prelude" }
+portable-atomic-util = { version = "0.2.4", default-features = false, features = ["alloc"] }
 wasefire-common = { path = "../../../crates/common", optional = true }
+
+[dependencies.wasefire]
+path = "../../../crates/prelude"
+default-features = false
+features = [
+  "api-button",
+  "api-clock",
+  "api-crypto-cbc",
+  "api-crypto-ecdh",
+  "api-crypto-ecdsa",
+  "api-crypto-hash",
+  "api-crypto-hkdf",
+  "api-led",
+  "api-rng",
+  "api-store",
+  "api-timer",
+  "api-usb-ctap",
+]
 
 [dependencies.opensk-lib]
 git = "https://github.com/google/OpenSK.git"
@@ -18,8 +36,9 @@ default-features = false
 [features]
 ctap1 = ["opensk-lib/with_ctap1"]
 debug = ["opensk-lib/debug_ctap"]
-ed25519 = ["opensk-lib/ed25519"]
-fingerprint = ["dep:wasefire-common", "opensk-lib/fingerprint"]
+ed25519 = ["opensk-lib/ed25519", "wasefire/api-crypto-ed25519"]
+fingerprint = ["dep:wasefire-common", "opensk-lib/fingerprint", "wasefire/api-fingerprint-matcher"]
+led-1 = []
 test = ["opensk-lib/std", "wasefire/test"]
 
 [lints]
