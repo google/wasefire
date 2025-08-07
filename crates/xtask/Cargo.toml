@@ -13,6 +13,7 @@ data-encoding = "2.9.0"
 env_logger = "0.11.8"
 libc = "0.2.174"
 log = "0.4.27"
+object = "0.37.2"
 rustc-demangle = "0.1.26"
 serde = { version = "1.0.219", features = ["derive"] }
 serialport = "4.7.2"

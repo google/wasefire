@@ -47,12 +47,6 @@ SECTIONS {
     LONG(0x1d4); /* address translation */
     . = ORIGIN(MANIF) + 824;
     LONG(0x71c36c47); /* manifest version */
-    . = ORIGIN(MANIF) + 836;
-    LONG(RUNNER_VERSION_MAJ); /* version major */
-    LONG(RUNNER_VERSION_MIN); /* version minor */
-    LONG(RUNNER_VERSION_SEC); /* security version */
-    LONG(RUNNER_VERSION_TLW); /* timestamp low */
-    LONG(RUNNER_VERSION_THG); /* timestamp high */
     . = ORIGIN(MANIF) + 892;
     LONG(ADDR(.text) - ORIGIN(MANIF)); /* code start */
     LONG(ADDR(.text) + SIZEOF(.text) - ORIGIN(MANIF)); /* code end */
