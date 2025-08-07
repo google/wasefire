@@ -14,25 +14,9 @@
 
 //! Example applet running OpenSK.
 //!
-//! To build a native applet for the nRF52840 dongle:
+//! See the [README] for more information.
 //!
-//! ```shell
-//! cargo xtask --release --native \
-//!   applet rust opensk --opt-level=z \
-//!   runner nordic --board=dongle --opt-level=z --features=usb-ctap \
-//!     --features=software-crypto-aes256-cbc,software-crypto-hmac-sha256 \
-//!     --features=software-crypto-p256-ecdsa,software-crypto-p256-ecdh \
-//!   flash
-//! ```
-//!
-//! To build a native applet for the OpenTitan A2 board:
-//!
-//! ```shell
-//! cargo xtask --release --native \
-//!   applet rust opensk --opt-level=z \
-//!   runner opentitan --opt-level=z --features=usb-ctap \
-//!   flash
-//! ```
+//! [README]: https://github.com/google/wasefire/blob/main/examples/rust/opensk/README.md
 
 #![no_std]
 wasefire::applet!();

@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloc::sync::Arc;
 use core::sync::atomic::Ordering::Relaxed;
 
+use portable_atomic_util::Arc;
 use wasefire::button;
 use wasefire::sync::{AtomicBool, Mutex};
 

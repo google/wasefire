@@ -34,6 +34,11 @@ impl Drop for Blink {
     }
 }
 
+#[cfg(not(feature = "led-1"))]
+const LED_ID: usize = 0;
+#[cfg(feature = "led-1")]
+const LED_ID: usize = 1;
+
 static STATE: Mutex<Option<State>> = Mutex::new(None);
 
 struct State {
@@ -46,7 +51,7 @@ impl State {
         match this {
             None => {
                 let timer = timer::Timer::new(Handler);
-                led::set(0, led::On);
+                led::set(LED_ID, led::On);
                 timer.start_ms(timer::Mode::Periodic, period_ms);
                 *this = Some(State { count: NonZero::new(1).unwrap(), timer });
             }
@@ -58,7 +63,7 @@ impl State {
         let Some(state) = this else { unreachable!() };
         if state.count.get() == 1 {
             state.timer.stop();
-            led::set(0, led::Off);
+            led::set(LED_ID, led::Off);
             *this = None;
         } else {
             state.count = NonZero::new(state.count.get() - 1).unwrap();
@@ -70,6 +75,6 @@ struct Handler;
 
 impl timer::Handler for Handler {
     fn event(&self) {
-        led::set(0, !led::get(0));
+        led::set(LED_ID, !led::get(LED_ID));
     }
 }
