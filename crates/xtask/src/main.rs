@@ -715,29 +715,31 @@ impl RunnerOptions {
             cmd::execute(&mut cargo).await?;
         }
         let elf = self.name.elf().await;
-        if let Some(version) = version.as_deref() {
-            if self.name == RunnerName::Nordic {
-                ensure!(version.len() == 8, "--version must be a big-endian hexadecimal u32");
-                ensure!(version != "ffffffff", "--version must be smaller than u32::MAX");
-                let version = u32::from_be_bytes(HEX.decode(version.as_bytes())?[..].try_into()?);
-                let mut content = fs::read(&elf).await?;
-                let pos = section_offset(&content, ".header")?;
-                content[pos ..][.. 4].copy_from_slice(&version.to_le_bytes());
-                fs::write(&elf, content).await?;
-            }
-            if self.name == RunnerName::OpenTitan {
-                let mut version = HEX.decode(version.as_bytes())?;
-                ensure!(version.len() == 20, "--version must be 20 bytes in hexadecimal");
-                ensure!(version != [0xff; 20], "--version must not be all 0xff");
-                let len = [4, 4, 4, 8].into_iter().fold(0, |pos, len| {
-                    version[pos ..][.. len].reverse();
-                    pos + len
-                });
-                let mut content = fs::read(&elf).await?;
-                let pos = section_offset(&content, ".manifest")? + 836;
-                content[pos ..][.. len].copy_from_slice(&version);
-                fs::write(&elf, content).await?;
-            }
+        if self.name == RunnerName::Nordic {
+            let version = version.as_deref().unwrap_or("00000000");
+            ensure!(version.len() == 8, "--version must be a big-endian hexadecimal u32");
+            ensure!(version != "ffffffff", "--version must be smaller than u32::MAX");
+            let version = u32::from_be_bytes(HEX.decode(version.as_bytes())?[..].try_into()?);
+            let mut content = fs::read(&elf).await?;
+            let pos = section_offset(&content, ".header")?;
+            content[pos ..][.. 4].copy_from_slice(&version.to_le_bytes());
+            fs::write(&elf, content).await?;
+        }
+        if self.name == RunnerName::OpenTitan {
+            let mut version = match version.as_deref() {
+                Some(x) => HEX.decode(x.as_bytes())?,
+                None => vec![0; 20],
+            };
+            ensure!(version.len() == 20, "--version must be 20 bytes in hexadecimal");
+            ensure!(version != [0xff; 20], "--version must not be all 0xff");
+            let len = [4, 4, 4, 8].into_iter().fold(0, |pos, len| {
+                version[pos ..][.. len].reverse();
+                pos + len
+            });
+            let mut content = fs::read(&elf).await?;
+            let pos = section_offset(&content, ".manifest")? + 836;
+            content[pos ..][.. len].copy_from_slice(&version);
+            fs::write(&elf, content).await?;
         }
         if self.measure_bloat {
             ensure_command(&["cargo", "bloat"]).await?;
