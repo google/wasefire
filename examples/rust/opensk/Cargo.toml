@@ -29,7 +29,7 @@ features = [
 
 [dependencies.opensk-lib]
 git = "https://github.com/google/OpenSK.git"
-rev = "1306426f1c5c17c2534c52c7b894829dc07730f6"
+rev = "c749243e57d1246aefaec791c9d98f06c57e23e6"
 package = "opensk"
 default-features = false
 
