@@ -6,6 +6,7 @@ This applet is an example of how to implement a security key on Wasefire. It dep
 ## Features
 
 The applet provides a few customization features (all disabled by default):
+
 - `ctap1` enables support for CTAP 1 (the applet always implements CTAP 2)
 - `ed25519` enables support for Ed25519 (the applet always implements ECDSA P-256)
 - `fingerprint` enables support for fingerprints
@@ -18,6 +19,7 @@ applet at this time. This limitation will be lifted in the future.
 ## Platforms
 
 The applet needs the platform to implement the following features of the board API:
+
 - `api-button`
 - `api-clock`
 - `api-crypto-aes256-cbc`
