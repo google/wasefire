@@ -20,6 +20,7 @@ use core::cell::Cell;
 use core::time::Duration;
 
 use wasefire_applet_api::timer as api;
+use wasefire_common::ptr::SharedPtr;
 
 pub use self::api::Mode;
 pub use self::api::Mode::*;
@@ -42,7 +43,7 @@ impl<F: Fn() + 'static> Handler for F {
 pub struct Timer<H: Handler> {
     id: usize,
     running: Cell<bool>,
-    handler: *const H,
+    handler: SharedPtr<H>,
 }
 
 impl<H: Handler> Timer<H> {
@@ -58,7 +59,7 @@ impl<H: Handler> Timer<H> {
         let handler_data = handler as *const u8;
         let params = api::allocate::Params { handler_func, handler_data };
         let id = convert(unsafe { api::allocate(params) }).unwrap();
-        Timer { id, running: Cell::new(false), handler }
+        Timer { id, running: Cell::new(false), handler: SharedPtr(handler) }
     }
 
     /// Starts the timer.
@@ -113,7 +114,7 @@ impl<H: Handler> Drop for Timer<H> {
         }
         let params = api::free::Params { id: self.id };
         convert_unit(unsafe { api::free(params) }).unwrap();
-        drop(unsafe { Box::from_raw(self.handler as *mut H) });
+        drop(unsafe { Box::from_raw(self.handler.0 as *mut H) });
     }
 }
 

@@ -43,10 +43,15 @@ use opensk_lib::env::Env as _;
 
 mod blink;
 mod env;
+mod touch;
 
 fn main() -> ! {
     let mut opensk_ctap = opensk_lib::Ctap::new(env::init());
     let mut wink: Option<blink::Blink> = None;
+    #[cfg(feature = "ctap1")]
+    let mut u2f: Option<touch::Touch> = None;
+    #[cfg(feature = "ctap1")]
+    env::persist::init(&mut opensk_ctap);
     debug!("OpenSK initialized");
     loop {
         match (wink.is_some(), opensk_ctap.should_wink()) {
@@ -60,8 +65,17 @@ fn main() -> ! {
             RecvStatus::Timeout => continue,
             RecvStatus::Received(endpoint) => assert_eq!(endpoint, UsbEndpoint::MainHid),
         }
+        #[cfg(feature = "ctap1")]
+        if u2f.as_ref().is_some_and(|x| x.is_present()) {
+            u2f = None;
+            opensk_ctap.u2f_grant_user_presence();
+        }
         for packet in opensk_ctap.process_hid_packet(&packet, Transport::MainHid) {
             opensk_ctap.env().hid_connection().send(&packet, UsbEndpoint::MainHid).unwrap();
+        }
+        #[cfg(feature = "ctap1")]
+        if opensk_ctap.u2f_needs_user_presence() && u2f.is_none() {
+            u2f = Some(touch::Touch::new());
         }
     }
 }

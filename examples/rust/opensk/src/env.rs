@@ -23,13 +23,18 @@ mod crypto;
 #[cfg(feature = "fingerprint")]
 mod fingerprint;
 pub(crate) mod hid_connection;
-mod persist;
+pub(crate) mod persist;
 mod rng;
 mod user_presence;
 mod write;
 
 pub(crate) fn init() -> WasefireEnv {
     WasefireEnv {
+        customization: CustomizationImpl {
+            #[cfg(feature = "ctap1")]
+            use_batch_attestation: true,
+            ..DEFAULT_CUSTOMIZATION
+        },
         user_presence: user_presence::init(),
         #[cfg(feature = "fingerprint")]
         fingerprint: fingerprint::init(),
@@ -37,6 +42,7 @@ pub(crate) fn init() -> WasefireEnv {
 }
 
 pub(crate) struct WasefireEnv {
+    customization: CustomizationImpl,
     user_presence: user_presence::Impl,
     #[cfg(feature = "fingerprint")]
     fingerprint: fingerprint::Impl,
@@ -85,7 +91,7 @@ impl Env for WasefireEnv {
     }
 
     fn customization(&self) -> &Self::Customization {
-        &DEFAULT_CUSTOMIZATION
+        &self.customization
     }
 
     fn hid_connection(&mut self) -> &mut Self::HidConnection {
