@@ -40,12 +40,13 @@ enabled. If set, it should start with `--features=` and continue with a non-empt
 list of the applet features to enable. For example:
 
 ```rust
-export APPLET_FEATURES=ctap1,ed25519
+export APPLET_FEATURES=--features=ctap1,ed25519
 ```
 
 Similarly, the `PLATFORM_FEATURES` environment variable controls the platform features to enable
-depending on the enabled applet features. Each platform will describe whether it supports each
-applet feature, and which platform features to enable if it does.
+depending on the enabled applet features. So it must be either unset, or set using a `--features=`
+prefix. Each platform will describe whether it supports each applet feature, and which platform
+features to enable if it does.
 
 Note that you may need to run `./scripts/setup.sh` if any command fails.
 
@@ -161,7 +162,6 @@ The applet feature `fingerprint` is not supported.
 #### Board: Teacup A2
 
 A LED (active high) needs to be connected to R10. A capacitive touch needs to be connected to R13.
-
 
 ```shell
 cargo xtask --release --native \
