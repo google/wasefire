@@ -356,7 +356,7 @@ dependencies = [
 [[package]]
 name = "opensk"
 version = "1.0.0"
-source = "git+https://github.com/google/OpenSK.git?rev=1306426f1c5c17c2534c52c7b894829dc07730f6#1306426f1c5c17c2534c52c7b894829dc07730f6"
+source = "git+https://github.com/google/OpenSK.git?rev=c749243e57d1246aefaec791c9d98f06c57e23e6#c749243e57d1246aefaec791c9d98f06c57e23e6"
 dependencies = [
  "aes",
  "arrayref",
@@ -429,7 +429,7 @@ dependencies = [
 [[package]]
 name = "persistent_store"
 version = "0.1.0"
-source = "git+https://github.com/google/OpenSK.git?rev=1306426f1c5c17c2534c52c7b894829dc07730f6#1306426f1c5c17c2534c52c7b894829dc07730f6"
+source = "git+https://github.com/google/OpenSK.git?rev=c749243e57d1246aefaec791c9d98f06c57e23e6#c749243e57d1246aefaec791c9d98f06c57e23e6"
 
 [[package]]
 name = "pkcs8"
@@ -578,7 +578,7 @@ dependencies = [
 [[package]]
 name = "sk-cbor"
 version = "0.1.2"
-source = "git+https://github.com/google/OpenSK.git?rev=1306426f1c5c17c2534c52c7b894829dc07730f6#1306426f1c5c17c2534c52c7b894829dc07730f6"
+source = "git+https://github.com/google/OpenSK.git?rev=c749243e57d1246aefaec791c9d98f06c57e23e6#c749243e57d1246aefaec791c9d98f06c57e23e6"
 
 [[package]]
 name = "spin"
