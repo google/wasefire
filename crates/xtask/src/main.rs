@@ -22,9 +22,10 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use anyhow::{Context, Result, bail, ensure};
+use anyhow::{Context, Result, anyhow, bail, ensure};
 use clap::{Parser, ValueEnum};
 use data_encoding::HEXLOWER_PERMISSIVE as HEX;
+use object::read::elf::{ElfFile32, SectionHeader as _};
 use rustc_demangle::demangle;
 use tokio::process::Command;
 use tokio::sync::OnceCell;
@@ -627,13 +628,6 @@ impl RunnerOptions {
             let native = main.is_native() as u8;
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_NATIVE={native}"));
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
-            if self.name == RunnerName::Nordic {
-                let version = version.as_deref().unwrap_or("00000000");
-                ensure!(version.len() == 8, "--version must be a big-endian hexadecimal u32");
-                ensure!(version != "ffffffff", "--version must be smaller than u32::MAX");
-                let version = u32::from_be_bytes(HEX.decode(version.as_bytes())?[..].try_into()?);
-                rustflags.push(format!("-C link-arg=--defsym=RUNNER_VERSION={version}"));
-            }
             if self.name == RunnerName::OpenTitan {
                 const OPENTITAN: &str = "third_party/lowRISC/opentitan";
                 const CRYPTODIR: &str = "sw/device/lib/crypto";
@@ -643,16 +637,6 @@ impl RunnerOptions {
                 cmd::execute(&mut bazel).await?;
                 rustflags.push(format!("-C link-arg=-L../../{OPENTITAN}/bazel-bin/{CRYPTODIR}"));
                 rustflags.push("-C link-arg=-lotcrypto".to_string());
-                let version = match version {
-                    Some(x) => HEX.decode(x.as_bytes())?,
-                    None => vec![0; 20],
-                };
-                ensure!(version.len() == 20, "--version must be 20 bytes in hexadecimal");
-                ensure!(version != [0xff; 20], "--version must not be all 0xff");
-                for (i, name) in ["MAJ", "MIN", "SEC", "THG", "TLW"].into_iter().enumerate() {
-                    let value = u32::from_be_bytes(version[4 * i ..][.. 4].try_into().unwrap());
-                    rustflags.push(format!("-C link-arg=--defsym=RUNNER_VERSION_{name}={value}"));
-                }
                 rustflags.push("-C link-arg=-Tmemory.x".to_string());
                 cargo.env("RISCV_MTVEC_ALIGN", "256");
             }
@@ -730,6 +714,31 @@ impl RunnerOptions {
         } else {
             cmd::execute(&mut cargo).await?;
         }
+        let elf = self.name.elf().await;
+        if let Some(version) = version.as_deref() {
+            if self.name == RunnerName::Nordic {
+                ensure!(version.len() == 8, "--version must be a big-endian hexadecimal u32");
+                ensure!(version != "ffffffff", "--version must be smaller than u32::MAX");
+                let version = u32::from_be_bytes(HEX.decode(version.as_bytes())?[..].try_into()?);
+                let mut content = fs::read(&elf).await?;
+                let pos = section_offset(&content, ".header")?;
+                content[pos ..][.. 4].copy_from_slice(&version.to_le_bytes());
+                fs::write(&elf, content).await?;
+            }
+            if self.name == RunnerName::OpenTitan {
+                let mut version = HEX.decode(version.as_bytes())?;
+                ensure!(version.len() == 20, "--version must be 20 bytes in hexadecimal");
+                ensure!(version != [0xff; 20], "--version must not be all 0xff");
+                let len = [4, 4, 4, 8].into_iter().fold(0, |pos, len| {
+                    version[pos ..][.. len].reverse();
+                    pos + len
+                });
+                let mut content = fs::read(&elf).await?;
+                let pos = section_offset(&content, ".manifest")? + 836;
+                content[pos ..][.. len].copy_from_slice(&version);
+                fs::write(&elf, content).await?;
+            }
+        }
         if self.measure_bloat {
             ensure_command(&["cargo", "bloat"]).await?;
             let mut bloat = wrap_command().await?;
@@ -753,7 +762,6 @@ impl RunnerOptions {
             bloat.args(["--crates", "--split-std"]);
             cmd::execute(&mut bloat).await?;
         }
-        let elf = self.name.elf().await;
         if main.size {
             let mut size = wrap_command().await?;
             size.arg("rust-size");
@@ -998,6 +1006,15 @@ async fn ensure_assemblyscript() -> Result<()> {
     npm.arg(format!("assemblyscript@{ASC_VERSION}"));
     npm.current_dir("examples/assemblyscript");
     cmd::execute(&mut npm).await
+}
+
+fn section_offset(elf: &[u8], name: &str) -> Result<usize> {
+    let file = <ElfFile32>::parse(elf)?;
+    let (_, header) = file
+        .elf_section_table()
+        .section_by_name(file.endian(), name.as_bytes())
+        .with_context(|| anyhow!("no {name} section"))?;
+    Ok(header.sh_offset(file.endian()) as usize)
 }
 
 #[tokio::main]
