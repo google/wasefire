@@ -4,6 +4,9 @@
 
 ### Major
 
+- Deprecate `transfer::Request` to `transfer::_Request0`
+- Deprecate `Api::AppletUninstall` to `Api::_AppletUninstall0`
+- Deprecate `Api::AppletInstall` to `Api::_AppletInstall0`
 - Add `Api::PlatformClearStore` to clear the store
 - Add `Any` bound to `Connection`
 - Deprecate `platform::Info` to `platform::_Info0`
@@ -13,6 +16,7 @@
 
 ### Minor
 
+- Add `transfer::Response` for more granular erase
 - Fix lints
 - Add `platform::Info` to support A/B platform update
 - Use Rust edition 2024

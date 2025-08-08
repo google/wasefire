@@ -245,14 +245,20 @@ api! {
     /// vendor-specific messages.
     7 [3 - 4] _PlatformUpdateMetadata: () => &'a [u8],
 
-    /// Updates the platform.
-    8 [3 -] PlatformUpdate: transfer::Request<'a> => (),
+    /// (deprecated) Updates the platform.
+    ///
+    /// This message is deprecated in favor of [`PlatformUpdate`].
+    8 [3 - 6] _PlatformUpdate0: transfer::_Request0<'a> => (),
 
-    /// Installs an applet.
-    9 [4 -] AppletInstall: transfer::Request<'a> => (),
+    /// (deprecated) Installs an applet.
+    ///
+    /// This message is deprecated in favor of [`AppletInstall`].
+    9 [4 - 6] _AppletInstall0: transfer::_Request0<'a> => (),
 
-    /// Uninstalls an applet.
-    10 [4 -] AppletUninstall: () => (),
+    /// (deprecated) Uninstalls an applet.
+    ///
+    /// This message is deprecated in favor of [`AppletInstall`] with an empty transfer.
+    10 [4 - 6] _AppletUninstall0: () => (),
 
     /// Returns the exit status of an applet, if not running.
     11 [4 -] AppletExitStatus: applet::AppletId => Option<applet::ExitStatus>,
@@ -270,5 +276,11 @@ api! {
     /// The argument is the number of keys to protect. Using zero will clear all entries.
     14 [6 -] PlatformClearStore: usize => (),
 
-    next 15 [7 -]
+    /// Updates the platform.
+    15 [7 -] PlatformUpdate: transfer::Request<'a> => transfer::Response,
+
+    /// Installs an applet.
+    16 [7 -] AppletInstall: transfer::Request<'a> => transfer::Response,
+
+    next 17 [8 -]
 }

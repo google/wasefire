@@ -20,6 +20,7 @@ use wasefire_error::{Code, Error};
 use wasefire_store::StorageIndex;
 
 use crate::board::with_state;
+use crate::flash::PAGE_SIZE;
 use crate::symbol_addr;
 
 pub struct State {
@@ -36,8 +37,8 @@ pub fn init() -> State {
     let storeb = symbol_addr!(_storeb) as usize;
     let limitb = symbol_addr!(_limitb) as usize;
     let mut pages = Vec::new();
-    pages.extend((storea .. limita).step_by(crate::flash::PAGE_SIZE));
-    pages.extend((storeb .. limitb).step_by(crate::flash::PAGE_SIZE));
+    pages.extend((storea .. limita).step_by(PAGE_SIZE));
+    pages.extend((storeb .. limitb).step_by(PAGE_SIZE));
     let store = Some(Impl { pages });
     let applets = [Raw { start: appleta, limit: storea }, Raw { start: appletb, limit: storeb }];
     let start = crate::manifest::inactive() as *const _ as usize;
@@ -64,7 +65,7 @@ impl wasefire_store::Storage for Impl {
     }
 
     fn page_size(&self) -> usize {
-        crate::flash::PAGE_SIZE
+        PAGE_SIZE
     }
 
     fn num_pages(&self) -> usize {
@@ -131,68 +132,62 @@ impl Raw {
         crate::flash::write(self.start + offset, data)
     }
 
-    pub fn erase(&self) -> Result<(), Error> {
-        for addr in (self.start .. self.limit).step_by(crate::flash::PAGE_SIZE) {
-            crate::flash::erase(addr)?;
-        }
-        Ok(())
+    pub fn erase(&self, offset: usize) -> Result<(), Error> {
+        crate::flash::erase(self.start + offset)
     }
 }
 
 pub struct Linear {
     dry_run: bool,
-    offset: usize,   // aligned to BUFFER_SIZE bytes
-    buffer: Vec<u8>, // up to BUFFER_SIZE - 1 unwritten bytes
+    length: Option<usize>,
+    offset: usize,
 }
 
 impl Linear {
-    pub const BUFFER_SIZE: usize = 8;
-
-    pub fn start(dry_run: bool, raw: &Raw) -> Result<Self, Error> {
-        if !dry_run {
-            raw.erase()?;
-        }
-        Ok(Linear { dry_run, offset: 0, buffer: Vec::new() })
+    pub fn start(dry_run: bool) -> Result<Self, Error> {
+        Ok(Linear { dry_run, length: None, offset: 0 })
     }
 
-    pub fn write(&mut self, raw: &Raw, mut chunk: &[u8]) -> Result<(), Error> {
-        let Linear { dry_run, offset, buffer } = self;
-        if !buffer.is_empty() {
-            let length = core::cmp::min(chunk.len(), Self::BUFFER_SIZE - buffer.len());
-            buffer.extend_from_slice(&chunk[.. length]);
-            chunk = &chunk[length ..];
-            if buffer.len() < Self::BUFFER_SIZE {
-                return Ok(());
+    pub fn erase(&mut self, raw: &Raw) -> Result<(), Error> {
+        if self.length.is_some() {
+            return Err(Error::user(Code::InvalidState));
+        }
+        if !self.dry_run
+            && !unsafe { raw.read() }[self.offset ..][.. PAGE_SIZE].iter().all(|x| *x == 0xff)
+        {
+            raw.erase(self.offset)?;
+        }
+        self.offset += PAGE_SIZE;
+        if raw.len() <= self.offset {
+            Error::internal(Code::InvalidLength).check(self.offset == raw.len())?;
+            self.length = Some(0);
+            self.offset = 0;
+        }
+        Ok(())
+    }
+
+    pub fn write(&mut self, raw: &Raw, chunk: &[u8]) -> Result<(), Error> {
+        Error::user(Code::InvalidLength).check(chunk.len() <= PAGE_SIZE)?;
+        Error::user(Code::OutOfBounds).check(self.offset + PAGE_SIZE <= raw.len())?;
+        let length = self.length.as_mut().ok_or(Error::user(Code::InvalidState))?;
+        if !self.dry_run {
+            let len = chunk.len() / 8 * 8;
+            let (aligned, rest) = chunk.split_at(len);
+            raw.write(self.offset, aligned)?;
+            if !rest.is_empty() {
+                let mut word = [0xff; 8];
+                word[.. rest.len()].copy_from_slice(rest);
+                raw.write(self.offset + len, &word)?;
             }
-            if !*dry_run {
-                raw.write(*offset, buffer)?;
-            }
-            *offset += buffer.len();
-            buffer.clear();
         }
-        if offset.checked_add(chunk.len()).is_none_or(|x| raw.len() - Self::BUFFER_SIZE < x) {
-            return Err(Error::user(Code::OutOfBounds));
-        }
-        let length = chunk.len() / Self::BUFFER_SIZE * Self::BUFFER_SIZE;
-        if !*dry_run {
-            raw.write(*offset, &chunk[.. length])?;
-        }
-        *offset += length;
-        buffer.extend_from_slice(&chunk[length ..]);
+        self.offset += PAGE_SIZE;
+        *length += chunk.len();
         Ok(())
     }
 
     /// Flushes and returns the total number of bytes written, unless dry run.
-    pub fn flush(self, raw: &Raw) -> Result<Option<usize>, Error> {
-        let Linear { dry_run, mut offset, mut buffer } = self;
-        if !buffer.is_empty() {
-            let length = buffer.len();
-            buffer.resize(Self::BUFFER_SIZE, 0xff);
-            if !dry_run {
-                raw.write(offset, &buffer)?;
-            }
-            offset += length;
-        }
-        Ok((!dry_run).then_some(offset))
+    pub fn finish(self) -> Result<Option<usize>, Error> {
+        let length = self.length.ok_or(Error::user(Code::InvalidState))?;
+        Ok((!self.dry_run).then_some(length))
     }
 }

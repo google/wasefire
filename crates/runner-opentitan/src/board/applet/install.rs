@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,15 +14,19 @@
 
 use wasefire_board_api::transfer::Api;
 use wasefire_error::{Code, Error};
-use wasefire_logger as log;
 
-use crate::board::platform::version;
 use crate::board::storage::Linear;
 use crate::board::with_state;
 use crate::flash::PAGE_SIZE;
 
 pub struct State {
     storage: Option<Linear>,
+}
+
+impl State {
+    pub fn ongoing(&self) -> bool {
+        self.storage.is_some()
+    }
 }
 
 pub fn init() -> State {
@@ -36,46 +40,50 @@ impl Api for Impl {
 
     fn start(dry_run: bool) -> Result<usize, Error> {
         with_state(|state| {
-            state.platform.update.storage = Some(Linear::start(dry_run)?);
-            Ok(state.storage.other.len() / PAGE_SIZE)
+            let side = crate::flash::inactive() as usize;
+            let raw = &state.storage.applets[side];
+            if !dry_run {
+                raw.erase(raw.len() - PAGE_SIZE)?;
+            }
+            state.applet.install.storage = Some(Linear::start(dry_run)?);
+            Ok(raw.len() / PAGE_SIZE)
         })
     }
 
     fn erase() -> Result<(), Error> {
         with_state(|state| {
-            let Some(writing) = &mut state.platform.update.storage else {
+            let Some(linear) = &mut state.applet.install.storage else {
                 return Err(Error::user(Code::InvalidState));
             };
-            writing.erase(&state.storage.other)
+            let side = crate::flash::inactive() as usize;
+            linear.erase(&state.storage.applets[side])
         })
     }
 
     fn write(chunk: &[u8]) -> Result<(), Error> {
         with_state(|state| {
-            let Some(writing) = &mut state.platform.update.storage else {
+            let Some(linear) = &mut state.applet.install.storage else {
                 return Err(Error::user(Code::InvalidState));
             };
-            writing.write(&state.storage.other, chunk)
+            let side = crate::flash::inactive() as usize;
+            linear.write(&state.storage.applets[side], chunk)
         })
     }
 
     fn finish() -> Result<(), Error> {
         with_state(|state| {
-            let Some(writing) = state.platform.update.storage.take() else {
+            let Some(linear) = state.applet.install.storage.take() else {
                 return Err(Error::user(Code::InvalidState));
             };
-            if writing.finish()?.is_some() {
-                reboot()?;
+            let side = crate::flash::inactive() as usize;
+            let raw = &state.storage.applets[side];
+            if let Some(length) = linear.finish()? {
+                let length = !(length as u32);
+                let mut chunk = [0xff; 8];
+                chunk[4 ..].copy_from_slice(&length.to_ne_bytes());
+                raw.write(raw.len() - chunk.len(), &chunk)?;
             }
             Ok(())
         })
     }
-}
-
-fn reboot() -> Result<!, Error> {
-    let next = crate::flash::active().opposite();
-    let primary = if version(true) < version(false) { next.opposite() } else { next };
-    log::info!("Rebooting to side {} (primary={})", next, primary);
-    crate::bootsvc::next_boot(Some(next), Some(primary))?;
-    crate::reboot();
 }

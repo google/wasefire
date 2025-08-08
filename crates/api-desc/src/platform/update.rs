@@ -25,10 +25,6 @@ pub(crate) fn new() -> Item {
     let name = "update".into();
     let items = vec![
         item! {
-            /// Whether platform update is supported.
-            fn is_supported "pus" {} -> bool
-        },
-        item! {
             /// Starts a platform update process.
             fn initialize "pui" {
                 /// Zero for normal operation. One for dry-run.

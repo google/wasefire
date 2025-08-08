@@ -19,40 +19,17 @@ use wasefire_sync::TakeCell;
 
 use crate::storage::{Storage, StorageWriter};
 
+pub mod install;
+
 pub enum Impl {}
 
 impl Api for Impl {
+    type Install = install::Impl;
+
     unsafe fn get() -> Result<&'static [u8], Error> {
         STATE.with(|state| {
             let storage = unsafe { state.writer.get() }?;
             Ok(&storage[.. state.size])
-        })
-    }
-
-    fn start(dry_run: bool) -> Result<(), Error> {
-        STATE.with(|state| {
-            state.size = 0;
-            state.writer.start(dry_run)
-        })
-    }
-
-    fn write(chunk: &[u8]) -> Result<(), Error> {
-        STATE.with(|state| {
-            state.writer.write(chunk)?;
-            state.size += chunk.len();
-            Ok(())
-        })
-    }
-
-    fn finish() -> Result<(), Error> {
-        STATE.with(|state| {
-            let dry_run = state.writer.dry_run()?;
-            state.writer.finish()?;
-            if dry_run {
-                Ok(state.size = read_size(state.writer.storage())?)
-            } else {
-                write_size(state.writer.storage_mut(), state.size)
-            }
         })
     }
 }
@@ -74,15 +51,13 @@ struct State {
 
 fn last_word(storage: &Storage) -> StorageIndex {
     let num_pages = storage.num_pages();
-    let word_size = storage.word_size();
     let page_size = storage.page_size();
-    StorageIndex { page: num_pages - 1, byte: page_size - word_size }
+    StorageIndex { page: num_pages - 1, byte: page_size - 4 }
 }
 
 fn read_size(storage: &Storage) -> Result<usize, Error> {
-    let word_size = storage.word_size();
-    let slice = storage.read_slice(last_word(storage), word_size)?;
-    Ok(!usize::from_ne_bytes(*<&[u8; 4]>::try_from(&slice[..]).unwrap()))
+    let word = storage.read_slice(last_word(storage), 4)?;
+    Ok(!usize::from_ne_bytes(*<&[u8; 4]>::try_from(&word[..]).unwrap()))
 }
 
 fn write_size(storage: &mut Storage, size: usize) -> Result<(), Error> {

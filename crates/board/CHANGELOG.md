@@ -4,6 +4,8 @@
 
 ### Major
 
+- Remove `platform::update::Api` and change `platform::Api::Update` in favor of `transfer::Api`
+- Remove `applet::Api::{start,write,finish}()` in favor of `applet::Api::Install`
 - Change `usb::ctap::Ctap::tick()` to take whether the class may have data available
 - Add `gpio::Api::{enable,disable}` and `Event::Gpio` for GPIO event support
 - Change `crypto::Hash` bound from `FixedOutputReset` to `FixedOutput`
@@ -12,6 +14,8 @@
 
 ### Minor
 
+- Add `applet::Api::Install` for applet install and uninstall
+- Add `transfer::Api` as a common API for `applet::Api::Install` and `platform::Api::Update`
 - Add `Api::Fingerprint` for fingerprint matchers and sensors
 - Add `crypto::Ed25519` for Ed25519
 - Add `crypto::CryptoRng` as a helper to implement `rand_core::CryptoRngCore` using `rng::Api` for

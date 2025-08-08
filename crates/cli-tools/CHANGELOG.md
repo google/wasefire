@@ -4,6 +4,7 @@
 
 ### Major
 
+- Remove `action::Transfer::chunk_size` used by `action::{AppletInstall,PlatformUpdate}`
 - Make `action::Rpc` private
 - Remove `action::PlatformUpdate::metadata()` which is now vendor-specific
 - Change `action::PlatformInfo::run()` to return the platform information instead of printing

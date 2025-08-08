@@ -23,7 +23,6 @@ use wasefire_sync::Once;
 use crate::Error;
 
 pub mod protocol;
-pub mod update;
 
 /// Platform event.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -45,7 +44,10 @@ pub trait Api: Send {
     type Protocol: protocol::Api;
 
     /// Platform update interface.
-    type Update: update::Api;
+    ///
+    /// Calling `finish()` will reboot if the update is successful and thus only returns in case of
+    /// errors or in dry-run mode.
+    type Update: crate::transfer::Api;
 
     /// Returns the platform serial.
     fn serial() -> alloc::borrow::Cow<'static, [u8]>;

@@ -112,7 +112,12 @@ impl AppletInstall {
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let AppletInstall { applet, transfer, wait } = self;
         transfer
-            .run::<service::AppletInstall>(connection, applet, "Installed", None::<fn(_) -> _>)
+            .run::<service::AppletInstall>(
+                connection,
+                Some(applet),
+                "Installed",
+                None::<fn(_) -> _>,
+            )
             .await?;
         match wait {
             Some(AppletInstallWait::Wait { mut action }) => {
@@ -131,7 +136,10 @@ pub struct AppletUninstall {}
 impl AppletUninstall {
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let AppletUninstall {} = self;
-        connection.call::<service::AppletUninstall>(()).await.map(|x| *x.get())
+        let transfer = Transfer { dry_run: false };
+        transfer
+            .run::<service::AppletInstall>(connection, None, "Uninstalled", None::<fn(_) -> _>)
+            .await
     }
 }
 
@@ -433,7 +441,7 @@ impl PlatformUpdate {
         transfer
             .run::<service::PlatformUpdate>(
                 connection,
-                platform,
+                Some(platform),
                 "Updated",
                 Some(|_| bail!("device responded to a transfer finish")),
             )
@@ -447,46 +455,56 @@ pub struct Transfer {
     /// Whether the transfer is a dry-run.
     #[arg(long)]
     dry_run: bool,
-
-    /// How to chunk the payload.
-    #[arg(long, default_value_t = 1024)]
-    chunk_size: usize,
 }
 
 impl Transfer {
     async fn run<S>(
-        self, connection: &mut dyn Connection, payload: impl AsRef<Path>, message: &'static str,
+        self, connection: &mut dyn Connection, payload: Option<PathBuf>, message: &'static str,
         finish: Option<impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>>,
     ) -> Result<()>
     where
         S: for<'a> service::Service<
                 Request<'a> = service::transfer::Request<'a>,
-                Response<'a> = (),
+                Response<'a> = service::transfer::Response,
             >,
     {
-        use wasefire_protocol::transfer::Request;
-        let Transfer { dry_run, chunk_size } = self;
-        let payload = fs::read(payload).await?;
-        let progress = indicatif::ProgressBar::new(payload.len() as u64)
-            .with_style(
-                indicatif::ProgressStyle::with_template(
-                    "{msg:9} {elapsed:>3} {spinner} [{wide_bar}] {bytes:>10} / {total_bytes:<10}",
-                )?
-                .tick_chars("-\\|/ ")
-                .progress_chars("##-"),
-            )
-            .with_message("Starting");
-        progress.enable_steady_tick(Duration::from_millis(200));
-        connection.call::<S>(Request::Start { dry_run }).await?.get();
+        use wasefire_protocol::transfer::{Request, Response};
+        let Transfer { dry_run } = self;
+        let payload = match payload {
+            None => Vec::new(),
+            Some(x) => fs::read(x).await?,
+        };
+        let Response::Start { chunk_size, num_pages } =
+            *connection.call::<S>(Request::Start { dry_run }).await?.get()
+        else {
+            bail!("received unexpected response");
+        };
+        let multi_progress = indicatif::MultiProgress::new();
+        let style = indicatif::ProgressStyle::with_template(
+            "{msg:9} {elapsed:>3} {spinner} [{wide_bar}] {bytes:>10} / {total_bytes:<10}",
+        )?
+        .tick_chars("-\\|/ ")
+        .progress_chars("##-");
+        let progress =
+            multi_progress.add(indicatif::ProgressBar::new((num_pages * chunk_size) as u64));
+        progress.set_style(style.clone());
+        progress.set_message("Erasing");
+        for _ in 0 .. num_pages {
+            connection.call::<S>(Request::Erase).await?.get();
+            progress.inc(chunk_size as u64);
+        }
+        progress.finish_with_message("Erased");
+        let progress = multi_progress.add(indicatif::ProgressBar::new(payload.len() as u64));
+        progress.set_style(style);
         progress.set_message("Writing");
         for chunk in payload.chunks(chunk_size) {
-            progress.inc(chunk.len() as u64);
             connection.call::<S>(Request::Write { chunk }).await?.get();
+            progress.inc(chunk.len() as u64);
         }
         progress.set_message("Finishing");
         match (dry_run, finish) {
             (false, Some(finish)) => final_call::<S>(connection, Request::Finish, finish).await?,
-            _ => *connection.call::<S>(Request::Finish).await?.get(),
+            _ => drop(connection.call::<S>(Request::Finish).await?.get()),
         }
         progress.finish_with_message(message);
         Ok(())

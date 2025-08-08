@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,9 +14,8 @@
 
 use wasefire_board_api::transfer::Api;
 use wasefire_error::Error;
-use wasefire_sync::TakeCell;
 
-use crate::storage::{Storage, StorageWriter};
+use super::{STATE, read_size, write_size};
 
 pub enum Impl {}
 
@@ -24,28 +23,36 @@ impl Api for Impl {
     const CHUNK_SIZE: usize = crate::storage::PAGE_SIZE;
 
     fn start(dry_run: bool) -> Result<usize, Error> {
-        STATE.with(|state| state.start(dry_run))
+        STATE.with(|state| {
+            if !dry_run {
+                state.writer.erase_last_page()?;
+            }
+            state.size = 0;
+            state.writer.start(dry_run)
+        })
     }
 
     fn erase() -> Result<(), Error> {
-        STATE.with(|state| state.erase())
+        STATE.with(|state| state.writer.erase())
     }
 
     fn write(chunk: &[u8]) -> Result<(), Error> {
-        STATE.with(|state| state.write(chunk))
+        STATE.with(|state| {
+            state.size += chunk.len();
+            state.writer.write(chunk)
+        })
     }
 
     fn finish() -> Result<(), Error> {
         STATE.with(|state| {
-            let dry_run = state.dry_run()?;
-            state.finish()?;
-            if dry_run { Ok(()) } else { super::reboot() }
+            let dry_run = state.writer.dry_run()?;
+            state.writer.finish()?;
+            if dry_run {
+                state.size = read_size(state.writer.storage())?;
+                Ok(())
+            } else {
+                write_size(state.writer.storage_mut(), state.size)
+            }
         })
     }
 }
-
-pub fn init(storage: Storage) {
-    STATE.put(StorageWriter::new(storage));
-}
-
-static STATE: TakeCell<StorageWriter> = TakeCell::new(None);

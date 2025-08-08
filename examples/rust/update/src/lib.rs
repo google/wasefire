@@ -16,7 +16,6 @@
 wasefire::applet!();
 
 fn main() {
-    assert!(platform::update::is_supported());
     debug!(" running    side: {}", platform::running_side());
     debug!(" running version: {:02x?}", platform::running_version());
     debug!("opposite version: {:02x?}", platform::opposite_version());

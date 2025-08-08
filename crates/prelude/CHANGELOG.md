@@ -4,6 +4,7 @@
 
 ### Major
 
+- Remove `platform::update::is_supported()` because it's always supported
 - Remove `platform::update::metadata()` which is now vendor-specific
 - Rename `platform::version()` to `platform::running_version()`
 - Make `syscall()` unsafe to call

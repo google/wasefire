@@ -13,25 +13,18 @@
 // limitations under the License.
 
 use wasefire_applet_api::platform::update::{self as api, Api};
-use wasefire_board_api::platform::update::Api as _;
-use wasefire_board_api::{self as board, Api as Board, Support};
+use wasefire_board_api::transfer::Api as _;
+use wasefire_board_api::{self as board, Api as Board};
 
 use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
-        Api::IsSupported(call) => is_supported(call),
         Api::Initialize(call) => initialize(call),
         Api::Process(call) => process_(call),
         Api::Finalize(call) => finalize(call),
     }
-}
-
-fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
-    let api::is_supported::Params {} = call.read();
-    let supported = board::platform::Update::<B>::SUPPORT as u32;
-    call.reply(Ok(supported))
 }
 
 fn initialize<B: Board>(call: SchedulerCall<B, api::initialize::Sig>) {
@@ -42,7 +35,10 @@ fn initialize<B: Board>(call: SchedulerCall<B, api::initialize::Sig>) {
             1 => true,
             _ => Err(Trap)?,
         };
-        board::platform::Update::<B>::initialize(dry_run)?
+        let count = board::platform::Update::<B>::start(dry_run)?;
+        for _ in 0 .. count {
+            board::platform::Update::<B>::erase()?;
+        }
     };
     call.reply(result);
 }
@@ -53,12 +49,12 @@ fn process_<B: Board>(mut call: SchedulerCall<B, api::process::Sig>) {
     let memory = applet.memory();
     let result = try {
         let chunk = memory.get(*ptr, *len)?;
-        board::platform::Update::<B>::process(chunk)?
+        board::platform::Update::<B>::write(chunk)?
     };
     call.reply(result);
 }
 
 fn finalize<B: Board>(call: SchedulerCall<B, api::finalize::Sig>) {
     let api::finalize::Params {} = call.read();
-    call.reply(try { board::platform::Update::<B>::finalize()? });
+    call.reply(try { board::platform::Update::<B>::finish()? });
 }

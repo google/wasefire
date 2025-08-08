@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,40 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use anyhow::Result;
+use tokio::runtime::Handle;
 use wasefire_board_api::transfer::Api;
-use wasefire_error::Error;
-use wasefire_sync::TakeCell;
+use wasefire_error::{Code, Error};
 
-use crate::storage::{Storage, StorageWriter};
+use super::with_state;
 
 pub enum Impl {}
 
 impl Api for Impl {
-    const CHUNK_SIZE: usize = crate::storage::PAGE_SIZE;
+    const CHUNK_SIZE: usize = 4096;
 
     fn start(dry_run: bool) -> Result<usize, Error> {
-        STATE.with(|state| state.start(dry_run))
+        with_state(|x| Handle::current().block_on(x.start(dry_run)))?;
+        Ok(0)
     }
 
     fn erase() -> Result<(), Error> {
-        STATE.with(|state| state.erase())
+        Err(Error::user(Code::InvalidState))
     }
 
     fn write(chunk: &[u8]) -> Result<(), Error> {
-        STATE.with(|state| state.write(chunk))
+        with_state(|x| x.write(chunk))
     }
 
     fn finish() -> Result<(), Error> {
-        STATE.with(|state| {
-            let dry_run = state.dry_run()?;
-            state.finish()?;
-            if dry_run { Ok(()) } else { super::reboot() }
-        })
+        with_state(|x| Handle::current().block_on(x.finish()))
     }
 }
-
-pub fn init(storage: Storage) {
-    STATE.put(StorageWriter::new(storage));
-}
-
-static STATE: TakeCell<StorageWriter> = TakeCell::new(None);

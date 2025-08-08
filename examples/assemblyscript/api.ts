@@ -1472,11 +1472,6 @@
   // All operations are abstract over the update content such that they can work on all
   // platforms. In particular, chunks and errors are platform-specific. Applets with
   // knowledge about their platform may actually inspect that content for additional checks.
-    // Whether platform update is supported.
-    @external("env", "pus")
-    export declare function platform_update_is_supported(
-    ): i32
-
     // Starts a platform update process.
     @external("env", "pui")
     export declare function platform_update_initialize(

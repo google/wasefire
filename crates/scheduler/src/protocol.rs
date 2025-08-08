@@ -17,6 +17,7 @@ use alloc::boxed::Box;
 #[cfg(feature = "applet-api-platform-protocol")]
 use wasefire_applet_api::platform::protocol as applet_api;
 use wasefire_board_api::platform::protocol::Api as _;
+use wasefire_board_api::transfer::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
 use wasefire_error::{Code, Error};
 use wasefire_logger as log;
@@ -116,21 +117,11 @@ fn process_event_<B: Board>(
             let response = board::platform::Protocol::<B>::vendor(request)?;
             reply::<B, service::PlatformVendor>(&response);
         }
-        Api::PlatformUpdate(request) => process_update::<B>(scheduler, request)?,
+        Api::PlatformUpdate(request) => process_transfer::<B, PlatformUpdate>(scheduler, request)?,
         #[cfg(feature = "native")]
-        Api::AppletInstall(_) | Api::AppletUninstall(_) => {
-            return Err(Error::world(Code::NotImplemented));
-        }
+        Api::AppletInstall(_) => return Err(Error::world(Code::NotImplemented)),
         #[cfg(feature = "wasm")]
-        Api::AppletInstall(request) => process_install::<B>(scheduler, request)?,
-        #[cfg(feature = "wasm")]
-        Api::AppletUninstall(()) => {
-            use wasefire_board_api::applet::Api as _;
-            board::Applet::<B>::start(false)?;
-            board::Applet::<B>::finish()?;
-            scheduler.stop_applet(ExitStatus::Kill);
-            reply::<B, service::AppletUninstall>(());
-        }
+        Api::AppletInstall(request) => process_transfer::<B, AppletInstall>(scheduler, request)?,
         Api::AppletExitStatus(applet_id) => {
             use crate::applet::Slot;
             let service::applet::AppletId = applet_id;
@@ -188,58 +179,76 @@ pub fn put_response<B: Board>(
     }
 }
 
-fn process_update<B: Board>(
-    scheduler: &mut Scheduler<B>, request: service::transfer::Request,
-) -> Result<(), Error> {
-    use wasefire_board_api::platform::update::Api as _;
-    match request {
-        service::transfer::Request::Start { dry_run } => {
-            *scheduler.protocol.0.update() = TransferState::Running { dry_run };
-            board::platform::Update::<B>::initialize(dry_run)?;
-        }
-        service::transfer::Request::Write { chunk } => {
-            let _ = scheduler.protocol.0.update().dry_run()?;
-            board::platform::Update::<B>::process(chunk)?;
-        }
-        service::transfer::Request::Finish => {
-            let _ = scheduler.protocol.0.update().dry_run()?;
-            board::platform::Update::<B>::finalize()?;
-            *scheduler.protocol.0.update() = TransferState::Ready;
-        }
+trait TransferKind<B: Board> {
+    type Api: board::transfer::Api;
+    fn start(scheduler: &mut Scheduler<B>);
+    fn finish(scheduler: &mut Scheduler<B>);
+    fn state(scheduler: &mut Scheduler<B>) -> &mut TransferState;
+}
+
+enum PlatformUpdate {}
+impl<B: Board> TransferKind<B> for PlatformUpdate {
+    type Api = board::platform::Update<B>;
+    fn start(_: &mut Scheduler<B>) {}
+    fn finish(_: &mut Scheduler<B>) {}
+    fn state(scheduler: &mut Scheduler<B>) -> &mut TransferState {
+        scheduler.protocol.0.update()
     }
-    reply::<B, service::PlatformUpdate>(());
-    Ok(())
 }
 
 #[cfg(feature = "wasm")]
-fn process_install<B: Board>(
-    scheduler: &mut Scheduler<B>, request: service::transfer::Request,
-) -> Result<(), Error> {
-    use wasefire_board_api::applet::Api as _;
-    match request {
-        service::transfer::Request::Start { dry_run } => {
-            if !dry_run {
-                scheduler.stop_applet(ExitStatus::Kill);
-            }
-            *scheduler.protocol.0.install() = TransferState::Running { dry_run };
-            board::Applet::<B>::start(dry_run)?;
-        }
-        service::transfer::Request::Write { chunk } => {
-            let _ = scheduler.protocol.0.install().dry_run()?;
-            board::Applet::<B>::write(chunk)?;
-        }
-        service::transfer::Request::Finish => {
-            let dry_run = scheduler.protocol.0.install().dry_run()?;
-            board::Applet::<B>::finish()?;
-            *scheduler.protocol.0.install() = TransferState::Ready;
-            if !dry_run {
-                scheduler
-                    .start_applet()
-                    .inspect_err(|e| log::warn!("Failed to start applet: {}", e))?;
-            }
+enum AppletInstall {}
+#[cfg(feature = "wasm")]
+impl<B: Board> TransferKind<B> for AppletInstall {
+    type Api = board::applet::Install<B>;
+    fn start(scheduler: &mut Scheduler<B>) {
+        scheduler.stop_applet(ExitStatus::Kill);
+    }
+    fn finish(scheduler: &mut Scheduler<B>) {
+        match scheduler.start_applet() {
+            Ok(()) => (),
+            Err(e) => log::warn!("Failed to start applet: {}", e),
         }
     }
-    reply::<B, service::AppletInstall>(());
+    fn state(scheduler: &mut Scheduler<B>) -> &mut TransferState {
+        scheduler.protocol.0.install()
+    }
+}
+
+fn process_transfer<B: Board, T: TransferKind<B>>(
+    scheduler: &mut Scheduler<B>, request: service::transfer::Request,
+) -> Result<(), Error> {
+    let response = match request {
+        service::transfer::Request::Start { dry_run } => {
+            if !dry_run {
+                T::start(scheduler);
+            }
+            *T::state(scheduler) = TransferState::Running { dry_run };
+            let num_pages = T::Api::start(dry_run)?;
+            let chunk_size = T::Api::CHUNK_SIZE;
+            service::transfer::Response::Start { chunk_size, num_pages }
+        }
+        service::transfer::Request::Erase => {
+            let _ = T::state(scheduler).dry_run()?;
+            T::Api::erase()?;
+            service::transfer::Response::Erase
+        }
+        service::transfer::Request::Write { chunk } => {
+            let _ = T::state(scheduler).dry_run()?;
+            T::Api::write(chunk)?;
+            service::transfer::Response::Write
+        }
+        service::transfer::Request::Finish => {
+            let dry_run = T::state(scheduler).dry_run()?;
+            T::Api::finish()?;
+            *T::state(scheduler) = TransferState::Ready;
+            if !dry_run {
+                T::finish(scheduler);
+            }
+            service::transfer::Response::Finish
+        }
+    };
+    reply::<B, service::AppletInstall>(response);
     Ok(())
 }
 
