@@ -10,6 +10,9 @@
 
 ### Minor
 
+- Implement `Clone` for `action::Transfer`
+- Add `action::ConnectionOptions::reboot_stable()` to tell whether a device reboot would invalidate
+  the connection options
 - Add `--repl` flag to enable REPL for `action::{Applet,Platform}Rpc`
 - Add `action::PlatformClearStore` to clear the store
 - Change `action::optimize_wasm()` (and thus `action::RustAppletBuild`) to also compute the

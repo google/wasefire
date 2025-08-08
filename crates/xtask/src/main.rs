@@ -325,13 +325,23 @@ enum RunnerCommand {
         options: action::ConnectionOptions,
         #[command(flatten)]
         transfer: action::Transfer,
+
+        /// Updates both sides of the runner.
+        #[clap(long)]
+        both: bool,
+
+        #[clap(skip)]
+        step: Option<usize>,
     },
 
     /// Flashes the runner.
     Flash(Flash),
 
-    /// Produces target/wasefire/platform_{side}.bin files instead of flashing.
-    Bundle,
+    /// Produces target/wasefire/platform{,_a,_b}.bin files instead of flashing.
+    Bundle {
+        #[clap(skip)]
+        step: usize,
+    },
 }
 
 #[derive(clap::Args)]
@@ -566,38 +576,65 @@ impl AppletCommand {
 
 impl Runner {
     async fn execute(self, main: &MainOptions) -> Result<()> {
-        self.options.execute(main, 0, self.command).await?;
+        self.options.execute(main, self.command).await?;
         Ok(())
     }
 }
 
 impl RunnerOptions {
-    async fn execute(
-        self, main: &MainOptions, mut step: usize, cmd: Option<RunnerCommand>,
-    ) -> Result<()> {
-        let (mut update, flash) = match &cmd {
-            Some(RunnerCommand::Update { options, .. }) => (Some(options.connect().await?), None),
-            Some(RunnerCommand::Flash(x)) => (None, Some(x)),
-            Some(RunnerCommand::Bundle) => (None, None),
-            None => (None, None),
-        };
+    async fn execute(mut self, main: &MainOptions, cmd: Option<RunnerCommand>) -> Result<()> {
         let mut version = self.version.as_deref().map(Cow::Borrowed);
-        if let Some(connection) = &mut update {
-            let action = action::PlatformInfo {};
-            let info = action.run(connection).await?;
-            let info = info.get();
-            if version.is_none() {
-                let mut next_version = info.running_version.to_vec();
-                for byte in next_version.iter_mut().rev() {
-                    *byte = byte.wrapping_add(1);
-                    if 0 < *byte {
-                        break;
+        let mut step = match &cmd {
+            Some(RunnerCommand::Bundle { step }) => *step,
+            _ => 0,
+        };
+        let flash = match &cmd {
+            Some(RunnerCommand::Flash(x)) => Some(x),
+            _ => None,
+        };
+        let update = match &cmd {
+            Some(RunnerCommand::Update { options, both, step: next_step, .. }) => {
+                ensure!(
+                    !both || options.reboot_stable(),
+                    "--both requires a reboot-stable protocol"
+                );
+                let mut connection = match next_step {
+                    None => options.connect().await?,
+                    Some(_) => loop {
+                        tokio::time::sleep(Duration::from_millis(300)).await;
+                        if let Ok(x) = options.connect().await {
+                            break x;
+                        }
+                    },
+                };
+                let action = action::PlatformInfo {};
+                let info = action.run(&mut connection).await?;
+                let info = info.get();
+                match next_step {
+                    None => {
+                        if version.is_none() {
+                            let mut next_version = info.running_version.to_vec();
+                            for byte in next_version.iter_mut().rev() {
+                                *byte = byte.wrapping_add(1);
+                                if 0 < *byte {
+                                    break;
+                                }
+                            }
+                            version = Some(Cow::Owned(HEX.encode(&next_version)));
+                        }
+                        step = info.running_side.opposite() as usize;
+                    }
+                    Some(next_step) => {
+                        let version = HEX.decode(version.as_ref().unwrap().as_bytes())?;
+                        step = *next_step;
+                        ensure!(info.running_version == version, "first update failed");
+                        ensure!(info.running_side as usize == 1 - step, "first update failed");
                     }
                 }
-                version = Some(Cow::Owned(HEX.encode(&next_version)));
+                Some(connection)
             }
-            step = info.running_side.opposite() as usize;
-        }
+            _ => None,
+        };
         let mut cargo = Command::new("cargo");
         let mut rustflags = Vec::new();
         let mut features = self.features.clone();
@@ -796,18 +833,26 @@ impl RunnerOptions {
                 println!("{:#010x}\t{}\t{}", address, stack, demangle(name));
             }
         }
-        let Some(cmd) = cmd else { return Ok(()) };
+        let Some(mut cmd) = cmd else { return Ok(()) };
         let flash = match cmd {
-            RunnerCommand::Update { transfer, .. } => {
+            RunnerCommand::Update { ref transfer, both, step: ref mut next_step, .. } => {
                 let platform_a = self.bundle(&elf, side).await?.into();
+                let transfer = transfer.clone();
                 let action = action::PlatformUpdate { platform_a, platform_b: None, transfer };
-                return action.run(&mut update.unwrap()).await;
+                action.run(&mut update.unwrap()).await?;
+                if !both || next_step.is_some() {
+                    return Ok(());
+                }
+                *next_step = Some(1 - step);
+                self.version = Some(version.unwrap().into_owned());
+                return Box::pin(self.execute(main, Some(cmd))).await;
             }
             RunnerCommand::Flash(x) => x,
-            RunnerCommand::Bundle => {
+            RunnerCommand::Bundle { ref mut step } => {
                 self.bundle(&elf, side).await?;
-                if step < max_step {
-                    return Box::pin(self.execute(main, step + 1, Some(cmd))).await;
+                if *step < max_step {
+                    *step += 1;
+                    return Box::pin(self.execute(main, Some(cmd))).await;
                 }
                 return Ok(());
             }
@@ -970,7 +1015,7 @@ impl Wait {
             };
             let error = match action.run(&mut connection).await {
                 Err(x) => x,
-                Ok(_) => continue,
+                Ok(()) => continue,
             };
             use wasefire_error::{Code, Error};
             if root_cause_is::<Error>(&error, |&x| x == Error::user(Code::NotFound)) {

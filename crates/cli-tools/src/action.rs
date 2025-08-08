@@ -58,6 +58,19 @@ impl ConnectionOptions {
     pub async fn connect(&self) -> Result<Box<dyn Connection>> {
         self.protocol.connect(*self.timeout).await
     }
+
+    /// Returns whether these options identify a device even after reboot.
+    pub fn reboot_stable(&self) -> bool {
+        match &self.protocol {
+            protocol::Protocol::Usb(x) => match x {
+                protocol::ProtocolUsb::Auto => true,
+                protocol::ProtocolUsb::Serial(_) => true,
+                protocol::ProtocolUsb::BusDev { .. } => false,
+            },
+            protocol::Protocol::Unix(_) => true,
+            protocol::Protocol::Tcp(_) => true,
+        }
+    }
 }
 
 /// Returns the API version of a platform.
@@ -429,7 +442,7 @@ impl PlatformUpdate {
 }
 
 /// Parameters for a transfer from the host to the device.
-#[derive(clap::Args)]
+#[derive(Clone, clap::Args)]
 pub struct Transfer {
     /// Whether the transfer is a dry-run.
     #[arg(long)]
