@@ -51,6 +51,7 @@ pub mod radio;
 pub mod rng;
 #[cfg(feature = "api-timer")]
 pub mod timer;
+pub mod transfer;
 #[cfg(feature = "api-uart")]
 pub mod uart;
 #[cfg(feature = "internal-api-usb")]

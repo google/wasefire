@@ -14,7 +14,6 @@
 
 use alloc::borrow::Cow;
 use alloc::vec;
-use alloc::vec::Vec;
 use core::ptr::addr_of_mut;
 
 use embedded_storage::nor_flash::{
@@ -27,7 +26,7 @@ use wasefire_store::{self as store, StorageIndex};
 use wasefire_sync::{AtomicBool, Ordering, TakeCell};
 
 const WORD_SIZE: usize = <Nvmc<NVMC>>::WRITE_SIZE;
-const PAGE_SIZE: usize = <Nvmc<NVMC>>::ERASE_SIZE;
+pub const PAGE_SIZE: usize = <Nvmc<NVMC>>::ERASE_SIZE;
 
 static DRIVER: TakeCell<NVMC> = TakeCell::new(None);
 
@@ -50,9 +49,10 @@ macro_rules! take_storage {
             static mut $end: u32;
         }
         let start = addr_of_mut!($start) as *mut u8;
-        let end = addr_of_mut!($end) as usize;
+        let end = addr_of_mut!($end).addr();
+        assert_eq!(start.addr() % PAGE_SIZE, 0);
+        assert_eq!(end % PAGE_SIZE, 0);
         let length = end.checked_sub(start as usize).unwrap();
-        assert_eq!(length % PAGE_SIZE, 0);
         core::ptr::from_raw_parts_mut(start, length)
     }};
 }
@@ -104,17 +104,18 @@ impl Storage {
 
 pub struct StorageWriter {
     storage: Storage,
-    // None if not running.
-    dry_run: Option<bool>,
-    // offset % WORD_SIZE == 0
+    state: Option<WriterState>,
+}
+
+struct WriterState {
+    dry_run: bool,
+    write: bool,
     offset: usize,
-    // buffer.len() < WORD_SIZE
-    buffer: Vec<u8>,
 }
 
 impl StorageWriter {
     pub fn new(storage: Storage) -> Self {
-        StorageWriter { storage, dry_run: None, offset: 0, buffer: Vec::with_capacity(WORD_SIZE) }
+        StorageWriter { storage, state: None }
     }
 
     pub fn storage(&self) -> &Storage {
@@ -131,85 +132,77 @@ impl StorageWriter {
     ///
     /// The returned reference is invalidated when `start()` is called.
     pub unsafe fn get(&self) -> Result<&'static [u8], Error> {
-        if self.dry_run.is_some() {
+        if self.state.is_some() {
             return Err(Error::user(Code::InvalidState));
         }
         Ok(unsafe { self.storage.get() })
     }
 
+    pub fn erase_last_page(&mut self) -> Result<(), Error> {
+        let to = self.storage.len() as u32;
+        let from = to - PAGE_SIZE as u32;
+        Helper::new(&self.storage).nvmc().erase(from, to).map_err(convert)
+    }
+
     pub fn dry_run(&self) -> Result<bool, Error> {
-        self.dry_run.ok_or(Error::user(Code::InvalidState))
+        self.state.as_ref().map(|x| x.dry_run).ok_or(Error::user(Code::InvalidState))
     }
 
-    pub fn start(&mut self, dry_run: bool) -> Result<(), Error> {
-        if self.dry_run.is_some() {
-            self.offset = 0;
-            self.buffer.clear();
+    pub fn start(&mut self, dry_run: bool) -> Result<usize, Error> {
+        self.state = Some(WriterState { dry_run, write: false, offset: 0 });
+        Ok(self.storage.len() / PAGE_SIZE)
+    }
+
+    pub fn erase(&mut self) -> Result<(), Error> {
+        let (storage, state) = self.state()?;
+        if state.write {
+            return Err(Error::user(Code::InvalidState));
         }
-        self.dry_run = Some(dry_run);
-        assert_eq!(self.offset, 0);
-        assert!(self.buffer.is_empty());
-        if !self.dry_run()? {
-            // Erase the storage.
-            for offset in (0 .. self.storage.len()).step_by(PAGE_SIZE) {
-                let content = unsafe { self.storage.get() };
-                // Only erase a page if needed.
-                if content[offset ..][.. PAGE_SIZE].iter().all(|x| *x == 0xff) {
-                    continue;
-                }
-                let from = offset as u32;
+        if !state.dry_run {
+            let content = unsafe { storage.get() };
+            if !content[state.offset ..][.. PAGE_SIZE].iter().all(|x| *x == 0xff) {
+                let from = state.offset as u32;
                 let to = from + PAGE_SIZE as u32;
-                Helper::new(&self.storage).nvmc().erase(from, to).map_err(convert)?;
+                Helper::new(storage).nvmc().erase(from, to).map_err(convert)?;
             }
         }
+        state.offset += PAGE_SIZE;
+        if storage.len() <= state.offset {
+            Error::internal(Code::InvalidLength).check(state.offset == storage.len())?;
+            state.write = true;
+            state.offset = 0;
+        }
         Ok(())
     }
 
-    pub fn write(&mut self, mut chunk: &[u8]) -> Result<(), Error> {
-        if !self.buffer.is_empty() {
-            assert!(self.buffer.len() < WORD_SIZE);
-            let length = core::cmp::min(chunk.len(), WORD_SIZE - self.buffer.len());
-            self.buffer.extend_from_slice(&chunk[.. length]);
-            chunk = &chunk[length ..];
-            if self.buffer.len() < WORD_SIZE {
-                return Ok(());
+    pub fn write(&mut self, chunk: &[u8]) -> Result<(), Error> {
+        let (storage, state) = self.state()?;
+        Error::user(Code::InvalidLength).check(chunk.len() <= PAGE_SIZE)?;
+        Error::user(Code::OutOfBounds).check(state.offset + PAGE_SIZE <= storage.len())?;
+        Error::user(Code::InvalidState).check(state.write)?;
+        if !state.dry_run {
+            let mut pos = state.offset as u32;
+            let len = chunk.len() / 4 * 4;
+            let (aligned, rest) = chunk.split_at(len);
+            Helper::new(storage).nvmc().write(pos, aligned).map_err(convert)?;
+            if !rest.is_empty() {
+                pos += len as u32;
+                let mut word = [0xff; 4];
+                word[.. rest.len()].copy_from_slice(rest);
+                Helper::new(storage).nvmc().write(pos, &word).map_err(convert)?;
             }
-            self.write_buffer()?;
         }
-        assert!(self.buffer.is_empty());
-        let length = chunk.len() / WORD_SIZE * WORD_SIZE;
-        self.aligned_write(&chunk[.. length])?;
-        self.buffer.extend_from_slice(&chunk[length ..]);
-        Ok(())
-    }
-
-    fn write_buffer(&mut self) -> Result<(), Error> {
-        assert_eq!(self.buffer.len(), WORD_SIZE);
-        let data = core::mem::take(&mut self.buffer);
-        self.aligned_write(&data)?;
-        self.buffer = data;
-        self.buffer.clear();
-        Ok(())
-    }
-
-    fn aligned_write(&mut self, data: &[u8]) -> Result<(), Error> {
-        assert_eq!(data.len() % WORD_SIZE, 0);
-        if !self.dry_run()? {
-            Helper::new(&self.storage).nvmc().write(self.offset as u32, data).map_err(convert)?;
-        }
-        self.offset += data.len();
+        state.offset += PAGE_SIZE;
         Ok(())
     }
 
     pub fn finish(&mut self) -> Result<(), Error> {
-        if !self.buffer.is_empty() {
-            assert!(self.buffer.len() < WORD_SIZE);
-            self.buffer.resize(WORD_SIZE, 0xff);
-            self.write_buffer()?;
-        }
-        self.dry_run = None;
-        self.offset = 0;
-        Ok(())
+        let state = self.state.take().ok_or(Error::user(Code::InvalidState))?;
+        Error::user(Code::InvalidState).check(state.write)
+    }
+
+    fn state(&mut self) -> Result<(&mut Storage, &mut WriterState), Error> {
+        Ok((&mut self.storage, self.state.as_mut().ok_or(Error::user(Code::InvalidState))?))
     }
 }
 

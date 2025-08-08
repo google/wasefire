@@ -16,28 +16,32 @@ use std::sync::Mutex;
 
 use anyhow::Result;
 use tokio::runtime::Handle;
-use wasefire_board_api::Supported;
-use wasefire_board_api::platform::update::Api;
+use wasefire_board_api::transfer::Api;
 use wasefire_cli_tools::fs;
 use wasefire_error::{Code, Error};
 
 pub enum Impl {}
 
-impl Supported for Impl {}
-
 impl Api for Impl {
-    fn initialize(dry_run: bool) -> Result<(), Error> {
-        Ok(*STATE.lock().unwrap() = Some(State { dry_run, buffer: Vec::new() }))
+    const CHUNK_SIZE: usize = 4096;
+
+    fn start(dry_run: bool) -> Result<usize, Error> {
+        *STATE.lock().unwrap() = Some(State { dry_run, buffer: Vec::new() });
+        Ok(0)
     }
 
-    fn process(chunk: &[u8]) -> Result<(), Error> {
+    fn erase() -> Result<(), Error> {
+        Err(Error::user(Code::InvalidState))
+    }
+
+    fn write(chunk: &[u8]) -> Result<(), Error> {
         match &mut *STATE.lock().unwrap() {
             None => Err(Error::user(Code::InvalidState)),
             Some(state) => Ok(state.buffer.extend_from_slice(chunk)),
         }
     }
 
-    fn finalize() -> Result<(), Error> {
+    fn finish() -> Result<(), Error> {
         match STATE.lock().unwrap().take() {
             None => Err(Error::user(Code::InvalidState)),
             Some(State { dry_run: true, .. }) => Ok(()),

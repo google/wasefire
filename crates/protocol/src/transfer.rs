@@ -17,26 +17,50 @@
 use wasefire_wire::Wire;
 
 /// Requests to transfer data.
-///
-/// The responses contain no information and just use the unit type.
 #[derive(Debug, Wire)]
 pub enum Request<'a> {
     /// Starts a transfer.
     Start {
         /// Whether the transfer is a dry-run.
         ///
-        /// In dry-run mode, all mutable operations are skipped.
+        /// In dry-run mode, nothing is erased or written, but the process is otherwise unchanged.
         dry_run: bool,
     },
 
-    /// Writes a chunk of data.
+    /// Erases a page.
     ///
-    /// Should only be used between a `Start` and a `Finish`.
+    /// See [`Response::Start::chunk_size`] for the number of pages to erase.
+    Erase,
+
+    /// Writes a chunk of data.
     Write {
         /// The next chunk of data to transfer.
+        ///
+        /// It should have [`Response::Start::chunk_size`] bytes unless it's the last chunk.
         chunk: &'a [u8],
     },
 
     /// Finishes a transfer.
+    Finish,
+}
+
+#[derive(Debug, Wire)]
+pub enum Response {
+    Start {
+        /// Size in bytes of a complete chunk.
+        chunk_size: usize,
+
+        /// Number of pages to erase.
+        num_pages: usize,
+    },
+    Erase,
+    Write,
+    Finish,
+}
+
+#[derive(Debug, Wire)]
+pub enum _Request0<'a> {
+    Start { dry_run: bool },
+    Write { chunk: &'a [u8] },
     Finish,
 }

@@ -20,33 +20,26 @@ use crate::Error;
 
 /// Applet interface.
 pub trait Api: Send {
+    /// Installs or uninstalls an applet.
+    ///
+    /// An empty transfer uninstalls the applet (because valid applets are not empty). A non-empty
+    /// transfer installs the transferred applet.
+    ///
+    /// Calling `start(true)` will uninstall the current applet if any. It is always possible to
+    /// call `start()`, in which case a new transfer process is started.
+    ///
+    /// Until `finish()` is called, there should be no installed applet. In particular, if the
+    /// platform reboots and `get()` is called, the returned slice should be empty.
+    type Install: crate::transfer::Api;
+
     /// Returns the persisted applet.
     ///
     /// # Safety
     ///
-    /// This function must not be called after `start(true)` until `finish()` is called. Besides,
+    /// This function must not be called during a transfer process (unless it's a dry-run). Besides,
     /// whenever `start(true)` is called, it invalidates the result of a previous call to this
     /// function.
     unsafe fn get() -> Result<&'static [u8], Error>;
-
-    /// Starts the process of writing an applet to flash.
-    ///
-    /// Also erases the previous applet (if any). In particular, writing an empty applet can be used
-    /// to erase an existing applet (because valid applets are not empty).
-    ///
-    /// In case an applet is already being written, this function will start a new process.
-    ///
-    /// During a dry-run, any mutable operation is skipped and only checks are performed.
-    fn start(dry_run: bool) -> Result<(), Error>;
-
-    /// Writes the next chunk of an applet being written to flash.
-    fn write(chunk: &[u8]) -> Result<(), Error>;
-
-    /// Finishes the process of writing an applet to flash.
-    ///
-    /// Implementations should make sure that if the platform reboots before this call, the
-    /// persisted applet is empty.
-    fn finish() -> Result<(), Error>;
 
     /// Notifies an applet start.
     fn notify_start() {}
@@ -56,3 +49,6 @@ pub trait Api: Send {
         let _ = status;
     }
 }
+
+/// Applet install interface.
+pub type Install<B> = <super::Applet<B> as Api>::Install;

@@ -15,30 +15,21 @@
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use tokio::runtime::Handle;
 use wasefire_board_api::Error;
 use wasefire_board_api::applet::Api;
 use wasefire_cli_tools::fs;
 use wasefire_error::Code;
 use wasefire_protocol::applet::ExitStatus;
 
+mod install;
+
 pub enum Impl {}
 
 impl Api for Impl {
+    type Install = install::Impl;
+
     unsafe fn get() -> Result<&'static [u8], Error> {
         with_state(|x| x.get())
-    }
-
-    fn start(dry_run: bool) -> Result<(), Error> {
-        with_state(|x| Handle::current().block_on(x.start(dry_run)))
-    }
-
-    fn write(chunk: &[u8]) -> Result<(), Error> {
-        with_state(|x| x.write(chunk))
-    }
-
-    fn finish() -> Result<(), Error> {
-        with_state(|x| Handle::current().block_on(x.finish()))
     }
 
     fn notify_start() {

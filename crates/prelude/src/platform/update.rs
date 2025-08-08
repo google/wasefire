@@ -16,12 +16,7 @@
 
 use wasefire_applet_api::platform::update as api;
 
-use crate::{Error, convert_bool, convert_unit};
-
-/// Returns whether platform update is supported.
-pub fn is_supported() -> bool {
-    convert_bool(unsafe { api::is_supported() }).unwrap_or(false)
-}
+use crate::{Error, convert_unit};
 
 /// Starts a platform update process.
 ///
