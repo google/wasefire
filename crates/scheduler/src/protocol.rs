@@ -117,11 +117,15 @@ fn process_event_<B: Board>(
             let response = board::platform::Protocol::<B>::vendor(request)?;
             reply::<B, service::PlatformVendor>(&response);
         }
-        Api::PlatformUpdate(request) => process_transfer::<B, PlatformUpdate>(scheduler, request)?,
+        Api::PlatformUpdate(request) => {
+            process_transfer::<B, service::PlatformUpdate>(scheduler, request)?
+        }
         #[cfg(feature = "native")]
         Api::AppletInstall(_) => return Err(Error::world(Code::NotImplemented)),
         #[cfg(feature = "wasm")]
-        Api::AppletInstall(request) => process_transfer::<B, AppletInstall>(scheduler, request)?,
+        Api::AppletInstall(request) => {
+            process_transfer::<B, service::AppletInstall>(scheduler, request)?
+        }
         Api::AppletExitStatus(applet_id) => {
             use crate::applet::Slot;
             let service::applet::AppletId = applet_id;
@@ -179,15 +183,16 @@ pub fn put_response<B: Board>(
     }
 }
 
-trait TransferKind<B: Board> {
+trait TransferKind<B: Board>
+where Self: for<'a> Service<Response<'a> = service::transfer::Response>
+{
     type Api: board::transfer::Api;
     fn start(scheduler: &mut Scheduler<B>);
     fn finish(scheduler: &mut Scheduler<B>);
     fn state(scheduler: &mut Scheduler<B>) -> &mut TransferState;
 }
 
-enum PlatformUpdate {}
-impl<B: Board> TransferKind<B> for PlatformUpdate {
+impl<B: Board> TransferKind<B> for service::PlatformUpdate {
     type Api = board::platform::Update<B>;
     fn start(_: &mut Scheduler<B>) {}
     fn finish(_: &mut Scheduler<B>) {}
@@ -197,9 +202,7 @@ impl<B: Board> TransferKind<B> for PlatformUpdate {
 }
 
 #[cfg(feature = "wasm")]
-enum AppletInstall {}
-#[cfg(feature = "wasm")]
-impl<B: Board> TransferKind<B> for AppletInstall {
+impl<B: Board> TransferKind<B> for service::AppletInstall {
     type Api = board::applet::Install<B>;
     fn start(scheduler: &mut Scheduler<B>) {
         scheduler.stop_applet(ExitStatus::Kill);
@@ -248,7 +251,7 @@ fn process_transfer<B: Board, T: TransferKind<B>>(
             service::transfer::Response::Finish
         }
     };
-    reply::<B, service::AppletInstall>(response);
+    reply::<B, T>(response);
     Ok(())
 }
 

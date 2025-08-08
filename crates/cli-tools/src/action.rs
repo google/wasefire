@@ -137,9 +137,7 @@ impl AppletUninstall {
     pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
         let AppletUninstall {} = self;
         let transfer = Transfer { dry_run: false };
-        transfer
-            .run::<service::AppletInstall>(connection, None, "Uninstalled", None::<fn(_) -> _>)
-            .await
+        transfer.run::<service::AppletInstall>(connection, None, "Erased", None::<fn(_) -> _>).await
     }
 }
 
@@ -485,7 +483,7 @@ impl Transfer {
         )?
         .tick_chars("-\\|/ ")
         .progress_chars("##-");
-        let progress =
+        let mut progress =
             multi_progress.add(indicatif::ProgressBar::new((num_pages * chunk_size) as u64));
         progress.set_style(style.clone());
         progress.set_message("Erasing");
@@ -493,13 +491,15 @@ impl Transfer {
             connection.call::<S>(Request::Erase).await?.get();
             progress.inc(chunk_size as u64);
         }
-        progress.finish_with_message("Erased");
-        let progress = multi_progress.add(indicatif::ProgressBar::new(payload.len() as u64));
-        progress.set_style(style);
-        progress.set_message("Writing");
-        for chunk in payload.chunks(chunk_size) {
-            connection.call::<S>(Request::Write { chunk }).await?.get();
-            progress.inc(chunk.len() as u64);
+        if !payload.is_empty() {
+            progress.finish_with_message("Erased");
+            progress = multi_progress.add(indicatif::ProgressBar::new(payload.len() as u64));
+            progress.set_style(style);
+            progress.set_message("Writing");
+            for chunk in payload.chunks(chunk_size) {
+                connection.call::<S>(Request::Write { chunk }).await?.get();
+                progress.inc(chunk.len() as u64);
+            }
         }
         progress.set_message("Finishing");
         match (dry_run, finish) {
