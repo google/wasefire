@@ -483,24 +483,32 @@ impl Transfer {
         )?
         .tick_chars("-\\|/ ")
         .progress_chars("##-");
-        let mut progress =
-            multi_progress.add(indicatif::ProgressBar::new((num_pages * chunk_size) as u64));
-        progress.set_style(style.clone());
-        progress.set_message("Erasing");
-        for _ in 0 .. num_pages {
-            connection.call::<S>(Request::Erase).await?.get();
-            progress.inc(chunk_size as u64);
+        let mut progress = None;
+        if 0 < num_pages {
+            let progress = progress.insert(
+                multi_progress.add(indicatif::ProgressBar::new((num_pages * chunk_size) as u64)),
+            );
+            progress.set_style(style.clone());
+            progress.set_message("Erasing");
+            for _ in 0 .. num_pages {
+                connection.call::<S>(Request::Erase).await?.get();
+                progress.inc(chunk_size as u64);
+            }
         }
         if !payload.is_empty() {
-            progress.finish_with_message("Erased");
-            progress = multi_progress.add(indicatif::ProgressBar::new(payload.len() as u64));
-            progress.set_style(style);
+            if let Some(progress) = progress.take() {
+                progress.finish_with_message("Erased");
+            }
+            let progress = progress
+                .insert(multi_progress.add(indicatif::ProgressBar::new(payload.len() as u64)));
+            progress.set_style(style.clone());
             progress.set_message("Writing");
             for chunk in payload.chunks(chunk_size) {
                 connection.call::<S>(Request::Write { chunk }).await?.get();
                 progress.inc(chunk.len() as u64);
             }
         }
+        let progress = progress.unwrap_or_else(|| indicatif::ProgressBar::new(0).with_style(style));
         progress.set_message("Finishing");
         match (dry_run, finish) {
             (false, Some(finish)) => final_call::<S>(connection, Request::Finish, finish).await?,

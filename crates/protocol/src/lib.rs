@@ -279,7 +279,7 @@ api! {
     /// Updates the platform.
     15 [7 -] PlatformUpdate: transfer::Request<'a> => transfer::Response,
 
-    /// Installs an applet.
+    /// Installs or uninstalls an applet.
     16 [7 -] AppletInstall: transfer::Request<'a> => transfer::Response,
 
     next 17 [8 -]

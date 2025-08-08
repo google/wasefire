@@ -17,12 +17,6 @@
 use wasefire_wire::Wire;
 
 /// Requests to transfer data.
-///
-/// Each request variant as an associated response variant. The order of operations is:
-/// - Start
-/// - Erase `Response::Start::num_pages` times
-/// - Write zero or more times
-/// - Finish
 #[derive(Debug, Wire)]
 pub enum Request<'a> {
     /// Starts a transfer.
