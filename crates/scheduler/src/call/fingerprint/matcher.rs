@@ -16,9 +16,11 @@ use wasefire_applet_api::fingerprint::matcher as api;
 use wasefire_applet_api::fingerprint::matcher::Api;
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-fingerprint-matcher")]
+use wasefire_board_api::applet::MemoryExt as _;
+#[cfg(feature = "board-api-fingerprint-matcher")]
 use wasefire_board_api::fingerprint::matcher::Api as _;
 #[cfg(feature = "board-api-fingerprint-matcher")]
-use wasefire_board_api::{self as board, AppletMemoryExt as _, Support};
+use wasefire_board_api::{self as board, Support};
 
 #[cfg(feature = "board-api-fingerprint-matcher")]
 use crate::event::{Handler, fingerprint::matcher::Key};

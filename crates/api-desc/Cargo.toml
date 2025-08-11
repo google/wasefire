@@ -47,6 +47,7 @@ api-timer = []
 api-uart = []
 api-usb-ctap = ["internal-api-usb"]
 api-usb-serial = ["internal-api-usb"]
+api-vendor = []
 # Enables all API features.
 full-api = [
   "api-button",
@@ -76,6 +77,7 @@ full-api = [
   "api-uart",
   "api-usb-ctap",
   "api-usb-serial",
+  "api-vendor",
 ]
 # Internal features.
 internal-api-crypto = []

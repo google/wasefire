@@ -15,7 +15,7 @@
 use core::cell::RefCell;
 
 use critical_section::Mutex;
-use wasefire_board_api::{self as board, AppletMemory, Event, Failure};
+use wasefire_board_api::{self as board, Event};
 use wasefire_scheduler as scheduler;
 
 mod applet;
@@ -29,6 +29,8 @@ mod rng;
 mod storage;
 pub mod timer;
 pub mod usb;
+#[cfg(feature = "test-vendor")]
+mod vendor;
 
 struct State {
     events: Events,
@@ -77,16 +79,6 @@ impl board::Api for Board {
         }
     }
 
-    fn vendor(mem: impl AppletMemory, x1: u32, x2: u32, x3: u32, x4: u32) -> Result<u32, Failure> {
-        #[cfg(not(feature = "test-vendor"))]
-        let _ = &mem;
-        match (x1, x2, x3, x4) {
-            #[cfg(feature = "test-vendor")]
-            (0, _, _, _) => syscall_test::process(mem, x2, x3, x4),
-            _ => Err(Failure::TRAP),
-        }
-    }
-
     type Applet = applet::Impl;
     type Button = button::Impl;
     type Clock = clock::Impl;
@@ -99,6 +91,8 @@ impl board::Api for Board {
     type Timer = timer::Impl;
     #[cfg(feature = "_usb")]
     type Usb = usb::Impl;
+    #[cfg(feature = "test-vendor")]
+    type Vendor = vendor::Impl;
 }
 
 #[derive(Default)]

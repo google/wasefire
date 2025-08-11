@@ -4,7 +4,8 @@
 
 ### Major
 
-- Rename `Api::syscall()` to `Api::vendor()` and add an `AppletMemory` parameter
+- Add `Event::Vendor` for vendor events
+- Move `Api::syscall()` to `vendor::Api::syscall()` and add `applet::{Memory,Handlers}` parameters
 - Remove `platform::update::Api` and change `platform::Api::Update` in favor of `transfer::Api`
 - Remove `applet::Api::{start,write,finish}()` in favor of `applet::Api::Install`
 - Change `usb::ctap::Ctap::tick()` to take whether the class may have data available
@@ -15,8 +16,9 @@
 
 ### Minor
 
+- Add `vendor::Api` for vendor syscalls and events
 - Add `Trap` and `Failure` to complete `Error` for applet failures
-- Add `AppletMemory{,Ext}` to abstract over the applet memory
+- Add `applet::{Memory{,Ext},Handlers}` to abstract over the applet memory and handlers
 - Add `applet::Api::Install` for applet install and uninstall
 - Add `transfer::Api` as a common API for `applet::Api::Install` and `platform::Api::Update`
 - Add `Api::Fingerprint` for fingerprint matchers and sensors

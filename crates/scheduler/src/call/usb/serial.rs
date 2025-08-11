@@ -19,7 +19,7 @@ use wasefire_applet_api::usb::serial::Api;
 use wasefire_board_api as board;
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-usb-serial")]
-use wasefire_board_api::AppletMemory as _;
+use wasefire_board_api::applet::Memory as _;
 #[cfg(feature = "board-api-usb-serial")]
 use wasefire_board_api::usb::serial::{Api as _, Event};
 

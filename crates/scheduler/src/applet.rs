@@ -16,7 +16,8 @@
 use alloc::boxed::Box;
 use alloc::collections::{BTreeSet, VecDeque};
 
-#[cfg(feature = "internal-hash-context")]
+use derive_where::derive_where;
+#[cfg(any(feature = "internal-hash-context", feature = "board-api-vendor"))]
 use wasefire_board_api as board;
 use wasefire_board_api::{Api as Board, Event};
 #[cfg(feature = "applet-api-platform-protocol")]
@@ -25,6 +26,8 @@ use wasefire_logger as log;
 
 use self::store::{Memory, Store, StoreApi};
 use crate::Trap;
+#[cfg(feature = "board-api-vendor")]
+use crate::event::InstId;
 use crate::event::{Handler, Key};
 
 pub mod store;
@@ -45,11 +48,10 @@ impl<B: Board> Slot<B> {
     }
 }
 
+#[derive_where(Default)]
 pub struct Applet<B: Board> {
     pub store: self::store::Store,
-
-    /// Pending events.
-    events: VecDeque<Event<B>>,
+    pub events: Events<B>,
 
     /// Protocol request or response, if any.
     #[cfg(feature = "applet-api-platform-protocol")]
@@ -59,27 +61,23 @@ pub struct Applet<B: Board> {
     #[cfg(feature = "wasm")]
     done: bool,
 
-    handlers: BTreeSet<Handler<B>>,
-
     #[cfg(feature = "internal-hash-context")]
     pub hashes: AppletHashes<B>,
 }
 
-// We have to implement manually because derive is not able to find the correct bounds.
-impl<B: Board> Default for Applet<B> {
-    fn default() -> Self {
-        Self {
-            store: Default::default(),
-            events: Default::default(),
-            #[cfg(feature = "applet-api-platform-protocol")]
-            protocol: Default::default(),
-            #[cfg(feature = "wasm")]
-            done: Default::default(),
-            handlers: Default::default(),
-            #[cfg(feature = "internal-hash-context")]
-            hashes: Default::default(),
-        }
-    }
+#[derive_where(Default)]
+pub struct Events<B: Board> {
+    /// Pending events.
+    pending: VecDeque<Event<B>>,
+
+    /// Registered event handlers.
+    handlers: BTreeSet<Handler<B>>,
+}
+
+#[cfg(feature = "board-api-vendor")]
+pub struct Handlers<'a, B: Board> {
+    inst: Option<InstId>,
+    events: &'a mut Events<B>,
 }
 
 #[derive(Debug, Default)]
@@ -134,6 +132,49 @@ impl<B: Board> AppletHashes<B> {
     }
 }
 
+impl<B: Board> Events<B> {
+    #[allow(dead_code)] // in case there are no events
+    fn enable(&mut self, handler: Handler<B>) -> Result<(), Trap> {
+        match self.handlers.insert(handler) {
+            true => Ok(()),
+            false => {
+                log::warn!("Tried to overwrite existing handler");
+                Err(Trap)
+            }
+        }
+    }
+
+    fn disable(&mut self, key: Key<B>) -> Result<(), Trap> {
+        self.pending.retain(|x| Key::from(x) != key);
+        match self.handlers.remove(&key) {
+            true => Ok(()),
+            false => {
+                log::warn!("Tried to remove non-existing handler");
+                Err(Trap)
+            }
+        }
+    }
+
+    #[cfg(feature = "board-api-vendor")]
+    pub fn handlers(&mut self, inst: Option<InstId>) -> Handlers<'_, B> {
+        Handlers { inst, events: self }
+    }
+}
+
+#[cfg(feature = "board-api-vendor")]
+impl<'a, B: Board> board::applet::Handlers<board::vendor::Key<B>> for Handlers<'a, B> {
+    fn register(&mut self, key: board::vendor::Key<B>, func: u32, data: u32) -> Result<(), Trap> {
+        let inst = self.inst.unwrap();
+        let key = Key::Vendor(crate::event::vendor::Key { key });
+        self.events.enable(Handler { key, inst, func, data })
+    }
+
+    fn unregister(&mut self, key: board::vendor::Key<B>) -> Result<(), Trap> {
+        let key = Key::Vendor(crate::event::vendor::Key { key });
+        self.events.disable(key)
+    }
+}
+
 impl<B: Board> Applet<B> {
     pub fn store_mut(&mut self) -> &mut Store {
         &mut self.store
@@ -147,15 +188,15 @@ impl<B: Board> Applet<B> {
     pub fn push(&mut self, event: Event<B>) {
         const MAX_EVENTS: usize = 5;
         #[allow(clippy::if_same_then_else)]
-        if !self.handlers.contains(&Key::from(&event)) {
+        if !self.events.handlers.contains(&Key::from(&event)) {
             // This can happen after an event is disabled and the event queue of the board is
             // flushed.
             log::trace!("Discarding {:?}", event);
-        } else if self.events.contains(&event) {
+        } else if self.events.pending.contains(&event) {
             log::trace!("Merging {:?}", event);
-        } else if self.events.len() < MAX_EVENTS {
+        } else if self.events.pending.len() < MAX_EVENTS {
             log::debug!("Pushing {:?}", event);
-            self.events.push_back(event);
+            self.events.pending.push_back(event);
         } else {
             log::warn!("Dropping {:?}", event);
         }
@@ -167,7 +208,7 @@ impl<B: Board> Applet<B> {
         if core::mem::replace(&mut self.done, false) {
             return EventAction::Reply;
         }
-        match self.events.pop_front() {
+        match self.events.pending.pop_front() {
             Some(event) => EventAction::Handle(event),
             None => EventAction::Wait,
         }
@@ -180,24 +221,11 @@ impl<B: Board> Applet<B> {
 
     #[allow(dead_code)] // in case there are no events
     pub fn enable(&mut self, handler: Handler<B>) -> Result<(), Trap> {
-        match self.handlers.insert(handler) {
-            true => Ok(()),
-            false => {
-                log::warn!("Tried to overwrite existing handler");
-                Err(Trap)
-            }
-        }
+        self.events.enable(handler)
     }
 
     pub fn disable(&mut self, key: Key<B>) -> Result<(), Trap> {
-        self.events.retain(|x| Key::from(x) != key);
-        match self.handlers.remove(&key) {
-            true => Ok(()),
-            false => {
-                log::warn!("Tried to remove non-existing handler");
-                Err(Trap)
-            }
-        }
+        self.events.disable(key)
     }
 
     #[cfg_attr(not(feature = "board-api-fingerprint-matcher"), allow(dead_code))]
@@ -208,8 +236,8 @@ impl<B: Board> Applet<B> {
     }
 
     pub fn free(&mut self) {
-        self.events.clear();
-        for &Handler { key, .. } in &self.handlers {
+        self.events.pending.clear();
+        for &Handler { key, .. } in &self.events.handlers {
             if let Err(error) = key.disable() {
                 log::warn!("Failed disabling {:?}: {}", key, error);
             }
@@ -217,16 +245,16 @@ impl<B: Board> Applet<B> {
     }
 
     pub fn get(&self, key: Key<B>) -> Option<&Handler<B>> {
-        self.handlers.get(&key)
+        self.events.handlers.get(&key)
     }
 
     #[cfg(feature = "wasm")]
     pub fn has_handlers(&self) -> bool {
-        !self.handlers.is_empty()
+        !self.events.handlers.is_empty()
     }
 
     pub fn len(&self) -> usize {
-        self.events.len()
+        self.events.pending.len()
     }
 
     #[cfg(feature = "applet-api-platform-protocol")]

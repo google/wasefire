@@ -61,10 +61,11 @@ ed25519 = ["wasefire-scheduler/board-api-crypto-ed25519"]
 software-ed25519 = ["wasefire-scheduler/software-crypto-ed25519"]
 usb-ctap = ["_usb", "dep:usbd-hid", "wasefire-scheduler/board-api-usb-ctap"]
 # Implements vendor APIs for testing.
-test-vendor = ["dep:syscall-test"]
+test-vendor = ["dep:syscall-test", "wasefire-scheduler/board-api-vendor"]
 # Exactly one is enabled by xtask.
 debug = [
   "dep:defmt",
+  "syscall-test?/defmt",
   "usb-device/defmt",
   "wasefire-common/defmt",
   "wasefire-logger/defmt",

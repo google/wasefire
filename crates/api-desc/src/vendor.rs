@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::applet::Memory as AppletMemory;
+use crate::*;
 
-pub use self::impl_::Store;
-
-#[cfg_attr(feature = "native", path = "store/native.rs")]
-#[cfg_attr(feature = "wasm", path = "store/wasm.rs")]
-mod impl_;
-
-pub type Memory<'a> = <Store as StoreApi>::Memory<'a>;
-
-pub trait StoreApi {
-    type Memory<'a>: AppletMemory
-    where Self: 'a;
-
-    fn memory(&mut self) -> Self::Memory<'_>;
+pub(crate) fn new() -> Item {
+    let docs = docs! {
+        /// Vendor interface.
+    };
+    let name = "vendor".into();
+    let items = vec![item! {
+        /// Vendor syscalls.
+        ///
+        /// Those calls are directly forwarded to the board by the scheduler.
+        fn syscall "vs" { x1: usize, x2: usize, x3: usize, x4: usize } -> usize
+    }];
+    Item::Mod(Mod { docs, name, items })
 }

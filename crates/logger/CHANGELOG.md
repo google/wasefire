@@ -1,9 +1,14 @@
 # Changelog
 
-## 0.1.7-git
+## 0.2.0-git
+
+### Major
+
+- Remove `every!` macro
 
 ### Minor
 
+- Add `MaybeFormat` trait to conditionally depend on `defmt::Format`
 - Use Rust edition 2024
 
 ### Patch

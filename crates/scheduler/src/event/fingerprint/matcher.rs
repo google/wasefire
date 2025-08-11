@@ -14,8 +14,9 @@
 
 use alloc::vec::Vec;
 
+use wasefire_board_api::applet::Memory as _;
 use wasefire_board_api::fingerprint::matcher::{Api as _, Event};
-use wasefire_board_api::{self as board, Api as Board, AppletMemory as _};
+use wasefire_board_api::{self as board, Api as Board};
 use wasefire_error::{Code, Error};
 
 use crate::applet::Applet;

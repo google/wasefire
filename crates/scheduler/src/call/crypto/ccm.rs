@@ -15,7 +15,7 @@
 use wasefire_applet_api::crypto::ccm::{self as api, Api};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
-use wasefire_board_api::AppletMemory as _;
+use wasefire_board_api::applet::Memory as _;
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
 use wasefire_board_api::crypto::aead::{Api as _, Array};
 #[cfg(feature = "board-api-crypto-aes128-ccm")]

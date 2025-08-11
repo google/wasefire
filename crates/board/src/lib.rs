@@ -56,6 +56,8 @@ pub mod transfer;
 pub mod uart;
 #[cfg(feature = "internal-api-usb")]
 pub mod usb;
+#[cfg(feature = "api-vendor")]
+pub mod vendor;
 
 /// Board interface.
 ///
@@ -73,17 +75,6 @@ pub trait Api: Send + 'static {
     /// This function is non-blocking if an event already triggered. However, if there are no event
     /// available, this function blocks and enters a power-saving state until an event triggers.
     fn wait_event() -> Event<Self>;
-
-    /// Board-specific syscalls.
-    ///
-    /// Those calls are directly forwarded from the applet by the scheduler. The default
-    /// implementation always traps. The platform will panic if `Some(Ok(x))` is returned when `x as
-    /// i32` would be negative.
-    fn vendor(
-        _mem: impl AppletMemory, _x1: u32, _x2: u32, _x3: u32, _x4: u32,
-    ) -> Result<u32, Failure> {
-        Err(Failure::TRAP)
-    }
 
     /// Applet interface.
     type Applet: applet::Api;
@@ -141,6 +132,10 @@ pub trait Api: Send + 'static {
     /// USB interface.
     #[cfg(feature = "internal-api-usb")]
     type Usb: usb::Api;
+
+    /// Vendor interface.
+    #[cfg(feature = "api-vendor")]
+    type Vendor: vendor::Api;
 }
 
 /// Describes how an API is supported.
@@ -200,6 +195,10 @@ pub enum Event<B: Api + ?Sized> {
     /// USB event.
     #[cfg(feature = "internal-api-usb")]
     Usb(usb::Event),
+
+    /// Vendor event.
+    #[cfg(feature = "api-vendor")]
+    Vendor(vendor::Event<B>),
 
     /// Dummy event for typing purposes.
     Impossible(Impossible<B>),
@@ -283,6 +282,10 @@ pub type Uart<B> = <B as Api>::Uart;
 #[cfg(feature = "internal-api-usb")]
 pub type Usb<B> = <B as Api>::Usb;
 
+/// Vendor interface.
+#[cfg(feature = "api-vendor")]
+pub type Vendor<B> = <B as Api>::Vendor;
+
 /// Valid identifier for a countable API.
 #[derive_where(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Id<T: Support<usize> + ?Sized> {
@@ -354,73 +357,3 @@ impl From<Error> for Failure {
         Failure(unsafe { core::mem::transmute::<Error, u32>(value) })
     }
 }
-
-/// Interface to an applet memory.
-pub trait AppletMemory {
-    /// Returns a given shared slice from the applet memory.
-    fn get(&self, ptr: u32, len: u32) -> Result<&[u8], Trap>;
-
-    /// Returns a given exclusive slice from the applet memory.
-    #[allow(clippy::mut_from_ref)]
-    fn get_mut(&self, ptr: u32, len: u32) -> Result<&mut [u8], Trap>;
-
-    /// Allocates in the applet memory (traps in case of errors).
-    ///
-    /// This function always returns a valid allocated pointer. If the size is zero or there is not
-    /// enough memory, a trap is returned.
-    fn alloc(&mut self, size: u32, align: u32) -> Result<u32, Trap>;
-}
-
-/// Helper methods on top of `AppletMemory`.
-pub trait AppletMemoryExt: AppletMemory {
-    /// Returns a shared slice from the applet memory or `None` if `ptr == 0`.
-    fn get_opt(&self, ptr: u32, len: u32) -> Result<Option<&[u8]>, Trap> {
-        Ok(match ptr {
-            0 => None,
-            _ => Some(self.get(ptr, len)?),
-        })
-    }
-
-    /// Returns a shared array from the applet memory.
-    fn get_array<const LEN: usize>(&self, ptr: u32) -> Result<&[u8; LEN], Trap> {
-        self.get(ptr, LEN as u32).map(|x| x.try_into().unwrap())
-    }
-
-    /// Returns an exclusive array from the applet memory.
-    fn get_array_mut<const LEN: usize>(&self, ptr: u32) -> Result<&mut [u8; LEN], Trap> {
-        self.get_mut(ptr, LEN as u32).map(|x| x.try_into().unwrap())
-    }
-
-    /// Returns a shared object from the applet memory.
-    #[allow(clippy::wrong_self_convention)]
-    fn from_bytes<T: bytemuck::AnyBitPattern>(&self, ptr: u32) -> Result<&T, Trap> {
-        bytemuck::try_from_bytes(self.get(ptr, core::mem::size_of::<T>() as u32)?).map_err(|_| Trap)
-    }
-
-    /// Returns an exclusive object from the applet memory.
-    #[allow(clippy::wrong_self_convention)]
-    fn from_bytes_mut<T: bytemuck::NoUninit + bytemuck::AnyBitPattern>(
-        &self, ptr: u32,
-    ) -> Result<&mut T, Trap> {
-        bytemuck::try_from_bytes_mut(self.get_mut(ptr, core::mem::size_of::<T>() as u32)?)
-            .map_err(|_| Trap)
-    }
-
-    /// Allocates a copy of `data` unless it's empty.
-    ///
-    /// Always returns `data.len()`. Also writes it to `len_ptr` if provided.
-    fn alloc_copy(&mut self, ptr_ptr: u32, len_ptr: Option<u32>, data: &[u8]) -> Result<u32, Trap> {
-        let len = data.len() as u32;
-        if 0 < len {
-            let ptr = self.alloc(len, 1)?;
-            self.get_mut(ptr, len)?.copy_from_slice(data);
-            self.get_mut(ptr_ptr, 4)?.copy_from_slice(&ptr.to_le_bytes());
-        }
-        if let Some(len_ptr) = len_ptr {
-            self.get_mut(len_ptr, 4)?.copy_from_slice(&len.to_le_bytes());
-        }
-        Ok(len)
-    }
-}
-
-impl<T: AppletMemory> AppletMemoryExt for T {}

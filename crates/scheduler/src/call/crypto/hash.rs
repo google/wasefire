@@ -17,9 +17,8 @@
 use digest::{FixedOutput, InvalidLength, KeyInit, Output, Update};
 use generic_array::GenericArray;
 use wasefire_applet_api::crypto::hash::{self as api, Algorithm, Api};
-use wasefire_board_api::{
-    self as board, Api as Board, AppletMemory as _, AppletMemoryExt as _, Support,
-};
+use wasefire_board_api::applet::{Memory as _, MemoryExt as _};
+use wasefire_board_api::{self as board, Api as Board, Support};
 use wasefire_error::{Code, Error};
 
 #[cfg(feature = "internal-hash-context")]

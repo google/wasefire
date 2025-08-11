@@ -15,7 +15,7 @@
 use wasefire_applet_api::uart::{self as api, Api};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-uart")]
-use wasefire_board_api::AppletMemory as _;
+use wasefire_board_api::applet::Memory as _;
 #[cfg(feature = "board-api-uart")]
 use wasefire_board_api::uart::{Api as _, Direction, Event};
 #[cfg(feature = "board-api-uart")]

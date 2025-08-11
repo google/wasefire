@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `vendor` module and move `syscall()` there
 - Remove `platform::update::is_supported()` function
 - Add `fingerprint::{matcher,sensor}` modules for fingerprint matchers and sensors
 - Add `crypto::{ecdsa,ecdh,ed25519}` module for ECDSA, ECDH, and Ed25519

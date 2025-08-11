@@ -45,6 +45,7 @@ api-timer = ["wasefire-applet-api-desc/api-timer"]
 api-uart = ["wasefire-applet-api-desc/api-uart"]
 api-usb-ctap = ["wasefire-applet-api-desc/api-usb-ctap"]
 api-usb-serial = ["wasefire-applet-api-desc/api-usb-serial"]
+api-vendor = ["wasefire-applet-api-desc/api-vendor"]
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"

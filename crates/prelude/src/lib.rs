@@ -37,7 +37,6 @@
 
 extern crate alloc;
 
-use wasefire_applet_api as api;
 pub use wasefire_error::{self as error, Error};
 use wasefire_one_of::at_most_one_of;
 #[cfg(feature = "rust-crypto")]
@@ -82,22 +81,10 @@ pub mod timer;
 pub mod uart;
 #[cfg(feature = "internal-api-usb")]
 pub mod usb;
+#[cfg(feature = "api-vendor")]
+pub mod vendor;
 
 at_most_one_of!["native", "test", "wasm"];
-
-/// Board-specific syscalls.
-///
-/// Those calls are directly forwarded to the board by the scheduler.
-///
-/// # Safety
-///
-/// For the syscalls they support, boards must either provide safe libraries or safety documentation
-/// (these requirements are not exclusive). If no safety documentation is provided, it must be
-/// assumed that this function cannot be called (regardless of its arguments).
-pub unsafe fn syscall(x1: usize, x2: usize, x3: usize, x4: usize) -> Result<usize, Error> {
-    let params = api::syscall::Params { x1, x2, x3, x4 };
-    convert(unsafe { api::syscall(params) })
-}
 
 /// Defines the entry point of an applet.
 ///

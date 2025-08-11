@@ -13,8 +13,9 @@
 // limitations under the License.
 
 use wasefire_applet_api::platform::update::{self as api, Api};
+use wasefire_board_api::applet::Memory as _;
 use wasefire_board_api::transfer::Api as _;
-use wasefire_board_api::{self as board, Api as Board, AppletMemory as _};
+use wasefire_board_api::{self as board, Api as Board};
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
