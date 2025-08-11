@@ -19,11 +19,11 @@ use wasefire_applet_api::usb::ctap::Api;
 use wasefire_board_api as board;
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-usb-ctap")]
+use wasefire_board_api::AppletMemoryExt as _;
+#[cfg(feature = "board-api-usb-ctap")]
 use wasefire_board_api::usb::ctap::{Api as _, Event};
 
 use crate::DispatchSchedulerCall;
-#[cfg(feature = "board-api-usb-ctap")]
-use crate::applet::store::MemoryApi;
 #[cfg(feature = "board-api-usb-ctap")]
 use crate::event::{Handler, usb::ctap::Key};
 #[cfg(feature = "board-api-usb-ctap")]

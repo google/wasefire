@@ -15,14 +15,14 @@
 use wasefire_applet_api::uart::{self as api, Api};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-uart")]
+use wasefire_board_api::AppletMemory as _;
+#[cfg(feature = "board-api-uart")]
 use wasefire_board_api::uart::{Api as _, Direction, Event};
 #[cfg(feature = "board-api-uart")]
 use wasefire_board_api::{self as board, Id, Support};
 
 #[cfg(feature = "board-api-uart")]
 use crate::Failure;
-#[cfg(feature = "board-api-uart")]
-use crate::applet::store::MemoryApi;
 #[cfg(feature = "board-api-uart")]
 use crate::event::{Handler, uart::Key};
 use crate::{DispatchSchedulerCall, SchedulerCall};

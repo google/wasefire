@@ -15,11 +15,10 @@
 use alloc::vec::Vec;
 
 use wasefire_board_api::fingerprint::matcher::{Api as _, Event};
-use wasefire_board_api::{self as board, Api as Board};
+use wasefire_board_api::{self as board, Api as Board, AppletMemory as _};
 use wasefire_error::{Code, Error};
 
 use crate::applet::Applet;
-use crate::applet::store::MemoryApi;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]

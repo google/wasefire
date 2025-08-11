@@ -21,6 +21,7 @@ embedded-storage = "0.3.1"
 header = { path = "crates/header" }
 panic-abort = { version = "0.3.2", optional = true }
 panic-probe = { version = "1.0.0", features = ["print-defmt"], optional = true }
+syscall-test = { path = "../board/crates/syscall-test", optional = true }
 typenum = { version = "1.18.0", default-features = false, optional = true }
 usb-device = "0.3.2"
 usbd-hid = { version = "0.8.2", optional = true }
@@ -82,7 +83,7 @@ radio-ble = [
   "dep:wasefire-applet-api",
   "wasefire-scheduler/board-api-radio-ble",
 ]
-test-vendor = ["dep:data-encoding"]
+test-vendor = ["dep:data-encoding", "dep:syscall-test"]
 uart = ["wasefire-scheduler/board-api-uart"]
 usb-ctap = ["_usb", "dep:usbd-hid", "wasefire-scheduler/board-api-usb-ctap"]
 usb-serial = ["_usb", "dep:usbd-serial", "wasefire-scheduler/board-api-usb-serial"]

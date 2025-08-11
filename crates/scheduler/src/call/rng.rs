@@ -19,13 +19,13 @@ use wasefire_applet_api::rng::Api;
 use wasefire_board_api as board;
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-rng")]
+use wasefire_board_api::AppletMemory as _;
+#[cfg(feature = "board-api-rng")]
 use wasefire_board_api::rng::Api as _;
 
 use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-rng")]
 use crate::SchedulerCall;
-#[cfg(feature = "board-api-rng")]
-use crate::applet::store::MemoryApi;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {

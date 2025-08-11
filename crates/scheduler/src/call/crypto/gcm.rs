@@ -18,11 +18,11 @@ use wasefire_board_api::Api as Board;
 use wasefire_board_api::crypto::aead::Api as _;
 #[cfg(feature = "board-api-crypto-aes256-gcm")]
 use wasefire_board_api::{self as board, Support as _};
+#[cfg(feature = "board-api-crypto-aes256-gcm")]
+use wasefire_board_api::{AppletMemory as _, AppletMemoryExt as _};
 
 #[cfg(feature = "board-api-crypto-aes256-gcm")]
 use crate::Trap;
-#[cfg(feature = "board-api-crypto-aes256-gcm")]
-use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {

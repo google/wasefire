@@ -4,6 +4,7 @@
 
 ### Major
 
+- Rename `Api::syscall()` to `Api::vendor()` and add an `AppletMemory` parameter
 - Remove `platform::update::Api` and change `platform::Api::Update` in favor of `transfer::Api`
 - Remove `applet::Api::{start,write,finish}()` in favor of `applet::Api::Install`
 - Change `usb::ctap::Ctap::tick()` to take whether the class may have data available
@@ -14,6 +15,8 @@
 
 ### Minor
 
+- Add `Trap` and `Failure` to complete `Error` for applet failures
+- Add `AppletMemory{,Ext}` to abstract over the applet memory
 - Add `applet::Api::Install` for applet install and uninstall
 - Add `transfer::Api` as a common API for `applet::Api::Install` and `platform::Api::Update`
 - Add `Api::Fingerprint` for fingerprint matchers and sensors
@@ -199,4 +202,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 13 -->
+<!-- Increment to skip CHANGELOG.md test: 14 -->

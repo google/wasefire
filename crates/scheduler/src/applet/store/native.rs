@@ -14,7 +14,9 @@
 
 use core::alloc::Layout;
 
-use super::{MemoryApi, StoreApi};
+use wasefire_board_api::AppletMemory;
+
+use super::StoreApi;
 use crate::Trap;
 
 #[derive(Debug, Default)]
@@ -34,7 +36,7 @@ impl StoreApi for Store {
 
 // SATEFY: For now we trust the applet. We could do some additional checks. But those already run
 // when running the applet in Wasm. Native applets are meant for performance.
-impl MemoryApi for Memory {
+impl AppletMemory for Memory {
     fn get(&self, ptr: u32, len: u32) -> Result<&[u8], Trap> {
         match (ptr, len) {
             (_, 0) => Ok(&[]),

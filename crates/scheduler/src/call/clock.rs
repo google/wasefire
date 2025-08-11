@@ -17,13 +17,13 @@ use wasefire_applet_api::clock::Api;
 use wasefire_applet_api::clock::{self as api};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-clock")]
+use wasefire_board_api::AppletMemory as _;
+#[cfg(feature = "board-api-clock")]
 use wasefire_board_api::{self as board, clock::Api as _};
 
 use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-clock")]
 use crate::SchedulerCall;
-#[cfg(feature = "board-api-clock")]
-use crate::applet::store::MemoryApi;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {

@@ -26,8 +26,7 @@ pub mod uart;
 pub mod usb;
 
 use tokio::sync::mpsc::Sender;
-use wasefire_board_api::{Api, Event};
-use wasefire_error::Error;
+use wasefire_board_api::{Api, AppletMemory, Event, Failure};
 use wasefire_store::FileStorage;
 
 use crate::RECEIVER;
@@ -55,11 +54,10 @@ impl Api for Board {
         RECEIVER.lock().unwrap().as_mut().unwrap().blocking_recv().unwrap()
     }
 
-    fn syscall(x1: u32, x2: u32, x3: u32, x4: u32) -> Option<Result<u32, Error>> {
+    fn vendor(mem: impl AppletMemory, x1: u32, x2: u32, x3: u32, x4: u32) -> Result<u32, Failure> {
         match (x1, x2, x3, x4) {
-            // The syscall_test example relies on this.
-            (0, 0, 0, x) => Some(Error::decode(x as i32)),
-            _ => None,
+            (0, _, _, _) => syscall_test::process(mem, x2, x3, x4),
+            _ => Err(Failure::TRAP),
         }
     }
 

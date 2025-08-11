@@ -56,6 +56,7 @@ cli-tools
 cli
 xtask
 protocol/crates/schema
+board/crates/syscall-test
 runner-host/crates/web-common
 runner-host/crates/web-client
 runner-host/crates/web-server

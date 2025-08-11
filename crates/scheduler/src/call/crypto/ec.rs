@@ -17,12 +17,12 @@ use generic_array as _;
 use wasefire_applet_api::crypto::ec::{self as api, Api, Curve};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "internal-board-api-crypto-ecc")]
+use wasefire_board_api::AppletMemoryExt as _;
+#[cfg(feature = "internal-board-api-crypto-ecc")]
 use wasefire_board_api::crypto::ecc::Api as _;
 #[cfg(feature = "internal-board-api-crypto-ecc")]
 use wasefire_board_api::{self as board, Support};
 
-#[cfg(feature = "internal-board-api-crypto-ecc")]
-use crate::applet::store::MemoryApi;
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {

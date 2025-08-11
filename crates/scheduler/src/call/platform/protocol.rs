@@ -14,9 +14,8 @@
 
 use wasefire_applet_api::platform::protocol as api;
 use wasefire_applet_api::platform::protocol::Api;
-use wasefire_board_api::Api as Board;
+use wasefire_board_api::{Api as Board, AppletMemory as _, AppletMemoryExt as _};
 
-use crate::applet::store::MemoryApi;
 use crate::event::Handler;
 use crate::event::platform::protocol::Key;
 use crate::{DispatchSchedulerCall, SchedulerCall};

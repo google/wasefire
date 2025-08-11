@@ -506,6 +506,7 @@ dependencies = [
  "embedded-alloc",
  "riscv",
  "riscv-rt",
+ "syscall-test",
  "typenum",
  "usb-device",
  "usbd-hid",
@@ -660,6 +661,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "syscall-test"
+version = "0.1.0"
+dependencies = [
+ "wasefire-board-api",
+]
+
+[[package]]
 name = "thiserror"
 version = "2.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -786,6 +794,7 @@ dependencies = [
 name = "wasefire-board-api"
 version = "0.9.0-git"
 dependencies = [
+ "bytemuck",
  "crypto-common",
  "data-encoding",
  "defmt 1.0.1",

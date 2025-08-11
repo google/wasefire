@@ -17,19 +17,15 @@
 use digest::{FixedOutput, InvalidLength, KeyInit, Output, Update};
 use generic_array::GenericArray;
 use wasefire_applet_api::crypto::hash::{self as api, Algorithm, Api};
-use wasefire_board_api::{self as board, Api as Board, Support};
+use wasefire_board_api::{
+    self as board, Api as Board, AppletMemory as _, AppletMemoryExt as _, Support,
+};
 use wasefire_error::{Code, Error};
 
 #[cfg(feature = "internal-hash-context")]
 use crate::applet::HashContext;
-use crate::applet::store::{MemoryApi, StoreApi};
+use crate::applet::store::StoreApi;
 use crate::{DispatchSchedulerCall, Failure, SchedulerCall, Trap};
-
-impl From<InvalidLength> for Failure {
-    fn from(InvalidLength: InvalidLength) -> Self {
-        Self::Error(Error::user(Code::InvalidLength))
-    }
-}
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
@@ -203,7 +199,7 @@ fn hkdf_expand<B: Board>(mut call: SchedulerCall<B, api::hkdf_expand::Sig>) {
         call.read();
     let applet = call.applet();
     let memory = applet.memory();
-    let result: Result<(), _> = try {
+    let result: Result<(), Failure> = try {
         let prk = memory.get(*prk, *prk_len)?;
         let info = memory.get(*info, *info_len)?;
         let okm = memory.get_mut(*okm, *okm_len)?;
@@ -224,13 +220,13 @@ fn hkdf_expand<B: Board>(mut call: SchedulerCall<B, api::hkdf_expand::Sig>) {
 #[cfg(feature = "applet-api-crypto-hkdf")]
 fn hkdf<H: KeyInit + Update + FixedOutput>(
     prk: &[u8], info: &[u8], okm: &mut [u8],
-) -> Result<(), InvalidLength> {
+) -> Result<(), Failure> {
     if 255 * H::output_size() < okm.len() {
-        return Err(InvalidLength);
+        return Err(convert(InvalidLength));
     }
     let mut output = Output::<H>::default();
     for (chunk, i) in okm.chunks_mut(H::output_size()).zip(1u8 ..) {
-        let mut hmac = <H as KeyInit>::new_from_slice(prk)?;
+        let mut hmac = <H as KeyInit>::new_from_slice(prk).map_err(convert)?;
         if 1 < i {
             hmac.update(&output);
         }
@@ -270,4 +266,9 @@ fn convert_hmac_algorithm<B: Board>(algorithm: u32) -> Result<Result<Algorithm, 
         }
     };
     Ok(support.then_some(algorithm).ok_or(Trap))
+}
+
+#[cfg(feature = "applet-api-crypto-hkdf")]
+fn convert(InvalidLength: InvalidLength) -> Failure {
+    Error::user(Code::InvalidLength).into()
 }

@@ -19,11 +19,9 @@ use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-radio-ble")]
 use wasefire_board_api::radio::ble::{Api as _, Event};
 #[cfg(feature = "board-api-radio-ble")]
-use wasefire_board_api::{self as board};
+use wasefire_board_api::{self as board, AppletMemoryExt as _};
 
 use crate::DispatchSchedulerCall;
-#[cfg(feature = "board-api-radio-ble")]
-use crate::applet::store::MemoryApi;
 #[cfg(feature = "board-api-radio-ble")]
 use crate::event::{Handler, radio::ble::Key};
 #[cfg(feature = "board-api-radio-ble")]

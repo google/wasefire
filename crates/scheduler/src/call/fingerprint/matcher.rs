@@ -14,16 +14,12 @@
 
 use wasefire_applet_api::fingerprint::matcher as api;
 use wasefire_applet_api::fingerprint::matcher::Api;
-#[cfg(feature = "board-api-fingerprint-matcher")]
-use wasefire_board_api as board;
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-fingerprint-matcher")]
-use wasefire_board_api::Support;
-#[cfg(feature = "board-api-fingerprint-matcher")]
 use wasefire_board_api::fingerprint::matcher::Api as _;
-
 #[cfg(feature = "board-api-fingerprint-matcher")]
-use crate::applet::store::MemoryApi;
+use wasefire_board_api::{self as board, AppletMemoryExt as _, Support};
+
 #[cfg(feature = "board-api-fingerprint-matcher")]
 use crate::event::{Handler, fingerprint::matcher::Key};
 use crate::{DispatchSchedulerCall, SchedulerCall};
