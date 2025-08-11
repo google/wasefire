@@ -394,7 +394,7 @@ pub trait AppletMemoryExt: AppletMemory {
     /// Returns a shared object from the applet memory.
     #[allow(clippy::wrong_self_convention)]
     fn from_bytes<T: bytemuck::AnyBitPattern>(&self, ptr: u32) -> Result<&T, Trap> {
-        Ok(bytemuck::from_bytes(self.get(ptr, core::mem::size_of::<T>() as u32)?))
+        bytemuck::try_from_bytes(self.get(ptr, core::mem::size_of::<T>() as u32)?).map_err(|_| Trap)
     }
 
     /// Returns an exclusive object from the applet memory.
@@ -402,7 +402,8 @@ pub trait AppletMemoryExt: AppletMemory {
     fn from_bytes_mut<T: bytemuck::NoUninit + bytemuck::AnyBitPattern>(
         &self, ptr: u32,
     ) -> Result<&mut T, Trap> {
-        Ok(bytemuck::from_bytes_mut(self.get_mut(ptr, core::mem::size_of::<T>() as u32)?))
+        bytemuck::try_from_bytes_mut(self.get_mut(ptr, core::mem::size_of::<T>() as u32)?)
+            .map_err(|_| Trap)
     }
 
     /// Allocates a copy of `data` unless it's empty.
