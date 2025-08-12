@@ -24,13 +24,17 @@ use bytemuck::Zeroable;
 use data_encoding::HEXLOWER;
 use wasefire::vendor::syscall;
 
+const SYSCALL_ID: usize = ble_adv::SYSCALL_ID as usize;
+const OP_REGISTER: usize = ble_adv::OP_REGISTER as usize;
+const OP_READ_PACKET: usize = ble_adv::OP_READ_PACKET as usize;
+
 fn main() {
-    unsafe { syscall(0x80000001, 1, print_event as usize, 0) }.unwrap();
+    unsafe { syscall(SYSCALL_ID, OP_REGISTER, print_event as usize, 0) }.unwrap();
 }
 
 extern "C" fn print_event(_: *const u8) {
     let mut packet = Advertisement::zeroed();
-    match unsafe { syscall(0x80000001, 3, &mut packet as *mut _ as usize, 0) } {
+    match unsafe { syscall(SYSCALL_ID, OP_READ_PACKET, &mut packet as *mut _ as usize, 0) } {
         Ok(0) => debug!("no packet"),
         Ok(1) => {
             let freq = packet.freq;

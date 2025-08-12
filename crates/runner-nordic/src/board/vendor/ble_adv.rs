@@ -37,17 +37,19 @@ pub fn syscall(
     memory: impl Memory, mut handlers: impl Handlers<super::Key>, x2: u32, x3: u32, x4: u32,
 ) -> Result<u32, Failure> {
     match (x2, x3, x4) {
-        (1, func, data) => {
+        (ble_adv::OP_REGISTER, func, data) => {
             handlers.register(super::Key::BleAdv, func, data)?;
             enable()?;
             Ok(0)
         }
-        (2, 0, 0) => {
+        (ble_adv::OP_UNREGISTER, 0, 0) => {
             disable()?;
             handlers.unregister(super::Key::BleAdv)?;
             Ok(0)
         }
-        (3, ptr, 0) => Ok(read_advertisement(memory.from_bytes_mut(ptr)?)? as u32),
+        (ble_adv::OP_READ_PACKET, ptr, 0) => {
+            Ok(read_advertisement(memory.from_bytes_mut(ptr)?)? as u32)
+        }
         _ => Err(Failure::TRAP),
     }
 }

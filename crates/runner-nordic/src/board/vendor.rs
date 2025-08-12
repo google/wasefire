@@ -54,7 +54,7 @@ impl Api for Impl {
             #[cfg(feature = "gpio")]
             (0x80000000, x, y, z) => Ok(crate::board::gpio::syscall(x, y, z)?),
             #[cfg(feature = "ble-adv")]
-            (0x80000001, x, y, z) => Ok(ble_adv::syscall(memory, handlers, x, y, z)?),
+            (::ble_adv::SYSCALL_ID, x, y, z) => Ok(ble_adv::syscall(memory, handlers, x, y, z)?),
             _ => Err(Failure::TRAP),
         }
     }

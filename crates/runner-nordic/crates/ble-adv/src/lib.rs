@@ -33,3 +33,8 @@ impl Advertisement {
         &self.data[.. self.data_len as usize]
     }
 }
+
+pub const SYSCALL_ID: u32 = 0x80000001;
+pub const OP_REGISTER: u32 = 1;
+pub const OP_UNREGISTER: u32 = 2;
+pub const OP_READ_PACKET: u32 = 3;
