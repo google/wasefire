@@ -39,7 +39,6 @@ api-led = []
 api-platform = ["internal-api-platform"]
 api-platform-protocol = ["internal-api-platform"]
 api-platform-update = ["internal-api-platform"]
-api-radio-ble = ["internal-api-radio"]
 api-rng = []
 api-store = ["internal-api-store"]
 api-store-fragment = ["internal-api-store"]
@@ -69,7 +68,6 @@ full-api = [
   "api-platform",
   "api-platform-protocol",
   "api-platform-update",
-  "api-radio-ble",
   "api-rng",
   "api-store",
   "api-store-fragment",
@@ -84,7 +82,6 @@ internal-api-crypto = []
 internal-api-crypto-hash = ["internal-api-crypto"]
 internal-api-fingerprint = []
 internal-api-platform = []
-internal-api-radio = []
 internal-api-store = []
 internal-api-usb = []
 

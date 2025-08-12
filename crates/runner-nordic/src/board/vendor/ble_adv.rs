@@ -14,6 +14,7 @@
 
 use alloc::collections::VecDeque;
 
+use ble_adv::Advertisement;
 use nrf52840_hal::pac::TIMER0;
 use rubble::beacon::{BeaconScanner, ScanCallback};
 use rubble::bytes::{ByteWriter, ToBytes};
@@ -23,60 +24,72 @@ use rubble::link::{DeviceAddress, MIN_PDU_BUF, Metadata, NextUpdate, RadioCmd};
 use rubble::time::{Duration, Timer};
 use rubble_nrf5x::radio::BleRadio;
 use rubble_nrf5x::timer::BleTimer;
-use wasefire_applet_api::radio::ble::Advertisement;
-use wasefire_board_api::radio::ble::{Api, Event};
-use wasefire_board_api::{Error, Supported};
+use wasefire_board_api::Failure;
+use wasefire_board_api::applet::{Handlers, Memory, MemoryExt as _};
+use wasefire_board_api::vendor::Event;
+use wasefire_error::Error;
 use wasefire_logger as log;
 use wasefire_sync::TakeCell;
 
 use crate::with_state;
 
-pub enum Impl {}
-
-impl Supported for Impl {}
-
-impl Api for Impl {
-    fn enable(event: &Event) -> Result<(), Error> {
-        match event {
-            Event::Advertisement => with_state(|state| {
-                let ble = &mut state.ble;
-                let scanner_cmd = ble.scanner.configure(ble.timer.now(), Duration::millis(500));
-                ble.radio.configure_receiver(scanner_cmd.radio);
-                ble.timer.configure_interrupt(scanner_cmd.next_update);
-                Ok(())
-            }),
+pub fn syscall(
+    memory: impl Memory, mut handlers: impl Handlers<super::Key>, x2: u32, x3: u32, x4: u32,
+) -> Result<u32, Failure> {
+    match (x2, x3, x4) {
+        (ble_adv::OP_REGISTER, func, data) => {
+            handlers.register(super::Key::BleAdv, func, data)?;
+            enable()?;
+            Ok(0)
         }
-    }
-
-    fn disable(event: &Event) -> Result<(), Error> {
-        match event {
-            Event::Advertisement => with_state(|state| {
-                let ble = &mut state.ble;
-                ble.timer.configure_interrupt(NextUpdate::Disable);
-                ble.radio.configure_receiver(RadioCmd::Off);
-                Ok(())
-            }),
+        (ble_adv::OP_UNREGISTER, 0, 0) => {
+            disable()?;
+            handlers.unregister(super::Key::BleAdv)?;
+            Ok(0)
         }
+        (ble_adv::OP_READ_PACKET, ptr, 0) => {
+            Ok(read_advertisement(memory.from_bytes_mut(ptr)?)? as u32)
+        }
+        _ => Err(Failure::TRAP),
     }
+}
 
-    fn read_advertisement(output: &mut Advertisement) -> Result<bool, Error> {
-        with_state(|state| {
-            let ble = &mut state.ble;
-            let input = match ble.packet_queue.pop_front() {
-                Some(x) => x,
-                None => return Ok(false),
-            };
-            output.ticks = input.metadata.ticks;
-            output.freq = input.metadata.freq;
-            output.rssi = input.metadata.rssi;
-            output.pdu_type = input.metadata.pdu_type;
-            output.addr = input.addr;
-            output.data_len = input.data.len() as u8;
-            output.data[.. input.data.len()].copy_from_slice(&input.data);
-            log::trace!("read_advertisement() -> {:?}", log::Debug2Format(output));
-            Ok(true)
-        })
-    }
+fn enable() -> Result<(), Error> {
+    with_state(|state| {
+        let ble = &mut state.ble;
+        let scanner_cmd = ble.scanner.configure(ble.timer.now(), Duration::millis(500));
+        ble.radio.configure_receiver(scanner_cmd.radio);
+        ble.timer.configure_interrupt(scanner_cmd.next_update);
+        Ok(())
+    })
+}
+
+pub fn disable() -> Result<(), Error> {
+    with_state(|state| {
+        let ble = &mut state.ble;
+        ble.timer.configure_interrupt(NextUpdate::Disable);
+        ble.radio.configure_receiver(RadioCmd::Off);
+        Ok(())
+    })
+}
+
+fn read_advertisement(output: &mut Advertisement) -> Result<bool, Error> {
+    with_state(|state| {
+        let ble = &mut state.ble;
+        let input = match ble.packet_queue.pop_front() {
+            Some(x) => x,
+            None => return Ok(false),
+        };
+        output.ticks = input.metadata.ticks;
+        output.freq = input.metadata.freq;
+        output.rssi = input.metadata.rssi;
+        output.pdu_type = input.metadata.pdu_type;
+        output.addr = input.addr;
+        output.data_len = input.data.len() as u8;
+        output.data[.. input.data.len()].copy_from_slice(&input.data);
+        log::trace!("read_advertisement() -> {:?}", output);
+        Ok(true)
+    })
 }
 
 pub struct Ble {
@@ -94,7 +107,7 @@ impl Ble {
         Ble { radio, scanner, timer, packet_queue }
     }
 
-    pub fn tick(&mut self, mut push: impl FnMut(Event)) {
+    pub fn tick(&mut self, mut push: impl FnMut(Event<crate::Board>)) {
         let next_update =
             match self.radio.recv_beacon_interrupt(self.timer.now(), &mut self.scanner) {
                 Some(x) => x,
@@ -104,7 +117,7 @@ impl Ble {
         if let Some(packet) = BLE_PACKET.get() {
             if self.packet_queue.len() < 50 {
                 self.packet_queue.push_back(packet);
-                push(Event::Advertisement);
+                push(Event(super::Event::BleAdv));
                 log::debug!("BLE queue size: {}", self.packet_queue.len());
             } else {
                 log::warn!("BLE Packet dropped. Queue size: {}", self.packet_queue.len());

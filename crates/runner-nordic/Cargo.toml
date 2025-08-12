@@ -7,6 +7,7 @@ publish = false
 edition = "2024"
 
 [dependencies]
+ble-adv = { path = "crates/ble-adv", optional = true }
 bytemuck = { version = "1.23.1", default-features = false, optional = true }
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
 cortex-m-rt = { version = "0.7.5", features = ["set-vtor"] }
@@ -26,7 +27,6 @@ typenum = { version = "1.18.0", default-features = false, optional = true }
 usb-device = "0.3.2"
 usbd-hid = { version = "0.8.2", optional = true }
 usbd-serial = { version = "0.2.2", optional = true }
-wasefire-applet-api = { path = "../api", optional = true }
 wasefire-board-api = { path = "../board" }
 wasefire-common = { path = "../common" }
 wasefire-error = { path = "../error" }
@@ -70,6 +70,7 @@ features = [
 
 [features]
 aes128-ccm = ["_crypto", "dep:typenum", "wasefire-scheduler/board-api-crypto-aes128-ccm"]
+ble-adv = ["_vendor", "dep:ble-adv", "dep:rubble", "dep:rubble-nrf5x"]
 fpc2534 = [
   "_gpio_port1",
   "dep:bytemuck",
@@ -77,12 +78,6 @@ fpc2534 = [
   "wasefire-scheduler/board-api-fingerprint-sensor",
 ]
 gpio = ["_gpio_port1", "_vendor", "wasefire-scheduler/board-api-gpio"]
-radio-ble = [
-  "dep:rubble",
-  "dep:rubble-nrf5x",
-  "dep:wasefire-applet-api",
-  "wasefire-scheduler/board-api-radio-ble",
-]
 test-vendor = ["_vendor", "dep:data-encoding", "dep:syscall-test"]
 uart = ["wasefire-scheduler/board-api-uart"]
 usb-ctap = ["_usb", "dep:usbd-hid", "wasefire-scheduler/board-api-usb-ctap"]
@@ -107,6 +102,7 @@ board-dongle = ["_gpio_port1", "header/board-dongle"]
 board-makerdiary = ["header/board-makerdiary"]
 # Exactly one is enabled by xtask.
 debug = [
+  "ble-adv?/defmt",
   "dep:defmt",
   "dep:defmt-rtt",
   "dep:panic-probe",
@@ -124,7 +120,7 @@ native = ["wasefire-scheduler/native"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
 # Internal features.
 _crypto = []
-_full = ["_software-crypto", "aes128-ccm", "gpio", "radio-ble", "uart", "usb-ctap", "usb-serial"]
+_full = ["_software-crypto", "aes128-ccm", "ble-adv", "gpio", "uart", "usb-ctap", "usb-serial"]
 _gpio_port1 = []
 _software-crypto = [
   "software-crypto-aes256-cbc",

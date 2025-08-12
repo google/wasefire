@@ -1,0 +1,19 @@
+[package]
+name = "nordic_ble_adv"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+edition = "2024"
+
+[dependencies]
+ble-adv = { path = "../../../crates/runner-nordic/crates/ble-adv" }
+bytemuck = { version = "1.23.1", default-features = false }
+data-encoding = { version = "2.9.0", default-features = false, features = ["alloc"] }
+wasefire = { path = "../../../crates/prelude" }
+
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unused-crate-dependencies = "warn"

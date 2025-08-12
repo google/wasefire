@@ -116,6 +116,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf4b9d6a944f767f8e5e0db018570623c85f3d925ac718db4e06d0187adb21c1"
 
 [[package]]
+name = "ble-adv"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "defmt 1.0.1",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -921,6 +929,7 @@ dependencies = [
 name = "runner-nordic"
 version = "0.1.0"
 dependencies = [
+ "ble-adv",
  "bytemuck",
  "cortex-m",
  "cortex-m-rt",
@@ -943,7 +952,6 @@ dependencies = [
  "usb-device",
  "usbd-hid",
  "usbd-serial",
- "wasefire-applet-api",
  "wasefire-board-api",
  "wasefire-common",
  "wasefire-error",
@@ -1346,7 +1354,6 @@ dependencies = [
  "usb-device",
  "usbd-hid",
  "usbd-serial",
- "wasefire-applet-api",
  "wasefire-common",
  "wasefire-error",
  "wasefire-logger",

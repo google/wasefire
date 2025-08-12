@@ -48,12 +48,6 @@ zeroize = { version = "1.7.0", optional = true, default-features = false }
 # TODO(usbd-hid > 0.8.2): Remove
 ssmarshal = { version = "1.0.0", default-features = false, optional = true }
 
-[dependencies.wasefire-applet-api]
-version = "0.8.0-git"
-path = "../api"
-features = ["host"]
-optional = true
-
 [features]
 std = ["ssmarshal?/std", "wasefire-store?/std"]
 # Logging features (enable at most one).
@@ -81,7 +75,6 @@ api-fingerprint-matcher = ["internal-api-fingerprint"]
 api-fingerprint-sensor = ["internal-api-fingerprint"]
 api-gpio = ["bytemuck/derive"]
 api-led = []
-api-radio-ble = ["internal-api-radio", "wasefire-applet-api/api-radio-ble"]
 api-rng = []
 api-storage = ["dep:wasefire-store"]
 api-timer = []
@@ -111,7 +104,6 @@ full-api = [
   "api-fingerprint-sensor",
   "api-gpio",
   "api-led",
-  "api-radio-ble",
   "api-rng",
   "api-storage",
   "api-timer",
@@ -217,7 +209,6 @@ internal-api-crypto-hmac = [
   "internal-with-error",
 ]
 internal-api-fingerprint = []
-internal-api-radio = []
 internal-api-usb = []
 internal-crypto-rng = ["api-rng", "dep:signature", "internal-with-error", "signature?/rand_core"]
 internal-software-crypto = [

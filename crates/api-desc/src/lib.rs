@@ -36,8 +36,6 @@ mod led;
 mod macros;
 #[cfg(feature = "internal-api-platform")]
 mod platform;
-#[cfg(feature = "internal-api-radio")]
-mod radio;
 #[cfg(feature = "api-rng")]
 mod rng;
 mod scheduling;
@@ -75,8 +73,6 @@ impl Default for Api {
             led::new(),
             #[cfg(feature = "internal-api-platform")]
             platform::new(),
-            #[cfg(feature = "internal-api-radio")]
-            radio::new(),
             #[cfg(feature = "api-rng")]
             rng::new(),
             scheduling::new(),
@@ -181,11 +177,6 @@ enum Type {
     Integer {
         signed: bool,
         bits: Option<usize>,
-    },
-    #[cfg_attr(not(feature = "api-radio-ble"), allow(dead_code))]
-    Array {
-        type_: Box<Type>,
-        length: usize,
     },
     Pointer {
         mutable: bool,
@@ -582,7 +573,6 @@ impl Type {
             Type::Integer { bits: None, .. } => true,
             Type::Integer { bits: Some(32), .. } => true,
             Type::Integer { bits: Some(_), .. } => false,
-            Type::Array { .. } => false,
             Type::Pointer { .. } => true,
             Type::Function { .. } => true,
         }
@@ -604,7 +594,6 @@ impl Type {
             Type::Never | Type::Unit | Type::Bool => false,
             Type::Integer { bits: None, .. } => true,
             Type::Integer { bits: Some(_), .. } => false,
-            Type::Array { .. } => false,
             Type::Pointer { .. } => true,
             Type::Function { .. } => true,
         }
@@ -634,10 +623,6 @@ impl Type {
             Type::Integer { signed: true, bits: Some(64) } => quote!(i64),
             Type::Integer { signed: false, bits: Some(64) } => quote!(u64),
             Type::Integer { .. } => unimplemented!(),
-            Type::Array { type_, length } => {
-                let type_ = type_.wasm_rust();
-                quote!([#type_; #length])
-            }
             Type::Pointer { mutable, type_ } => {
                 let mutable = if *mutable { quote!(mut) } else { quote!(const) };
                 let type_ = match type_ {
@@ -667,7 +652,6 @@ impl Type {
             Type::Integer { signed: true, bits: Some(64) } => write!(output, "i64"),
             Type::Integer { signed: false, bits: Some(64) } => write!(output, "u64"),
             Type::Integer { .. } => unimplemented!(),
-            Type::Array { .. } => write!(output, "unimplemented"),
             // TODO: Is there a way to decorate this better?
             Type::Pointer { mutable: _, type_: _ } => write!(output, "usize"),
             // TODO: Is there a way to decorate this better?

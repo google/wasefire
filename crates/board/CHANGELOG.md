@@ -4,6 +4,7 @@
 
 ### Major
 
+- Remove the `api-radio-ble` feature and associated items
 - Add `Event::Vendor` for vendor events
 - Move `Api::syscall()` to `vendor::Api::syscall()` and add `applet::{Memory,Handlers}` parameters
 - Remove `platform::update::Api` and change `platform::Api::Update` in favor of `transfer::Api`

@@ -93,7 +93,6 @@ applet-api-platform-update = [
   "internal-applet-api-platform",
   "wasefire-applet-api/api-platform-update",
 ]
-applet-api-radio-ble = ["internal-applet-api-radio", "wasefire-applet-api/api-radio-ble"]
 applet-api-rng = ["wasefire-applet-api/api-rng"]
 applet-api-store = ["internal-applet-api-store", "wasefire-applet-api/api-store"]
 applet-api-store-fragment = ["internal-applet-api-store", "wasefire-applet-api/api-store-fragment"]
@@ -175,11 +174,6 @@ board-api-fingerprint-sensor = [
 ]
 board-api-gpio = ["applet-api-gpio", "dep:bytemuck", "wasefire-board-api/api-gpio"]
 board-api-led = ["applet-api-led", "wasefire-board-api/api-led"]
-board-api-radio-ble = [
-  "applet-api-radio-ble",
-  "internal-board-api-radio",
-  "wasefire-board-api/api-radio-ble",
-]
 board-api-rng = ["applet-api-rng", "wasefire-board-api/api-rng"]
 board-api-storage = [
   "applet-api-store",
@@ -224,7 +218,6 @@ full-applet-api = [
   "applet-api-platform",
   "applet-api-platform-protocol",
   "applet-api-platform-update",
-  "applet-api-radio-ble",
   "applet-api-rng",
   "applet-api-store",
   "applet-api-store-fragment",
@@ -256,7 +249,6 @@ full-board-api = [
   "board-api-fingerprint-sensor",
   "board-api-gpio",
   "board-api-led",
-  "board-api-radio-ble",
   "board-api-rng",
   "board-api-storage",
   "board-api-timer",
@@ -320,14 +312,12 @@ internal-applet-api-crypto = []
 internal-applet-api-crypto-hash = ["dep:digest", "dep:generic-array", "internal-applet-api-crypto"]
 internal-applet-api-fingerprint = []
 internal-applet-api-platform = []
-internal-applet-api-radio = []
 internal-applet-api-store = []
 internal-applet-api-usb = []
 internal-board-api-crypto-ecc = []
 internal-board-api-crypto-ecdh = []
 internal-board-api-crypto-ecdsa = []
 internal-board-api-fingerprint = []
-internal-board-api-radio = []
 internal-board-api-usb = []
 internal-debug = ["dep:bytemuck"]
 internal-hash-context = []

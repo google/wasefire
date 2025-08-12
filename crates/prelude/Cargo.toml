@@ -66,7 +66,6 @@ api-platform-protocol = [
   "wasefire-applet-api/api-platform-protocol",
 ]
 api-platform-update = ["internal-api-platform", "wasefire-applet-api/api-platform-update"]
-api-radio-ble = ["internal-api-radio", "wasefire-applet-api/api-radio-ble"]
 api-rng = ["wasefire-applet-api/api-rng"]
 api-store = ["internal-api-store", "wasefire-applet-api/api-store"]
 api-store-fragment = ["internal-api-store", "wasefire-applet-api/api-store-fragment"]
@@ -96,7 +95,6 @@ full-api = [
   "api-platform",
   "api-platform-protocol",
   "api-platform-update",
-  "api-radio-ble",
   "api-rng",
   "api-store",
   "api-store-fragment",
@@ -119,7 +117,6 @@ internal-api-crypto = []
 internal-api-crypto-hash = ["internal-api-crypto"]
 internal-api-fingerprint = []
 internal-api-platform = []
-internal-api-radio = []
 internal-api-store = []
 internal-api-usb = []
 internal-rpc = ["dep:sealed"]

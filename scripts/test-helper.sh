@@ -189,7 +189,6 @@ led
 platform
 platform-protocol
 platform-update
-radio-ble
 rng
 store
 store-fragment
@@ -221,7 +220,6 @@ fingerprint-matcher
 fingerprint-sensor
 gpio
 led
-radio-ble
 rng
 storage
 timer

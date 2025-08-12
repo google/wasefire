@@ -965,7 +965,6 @@ dependencies = [
  "usb-device",
  "usbd-hid",
  "usbd-serial",
- "wasefire-applet-api",
  "wasefire-common",
  "wasefire-error",
  "wasefire-logger",
