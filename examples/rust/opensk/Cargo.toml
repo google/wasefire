@@ -39,6 +39,7 @@ debug = ["opensk-lib/debug_ctap"]
 ed25519 = ["opensk-lib/ed25519", "wasefire/api-crypto-ed25519"]
 fingerprint = ["dep:wasefire-common", "opensk-lib/fingerprint", "wasefire/api-fingerprint-matcher"]
 led-1 = []
+perf = []
 test = ["opensk-lib/std", "wasefire/test"]
 
 [lints]

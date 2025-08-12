@@ -25,4 +25,5 @@ cargo check --lib --target=wasm32-unknown-unknown --features=debug
 cargo check --lib --target=wasm32-unknown-unknown --features=ed25519
 cargo check --lib --target=wasm32-unknown-unknown --features=fingerprint
 cargo check --lib --target=wasm32-unknown-unknown --features=led-1
+cargo check --lib --target=wasm32-unknown-unknown --features=perf
 cargo test --lib --features=test
