@@ -17,7 +17,7 @@ use alloc::vec::Vec;
 use wasefire_board_api::applet::{Handlers, Memory};
 use wasefire_board_api::vendor::Api;
 #[cfg(feature = "test-vendor")]
-use wasefire_board_api::vendor::Event;
+use wasefire_board_api::vendor::Event as BoardEvent;
 use wasefire_board_api::{Error, Failure};
 
 #[cfg(feature = "test-vendor")]
@@ -26,22 +26,14 @@ use crate::with_state;
 pub enum Impl {}
 
 impl Api for Impl {
-    #[cfg(not(feature = "test-vendor"))]
-    type Event = wasefire_board_api::vendor::NoEvent;
-    #[cfg(feature = "test-vendor")]
-    type Event = syscall_test::Event;
-
-    #[cfg(not(feature = "test-vendor"))]
-    type Key = ();
-    #[cfg(feature = "test-vendor")]
-    type Key = syscall_test::Key;
+    type Event = Event;
+    type Key = Key;
 
     fn key(event: &Self::Event) -> Self::Key {
-        #[cfg(not(feature = "test-vendor"))]
-        let (_, key) = (event, ());
-        #[cfg(feature = "test-vendor")]
-        let key = syscall_test::key(event);
-        key
+        match *event {
+            #[cfg(feature = "test-vendor")]
+            Event::Vendor(ref event) => Key::Vendor(syscall_test::key(event)),
+        }
     }
 
     fn syscall(
@@ -52,7 +44,7 @@ impl Api for Impl {
         match (x1, x2, x3, x4) {
             #[cfg(feature = "test-vendor")]
             (0, _, _, _) => with_state(|state| {
-                let push = |event| state.events.push(Event(event).into());
+                let push = |event| state.events.push(BoardEvent(Event::Vendor(event)).into());
                 syscall_test::syscall(memory, handlers, push, x2, x3, x4)
             }),
             #[cfg(feature = "gpio")]
@@ -66,16 +58,38 @@ impl Api for Impl {
         params: &mut Vec<u32>,
     ) {
         #[cfg(not(feature = "test-vendor"))]
-        let _ = (memory, handlers, event, params);
-        #[cfg(feature = "test-vendor")]
-        syscall_test::callback(memory, handlers, event, params)
+        let _ = (memory, handlers, params);
+        match event {
+            #[cfg(feature = "test-vendor")]
+            Event::Vendor(event) => syscall_test::callback(memory, handlers, event, params),
+        }
     }
 
     fn disable(key: Self::Key) -> Result<(), Error> {
-        #[cfg(not(feature = "test-vendor"))]
-        let () = key;
-        #[cfg(feature = "test-vendor")]
-        syscall_test::disable(key)?;
-        Ok(())
+        match key {
+            #[cfg(feature = "test-vendor")]
+            Key::Vendor(key) => syscall_test::disable(key),
+        }
+    }
+}
+
+#[cfg_attr(feature = "debug", derive(defmt::Format))]
+#[derive(Debug, PartialEq, Eq)]
+pub enum Event {
+    #[cfg(feature = "test-vendor")]
+    Vendor(syscall_test::Event),
+}
+
+#[cfg_attr(feature = "debug", derive(defmt::Format))]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Key {
+    #[cfg(feature = "test-vendor")]
+    Vendor(syscall_test::Key),
+}
+
+#[cfg(feature = "test-vendor")]
+impl From<syscall_test::Key> for Key {
+    fn from(key: syscall_test::Key) -> Self {
+        Key::Vendor(key)
     }
 }
