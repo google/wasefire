@@ -62,8 +62,6 @@ mod gpio;
 mod led;
 #[cfg(feature = "internal-applet-api-platform")]
 mod platform;
-#[cfg(feature = "internal-applet-api-radio")]
-mod radio;
 #[cfg(feature = "applet-api-rng")]
 mod rng;
 mod scheduling;
@@ -95,8 +93,6 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Led(call) => led::process(call),
         #[cfg(feature = "internal-applet-api-platform")]
         Api::Platform(call) => platform::process(call),
-        #[cfg(feature = "internal-applet-api-radio")]
-        Api::Radio(call) => radio::process(call),
         #[cfg(feature = "applet-api-rng")]
         Api::Rng(call) => rng::process(call),
         Api::Scheduling(call) => scheduling::process(call),

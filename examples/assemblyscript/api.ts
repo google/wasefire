@@ -1535,68 +1535,6 @@
   ): i32
 // END OF MODULE platform
 
-// START OF MODULE radio
-// Radio operations.
-  // START OF MODULE radio_ble
-  // Bluetooth Low Energy (BLE) operations.
-    // BLE events.
-    enum radio_ble_Event {
-      // Advertisement packets.
-      Advertisement = 0,
-    }
-
-    // Advertisement packet.
-    class radio_ble_Advertisement {
-      ticks: u32;
-
-      freq: u16;
-
-      rssi: i8;
-
-      pdu_type: u8;
-
-      addr: unimplemented;
-
-      data_len: u8;
-
-      data: unimplemented;
-
-      _padding: unimplemented;
-    }
-
-    // Reads the next advertisement packet into a buffer, if any.
-    //
-    // Returns whether a packet was read.
-    @external("env", "rlra")
-    export declare function radio_ble_read_advertisement(
-      // Pointer to the [`super::Advertisement`] packet.
-      ptr: usize,
-    ): i32
-
-    // Register a handler for radio events.
-    @external("env", "rle")
-    export declare function radio_ble_register(
-      // Radio [`super::Event`] to listen to.
-      event: u32,
-
-      // Function called on radio events.
-      //
-      // The function takes its opaque `data` as argument.
-      handler_func: usize,
-
-      // The opaque data to use when calling the handler function.
-      handler_data: usize,
-    ): i32
-
-    // Unregister handlers for radio events.
-    @external("env", "rld")
-    export declare function radio_ble_unregister(
-      // Radio [`super::Event`] to stop listening to.
-      event: u32,
-    ): i32
-  // END OF MODULE radio_ble
-// END OF MODULE radio
-
 // START OF MODULE rng
 // Random number generators.
   // Fills a slice with random bytes.

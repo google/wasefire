@@ -63,8 +63,6 @@ pub mod gpio;
 pub mod led;
 #[cfg(feature = "internal-api-platform")]
 pub mod platform;
-#[cfg(feature = "internal-api-radio")]
-pub mod radio;
 #[cfg(feature = "api-rng")]
 pub mod rng;
 #[cfg(feature = "internal-rpc")]

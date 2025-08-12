@@ -62,6 +62,7 @@ runner-host/crates/web-client
 runner-host/crates/web-server
 runner-host
 runner-nordic/crates/header
+runner-nordic/crates/ble-adv
 runner-nordic
 runner-nordic/crates/bootloader
 runner-opentitan/crates/register

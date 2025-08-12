@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provides API for radio.
+#![no_std]
 
-#[cfg(feature = "api-radio-ble")]
-pub mod ble;
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+#[repr(C)]
+pub struct Advertisement {
+    pub ticks: u32,
+    pub freq: u16,
+    pub rssi: i8,
+    pub pdu_type: u8,
+    pub addr: [u8; 6],
+    pub data_len: u8,
+    pub data: [u8; 31],
+    _padding: [u8; 2],
+}
+
+impl Advertisement {
+    pub fn data(&self) -> &[u8] {
+        &self.data[.. self.data_len as usize]
+    }
+}

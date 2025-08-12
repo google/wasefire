@@ -45,8 +45,6 @@ pub mod gpio;
 #[cfg(feature = "api-led")]
 pub mod led;
 pub mod platform;
-#[cfg(feature = "internal-api-radio")]
-pub mod radio;
 #[cfg(feature = "api-rng")]
 pub mod rng;
 #[cfg(feature = "api-timer")]
@@ -108,10 +106,6 @@ pub trait Api: Send + 'static {
 
     /// Platform interface.
     type Platform: platform::Api;
-
-    /// Radio interface.
-    #[cfg(feature = "internal-api-radio")]
-    type Radio: radio::Api;
 
     /// Random number generator interface.
     #[cfg(feature = "api-rng")]
@@ -179,10 +173,6 @@ pub enum Event<B: Api + ?Sized> {
 
     /// Platform event.
     Platform(platform::Event),
-
-    /// Radio event.
-    #[cfg(feature = "internal-api-radio")]
-    Radio(radio::Event),
 
     /// Timer event.
     #[cfg(feature = "api-timer")]
@@ -257,10 +247,6 @@ pub type Led<B> = <B as Api>::Led;
 
 /// Platform interface.
 pub type Platform<B> = <B as Api>::Platform;
-
-/// Radio interface.
-#[cfg(feature = "internal-api-radio")]
-pub type Radio<B> = <B as Api>::Radio;
 
 /// Random number generator interface.
 #[cfg(feature = "api-rng")]

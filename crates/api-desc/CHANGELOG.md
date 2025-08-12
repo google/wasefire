@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Remove the `radio` module
 - Add `vendor` module and move `syscall()` there
 - Remove `platform::update::is_supported()` function
 - Add `fingerprint::{matcher,sensor}` modules for fingerprint matchers and sensors

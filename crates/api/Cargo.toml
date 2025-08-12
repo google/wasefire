@@ -53,7 +53,6 @@ api-led = ["wasefire-applet-api-macro/api-led"]
 api-platform = ["wasefire-applet-api-macro/api-platform"]
 api-platform-protocol = ["wasefire-applet-api-macro/api-platform-protocol"]
 api-platform-update = ["wasefire-applet-api-macro/api-platform-update"]
-api-radio-ble = ["wasefire-applet-api-macro/api-radio-ble"]
 api-rng = ["wasefire-applet-api-macro/api-rng"]
 api-store = ["wasefire-applet-api-macro/api-store"]
 api-store-fragment = ["wasefire-applet-api-macro/api-store-fragment"]
@@ -83,7 +82,6 @@ full-api = [
   "api-platform",
   "api-platform-protocol",
   "api-platform-update",
-  "api-radio-ble",
   "api-rng",
   "api-store",
   "api-store-fragment",

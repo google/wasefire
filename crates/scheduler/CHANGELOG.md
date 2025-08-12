@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support the removal of the `radio` module
 - Support `vendor` module
 - Use `Trap`, `Failure`, and `AppletMemory{,Ext}` from `wasefire-board-api`
 - Support `fingerprint::{matcher,sensor}` modules

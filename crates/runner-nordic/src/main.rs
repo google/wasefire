@@ -46,9 +46,9 @@ use nrf52840_hal::usbd::{UsbPeripheral, Usbd};
 use panic_abort as _;
 #[cfg(feature = "debug")]
 use panic_probe as _;
-#[cfg(feature = "radio-ble")]
+#[cfg(feature = "ble-adv")]
 use rubble::link::MIN_PDU_BUF;
-#[cfg(feature = "radio-ble")]
+#[cfg(feature = "ble-adv")]
 use rubble_nrf5x::radio::BleRadio;
 use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
@@ -71,12 +71,12 @@ use wasefire_scheduler::Scheduler;
 use crate::board::button::{Button, Channels};
 #[cfg(feature = "gpio")]
 use crate::board::gpio::Gpio;
-#[cfg(feature = "radio-ble")]
-use crate::board::radio::ble::Ble;
 use crate::board::timer::Timers;
 #[cfg(feature = "uart")]
 use crate::board::uart::Uarts;
 use crate::board::usb::Usb;
+#[cfg(feature = "ble-adv")]
+use crate::board::vendor::ble_adv::Ble;
 use crate::board::{Events, button, led};
 use crate::storage::Storage;
 
@@ -104,7 +104,7 @@ struct State {
     #[cfg(feature = "usb-serial")]
     serial: Serial<'static, Usb>,
     timers: Timers,
-    #[cfg(feature = "radio-ble")]
+    #[cfg(feature = "ble-adv")]
     ble: Ble,
     #[cfg(feature = "aes128-ccm")]
     ccm: Ccm,
@@ -222,7 +222,7 @@ fn main() -> ! {
     let serial = Serial::new(SerialPort::new(usb_bus));
     board::platform::init_serial(&p.FICR);
     let usb_dev = wasefire_board_api::platform::usb_device::<_, Board>(usb_bus);
-    #[cfg(feature = "radio-ble")]
+    #[cfg(feature = "ble-adv")]
     let ble = {
         use alloc::boxed::Box;
         // TX buffer is mandatory even when we only listen.
@@ -256,7 +256,7 @@ fn main() -> ! {
         #[cfg(feature = "usb-serial")]
         serial,
         timers,
-        #[cfg(feature = "radio-ble")]
+        #[cfg(feature = "ble-adv")]
         ble,
         #[cfg(feature = "aes128-ccm")]
         ccm,
@@ -296,9 +296,9 @@ macro_rules! interrupts {
 
 interrupts! {
     GPIOTE = gpiote(),
-    #[cfg(feature = "radio-ble")]
+    #[cfg(feature = "ble-adv")]
     RADIO = radio(),
-    #[cfg(feature = "radio-ble")]
+    #[cfg(feature = "ble-adv")]
     TIMER0 = radio_timer(),
     TIMER1 = timer(0),
     TIMER2 = timer(1),
@@ -335,12 +335,12 @@ fn gpiote() {
     });
 }
 
-#[cfg(feature = "radio-ble")]
+#[cfg(feature = "ble-adv")]
 fn radio() {
     with_state(|state| state.ble.tick(|event| state.events.push(event.into())))
 }
 
-#[cfg(feature = "radio-ble")]
+#[cfg(feature = "ble-adv")]
 fn radio_timer() {
     with_state(|state| state.ble.tick_timer())
 }

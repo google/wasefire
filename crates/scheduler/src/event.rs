@@ -31,8 +31,6 @@ pub mod fingerprint;
 #[cfg(feature = "board-api-gpio")]
 pub mod gpio;
 pub mod platform;
-#[cfg(feature = "internal-board-api-radio")]
-pub mod radio;
 #[cfg(feature = "board-api-timer")]
 pub mod timer;
 #[cfg(feature = "board-api-uart")]
@@ -57,8 +55,6 @@ pub enum Key<B: Board> {
     #[cfg(feature = "board-api-gpio")]
     Gpio(gpio::Key<B>),
     Platform(platform::Key),
-    #[cfg(feature = "internal-board-api-radio")]
-    Radio(radio::Key),
     #[cfg(feature = "board-api-timer")]
     Timer(timer::Key<B>),
     #[cfg(feature = "board-api-uart")]
@@ -107,10 +103,6 @@ impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
                     Key::Platform(event.into())
                 )
             }
-            #[cfg(feature = "internal-board-api-radio")]
-            Event::Radio(event) => {
-                or_unreachable!("internal-applet-api-radio", [event], Key::Radio(event.into()))
-            }
             #[cfg(feature = "board-api-timer")]
             Event::Timer(event) => {
                 or_unreachable!("applet-api-timer", [event], Key::Timer(event.into()))
@@ -142,8 +134,6 @@ impl<B: Board> Key<B> {
             #[cfg(feature = "board-api-gpio")]
             Key::Gpio(x) => x.disable(),
             Key::Platform(x) => x.disable(),
-            #[cfg(feature = "internal-board-api-radio")]
-            Key::Radio(x) => x.disable::<B>(),
             #[cfg(feature = "board-api-timer")]
             Key::Timer(x) => x.disable(),
             #[cfg(feature = "board-api-uart")]
@@ -200,10 +190,6 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
         #[cfg(feature = "board-api-gpio")]
         Event::Gpio(_) => or_unreachable!("applet-api-gpio", [], gpio::process()),
         Event::Platform(event) => platform::process(event),
-        #[cfg(feature = "internal-board-api-radio")]
-        Event::Radio(event) => {
-            or_unreachable!("internal-applet-api-radio", [event], radio::process(event))
-        }
         #[cfg(feature = "board-api-timer")]
         Event::Timer(_) => or_unreachable!("applet-api-timer", [], timer::process()),
         #[cfg(feature = "board-api-uart")]
