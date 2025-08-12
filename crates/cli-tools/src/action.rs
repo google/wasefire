@@ -810,6 +810,14 @@ impl Display for OptLevel {
 ///
 /// This also computes the side-table and inserts it as the first section.
 pub async fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> Result<()> {
+    let result = optimize_wasm_(applet.as_ref(), opt_level).await;
+    if result.is_err() {
+        let _ = fs::remove_file(applet).await;
+    }
+    result
+}
+
+async fn optimize_wasm_(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> Result<()> {
     let mut strip = Command::new("wasm-strip");
     strip.arg(applet.as_ref());
     cmd::execute(&mut strip).await?;

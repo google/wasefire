@@ -4,6 +4,7 @@
 
 ### Major
 
+- Change `action::optimize_wasm()` to delete the applet on error
 - Remove `action::Transfer::chunk_size` used by `action::{AppletInstall,PlatformUpdate}`
 - Make `action::Rpc` private
 - Remove `action::PlatformUpdate::metadata()` which is now vendor-specific
@@ -85,4 +86,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 14 -->
+<!-- Increment to skip CHANGELOG.md test: 15 -->
