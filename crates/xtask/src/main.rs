@@ -320,19 +320,7 @@ struct RunnerOptions {
 #[derive(clap::Subcommand)]
 enum RunnerCommand {
     /// Updates the runner.
-    Update {
-        #[command(flatten)]
-        options: action::ConnectionOptions,
-        #[command(flatten)]
-        transfer: action::Transfer,
-
-        /// Updates both sides of the runner.
-        #[clap(long)]
-        both: bool,
-
-        #[clap(skip)]
-        step: Option<usize>,
-    },
+    Update(Update),
 
     /// Flashes the runner.
     Flash(Flash),
@@ -342,6 +330,24 @@ enum RunnerCommand {
         #[clap(skip)]
         step: usize,
     },
+}
+
+#[derive(clap::Args)]
+struct Update {
+    #[command(flatten)]
+    options: action::ConnectionOptions,
+    #[command(flatten)]
+    transfer: action::Transfer,
+
+    #[clap(flatten)]
+    attach: AttachOptions,
+
+    /// Updates both sides of the runner.
+    #[clap(long)]
+    both: bool,
+
+    #[clap(skip)]
+    step: Option<usize>,
 }
 
 #[derive(clap::Args)]
@@ -593,7 +599,7 @@ impl RunnerOptions {
             _ => None,
         };
         let update = match &cmd {
-            Some(RunnerCommand::Update { options, both, step: next_step, .. }) => {
+            Some(RunnerCommand::Update(Update { options, both, step: next_step, .. })) => {
                 ensure!(
                     !both || options.reboot_stable(),
                     "--both requires a reboot-stable protocol"
@@ -835,15 +841,17 @@ impl RunnerOptions {
         }
         let Some(mut cmd) = cmd else { return Ok(()) };
         let flash = match cmd {
-            RunnerCommand::Update { ref transfer, both, step: ref mut next_step, .. } => {
+            RunnerCommand::Update(cmd_update) => {
                 let platform_a = self.bundle(&elf, side).await?.into();
-                let transfer = transfer.clone();
+                let transfer = cmd_update.transfer.clone();
                 let action = action::PlatformUpdate { platform_a, platform_b: None, transfer };
                 action.run(&mut update.unwrap()).await?;
-                if !both || next_step.is_some() {
-                    return Ok(());
+                if !cmd_update.both || cmd_update.step.is_some() {
+                    let attach =
+                        Attach { name: self.name, log: self.log, options: cmd_update.attach };
+                    attach.execute(main).await?;
                 }
-                *next_step = Some(1 - step);
+                let cmd = RunnerCommand::Update(Update { step: Some(1 - step), ..cmd_update });
                 self.version = Some(version.unwrap().into_owned());
                 return Box::pin(self.execute(main, Some(cmd))).await;
             }
