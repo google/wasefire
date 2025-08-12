@@ -49,6 +49,8 @@ mod timer;
 mod uart;
 #[cfg(feature = "internal-api-usb")]
 mod usb;
+#[cfg(feature = "api-vendor")]
+mod vendor;
 
 pub use id::{Id, Name};
 
@@ -86,12 +88,8 @@ impl Default for Api {
             uart::new(),
             #[cfg(feature = "internal-api-usb")]
             usb::new(),
-            item! {
-                /// Board-specific syscalls.
-                ///
-                /// Those calls are directly forwarded to the board by the scheduler.
-                fn syscall "s" { x1: usize, x2: usize, x3: usize, x4: usize } -> usize
-            },
+            #[cfg(feature = "api-vendor")]
+            vendor::new(),
         ])
     }
 }

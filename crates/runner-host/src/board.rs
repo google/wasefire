@@ -24,9 +24,10 @@ mod storage;
 pub mod timer;
 pub mod uart;
 pub mod usb;
+mod vendor;
 
 use tokio::sync::mpsc::Sender;
-use wasefire_board_api::{Api, AppletMemory, Event, Failure};
+use wasefire_board_api::{Api, Event};
 use wasefire_store::FileStorage;
 
 use crate::RECEIVER;
@@ -54,13 +55,6 @@ impl Api for Board {
         RECEIVER.lock().unwrap().as_mut().unwrap().blocking_recv().unwrap()
     }
 
-    fn vendor(mem: impl AppletMemory, x1: u32, x2: u32, x3: u32, x4: u32) -> Result<u32, Failure> {
-        match (x1, x2, x3, x4) {
-            (0, _, _, _) => syscall_test::process(mem, x2, x3, x4),
-            _ => Err(Failure::TRAP),
-        }
-    }
-
     type Applet = applet::Impl;
     type Button = button::Impl;
     type Clock = clock::Impl;
@@ -73,4 +67,5 @@ impl Api for Board {
     type Timer = timer::Impl;
     type Uart = uart::Impl;
     type Usb = usb::Impl;
+    type Vendor = vendor::Impl;
 }

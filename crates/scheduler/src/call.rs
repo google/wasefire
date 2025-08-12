@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_applet_api::{self as api, Api};
+use wasefire_applet_api::Api;
 use wasefire_board_api::Api as Board;
 
-use crate::{DispatchSchedulerCall, SchedulerCall};
+use crate::DispatchSchedulerCall;
 
 #[cfg_attr(not(feature = "applet-api-store"), allow(unused_macros))]
 macro_rules! or_fail {
@@ -75,6 +75,8 @@ mod timer;
 mod uart;
 #[cfg(feature = "internal-applet-api-usb")]
 mod usb;
+#[cfg(feature = "applet-api-vendor")]
+mod vendor;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
@@ -100,18 +102,13 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Scheduling(call) => scheduling::process(call),
         #[cfg(feature = "internal-applet-api-store")]
         Api::Store(call) => store::process(call),
-        Api::Syscall(call) => syscall(call),
         #[cfg(feature = "applet-api-timer")]
         Api::Timer(call) => timer::process(call),
         #[cfg(feature = "applet-api-uart")]
         Api::Uart(call) => uart::process(call),
         #[cfg(feature = "internal-applet-api-usb")]
         Api::Usb(call) => usb::process(call),
+        #[cfg(feature = "applet-api-vendor")]
+        Api::Vendor(call) => vendor::process(call),
     }
-}
-
-fn syscall<B: Board>(mut call: SchedulerCall<B, api::syscall::Sig>) {
-    let api::syscall::Params { x1, x2, x3, x4 } = call.read();
-    let result = B::vendor(call.memory(), *x1, *x2, *x3, *x4);
-    call.reply(result);
 }

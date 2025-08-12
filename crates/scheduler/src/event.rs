@@ -39,6 +39,8 @@ pub mod timer;
 pub mod uart;
 #[cfg(feature = "internal-board-api-usb")]
 pub mod usb;
+#[cfg(feature = "board-api-vendor")]
+pub mod vendor;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg(feature = "native")]
@@ -63,6 +65,8 @@ pub enum Key<B: Board> {
     Uart(uart::Key<B>),
     #[cfg(feature = "internal-board-api-usb")]
     Usb(usb::Key),
+    #[cfg(feature = "board-api-vendor")]
+    Vendor(vendor::Key<B>),
     _Impossible(Impossible<B>),
 }
 
@@ -119,6 +123,10 @@ impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
             Event::Usb(event) => {
                 or_unreachable!("internal-applet-api-usb", [event], Key::Usb(event.into()))
             }
+            #[cfg(feature = "board-api-vendor")]
+            Event::Vendor(event) => {
+                or_unreachable!("applet-api-vendor", [event], Key::Vendor(event.into()))
+            }
             Event::Impossible(x) => x.unreachable(),
         }
     }
@@ -142,6 +150,8 @@ impl<B: Board> Key<B> {
             Key::Uart(x) => x.disable(),
             #[cfg(feature = "internal-board-api-usb")]
             Key::Usb(x) => x.disable::<B>(),
+            #[cfg(feature = "board-api-vendor")]
+            Key::Vendor(x) => x.disable(),
             Key::_Impossible(x) => x.unreachable(),
         }
     }
@@ -201,6 +211,14 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
         #[cfg(feature = "internal-board-api-usb")]
         Event::Usb(event) => {
             or_unreachable!("internal-applet-api-usb", [event], usb::process(event))
+        }
+        #[cfg(feature = "board-api-vendor")]
+        Event::Vendor(event) => {
+            or_unreachable!(
+                "applet-api-vendor",
+                [event],
+                vendor::process(event, &mut params, applet)
+            )
         }
         Event::Impossible(x) => x.unreachable(),
     }

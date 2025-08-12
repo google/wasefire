@@ -17,9 +17,11 @@ use wasefire_applet_api::crypto::ed25519::Kind;
 use wasefire_applet_api::crypto::ed25519::{self as api, Api};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-crypto-ed25519")]
+use wasefire_board_api::applet::{Memory as _, MemoryExt as _};
+#[cfg(feature = "board-api-crypto-ed25519")]
 use wasefire_board_api::crypto::ed25519::Api as _;
 #[cfg(feature = "board-api-crypto-ed25519")]
-use wasefire_board_api::{self as board, AppletMemory as _, AppletMemoryExt as _, Support};
+use wasefire_board_api::{self as board, Support};
 #[cfg(feature = "board-api-crypto-ed25519")]
 use wasefire_error::{Code, Error};
 

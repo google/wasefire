@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support the `api-vendor` feature
 - Support the `api-fingerprint-{matcher,sensor}` features
 - Support the `api-crypto-{ecdsa,ecdh,ed25519}` features
 - Support the `api-clock` feature

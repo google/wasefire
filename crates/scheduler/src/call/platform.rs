@@ -19,7 +19,7 @@ use wasefire_applet_api::platform::Api;
 use wasefire_board_api as board;
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "applet-api-platform")]
-use wasefire_board_api::AppletMemoryExt as _;
+use wasefire_board_api::applet::MemoryExt as _;
 #[cfg(feature = "applet-api-platform")]
 use wasefire_board_api::platform::Api as _;
 #[cfg(feature = "applet-api-platform")]

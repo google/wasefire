@@ -2020,16 +2020,19 @@
   // END OF MODULE usb_serial
 // END OF MODULE usb
 
-// Board-specific syscalls.
-//
-// Those calls are directly forwarded to the board by the scheduler.
-@external("env", "s")
-export declare function syscall(
-  x1: usize,
+// START OF MODULE vendor
+// Vendor interface.
+  // Vendor syscalls.
+  //
+  // Those calls are directly forwarded to the board by the scheduler.
+  @external("env", "vs")
+  export declare function vendor_syscall(
+    x1: usize,
 
-  x2: usize,
+    x2: usize,
 
-  x3: usize,
+    x3: usize,
 
-  x4: usize,
-): i32
+    x4: usize,
+  ): i32
+// END OF MODULE vendor

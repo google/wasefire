@@ -2107,7 +2107,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.1.7-git"
+version = "0.2.0-git"
 dependencies = [
  "log",
 ]

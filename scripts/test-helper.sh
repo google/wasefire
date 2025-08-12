@@ -197,6 +197,7 @@ timer
 uart
 usb-ctap
 usb-serial
+vendor
 '
 
 _TEST_BOARD_API='
@@ -227,6 +228,7 @@ timer
 uart
 usb-ctap
 usb-serial
+vendor
 '
 
 _TEST_SOFTWARE_CRYPTO='

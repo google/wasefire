@@ -20,7 +20,7 @@ bytemuck = { version = "1.23.1", default-features = false, features = ["derive"]
 sealed = { version = "0.6.0", default-features = false, optional = true }
 wasefire-applet-api-macro = { version = "0.8.0-git", path = "../api-macro" }
 wasefire-error = { version = "0.1.3-git", path = "../error" }
-wasefire-logger = { version = "0.1.7-git", path = "../logger", optional = true }
+wasefire-logger = { version = "0.2.0-git", path = "../logger", optional = true }
 wasefire-one-of = { version = "0.1.1-git", path = "../one-of" }
 
 [dependencies.derive-where]
@@ -61,6 +61,7 @@ api-timer = ["wasefire-applet-api-macro/api-timer"]
 api-uart = ["wasefire-applet-api-macro/api-uart"]
 api-usb-ctap = ["wasefire-applet-api-macro/api-usb-ctap"]
 api-usb-serial = ["wasefire-applet-api-macro/api-usb-serial"]
+api-vendor = ["wasefire-applet-api-macro/api-vendor"]
 # Enables all API features (unstable for host).
 full-api = [
   "api-button",
@@ -90,6 +91,7 @@ full-api = [
   "api-uart",
   "api-usb-ctap",
   "api-usb-serial",
+  "api-vendor",
 ]
 # Implements the API with weak symbols to permit custom definitions (only
 # relevant in wasm mode).

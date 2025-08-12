@@ -7,10 +7,11 @@
 - Remove `platform::update::is_supported()` because it's always supported
 - Remove `platform::update::metadata()` which is now vendor-specific
 - Rename `platform::version()` to `platform::running_version()`
-- Make `syscall()` unsafe to call
+- Make `syscall()` unsafe to call and move it to `vendor::syscall()`
 
 ### Minor
 
+- Add `vendor` module for vendor syscalls
 - Implement `Send` for `button::Listener` and `timer::Timer`
 - Increase the maximum allocation size with the `wasm` feature
 - Add `fingerprint::{matcher,sensor}` modules for fingerprint matchers and sensors

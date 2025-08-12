@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support `vendor` module
 - Use `Trap`, `Failure`, and `AppletMemory{,Ext}` from `wasefire-board-api`
 - Support `fingerprint::{matcher,sensor}` modules
 - Support `PlatformClearStore` protocol call

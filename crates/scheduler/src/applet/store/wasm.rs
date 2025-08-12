@@ -18,7 +18,7 @@ use core::cell::RefCell;
 use core::marker::PhantomData;
 use core::ops::Range;
 
-use wasefire_board_api::AppletMemory;
+use wasefire_board_api::applet::Memory as AppletMemory;
 use wasefire_interpreter::{
     Call, Error, InstId, Module, RunResult, Store as InterpreterStore, Val,
 };

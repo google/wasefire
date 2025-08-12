@@ -45,6 +45,7 @@ features = [
   "board-api-uart",
   "board-api-usb-ctap",
   "board-api-usb-serial",
+  "board-api-vendor",
   "software-crypto-aes128-ccm",
   "software-crypto-aes256-cbc",
   "software-crypto-aes256-gcm",

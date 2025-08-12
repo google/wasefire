@@ -14,7 +14,7 @@
 
 use core::alloc::Layout;
 
-use wasefire_board_api::AppletMemory;
+use wasefire_board_api::applet::Memory as AppletMemory;
 
 use super::StoreApi;
 use crate::Trap;

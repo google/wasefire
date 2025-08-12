@@ -15,15 +15,20 @@
 //! Tests that the board-specific syscall API is working properly.
 
 #![no_std]
+wasefire::applet!();
 
 use alloc::vec;
-wasefire::applet!();
+use alloc::vec::Vec;
+use core::cell::RefCell;
+
+use wasefire::vendor::syscall;
 
 fn main() {
     test_error();
     test_read();
     test_write();
     test_alloc();
+    test_handler();
     scheduling::exit();
 }
 
@@ -70,4 +75,50 @@ fn test_alloc() {
         debug!("- {data:02x?}");
         assert!(data.iter().all(|&x| x == len as u8));
     }
+}
+
+fn test_handler() {
+    debug!("test_handler(): Check that platform can register handler.");
+    type Call = RefCell<Vec<Option<u32>>>;
+    let calls: Call = RefCell::new(Vec::new());
+    let data = &calls as *const _ as usize;
+    extern "C" fn foo(data: *const u8) {
+        let calls = unsafe { &*data.cast::<Call>() };
+        calls.borrow_mut().push(None);
+    }
+    extern "C" fn bar(data: *const u8, value: u32) {
+        let calls = unsafe { &*data.cast::<Call>() };
+        calls.borrow_mut().push(Some(value));
+    }
+    debug!("- register handlers for Foo and Bar events");
+    unsafe { syscall(0, 4, foo as usize, data) }.unwrap();
+    unsafe { syscall(0, 5, bar as usize, data) }.unwrap();
+    debug!("- trigger a Foo event and make sure the Foo handler is called");
+    unsafe { syscall(0, 7, 0, 0) }.unwrap();
+    assert_eq!(scheduling::num_pending_callbacks(), 1);
+    assert_eq!(*calls.borrow(), []);
+    scheduling::wait_for_callback();
+    assert_eq!(scheduling::num_pending_callbacks(), 0);
+    assert_eq!(*calls.borrow(), [None]);
+    debug!("- trigger another Foo event and make sure the foo handler is not called");
+    // The Foo handler was automatically unregistered by the previous Foo event. The scheduler
+    // discards events when it has no registered handler.
+    unsafe { syscall(0, 7, 0, 0) }.unwrap();
+    assert_eq!(scheduling::num_pending_callbacks(), 0);
+    debug!("- trigger multiple Bar events with values 42, 13, and 13");
+    // The scheduler will merge equal events.
+    unsafe { syscall(0, 7, 1, 42) }.unwrap();
+    unsafe { syscall(0, 7, 1, 13) }.unwrap();
+    unsafe { syscall(0, 7, 1, 13) }.unwrap();
+    debug!("- make sure the bar handler is called only twice with 42 and 13");
+    assert_eq!(scheduling::num_pending_callbacks(), 2);
+    assert_eq!(*calls.borrow(), [None]);
+    scheduling::wait_for_callback();
+    assert_eq!(scheduling::num_pending_callbacks(), 1);
+    assert_eq!(*calls.borrow(), [None, Some(42)]);
+    scheduling::wait_for_callback();
+    assert_eq!(scheduling::num_pending_callbacks(), 0);
+    assert_eq!(*calls.borrow(), [None, Some(42), Some(13)]);
+    debug!("- unregister the handler for Bar events");
+    unsafe { syscall(0, 6, 1, 0) }.unwrap();
 }

@@ -19,9 +19,11 @@ use wasefire_applet_api::crypto::ecdsa::Kind;
 use wasefire_applet_api::crypto::ecdsa::{self as api, Api, Curve};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "internal-board-api-crypto-ecdsa")]
+use wasefire_board_api::applet::{Memory as _, MemoryExt as _};
+#[cfg(feature = "internal-board-api-crypto-ecdsa")]
 use wasefire_board_api::crypto::ecdsa::Api as _;
 #[cfg(feature = "internal-board-api-crypto-ecdsa")]
-use wasefire_board_api::{self as board, AppletMemory as _, AppletMemoryExt as _, Support};
+use wasefire_board_api::{self as board, Support};
 use wasefire_error::{Code, Error};
 
 #[cfg(feature = "internal-board-api-crypto-ecdsa")]

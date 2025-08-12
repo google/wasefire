@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,35 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(feature = "board-api-rng")]
-use wasefire_applet_api::rng as api;
-use wasefire_applet_api::rng::Api;
-#[cfg(feature = "board-api-rng")]
-use wasefire_board_api as board;
+#[cfg(feature = "board-api-vendor")]
+use wasefire_applet_api::vendor as api;
+use wasefire_applet_api::vendor::Api;
 use wasefire_board_api::Api as Board;
-#[cfg(feature = "board-api-rng")]
-use wasefire_board_api::applet::Memory as _;
-#[cfg(feature = "board-api-rng")]
-use wasefire_board_api::rng::Api as _;
+#[cfg(feature = "board-api-vendor")]
+use wasefire_board_api::{self as board, vendor::Api as _};
 
 use crate::DispatchSchedulerCall;
-#[cfg(feature = "board-api-rng")]
+#[cfg(feature = "board-api-vendor")]
 use crate::SchedulerCall;
+#[cfg(feature = "board-api-vendor")]
+use crate::applet::store::StoreApi as _;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
-        Api::FillBytes(call) => or_fail!("board-api-rng", fill_bytes(call)),
+        Api::Syscall(call) => or_fail!("board-api-vendor", syscall(call)),
     }
 }
 
-#[cfg(feature = "board-api-rng")]
-fn fill_bytes<B: Board>(mut call: SchedulerCall<B, api::fill_bytes::Sig>) {
-    let api::fill_bytes::Params { ptr, len } = call.read();
+#[cfg(feature = "board-api-vendor")]
+fn syscall<B: Board>(mut call: SchedulerCall<B, api::syscall::Sig>) {
+    let api::syscall::Params { x1, x2, x3, x4 } = call.read();
+    let inst = call.inst();
     let applet = call.applet();
-    let memory = applet.memory();
-    let result = try {
-        let output = memory.get_mut(*ptr, *len)?;
-        board::Rng::<B>::fill_bytes(output)?
-    };
+    let memory = applet.store.memory();
+    let handlers = applet.events.handlers(Some(inst));
+    let result = board::Vendor::<B>::syscall(memory, handlers, *x1, *x2, *x3, *x4);
     call.reply(result);
 }

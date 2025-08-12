@@ -86,15 +86,12 @@ pub fn flush() {
 #[cfg(not(any(feature = "log", feature = "defmt")))]
 pub fn flush() {}
 
-#[macro_export]
-macro_rules! every {
-    ($n:expr, $t:ident, $($args: expr),*$(,)?) => {{
-        use core::sync::atomic::AtomicU32;
-        use core::sync::atomic::Ordering::SeqCst;
-        static COUNT: AtomicU32 = AtomicU32::new(0);
-        let count = COUNT.fetch_add(1, SeqCst).wrapping_add(1);
-        if count % $n == 0 {
-            $crate::$t!($($args),*);
-        }
-    }};
-}
+#[cfg(not(feature = "defmt"))]
+pub trait MaybeFormat {}
+#[cfg(not(feature = "defmt"))]
+impl<T> MaybeFormat for T {}
+
+#[cfg(feature = "defmt")]
+pub trait MaybeFormat: defmt::Format {}
+#[cfg(feature = "defmt")]
+impl<T: defmt::Format> MaybeFormat for T {}

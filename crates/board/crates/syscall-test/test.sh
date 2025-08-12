@@ -21,3 +21,4 @@ test_helper
 
 cargo check --lib
 cargo check --lib --target=thumbv7em-none-eabi
+cargo check --lib --target=thumbv7em-none-eabi --features=defmt
