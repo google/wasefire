@@ -20,8 +20,6 @@ pub(crate) fn clock_ms() -> u64 {
     0
 }
 
-static _COUNT: AtomicU32 = AtomicU32::new(0);
+pub(crate) fn init() {}
 
-pub(crate) fn init() {
-    crate::allocator::init();
-}
+static _COUNT: AtomicU32 = AtomicU32::new(0);

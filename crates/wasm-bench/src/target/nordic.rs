@@ -55,5 +55,5 @@ fn ticks_low() -> u64 {
 
 #[exception]
 fn SysTick() {
-    let _ = COUNT.fetch_add(1, Ordering::Relaxed);
+    COUNT.fetch_add(1, Ordering::Relaxed);
 }

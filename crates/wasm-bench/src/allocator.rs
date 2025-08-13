@@ -28,8 +28,6 @@ macro_rules! addr_of_sym {
     }};
 }
 
-pub(crate) static PEAK: AtomicUsize = AtomicUsize::new(0);
-
 pub(crate) fn init() {
     let Regions { data, heap, stack } = regions();
     crate::println!("Size: data={} heap={} stack={}", data.len(), heap.len(), stack.len());
@@ -46,6 +44,8 @@ pub(crate) fn done() {
     let stack = peak_stack(regions().stack);
     crate::println!("Peak usage: heap={heap} stack={stack}");
 }
+
+static PEAK: AtomicUsize = AtomicUsize::new(0);
 
 #[inline(never)]
 fn cur_stack(x: usize) -> usize {

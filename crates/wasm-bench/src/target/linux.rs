@@ -16,8 +16,7 @@ use std::sync::OnceLock;
 use std::time::Instant;
 
 pub(crate) fn clock_ms() -> u64 {
-    let start = *START.get().unwrap();
-    Instant::now().duration_since(start).as_millis() as u64
+    Instant::now().duration_since(*START.get().unwrap()).as_millis() as u64
 }
 
 pub(crate) fn init() {
