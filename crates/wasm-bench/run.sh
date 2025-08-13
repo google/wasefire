@@ -27,7 +27,7 @@ case "$1" in
 esac
 
 case "$2" in
-  base|wasmi|wasmtime) ;;
+  base|wasmtime) ;;
   *) e "Unsupported runtime: $2" ;;
 esac
 
@@ -39,13 +39,15 @@ esac
 
 # See test.sh for supported (and tested) combinations.
 case $1-$2 in
-  *-base|linux-*|nordic-wasmi|nordic-wasmtime) ;;
+  *-base|linux-*|nordic-*) ;;
   *) e "Unsupported combination: $1 $2" ;;
 esac
 
 FEATURES=--features=target-$1,runtime-$2
-BUILD_STD='-Zbuild-std=core,alloc -Zbuild-std-features=panic_immediate_abort'
-[ $3 = size ] && BUILD_STD="$BUILD_STD,optimize_for_size"
+if [ -n "$TARGET" ]; then
+  BUILD_STD='-Zbuild-std=core,alloc -Zbuild-std-features=panic_immediate_abort'
+  [ $3 = size ] && BUILD_STD="$BUILD_STD,optimize_for_size"
+fi
 shift 3
 set -- $PROFILE $BUILD_STD $TARGET $FEATURES "$@"
 

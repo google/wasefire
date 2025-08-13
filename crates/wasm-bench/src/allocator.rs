@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use embedded_alloc::LlffHeap as Heap;
+use core::alloc::{GlobalAlloc, Layout};
+use core::ops::Range;
+use core::sync::atomic::Ordering::Relaxed;
 
-#[global_allocator]
-static ALLOCATOR: Heap = Heap::empty();
+use embedded_alloc::LlffHeap;
+use wasefire_sync::AtomicUsize;
 
 macro_rules! addr_of_sym {
     ($sym:ident) => {{
@@ -27,53 +29,77 @@ macro_rules! addr_of_sym {
 }
 
 pub(crate) fn init() {
-    #[cfg(feature = "target-nordic")]
-    let (sheap, eheap) = (cortex_m_rt::heap_start() as usize, addr_of_sym!(_stack_end));
-    #[cfg(feature = "target-riscv")]
-    let (sheap, eheap) = (addr_of_sym!(_sheap), addr_of_sym!(_eheap));
-    assert!(sheap < eheap);
-    #[cfg(feature = "target-nordic")]
-    {
-        let (sram, eram) = (addr_of_sym!(_ram_start), addr_of_sym!(_ram_end));
-        crate::println!(
-            "Size: data={} heap={} stack={}",
-            sheap - sram,
-            eheap - sheap,
-            eram - eheap
-        );
-    }
+    let Regions { data, heap, stack } = regions();
+    crate::println!("Size: data={} heap={} stack={}", data.len(), heap.len(), stack.len());
     // SAFETY: Called only once before any allocation.
-    unsafe { ALLOCATOR.init(sheap, eheap - sheap) };
+    unsafe { ALLOCATOR.0.init(heap.start, heap.len()) };
+    for ptr in stack.start .. cur_stack(0) {
+        // SAFETY: That part of the stack should be unused (write_volatile should be inlined).
+        unsafe { (ptr as *mut u8).write_volatile(0) };
+    }
+}
+
+pub(crate) fn done() {
+    let heap = PEAK.load(Relaxed);
+    let stack = peak_stack(regions().stack);
+    crate::println!("Peak usage: heap={heap} stack={stack}");
+}
+
+static PEAK: AtomicUsize = AtomicUsize::new(0);
+
+#[inline(never)]
+fn cur_stack(x: usize) -> usize {
+    x + &x as *const _ as usize
+}
+
+fn peak_stack(region: Range<usize>) -> usize {
+    for ptr in region.clone() {
+        // SAFETY: That part of the stack should be unused (read_volatile should be inlined).
+        if unsafe { (ptr as *const u8).read_volatile() } != 0 {
+            return region.end - ptr;
+        }
+    }
+    0
+}
+
+struct Regions {
+    data: Range<usize>,
+    heap: Range<usize>,
+    stack: Range<usize>,
 }
 
 #[cfg(feature = "target-nordic")]
-pub(crate) mod usage {
-    use core::sync::atomic::{AtomicU32, Ordering};
+fn regions() -> Regions {
+    let (sheap, eheap) = (cortex_m_rt::heap_start() as usize, addr_of_sym!(_stack_end));
+    let (sram, eram) = (addr_of_sym!(_ram_start), addr_of_sym!(_ram_end));
+    assert!(sram <= sheap && sheap < eheap && eheap < eram);
+    Regions { data: sram .. sheap, heap: sheap .. eheap, stack: eheap .. eram }
+}
 
-    pub(crate) fn print() {
-        static HEAP: Peak = Peak::new();
-        static STACK: Peak = Peak::new();
-        crate::println!("Peak usage: heap={} stack={}", HEAP.update(heap()), STACK.update(stack()));
+#[cfg(feature = "target-riscv")]
+fn regions() -> Regions {
+    let sram = addr_of_sym!(sram);
+    let sheap = riscv_rt::heap_start() as usize;
+    let eheap = sheap + addr_of_sym!(_heap_size);
+    let sstack = addr_of_sym!(sstack);
+    let estack = addr_of_sym!(_stack_start);
+    assert!(sram <= sheap && sstack < estack);
+    Regions { data: sram .. sheap, heap: sheap .. eheap, stack: sstack .. estack }
+}
+
+#[global_allocator]
+static ALLOCATOR: Heap = Heap(LlffHeap::empty());
+
+struct Heap(LlffHeap);
+
+unsafe impl GlobalAlloc for Heap {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        let ptr = unsafe { self.0.alloc(layout) };
+        PEAK.fetch_max(self.0.used(), Relaxed);
+        ptr
     }
 
-    struct Peak(AtomicU32);
-
-    impl Peak {
-        const fn new() -> Self {
-            Peak(AtomicU32::new(0))
-        }
-
-        fn update(&self, x: u32) -> u32 {
-            core::cmp::max(self.0.fetch_max(x, Ordering::Relaxed), x)
-        }
-    }
-
-    fn heap() -> u32 {
-        super::ALLOCATOR.used() as u32
-    }
-
-    fn stack() -> u32 {
-        let x = addr_of_sym!(_stack_start) as u32;
-        x - &x as *const _ as u32
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        unsafe { self.0.dealloc(ptr, layout) }
     }
 }

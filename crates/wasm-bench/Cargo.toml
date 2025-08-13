@@ -11,22 +11,15 @@ cortex-m = { version = "0.7.7", features = ["critical-section-single-core"], opt
 cortex-m-rt = { version = "0.7.5", optional = true }
 embedded-alloc = { version = "0.6.0", optional = true }
 nrf52840-hal = { version = "0.18.0", optional = true }
-panic-rtt-target = { version = "0.2.0", optional = true }
 riscv = { version = "0.14.0", features = ["critical-section-single-hart"], optional = true }
 riscv-rt = { version = "0.15.0", optional = true }
-rtt-target = { version = "0.6.1", optional = true }
-wasmi = { version = "0.48.0", default-features = false, optional = true }
-
-[dependencies.portable-atomic]
-version = "1.11.1"
-default-features = false
-features = ["critical-section"]
-optional = true
+semihosting = { version = "0.1.20", features = ["panic-handler", "stdio"], optional = true }
+wasefire-sync = { version = "0.1.2-git", path = "../sync", optional = true }
 
 [dependencies.wasmtime]
 version = "35.0.0"
 default-features = false
-features = ["runtime"]
+features = ["async", "runtime"]
 optional = true
 
 [dependencies.wasefire-interpreter]
@@ -46,25 +39,36 @@ features = ["float-types"]
 optional = true
 
 [features]
-_target-embedded = ["dep:embedded-alloc", "wasmtime?/pulley"]
-runtime-base = ["dep:wasefire-interpreter"]
-runtime-wasmi = ["dep:wasmi"]
-runtime-wasmtime = ["dep:wasmtime"]
-target-linux = ["wasmtime?/cranelift"]
-target-nordic = [
-  "_target-embedded",
-  "dep:cortex-m",
-  "dep:cortex-m-rt",
-  "dep:nrf52840-hal",
-  "dep:panic-rtt-target",
-  "dep:rtt-target",
+_target-embedded = [
+  "dep:embedded-alloc",
+  "dep:semihosting",
+  "dep:wasefire-sync",
+  "wasmtime?/pulley",
 ]
-target-riscv = ["_target-embedded", "dep:portable-atomic", "dep:riscv", "dep:riscv-rt"]
+runtime-base = ["dep:wasefire-interpreter"]
+runtime-wasmtime = ["dep:wasefire-sync", "dep:wasmtime"]
+target-linux = ["wasmtime?/cranelift"]
+target-nordic = ["_target-embedded", "dep:cortex-m", "dep:cortex-m-rt", "dep:nrf52840-hal"]
+target-riscv = [
+  "_target-embedded",
+  "dep:riscv",
+  "dep:riscv-rt",
+  "wasefire-sync?/unsafe-assume-single-core",
+]
 
 [profile.release]
 codegen-units = 1
 lto = true
 panic = "abort"
+
+[profile.release.package.wasmtime]
+opt-level = "z"
+
+[profile.release.package.pulley-interpreter]
+opt-level = 3
+
+[profile.release.package.wasefire-interpreter]
+opt-level = 3
 
 [profile.release-size]
 inherits = "release"

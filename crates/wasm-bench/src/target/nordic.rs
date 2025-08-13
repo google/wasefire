@@ -16,21 +16,13 @@ use core::sync::atomic::{AtomicU32, Ordering};
 
 use cortex_m::peripheral::SYST;
 use cortex_m_rt::exception;
-use panic_rtt_target as _;
 
 pub(crate) fn clock_ms() -> u64 {
     // The frequency is 64MHz and we want milli-seconds.
     (ticks() >> 6) / 1000
 }
 
-#[macro_export]
-macro_rules! println {
-    ($($x:tt)*) => { rtt_target::rprintln!($($x)*) };
-}
-
 pub(crate) fn init() {
-    rtt_target::rtt_init_print!();
-    crate::allocator::init();
     let c = nrf52840_hal::pac::CorePeripherals::take().unwrap();
     let mut syst = c.SYST;
     syst.set_reload(0xffffff);
@@ -63,8 +55,5 @@ fn ticks_low() -> u64 {
 
 #[exception]
 fn SysTick() {
-    const MASK: u32 = 0xf;
-    if COUNT.fetch_add(1, Ordering::Relaxed) & MASK == MASK {
-        crate::allocator::usage::print();
-    }
+    COUNT.fetch_add(1, Ordering::Relaxed);
 }
