@@ -94,8 +94,9 @@ struct Heap(LlffHeap);
 
 unsafe impl GlobalAlloc for Heap {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        let ptr = unsafe { self.0.alloc(layout) };
         PEAK.fetch_max(self.0.used(), Relaxed);
-        unsafe { self.0.alloc(layout) }
+        ptr
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
