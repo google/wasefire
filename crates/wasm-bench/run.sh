@@ -19,39 +19,59 @@ set -e
 
 ensure_submodule third_party/wasm3/wasm-coremark
 
+DEBUG=n
+while [ "${1#--}" != "$1" ]; do
+  case "${1#--}" in
+    debug) DEBUG=y ;;
+    *) e "Unsupported flag --$1" ;;
+  esac
+  shift
+done
+
 case "$1" in
-  linux) ;;
-  nordic) TARGET=--target=thumbv7em-none-eabi ;;
-  riscv) TARGET=--target=riscv32imc-unknown-none-elf ;;
+  linux)
+    TARGET="$(rustc -vV | sed -n 's/^host: //p')"
+    RUN=
+    ;;
+  nordic)
+    TARGET=thumbv7em-none-eabi
+    RUSTFLAGS=-Clink-arg=-Tlink.x
+    RUN='../../scripts/wrapper.sh probe-rs run --chip=nRF52840_xxAA'
+    ;;
   *) e "Unsupported target: $1" ;;
 esac
 
 case "$2" in
-  base|wasmtime) ;;
+  base) ;;
+  wasmtime) ;;
   *) e "Unsupported runtime: $2" ;;
 esac
 
 case "$3" in
-  perf) PROFILE=--release ;;
-  size) PROFILE=--profile=release-size ;;
+  perf) PROFILE=release ;;
+  size) PROFILE=release-size ;;
   *) e "Unsupported profile: $3" ;;
 esac
 
-# See test.sh for supported (and tested) combinations.
-case $1-$2 in
-  *-base|linux-*|nordic-*) ;;
-  *) e "Unsupported combination: $1 $2" ;;
-esac
-
-FEATURES=--features=target-$1,runtime-$2
-if [ -n "$TARGET" ]; then
+if [ $1 != linux ]; then
+  if [ $2 = wasmtime ]; then
+    RUSTFLAGS="$RUSTFLAGS --cfg=pulley_disable_interp_simd"
+  fi
   BUILD_STD='-Zbuild-std=core,alloc -Zbuild-std-features=panic_immediate_abort'
-  [ $3 = size ] && BUILD_STD="$BUILD_STD,optimize_for_size"
+  if [ $3 = size ]; then
+    BUILD_STD="$BUILD_STD,optimize_for_size"
+  fi
+  RUSTFLAGS="$RUSTFLAGS --allow=unused-crate-dependencies"
 fi
-shift 3
-set -- $PROFILE $BUILD_STD $TARGET $FEATURES "$@"
 
-WASEFIRE_WRAPPER_EXEC=n ../../scripts/wrapper.sh probe-rs
-WASEFIRE_WRAPPER_EXEC=n ../../scripts/wrapper.sh cargo-size
-[ -z "$TARGET" ] || x ../../scripts/wrapper.sh cargo-size "$@"
-x cargo run "$@"
+if [ $DEBUG = y ]; then
+  BUILD_STD=
+  DEBUG_CONFIG=--config=profile.release.debug=true
+fi
+
+x env RUSTFLAGS="$RUSTFLAGS" cargo build $DEBUG_CONFIG \
+  --target=$TARGET --profile=$PROFILE $BUILD_STD --features=target-$1,runtime-$2
+
+ELF=../../target/$TARGET/$PROFILE/wasm-bench
+x ../../scripts/wrapper.sh rust-size $ELF
+x $RUN $ELF
