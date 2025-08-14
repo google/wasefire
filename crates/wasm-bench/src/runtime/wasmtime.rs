@@ -25,6 +25,8 @@ pub(crate) fn run(wasm: &[u8]) -> f32 {
     config.async_stack_size(16 * 1024);
     config.max_wasm_stack(8 * 1024);
     config.memory_reservation_for_growth(0);
+    config.wasm_relaxed_simd(false);
+    config.wasm_simd(false);
     let engine = Engine::new(&config).unwrap();
     #[cfg(feature = "_target-embedded")]
     let module = unsafe { Module::deserialize_raw(&engine, wasm.into()) }.unwrap();

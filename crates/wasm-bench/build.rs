@@ -37,6 +37,8 @@ fn main() {
         config.generate_address_map(false);
         config.memory_init_cow(false);
         config.memory_reservation(0);
+        config.wasm_relaxed_simd(false);
+        config.wasm_simd(false);
         let engine = wasmtime::Engine::new(&config).unwrap();
         module = engine.precompile_module(&module).unwrap();
     }
