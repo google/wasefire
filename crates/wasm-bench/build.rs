@@ -34,6 +34,7 @@ fn main() {
     if cfg!(feature = "_target-embedded") {
         let mut config = wasmtime::Config::new();
         config.target("pulley32").unwrap();
+        // TODO(https://github.com/bytecodealliance/wasmtime/issues/10286): Also strip symbol table.
         config.generate_address_map(false);
         config.memory_init_cow(false);
         config.memory_reservation(0);

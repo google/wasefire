@@ -19,9 +19,11 @@ set -e
 
 ensure_submodule third_party/wasm3/wasm-coremark
 
+BUILD=n
 DEBUG=n
 while [ "${1#--}" != "$1" ]; do
   case "${1#--}" in
+    build) BUILD=y ;;
     debug) DEBUG=y ;;
     *) e "Unsupported flag --$1" ;;
   esac
@@ -74,4 +76,4 @@ x env RUSTFLAGS="$RUSTFLAGS" cargo build $DEBUG_CONFIG \
 
 ELF=../../target/$TARGET/$PROFILE/wasm-bench
 x ../../scripts/wrapper.sh rust-size $ELF
-x $RUN $ELF
+[ $BUILD = y ] || x $RUN $ELF
