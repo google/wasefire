@@ -2085,6 +2085,7 @@ name = "wasefire-common"
 version = "0.1.0-git"
 dependencies = [
  "wasefire-error",
+ "wasefire-sync",
 ]
 
 [[package]]
@@ -2101,7 +2102,7 @@ dependencies = [
  "derive-where",
  "num_enum",
  "paste",
- "portable-atomic",
+ "wasefire-common",
  "wasefire-error",
 ]
 
