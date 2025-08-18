@@ -1131,6 +1131,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasefire-common"
+version = "0.1.0-git"
+dependencies = [
+ "wasefire-error",
+ "wasefire-sync",
+]
+
+[[package]]
 name = "wasefire-error"
 version = "0.1.3-git"
 dependencies = [
@@ -1145,7 +1153,7 @@ dependencies = [
  "libm",
  "num_enum",
  "paste",
- "portable-atomic",
+ "wasefire-common",
  "wasefire-error",
 ]
 

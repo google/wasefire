@@ -290,9 +290,9 @@ checksum = "4e20e6499bbbc412f280b04a42346b356c6fa0753d5fd22b7bd752ff34c778ee"
 
 [[package]]
 name = "portable-atomic"
-version = "1.7.0"
+version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da544ee218f0d287a911e9c99a39a8c9bc8fcad3cb8db5959940044ecfc67265"
+checksum = "f84267b20a16ea918e43c6a88433c2d54fa145c92a811b5b047ccbe153674483"
 
 [[package]]
 name = "proc-macro2"
@@ -347,6 +347,15 @@ name = "semver-parser"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
+
+[[package]]
+name = "spin"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5fe4ccb98d9c292d56fec89a5e07da7fc4cf0dc11e156b41793132775d3e591"
+dependencies = [
+ "portable-atomic",
+]
 
 [[package]]
 name = "stable_deref_trait"
@@ -413,6 +422,7 @@ name = "wasefire-common"
 version = "0.1.0-git"
 dependencies = [
  "wasefire-error",
+ "wasefire-sync",
 ]
 
 [[package]]
@@ -425,3 +435,11 @@ dependencies = [
 [[package]]
 name = "wasefire-one-of"
 version = "0.1.1-git"
+
+[[package]]
+name = "wasefire-sync"
+version = "0.1.2-git"
+dependencies = [
+ "portable-atomic",
+ "spin",
+]

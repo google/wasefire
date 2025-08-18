@@ -822,6 +822,7 @@ version = "0.1.0-git"
 dependencies = [
  "defmt 1.0.1",
  "wasefire-error",
+ "wasefire-sync",
 ]
 
 [[package]]
@@ -839,7 +840,7 @@ dependencies = [
  "derive-where",
  "num_enum",
  "paste",
- "portable-atomic",
+ "wasefire-common",
  "wasefire-error",
 ]
 

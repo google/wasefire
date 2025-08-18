@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use portable_atomic::{AtomicUsize, Ordering};
+use wasefire_sync::{AtomicU32, Ordering};
 
 /// Returns numbers from 1 to u32::MAX (inclusive).
+#[derive(Default)]
 pub struct UniqueId {
-    count: AtomicUsize,
+    count: AtomicU32,
 }
 
 impl UniqueId {
+    /// Creates a new sequence.
     pub const fn new() -> Self {
-        Self { count: AtomicUsize::new(0) }
+        Self { count: AtomicU32::new(0) }
     }
 
-    pub fn next(&self) -> usize {
-        let result = self.count.fetch_add(1, Ordering::SeqCst);
-        assert!(result < u32::MAX as usize);
+    /// Gets the next element in the sequence.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called more than `u32::MAX` times on a given sequence.
+    pub fn next(&self) -> u32 {
+        let result = self.count.fetch_add(1, Ordering::Relaxed);
+        assert!(result < u32::MAX);
         result + 1
     }
 }
