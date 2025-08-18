@@ -23,7 +23,9 @@ use nrf52840_hal::gpiote::Gpiote;
 use nrf52840_hal::pac::SPI0;
 use nrf52840_hal::spi::Spi;
 use wasefire_board_api::Supported;
-use wasefire_board_api::fingerprint::{Api, matcher, sensor};
+#[cfg(feature = "fpc2534")]
+use wasefire_board_api::fingerprint::matcher;
+use wasefire_board_api::fingerprint::{Api, sensor};
 use wasefire_error::{Code, Error};
 use wasefire_logger as log;
 use wasefire_sync::AtomicBool;
@@ -71,10 +73,12 @@ pub fn vendor(frame: Vec<u8>) {
 impl Supported for Impl {}
 
 impl Api for Impl {
+    #[cfg(feature = "fpc2534")]
     type Matcher = Self;
     type Sensor = Self;
 }
 
+#[cfg(feature = "fpc2534")]
 impl matcher::Api for Impl {
     const TEMPLATE_ID_SIZE: usize = 2;
 
@@ -232,14 +236,19 @@ enum Cmd {
     Capture = 0x0050,
     Abort = 0x0052,
     ImageData = 0x0053,
+    #[cfg(feature = "fpc2534")]
     Enroll = 0x0054,
+    #[cfg(feature = "fpc2534")]
     Identify = 0x0055,
+    #[cfg(feature = "fpc2534")]
     ListTemplates = 0x0060,
+    #[cfg(feature = "fpc2534")]
     DeleteTemplate = 0x0061,
     DataGet = 0x0101,
 }
 
 #[derive(Clone, Copy)]
+#[cfg(feature = "fpc2534")]
 enum IdType {
     All = 0x2023,
     Specified = 0x3034,
@@ -264,9 +273,13 @@ enum OpResult {
     CaptureImageData,
     CaptureDataGet(Option<Vec<u8>>),
     Abort(Option<Option<Error>>),
+    #[cfg(feature = "fpc2534")]
     Enroll(Option<u16>),
+    #[cfg(feature = "fpc2534")]
     Identify(Option<u16>),
+    #[cfg(feature = "fpc2534")]
     Delete(Option<Option<Error>>),
+    #[cfg(feature = "fpc2534")]
     List(Option<Result<Vec<u8>, Error>>),
 }
 
@@ -332,6 +345,7 @@ impl FrameBuilder {
         self.0.extend_from_slice(bytemuck::bytes_of(x))
     }
 
+    #[cfg(feature = "fpc2534")]
     fn push_template(&mut self, template_id: Option<&[u8]>) -> Result<(), Error> {
         match template_id {
             None => {
@@ -424,8 +438,11 @@ fn handle_frame(state: &mut crate::State) -> Result<(), Error> {
     match frame.pop::<u16>()? {
         x if x == Cmd::Status as u16 => handle_status(state, &mut frame)?,
         x if x == Cmd::ImageData as u16 => handle_image_data(state, &mut frame)?,
+        #[cfg(feature = "fpc2534")]
         x if x == Cmd::Enroll as u16 => handle_enroll(state, &mut frame)?,
+        #[cfg(feature = "fpc2534")]
         x if x == Cmd::Identify as u16 => handle_identify(state, &mut frame)?,
+        #[cfg(feature = "fpc2534")]
         x if x == Cmd::ListTemplates as u16 => handle_list_templates(state, &mut frame)?,
         x if x == Cmd::DataGet as u16 => handle_data_get(state, &mut frame)?,
         x => {
@@ -465,17 +482,21 @@ fn handle_status(state: &mut crate::State, frame: &mut FrameParser) -> Result<()
                 WAIT.store(false, Ordering::Release);
                 None
             }
+            #[cfg(feature = "fpc2534")]
             OpResult::Enroll(None) => {
                 error.map(|error| matcher::Event::EnrollError { error }.into())
             }
+            #[cfg(feature = "fpc2534")]
             OpResult::Identify(None) => {
                 error.map(|error| matcher::Event::IdentifyError { error }.into())
             }
+            #[cfg(feature = "fpc2534")]
             OpResult::Delete(None) => {
                 state.fpc2534.result = OpResult::Delete(Some(error));
                 WAIT.store(false, Ordering::Release);
                 None
             }
+            #[cfg(feature = "fpc2534")]
             OpResult::List(None) => {
                 match error {
                     Some(error) => state.fpc2534.result = OpResult::List(Some(Err(error))),
@@ -498,6 +519,12 @@ fn handle_status(state: &mut crate::State, frame: &mut FrameParser) -> Result<()
         }
         return Ok(());
     }
+    #[cfg(not(feature = "fpc2534"))]
+    if status_event == StatusEvent::CmdFailed as u16 {
+        log::warn!("Unexpected status event");
+        return Err(Error::world(Code::InvalidState));
+    }
+    #[cfg(feature = "fpc2534")]
     if status_event == StatusEvent::CmdFailed as u16 {
         let error = Error::new(0x80, 0x8000 | app_fail_code);
         let event = match state.fpc2534.result {
@@ -546,6 +573,7 @@ fn handle_image_data(state: &mut crate::State, frame: &mut FrameParser) -> Resul
     Ok(())
 }
 
+#[cfg(feature = "fpc2534")]
 fn handle_enroll(state: &mut crate::State, frame: &mut FrameParser) -> Result<(), Error> {
     Error::world(Code::InvalidArgument).check(is_event(frame)?)?;
     let id = frame.pop::<u16>()?;
@@ -564,6 +592,7 @@ fn handle_enroll(state: &mut crate::State, frame: &mut FrameParser) -> Result<()
     Ok(())
 }
 
+#[cfg(feature = "fpc2534")]
 fn handle_identify(state: &mut crate::State, frame: &mut FrameParser) -> Result<(), Error> {
     Error::world(Code::InvalidArgument).check(is_event(frame)?)?;
     let result = frame.pop::<u16>()?;
@@ -589,6 +618,7 @@ fn handle_identify(state: &mut crate::State, frame: &mut FrameParser) -> Result<
     Ok(())
 }
 
+#[cfg(feature = "fpc2534")]
 fn handle_list_templates(state: &mut crate::State, frame: &mut FrameParser) -> Result<(), Error> {
     Error::world(Code::InvalidArgument).check(!is_event(frame)?)?;
     let count = frame.pop::<u16>()?;

@@ -55,7 +55,7 @@ impl HasRpc<'static, Usb> for Impl {
         use alloc::string::String;
         use core::fmt::Write;
 
-        #[cfg(not(feature = "fpc2534"))]
+        #[cfg(not(feature = "fpc2534-sensor"))]
         use data_encoding as _;
 
         if let Some(request) = request.strip_prefix(b"echo ") {
@@ -101,7 +101,7 @@ impl HasRpc<'static, Usb> for Impl {
             let slice = unsafe { core::slice::from_raw_parts(ptr as *const u8, len as usize) };
             return Ok(slice.to_vec().into_boxed_slice());
         }
-        #[cfg(feature = "fpc2534")]
+        #[cfg(feature = "fpc2534-sensor")]
         if let Some(frame) = request.strip_prefix(b"fpc ") {
             let mut hex = data_encoding::HEXLOWER_PERMISSIVE.specification();
             hex.ignore.push_str(" \n");
