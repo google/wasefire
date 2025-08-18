@@ -143,7 +143,6 @@ mod cursor;
 mod error;
 mod exec;
 mod format;
-mod id;
 mod module;
 mod parser;
 mod side_table;

@@ -16,6 +16,7 @@
 
 #![no_std]
 
+pub mod id;
 pub mod platform;
 pub mod ptr;
 

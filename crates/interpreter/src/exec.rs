@@ -16,6 +16,8 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
+use wasefire_common::id::UniqueId;
+
 use crate::cursor::*;
 use crate::error::*;
 use crate::module::*;
@@ -43,7 +45,7 @@ pub enum Val {
     RefExtern(usize),
 }
 
-static STORE_ID: id::UniqueId = id::UniqueId::new();
+static STORE_ID: UniqueId = UniqueId::new();
 
 /// Runtime store.
 // We cannot GC by design. Vectors can only grow.
@@ -96,7 +98,7 @@ pub struct Call<'a, 'm> {
 impl Default for Store<'_> {
     fn default() -> Self {
         Self {
-            id: STORE_ID.next(),
+            id: STORE_ID.next() as usize,
             insts: vec![],
             funcs: vec![],
             func_default: None,

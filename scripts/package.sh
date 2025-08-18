@@ -34,10 +34,10 @@ one-of
 logger
 wire-derive
 error
+sync
 common
 wire
 wire/fuzz
-sync
 protocol
 interpreter
 store
