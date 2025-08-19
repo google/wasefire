@@ -22,6 +22,7 @@
 
 ### Patch
 
+- Simplify redundant logic in wasm memory
 - Return errors instead of trapping for UART
 - Use `cargo::` instead of `cargo:` for build script instructions
 - Add warning when applet fails to start after install
