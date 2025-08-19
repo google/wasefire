@@ -137,9 +137,7 @@ impl AppletMemory for Memory<'_> {
         let len = len as usize;
         let range = ptr .. ptr.checked_add(len).ok_or(Trap)?;
         self.borrow_mut(range.clone())?;
-        let data = unsafe { self.data() };
-        let data = unsafe { core::slice::from_raw_parts_mut(data.as_ptr() as *mut u8, data.len()) };
-        <[u8]>::get_mut(data, range).ok_or(Trap)
+        <[u8]>::get_mut(unsafe { self.data() }, range).ok_or(Trap)
     }
 
     fn alloc(&mut self, size: u32, align: u32) -> Result<u32, Trap> {
