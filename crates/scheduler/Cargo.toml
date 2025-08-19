@@ -29,6 +29,7 @@ wasefire-error = { version = "0.1.3-git", path = "../error" }
 wasefire-logger = { version = "0.2.0-git", path = "../logger" }
 wasefire-one-of = { version = "0.1.1-git", path = "../one-of" }
 wasefire-protocol = { version = "0.3.0-git", path = "../protocol", features = ["device"] }
+wasefire-slice-cell = { version = "0.1.0-git", path = "../slice-cell", optional = true }
 wasefire-store = { version = "0.3.1-git", path = "../store", optional = true }
 wasefire-sync = { version = "0.1.2-git", path = "../sync", optional = true }
 
@@ -302,7 +303,7 @@ software-crypto-sha256 = ["board-api-crypto-sha256", "wasefire-board-api/softwar
 software-crypto-sha384 = ["board-api-crypto-sha384", "wasefire-board-api/software-crypto-sha384"]
 # Selects between Wasm applet or native applet (choose exactly one).
 native = ["dep:wasefire-sync"]
-wasm = ["dep:wasefire-interpreter"]
+wasm = ["dep:wasefire-interpreter", "dep:wasefire-slice-cell"]
 # Assume WASM modules being loaded are valid and do not validate them. This is a
 # safety invariant.
 unsafe-skip-validation = []

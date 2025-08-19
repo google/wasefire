@@ -14,15 +14,13 @@
 
 use alloc::vec;
 use alloc::vec::Vec;
-use core::cell::RefCell;
-use core::marker::PhantomData;
-use core::ops::Range;
 
 use wasefire_board_api::applet::Memory as AppletMemory;
 use wasefire_interpreter::{
     Call, Error, InstId, Module, RunResult, Store as InterpreterStore, Val,
 };
 use wasefire_logger as log;
+use wasefire_slice_cell::SliceCell;
 
 use super::StoreApi;
 use crate::Trap;
@@ -68,58 +66,22 @@ impl StoreApi for Store {
     }
 }
 
-// TODO: This could be a slice-cell crate. And should probably already be exposed in the
-// interpreter?
 pub struct Memory<'a> {
     store: *mut InterpreterStore<'static>,
-    lifetime: PhantomData<&'a ()>,
-    // Sorted ranges of borrow.
-    borrow: RefCell<Vec<(bool, Range<usize>)>>,
+    memory: SliceCell<'a, u8>,
 }
 
 impl<'a> Memory<'a> {
     fn new(store: &'a mut InterpreterStore<'static>) -> Self {
-        Self { store, lifetime: PhantomData, borrow: RefCell::new(Vec::new()) }
+        Self { store, memory: SliceCell::new(store.last_call().unwrap().mem()) }
     }
 
-    #[allow(clippy::mut_from_ref)]
-    unsafe fn data(&self) -> &mut [u8] {
-        unsafe { &mut *self.store }.last_call().unwrap().mem()
-    }
-
-    fn borrow(&self, range: Range<usize>) -> Result<(), Trap> {
-        self.borrow_impl((false, range))
-    }
-
-    fn borrow_mut(&self, range: Range<usize>) -> Result<(), Trap> {
-        self.borrow_impl((true, range))
-    }
-
-    /// Returns whether the borrow is allowed.
-    fn borrow_impl(&self, y: (bool, Range<usize>)) -> Result<(), Trap> {
-        let mut borrow = self.borrow.borrow_mut();
-        let i = match borrow.iter().position(|x| y.1.start < x.1.end) {
-            None => {
-                borrow.push(y);
-                return Ok(());
-            }
-            Some(x) => x,
-        };
-        let j = match borrow[i ..].iter().position(|x| y.1.end <= x.1.start) {
-            None => borrow.len(),
-            Some(x) => i + x,
-        };
-        if i == j {
-            borrow.insert(i, y);
-            return Ok(());
-        }
-        if y.0 || borrow[i .. j].iter().any(|x| x.0) {
-            return Err(Trap);
-        }
-        borrow[i].1.start = core::cmp::min(borrow[i].1.start, y.1.start);
-        borrow[i].1.end = core::cmp::max(borrow[j - 1].1.end, y.1.end);
-        borrow.drain(i + 1 .. j);
-        Ok(())
+    fn with_store<T>(&mut self, f: impl FnOnce(&mut InterpreterStore<'static>) -> T) -> T {
+        self.memory.reset(); // only to free the internal state early
+        let store = unsafe { &mut *self.store };
+        let result = f(store);
+        *self = Memory::new(store);
+        result
     }
 }
 
@@ -128,34 +90,32 @@ impl AppletMemory for Memory<'_> {
         let ptr = ptr as usize;
         let len = len as usize;
         let range = ptr .. ptr.checked_add(len).ok_or(Trap)?;
-        self.borrow(range.clone())?;
-        <[u8]>::get(unsafe { self.data() }, range).ok_or(Trap)
+        self.memory.get_range(range).map_err(|_| Trap)
     }
 
     fn get_mut(&self, ptr: u32, len: u32) -> Result<&mut [u8], Trap> {
         let ptr = ptr as usize;
         let len = len as usize;
         let range = ptr .. ptr.checked_add(len).ok_or(Trap)?;
-        self.borrow_mut(range.clone())?;
-        <[u8]>::get_mut(unsafe { self.data() }, range).ok_or(Trap)
+        self.memory.get_range_mut(range).map_err(|_| Trap)
     }
 
     fn alloc(&mut self, size: u32, align: u32) -> Result<u32, Trap> {
-        self.borrow.borrow_mut().clear();
-        let store = unsafe { &mut *self.store };
-        let args = vec![Val::I32(size), Val::I32(align)];
-        let inst = store.last_call().unwrap().inst();
-        // TODO: We should ideally account this to the applet performance time.
-        let result = match store.invoke(inst, "alloc", args) {
-            Ok(RunResult::Done(x)) if x.len() == 1 => x[0],
-            Ok(RunResult::Done(_)) => return Err(Trap),
-            Ok(RunResult::Host(_)) => log::panic!("alloc called into host"),
-            Err(Error::Trap) => return Err(Trap),
-            Err(x) => log::panic!("alloc failed with {}", log::Debug2Format(&x)),
-        };
-        match result {
-            Val::I32(x) if x != 0 => Ok(x),
-            _ => Err(Trap),
-        }
+        self.with_store(|store| {
+            let args = vec![Val::I32(size), Val::I32(align)];
+            let inst = store.last_call().unwrap().inst();
+            // TODO: We should ideally account this to the applet performance time.
+            let result = match store.invoke(inst, "alloc", args) {
+                Ok(RunResult::Done(x)) if x.len() == 1 => x[0],
+                Ok(RunResult::Done(_)) => return Err(Trap),
+                Ok(RunResult::Host(_)) => log::panic!("alloc called into host"),
+                Err(Error::Trap) => return Err(Trap),
+                Err(x) => log::panic!("alloc failed with {}", log::Debug2Format(&x)),
+            };
+            match result {
+                Val::I32(x) if x != 0 => Ok(x),
+                _ => Err(Trap),
+            }
+        })
     }
 }

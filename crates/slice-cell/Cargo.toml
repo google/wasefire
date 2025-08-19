@@ -1,0 +1,23 @@
+[package]
+name = "wasefire-slice-cell"
+version = "0.1.0-git"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = true
+edition = "2024"
+description = "Slice with dynamic borrow checking"
+repository = "https://github.com/google/wasefire"
+include = ["/LICENSE", "/src/"]
+keywords = ["borrow", "cell", "lifetime", "no-std", "range", "slice"]
+categories = ["data-structures", "memory-management", "no-std"]
+
+[features]
+_internal = []
+
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.uninlined_format_args = "allow"
+clippy.unit-arg = "allow"
+rust.unreachable-pub = "warn"
+rust.unused-crate-dependencies = "warn"

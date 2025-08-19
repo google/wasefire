@@ -1,0 +1,24 @@
+[package]
+name = "fuzz"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4.10"
+wasefire-slice-cell = { path = ".." }
+
+[[bin]]
+name = "lib"
+path = "fuzz_targets/lib.rs"
+
+[lints]
+clippy.literal-string-with-formatting-args = "allow"
+clippy.mod-module-files = "warn"
+clippy.uninlined_format_args = "allow"
+clippy.unit-arg = "allow"
