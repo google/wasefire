@@ -98,7 +98,7 @@ _test_desc() {
 }
 
 _test_check() {
-  sed 's/cargo \(miri \)\?test/cargo check --profile=test/;s/cargo run/cargo check/';
+  sed -E 's/cargo (miri )?test/cargo check --profile=test/;s/cargo run/cargo check/;s/ -- .*$//';
 }
 _test_clippy() { sed 's/cargo check/cargo clippy/;s/$/ -- --deny=warnings/'; }
 
