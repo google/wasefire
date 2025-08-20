@@ -97,7 +97,9 @@ _test_desc() {
   sed '0,/^test_helper$/d;:a;/\\$/{N;s/\\\n//;ta};s/ \+/ /g' "$SELF" | grep -Ev '^($|#)'
 }
 
-_test_check() { sed 's/cargo test/cargo check --profile=test/;s/cargo run/cargo check/'; }
+_test_check() {
+  sed 's/cargo \(miri \)\?test/cargo check --profile=test/;s/cargo run/cargo check/';
+}
 _test_clippy() { sed 's/cargo check/cargo clippy/;s/$/ -- --deny=warnings/'; }
 
 _test_ensure_lib() {
