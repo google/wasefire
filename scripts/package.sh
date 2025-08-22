@@ -31,6 +31,8 @@ cargo_info_version() { _cargo_info "$1" version; }
 # Tested by ./scripts/publish.sh --dry-run
 TOPOLOGICAL_ORDER='
 one-of
+slice-cell
+slice-cell/fuzz
 logger
 wire-derive
 error
