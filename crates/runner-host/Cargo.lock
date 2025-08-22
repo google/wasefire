@@ -2920,9 +2920,14 @@ dependencies = [
  "wasefire-logger",
  "wasefire-one-of",
  "wasefire-protocol",
+ "wasefire-slice-cell",
  "wasefire-store",
  "wasefire-sync",
 ]
+
+[[package]]
+name = "wasefire-slice-cell"
+version = "0.1.0-git"
 
 [[package]]
 name = "wasefire-store"

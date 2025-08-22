@@ -15,7 +15,6 @@
 //! Slice with dynamic borrow checking.
 
 #![no_std]
-#![cfg_attr(feature = "_internal", feature(array_windows))]
 #![feature(slice_ptr_get)]
 
 extern crate alloc;
@@ -144,12 +143,6 @@ mod internal {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             write!(f, "{}{:?}", if self.exclusive { "mut " } else { "" }, self.range)
         }
-    }
-
-    /// Checks whether the state invariant holds.
-    #[cfg(feature = "_internal")]
-    pub fn state_invariant(state: &State) -> bool {
-        state.array_windows().all(|[prev, next]| prev.range.end <= next.range.start)
     }
 
     /// Makes sure the non-empty range can be borrowed (shared or exclusively).

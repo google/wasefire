@@ -1,3 +1,18 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#![feature(array_windows)]
 #![feature(get_disjoint_mut_helpers)]
 #![allow(clippy::reversed_empty_ranges)]
 #![allow(clippy::single_range_in_vec_init)]
@@ -252,8 +267,11 @@ fn borrow() {
     use core::slice::GetDisjointMutIndex;
     use std::ops::Range;
 
-    use wasefire_slice_cell::{Access, State, borrow_check, state_invariant};
+    use wasefire_slice_cell::{Access, State, borrow_check};
 
+    fn state_invariant(state: &State) -> bool {
+        state.array_windows().all(|[prev, next]| prev.range.end <= next.range.start)
+    }
     struct Test<'a> {
         actual_ranges: &'a [Range<usize>],
         expected_ranges: &'a [Range<usize>],
