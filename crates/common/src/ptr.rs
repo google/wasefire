@@ -17,3 +17,9 @@ pub struct SharedPtr<T>(pub *const T);
 
 unsafe impl<T: Sync> Send for SharedPtr<T> {}
 unsafe impl<T: Sync> Sync for SharedPtr<T> {}
+
+/// Raw pointer for a reference with dynamic lifetime.
+pub struct OwnedPtr<T>(pub *mut T);
+
+unsafe impl<T: Sync> Send for OwnedPtr<T> {}
+unsafe impl<T: Sync> Sync for OwnedPtr<T> {}
