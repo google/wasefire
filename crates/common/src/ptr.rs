@@ -12,8 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// Raw pointer for a reference with dynamic lifetime.
+/// Raw pointer for a shared reference with dynamic lifetime.
+///
+/// This is appropriate for `&T`.
 pub struct SharedPtr<T>(pub *const T);
 
 unsafe impl<T: Sync> Send for SharedPtr<T> {}
 unsafe impl<T: Sync> Sync for SharedPtr<T> {}
+
+/// Raw pointer for an exclusive reference with dynamic lifetime.
+///
+/// This is appropriate for `&mut T`.
+pub struct ExclusivePtr<T>(pub *mut T);
+
+unsafe impl<T: Send> Send for ExclusivePtr<T> {}
+unsafe impl<T: Sync> Sync for ExclusivePtr<T> {}
