@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use core::ptr::addr_of_mut;
-
 use embedded_alloc::TlsfHeap as Heap;
 
 #[global_allocator]
@@ -24,8 +22,8 @@ pub fn init() {
         static mut __sheap: u32;
         static mut __eheap: u32;
     }
-    let sheap = addr_of_mut!(__sheap) as usize;
-    let eheap = addr_of_mut!(__eheap) as usize;
+    let sheap = (&raw mut __sheap).addr();
+    let eheap = (&raw mut __eheap).addr();
     assert!(sheap < eheap);
     // SAFETY: Called only once before any allocation.
     unsafe { ALLOCATOR.init(sheap, eheap - sheap) }

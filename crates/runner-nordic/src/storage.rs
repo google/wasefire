@@ -14,7 +14,6 @@
 
 use alloc::borrow::Cow;
 use alloc::vec;
-use core::ptr::addr_of_mut;
 
 use embedded_storage::nor_flash::{
     ErrorType, NorFlash, NorFlashError, NorFlashErrorKind, ReadNorFlash,
@@ -48,8 +47,8 @@ macro_rules! take_storage {
             static mut $start: u32;
             static mut $end: u32;
         }
-        let start = addr_of_mut!($start) as *mut u8;
-        let end = addr_of_mut!($end).addr();
+        let start = &raw mut $start;
+        let end = (&raw mut $end).addr();
         assert_eq!(start.addr() % PAGE_SIZE, 0);
         assert_eq!(end % PAGE_SIZE, 0);
         let length = end.checked_sub(start as usize).unwrap();

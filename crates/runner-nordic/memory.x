@@ -7,7 +7,7 @@ ASSERT(_platform <= _applet, "_platform > _applet");
 ASSERT(_applet <= _store, "_applet > _store");
 ASSERT(_store <= _limit, "_store > _limit");
 
-_platform_size = (_applet - _platform) / 2;
+_platform_size = (_applet - _platform) / RUNNER_NUM_SIDES;
 ASSERT(_platform_size % 0x1000 == 0, "_platform_size % 0x1000 != 0");
 
 /* for header */
@@ -40,7 +40,7 @@ SECTIONS {
 /* for runner */
 __eheap = _rlimit;
 __sother = _platform + (1 - RUNNER_SIDE) * _platform_size;
-__eother = __sother + _platform_size;
+__eother = __sother + (RUNNER_NUM_SIDES - 1) * _platform_size;
 __sapplet = _applet;
 __eapplet = _store;
 __sstore = _store;

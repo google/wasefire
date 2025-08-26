@@ -292,6 +292,13 @@ struct RunnerOptions {
     #[clap(long)]
     board: Option<String>,
 
+    /// Disables A/B platform partitioning.
+    ///
+    /// This is only supported on Nordic. This can be useful for debugging when a platform is too
+    /// large. As a consequence, it is not possible to update such a platform.
+    #[clap(long)]
+    single_sided: bool,
+
     /// Prints the command lines to use GDB.
     #[clap(long)]
     gdb: bool,
@@ -590,6 +597,10 @@ impl Runner {
 impl RunnerOptions {
     async fn execute(mut self, main: &MainOptions, cmd: Option<RunnerCommand>) -> Result<()> {
         let mut version = self.version.as_deref().map(Cow::Borrowed);
+        ensure!(
+            !self.single_sided || matches!(cmd, None | Some(RunnerCommand::Flash(_))),
+            "unsupported runner command for single-sided platforms"
+        );
         let mut step = match &cmd {
             Some(RunnerCommand::Bundle { step }) => *step,
             _ => 0,
@@ -671,6 +682,10 @@ impl RunnerOptions {
             let native = main.is_native() as u8;
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_NATIVE={native}"));
             rustflags.push(format!("-C link-arg=--defsym=RUNNER_SIDE={step}"));
+            if self.name == RunnerName::Nordic {
+                let num_sides = if self.single_sided { 1 } else { 2 };
+                rustflags.push(format!("-C link-arg=--defsym=RUNNER_NUM_SIDES={num_sides}"));
+            }
             if self.name == RunnerName::OpenTitan {
                 const OPENTITAN: &str = "third_party/lowRISC/opentitan";
                 const CRYPTODIR: &str = "sw/device/lib/crypto";
@@ -871,6 +886,9 @@ impl RunnerOptions {
             cargo.current_dir("crates/runner-nordic/crates/bootloader");
             cargo.args(["build", "--release", "--target=thumbv7em-none-eabi"]);
             cargo.arg(format!("--features=board-{board}"));
+            if self.single_sided {
+                cargo.arg("--features=single-sided");
+            }
             cargo.args(["-Zbuild-std=core", "-Zbuild-std-features=panic_immediate_abort"]);
             // TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
             cargo.env("RUSTFLAGS", "--allow=unused-crate-dependencies");

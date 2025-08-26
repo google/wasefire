@@ -30,6 +30,9 @@ exactly_one_of!["board-devkit", "board-dongle", "board-makerdiary"];
 #[entry]
 fn main() -> ! {
     let mut new = Header::new(Side::A);
+    if cfg!(feature = "single-sided") {
+        unsafe { asm::bootload(new.firmware() as *const u32) };
+    }
     let mut old = Header::new(Side::B);
     if new.timestamp() < old.timestamp() {
         core::mem::swap(&mut new, &mut old);

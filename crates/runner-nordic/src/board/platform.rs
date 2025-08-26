@@ -46,6 +46,13 @@ impl Api for Impl {
     }
 
     fn opposite_version() -> Result<Cow<'static, [u8]>, Error> {
+        unsafe extern "C" {
+            static mut __sother: u32;
+            static mut __eother: u32;
+        }
+        if (&raw mut __sother).addr() == (&raw mut __eother).addr() {
+            return Err(Error::world(Code::NotEnough));
+        }
         let side = Self::running_side().opposite();
         let header = Header::new(side);
         if header.has_firmware() {
