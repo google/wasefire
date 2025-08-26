@@ -51,7 +51,7 @@ impl Api for Impl {
             static mut __eother: u32;
         }
         if (&raw mut __sother).addr() == (&raw mut __eother).addr() {
-            return Err(Error::world(Code::NotFound));
+            return Err(Error::world(Code::NotEnough));
         }
         let side = Self::running_side().opposite();
         let header = Header::new(side);
