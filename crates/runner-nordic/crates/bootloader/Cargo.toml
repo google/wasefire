@@ -17,6 +17,8 @@ wasefire-common = { path = "../../../common" }
 wasefire-one-of = { path = "../../../one-of" }
 
 [features]
+# Enabled by xtask.
+single-sided = []
 # Exactly one is enabled by xtask.
 board-devkit = ["header/board-devkit"]
 board-dongle = ["header/board-dongle"]
