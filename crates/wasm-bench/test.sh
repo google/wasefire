@@ -21,8 +21,8 @@ ensure_submodule third_party/wasm3/wasm-coremark
 
 test_helper
 
-cargo test --bin=wasm-bench --features=target-linux,runtime-base
-cargo test --bin=wasm-bench --features=target-linux,runtime-wasmtime
+cargo test --bin=wasm-bench --target=i686-unknown-linux-gnu --features=target-linux,runtime-base
+cargo test --bin=wasm-bench --target=i686-unknown-linux-gnu --features=target-linux,runtime-wasmtime
 
 cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-base
 cargo check --bin=wasm-bench --target=thumbv7em-none-eabi --features=target-nordic,runtime-wasmtime
