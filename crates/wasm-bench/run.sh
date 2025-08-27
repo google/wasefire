@@ -32,7 +32,7 @@ done
 
 case "$1" in
   linux)
-    TARGET="$(rustc -vV | sed -n 's/^host: //p')"
+    TARGET=i686-unknown-linux-gnu
     RUN=
     ;;
   nordic)

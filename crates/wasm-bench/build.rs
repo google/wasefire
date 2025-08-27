@@ -28,10 +28,13 @@ fn main() {
 
     const PATH: &str = "../../third_party/wasm3/wasm-coremark/coremark-minimal.wasm";
     println!("cargo::rerun-if-changed={PATH}");
-    #[allow(unused_mut)]
     let mut module = std::fs::read(PATH).unwrap();
+    #[cfg(feature = "runtime-base")]
+    {
+        module = wasefire_interpreter::prepare(&module).unwrap();
+    }
     #[cfg(feature = "runtime-wasmtime")]
-    if cfg!(feature = "_target-embedded") {
+    {
         let mut config = wasmtime::Config::new();
         config.target("pulley32").unwrap();
         // TODO(https://github.com/bytecodealliance/wasmtime/issues/10286): Also strip symbol table.
@@ -43,8 +46,6 @@ fn main() {
         let engine = wasmtime::Engine::new(&config).unwrap();
         module = engine.precompile_module(&module).unwrap();
     }
-    #[cfg(feature = "runtime-base")]
-    (module = wasefire_interpreter::prepare(&module).unwrap());
     println!("cargo::warning=module size is {} bytes", module.len());
     std::fs::write(out.join("module.bin"), &module).unwrap();
 }
