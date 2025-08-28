@@ -28,7 +28,6 @@ use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use object::read::elf::{ElfFile32, SectionHeader as _};
 use rustc_demangle::demangle;
 use tokio::process::Command;
-use tokio::sync::OnceCell;
 use wasefire_cli_tools::error::root_cause_is;
 use wasefire_cli_tools::{action, changelog, cmd, fs};
 
@@ -215,21 +214,8 @@ impl RunnerName {
     }
 
     async fn target(self) -> &'static str {
-        // Each time we specify RUSTFLAGS, we want to specify --target. This is because if --target
-        // is not specified then RUSTFLAGS applies to all compiler invocations (including build
-        // scripts and proc macros). This leads to recompilation when RUSTFLAGS changes. See
-        // https://github.com/rust-lang/cargo/issues/8716.
-        static HOST_TARGET: OnceCell<String> = OnceCell::const_new();
         match self {
-            RunnerName::Host => {
-                HOST_TARGET
-                    .get_or_init(|| async {
-                        let mut sh = Command::new("sh");
-                        sh.args(["-c", "rustc -vV | sed -n 's/^host: //p'"]);
-                        cmd::output_line(&mut sh).await.unwrap()
-                    })
-                    .await
-            }
+            RunnerName::Host => "i686-unknown-linux-gnu",
             RunnerName::Nordic => "thumbv7em-none-eabi",
             RunnerName::OpenTitan => "riscv32imc-unknown-none-elf",
         }
@@ -673,6 +659,9 @@ impl RunnerOptions {
             RunnerName::Nordic | RunnerName::OpenTitan => (Some(step), 1),
         };
         if self.name == RunnerName::Host {
+            if std::env::var_os("PKG_CONFIG_SYSROOT_DIR").is_none() {
+                cargo.env("PKG_CONFIG_SYSROOT_DIR", "/usr/lib/i386-linux-gnu/pkgconfig");
+            }
             if let Some(version) = version.as_deref() {
                 cargo.env("WASEFIRE_HOST_VERSION", version);
             }
@@ -739,7 +728,7 @@ impl RunnerOptions {
             rustflags.push("-Z emit-stack-sizes".to_string());
             rustflags.push("-C link-arg=-Tstack-sizes.x".to_string());
         }
-        if main.native {
+        if main.is_native() {
             features.push("native".to_string());
         } else {
             features.push("wasm".to_string());
