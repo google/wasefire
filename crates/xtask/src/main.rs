@@ -987,9 +987,11 @@ impl Attach {
 
     async fn execute_host(self, mut cargo: Option<Command>) -> Result<!> {
         const HOST: &str = "target/wasefire/host";
+        let bin = format!("{HOST}/platform.bin");
         loop {
+            let copy_bin = cargo.is_some();
             let mut cargo = cargo.take().unwrap_or_else(|| {
-                let mut cargo = Command::new(format!("{HOST}/platform.bin"));
+                let mut cargo = Command::new(&bin);
                 cargo.arg(HOST);
                 if let Some(log) = &self.log {
                     cargo.env("RUST_LOG", log);
@@ -1002,6 +1004,9 @@ impl Attach {
             }
             cargo.args(&self.options.args);
             cmd::exit_status(&mut cargo).await?;
+            if copy_bin {
+                fs::copy(RunnerName::Host.elf().await, &bin).await?;
+            }
         }
     }
 

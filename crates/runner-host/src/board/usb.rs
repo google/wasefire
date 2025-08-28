@@ -28,7 +28,6 @@ use wasefire_board_api::usb::Api;
 use wasefire_board_api::usb::ctap::{Ctap, HasHid, WithHid};
 use wasefire_board_api::usb::serial::{HasSerial, Serial, WithSerial};
 use wasefire_cli_tools::cmd;
-use wasefire_error::{Code, Error};
 use wasefire_protocol_usb::Rpc;
 
 use crate::with_state;
@@ -119,15 +118,15 @@ impl State {
     }
 
     pub fn protocol(&mut self) -> &mut Rpc<'static, UsbIpBus> {
-        self.protocol.as_mut().unwrap()
+        self.protocol.as_mut().expect("--protocol is not usb")
     }
 
-    pub fn ctap(&mut self) -> Result<&mut Ctap<'static, UsbIpBus>, Error> {
-        self.ctap.as_mut().ok_or(Error::world(Code::NotImplemented))
+    pub fn ctap(&mut self) -> &mut Ctap<'static, UsbIpBus> {
+        self.ctap.as_mut().expect("--usb-ctap is not set")
     }
 
-    pub fn serial(&mut self) -> Result<&mut Serial<'static, UsbIpBus>, Error> {
-        self.serial.as_mut().ok_or(Error::world(Code::NotImplemented))
+    pub fn serial(&mut self) -> &mut Serial<'static, UsbIpBus> {
+        self.serial.as_mut().expect("--usb-serial is not set")
     }
 
     fn poll(&mut self) -> bool {
@@ -144,7 +143,7 @@ impl HasHid for Impl {
     type UsbBus = UsbIpBus;
 
     fn with_hid<R>(f: impl FnOnce(&mut Ctap<Self::UsbBus>) -> R) -> R {
-        with_state(|state| f(state.usb.ctap().unwrap()))
+        with_state(|state| f(state.usb.ctap()))
     }
 }
 
@@ -152,7 +151,7 @@ impl HasSerial for Impl {
     type UsbBus = UsbIpBus;
 
     fn with_serial<R>(f: impl FnOnce(&mut Serial<Self::UsbBus>) -> R) -> R {
-        with_state(|state| f(state.usb.serial().unwrap()))
+        with_state(|state| f(state.usb.serial()))
     }
 }
 
