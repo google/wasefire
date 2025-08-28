@@ -83,7 +83,7 @@ full() {
     pid=$!
     x cargo xtask wait-platform $protocol
     run $protocol "$release"
-    [ $1 = host ] || run $protocol "$release" "$@"
+    run $protocol "$release" "$@"
     x cargo wasefire platform-lock $protocol
     x kill -TERM -$pid
     sleep 1 # for the OS to cleanup probe-rs resources (claimed USB interface)
