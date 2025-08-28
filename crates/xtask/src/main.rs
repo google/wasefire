@@ -346,15 +346,21 @@ struct Update {
     #[command(flatten)]
     transfer: action::Transfer,
 
-    #[clap(flatten)]
-    attach: AttachOptions,
-
     /// Updates both sides of the runner.
     #[clap(long)]
     both: bool,
 
     #[clap(skip)]
     step: Option<usize>,
+
+    #[clap(subcommand)]
+    command: Option<UpdateCommand>,
+}
+
+#[derive(clap::Subcommand)]
+enum UpdateCommand {
+    /// Attaches to the runner after the update.
+    Attach(AttachOptions),
 }
 
 #[derive(clap::Args)]
@@ -862,9 +868,13 @@ impl RunnerOptions {
                 let action = action::PlatformUpdate { platform_a, platform_b: None, transfer };
                 action.run(&mut update.unwrap()).await?;
                 if !cmd_update.both || cmd_update.step.is_some() {
-                    let attach =
-                        Attach { name: self.name, log: self.log, options: cmd_update.attach };
-                    attach.execute(main).await?;
+                    match cmd_update.command {
+                        Some(UpdateCommand::Attach(options)) => {
+                            let attach = Attach { name: self.name, log: self.log, options };
+                            attach.execute(main).await?
+                        }
+                        None => return Ok(()),
+                    }
                 }
                 let cmd = RunnerCommand::Update(Update { step: Some(1 - step), ..cmd_update });
                 self.version = Some(version.unwrap().into_owned());
