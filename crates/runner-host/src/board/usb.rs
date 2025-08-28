@@ -126,7 +126,7 @@ impl State {
     }
 
     pub fn serial(&mut self) -> &mut Serial<'static, UsbIpBus> {
-        self.serial.as_mut().expect("-usb-serial is not set")
+        self.serial.as_mut().expect("--usb-serial is not set")
     }
 
     fn poll(&mut self) -> bool {
