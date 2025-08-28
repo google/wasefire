@@ -53,6 +53,10 @@ install() {
           *) e "Internal error: apt-get install unimplemented for $*" ;;
         esac ;;
     esac
+    if ! dpkg --print-foreign-architectures | grep -q i386; then
+      x sudo dpkg --add-architecture i386
+      x sudo apt-get update
+    fi
     # Make sure apt-get update has run at least once (useful for fresh VMs).
     [ -e /var/lib/apt/lists/lock ] || x sudo apt-get update
     x sudo apt-get install $WASEFIRE_YES "$1"

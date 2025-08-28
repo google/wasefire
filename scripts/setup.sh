@@ -42,7 +42,6 @@ done
 # Basic binaries used for all Unix systems.
 ensure bin curl
 ensure bin pkg-config
-ensure apt gcc-multilib
 
 if ! has bin rustup; then
   x git submodule update --init third_party/rust-lang/rustup
@@ -61,3 +60,5 @@ ensure lib openssl
 
 # Transitive dependencies of runner-host.
 ensure bin usbip
+ensure apt gcc-multilib
+ensure apt libssl-dev:i386

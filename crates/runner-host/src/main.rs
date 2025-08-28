@@ -41,9 +41,6 @@ mod web;
 exactly_one_of!["debug", "release"];
 exactly_one_of!["native", "wasm"];
 
-#[cfg(feature = "native")]
-compile_error!("native is not supported");
-
 static STATE: Mutex<Option<board::State>> = Mutex::new(None);
 static RECEIVER: Mutex<Option<Receiver<Event<Board>>>> = Mutex::new(None);
 static FLAGS: LazyLock<Flags> = LazyLock::new(Flags::parse);

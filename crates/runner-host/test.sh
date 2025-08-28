@@ -20,7 +20,13 @@ set -e
 ensure_applet
 ( cd crates/web-client && make )
 
+if [ -z "$PKG_CONFIG_SYSROOT_DIR" ]; then
+  export PKG_CONFIG_SYSROOT_DIR=/usr/lib/i386-linux-gnu/pkgconfig
+fi
+
 test_helper
 
-cargo test --bin=runner-host --features=wasm,debug
-cargo check --bin=runner-host --features=wasm,release
+cargo test --bin=runner-host --target=i686-unknown-linux-gnu --features=wasm,debug
+cargo check --bin=runner-host --target=i686-unknown-linux-gnu --features=wasm,release
+cargo check --bin=runner-host --target=i686-unknown-linux-gnu --features=native,debug
+cargo check --bin=runner-host --target=i686-unknown-linux-gnu --features=native,release
