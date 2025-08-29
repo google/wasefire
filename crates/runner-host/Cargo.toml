@@ -17,7 +17,6 @@ tokio = { version = "1.47.1", features = ["full"] }
 usb-device = "0.3.2"
 usbd-hid = "0.8.2"
 usbd-serial = "0.2.2"
-usbip-device = "0.2.0"
 wasefire-board-api = { path = "../board", features = ["std"] }
 wasefire-cli-tools = { path = "../cli-tools" }
 wasefire-common = { path = "../common" }
@@ -30,6 +29,12 @@ wasefire-protocol-tokio = { path = "../protocol-tokio", features = ["device"] }
 wasefire-protocol-usb = { path = "../protocol-usb", features = ["device", "std"] }
 wasefire-store = { path = "../store", features = ["std"] }
 web-server = { path = "crates/web-server" }
+
+# TODO(https://github.com/Sawchord/usbip-device/pull/9): Use Sawchord repository
+# TODO(usbip-device > 0.2.0): Use crates.io
+[dependencies.usbip-device]
+git = "https://github.com/ia0/usbip-device.git"
+rev = "e918bf64a29eef0edc4572d65df4e813b80755f2"
 
 [dependencies.wasefire-scheduler]
 path = "../scheduler"

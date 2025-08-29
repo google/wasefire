@@ -54,9 +54,26 @@ Note that you may need to run `./scripts/setup.sh` if any command fails.
 
 ### Host
 
-It is currently not possible to run OpenSK on the host platform, because it only supports
-Web-Assembly applets. This limitation will either be lifted when the OpenSK applet can compile to
-Web-Assembly or when the host platform supports running native applets.
+#### Feature: ctap1
+
+The applet feature `ctap1` is supported and doesn't need any platform feature.
+
+#### Feature: ed25519
+
+The applet feature `ed25519` is supported and doesn't need any platform feature.
+
+#### Feature: fingerprint
+
+The applet feature `fingerprint` is not supported.
+
+#### Board
+
+```shell
+cargo xtask --native \
+  applet rust opensk $APPLET_FEATURES \
+  runner host $PLATFORM_FEATURES \
+  flash --reset-flash --usb-ctap --interface=web
+```
 
 ### nRF52840
 

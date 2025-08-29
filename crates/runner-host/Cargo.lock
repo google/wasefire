@@ -2665,8 +2665,7 @@ dependencies = [
 [[package]]
 name = "usbip-device"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b2d89f80e9ecc1c37503b9c67be21f5c16d5205b2a6134470f67668207140aa"
+source = "git+https://github.com/ia0/usbip-device.git?rev=e918bf64a29eef0edc4572d65df4e813b80755f2#e918bf64a29eef0edc4572d65df4e813b80755f2"
 dependencies = [
  "bitflags 1.3.2",
  "log",
