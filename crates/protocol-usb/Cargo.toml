@@ -15,7 +15,7 @@ categories = ["embedded", "no-std"]
 features = ["device"]
 
 [dependencies]
-anyhow = { version = "1.0.98", default-features = false, features = ["std"], optional = true }
+anyhow = { version = "1.0.99", default-features = false, features = ["std"], optional = true }
 defmt = { version = "1.0.1", default-features = false, optional = true }
 rusb = { version = "0.9.4", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false, optional = true }

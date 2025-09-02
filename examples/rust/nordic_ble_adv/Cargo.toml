@@ -7,7 +7,7 @@ edition = "2024"
 
 [dependencies]
 ble-adv = { path = "../../../crates/runner-nordic/crates/ble-adv" }
-bytemuck = { version = "1.23.1", default-features = false }
+bytemuck = { version = "1.23.2", default-features = false }
 data-encoding = { version = "2.9.0", default-features = false, features = ["alloc"] }
 wasefire = { path = "../../../crates/prelude" }
 

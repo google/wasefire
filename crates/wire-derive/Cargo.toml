@@ -15,11 +15,11 @@ categories = ["embedded", "no-std"]
 proc-macro = true
 
 [dependencies]
-proc-macro2 = { version = "1.0.95", default-features = false }
+proc-macro2 = { version = "1.0.101", default-features = false }
 quote = { version = "1.0.40", default-features = false }
 
 [dependencies.syn]
-version = "2.0.104"
+version = "2.0.106"
 default-features = false
 features = [
   "clone-impls",
@@ -33,7 +33,7 @@ features = [
 ]
 
 [dev-dependencies]
-prettyplease = "0.2.36"
+prettyplease = "0.2.37"
 similar-asserts = "1.7.0"
 
 [features]

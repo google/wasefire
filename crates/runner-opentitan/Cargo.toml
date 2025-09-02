@@ -7,7 +7,7 @@ publish = false
 edition = "2024"
 
 [dependencies]
-bytemuck = { version = "1.23.1", default-features = false }
+bytemuck = { version = "1.23.2", default-features = false }
 critical-section = "1.2.0"
 crypto-common = { version = "0.1.6", default-features = false }
 defmt = { version = "1.0.1", optional = true }

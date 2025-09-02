@@ -48,7 +48,7 @@ impl Client {
             .map(|ws: warp::ws::Ws, client| ws.on_upgrade(|socket| handle(socket, client)));
         let routes = warp::get().and(static_files.or(ws));
 
-        tokio::spawn(async move { warp::serve(routes).run(addr).await });
+        tokio::spawn(warp::serve(routes).run(addr));
         #[cfg(feature = "log")]
         let search = format!("?log={}", ::log::max_level());
         #[cfg(not(feature = "log"))]

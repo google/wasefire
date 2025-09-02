@@ -17,7 +17,7 @@ semihosting = { version = "0.1.20", features = ["panic-handler", "stdio"], optio
 wasefire-sync = { version = "0.1.2-git", path = "../sync", optional = true }
 
 [dependencies.wasmtime]
-version = "35.0.0"
+version = "36.0.2"
 default-features = false
 features = ["async", "runtime"]
 optional = true
@@ -28,7 +28,7 @@ features = ["float-types"]
 optional = true
 
 [build-dependencies.wasmtime]
-version = "35.0.0"
+version = "36.0.2"
 default-features = false
 features = ["cranelift", "pulley"]
 optional = true

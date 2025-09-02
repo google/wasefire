@@ -7,8 +7,8 @@ publish = false
 edition = "2024"
 
 [dependencies]
-anyhow = { version = "1.0.98", default-features = false, features = ["std"] }
-clap = { version = "4.5.42", default-features = false, features = ["derive", "std"] }
+anyhow = { version = "1.0.99", default-features = false, features = ["std"] }
+clap = { version = "4.5.46", default-features = false, features = ["derive", "std"] }
 wasefire-applet-api-desc = { path = "../.." }
 
 [lints]
