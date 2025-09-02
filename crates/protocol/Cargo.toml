@@ -15,7 +15,7 @@ categories = ["embedded", "no-std"]
 features = ["device", "host"]
 
 [dependencies]
-anyhow = { version = "1.0.98", default-features = false, features = ["std"], optional = true }
+anyhow = { version = "1.0.99", default-features = false, features = ["std"], optional = true }
 data-encoding = { version = "2.9.0", default-features = false, features = ["std"], optional = true }
 serde = { version = "1.0.219", default-features = false, features = ["derive"], optional = true }
 wasefire-common = { version = "0.1.0-git", path = "../common" }

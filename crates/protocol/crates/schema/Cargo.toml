@@ -7,7 +7,7 @@ publish = false
 edition = "2024"
 
 [dependencies]
-anyhow = "1.0.98"
+anyhow = "1.0.99"
 tokio = { version = "1.47.1", features = ["full"] }
 wasefire-cli-tools = { path = "../../../cli-tools" }
 wasefire-error = { path = "../../../error" }

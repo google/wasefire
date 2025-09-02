@@ -6,8 +6,8 @@ license = "Apache-2.0"
 edition = "2024"
 
 [dependencies]
-anyhow = "1.0.98"
-clap = { version = "4.5.42", features = ["derive"] }
+anyhow = "1.0.99"
+clap = { version = "4.5.46", features = ["derive"] }
 env_logger = "0.11.8"
 log = "0.4.27"
 wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["action"] }

@@ -7,7 +7,7 @@ publish = false
 edition = "2024"
 
 [dependencies]
-bytemuck = { version = "1.23.1", default-features = false, features = ["derive"] }
+bytemuck = { version = "1.23.2", default-features = false, features = ["derive"] }
 register = { path = "../register" }
 
 [lints]

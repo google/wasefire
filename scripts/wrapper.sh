@@ -57,7 +57,7 @@ case "$1" in
   cargo)
     case "$2" in
       bloat) ensure_cargo cargo-bloat 0.12.1 ;;
-      upgrade) ensure_cargo cargo-edit 0.13.6 ;;
+      upgrade) ensure_cargo cargo-edit 0.13.7 ;;
       *) e "Wrapper does not support 'cargo $2'" ;;
     esac
     ;;
@@ -65,7 +65,7 @@ case "$1" in
   mdbook) ensure_cargo mdbook 0.4.52 ;;
   nrfdfu) ensure_cargo nrfdfu 0.2.0 ;;
   probe-rs) ensure_cargo probe-rs-tools 0.29.1 ;;
-  rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.3.6 ;;
+  rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.4.0 ;;
   taplo) ensure_cargo taplo-cli 0.10.0 ;;
   trunk) ensure_cargo trunk 0.21.14 ;;
   twiggy) ensure_cargo twiggy 0.8.0 ;;
