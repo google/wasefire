@@ -111,7 +111,10 @@ impl PreStore {
 
     // Safety: the slice must outlive the store.
     pub unsafe fn instantiate(mut self, pulley: &'static [u8], id: usize) -> Result<Store, Error> {
-        let module = unsafe { Module::deserialize_raw(&self.engine, pulley.into()) }.unwrap();
+        let Ok(module) = (unsafe { Module::deserialize_raw(&self.engine, pulley.into()) }) else {
+            log::warn!("Failed to deserialize pulley module.");
+            return Err(Error::user(Code::InvalidArgument));
+        };
         'imports: for import in module.imports().filter(|x| x.module() == "env") {
             let name = import.name();
             let ExternType::Func(func) = import.ty() else { continue };
@@ -137,6 +140,10 @@ impl PreStore {
                 Poll::Pending => unreachable!(),
             }
         };
+        if instance.get_memory(&mut self.store, "memory").is_none() {
+            log::warn!("Applet does not have a memory.");
+            return Err(Error::user(Code::NotFound));
+        }
         Ok(Store {
             instance,
             store: Box::into_raw(Box::new(self.store)),
@@ -163,13 +170,14 @@ type ThreadResult = Result<Vec<Val>, Trap>;
 
 impl Drop for Store {
     fn drop(&mut self) {
+        // It is important to drop the threads and calls in an interleaved manner since that's how
+        // they depend on each other.
         loop {
             if self.threads.len() == self.calls.len() {
                 if self.threads.is_empty() {
                     break;
                 }
-                let caller = self.calls.pop().unwrap().caller.0;
-                drop(unsafe { Box::from_raw(caller) });
+                self.calls.pop();
             } else {
                 assert_eq!(self.threads.len(), self.calls.len() + 1);
                 self.threads.pop();
@@ -204,8 +212,7 @@ impl Store {
 
     pub fn resume(&mut self, result: u32) -> Result<RunResult, Error> {
         assert_eq!(self.calls.len(), self.threads.len());
-        let caller = self.calls.pop().unwrap().caller.0;
-        drop(unsafe { Box::from_raw(caller) });
+        self.calls.pop();
         STATE.put(State::Reply(result));
         Ok(self.execute())
     }
@@ -253,6 +260,12 @@ pub struct Call {
     caller: ExclusivePtr<Caller<'static, ()>>,
     pub id: usize,
     pub args: Vec<u32>,
+}
+
+impl Drop for Call {
+    fn drop(&mut self) {
+        drop(unsafe { Box::from_raw(self.caller.0) });
+    }
 }
 
 enum State {
@@ -335,7 +348,7 @@ impl wasefire_board_api::applet::Memory for Memory<'_> {
                 },
                 Ok(RunResult::Host) => log::warn!("alloc called into host"),
                 Ok(RunResult::Trap) => log::warn!("alloc trapped"),
-                Err(x) => log::panic!("alloc failed with {}", x),
+                Err(x) => log::error!("alloc failed with {}", x),
             }
             Err(Trap)
         })
