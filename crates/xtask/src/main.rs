@@ -543,7 +543,8 @@ impl AppletOptions {
         let dir = format!("examples/{}", self.lang);
         ensure_assemblyscript().await?;
         let mut asc = Command::new("./node_modules/.bin/asc");
-        asc.args(["-o", "../../target/wasefire/applet.wasm"]);
+        let src = "../../target/wasefire/applet-assemblyscript.wasm";
+        asc.args(["-o", src]);
         match self.opt_level {
             Some(level) => drop(asc.arg(format!("-O{level}"))),
             None => drop(asc.arg("-O")),
@@ -558,7 +559,10 @@ impl AppletOptions {
         asc.arg(format!("{}/main.ts", self.name));
         asc.current_dir(dir);
         cmd::execute(&mut asc).await?;
-        action::optimize_wasm("target/wasefire/applet.wasm", self.opt_level).await?;
+        let opt = "target/wasefire/applet-opt.wasm";
+        action::optimize_wasm(src, self.opt_level, opt).await?;
+        let dst = "target/wasefire/applet.wasm";
+        action::compute_sidetable(opt, dst).await?;
         Ok(())
     }
 }
