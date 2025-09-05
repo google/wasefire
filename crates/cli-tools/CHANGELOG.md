@@ -13,6 +13,8 @@
 
 ### Minor
 
+- Add `action::RustAppletBuild::pulley` to build a Pulley applet
+- Add `action::compile_pulley()` to compile a Pulley applet
 - Add `fs::has_changed()` to check whether a file needs update
 - Add `action::compute_sidetable()` to compute the side-table
 - Implement `Clone` for `action::Transfer`

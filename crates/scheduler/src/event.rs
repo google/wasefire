@@ -41,7 +41,7 @@ pub mod usb;
 pub mod vendor;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg(feature = "native")]
+#[cfg(any(feature = "native", feature = "pulley"))]
 pub struct InstId;
 
 // TODO: This could be encoded into a u32 for performance/footprint.
@@ -207,6 +207,13 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
             )
         }
         Event::Impossible(x) => x.unreachable(),
+    }
+    #[allow(unreachable_code)] // when there are no events
+    #[cfg(feature = "pulley")]
+    {
+        use alloc::format;
+        let name = format!("cb{}", params.len() - 2);
+        scheduler.call(&name, &params);
     }
     #[allow(unreachable_code)] // when there are no events
     #[cfg(feature = "wasm")]

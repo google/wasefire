@@ -39,6 +39,14 @@ path = "../interpreter"
 features = ["toctou"]
 optional = true
 
+# TODO(wasmtime > 36.0.2): Use crates.io
+[dependencies.wasmtime]
+git = "https://github.com/bytecodealliance/wasmtime.git"
+rev = "0744262f79e235b172331f5ba1a2c43b5aedcbfb"
+default-features = false
+features = ["async", "runtime"]
+optional = true
+
 [features]
 std = ["wasefire-board-api/std", "wasefire-store?/std"]
 # Logging features (enable at most one).
@@ -303,6 +311,7 @@ software-crypto-sha256 = ["board-api-crypto-sha256", "wasefire-board-api/softwar
 software-crypto-sha384 = ["board-api-crypto-sha384", "wasefire-board-api/software-crypto-sha384"]
 # Selects between Wasm applet or native applet (choose exactly one).
 native = ["dep:wasefire-sync"]
+pulley = ["dep:wasefire-common", "dep:wasefire-slice-cell", "dep:wasefire-sync", "dep:wasmtime"]
 wasm = ["dep:wasefire-interpreter", "dep:wasefire-slice-cell"]
 # Assume WASM modules being loaded are valid and do not validate them. This is a
 # safety invariant.

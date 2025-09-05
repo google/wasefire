@@ -34,17 +34,21 @@ fn main() {
 
 extern "C" fn print_event(_: *const u8) {
     let mut packet = Advertisement::zeroed();
-    match unsafe { syscall(SYSCALL_ID, OP_READ_PACKET, &mut packet as *mut _ as usize, 0) } {
-        Ok(0) => debug!("no packet"),
-        Ok(1) => {
-            let freq = packet.freq;
-            let rssi = packet.rssi;
-            let pdu = packet.pdu_type;
-            let addr = HEXLOWER.encode(&packet.addr);
-            let data = HEXLOWER.encode(packet.data());
-            debug!("{freq}MHz R{rssi} T{pdu} @{addr}: {data}");
+    loop {
+        match unsafe { syscall(SYSCALL_ID, OP_READ_PACKET, &mut packet as *mut _ as usize, 0) } {
+            Ok(0) => debug!("no packet"),
+            Ok(1) => {
+                let freq = packet.freq;
+                let rssi = packet.rssi;
+                let pdu = packet.pdu_type;
+                let addr = HEXLOWER.encode(&packet.addr);
+                let data = HEXLOWER.encode(packet.data());
+                debug!("{freq}MHz R{rssi} T{pdu} @{addr}: {data}");
+                continue;
+            }
+            Ok(x) => panic!("platform returned Ok({x})"),
+            Err(error) => debug!("error: {error}"),
         }
-        Ok(x) => panic!("platform returned Ok({x})"),
-        Err(error) => debug!("error: {error}"),
+        break;
     }
 }

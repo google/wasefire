@@ -39,7 +39,7 @@ mod cleanup;
 mod web;
 
 exactly_one_of!["debug", "release"];
-exactly_one_of!["native", "wasm"];
+exactly_one_of!["native", "pulley", "wasm"];
 
 static STATE: Mutex<Option<board::State>> = Mutex::new(None);
 static RECEIVER: Mutex<Option<Receiver<Event<Board>>>> = Mutex::new(None);

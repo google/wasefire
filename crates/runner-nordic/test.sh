@@ -20,7 +20,7 @@ set -e
 ensure_applet
 
 for feature in $(package_features); do
-  case $feature in _*|board-*|debug|release|native|wasm) continue ;; esac
+  case $feature in _*|board-*|debug|release|native|pulley|wasm) continue ;; esac
   x cargo clippy --bin=runner-nordic --target=thumbv7em-none-eabi \
 --features=wasm,debug,board-devkit,$feature
 done
@@ -32,6 +32,7 @@ cargo check --bin=runner-nordic --target=thumbv7em-none-eabi \
 cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,debug,board-devkit
 DEFMT_LOG=trace cargo check --bin=runner-nordic --target=thumbv7em-none-eabi \
 --features=wasm,debug,board-devkit
+cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=pulley,debug,board-devkit
 cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=wasm,release,board-dongle
 cargo check --bin=runner-nordic --target=thumbv7em-none-eabi --features=native,release,board-dongle
 cargo check --bin=runner-nordic --target=thumbv7em-none-eabi \
