@@ -543,8 +543,8 @@ impl AppletOptions {
         let dir = format!("examples/{}", self.lang);
         ensure_assemblyscript().await?;
         let mut asc = Command::new("./node_modules/.bin/asc");
-        let src = "../../target/wasefire/applet-assemblyscript.wasm";
-        asc.args(["-o", src]);
+        let src = "target/wasefire/applet-assemblyscript.wasm";
+        asc.args(["-o", &format!("../../{src}")]);
         match self.opt_level {
             Some(level) => drop(asc.arg(format!("-O{level}"))),
             None => drop(asc.arg("-O")),
