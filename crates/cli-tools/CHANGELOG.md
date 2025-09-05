@@ -4,7 +4,8 @@
 
 ### Major
 
-- Change `action::optimize_wasm()` to delete the applet on error
+- Remove `fs::copy_if_changed()` in favor of `fs::has_changed()`
+- Change `action::optimize_wasm()` to take a destination file
 - Remove `action::Transfer::chunk_size` used by `action::{AppletInstall,PlatformUpdate}`
 - Make `action::Rpc` private
 - Remove `action::PlatformUpdate::metadata()` which is now vendor-specific
@@ -12,13 +13,15 @@
 
 ### Minor
 
+- Add `fs::has_changed()` to check whether a file needs update
+- Add `action::compute_sidetable()` to compute the side-table
 - Implement `Clone` for `action::Transfer`
 - Add `action::ConnectionOptions::reboot_stable()` to tell whether a device reboot would invalidate
   the connection options
 - Add `--repl` flag to enable REPL for `action::{Applet,Platform}Rpc`
 - Add `action::PlatformClearStore` to clear the store
-- Change `action::optimize_wasm()` (and thus `action::RustAppletBuild`) to also compute the
-  side-table trading applet footprint for performance
+- Change `action::RustAppletBuild` to also compute the side-table trading applet footprint for
+  performance
 - Enable `wasefire/unsafe-assume-single-core` feature when building a native applet for RISC-V
 - Add `action::usb_serial` module to connect to the USB serial of a platform
 - Add `cmd::status()` to execute a command and return its error code
@@ -86,4 +89,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 16 -->
+<!-- Increment to skip CHANGELOG.md test: 17 -->

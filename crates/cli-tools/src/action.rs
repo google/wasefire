@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::time::Duration;
 
-use anyhow::{Result, anyhow, bail, ensure};
+use anyhow::{Context, Result, anyhow, bail, ensure};
 use clap::{ValueEnum, ValueHint};
 use rusb::GlobalContext;
 use tokio::fs::File;
@@ -710,14 +710,19 @@ impl RustAppletBuild {
         cargo.env("RUSTFLAGS", rustflags.join(" "));
         cargo.current_dir(&self.crate_dir);
         cmd::execute(&mut cargo).await?;
-        let (src, dst) = match &self.native {
-            None => (format!("wasm32-unknown-unknown/{profile}/{name}.wasm"), "applet.wasm"),
-            Some(target) => (format!("{target}/{profile}/lib{name}.a"), "libapplet.a"),
-        };
-        let applet = self.output_dir.join(dst);
-        if fs::copy_if_changed(target_dir.join(src), &applet).await? && dst.ends_with(".wasm") {
-            optimize_wasm(&applet, self.opt_level).await?;
+        if let Some(target) = &self.native {
+            let src = target_dir.join(format!("{target}/{profile}/lib{name}.a"));
+            let dst = self.output_dir.join("libapplet.a");
+            if fs::has_changed(&src, &dst).await? {
+                fs::copy(src, dst).await?;
+            }
+            return Ok(());
         }
+        let src = target_dir.join(format!("wasm32-unknown-unknown/{profile}/{name}.wasm"));
+        let opt = self.output_dir.join("applet-opt.wasm");
+        optimize_wasm(src, self.opt_level, &opt).await?;
+        let dst = self.output_dir.join("applet.wasm");
+        compute_sidetable(opt, dst).await?;
         Ok(())
     }
 }
@@ -806,37 +811,48 @@ impl Display for OptLevel {
     }
 }
 
-/// Strips and optimizes a WASM applet.
-///
-/// This also computes the side-table and inserts it as the first section.
-pub async fn optimize_wasm(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> Result<()> {
-    let result = optimize_wasm_(applet.as_ref(), opt_level).await;
-    if result.is_err() {
-        let _ = fs::remove_file(applet).await;
+/// Strips and optimizes a wasm module.
+pub async fn optimize_wasm(
+    src: impl AsRef<Path>, opt_level: Option<OptLevel>, dst: impl AsRef<Path>,
+) -> Result<()> {
+    if !fs::has_changed(src.as_ref(), dst.as_ref()).await? {
+        return Ok(());
     }
-    result
+    let result: Result<()> = try {
+        fs::copy(src, dst.as_ref()).await?;
+        cmd::execute(Command::new("wasm-strip").arg(dst.as_ref())).await?;
+        let mut opt = Command::new("wasm-opt");
+        opt.args(["--enable-bulk-memory", "--enable-sign-ext", "--enable-mutable-globals"]);
+        match opt_level {
+            Some(level) => drop(opt.arg(format!("-O{level:#}"))),
+            None => drop(opt.arg("-O")),
+        }
+        opt.arg(dst.as_ref());
+        opt.arg("-o");
+        opt.arg(dst.as_ref());
+        cmd::execute(&mut opt).await?;
+    };
+    if result.is_err() {
+        let _ = fs::remove_file(dst).await;
+    }
+    result.context("optimizing wasm")
 }
 
-async fn optimize_wasm_(applet: impl AsRef<Path>, opt_level: Option<OptLevel>) -> Result<()> {
-    let mut strip = Command::new("wasm-strip");
-    strip.arg(applet.as_ref());
-    cmd::execute(&mut strip).await?;
-    let mut opt = Command::new("wasm-opt");
-    opt.args(["--enable-bulk-memory", "--enable-sign-ext", "--enable-mutable-globals"]);
-    match opt_level {
-        Some(level) => drop(opt.arg(format!("-O{level:#}"))),
-        None => drop(opt.arg("-O")),
+/// Computes the side-table and inserts it as the first section.
+pub async fn compute_sidetable(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
+    if !fs::has_changed(src.as_ref(), dst.as_ref()).await? {
+        return Ok(());
     }
-    opt.arg(applet.as_ref());
-    opt.arg("-o");
-    opt.arg(applet.as_ref());
-    cmd::execute(&mut opt).await?;
-    // Compute the side-table.
-    let wasm = fs::read(applet.as_ref()).await?;
-    let wasm = wasefire_interpreter::prepare(&wasm)
-        .map_err(|_| anyhow!("failed to compute side-table"))?;
-    fs::write(applet.as_ref(), &wasm).await?;
-    Ok(())
+    let result: Result<()> = try {
+        let wasm = fs::read(src).await?;
+        let wasm = wasefire_interpreter::prepare(&wasm)
+            .map_err(|_| anyhow!("failed to compute side-table"))?;
+        fs::write(&dst, &wasm).await?;
+    };
+    if result.is_err() {
+        let _ = fs::remove_file(dst).await;
+    }
+    result
 }
 
 fn wasefire_feature(

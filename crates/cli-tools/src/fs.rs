@@ -60,17 +60,11 @@ pub async fn try_relative(base: impl AsRef<Path>, path: impl AsRef<Path>) -> Res
     Ok(result)
 }
 
-pub async fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
-    let src = from.as_ref().display();
-    let dst = to.as_ref().display();
-    create_parent(to.as_ref()).await?;
-    debug!("cp {src:?} {dst:?}");
-    tokio::fs::copy(from.as_ref(), to.as_ref())
-        .await
-        .with_context(|| format!("copying {src} to {dst}"))
-}
-
-pub async fn copy_if_changed(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<bool> {
+/// Returns whether a destination file depending on a source file needs update.
+///
+/// If it does and the destination file exists, it is deleted. A file named like the destination
+/// file and suffixed with `.orig` is created.
+pub async fn has_changed(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<bool> {
     let dst_orig = dst.as_ref().with_added_extension("orig");
     let mut changed = !exists(&dst).await
         || metadata(&dst).await?.modified()? < metadata(&src).await?.modified()?
@@ -86,10 +80,23 @@ pub async fn copy_if_changed(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Re
         } else if let Some(parent) = dst.as_ref().parent() {
             create_dir_all(parent).await?;
         }
-        copy(&src, &dst).await?;
+        match tokio::fs::remove_file(&dst).await {
+            Err(x) if x.kind() == ErrorKind::NotFound => (),
+            x => x?,
+        }
         tokio::fs::copy(&src, &dst_orig).await?;
     }
     Ok(changed)
+}
+
+pub async fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
+    let src = from.as_ref().display();
+    let dst = to.as_ref().display();
+    create_parent(to.as_ref()).await?;
+    debug!("cp {src:?} {dst:?}");
+    tokio::fs::copy(from.as_ref(), to.as_ref())
+        .await
+        .with_context(|| format!("copying {src} to {dst}"))
 }
 
 pub async fn create_dir_all(path: impl AsRef<Path>) -> Result<()> {
