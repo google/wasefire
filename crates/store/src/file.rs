@@ -140,7 +140,7 @@ mod tests {
     const BLANK_WORD: &[u8] = &[0xff, 0xff, 0xff, 0xff];
     const DATA_WORD: &[u8] = &[0xee, 0xdd, 0xbb, 0x77];
 
-    const FILE_NAME: &str = "opensk_storage.bin";
+    const FILE_NAME: &str = "storage.bin";
 
     const OPTIONS: FileOptions = FileOptions { word_size: 4, page_size: 0x1000, num_pages: 20 };
 
