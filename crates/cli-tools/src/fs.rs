@@ -80,7 +80,10 @@ pub async fn has_changed(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result
         } else if let Some(parent) = dst.as_ref().parent() {
             create_dir_all(parent).await?;
         }
-        let _ = tokio::fs::remove_file(&dst).await;
+        match tokio::fs::remove_file(&dst).await {
+            Err(x) if x.kind() == ErrorKind::NotFound => (),
+            x => x?,
+        }
         tokio::fs::copy(&src, &dst_orig).await?;
     }
     Ok(changed)
