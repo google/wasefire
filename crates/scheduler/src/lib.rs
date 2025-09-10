@@ -245,7 +245,9 @@ impl<B: Board> Scheduler<B> {
             log::warn!("Failed to start applet: {}", error);
         }
         loop {
+            log::trace!("Flushing events.");
             scheduler.flush_events();
+            log::trace!("Processing applet.");
             scheduler.process_applet();
         }
     }
@@ -454,19 +456,13 @@ impl<B: Board> Scheduler<B> {
 
     /// Returns whether execution should resume.
     fn process_event(&mut self) -> bool {
-        let event = loop {
-            let applet = match self.applet.get() {
-                Some(x) => x,
-                None => return false,
-            };
-            match applet.pop() {
-                EventAction::Handle(event) => break event,
-                EventAction::Wait => self.wait_event(),
-                #[cfg(any(feature = "pulley", feature = "wasm"))]
-                EventAction::Reply => return true,
-            }
-        };
-        event::process(self, event);
+        let Some(applet) = self.applet.get() else { return false };
+        match applet.pop() {
+            EventAction::Handle(event) => event::process(self, event),
+            EventAction::Wait => self.wait_event(),
+            #[cfg(any(feature = "pulley", feature = "wasm"))]
+            EventAction::Reply => return true,
+        }
         false
     }
 

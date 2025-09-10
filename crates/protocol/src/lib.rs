@@ -282,5 +282,8 @@ api! {
     /// Installs or uninstalls an applet.
     16 [7 -] AppletInstall: transfer::Request<'a> => transfer::Response,
 
-    next 17 [8 -]
+    /// Reboots an applet.
+    17 [8 -] AppletReboot: applet::AppletId => (),
+
+    next 18 [9 -]
 }

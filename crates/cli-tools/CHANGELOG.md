@@ -13,6 +13,7 @@
 
 ### Minor
 
+- Add `action::AppletReboot` to reboot an applet
 - Add `action::RustAppletBuild::pulley` to build a Pulley applet
 - Add `action::compile_pulley()` to compile a Pulley applet
 - Add `fs::has_changed()` to check whether a file needs update

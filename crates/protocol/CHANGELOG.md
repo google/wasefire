@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add `Api::AppletReboot` to reboot an applet
 - Deprecate `transfer::Request` to `transfer::_Request0`
 - Deprecate `Api::AppletUninstall` to `Api::_AppletUninstall0`
 - Deprecate `Api::AppletInstall` to `Api::_AppletInstall0`

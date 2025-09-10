@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support `AppletReboot` protocol call
 - Add `pulley` feature for Pulley platform
 - Support the removal of the `radio` module
 - Support `vendor` module
@@ -23,6 +24,7 @@
 
 ### Patch
 
+- Only process a single event when executing callbacks after main
 - Use `wasefire-slice-cell` for wasm memory
 - Return errors instead of trapping for UART
 - Use `cargo::` instead of `cargo:` for build script instructions
