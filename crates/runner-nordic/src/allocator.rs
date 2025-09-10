@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(not(feature = "test-vendor"))]
 use embedded_alloc::TlsfHeap as Heap;
+#[cfg(feature = "test-vendor")]
+pub use wrapper::*;
 
 #[global_allocator]
 static ALLOCATOR: Heap = Heap::empty();
@@ -27,4 +30,48 @@ pub fn init() {
     assert!(sheap < eheap);
     // SAFETY: Called only once before any allocation.
     unsafe { ALLOCATOR.init(sheap, eheap - sheap) }
+}
+
+#[cfg(feature = "test-vendor")]
+mod wrapper {
+    use core::alloc::Layout;
+    use core::sync::atomic::Ordering::Relaxed;
+
+    use embedded_alloc::TlsfHeap;
+    use wasefire_sync::AtomicUsize;
+
+    static USAGE: AtomicUsize = AtomicUsize::new(0);
+    static PEAK: AtomicUsize = AtomicUsize::new(0);
+
+    pub struct Heap(TlsfHeap);
+
+    unsafe impl core::alloc::GlobalAlloc for Heap {
+        unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+            let result = unsafe { self.0.alloc(layout) };
+            if !result.is_null() {
+                let usage = USAGE.fetch_add(layout.size(), Relaxed) + layout.size();
+                PEAK.fetch_max(usage, Relaxed);
+            }
+            result
+        }
+
+        unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+            USAGE.fetch_sub(layout.size(), Relaxed);
+            unsafe { self.0.dealloc(ptr, layout) }
+        }
+    }
+
+    impl Heap {
+        pub const fn empty() -> Self {
+            Heap(TlsfHeap::empty())
+        }
+
+        pub unsafe fn init(&self, start: usize, size: usize) {
+            unsafe { self.0.init(start, size) }
+        }
+    }
+
+    pub fn peak() -> usize {
+        PEAK.swap(0, Relaxed)
+    }
 }
