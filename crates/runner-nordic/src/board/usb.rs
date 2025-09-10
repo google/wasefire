@@ -85,6 +85,10 @@ impl HasRpc<'static, Usb> for Impl {
             }
             return Ok(response.into_bytes().into_boxed_slice());
         }
+        if request == b"peak\n" {
+            let peak = crate::allocator::peak();
+            return Ok(alloc::format!("{peak}\n").into_bytes().into_boxed_slice());
+        }
         if let Some(range) = request.strip_prefix(b"dump ") {
             let range: Option<_> = try {
                 let range = core::str::from_utf8(range).ok()?.trim_end();
