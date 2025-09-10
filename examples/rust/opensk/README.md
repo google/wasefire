@@ -58,7 +58,18 @@ replacing `--native` with `--pulley` and:
 - For the first run, removing everything between `applet` (included) and `runner` (excluded).
 - For the second run, replacing everything after `runner` (included) with `install`.
 
-See the host platform below for an example.
+For example, if the native command is:
+
+```shell
+cargo xtask --native applet rust opensk $APPLET_FEATURES runner foo $PLATFORM_FEATURES flash
+```
+
+Then the 2 pulley commands (respectively for the platform and the applet) would be:
+
+```shell
+cargo xtask --pulley runner foo $PLATFORM_FEATURES flash
+cargo xtask --pulley applet rust opensk $APPLET_FEATURES install
+```
 
 ### Host
 

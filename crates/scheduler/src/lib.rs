@@ -370,6 +370,9 @@ impl<B: Board> Scheduler<B> {
                 }
             }
             self.process_applet();
+            if self.applet.get().is_none() {
+                return Ok(()); // applet trapped in process_applet()
+            }
         }
         assert!(matches!(self.applet.get().unwrap().pop(), EventAction::Reply));
         #[cfg(feature = "internal-debug")]
@@ -422,6 +425,9 @@ impl<B: Board> Scheduler<B> {
                 }
             }
             self.process_applet();
+            if self.applet.get().is_none() {
+                return Ok(()); // applet trapped in process_applet()
+            }
         }
         assert!(matches!(self.applet.get().unwrap().pop(), EventAction::Reply));
         #[cfg(feature = "internal-debug")]
