@@ -11,11 +11,6 @@ The applet provides a few customization features (all disabled by default):
 - `ed25519` enables support for Ed25519 (the applet always implements ECDSA P-256)
 - `fingerprint` enables support for fingerprints
 
-## Limitations
-
-The applet can only be compiled natively with a platform. It cannot be compiled as a Web-Assembly
-applet at this time. This limitation will be lifted in the future.
-
 ## Platforms
 
 The applet needs the platform to implement the following features of the board API:
@@ -52,6 +47,30 @@ features to enable if it does.
 
 Note that you may need to run `./scripts/setup.sh` if any command fails.
 
+## Targets
+
+Only native and pulley applets are supported, due to the size and complexity of the applet. It is
+not possible to use a wasm applet at this time. This limitation may be lifted in the future.
+
+The commands below are given for native applets. For pulley applets, the command must be run twice,
+replacing `--native` with `--pulley` and:
+
+- For the first run, removing everything between `applet` (included) and `runner` (excluded).
+- For the second run, replacing everything after `runner` (included) with `install`.
+
+For example, if the native command is:
+
+```shell
+cargo xtask --native applet rust opensk $APPLET_FEATURES runner foo $PLATFORM_FEATURES flash
+```
+
+Then the 2 pulley commands (respectively for the platform and the applet) would be:
+
+```shell
+cargo xtask --pulley runner foo $PLATFORM_FEATURES flash
+cargo xtask --pulley applet rust opensk $APPLET_FEATURES install
+```
+
 ### Host
 
 #### Feature: ctap1
@@ -66,13 +85,25 @@ The applet feature `ed25519` is supported and doesn't need any platform feature.
 
 The applet feature `fingerprint` is not supported.
 
-#### Board
+#### Target: native
 
 ```shell
-cargo xtask --native \
-  applet rust opensk $APPLET_FEATURES \
-  runner host $PLATFORM_FEATURES \
-  flash --reset-flash --usb-ctap --interface=web
+cargo xtask --native applet rust opensk $APPLET_FEATURES \
+  runner host flash --reset-flash --usb-ctap --interface=web
+```
+
+#### Target: pulley
+
+Start the platform in its own terminal:
+
+```shell
+cargo xtask --pulley runner host flash --reset-flash --usb-ctap --interface=web
+```
+
+Install the applet from another terminal:
+
+```shell
+cargo xtask --pulley applet rust opensk $APPLET_FEATURES install
 ```
 
 ### nRF52840

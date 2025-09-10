@@ -41,7 +41,7 @@ pub mod usb;
 pub mod vendor;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg(feature = "native")]
+#[cfg(any(feature = "native", feature = "pulley"))]
 pub struct InstId;
 
 // TODO: This could be encoded into a u32 for performance/footprint.
@@ -209,12 +209,11 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
         Event::Impossible(x) => x.unreachable(),
     }
     #[allow(unreachable_code)] // when there are no events
+    #[cfg(feature = "pulley")]
+    scheduler.call(cb_name(params.len() - 2), &params);
+    #[allow(unreachable_code)] // when there are no events
     #[cfg(feature = "wasm")]
-    {
-        use alloc::format;
-        let name = format!("cb{}", params.len() - 2);
-        scheduler.call(inst, &name, &params);
-    }
+    scheduler.call(inst, cb_name(params.len() - 2), &params);
     #[allow(unreachable_code)] // when there are no events
     #[cfg(feature = "native")]
     {
@@ -257,5 +256,16 @@ pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
             3 => schedule!(applet_cb3(x0, x1, x2)),
             _ => unimplemented!(),
         }
+    }
+}
+
+#[cfg(any(feature = "pulley", feature = "wasm"))]
+fn cb_name(params: usize) -> &'static str {
+    match params {
+        0 => "cb0",
+        1 => "cb1",
+        2 => "cb2",
+        3 => "cb3",
+        _ => unimplemented!(),
     }
 }

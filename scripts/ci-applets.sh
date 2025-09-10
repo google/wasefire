@@ -25,7 +25,11 @@ for lang in $(ls examples); do
     [ $lang = assemblyscript -a $name = node_modules ] && continue
     [ $lang = assemblyscript -a $name = api.ts ] && continue
     [ $lang = rust -a $name = exercises ] && continue
-    [ $lang = rust -a $name = opensk ] && continue
+    if [ $lang = rust -a $name = opensk ]; then
+      x cargo xtask --pulley applet $lang $name
+      x cargo xtask --pulley --release applet $lang $name
+      continue
+    fi
     x cargo xtask applet $lang $name
     x cargo xtask --release applet $lang $name
   done

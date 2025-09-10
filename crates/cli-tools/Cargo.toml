@@ -62,6 +62,14 @@ path = "../protocol-usb"
 features = ["host", "log"]
 optional = true
 
+# TODO(wasmtime > 36.0.2): Use crates.io
+[dependencies.wasmtime]
+git = "https://github.com/bytecodealliance/wasmtime.git"
+rev = "0744262f79e235b172331f5ba1a2c43b5aedcbfb"
+default-features = false
+features = ["cranelift", "pulley"]
+optional = true
+
 [features]
 action = [
   "cargo",
@@ -77,6 +85,7 @@ action = [
   "dep:wasefire-protocol-tokio",
   "dep:wasefire-protocol-usb",
   "dep:wasefire-wire",
+  "dep:wasmtime",
   "tokio/time",
 ]
 cargo = ["dep:cargo_metadata"]

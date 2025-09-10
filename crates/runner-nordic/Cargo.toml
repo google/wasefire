@@ -117,6 +117,7 @@ debug = [
 release = ["dep:panic-abort"]
 # Exactly one is enabled by xtask.
 native = ["wasefire-scheduler/native"]
+pulley = ["wasefire-scheduler/pulley"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
 # Internal features.
 _crypto = []
