@@ -148,7 +148,7 @@ checksum = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493"
 
 [[package]]
 name = "wasefire-wire-derive"
-version = "0.1.2-git"
+version = "0.1.2"
 dependencies = [
  "prettyplease",
  "proc-macro2",

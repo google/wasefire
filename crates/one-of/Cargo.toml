@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-one-of"
-version = "0.1.1-git"
+version = "0.1.1"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true

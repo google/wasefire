@@ -4,4 +4,4 @@ version = 4
 
 [[package]]
 name = "wasefire-slice-cell"
-version = "0.1.0-git"
+version = "0.1.0"

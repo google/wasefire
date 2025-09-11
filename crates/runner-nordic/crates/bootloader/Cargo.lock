@@ -419,7 +419,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-common"
-version = "0.1.0-git"
+version = "0.1.0"
 dependencies = [
  "wasefire-error",
  "wasefire-sync",
@@ -427,18 +427,18 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.3-git"
+version = "0.1.3"
 dependencies = [
  "num_enum",
 ]
 
 [[package]]
 name = "wasefire-one-of"
-version = "0.1.1-git"
+version = "0.1.1"
 
 [[package]]
 name = "wasefire-sync"
-version = "0.1.2-git"
+version = "0.1.2"
 dependencies = [
  "portable-atomic",
  "spin",
