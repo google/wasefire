@@ -241,9 +241,7 @@ impl<B: Board> Scheduler<B> {
     #[cfg(any(feature = "pulley", feature = "wasm"))]
     pub fn run() -> ! {
         let mut scheduler = Self::new();
-        if let Err(error) = scheduler.start_applet() {
-            log::warn!("Failed to start applet: {}", error);
-        }
+        scheduler.start_applet();
         loop {
             log::trace!("Flushing events.");
             scheduler.flush_events();
@@ -341,8 +339,16 @@ impl<B: Board> Scheduler<B> {
         }
     }
 
+    #[cfg(any(feature = "pulley", feature = "wasm"))]
+    fn start_applet(&mut self) {
+        match self.start_applet_() {
+            Ok(()) => (),
+            Err(e) => log::warn!("Failed to start applet: {}", e),
+        }
+    }
+
     #[cfg(feature = "pulley")]
-    fn start_applet(&mut self) -> Result<(), Error> {
+    fn start_applet_(&mut self) -> Result<(), Error> {
         // SAFETY: We stop the applet before installing a new one.
         let pulley = unsafe { <board::Applet<B> as board::applet::Api>::get()? };
         if pulley.is_empty() {
@@ -384,7 +390,7 @@ impl<B: Board> Scheduler<B> {
     }
 
     #[cfg(feature = "wasm")]
-    fn start_applet(&mut self) -> Result<(), Error> {
+    fn start_applet_(&mut self) -> Result<(), Error> {
         const MEMORY_SIZE: usize = memory_size();
         #[repr(align(16))]
         struct Memory([u8; MEMORY_SIZE]);
