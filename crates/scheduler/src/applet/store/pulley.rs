@@ -362,7 +362,50 @@ fn convert<T>(_: T) -> Error {
 }
 
 // Those symbols are needed by Wasmtime.
+// TODO(wasmtime > 36.0.2): Remove everything except the thread symbols at the end.
+#[allow(unused_variables)] // TODO: Remove too.
 mod capi {
+    #[expect(non_camel_case_types)]
+    enum wasmtime_memory_image {}
+
+    #[unsafe(no_mangle)]
+    extern "C" fn wasmtime_mmap_new(size: usize, prot_flags: u32, ret: &mut *mut u8) -> i32 {
+        unimplemented!();
+    }
+    #[unsafe(no_mangle)]
+    extern "C" fn wasmtime_mmap_remap(addr: *mut u8, size: usize, prot_flags: u32) -> i32 {
+        unimplemented!();
+    }
+    #[unsafe(no_mangle)]
+    extern "C" fn wasmtime_munmap(ptr: *mut u8, size: usize) -> i32 {
+        unimplemented!();
+    }
+    #[unsafe(no_mangle)]
+    extern "C" fn wasmtime_mprotect(ptr: *mut u8, size: usize, prot_flags: u32) -> i32 {
+        unimplemented!();
+    }
+    #[unsafe(no_mangle)]
+    extern "C" fn wasmtime_page_size() -> usize {
+        unimplemented!();
+    }
+
+    #[unsafe(no_mangle)]
+    extern "C" fn wasmtime_memory_image_new(
+        ptr: *const u8, len: usize, ret: &mut *mut wasmtime_memory_image,
+    ) -> i32 {
+        unimplemented!();
+    }
+    #[unsafe(no_mangle)]
+    extern "C" fn wasmtime_memory_image_map_at(
+        image: *mut wasmtime_memory_image, addr: *mut u8, len: usize,
+    ) -> i32 {
+        unimplemented!();
+    }
+    #[unsafe(no_mangle)]
+    extern "C" fn wasmtime_memory_image_free(image: *mut wasmtime_memory_image) {
+        unimplemented!();
+    }
+
     static mut TLS_PTR: *mut u8 = core::ptr::null_mut();
     #[unsafe(no_mangle)]
     extern "C" fn wasmtime_tls_get() -> *mut u8 {

@@ -16,10 +16,8 @@ riscv-rt = { version = "0.15.0", optional = true }
 semihosting = { version = "0.1.20", features = ["panic-handler", "stdio"], optional = true }
 wasefire-sync = { version = "0.1.2", path = "../sync", optional = true }
 
-# TODO(wasmtime > 36.0.2): Use crates.io
 [dependencies.wasmtime]
-git = "https://github.com/bytecodealliance/wasmtime.git"
-rev = "0744262f79e235b172331f5ba1a2c43b5aedcbfb"
+version = "36.0.2"
 default-features = false
 features = ["async", "runtime"]
 optional = true
@@ -29,10 +27,8 @@ path = "../interpreter"
 features = ["float-types"]
 optional = true
 
-# TODO(wasmtime > 36.0.2): Use crates.io
 [build-dependencies.wasmtime]
-git = "https://github.com/bytecodealliance/wasmtime.git"
-rev = "0744262f79e235b172331f5ba1a2c43b5aedcbfb"
+version = "36.0.2"
 default-features = false
 features = ["cranelift", "pulley"]
 optional = true

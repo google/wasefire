@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-cli-tools"
-version = "0.3.0"
+version = "0.3.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -62,10 +62,8 @@ path = "../protocol-usb"
 features = ["host", "log"]
 optional = true
 
-# TODO(wasmtime > 36.0.2): Use crates.io
 [dependencies.wasmtime]
-git = "https://github.com/bytecodealliance/wasmtime.git"
-rev = "0744262f79e235b172331f5ba1a2c43b5aedcbfb"
+version = "36.0.2"
 default-features = false
 features = ["cranelift", "pulley"]
 optional = true
