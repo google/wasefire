@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.6-git
+## 0.1.6
 
 ### Minor
 
@@ -55,4 +55,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 11 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->

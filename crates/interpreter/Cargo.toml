@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-interpreter"
-version = "0.4.0-git"
+version = "0.4.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -16,8 +16,8 @@ derive-where = { version = "1.6.0", default-features = false, features = ["night
 libm = { version = "0.2.15", default-features = false, optional = true }
 num_enum = { version = "0.7.4", default-features = false }
 paste = { version = "1.0.15", default-features = false }
-wasefire-common = { version = "0.1.0-git", path = "../common" }
-wasefire-error = { version = "0.1.3-git", path = "../error" }
+wasefire-common = { version = "0.1.0", path = "../common" }
+wasefire-error = { version = "0.1.3", path = "../error" }
 
 [dev-dependencies]
 lazy_static = "1.5.0"

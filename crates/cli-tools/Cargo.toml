@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-cli-tools"
-version = "0.3.0-git"
+version = "0.3.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -29,9 +29,9 @@ serde = { version = "1.0.219", default-features = false, features = ["derive"] }
 serialport = { version = "4.7.3", default-features = false, optional = true }
 tar = { version = "0.4.44", default-features = false }
 toml = { version = "0.9.5", default-features = false, features = ["display", "parse", "serde"] }
-wasefire-common = { version = "0.1.0-git", path = "../common", optional = true }
-wasefire-interpreter = { version = "0.4.0-git", path = "../interpreter", optional = true }
-wasefire-wire = { version = "0.1.2-git", path = "../wire", optional = true }
+wasefire-common = { version = "0.1.0", path = "../common", optional = true }
+wasefire-interpreter = { version = "0.4.0", path = "../interpreter", optional = true }
+wasefire-wire = { version = "0.1.2", path = "../wire", optional = true }
 
 [dependencies.clap]
 version = "4.5.46"
@@ -45,19 +45,19 @@ default-features = false
 features = ["fs", "io-std", "io-util", "macros", "process", "rt"]
 
 [dependencies.wasefire-protocol]
-version = "0.3.0-git"
+version = "0.3.0"
 path = "../protocol"
 features = ["host"]
 optional = true
 
 [dependencies.wasefire-protocol-tokio]
-version = "0.1.1-git"
+version = "0.1.1"
 path = "../protocol-tokio"
 features = ["host", "log"]
 optional = true
 
 [dependencies.wasefire-protocol-usb]
-version = "0.3.0-git"
+version = "0.3.0"
 path = "../protocol-usb"
 features = ["host", "log"]
 optional = true
