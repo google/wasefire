@@ -148,6 +148,15 @@ fn process_event_<B: Board>(
         }
         #[cfg(not(feature = "board-api-storage"))]
         Api::PlatformClearStore(_) => return Err(Error::world(Code::NotImplemented)),
+        #[cfg(feature = "native")]
+        Api::AppletReboot(_) => return Err(Error::world(Code::NotImplemented)),
+        #[cfg(any(feature = "pulley", feature = "wasm"))]
+        Api::AppletReboot(applet_id) => {
+            let service::applet::AppletId = applet_id;
+            scheduler.stop_applet(ExitStatus::Kill);
+            scheduler.start_applet();
+            reply::<B, service::AppletReboot>(());
+        }
         #[cfg(not(feature = "_test"))]
         _ => return Err(Error::internal(Code::NotImplemented)),
     }
@@ -208,10 +217,7 @@ impl<B: Board> TransferKind<B> for service::AppletInstall {
         scheduler.stop_applet(ExitStatus::Kill);
     }
     fn finish(scheduler: &mut Scheduler<B>) {
-        match scheduler.start_applet() {
-            Ok(()) => (),
-            Err(e) => log::warn!("Failed to start applet: {}", e),
-        }
+        scheduler.start_applet();
     }
     fn state(scheduler: &mut Scheduler<B>) -> &mut TransferState {
         scheduler.protocol.0.install()

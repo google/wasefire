@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `applet-reboot` to reboot an applet
 - Better progress bar for `applet-{,un}install` and `platform-update`
 - Add `--repl` flag to `{applet,platform}-rpc` to enable REPL splitting input as lines
 - Add `platform-clear-store` to clear the store

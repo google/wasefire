@@ -77,6 +77,14 @@ enum Action {
         action: action::AppletExitStatus,
     },
 
+    #[group(id = "Action::AppletReboot")]
+    AppletReboot {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        action: action::AppletReboot,
+    },
+
     // TODO(https://github.com/clap-rs/clap/issues/2621): We should be able to remove the explicit
     // group name.
     #[group(id = "Action::AppletRpc")]
@@ -277,6 +285,7 @@ async fn main() -> Result<()> {
         Action::AppletExitStatus { options, action } => {
             action.run(&mut options.connect().await?).await
         }
+        Action::AppletReboot { options, action } => action.run(&mut options.connect().await?).await,
         Action::AppletRpc { options, action } => action.run(&mut options.connect().await?).await,
         Action::Host(x) => x.run().await?,
         Action::PlatformClearStore { options, action } => {

@@ -189,6 +189,17 @@ impl AppletExitStatus {
     }
 }
 
+/// Reboots an applet installed on a platform.
+#[derive(clap::Args)]
+pub struct AppletReboot {}
+
+impl AppletReboot {
+    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+        let AppletReboot {} = self;
+        connection.call::<service::AppletReboot>(applet::AppletId).await.map(|x| *x.get())
+    }
+}
+
 /// Parameters for an applet or platform RPC.
 #[derive(clap::Args)]
 struct Rpc {

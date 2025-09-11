@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Support `AppletReboot` protocol call
 - Add `pulley` feature for Pulley platform
 - Support the removal of the `radio` module
 - Support `vendor` module
