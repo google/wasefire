@@ -102,6 +102,7 @@ ins board
 ins scheduler
 ins logger
 pri "## Common crates"
+ins common
 ins error
 ins sync
 pri "## Tools"
@@ -115,6 +116,7 @@ ins one-of
 ins protocol
 ins protocol-tokio
 ins protocol-usb
+ins slice-cell
 ins store
 ins stub
 ins wire
