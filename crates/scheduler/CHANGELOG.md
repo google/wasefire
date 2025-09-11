@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1-git
+
+### Patch
+
+- Update dependencies
+
 ## 0.5.0
 
 ### Major

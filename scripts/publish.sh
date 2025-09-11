@@ -67,7 +67,7 @@ git log -1 --pretty=%s | grep -q '^Release all crates (#[0-9]*)$' \
 
 for crate in $TOPOLOGICAL_ORDER; do
   ( cd crates/$crate
-    $(package_publish) || continue
+    $(package_publish) || exit 0
     current="$(package_version)"
     latest="$(cargo_info_version "$(package_name)")"
     if [ "$current" = "$latest" ]; then
