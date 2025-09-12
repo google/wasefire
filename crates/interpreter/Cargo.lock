@@ -168,7 +168,7 @@ checksum = "4a1a07cc7db3810833284e8d372ccdc6da29741639ecc70c9ec107df0fa6154c"
 
 [[package]]
 name = "wasefire-common"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "wasefire-error",
  "wasefire-sync",
@@ -183,7 +183,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.4.0"
+version = "0.4.1-git"
 dependencies = [
  "derive-where",
  "lazy_static",

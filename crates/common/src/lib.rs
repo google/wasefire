@@ -20,6 +20,17 @@ pub mod id;
 pub mod platform;
 pub mod ptr;
 
+/// Returns the address of a linker symbol.
+#[macro_export]
+macro_rules! addr_of_symbol {
+    ($sym:ident) => {{
+        unsafe extern "C" {
+            static mut $sym: [u8; 0];
+        }
+        (&raw mut $sym).addr()
+    }};
+}
+
 /// Extracts a value conditionally.
 ///
 /// The implementation unconditionally calls `take(x)`, so the temporary default value is dropped

@@ -44,7 +44,6 @@ mod time;
 #[cfg(feature = "debug")]
 mod uart;
 mod usb;
-mod util;
 
 fn idle() -> ! {
     loop {

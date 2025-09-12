@@ -2380,7 +2380,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.9.0"
+version = "0.9.1-git"
 dependencies = [
  "bytemuck",
  "data-encoding",
@@ -2425,7 +2425,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-common"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "wasefire-error",
  "wasefire-sync",
@@ -2440,7 +2440,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.4.0"
+version = "0.4.1-git"
 dependencies = [
  "derive-where",
  "num_enum",
@@ -2462,7 +2462,7 @@ version = "0.1.1"
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.3.0"
+version = "0.3.1-git"
 dependencies = [
  "anyhow",
  "data-encoding",
@@ -2473,7 +2473,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol-tokio"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "anyhow",
  "tokio",
@@ -2485,7 +2485,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol-usb"
-version = "0.3.0"
+version = "0.3.1-git"
 dependencies = [
  "anyhow",
  "rusb",
@@ -2512,7 +2512,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire"
-version = "0.1.2"
+version = "0.1.3-git"
 dependencies = [
  "wasefire-common",
  "wasefire-error",

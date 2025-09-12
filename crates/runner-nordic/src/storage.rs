@@ -20,6 +20,7 @@ use embedded_storage::nor_flash::{
 };
 use nrf52840_hal::nvmc::Nvmc;
 use nrf52840_hal::pac::NVMC;
+use wasefire_common::addr_of_symbol;
 use wasefire_error::{Code, Error};
 use wasefire_store::{self as store, StorageIndex};
 use wasefire_sync::{AtomicBool, Ordering, TakeCell};
@@ -43,16 +44,12 @@ unsafe impl Send for Storage {}
 macro_rules! take_storage {
     ($start:ident .. $end:ident) => {{
         assert!(!wasefire_sync::executed!());
-        unsafe extern "C" {
-            static mut $start: u32;
-            static mut $end: u32;
-        }
-        let start = &raw mut $start;
-        let end = (&raw mut $end).addr();
-        assert_eq!(start.addr() % PAGE_SIZE, 0);
+        let start = addr_of_symbol!($start);
+        let end = addr_of_symbol!($end);
+        assert_eq!(start % PAGE_SIZE, 0);
         assert_eq!(end % PAGE_SIZE, 0);
-        let length = end.checked_sub(start as usize).unwrap();
-        core::ptr::from_raw_parts_mut(start, length)
+        let length = end.checked_sub(start).unwrap();
+        core::ptr::from_raw_parts_mut(start as *mut u8, length)
     }};
 }
 

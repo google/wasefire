@@ -178,7 +178,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "wasefire"
-version = "0.8.0"
+version = "0.8.1-git"
 dependencies = [
  "bytemuck",
  "crypto-common",
@@ -222,7 +222,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-common"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "wasefire-error",
  "wasefire-sync",

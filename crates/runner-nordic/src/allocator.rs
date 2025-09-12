@@ -14,6 +14,7 @@
 
 #[cfg(not(feature = "test-vendor"))]
 use embedded_alloc::TlsfHeap as Heap;
+use wasefire_common::addr_of_symbol;
 #[cfg(feature = "test-vendor")]
 pub use wrapper::*;
 
@@ -21,12 +22,8 @@ pub use wrapper::*;
 static ALLOCATOR: Heap = Heap::empty();
 
 pub fn init() {
-    unsafe extern "C" {
-        static mut __sheap: u32;
-        static mut __eheap: u32;
-    }
-    let sheap = (&raw mut __sheap).addr();
-    let eheap = (&raw mut __eheap).addr();
+    let sheap = addr_of_symbol!(__sheap);
+    let eheap = addr_of_symbol!(__eheap);
     assert!(sheap < eheap);
     // SAFETY: Called only once before any allocation.
     unsafe { ALLOCATOR.init(sheap, eheap - sheap) }

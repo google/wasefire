@@ -14,6 +14,7 @@ nrf52840-hal = { version = "0.18.0", optional = true }
 riscv = { version = "0.14.0", features = ["critical-section-single-hart"], optional = true }
 riscv-rt = { version = "0.15.0", optional = true }
 semihosting = { version = "0.1.20", features = ["panic-handler", "stdio"], optional = true }
+wasefire-common = { version = "0.1.1-git", path = "../common", optional = true }
 wasefire-sync = { version = "0.1.2", path = "../sync", optional = true }
 
 [dependencies.wasmtime]
@@ -42,6 +43,7 @@ optional = true
 _target-embedded = [
   "dep:embedded-alloc",
   "dep:semihosting",
+  "dep:wasefire-common",
   "dep:wasefire-sync",
   "wasmtime?/pulley",
 ]
