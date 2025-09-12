@@ -17,16 +17,8 @@ use core::ops::Range;
 use core::sync::atomic::Ordering::Relaxed;
 
 use embedded_alloc::LlffHeap;
+use wasefire_common::addr_of_symbol;
 use wasefire_sync::AtomicUsize;
-
-macro_rules! addr_of_sym {
-    ($sym:ident) => {{
-        unsafe extern "C" {
-            static mut $sym: u32;
-        }
-        (&raw mut $sym).addr()
-    }};
-}
 
 pub(crate) fn init() {
     let Regions { data, heap, stack } = regions();
@@ -70,19 +62,19 @@ struct Regions {
 
 #[cfg(feature = "target-nordic")]
 fn regions() -> Regions {
-    let (sheap, eheap) = (cortex_m_rt::heap_start() as usize, addr_of_sym!(_stack_end));
-    let (sram, eram) = (addr_of_sym!(_ram_start), addr_of_sym!(_ram_end));
+    let (sheap, eheap) = (cortex_m_rt::heap_start() as usize, addr_of_symbol!(_stack_end));
+    let (sram, eram) = (addr_of_symbol!(_ram_start), addr_of_symbol!(_ram_end));
     assert!(sram <= sheap && sheap < eheap && eheap < eram);
     Regions { data: sram .. sheap, heap: sheap .. eheap, stack: eheap .. eram }
 }
 
 #[cfg(feature = "target-riscv")]
 fn regions() -> Regions {
-    let sram = addr_of_sym!(sram);
+    let sram = addr_of_symbol!(sram);
     let sheap = riscv_rt::heap_start() as usize;
-    let eheap = sheap + addr_of_sym!(_heap_size);
-    let sstack = addr_of_sym!(sstack);
-    let estack = addr_of_sym!(_stack_start);
+    let eheap = sheap + addr_of_symbol!(_heap_size);
+    let sstack = addr_of_symbol!(sstack);
+    let estack = addr_of_symbol!(_stack_start);
     assert!(sram <= sheap && sstack < estack);
     Regions { data: sram .. sheap, heap: sheap .. eheap, stack: sstack .. estack }
 }

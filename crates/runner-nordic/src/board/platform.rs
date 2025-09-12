@@ -18,6 +18,7 @@ use header::Header;
 use nrf52840_hal::pac::FICR;
 use wasefire_board_api::Error;
 use wasefire_board_api::platform::Api;
+use wasefire_common::addr_of_symbol;
 use wasefire_common::platform::Side;
 use wasefire_error::Code;
 use wasefire_sync::Once;
@@ -46,11 +47,7 @@ impl Api for Impl {
     }
 
     fn opposite_version() -> Result<Cow<'static, [u8]>, Error> {
-        unsafe extern "C" {
-            static mut __sother: u32;
-            static mut __eother: u32;
-        }
-        if (&raw mut __sother).addr() == (&raw mut __eother).addr() {
+        if addr_of_symbol!(__sother) == addr_of_symbol!(__eother) {
             return Err(Error::world(Code::NotEnough));
         }
         let side = Self::running_side().opposite();

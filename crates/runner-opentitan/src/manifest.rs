@@ -14,10 +14,10 @@
 
 use core::mem::offset_of;
 
-use crate::symbol_addr;
+use wasefire_common::addr_of_symbol;
 
 pub fn active() -> &'static Manifest {
-    let ptr = symbol_addr!(_smanifest).cast();
+    let ptr = addr_of_symbol!(_smanifest) as *const Manifest;
     unsafe { &*ptr }
 }
 

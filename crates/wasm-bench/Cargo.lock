@@ -1129,7 +1129,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-common"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "wasefire-error",
  "wasefire-sync",
@@ -1144,7 +1144,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.4.0"
+version = "0.4.1-git"
 dependencies = [
  "derive-where",
  "libm",
@@ -1173,6 +1173,7 @@ dependencies = [
  "riscv",
  "riscv-rt",
  "semihosting",
+ "wasefire-common",
  "wasefire-interpreter",
  "wasefire-sync",
  "wasmtime",

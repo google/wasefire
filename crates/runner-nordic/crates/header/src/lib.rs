@@ -14,8 +14,7 @@
 
 #![no_std]
 
-use core::ptr::addr_of;
-
+use wasefire_common::addr_of_symbol;
 use wasefire_common::platform::Side;
 use wasefire_one_of::exactly_one_of;
 
@@ -60,10 +59,7 @@ impl Header {
 }
 
 pub fn running_side() -> Option<Side> {
-    unsafe extern "C" {
-        static mut __header_origin: u32;
-    }
-    new_side(addr_of!(__header_origin) as u32)
+    new_side(addr_of_symbol!(__header_origin) as u32)
 }
 
 fn new_side(addr: u32) -> Option<Side> {

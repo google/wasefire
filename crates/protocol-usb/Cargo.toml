@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-protocol-usb"
-version = "0.3.0"
+version = "0.3.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -24,12 +24,12 @@ wasefire-logger = { version = "0.2.0", path = "../logger" }
 wasefire-one-of = { version = "0.1.1", path = "../one-of" }
 
 [dependencies.wasefire-board-api]
-version = "0.9.0"
+version = "0.9.1-git"
 path = "../board"
 optional = true
 
 [dependencies.wasefire-protocol]
-version = "0.3.0"
+version = "0.3.1-git"
 path = "../protocol"
 features = ["host"]
 optional = true

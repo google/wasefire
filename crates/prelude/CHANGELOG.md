@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.1-git
+
+### Patch
+
+- Update dependencies
+
 ## 0.8.0
 
 ### Major

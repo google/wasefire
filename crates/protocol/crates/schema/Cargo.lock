@@ -1429,7 +1429,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-common"
-version = "0.1.0"
+version = "0.1.1-git"
 dependencies = [
  "wasefire-error",
  "wasefire-sync",
@@ -1444,7 +1444,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.3.0"
+version = "0.3.1-git"
 dependencies = [
  "anyhow",
  "data-encoding",
@@ -1463,7 +1463,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-wire"
-version = "0.1.2"
+version = "0.1.3-git"
 dependencies = [
  "wasefire-common",
  "wasefire-error",

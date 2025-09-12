@@ -16,12 +16,12 @@ use alloc::borrow::Cow;
 use alloc::vec::Vec;
 
 use wasefire_board_api::Singleton;
+use wasefire_common::addr_of_symbol;
 use wasefire_error::{Code, Error};
 use wasefire_store::StorageIndex;
 
 use crate::board::with_state;
 use crate::flash::PAGE_SIZE;
-use crate::symbol_addr;
 
 pub struct State {
     store: Option<Impl>,
@@ -30,12 +30,12 @@ pub struct State {
 }
 
 pub fn init() -> State {
-    let appleta = symbol_addr!(_appleta) as usize;
-    let storea = symbol_addr!(_storea) as usize;
-    let limita = symbol_addr!(_limita) as usize;
-    let appletb = symbol_addr!(_appletb) as usize;
-    let storeb = symbol_addr!(_storeb) as usize;
-    let limitb = symbol_addr!(_limitb) as usize;
+    let appleta = addr_of_symbol!(_appleta);
+    let storea = addr_of_symbol!(_storea);
+    let limita = addr_of_symbol!(_limita);
+    let appletb = addr_of_symbol!(_appletb);
+    let storeb = addr_of_symbol!(_storeb);
+    let limitb = addr_of_symbol!(_limitb);
     let mut pages = Vec::new();
     pages.extend((storea .. limita).step_by(PAGE_SIZE));
     pages.extend((storeb .. limitb).step_by(PAGE_SIZE));
