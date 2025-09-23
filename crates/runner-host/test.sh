@@ -18,11 +18,8 @@ set -e
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
 ensure_applet
+ensure_i686
 ( cd crates/web-client && make )
-
-if [ -z "$PKG_CONFIG_SYSROOT_DIR" ]; then
-  export PKG_CONFIG_SYSROOT_DIR=/usr/lib/i386-linux-gnu/pkgconfig
-fi
 
 test_helper
 

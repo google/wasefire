@@ -247,8 +247,11 @@ impl Completion {
 }
 
 async fn self_update() -> Result<PathBuf> {
-    const URL: &str = "https://github.com/google/wasefire/releases/latest/download\
-/wasefire-x86_64-unknown-linux-gnu.tar.gz";
+    const URL: &str = concat!(
+        "https://github.com/google/wasefire/releases/latest/download/wasefire-",
+        target_triple::target!(),
+        ".tar.gz"
+    );
     let path = std::env::current_exe()?;
     let dir = path.parent().expect("current exe should be a file");
     let content = fs::download(URL).await?;

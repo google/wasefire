@@ -35,6 +35,12 @@ ensure_submodule() {
   )
 }
 
+ensure_i686() {
+  if [ -z "$PKG_CONFIG_SYSROOT_DIR" ]; then
+    export PKG_CONFIG_SYSROOT_DIR=/usr/lib/i386-linux-gnu/pkgconfig
+  fi
+}
+
 # check_*_api <prefix> <features> <clippy-args>..
 # <prefix> = "api-", "applet-api-", or "board-api-"
 # <features> = "--features=" or "--features=wasm,std,"
