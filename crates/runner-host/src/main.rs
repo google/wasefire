@@ -57,6 +57,8 @@ fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
 }
 
 #[derive(Parser)]
+// We disable the default help behavior of Clap because we want to exit with an error to avoid an
+// infinite loop when the CLI is invoked as `wasefire host -- --help`.
 #[command(disable_help_flag = true)]
 struct Flags {
     /// Path of the directory containing the platform files.
