@@ -227,7 +227,7 @@ impl RunnerName {
         // https://github.com/rust-lang/cargo/issues/8716.
         static HOST_TARGET: OnceCell<String> = OnceCell::const_new();
         match self {
-            RunnerName::Host if main.is_wasm() => "i686-unknown-linux-gnu",
+            RunnerName::Host if main.is_native() || main.pulley => "i686-unknown-linux-gnu",
             RunnerName::Host => {
                 HOST_TARGET
                     .get_or_init(|| async {
@@ -480,10 +480,6 @@ impl Flags {
 impl MainOptions {
     fn is_native(&self) -> bool {
         self.native || self.native_target.is_some()
-    }
-
-    fn is_wasm(&self) -> bool {
-        !self.is_native() && !self.pulley
     }
 }
 
