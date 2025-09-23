@@ -10,13 +10,19 @@ following projects[^exhaustiveness]:
 | [probe-rs]         | [probe.rs]                | Flashing and debugging      |
 | [cortex-m]         | [Rust Embedded]           | Cortex-M support            |
 | [riscv]            | [Rust Embedded]           | RISC-V support              |
+| [embedded-hal]     | [Rust Embedded]           | Hardware abstraction        |
+| [embedded-alloc]   | [Rust Embedded]           | Heap allocation             |
 | [critical-section] | [Rust Embedded]           | Mutex support               |
 | [portable-atomic]  | [taiki-e]                 | Atomic support              |
 | [usb-device]       | [Rust Embedded Community] | Generic USB interface       |
 | [usbd-serial]      | [Rust Embedded Community] | USB serial implementation   |
+| [usbd-hid]         | [twitchyliquid64]         | USB HID implementation      |
 | [usbip-device]     | [Sawchord]                | USB/IP implementation       |
 | [nrf-hal]          | [nRF Rust]                | nRF52840 support            |
 | [nrf-usbd]         | [nRF Rust]                | nRF52840 USB implementation |
+| [wasmtime]         | [Bytecode Alliance]       | Pulley applets              |
+| [bytemuck]         | [Lokathor]                | Safe low-level casts        |
+| [tokio]            | [tokio-rs]                | Host platform concurrency   |
 | [hashes]           | [Rust Crypto]             | SHA-256 and 384             |
 | [MACs]             | [Rust Crypto]             | HMAC-SHA-256 and 384        |
 | [AEADs]            | [Rust Crypto]             | AES-128-CCM and 256-GCM     |
@@ -44,7 +50,9 @@ requests [[10], [11], [12], [13]].
 [8]: https://github.com/RustCrypto/traits/issues/1307
 [9]: https://github.com/knurling-rs/defmt/issues/738
 [AEADs]: https://github.com/RustCrypto/AEADs
+[Bytecode Alliance]: https://github.com/bytecodealliance
 [Knurling]: https://github.com/knurling-rs
+[Lokathor]: https://github.com/Lokathor
 [MACs]: https://github.com/RustCrypto/MACs
 [Rust Crypto]: https://github.com/RustCrypto
 [Rust Embedded Community]: https://github.com/rust-embedded-community
@@ -52,10 +60,13 @@ requests [[10], [11], [12], [13]].
 [Rust]: https://github.com/rust-lang
 [Sawchord]: https://github.com/Sawchord
 [Wasm3 Labs]: https://github.com/wasm3
+[bytemuck]: https://github.com/Lokathor/bytemuck
 [cortex-m]: https://github.com/rust-embedded/cortex-m
 [critical-section]: https://github.com/rust-embedded/critical-section
 [defmt]: https://github.com/knurling-rs/defmt
 [elliptic-curves]: https://github.com/RustCrypto/elliptic-curves
+[embedded-alloc]: https://github.com/rust-embedded/embedded-alloc
+[embedded-hal]: https://github.com/rust-embedded/embedded-hal
 [hashes]: https://github.com/RustCrypto/hashes
 [nRF Rust]: https://github.com/nrf-rs
 [nrf-hal]: https://github.com/nrf-rs/nrf-hal
@@ -67,10 +78,15 @@ requests [[10], [11], [12], [13]].
 [riscv]: https://github.com/rust-embedded/riscv
 [rust-analyzer]: https://github.com/rust-lang/rust-analyzer
 [taiki-e]: https://github.com/taiki-e
+[tokio-rs]: https://github.com/tokio-rs
+[tokio]: https://github.com/tokio-rs/tokio
+[twitchyliquid64]: https://github.com/twitchyliquid64
 [usb-device]: https://github.com/rust-embedded-community/usb-device
+[usbd-hid]: https://github.com/twitchyliquid64/usbd-hid
 [usbd-serial]: https://github.com/rust-embedded-community/usbd-serial
 [usbip-device]: https://github.com/Sawchord/usbip-device
 [wasm3]: https://github.com/wasm3/wasm3
+[wasmtime]: https://github.com/bytecodealliance/wasmtime
 
 [^exhaustiveness]: We tried to focus on the projects that were critical to get
     where we are now. Some projects are thus deliberately left out (and some
