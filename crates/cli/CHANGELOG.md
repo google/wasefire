@@ -2,6 +2,10 @@
 
 ## 0.3.1-git
 
+### Minor
+
+- Do not hardcode `x86_64-unknown-linux-gnu` as the only target
+
 ### Patch
 
 - Update dependencies

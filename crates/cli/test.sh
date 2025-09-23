@@ -17,8 +17,11 @@ set -e
 
 . "$(git rev-parse --show-toplevel)"/scripts/test-helper.sh
 
+ensure_i686
+
 test_helper
 
 cargo test --bin=wasefire
+cargo check --bin=wasefire --target=i686-unknown-linux-gnu
 cargo check --bin=wasefire --features=_dev
 WASEFIRE_HOST_PLATFORM=/dev/null cargo check --bin=wasefire --features=_prod

@@ -16,3 +16,7 @@ covering all the code (like when a new cargo feature is added).
 ### Panics in examples
 
 It is ok for code under `examples/rust` to panic.
+
+### Variable quoting in shell scripts
+
+It is ok to not quote variables that are known to expand to themselves.
