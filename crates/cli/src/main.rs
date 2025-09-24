@@ -181,9 +181,12 @@ struct Host {
     /// If the platform code is missing (including if the directory does not exist), a default
     /// platform code is created and started.
     #[arg(long, default_value = "wasefire/host", value_hint = ValueHint::DirPath)]
+    #[arg(verbatim_doc_comment)]
     dir: PathBuf,
 
     /// Arguments to forward to the runner.
+    ///
+    /// Use `--` to force argument forwarding (for example `-- --help`).
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     args: Vec<String>,
 }

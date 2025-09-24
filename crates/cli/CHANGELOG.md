@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Improve help for `host`
 - Do not hardcode `x86_64-unknown-linux-gnu` as the only target
 
 ### Patch
