@@ -44,13 +44,13 @@ rev = "7e25fddfba533d81b28d551a485ea16c53285d5a"
 features = ["embedded-hal-02"]
 
 [dependencies.rubble]
-git = "https://github.com/jmichelp/rubble.git"
-rev = "d545f4f598d081c0177f38500792e353a7d932a3"
+git = "https://github.com/ia0/rubble.git"
+rev = "52b4090d42ddf3968459cc194b31b3cb929cb28d"
 optional = true
 
 [dependencies.rubble-nrf5x]
-git = "https://github.com/jmichelp/rubble.git"
-rev = "d545f4f598d081c0177f38500792e353a7d932a3"
+git = "https://github.com/ia0/rubble.git"
+rev = "52b4090d42ddf3968459cc194b31b3cb929cb28d"
 features = ["52840"]
 optional = true
 
