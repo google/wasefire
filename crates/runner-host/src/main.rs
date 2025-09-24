@@ -43,13 +43,23 @@ exactly_one_of!["native", "pulley", "wasm"];
 
 static STATE: Mutex<Option<board::State>> = Mutex::new(None);
 static RECEIVER: Mutex<Option<Receiver<Event<Board>>>> = Mutex::new(None);
-static FLAGS: LazyLock<Flags> = LazyLock::new(Flags::parse);
+static FLAGS: LazyLock<Flags> = LazyLock::new(|| match Flags::try_parse() {
+    Ok(x) => x,
+    Err(e) if e.kind() == clap::error::ErrorKind::DisplayHelp => {
+        e.print().unwrap();
+        std::process::exit(1);
+    }
+    Err(e) => e.exit(),
+});
 
 fn with_state<R>(f: impl FnOnce(&mut board::State) -> R) -> R {
     f(STATE.lock().unwrap().as_mut().unwrap())
 }
 
 #[derive(Parser)]
+// We disable the default help behavior of Clap because we want to exit with an error to avoid an
+// infinite loop when the CLI is invoked as `wasefire host -- --help`.
+#[command(disable_help_flag = true)]
 struct Flags {
     /// Path of the directory containing the platform files.
     dir: PathBuf,
@@ -89,6 +99,11 @@ struct Flags {
     /// Platform serial (in hexadecimal).
     #[arg(long, default_value = option_env!("WASEFIRE_HOST_SERIAL").unwrap_or_default())]
     serial: Option<String>,
+
+    /// Print help.
+    // TODO(https://github.com/clap-rs/clap/issues/4367): Simplify.
+    #[arg(long, action = clap::ArgAction::Help, value_parser = clap::value_parser!(bool))]
+    help: (),
 }
 
 #[test]
