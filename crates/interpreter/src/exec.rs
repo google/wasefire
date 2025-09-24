@@ -304,6 +304,12 @@ impl<'m> Store<'m> {
     pub fn last_call(&mut self) -> Option<Call<'_, 'm>> {
         if self.threads.is_empty() { None } else { Some(Call { store: self }) }
     }
+
+    /// Returns the memory of the given instance.
+    pub fn memory(&mut self, inst: InstId) -> Result<&mut [u8], Error> {
+        check(self.id == inst.store_id)?;
+        Ok(self.mem(inst.inst_id, 0).data)
+    }
 }
 
 impl<'a, 'm> Call<'a, 'm> {

@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Fix callbacks accessing memory when no threads are running
 - Update dependencies
 
 ## 0.5.0

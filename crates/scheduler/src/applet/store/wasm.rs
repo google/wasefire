@@ -26,33 +26,40 @@ use super::StoreApi;
 use crate::Trap;
 
 #[derive(Debug, Default)]
-pub struct Store(InterpreterStore<'static>);
+pub struct Store {
+    inst: Option<InstId>,
+    store: InterpreterStore<'static>,
+}
 
 impl Store {
     pub fn instantiate(
         &mut self, module: Module<'static>, memory: &'static mut [u8],
     ) -> Result<InstId, Error> {
-        self.0.instantiate(module, memory)
+        // We assume a single module per applet.
+        assert!(self.inst.is_none());
+        let inst = self.store.instantiate(module, memory)?;
+        self.inst = Some(inst);
+        Ok(inst)
     }
 
     pub fn link_func(
         &mut self, module: &'static str, name: &'static str, params: usize, results: usize,
     ) -> Result<(), Error> {
-        self.0.link_func(module, name, params, results)
+        self.store.link_func(module, name, params, results)
     }
 
     pub fn link_func_default(&mut self, module: &'static str) -> Result<(), Error> {
-        self.0.link_func_default(module)
+        self.store.link_func_default(module)
     }
 
     pub fn invoke<'a>(
         &'a mut self, inst: InstId, name: &str, args: Vec<Val>,
     ) -> Result<RunResult<'a, 'static>, Error> {
-        self.0.invoke(inst, name, args)
+        self.store.invoke(inst, name, args)
     }
 
     pub fn last_call(&mut self) -> Option<Call<'_, 'static>> {
-        self.0.last_call()
+        self.store.last_call()
     }
 }
 
@@ -61,26 +68,25 @@ impl StoreApi for Store {
         = Memory<'a>
     where Self: 'a;
 
-    fn memory(&mut self) -> Memory<'_> {
-        Memory::new(&mut self.0)
+    fn memory<'a>(&'a mut self) -> Memory<'a> {
+        let inst = self.inst.unwrap();
+        let store = self as *mut Store;
+        let memory = SliceCell::new(self.store.memory(inst).unwrap());
+        Memory { store, memory }
     }
 }
 
 pub struct Memory<'a> {
-    store: *mut InterpreterStore<'static>,
+    store: *mut Store,
     memory: SliceCell<'a, u8>,
 }
 
 impl<'a> Memory<'a> {
-    fn new(store: &'a mut InterpreterStore<'static>) -> Self {
-        Self { store, memory: SliceCell::new(store.last_call().unwrap().mem()) }
-    }
-
-    fn with_store<T>(&mut self, f: impl FnOnce(&mut InterpreterStore<'static>) -> T) -> T {
+    fn with_store<T>(&mut self, f: impl FnOnce(&mut Store) -> T) -> T {
         self.memory.reset(); // only to free the internal state early
         let store = unsafe { &mut *self.store };
         let result = f(store);
-        *self = Memory::new(store);
+        *self = store.memory();
         result
     }
 }

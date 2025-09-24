@@ -32,6 +32,7 @@ use crate::event::{Handler, Key};
 
 pub mod store;
 
+#[allow(clippy::large_enum_variant)]
 pub enum Slot<B: Board> {
     #[cfg(any(feature = "pulley", feature = "wasm"))]
     Empty,
