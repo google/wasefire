@@ -1126,10 +1126,9 @@ dependencies = [
 [[package]]
 name = "rubble"
 version = "0.0.5"
-source = "git+https://github.com/jmichelp/rubble.git?rev=d545f4f598d081c0177f38500792e353a7d932a3#d545f4f598d081c0177f38500792e353a7d932a3"
+source = "git+https://github.com/ia0/rubble.git?rev=52b4090d42ddf3968459cc194b31b3cb929cb28d#52b4090d42ddf3968459cc194b31b3cb929cb28d"
 dependencies = [
  "bitflags 2.9.4",
- "defmt 0.3.100",
  "fugit",
  "heapless 0.7.17",
  "p256",
@@ -1141,7 +1140,7 @@ dependencies = [
 [[package]]
 name = "rubble-nrf5x"
 version = "0.0.5"
-source = "git+https://github.com/jmichelp/rubble.git?rev=d545f4f598d081c0177f38500792e353a7d932a3#d545f4f598d081c0177f38500792e353a7d932a3"
+source = "git+https://github.com/ia0/rubble.git?rev=52b4090d42ddf3968459cc194b31b3cb929cb28d#52b4090d42ddf3968459cc194b31b3cb929cb28d"
 dependencies = [
  "nrf52840-pac",
  "rubble",
