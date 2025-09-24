@@ -101,8 +101,9 @@ struct Flags {
     serial: Option<String>,
 
     /// Print help.
-    #[arg(long, action = clap::ArgAction::Help)]
-    help: bool,
+    // TODO(https://github.com/clap-rs/clap/issues/4367): Simplify.
+    #[arg(long, action = clap::ArgAction::Help, value_parser = clap::value_parser!(bool))]
+    help: (),
 }
 
 #[test]
