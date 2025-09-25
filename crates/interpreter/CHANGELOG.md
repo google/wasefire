@@ -1,9 +1,14 @@
 # Changelog
 
-## 0.4.1-git
+## 0.5.0-git
+
+### Major
+
+- Update side table format to support the OpenSK example applet
 
 ### Minor
 
+- Increase supported number of locals from 100 to 1000
 - Add `Store::memory()` to access the memory of a given instance
 
 ### Patch

@@ -1278,7 +1278,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-interpreter"
-version = "0.4.1-git"
+version = "0.5.0-git"
 dependencies = [
  "derive-where",
  "num_enum",
