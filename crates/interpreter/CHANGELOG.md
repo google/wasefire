@@ -2,6 +2,10 @@
 
 ## 0.4.1-git
 
+### Minor
+
+- Add `Store::memory()` to access the memory of a given instance
+
 ### Patch
 
 - Update dependencies
