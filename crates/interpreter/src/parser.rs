@@ -653,7 +653,7 @@ impl<'m, M: Mode> Parser<'m, M> {
 
 /// Maximum number of locals (must be less than 2^32).
 // NOTE: This should be configurable.
-const MAX_LOCALS: u32 = 100;
+const MAX_LOCALS: u32 = 1000;
 
 fn check_eq<M: Mode, T: Eq>(x: T, y: T) -> MResult<(), M> {
     M::check(|| x == y)
