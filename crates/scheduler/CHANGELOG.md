@@ -2,9 +2,13 @@
 
 ## 0.5.1-git
 
+### Minor
+
+- Fix panic when the applet crashes during init
+- Fix callbacks accessing memory when no threads are running
+
 ### Patch
 
-- Fix callbacks accessing memory when no threads are running
 - Update dependencies
 
 ## 0.5.0

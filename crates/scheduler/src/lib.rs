@@ -369,7 +369,10 @@ impl<B: Board> Scheduler<B> {
         #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Platform);
         self.call("init", &[]);
-        while let Some(call) = self.applet.get().unwrap().store_mut().last_call() {
+        loop {
+            // The applet may have trapped in call() above or in process_applet() below.
+            let Some(applet) = self.applet.get() else { return Ok(()) };
+            let Some(call) = applet.store_mut().last_call() else { break };
             match self.host_funcs[call.id].descriptor().name {
                 "dp" => (),
                 x => {
@@ -378,9 +381,6 @@ impl<B: Board> Scheduler<B> {
                 }
             }
             self.process_applet();
-            if self.applet.get().is_none() {
-                return Ok(()); // applet trapped in process_applet()
-            }
         }
         assert!(matches!(self.applet.get().unwrap().pop(), EventAction::Reply));
         #[cfg(feature = "internal-debug")]
@@ -424,7 +424,10 @@ impl<B: Board> Scheduler<B> {
         #[cfg(feature = "internal-debug")]
         self.perf.record(perf::Slot::Platform);
         self.call(inst, "init", &[]);
-        while let Some(call) = self.applet.get().unwrap().store_mut().last_call() {
+        loop {
+            // The applet may have trapped in call() above or in process_applet() below.
+            let Some(applet) = self.applet.get() else { return Ok(()) };
+            let Some(call) = applet.store_mut().last_call() else { break };
             match self.host_funcs[call.index()].descriptor().name {
                 "dp" => (),
                 x => {
@@ -433,9 +436,6 @@ impl<B: Board> Scheduler<B> {
                 }
             }
             self.process_applet();
-            if self.applet.get().is_none() {
-                return Ok(()); // applet trapped in process_applet()
-            }
         }
         assert!(matches!(self.applet.get().unwrap().pop(), EventAction::Reply));
         #[cfg(feature = "internal-debug")]
