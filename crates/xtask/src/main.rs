@@ -269,7 +269,7 @@ struct RunnerOptions {
     /// - OpenTitan needs 20 bytes that are not all 0xff. The bytes are the major version (4
     ///   bytes), the minor version (4 bytes), the security version (4 bytes), and the timestamp (8
     ///   bytes).
-    #[clap(long)]
+    #[clap(long, verbatim_doc_comment)]
     version: Option<String>,
 
     /// Host platform serial.
@@ -296,7 +296,7 @@ struct RunnerOptions {
     /// - Host doesn't have a notion of board.
     /// - Nordic supports devkit (default), dongle, and makerdiary.
     /// - OpenTitan doesn't have a notion of board yet.
-    #[clap(long)]
+    #[clap(long, verbatim_doc_comment)]
     board: Option<String>,
 
     /// Disables A/B platform partitioning.
@@ -377,7 +377,7 @@ struct Flash {
     /// This is not supported by the following boards:
     /// - Nordic: dongle and makerdiary
     /// - OpenTitan
-    #[clap(long)]
+    #[clap(long, verbatim_doc_comment)]
     reset_flash: bool,
 
     /// Make sure the Nordic dongle bootloader doesn't check the runner CRC.
