@@ -81,7 +81,6 @@ version = "0.1.0"
 dependencies = [
  "ble-adv",
  "bytemuck",
- "data-encoding",
  "wasefire",
 ]
 
