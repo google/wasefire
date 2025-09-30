@@ -19,7 +19,7 @@ use crate::{Board, with_state};
 
 pub mod applet;
 pub mod button;
-mod clock;
+pub mod clock;
 #[cfg(feature = "_crypto")]
 mod crypto;
 mod debug;
