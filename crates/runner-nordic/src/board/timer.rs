@@ -17,7 +17,7 @@ use alloc::boxed::Box;
 use cortex_m::prelude::_embedded_hal_timer_CountDown;
 use embedded_hal_02::timer::Cancel;
 use nrf52840_hal::Timer;
-use nrf52840_hal::pac::{TIMER1, TIMER2, TIMER3, TIMER4};
+use nrf52840_hal::pac::{TIMER2, TIMER3, TIMER4};
 use nrf52840_hal::timer::{Instance, OneShot, Periodic};
 use wasefire_board_api::timer::{Api, Command};
 use wasefire_board_api::{Error, Id, Support};
@@ -28,7 +28,7 @@ use crate::with_state;
 pub enum Impl {}
 
 impl Support<usize> for Impl {
-    const SUPPORT: usize = 4;
+    const SUPPORT: usize = 3;
 }
 
 impl Api for Impl {
@@ -57,13 +57,8 @@ impl Api for Impl {
 pub struct Timers([ErasedTimer; <Impl as Support<usize>>::SUPPORT]);
 
 impl Timers {
-    pub fn new(t1: TIMER1, t2: TIMER2, t3: TIMER3, t4: TIMER4) -> Self {
-        Timers([
-            ErasedTimer::new(t1),
-            ErasedTimer::new(t2),
-            ErasedTimer::new(t3),
-            ErasedTimer::new(t4),
-        ])
+    pub fn new(t2: TIMER2, t3: TIMER3, t4: TIMER4) -> Self {
+        Timers([ErasedTimer::new(t2), ErasedTimer::new(t3), ErasedTimer::new(t4)])
     }
 
     pub fn tick(&mut self, index: usize) {
