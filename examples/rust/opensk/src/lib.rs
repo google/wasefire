@@ -30,23 +30,6 @@ mod env;
 mod touch;
 
 fn main() -> ! {
-    #[cfg(feature = "perf")]
-    {
-        struct Us(u64);
-        impl core::fmt::Display for Us {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{}.{:06}", self.0 / 1_000_000, self.0 % 1_000_000)
-            }
-        }
-        let prev = core::cell::Cell::new(debug::perf());
-        let timer = timer::Timer::new(move || {
-            let next = debug::perf();
-            let diff = next - prev.replace(next);
-            debug!("Perf: P={} A={} W={}", Us(diff.platform), Us(diff.applets), Us(diff.waiting));
-        });
-        timer.start_ms(timer::Periodic, 5_000);
-        timer.leak()
-    }
     let mut opensk_ctap = opensk_lib::Ctap::new(env::init());
     let mut wink: Option<blink::Blink> = None;
     #[cfg(feature = "ctap1")]
