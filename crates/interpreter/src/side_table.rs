@@ -101,44 +101,49 @@ pub fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
-pub struct BranchTableEntry([u8; 6]);
+pub struct BranchTableEntry([u8; 6]); // 48 bits
 
 #[derive(Debug)]
 pub struct BranchTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
-    pub delta_ip: i32,
+    pub delta_ip: i32, // 19 bits
     /// The amount to adjust the side-table pointer by if the branch is taken.
-    pub delta_stp: i32,
+    pub delta_stp: i32, // 13 bits
     /// The number of values that will be copied if the branch is taken.
-    pub val_cnt: u32,
+    pub val_cnt: u32, // 4 bits
     /// The number of values that will be popped if the branch is taken.
-    pub pop_cnt: u32,
+    pub pop_cnt: u32, // 12 bits
 }
 
 impl BranchTableEntry {
     pub fn new(view: BranchTableEntryView) -> Result<Self, Error> {
-        debug_assert!((i16::MIN as i32 .. i16::MAX as i32).contains(&view.delta_ip));
-        debug_assert!((i16::MIN as i32 .. i16::MAX as i32).contains(&view.delta_stp));
+        debug_assert!([0, -1].contains(&(view.delta_ip >> 18)), "{view:?}");
+        debug_assert!([0, -1].contains(&(view.delta_stp >> 12)), "{view:?}");
         debug_assert!(view.val_cnt <= 0xf);
         debug_assert!(view.pop_cnt <= 0xfff);
-        let delta_ip_bytes = (view.delta_ip as u16).to_le_bytes();
+        let delta_ip_bytes = view.delta_ip.to_le_bytes();
         let delta_stp_bytes = (view.delta_stp as u16).to_le_bytes();
         let pop_val_counts_bytes = (((view.pop_cnt << 4) | view.val_cnt) as u16).to_le_bytes();
         Ok(BranchTableEntry([
             delta_ip_bytes[0],
             delta_ip_bytes[1],
             delta_stp_bytes[0],
-            delta_stp_bytes[1],
+            (delta_stp_bytes[1] & 0x1f) | (delta_ip_bytes[2] << 5),
             pop_val_counts_bytes[0],
             pop_val_counts_bytes[1],
         ]))
     }
 
     pub fn view<M: Mode>(self) -> MResult<BranchTableEntryView, M> {
+        let mut delta_ip = parse_u16::<M>(&self.0, 0)? as u32;
+        let delta_stp = parse_u16::<M>(&self.0, 2)?;
         let pop_val_counts = parse_u16::<M>(&self.0, 4)?;
+        delta_ip |= (delta_stp as u32 & 0xe000) << 3;
+        let delta_ip = ((delta_ip << 13) as i32) >> 13;
+        let delta_stp = (((delta_stp << 3) as i16) >> 3) as i32;
         Ok(BranchTableEntryView {
-            delta_ip: (parse_u16::<M>(&self.0, 0)? as i16) as i32,
-            delta_stp: (parse_u16::<M>(&self.0, 2)? as i16) as i32,
+            delta_ip,
+            delta_stp,
             val_cnt: (pop_val_counts & 0xf) as u32,
             pop_cnt: (pop_val_counts >> 4) as u32,
         })
