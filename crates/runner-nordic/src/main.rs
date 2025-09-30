@@ -23,6 +23,7 @@ extern crate alloc;
 mod allocator;
 mod board;
 mod storage;
+#[cfg(feature = "debug")]
 mod systick;
 
 use core::cell::RefCell;
@@ -69,6 +70,7 @@ use wasefire_one_of::{at_most_one_of, exactly_one_of};
 use wasefire_scheduler::Scheduler;
 
 use crate::board::button::{Button, Channels};
+use crate::board::clock::Clock;
 #[cfg(feature = "gpio")]
 use crate::board::gpio::Gpio;
 use crate::board::timer::Timers;
@@ -103,6 +105,7 @@ struct State {
     ctap: Ctap<'static, Usb>,
     #[cfg(feature = "usb-serial")]
     serial: Serial<'static, Usb>,
+    clock: Clock,
     timers: Timers,
     #[cfg(feature = "ble-adv")]
     ble: Ble,
@@ -134,7 +137,9 @@ fn main() -> ! {
     static mut USB_BUS: MaybeUninit<UsbBusAllocator<Usb>> = MaybeUninit::uninit();
 
     allocator::init();
+    #[cfg(feature = "debug")]
     let c = nrf52840_hal::pac::CorePeripherals::take().unwrap();
+    #[cfg(feature = "debug")]
     systick::init(c.SYST);
     log::debug!("Runner starts.");
     let p = nrf52840_hal::pac::Peripherals::take().unwrap();
@@ -183,7 +188,8 @@ fn main() -> ! {
         Gpio::new(port0.p0_30.degrade(), 0, 30),
         Gpio::new(port0.p0_31.degrade(), 0, 31),
     ];
-    let timers = Timers::new(p.TIMER1, p.TIMER2, p.TIMER3, p.TIMER4);
+    let clock = Clock::new(p.TIMER1);
+    let timers = Timers::new(p.TIMER2, p.TIMER3, p.TIMER4);
     let gpiote = Gpiote::new(p.GPIOTE);
     #[cfg_attr(not(feature = "fpc2534"), allow(unused_mut))]
     let mut channels = Channels::default();
@@ -255,6 +261,7 @@ fn main() -> ! {
         ctap,
         #[cfg(feature = "usb-serial")]
         serial,
+        clock,
         timers,
         #[cfg(feature = "ble-adv")]
         ble,
@@ -300,10 +307,10 @@ interrupts! {
     RADIO = radio(),
     #[cfg(feature = "ble-adv")]
     TIMER0 = radio_timer(),
-    TIMER1 = timer(0),
-    TIMER2 = timer(1),
-    TIMER3 = timer(2),
-    TIMER4 = timer(3),
+    TIMER1 = clock(),
+    TIMER2 = timer(0),
+    TIMER3 = timer(1),
+    TIMER4 = timer(2),
     #[cfg(feature = "uart")]
     UARTE0_UART0 = uarte(0),
     #[cfg(feature = "uart")]
@@ -343,6 +350,10 @@ fn radio() {
 #[cfg(feature = "ble-adv")]
 fn radio_timer() {
     with_state(|state| state.ble.tick_timer())
+}
+
+fn clock() {
+    with_state(|state| state.clock.tick())
 }
 
 fn timer(timer: usize) {
