@@ -37,18 +37,24 @@ impl Clock {
     pub fn new(timer: TIMER1) -> Self {
         let mut timer = Timer::periodic(timer);
         timer.enable_interrupt();
-        timer.start(PERIOD);
+        timer.start((PERIOD - 1) as u32);
         Clock { timer, base: 0 }
     }
 
     pub fn tick(&mut self) {
         self.timer.reset_event();
-        self.base += PERIOD as u64 + 1;
+        self.base += PERIOD;
     }
 
     fn uptime_us(&self) -> u64 {
-        self.base + self.timer.read() as u64
+        let mut counter = self.timer.read() as u64;
+        // We assume the timer can't wrap around twice without self.base being updated (this would
+        // mean not processing interrupts for more than 1 hour).
+        if self.timer.event_compare_cc0().read().events_compare().bit() {
+            counter = self.timer.read() as u64 + PERIOD;
+        }
+        self.base + counter
     }
 }
 
-const PERIOD: u32 = u32::MAX;
+const PERIOD: u64 = u32::MAX as u64 + 1;
