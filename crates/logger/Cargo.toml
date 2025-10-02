@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-logger"
-version = "0.2.0"
+version = "0.2.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -13,7 +13,7 @@ categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
 defmt = { version = "1.0.1", default-features = false, optional = true }
-log = { version = "0.4.27", default-features = false, optional = true }
+log = { version = "0.4.28", default-features = false, optional = true }
 
 [features]
 defmt = ["dep:defmt"]

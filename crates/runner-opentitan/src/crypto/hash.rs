@@ -12,37 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// sw/device/lib/crypto/include/hash.h
+// sw/device/lib/crypto/include/sha2.h
 
 use wasefire_error::Error;
 
 use crate::crypto::common::{ConstByteBuf, HashDigest, HashMode};
 use crate::error::unwrap_status;
 
-// otcrypto_hash_context_t
+// otcrypto_sha2_context_t
 pub struct Context {
-    mode: HashMode,
-    data: [u32; 92],
+    data: [u32; 87],
 }
 
 impl Context {
     pub fn init(mode: HashMode) -> Result<Self, Error> {
-        let mut context = Context { mode, data: [0; _] };
-        let status = unsafe { otcrypto_hash_init(context.to_c(), mode.to_c()) };
+        let mut context = Context { data: [0; _] };
+        let status = unsafe { otcrypto_sha2_init(mode.to_c(), context.to_c()) };
         unwrap_status(status)?;
         Ok(context)
     }
 
     pub fn update(&mut self, data: &[u8]) -> Result<(), Error> {
-        let status = unsafe { otcrypto_hash_update(self.to_c(), data.into()) };
+        let status = unsafe { otcrypto_sha2_update(self.to_c(), data.into()) };
         unwrap_status(status)?;
         Ok(())
     }
 
     pub fn finalize(mut self, digest: &mut [u32]) -> Result<(), Error> {
-        let digest =
-            HashDigest { mode: self.mode.to_c(), data: digest.as_mut_ptr(), len: digest.len() };
-        let status = unsafe { otcrypto_hash_final(self.to_c(), digest) };
+        // The mode is set by the function based on the length.
+        let digest = HashDigest { mode: 0, data: digest.as_mut_ptr(), len: digest.len() };
+        let status = unsafe { otcrypto_sha2_final(self.to_c(), digest) };
         unwrap_status(status)?;
         Ok(())
     }
@@ -54,7 +53,7 @@ impl Context {
 }
 
 unsafe extern "C" {
-    fn otcrypto_hash_init(ctx: *mut u32, mode: i32) -> i32;
-    fn otcrypto_hash_update(ctx: *mut u32, message: ConstByteBuf) -> i32;
-    fn otcrypto_hash_final(ctx: *mut u32, digest: HashDigest) -> i32;
+    fn otcrypto_sha2_init(mode: i32, ctx: *mut u32) -> i32;
+    fn otcrypto_sha2_update(ctx: *mut u32, message: ConstByteBuf) -> i32;
+    fn otcrypto_sha2_final(ctx: *mut u32, digest: HashDigest) -> i32;
 }

@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-applet-api"
-version = "0.8.0"
+version = "0.8.1-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -18,9 +18,9 @@ features = ["full-api", "wasm"]
 [dependencies]
 bytemuck = { version = "1.23.2", default-features = false, features = ["derive"] }
 sealed = { version = "0.6.0", default-features = false, optional = true }
-wasefire-applet-api-macro = { version = "0.8.0", path = "../api-macro" }
+wasefire-applet-api-macro = { version = "0.8.1-git", path = "../api-macro" }
 wasefire-error = { version = "0.1.3", path = "../error" }
-wasefire-logger = { version = "0.2.0", path = "../logger", optional = true }
+wasefire-logger = { version = "0.2.1-git", path = "../logger", optional = true }
 wasefire-one-of = { version = "0.1.1", path = "../one-of" }
 
 [dependencies.derive-where]
