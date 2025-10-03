@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.7-git
+
+### Patch
+
+- Update dependencies
+
 ## 0.1.6
 
 ### Minor

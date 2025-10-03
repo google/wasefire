@@ -389,9 +389,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.40"
+version = "1.0.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1885c039570dc00dcb4ff087a89e185fd56bae234ddc7f056a945bf36467248d"
+checksum = "ce25767e7b499d1b604768e7cde645d14cc8584231ea6b295e9c9eb22c02e1d1"
 dependencies = [
  "proc-macro2",
 ]
@@ -538,9 +538,9 @@ dependencies = [
 
 [[package]]
 name = "typenum"
-version = "1.18.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dccffe3ce07af9386bfd29e80c0ab1a8205a2fc34e4bcd40364df902cfa8f3f"
+checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
 
 [[package]]
 name = "unicode-ident"
@@ -571,7 +571,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.8.0"
+version = "0.8.1-git"
 dependencies = [
  "bytemuck",
  "wasefire-applet-api-macro",
@@ -582,7 +582,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.2.2"
+version = "0.2.3-git"
 dependencies = [
  "data-encoding",
  "data-encoding-macro",
@@ -593,7 +593,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.8.0"
+version = "0.8.1-git"
 dependencies = [
  "wasefire-applet-api-desc",
 ]
@@ -615,7 +615,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.2.0"
+version = "0.2.1-git"
 
 [[package]]
 name = "wasefire-one-of"
@@ -623,7 +623,7 @@ version = "0.1.1"
 
 [[package]]
 name = "wasefire-stub"
-version = "0.1.6"
+version = "0.1.7-git"
 dependencies = [
  "crypto-common",
  "digest",
@@ -742,6 +742,6 @@ dependencies = [
 
 [[package]]
 name = "zeroize"
-version = "1.8.1"
+version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ced3678a2879b30306d323f4542626697a464a97c0a07c9aebf7ebca65cd4dde"
+checksum = "b97154e67e32c85465826e8bcc1c59429aaaf107c1e4a9e53c8d8ccd5eff88d0"

@@ -11,14 +11,14 @@ cortex-m = { version = "0.7.7", features = ["critical-section-single-core"], opt
 cortex-m-rt = { version = "0.7.5", optional = true }
 embedded-alloc = { version = "0.6.0", optional = true }
 nrf52840-hal = { version = "0.18.0", optional = true }
-riscv = { version = "0.14.0", features = ["critical-section-single-hart"], optional = true }
-riscv-rt = { version = "0.15.0", optional = true }
+riscv = { version = "0.15.0", features = ["critical-section-single-hart"], optional = true }
+riscv-rt = { version = "0.16.0", optional = true }
 semihosting = { version = "0.1.20", features = ["panic-handler", "stdio"], optional = true }
 wasefire-common = { version = "0.1.1-git", path = "../common", optional = true }
 wasefire-sync = { version = "0.1.2", path = "../sync", optional = true }
 
 [dependencies.wasmtime]
-version = "36.0.2"
+version = "37.0.1"
 default-features = false
 features = ["async", "runtime"]
 optional = true
@@ -29,7 +29,7 @@ features = ["float-types"]
 optional = true
 
 [build-dependencies.wasmtime]
-version = "36.0.2"
+version = "37.0.1"
 default-features = false
 features = ["cranelift", "pulley"]
 optional = true

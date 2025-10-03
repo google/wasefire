@@ -23,7 +23,7 @@ header = { path = "crates/header" }
 panic-abort = { version = "0.3.2", optional = true }
 panic-probe = { version = "1.0.0", features = ["print-defmt"], optional = true }
 syscall-test = { path = "../board/crates/syscall-test", optional = true }
-typenum = { version = "1.18.0", default-features = false, optional = true }
+typenum = { version = "1.19.0", default-features = false, optional = true }
 usb-device = "0.3.2"
 usbd-hid = { version = "0.8.2", optional = true }
 usbd-serial = { version = "0.2.2", optional = true }

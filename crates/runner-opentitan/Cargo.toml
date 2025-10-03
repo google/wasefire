@@ -15,7 +15,7 @@ digest = { version = "0.10.7", default-features = false }
 earlgrey = { path = "crates/earlgrey" }
 embedded-alloc = "0.6.0"
 syscall-test = { path = "../board/crates/syscall-test", optional = true }
-typenum = { version = "1.18.0", default-features = false }
+typenum = { version = "1.19.0", default-features = false }
 usb-device = { version = "0.3.2", default-features = false }
 usbd-hid = { version = "0.8.2", optional = true }
 wasefire-board-api = { path = "../board" }

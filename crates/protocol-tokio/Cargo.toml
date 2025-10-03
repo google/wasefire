@@ -15,9 +15,9 @@ categories = []
 features = ["device"]
 
 [dependencies]
-anyhow = { version = "1.0.99", default-features = false, features = ["std"] }
+anyhow = { version = "1.0.100", default-features = false, features = ["std"] }
 wasefire-error = { version = "0.1.3", path = "../error", optional = true }
-wasefire-logger = { version = "0.2.0", path = "../logger", optional = true }
+wasefire-logger = { version = "0.2.1-git", path = "../logger", optional = true }
 wasefire-one-of = { version = "0.1.1", path = "../one-of" }
 
 [dependencies.tokio]

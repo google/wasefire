@@ -91,9 +91,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.40"
+version = "1.0.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1885c039570dc00dcb4ff087a89e185fd56bae234ddc7f056a945bf36467248d"
+checksum = "ce25767e7b499d1b604768e7cde645d14cc8584231ea6b295e9c9eb22c02e1d1"
 dependencies = [
  "proc-macro2",
 ]
@@ -134,7 +134,7 @@ checksum = "5a5f39404a5da50712a4c1eecf25e90dd62b613502b7e925fd4e4d19b5c96512"
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.8.0"
+version = "0.8.1-git"
 dependencies = [
  "bytemuck",
  "derive-where",
@@ -147,7 +147,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-desc"
-version = "0.2.2"
+version = "0.2.3-git"
 dependencies = [
  "data-encoding",
  "data-encoding-macro",
@@ -158,7 +158,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.8.0"
+version = "0.8.1-git"
 dependencies = [
  "wasefire-applet-api-desc",
 ]
@@ -172,7 +172,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.2.0"
+version = "0.2.1-git"
 
 [[package]]
 name = "wasefire-one-of"
