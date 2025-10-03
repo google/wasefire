@@ -133,6 +133,10 @@ impl Changelog {
             .parse()
             .with_context(|| anyhow!("Invalid skip counter {parser}"))?;
         parser.done()?;
+        ensure!(
+            skip_counter == 0 || releases.first().unwrap().version.pre.as_str() == "git",
+            "Non-zero skip counter without prerelease"
+        );
         let result = Changelog { releases, skip_counter };
         assert_eq!(format!("{result}"), input);
         Ok(result)
@@ -580,6 +584,12 @@ mod tests {
     fn parse_changelog_handles_skip_counter_at_end() {
         let changelog = r"# Changelog
 
+## 0.1.1-git
+
+### Patch
+
+- Update dependencies
+
 ## 0.1.0
 
 <!-- Increment to skip CHANGELOG.md test: 5 -->
@@ -588,10 +598,19 @@ mod tests {
         assert_eq!(
             Changelog::parse(changelog).unwrap(),
             Changelog {
-                releases: vec![Release {
-                    version: Version::parse("0.1.0").unwrap(),
-                    contents: BTreeMap::new(),
-                }],
+                releases: vec![
+                    Release {
+                        version: Version::parse("0.1.1-git").unwrap(),
+                        contents: BTreeMap::from([(
+                            Severity::Patch,
+                            vec!["- Update dependencies".to_string(),]
+                        )])
+                    },
+                    Release {
+                        version: Version::parse("0.1.0").unwrap(),
+                        contents: BTreeMap::new(),
+                    }
+                ],
                 skip_counter: 5,
             }
         );
@@ -689,6 +708,21 @@ mod tests {
         assert_eq!(
             Changelog::parse(changelog).unwrap_err().to_string(),
             "Invalid skip counter prefix line 5"
+        );
+    }
+
+    #[test]
+    fn parse_changelog_skip_counter_is_zero_unless_prerelease() {
+        let changelog = r"# Changelog
+
+## 0.1.0
+
+<!-- Increment to skip CHANGELOG.md test: 1 -->
+";
+
+        assert_eq!(
+            Changelog::parse(changelog).unwrap_err().to_string(),
+            "Non-zero skip counter without prerelease"
         );
     }
 
