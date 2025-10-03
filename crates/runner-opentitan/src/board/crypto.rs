@@ -16,7 +16,7 @@ use wasefire_board_api::crypto;
 use wasefire_error::{Code, Error};
 
 mod aes;
-mod ecdh;
+pub mod ecdh;
 mod ecdsa;
 #[cfg(feature = "ed25519")]
 mod ed25519;

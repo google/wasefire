@@ -39,6 +39,7 @@ impl Api for Impl {
                 let push = |event| state.events.push(Event(event).into());
                 syscall_test::syscall(memory, handlers, push, x2, x3, x4)
             }),
+            (0x80000001, x, y, z) => crate::board::crypto::ecdh::syscall(memory, x, y, z),
             _ => Err(Failure::TRAP),
         }
     }

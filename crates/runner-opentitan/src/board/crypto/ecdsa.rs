@@ -114,7 +114,7 @@ impl Api<32> for Impl {
         key[.. 32].copy_from_slice(y);
         key[32 ..].copy_from_slice(x);
         key.reverse();
-        public.checksum = 0;
+        public.checksum = unsafe { public.borrow()? }.checksum();
         Ok(())
     }
 }
