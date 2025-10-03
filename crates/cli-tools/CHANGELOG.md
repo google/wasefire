@@ -2,6 +2,10 @@
 
 ## 0.3.1-git
 
+### Minor
+
+- Test in `changelog::execute_ci()` that skip counter is zero for releases
+
 ### Patch
 
 - Update dependencies
