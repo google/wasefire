@@ -90,7 +90,7 @@ impl Api<32> for Impl {
         key[.. 32].copy_from_slice(y);
         key[32 ..].copy_from_slice(x);
         key.reverse();
-        public.checksum = 0;
+        public.checksum = unsafe { public.borrow()? }.checksum();
         Ok(())
     }
 
@@ -104,6 +104,24 @@ impl Api<32> for Impl {
         }
         x.reverse();
         Ok(())
+    }
+}
+
+#[cfg(feature = "test-vendor")]
+pub fn syscall(
+    memory: impl wasefire_board_api::applet::Memory, x: u32, y: u32, z: u32,
+) -> Result<u32, wasefire_board_api::Failure> {
+    match (x, y, z) {
+        // Update checksum of private key.
+        (1, ptr, 0) => {
+            let key = memory.get_mut(ptr, core::mem::size_of::<Private>() as u32)?;
+            let key = try_from_bytes_mut::<Private>(key)?;
+            key.checksum = unsafe { key.borrow()? }.checksum();
+            let key = &mut key.public;
+            key.checksum = unsafe { key.borrow()? }.checksum();
+            Ok(0)
+        }
+        _ => Err(wasefire_board_api::Failure::TRAP),
     }
 }
 

@@ -42,5 +42,5 @@ pub fn unwrap_status(mut x: i32) -> Result<i32, Error> {
 #[cfg(false)]
 #[unsafe(no_mangle)]
 extern "C" fn wasefire_debug_mark(mark: i32) {
-    wasefire_logger::error!("DEBUG MARK {}", mark);
+    wasefire_logger::error!("DEBUG MARK {:08x} {}", mark, mark);
 }

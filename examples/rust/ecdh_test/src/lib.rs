@@ -17,6 +17,7 @@
 #![no_std]
 wasefire::applet!();
 
+use alloc::borrow::Cow;
 use alloc::vec;
 
 use ecdh_vectors::{P256_VECTORS, P384_VECTORS, Vector};
@@ -61,11 +62,15 @@ fn test<C: Curve>(name: &str, vectors: &[Vector]) {
     }
     for &Vector { tc_id, private, otprivate, public_x, public_y, shared } in vectors {
         debug!("- {tc_id}");
-        let private = match () {
-            () if cfg!(feature = "runner-opentitan") => otprivate,
-            _ => private,
+        let private: Cow<[u8]> = match () {
+            () if cfg!(feature = "runner-opentitan") => {
+                let mut private = otprivate.to_vec();
+                unsafe { vendor::syscall(0x80000001, 1, private.as_mut_ptr().addr(), 0) }.unwrap();
+                private.into()
+            }
+            _ => private.into(),
         };
-        let private = Private::<C>::import_testonly(private).unwrap();
+        let private = Private::<C>::import_testonly(&private).unwrap();
         let public = Public::<C>::import(public_x, public_y).unwrap();
         let shared_ = Shared::<C>::new(&private, &public).unwrap();
         let mut actual = vec![0; C::SIZE];
