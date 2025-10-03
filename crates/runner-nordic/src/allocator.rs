@@ -25,6 +25,8 @@ pub fn init() {
     let sheap = addr_of_symbol!(__sheap);
     let eheap = addr_of_symbol!(__eheap);
     assert!(sheap < eheap);
+    #[cfg(feature = "test-vendor")]
+    wrapper::USAGE.store(sheap - addr_of_symbol!(_rheap), core::sync::atomic::Ordering::Relaxed);
     // SAFETY: Called only once before any allocation.
     unsafe { ALLOCATOR.init(sheap, eheap - sheap) }
 }
@@ -37,7 +39,7 @@ mod wrapper {
     use embedded_alloc::TlsfHeap;
     use wasefire_sync::AtomicUsize;
 
-    static USAGE: AtomicUsize = AtomicUsize::new(0);
+    pub static USAGE: AtomicUsize = AtomicUsize::new(0);
     static PEAK: AtomicUsize = AtomicUsize::new(0);
 
     pub struct Heap(TlsfHeap);
