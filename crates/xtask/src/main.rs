@@ -231,9 +231,9 @@ impl RunnerName {
             RunnerName::Host => {
                 HOST_TARGET
                     .get_or_init(|| async {
-                        let mut sh = Command::new("sh");
-                        sh.args(["-c", "rustc -vV | sed -n 's/^host: //p'"]);
-                        cmd::output_line(&mut sh).await.unwrap()
+                        cmd::output_line(Command::new("rustc").args(["--print", "host-tuple"]))
+                            .await
+                            .unwrap()
                     })
                     .await
             }
