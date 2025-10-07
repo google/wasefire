@@ -18,7 +18,7 @@
 //! support triggering [events][Event].
 
 #![no_std]
-#![feature(doc_auto_cfg)]
+#![feature(doc_cfg)]
 #![feature(never_type)]
 
 extern crate alloc;

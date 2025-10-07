@@ -27,7 +27,7 @@
 //! and cancel the request it was processing if any.
 
 #![no_std]
-#![feature(doc_auto_cfg)]
+#![feature(doc_cfg)]
 #![feature(macro_metavar_expr)]
 #![feature(never_type)]
 
