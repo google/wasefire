@@ -17,9 +17,8 @@
 //! This library is also used for the internal maintenance CLI of Wasefire called xtask.
 
 #![feature(async_fn_track_caller)]
-#![feature(doc_auto_cfg)]
+#![feature(doc_cfg)]
 #![feature(never_type)]
-#![feature(path_add_extension)]
 #![feature(try_blocks)]
 #![feature(try_find)]
 

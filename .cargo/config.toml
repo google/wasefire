@@ -5,3 +5,6 @@ xtask = "run --manifest-path=crates/xtask/Cargo.toml --"
 
 [build]
 target-dir = "target"
+
+[unstable]
+panic-immediate-abort = true

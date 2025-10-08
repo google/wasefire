@@ -736,13 +736,12 @@ impl RunnerOptions {
                 cargo.arg("-Zbuild-std=core,alloc");
                 // TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
                 rustflags.push("--allow=unused-crate-dependencies".to_string());
-                let mut features = "-Zbuild-std-features=panic_immediate_abort".to_string();
                 if self.opt_level.is_some_and(action::OptLevel::optimize_for_size) {
-                    features.push_str(",optimize_for_size");
+                    cargo.arg("-Zbuild-std-features=optimize_for_size");
                 }
-                cargo.arg(features);
                 cargo.arg("--config=profile.release.codegen-units=1");
                 cargo.arg("--config=profile.release.lto=true");
+                cargo.arg("--config=profile.release.panic=\"immediate-abort\"");
             } else {
                 cargo.arg("--config=profile.release.debug=2");
                 rustflags.push("-C link-arg=-Tdefmt.x".to_string());
@@ -930,7 +929,7 @@ impl RunnerOptions {
             if self.single_sided {
                 cargo.arg("--features=single-sided");
             }
-            cargo.args(["-Zbuild-std=core", "-Zbuild-std-features=panic_immediate_abort"]);
+            cargo.args(["-Zbuild-std=core", "--config=profile.release.panic=\"immediate-abort\""]);
             // TODO(https://github.com/rust-lang/rust/issues/122105): Remove when fixed.
             cargo.env("RUSTFLAGS", "--allow=unused-crate-dependencies");
             cmd::execute(&mut cargo).await?;

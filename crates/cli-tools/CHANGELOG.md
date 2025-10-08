@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Use the `immediate-abort` panic strategy instead of `build-std-features`
 - Test in `changelog::execute_ci()` that skip counter is zero for releases
 
 ### Patch

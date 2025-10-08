@@ -19,7 +19,7 @@
 #![no_std]
 #![cfg_attr(all(feature = "wasm", feature = "native"), feature(linkage))]
 #![cfg_attr(feature = "host", feature(never_type))]
-#![feature(doc_auto_cfg)]
+#![feature(doc_cfg)]
 
 extern crate alloc;
 

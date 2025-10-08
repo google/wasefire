@@ -28,7 +28,7 @@
 
 #![no_std]
 #![feature(alloc_error_handler)]
-#![feature(doc_auto_cfg)]
+#![feature(doc_cfg)]
 #![feature(macro_metavar_expr)]
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(negative_impls)]

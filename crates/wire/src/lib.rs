@@ -36,7 +36,7 @@
 
 #![no_std]
 #![feature(array_try_from_fn)]
-#![feature(doc_auto_cfg)]
+#![feature(doc_cfg)]
 #![feature(never_type)]
 #![feature(try_blocks)]
 
