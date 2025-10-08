@@ -50,10 +50,14 @@ pub type Unsupported = ();
 #[non_exhaustive]
 #[cfg(feature = "debug")]
 pub enum Unsupported {
+    Exception,
+    HeapType,
+    MaxLocals,
     Opcode(u8),
     OpcodeFc(u32),
-    MaxLocals,
     SideTable,
+    TableInit,
+    TailCall,
 }
 
 #[cfg(feature = "debug")]

@@ -249,7 +249,13 @@ impl<'m, M: ValidMode> Context<'m, M> {
         let mut refs = vec![false; self.funcs.len()];
         if let Some(mut parser) = self.check_section(parser, SectionId::Table)? {
             for _ in 0 .. parser.parse_vec()? {
-                self.add_tabletype(parser.parse_tabletype()?)?;
+                let saved = parser.save();
+                if parser.parse_bytes(2) == Ok(&[0x40, 0x00]) {
+                    return Err(unsupported(if_debug!(Unsupported::TableInit)));
+                } else {
+                    unsafe { parser.restore(saved) };
+                    self.add_tabletype(parser.parse_tabletype()?)?;
+                }
             }
             check(parser.is_empty())?;
         }
@@ -260,17 +266,14 @@ impl<'m, M: ValidMode> Context<'m, M> {
             check(parser.is_empty())?;
         }
         check(self.mems.len() <= 1)?;
-        let globals_len = self.globals.len();
+        if self.check_section(parser, SectionId::Tag)?.is_some() {
+            return Err(unsupported(if_debug!(Unsupported::Exception)));
+        }
         if let Some(mut parser) = self.check_section(parser, SectionId::Global)? {
             for _ in 0 .. parser.parse_vec()? {
-                self.add_globaltype(parser.parse_globaltype()?)?;
-                Expr::check_const(
-                    self,
-                    &mut parser,
-                    &mut refs,
-                    globals_len,
-                    self.globals.last().unwrap().value.into(),
-                )?;
+                let g = parser.parse_globaltype()?;
+                Expr::check_const(self, &mut parser, &mut refs, g.value.into())?;
+                self.add_globaltype(g)?;
             }
             check(parser.is_empty())?;
         }
@@ -295,7 +298,7 @@ impl<'m, M: ValidMode> Context<'m, M> {
         }
         if let Some(mut parser) = self.check_section(parser, SectionId::Element)? {
             for _ in 0 .. parser.parse_vec()? {
-                parser.parse_elem(&mut ParseElem::new(self, &mut refs, globals_len))?;
+                parser.parse_elem(&mut ParseElem::new(self, &mut refs))?;
             }
             check(parser.is_empty())?;
         }
@@ -325,7 +328,7 @@ impl<'m, M: ValidMode> Context<'m, M> {
             let n = parser.parse_vec()?;
             check(self.datas.is_none_or(|m| m == n))?;
             for _ in 0 .. n {
-                parser.parse_data(&mut ParseData::new(self, &mut refs, globals_len))?;
+                parser.parse_data(&mut ParseData::new(self, &mut refs))?;
             }
             check(parser.is_empty())?;
         } else {
@@ -439,35 +442,20 @@ impl<'m, M: ValidMode> Context<'m, M> {
 struct ParseElem<'a, 'm, M: ValidMode> {
     context: &'a mut Context<'m, M>,
     refs: &'a mut [bool],
-    num_global_imports: usize,
     table_type: OpdType,
     elem_type: RefType,
 }
 
 impl<'a, 'm, M: ValidMode> ParseElem<'a, 'm, M> {
-    fn new(
-        context: &'a mut Context<'m, M>, refs: &'a mut [bool], num_global_imports: usize,
-    ) -> Self {
-        Self {
-            context,
-            num_global_imports,
-            refs,
-            table_type: OpdType::Bottom,
-            elem_type: RefType::FuncRef,
-        }
+    fn new(context: &'a mut Context<'m, M>, refs: &'a mut [bool]) -> Self {
+        Self { context, refs, table_type: OpdType::Bottom, elem_type: RefType::FuncRef }
     }
 }
 
 impl<'m, M: ValidMode> parser::ParseElem<'m, Check> for ParseElem<'_, 'm, M> {
     fn mode(&mut self, mode: parser::ElemMode<'_, 'm, Check>) -> MResult<(), Check> {
         if let parser::ElemMode::Active { table, offset } = mode {
-            Expr::check_const(
-                self.context,
-                offset,
-                self.refs,
-                self.num_global_imports,
-                ValType::I32.into(),
-            )?;
+            Expr::check_const(self.context, offset, self.refs, ValType::I32.into())?;
             self.table_type = self.context.table(table)?.item.into();
         }
         Ok(())
@@ -487,27 +475,18 @@ impl<'m, M: ValidMode> parser::ParseElem<'m, Check> for ParseElem<'_, 'm, M> {
     }
 
     fn init_expr(&mut self, parser: &mut parser::Parser<'m, Check>) -> MResult<(), Check> {
-        Expr::check_const(
-            self.context,
-            parser,
-            self.refs,
-            self.num_global_imports,
-            ValType::from(self.elem_type).into(),
-        )
+        Expr::check_const(self.context, parser, self.refs, ValType::from(self.elem_type).into())
     }
 }
 
 struct ParseData<'a, 'm, M: ValidMode> {
     context: &'a mut Context<'m, M>,
     refs: &'a mut [bool],
-    num_global_imports: usize,
 }
 
 impl<'a, 'm, M: ValidMode> ParseData<'a, 'm, M> {
-    fn new(
-        context: &'a mut Context<'m, M>, refs: &'a mut [bool], num_global_imports: usize,
-    ) -> Self {
-        Self { context, refs, num_global_imports }
+    fn new(context: &'a mut Context<'m, M>, refs: &'a mut [bool]) -> Self {
+        Self { context, refs }
     }
 }
 
@@ -515,13 +494,7 @@ impl<'m, M: ValidMode> parser::ParseData<'m, Check> for ParseData<'_, 'm, M> {
     fn mode(&mut self, mode: parser::DataMode<'_, 'm, Check>) -> MResult<(), Check> {
         if let parser::DataMode::Active { memory, offset } = mode {
             self.context.mem(memory)?;
-            Expr::check_const(
-                self.context,
-                offset,
-                self.refs,
-                self.num_global_imports,
-                ValType::I32.into(),
-            )?;
+            Expr::check_const(self.context, offset, self.refs, ValType::I32.into())?;
         }
         Ok(())
     }
@@ -586,7 +559,6 @@ impl OpdType {
 struct Expr<'a, 'm, M: ValidMode> {
     context: &'a Context<'m, M>,
     parser: &'a mut Parser<'m>,
-    globals_len: usize,
     /// Whether the expression is const and the function references.
     is_const: Result<&'a mut [bool], &'a [bool]>,
     is_body: bool,
@@ -634,7 +606,6 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
         Self {
             context,
             parser,
-            globals_len: context.globals.len(),
             is_const,
             is_body: false,
             locals: vec![],
@@ -645,10 +616,9 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
 
     fn check_const(
         context: &'a Context<'m, M>, parser: &'a mut Parser<'m>, refs: &'a mut [bool],
-        num_global_imports: usize, expected: ResultType<'m>,
+        expected: ResultType<'m>,
     ) -> CheckResult {
         let mut expr = Expr::new(context, parser, Ok(refs), None);
-        expr.globals_len = num_global_imports;
         expr.label().type_.results = expected;
         expr.check()
     }
@@ -679,12 +649,9 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
             return self.end_label();
         }
         if self.is_const.is_ok() {
+            use crate::syntax::IBinOp;
             match instr {
-                GlobalGet(x) => {
-                    let x = x as usize;
-                    let n = self.globals_len;
-                    check(x < n && self.context.globals[x].mutable == Mut::Const)?;
-                }
+                GlobalGet(x) => check(self.context.global(x)?.mutable == Mut::Const)?,
                 I32Const(_) => (),
                 I64Const(_) => (),
                 #[cfg(feature = "float-types")]
@@ -693,6 +660,7 @@ impl<'a, 'm, M: ValidMode> Expr<'a, 'm, M> {
                 F64Const(_) => (),
                 RefNull(_) => (),
                 RefFunc(_) => (),
+                Instr::IBinOp(_, IBinOp::Add | IBinOp::Sub | IBinOp::Mul) => (),
                 _ => return Err(invalid()),
             }
         }

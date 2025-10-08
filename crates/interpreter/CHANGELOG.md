@@ -8,6 +8,8 @@
 
 ### Minor
 
+- Implement `Clone` for `Module`
+- Extend `Unsupported` with variants specific to WebAssembly 3.0
 - Increase supported number of locals from 100 to 1000
 - Add `Store::memory()` to access the memory of a given instance
 
