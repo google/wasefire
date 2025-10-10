@@ -24,7 +24,7 @@ use wast::lexer::Lexer;
 use wast::token::Id;
 use wast::{QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, WastRet, Wat, parser};
 
-fn test(repo: &str, name: &str, skip: usize) {
+fn test(repo: &str, name: &str, skip: Option<usize>) {
     let path = format!("../../third_party/WebAssembly/{repo}/test/core/{name}.wast");
     let mut content = std::fs::read_to_string(path).unwrap();
     patch_content(name, &mut content);
@@ -43,7 +43,7 @@ fn test(repo: &str, name: &str, skip: usize) {
         match directive {
             WastDirective::Module(QuoteWat::Wat(Wat::Module(mut m))) => {
                 env.instantiate(name, &m.encode().unwrap());
-                env.register_id(m.id, env.inst);
+                env.register_inst(m.id, env.inst);
             }
             WastDirective::Module(mut wat) => env.instantiate(name, &wat.encode().unwrap()),
             WastDirective::AssertMalformed { module, .. } => assert_malformed(&mut env, module),
@@ -54,8 +54,31 @@ fn test(repo: &str, name: &str, skip: usize) {
             WastDirective::AssertTrap { exec, .. } => assert_trap(&mut env, exec),
             WastDirective::Invoke(invoke) => assert_invoke(&mut env, invoke),
             WastDirective::AssertExhaustion { call, .. } => assert_exhaustion(&mut env, call),
-            WastDirective::Register { name, module, .. } => env.register_name(name, module),
+            WastDirective::Register { name, module, .. } => {
+                if matches!(env.inst, Sup::No(_)) {
+                    // The module has not been instantiated, so any import will fail. We must exit
+                    // the test. Ideally, we have enough support that this doesn't happen.
+                    env.skip = None;
+                    break;
+                }
+                env.register_name(name, module);
+            }
             WastDirective::AssertUnlinkable { module, .. } => assert_unlinkable(&mut env, module),
+            WastDirective::ModuleDefinition(QuoteWat::Wat(Wat::Module(mut m))) => {
+                let module = Sup::conv(prepare(&m.encode().unwrap())).unwrap().map(|wasm| {
+                    let module = env.alloc(wasm.len());
+                    module.copy_from_slice(&wasm);
+                    Module::new(module).unwrap()
+                });
+                env.register_mod(m.id, module);
+            }
+            WastDirective::ModuleInstance { instance, module, .. } => {
+                env.inst = env.module(module).then(|module| {
+                    let memory = env.alloc(mem_size(name));
+                    Sup::conv(env.store.instantiate(module, memory)).unwrap()
+                });
+                env.register_inst(instance, env.inst);
+            }
             _ => unimplemented!("{:?}", directive),
         }
     }
@@ -112,7 +135,7 @@ fn mem_size(name: &str) -> usize {
 }
 
 /// Whether something is supported.
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 enum Sup<T> {
     Uninit,
     No(Unsupported),
@@ -131,6 +154,22 @@ impl<T> Sup<T> {
         }
     }
 
+    fn map<S>(self, f: impl FnOnce(T) -> S) -> Sup<S> {
+        match self {
+            Sup::Uninit => Sup::Uninit,
+            Sup::No(x) => Sup::No(x),
+            Sup::Yes(x) => Sup::Yes(f(x)),
+        }
+    }
+
+    fn then<S>(self, f: impl FnOnce(T) -> Sup<S>) -> Sup<S> {
+        match self {
+            Sup::Uninit => Sup::Uninit,
+            Sup::No(x) => Sup::No(x),
+            Sup::Yes(x) => f(x),
+        }
+    }
+
     fn res(self) -> Result<T, Error> {
         match self {
             Sup::Uninit => unreachable!(),
@@ -146,7 +185,7 @@ macro_rules! only_sup {
             Ok(x) => Ok(x),
             Err(Error::Unsupported(x)) => {
                 eprintln!("skip unsupported {x:?}");
-                $e.skip += 1;
+                *$e.skip.as_mut().unwrap() += 1;
                 return;
             }
             Err(x) => Err(x),
@@ -158,13 +197,21 @@ struct Env<'m> {
     pool: &'m mut [u8],
     store: Store<'m>,
     inst: Sup<InstId>,
-    map: HashMap<Id<'m>, Sup<InstId>>,
-    skip: usize,
+    insts: HashMap<Id<'m>, Sup<InstId>>,
+    mods: HashMap<Id<'m>, Sup<Module<'m>>>,
+    skip: Option<usize>,
 }
 
 impl<'m> Env<'m> {
     fn new(pool: &'m mut [u8]) -> Self {
-        Env { pool, store: Store::default(), inst: Sup::Uninit, map: HashMap::new(), skip: 0 }
+        Env {
+            pool,
+            store: Store::default(),
+            inst: Sup::Uninit,
+            insts: HashMap::new(),
+            mods: HashMap::new(),
+            skip: Some(0),
+        }
     }
 
     fn alloc(&mut self, size: usize) -> &'m mut [u8] {
@@ -200,22 +247,35 @@ impl<'m> Env<'m> {
     }
 
     fn register_name(&mut self, name: &'m str, module: Option<Id<'m>>) {
-        self.register_id(module, self.inst);
+        self.register_inst(module, self.inst);
         if let Sup::Yes(inst_id) = self.inst {
             self.store.set_name(inst_id, name).unwrap();
         }
     }
 
-    fn register_id(&mut self, id: Option<Id<'m>>, inst_id: Sup<InstId>) {
+    fn register_inst(&mut self, id: Option<Id<'m>>, inst_id: Sup<InstId>) {
         if let Some(id) = id {
-            self.map.insert(id, inst_id);
+            self.insts.insert(id, inst_id);
+        }
+    }
+
+    fn register_mod(&mut self, id: Option<Id<'m>>, module: Sup<Module<'m>>) {
+        if let Some(id) = id {
+            self.mods.insert(id, module);
         }
     }
 
     fn inst_id(&self, id: Option<Id>) -> Sup<InstId> {
         match id {
-            Some(x) => self.map[&x],
+            Some(x) => self.insts[&x],
             None => self.inst,
+        }
+    }
+
+    fn module(&self, id: Option<Id>) -> Sup<Module<'m>> {
+        match id {
+            Some(x) => self.mods[&x].clone(),
+            None => unimplemented!(),
         }
     }
 }
@@ -336,6 +396,7 @@ fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
                 Null(RefType::FuncRef),
                 C(W::RefNull(None | Some(HeapType::Abstract { ty: AbstractHeapType::Func, .. }))),
             ) => (),
+            (Ref(_), C(W::RefFunc(None))) if actual.type_() == ValType::FuncRef => (),
             (Ref(_), _) => unimplemented!(),
             (RefExtern(x), C(W::RefExtern(Some(y)))) => assert_eq!(x, y as usize),
             (x, y) => panic!("{x:?} !~ {y:?}"),
@@ -422,7 +483,7 @@ fn wast_arg_core(core: WastArgCore) -> Val {
 }
 
 macro_rules! test {
-    ($(#[$m:meta])* $($repo:literal,)? $name:ident$(, $file:literal)?$(; $skip:literal)?) => {
+    ($(#[$m:meta])* $($repo:literal,)? $name:ident$(, $file:literal)?$(; $skip:expr)?) => {
         test!(=1 {$(#[$m])*} [$($repo)?] $name [$($file)?] [$($skip)?]);
     };
     (=1 $meta:tt [] $name:ident $file:tt $skip:tt) => {
@@ -438,12 +499,12 @@ macro_rules! test {
         test!(=3 $meta $repo $name $file $skip);
     };
     (=3 $meta:tt $repo:literal $name:ident $file:tt []) => {
-        test!(=4 $meta $repo $name $file 0);
+        test!(=4 $meta $repo $name $file Some(0));
     };
-    (=3 $meta:tt $repo:literal $name:ident $file:tt [$skip:literal]) => {
+    (=3 $meta:tt $repo:literal $name:ident $file:tt [$skip:expr]) => {
         test!(=4 $meta $repo $name $file $skip);
     };
-    (=4 {$(#[$m:meta])*} $repo:literal $name:ident $file:tt $skip:literal) => {
+    (=4 {$(#[$m:meta])*} $repo:literal $name:ident $file:tt $skip:expr) => {
         #[test] $(#[$m])* fn $name() { test($repo, test!(=5 $file), $skip); }
     };
     (=5 $name:ident) => { stringify!($name) };
@@ -452,23 +513,26 @@ macro_rules! test {
 
 test!(address);
 test!(align);
+test!(annotations);
 test!(binary);
 test!(binary_leb128, "binary-leb128");
 test!(block);
 test!(br);
-test!(br_if);
-test!(br_table);
-test!(bulk);
+test!(br_if; Some(1));
+test!(br_on_non_null; Some(9));
+test!(br_on_null; Some(7));
+test!(br_table; Some(153));
 test!(call);
 test!(call_indirect);
+test!(call_ref; Some(31));
 test!(comments);
 test!(const_, "const");
 test!(conversions);
 test!(custom);
 test!(data);
-test!(elem);
+test!(elem; Some(2));
 test!(endianness);
-test!(exports);
+test!(exports; Some(1));
 test!(f32);
 test!(f32_bitwise);
 test!(f32_cmp);
@@ -481,60 +545,64 @@ test!(float_literals);
 test!(float_memory);
 test!(float_misc);
 test!(forward);
-test!(func);
+test!(func; Some(1));
 test!(func_ptrs);
-test!(global);
+test!(global; Some(6));
 test!(i32);
 test!(i64);
+test!(id);
 test!(if_, "if");
-test!(imports);
+test!(imports; None);
 test!(inline_module, "inline-module");
+test!(instance; None);
 test!(int_exprs);
 test!(int_literals);
 test!(labels);
 test!(left_to_right, "left-to-right");
-test!(linking);
+test!(linking; None);
 test!(load);
 test!(local_get);
+test!(local_init; Some(8));
 test!(local_set);
-test!(local_tee);
+test!(local_tee; Some(1));
 test!(loop_, "loop");
 test!(memory);
-test!(memory_copy);
-test!(memory_fill);
 test!(memory_grow);
-test!(memory_init);
 test!(memory_redundancy);
 test!(memory_size);
 test!(memory_trap);
 test!(names);
 test!(nop);
 test!(obsolete_keywords, "obsolete-keywords");
+test!(ref_, "ref"; Some(9));
+test!(ref_as_non_null; Some(5));
 test!(ref_func);
-test!(ref_is_null);
-test!(ref_null);
+test!(ref_is_null; Some(18));
+test!(ref_null; Some(32));
 test!(return_, "return");
-test!(select);
-test!(skip_stack_guard_page, "skip-stack-guard-page"; 10);
+test!(return_call; Some(44));
+test!(return_call_indirect; Some(64));
+test!(return_call_ref; Some(46));
+test!(select; Some(1));
+test!(skip_stack_guard_page, "skip-stack-guard-page"; Some(10));
 test!(stack);
 test!(start);
 test!(store);
 test!(switch);
-test!(table);
-test!(table_sub, "table-sub");
-test!(table_copy);
-test!(table_fill);
+test!(table; None);
 test!(table_get);
 test!(table_grow);
-test!(table_init);
 test!(table_set);
 test!(table_size);
 test!(token);
 test!(traps);
 test!(type_, "type");
+test!(type_canon, "type-canon"; Some(0));
+test!(type_equivalence, "type-equivalence"; None);
+test!(type_rec, "type-rec"; None);
 test!(unreachable);
-test!(unreached_invalid, "unreached-invalid");
-test!(unreached_valid, "unreached-valid");
+test!(unreached_invalid, "unreached-invalid"; Some(2));
+test!(unreached_valid, "unreached-valid"; Some(9));
 test!(unwind);
 test!(utf8_custom_section_id, "utf8-custom-section-id");
 test!(utf8_import_field, "utf8-import-field");

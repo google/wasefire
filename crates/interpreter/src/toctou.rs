@@ -24,6 +24,8 @@ pub trait Mode {
 
     fn check(cond: impl FnOnce() -> bool) -> Result<(), Self::Error>;
 
+    fn check_support(cond: impl FnOnce() -> Option<Unsupported>) -> Result<(), Self::Error>;
+
     fn open<T>(check: impl FnOnce() -> Option<T>) -> Result<T, Self::Error>;
 
     fn choose<T>(
@@ -47,6 +49,13 @@ impl Mode for Check {
 
     fn check(cond: impl FnOnce() -> bool) -> Result<(), Self::Error> {
         check(cond())
+    }
+
+    fn check_support(cond: impl FnOnce() -> Option<Unsupported>) -> Result<(), Self::Error> {
+        match cond() {
+            None => Ok(()),
+            Some(reason) => Self::unsupported(reason),
+        }
     }
 
     fn open<T>(check: impl FnOnce() -> Option<T>) -> Result<T, Self::Error> {
@@ -80,6 +89,10 @@ impl Mode for Use {
     }
 
     fn check(_cond: impl FnOnce() -> bool) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn check_support(_cond: impl FnOnce() -> Option<Unsupported>) -> Result<(), Self::Error> {
         Ok(())
     }
 

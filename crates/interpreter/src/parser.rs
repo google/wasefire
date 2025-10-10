@@ -185,12 +185,15 @@ impl<'m, M: Mode> Parser<'m, M> {
     }
 
     pub fn parse_valtype(&mut self) -> MResult<ValType, M> {
-        byte_enum::<M, _>(self.parse_byte()?)
+        let byte = self.parse_byte()?;
+        M::check_support(|| ValType::is_unsupported(byte))?;
+        byte_enum::<M, _>(byte)
     }
 
     pub fn parse_resulttype(&mut self) -> MResult<ResultType<'m>, M> {
         let n = self.parse_vec()?;
         let xs = self.parse_bytes(n)?;
+        M::check_support(|| xs.iter().find_map(|&x| ValType::is_unsupported(x)))?;
         M::check(|| xs.iter().all(|&x| ValType::try_from(x).is_ok()))?;
         // We don't have a safe version for this because we return a reference.
         let ptr = xs.as_ptr() as *const ValType;
@@ -199,6 +202,10 @@ impl<'m, M: Mode> Parser<'m, M> {
 
     pub fn parse_functype(&mut self) -> MResult<FuncType<'m>, M> {
         let byte = self.parse_byte()?;
+        M::check_support(|| {
+            matches!(byte, 0x4e | 0x4f | 0x50 | 0x5e | 0x5f)
+                .then_some(if_debug!(Unsupported::HeapType))
+        })?;
         M::check(|| byte == 0x60)?;
         let params = self.parse_resulttype()?;
         let results = self.parse_resulttype()?;
@@ -206,7 +213,9 @@ impl<'m, M: Mode> Parser<'m, M> {
     }
 
     pub fn parse_reftype(&mut self) -> MResult<RefType, M> {
-        byte_enum::<M, _>(self.parse_byte()?)
+        let byte = self.parse_byte()?;
+        M::check_support(|| RefType::is_unsupported(byte))?;
+        byte_enum::<M, _>(byte)
     }
 
     pub fn parse_limits(&mut self, mut max: u32) -> MResult<Limits, M> {
@@ -244,6 +253,7 @@ impl<'m, M: Mode> Parser<'m, M> {
             1 => ImportDesc::Table(self.parse_tabletype()?),
             2 => ImportDesc::Mem(self.parse_memtype()?),
             3 => ImportDesc::Global(self.parse_globaltype()?),
+            4 => M::unsupported(if_debug!(Unsupported::Exception))?,
             _ => M::invalid()?,
         })
     }
@@ -340,6 +350,8 @@ impl<'m, M: Mode> Parser<'m, M> {
                 let x = self.parse_tableidx()?;
                 Instr::CallIndirect(x, y)
             }
+            0x12 | 0x13 => M::unsupported(if_debug!(Unsupported::TailCall))?,
+            0x14 | 0x15 => M::unsupported(if_debug!(Unsupported::HeapType))?,
             0x1a => Instr::Drop,
             0x1b => Instr::Select(None),
             0x1c => Instr::Select(Some(self.parse_resulttype()?)),

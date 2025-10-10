@@ -23,7 +23,7 @@ use crate::toctou::*;
 use crate::*;
 
 /// Valid module.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Module<'m> {
     binary: &'m [u8],
     types: Vec<FuncType<'m>>,

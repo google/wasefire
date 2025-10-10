@@ -17,6 +17,8 @@ use core::ops::Deref;
 
 use num_enum::{TryFromPrimitive, UnsafeFromPrimitive};
 
+use crate::error::*;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive, UnsafeFromPrimitive)]
 #[repr(u8)]
 pub enum NumType {
@@ -40,6 +42,18 @@ pub enum RefType {
     ExternRef = 0x6f,
 }
 
+impl RefType {
+    pub(crate) fn is_unsupported(byte: u8) -> Option<Unsupported> {
+        match byte {
+            0x6f | 0x70 => None,
+            // TODO: We might want to support 0x63 and 0x64 but then we need can't represent RefType
+            // and ValType with u8.
+            0x63 | 0x64 | 0x69 ..= 0x74 => Some(if_debug!(Unsupported::HeapType)),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive, UnsafeFromPrimitive)]
 #[repr(u8)]
 pub enum ValType {
@@ -50,6 +64,12 @@ pub enum ValType {
     V128 = 0x7b,
     FuncRef = 0x70,
     ExternRef = 0x6f,
+}
+
+impl ValType {
+    pub(crate) fn is_unsupported(byte: u8) -> Option<Unsupported> {
+        RefType::is_unsupported(byte)
+    }
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
@@ -367,6 +387,7 @@ pub enum SectionId {
     Code = 10,
     Data = 11,
     DataCount = 12,
+    Tag = 13,
 }
 
 impl Deref for ResultType<'_> {
@@ -778,9 +799,11 @@ impl SectionId {
     pub fn order(self) -> u8 {
         // DataCount is actually between Element and Code.
         match self as u8 {
-            x @ 0 ..= 9 => x,
-            12 => 10,
-            x @ 10 ..= 11 => x + 1,
+            x @ 0 ..= 5 => x,
+            13 => 6,
+            x @ 6 ..= 9 => x + 1,
+            12 => 11,
+            x @ 10 ..= 11 => x + 2,
             _ => unreachable!(),
         }
     }

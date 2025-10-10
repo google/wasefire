@@ -20,7 +20,7 @@ use crate::toctou::*;
 
 pub const SECTION_NAME: &str = "wasefire-sidetable";
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct SideTableView<'m> {
     pub indices: &'m [u8], // including 0 and the length of metadata_array
     pub metadata: &'m [u8],
