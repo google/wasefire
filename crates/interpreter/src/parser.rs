@@ -186,18 +186,14 @@ impl<'m, M: Mode> Parser<'m, M> {
 
     pub fn parse_valtype(&mut self) -> MResult<ValType, M> {
         let byte = self.parse_byte()?;
-        if let Some(reason) = ValType::is_unsupported(byte) {
-            M::unsupported(reason)?;
-        }
+        M::check_support(|| ValType::is_unsupported(byte))?;
         byte_enum::<M, _>(byte)
     }
 
     pub fn parse_resulttype(&mut self) -> MResult<ResultType<'m>, M> {
         let n = self.parse_vec()?;
         let xs = self.parse_bytes(n)?;
-        if let Some(reason) = xs.iter().find_map(|&x| ValType::is_unsupported(x)) {
-            return M::unsupported(reason);
-        }
+        M::check_support(|| xs.iter().find_map(|&x| ValType::is_unsupported(x)))?;
         M::check(|| xs.iter().all(|&x| ValType::try_from(x).is_ok()))?;
         // We don't have a safe version for this because we return a reference.
         let ptr = xs.as_ptr() as *const ValType;
@@ -206,9 +202,10 @@ impl<'m, M: Mode> Parser<'m, M> {
 
     pub fn parse_functype(&mut self) -> MResult<FuncType<'m>, M> {
         let byte = self.parse_byte()?;
-        if matches!(byte, 0x4e | 0x4f | 0x50 | 0x5e | 0x5f) {
-            M::unsupported(if_debug!(Unsupported::HeapType))?;
-        }
+        M::check_support(|| {
+            matches!(byte, 0x4e | 0x4f | 0x50 | 0x5e | 0x5f)
+                .then_some(if_debug!(Unsupported::HeapType))
+        })?;
         M::check(|| byte == 0x60)?;
         let params = self.parse_resulttype()?;
         let results = self.parse_resulttype()?;
@@ -217,9 +214,7 @@ impl<'m, M: Mode> Parser<'m, M> {
 
     pub fn parse_reftype(&mut self) -> MResult<RefType, M> {
         let byte = self.parse_byte()?;
-        if let Some(reason) = RefType::is_unsupported(byte) {
-            M::unsupported(reason)?;
-        }
+        M::check_support(|| RefType::is_unsupported(byte))?;
         byte_enum::<M, _>(byte)
     }
 
