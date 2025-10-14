@@ -1,14 +1,12 @@
 [package]
-name = "fingerprint"
+name = "common"
 version = "0.1.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 edition = "2024"
 
 [dependencies]
-common = { path = "common" }
-wasefire = { path = "../../../crates/prelude" }
-wasefire-wire = { path = "../../../crates/wire" }
+wasefire-wire = { path = "../../../../crates/wire" }
 
 [lints]
 clippy.literal-string-with-formatting-args = "allow"
