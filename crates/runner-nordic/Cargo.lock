@@ -1737,7 +1737,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-sync"
-version = "0.1.2"
+version = "0.1.3-git"
 dependencies = [
  "portable-atomic",
  "spin 0.10.0",
