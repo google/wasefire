@@ -2,6 +2,10 @@
 
 ## 0.8.1-git
 
+### Minor
+
+- Implement `Sync` for `fingerprint::{matcher::{Enroll,Identify},sensor::Capture}`
+
 ### Patch
 
 - Update dependencies
