@@ -125,8 +125,7 @@ impl Enroll {
     }
 
     extern "C" fn step(data: *const u8, remaining: usize) {
-        let mut state = Self::state(data).lock();
-        match *state {
+        match *Self::state(data).lock() {
             EnrollState::Running(ref mut progress) => {
                 progress.detected += 1;
                 progress.remaining = Some(remaining);
@@ -137,8 +136,7 @@ impl Enroll {
     }
 
     extern "C" fn done(data: *const u8, result: isize, template: *mut u8) {
-        let mut state = Self::state(data).lock();
-        *state = match convert_unit(result) {
+        *Self::state(data).lock() = match convert_unit(result) {
             Ok(()) => EnrollState::Done { template: OwnedPtr(template) },
             Err(error) => EnrollState::Failed { error },
         }
@@ -244,8 +242,7 @@ impl Identify {
     }
 
     extern "C" fn call(data: *const u8, result: isize, template: *mut u8) {
-        let mut state = Self::state(data).lock();
-        *state = match convert_bool(result) {
+        *Self::state(data).lock() = match convert_bool(result) {
             Ok(matched) => IdentifyState::Done { matched, template: OwnedPtr(template) },
             Err(error) => IdentifyState::Failed { error },
         }
