@@ -109,7 +109,7 @@ impl AppletMemory for Memory<'_> {
     fn alloc(&mut self, size: u32, align: u32) -> Result<u32, Trap> {
         self.with_store(|store| {
             let args = vec![Val::I32(size), Val::I32(align)];
-            let inst = store.last_call().unwrap().inst();
+            let inst = store.inst.unwrap();
             // TODO: We should ideally account this to the applet performance time.
             let result = match store.invoke(inst, "alloc", args) {
                 Ok(RunResult::Done(x)) if x.len() == 1 => x[0],
