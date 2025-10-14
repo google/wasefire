@@ -15,10 +15,11 @@
 //! Provides fingerprint sensor.
 
 use alloc::boxed::Box;
-use core::cell::RefCell;
 
 use wasefire_applet_api::fingerprint::sensor as api;
+use wasefire_common::ptr::SharedPtr;
 use wasefire_error::Code;
+use wasefire_sync::Mutex;
 
 use crate::{Error, convert, convert_bool, convert_unit};
 
@@ -38,9 +39,9 @@ pub struct Image {
 
 /// State of an image capture.
 pub struct Capture {
-    // Safety: This is a `Box<RefCell<CaptureState>>` we own and lend the platform as a shared
+    // Safety: This is a `Box<Mutex<CaptureState>>` we own and lend the platform as a shared
     // borrow between the call to `api::capture()` and either `Self::abort()` or `Self::call()`.
-    state: *const u8,
+    state: SharedPtr<Mutex<CaptureState>>,
     // Whether the state has already been dropped.
     dropped: bool,
 }
@@ -63,18 +64,18 @@ impl Capture {
     /// Starts an image capture.
     pub fn new() -> Result<Self, Error> {
         let handler_func = Self::call;
-        let state = Box::into_raw(Box::new(RefCell::new(CaptureState::Started))) as *const u8;
-        let handler_data = state;
+        let state = Box::into_raw(Box::new(Mutex::new(CaptureState::Started)));
+        let handler_data = state as *const u8;
         let params = api::capture::Params { handler_func, handler_data };
         convert_unit(unsafe { api::capture(params) })?;
-        Ok(Capture { state, dropped: false })
+        Ok(Capture { state: SharedPtr(state), dropped: false })
     }
 
     /// Returns whether the capture has completed.
     ///
     /// Use `Self::result()` to access the result.
     pub fn is_done(&self) -> bool {
-        match *Self::state(self.state).borrow() {
+        match *Self::state(self.state.0 as *const u8).lock() {
             CaptureState::Started => false,
             CaptureState::Done { .. } | CaptureState::Failed { .. } => true,
         }
@@ -105,8 +106,7 @@ impl Capture {
     }
 
     extern "C" fn call(data: *const u8, ptr: *mut u8, width: isize, height: usize) {
-        let mut state = Self::state(data).borrow_mut();
-        *state = match convert(width) {
+        *Self::state(data).lock() = match convert(width) {
             Ok(width) => {
                 assert!(0 < width);
                 let len = width * height;
@@ -118,18 +118,18 @@ impl Capture {
         }
     }
 
-    fn state<'a>(data: *const u8) -> &'a RefCell<CaptureState> {
+    fn state<'a>(data: *const u8) -> &'a Mutex<CaptureState> {
         // SAFETY: `data` is the `&CaptureState` we lent the platform (see `Capture::state`). We are
         // borrowing it back for the duration of this call.
-        unsafe { &*(data as *const RefCell<CaptureState>) }
+        unsafe { &*(data as *const Mutex<CaptureState>) }
     }
 
     #[allow(clippy::wrong_self_convention)]
     fn into_state(&mut self) -> CaptureState {
         assert!(!self.dropped);
         self.dropped = true;
-        // SAFETY: `self.state` is a `Box<RefCell<CaptureState>>` we own back, now that the
+        // SAFETY: `self.state` is a `Box<Mutex<CaptureState>>` we own back, now that the
         // lifetime of the platform borrow is over (see `Capture::state`).
-        unsafe { Box::from_raw(self.state as *mut RefCell<CaptureState>) }.into_inner()
+        unsafe { Box::from_raw(self.state.0 as *mut Mutex<CaptureState>) }.into_inner()
     }
 }

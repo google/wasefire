@@ -16,11 +16,11 @@
 
 use alloc::boxed::Box;
 use alloc::vec::Vec;
-use core::cell::RefCell;
 
 use wasefire_applet_api::fingerprint::matcher as api;
+use wasefire_common::ptr::{OwnedPtr, SharedPtr};
 use wasefire_error::Code;
-use wasefire_sync::Lazy;
+use wasefire_sync::{Lazy, Mutex};
 
 use crate::{Error, convert, convert_bool, convert_unit};
 
@@ -37,9 +37,9 @@ fn template_length() -> usize {
 
 /// State of the enrollment of a new finger.
 pub struct Enroll {
-    // Safety: This is a `Box<RefCell<EnrollState>>` we own and lend the platform as a shared
+    // Safety: This is a `Box<Mutex<EnrollState>>` we own and lend the platform as a shared
     // borrow between the call to `api::enroll()` and either `Self::abort()` or `Self::done()`.
-    state: *const u8,
+    state: SharedPtr<Mutex<EnrollState>>,
     // Whether the state has already been dropped.
     dropped: bool,
 }
@@ -63,7 +63,7 @@ pub struct EnrollProgress {
 
 enum EnrollState {
     Running(EnrollProgress),
-    Done { template: *mut u8 },
+    Done { template: OwnedPtr<u8> },
     Failed { error: Error },
 }
 
@@ -75,9 +75,9 @@ impl Enroll {
     pub fn new() -> Result<Self, Error> {
         let handler_step_func = Self::step;
         let handler_func = Self::done;
-        let state = Box::into_raw(Box::new(RefCell::new(INIT_ENROLL_STATE))) as *const u8;
-        let handler_step_data = state;
-        let handler_data = state;
+        let state = Box::into_raw(Box::new(Mutex::new(INIT_ENROLL_STATE)));
+        let handler_step_data = state as *const u8;
+        let handler_data = state as *const u8;
         let params = api::enroll::Params {
             handler_step_func,
             handler_step_data,
@@ -85,14 +85,14 @@ impl Enroll {
             handler_data,
         };
         convert_unit(unsafe { api::enroll(params) })?;
-        Ok(Enroll { state, dropped: false })
+        Ok(Enroll { state: SharedPtr(state), dropped: false })
     }
 
     /// Returns the enrollment progress.
     ///
     /// Returns `None` if the enrollment finished. Use `Self::result()` to access the result.
     pub fn progress(&self) -> Option<EnrollProgress> {
-        match *Self::state(self.state).borrow() {
+        match *Self::state(self.state.0 as *const u8).lock() {
             EnrollState::Running(x) => Some(x),
             EnrollState::Done { .. } | EnrollState::Failed { .. } => None,
         }
@@ -125,8 +125,7 @@ impl Enroll {
     }
 
     extern "C" fn step(data: *const u8, remaining: usize) {
-        let mut state = Self::state(data).borrow_mut();
-        match *state {
+        match *Self::state(data).lock() {
             EnrollState::Running(ref mut progress) => {
                 progress.detected += 1;
                 progress.remaining = Some(remaining);
@@ -137,34 +136,33 @@ impl Enroll {
     }
 
     extern "C" fn done(data: *const u8, result: isize, template: *mut u8) {
-        let mut state = Self::state(data).borrow_mut();
-        *state = match convert_unit(result) {
-            Ok(()) => EnrollState::Done { template },
+        *Self::state(data).lock() = match convert_unit(result) {
+            Ok(()) => EnrollState::Done { template: OwnedPtr(template) },
             Err(error) => EnrollState::Failed { error },
         }
     }
 
-    fn state<'a>(data: *const u8) -> &'a RefCell<EnrollState> {
+    fn state<'a>(data: *const u8) -> &'a Mutex<EnrollState> {
         // SAFETY: `data` is the `&EnrollState` we lent the platform (see `Enroll::state`). We are
         // borrowing it back for the duration of this call.
-        unsafe { &*(data as *const RefCell<EnrollState>) }
+        unsafe { &*(data as *const Mutex<EnrollState>) }
     }
 
     #[allow(clippy::wrong_self_convention)]
     fn into_state(&mut self) -> EnrollState {
         assert!(!self.dropped);
         self.dropped = true;
-        // SAFETY: `self.state` is a `Box<RefCell<EnrollState>>` we own back, now that the lifetime
+        // SAFETY: `self.state` is a `Box<Mutex<EnrollState>>` we own back, now that the lifetime
         // of the platform borrow is over (see `Enroll::state`).
-        unsafe { Box::from_raw(self.state as *mut RefCell<EnrollState>) }.into_inner()
+        unsafe { Box::from_raw(self.state.0 as *mut Mutex<EnrollState>) }.into_inner()
     }
 }
 
 /// State of the identification of a finger.
 pub struct Identify {
-    // Safety: This is a `Box<RefCell<IdentifyState>>` we own and lend the platform as a shared
+    // Safety: This is a `Box<Mutex<IdentifyState>>` we own and lend the platform as a shared
     // borrow between the call to `api::identify()` and either `Self::abort()` or `Self::call()`.
-    state: *const u8,
+    state: SharedPtr<Mutex<IdentifyState>>,
     // Whether the state has already been dropped.
     dropped: bool,
 }
@@ -179,7 +177,7 @@ impl Drop for Identify {
 
 enum IdentifyState {
     Started,
-    Done { matched: bool, template: *mut u8 },
+    Done { matched: bool, template: OwnedPtr<u8> },
     Failed { error: Error },
 }
 
@@ -197,20 +195,20 @@ pub enum IdentifyResult {
 impl Identify {
     /// Starts the identification of a finger.
     pub fn new(template: Option<&[u8]>) -> Result<Self, Error> {
-        let template = opt_template(template);
+        let template = opt_template(template)?;
         let handler_func = Self::call;
-        let state = Box::into_raw(Box::new(RefCell::new(IdentifyState::Started))) as *const u8;
-        let handler_data = state;
+        let state = Box::into_raw(Box::new(Mutex::new(IdentifyState::Started)));
+        let handler_data = state as *const u8;
         let params = api::identify::Params { template, handler_func, handler_data };
         convert_unit(unsafe { api::identify(params) })?;
-        Ok(Identify { state, dropped: false })
+        Ok(Identify { state: SharedPtr(state), dropped: false })
     }
 
     /// Returns whether the identification has been completed.
     ///
     /// Use `Self::result()` to access the result.
     pub fn is_done(&self) -> bool {
-        match *Self::state(self.state).borrow() {
+        match *Self::state(self.state.0 as *const u8).lock() {
             IdentifyState::Started => false,
             IdentifyState::Done { .. } | IdentifyState::Failed { .. } => true,
         }
@@ -244,32 +242,31 @@ impl Identify {
     }
 
     extern "C" fn call(data: *const u8, result: isize, template: *mut u8) {
-        let mut state = Self::state(data).borrow_mut();
-        *state = match convert_bool(result) {
-            Ok(matched) => IdentifyState::Done { matched, template },
+        *Self::state(data).lock() = match convert_bool(result) {
+            Ok(matched) => IdentifyState::Done { matched, template: OwnedPtr(template) },
             Err(error) => IdentifyState::Failed { error },
         }
     }
 
-    fn state<'a>(data: *const u8) -> &'a RefCell<IdentifyState> {
+    fn state<'a>(data: *const u8) -> &'a Mutex<IdentifyState> {
         // SAFETY: `data` is the `&IdentifyState` we lent the platform (see `Identify::state`). We
         // are borrowing it back for the duration of this call.
-        unsafe { &*(data as *const RefCell<IdentifyState>) }
+        unsafe { &*(data as *const Mutex<IdentifyState>) }
     }
 
     #[allow(clippy::wrong_self_convention)]
     fn into_state(&mut self) -> IdentifyState {
         assert!(!self.dropped);
         self.dropped = true;
-        // SAFETY: `self.state` is a `Box<RefCell<IdentifyState>>` we own back, now that the
+        // SAFETY: `self.state` is a `Box<Mutex<IdentifyState>>` we own back, now that the
         // lifetime of the platform borrow is over (see `Identify::state`).
-        unsafe { Box::from_raw(self.state as *mut RefCell<IdentifyState>) }.into_inner()
+        unsafe { Box::from_raw(self.state.0 as *mut Mutex<IdentifyState>) }.into_inner()
     }
 }
 
 /// Deletes all enrolled fingers (or a specific on given its template ID).
 pub fn delete_template(template: Option<&[u8]>) -> Result<(), Error> {
-    let template = opt_template(template);
+    let template = opt_template(template)?;
     let params = api::delete_template::Params { template };
     convert_unit(unsafe { api::delete_template(params) })
 }
@@ -306,16 +303,16 @@ impl Templates {
     }
 }
 
-fn new_template(template: *mut u8) -> Box<[u8]> {
+fn new_template(template: OwnedPtr<u8>) -> Box<[u8]> {
     let len = template_length();
-    let ptr = core::ptr::slice_from_raw_parts_mut(template, len);
+    let ptr = core::ptr::slice_from_raw_parts_mut(template.0, len);
     unsafe { Box::from_raw(ptr) }
 }
 
-fn opt_template(template: Option<&[u8]>) -> *const u8 {
-    assert!(template.is_none_or(|x| x.len() == template_length()));
+fn opt_template(template: Option<&[u8]>) -> Result<*const u8, Error> {
     match template {
-        None => core::ptr::null(),
-        Some(x) => x.as_ptr(),
+        None => Ok(core::ptr::null()),
+        Some(x) if x.len() == template_length() => Ok(x.as_ptr()),
+        Some(_) => Err(Error::user(Code::InvalidLength)),
     }
 }
