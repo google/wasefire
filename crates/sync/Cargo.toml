@@ -23,7 +23,6 @@ features = ["lazy", "once", "portable_atomic", "spin_mutex"]
 unsafe-assume-single-core = ["portable-atomic/unsafe-assume-single-core"]
 
 [lints]
-clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"

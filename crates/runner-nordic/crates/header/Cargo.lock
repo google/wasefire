@@ -97,14 +97,14 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.3"
+version = "0.1.4-git"
 dependencies = [
  "num_enum",
 ]
 
 [[package]]
 name = "wasefire-one-of"
-version = "0.1.1"
+version = "0.1.2-git"
 
 [[package]]
 name = "wasefire-sync"

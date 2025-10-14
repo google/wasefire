@@ -17,7 +17,6 @@ wasefire-protocol-usb = { path = "../../../../crates/protocol-usb", features = [
 wasefire-wire = { path = "../../../../crates/wire" }
 
 [lints]
-clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"

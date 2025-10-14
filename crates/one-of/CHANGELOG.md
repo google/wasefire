@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2-git
+
+### Patch
+
+- No visible change
+
 ## 0.1.1
 
 ### Minor

@@ -47,7 +47,6 @@ api-usb-serial = ["wasefire-applet-api-desc/api-usb-serial"]
 api-vendor = ["wasefire-applet-api-desc/api-vendor"]
 
 [lints]
-clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"

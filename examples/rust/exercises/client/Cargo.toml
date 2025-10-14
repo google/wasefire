@@ -17,7 +17,6 @@ wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["actio
 usb = []
 
 [lints]
-clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"

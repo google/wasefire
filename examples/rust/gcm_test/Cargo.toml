@@ -13,7 +13,6 @@ wasefire = { path = "../../../crates/prelude" }
 rust-crypto = ["dep:aead", "wasefire/rust-crypto"]
 
 [lints]
-clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
