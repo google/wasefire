@@ -27,3 +27,11 @@ pub struct ExclusivePtr<T>(pub *mut T);
 
 unsafe impl<T: Send> Send for ExclusivePtr<T> {}
 unsafe impl<T: Sync> Sync for ExclusivePtr<T> {}
+
+/// Raw pointer for a box with dynamic lifetime.
+///
+/// This is appropriate for `Box<T>`.
+pub struct OwnedPtr<T>(pub *mut T);
+
+unsafe impl<T: Send> Send for OwnedPtr<T> {}
+unsafe impl<T: Sync> Sync for OwnedPtr<T> {}
