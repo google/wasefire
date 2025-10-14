@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3-git
+
+### Minor
+
+- Add `Mutex::into_inner()` to consume a mutex
+
 ## 0.1.2
 
 ### Minor

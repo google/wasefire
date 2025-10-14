@@ -28,7 +28,7 @@ wasefire-applet-api = { version = "0.8.1-git", path = "../api", features = ["was
 wasefire-common = { version = "0.1.1-git", path = "../common", optional = true }
 wasefire-error = { version = "0.1.3", path = "../error" }
 wasefire-one-of = { version = "0.1.1", path = "../one-of" }
-wasefire-sync = { version = "0.1.2", path = "../sync" }
+wasefire-sync = { version = "0.1.3-git", path = "../sync" }
 zeroize = { version = "1.8.2", default-features = false, features = ["derive"], optional = true }
 
 [features]

@@ -40,6 +40,11 @@ impl<T> Mutex<T> {
     pub fn lock(&self) -> MutexGuard<'_, T> {
         self.try_lock().unwrap()
     }
+
+    /// Consumes the mutex.
+    pub fn into_inner(self) -> T {
+        self.0.into_inner()
+    }
 }
 
 #[cfg(test)]
