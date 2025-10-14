@@ -196,5 +196,6 @@ async fn call_raw(
         if let Ok(response) = response.try_map(|x| x.ok_or(())) {
             break Ok(response);
         }
+        tokio::time::sleep(Duration::from_millis(300)).await;
     }
 }
