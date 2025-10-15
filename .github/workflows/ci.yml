@@ -46,6 +46,8 @@ jobs:
           x     tests-3  pull_request  push  schedule
           x     tests-4  pull_request  push  schedule
           x     tests-5  pull_request  push  schedule
+          x     tests-6  pull_request  push  schedule
+          x     tests-7  pull_request  push  schedule
           x     hw-host  pull_request  push  schedule
           x        book  pull_request  push  schedule
           x   footprint  pull_request  push

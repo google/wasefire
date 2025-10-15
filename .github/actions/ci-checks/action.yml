@@ -51,22 +51,28 @@ runs:
       run: ./scripts/ci-runners.sh
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-0') }}
-      run: ./scripts/ci-tests.sh 0 6
+      run: ./scripts/ci-tests.sh 0 8
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-1') }}
-      run: ./scripts/ci-tests.sh 1 6
+      run: ./scripts/ci-tests.sh 1 8
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-2') }}
-      run: ./scripts/ci-tests.sh 2 6
+      run: ./scripts/ci-tests.sh 2 8
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-3') }}
-      run: ./scripts/ci-tests.sh 3 6
+      run: ./scripts/ci-tests.sh 3 8
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-4') }}
-      run: ./scripts/ci-tests.sh 4 6
+      run: ./scripts/ci-tests.sh 4 8
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'tests-5') }}
-      run: ./scripts/ci-tests.sh 5 6
+      run: ./scripts/ci-tests.sh 5 8
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'tests-6') }}
+      run: ./scripts/ci-tests.sh 6 8
+      shell: bash
+    - if: ${{ contains(fromJSON(inputs.checks), 'tests-7') }}
+      run: ./scripts/ci-tests.sh 7 8
       shell: bash
     - if: ${{ contains(fromJSON(inputs.checks), 'hw-host') }}
       run: ./scripts/hwci.sh host
