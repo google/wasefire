@@ -18,7 +18,6 @@ yew = { version = "0.21", features = ["csr"] }
 yew-hooks = "0.3.4"
 
 [lints]
-clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"

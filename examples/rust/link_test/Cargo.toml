@@ -13,7 +13,6 @@ wasefire-error = { path = "../../../crates/error" }
 native = ["wasefire/native"]
 
 [lints]
-clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"

@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-one-of"
-version = "0.1.1"
+version = "0.1.2-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -12,7 +12,6 @@ keywords = ["macro", "no-std"]
 categories = ["no-std"]
 
 [lints]
-clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"

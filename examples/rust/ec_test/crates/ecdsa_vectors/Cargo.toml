@@ -6,7 +6,6 @@ license = "Apache-2.0"
 edition = "2024"
 
 [lints]
-clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"

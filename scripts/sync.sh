@@ -33,8 +33,6 @@ for dir in $(find crates examples/rust -name Cargo.toml -printf '%h\n' | sort); 
   grep -q '^\[lints\.' $file && e "unexpected [lints.*] section in $file"
   sed -i '/^\[lints\]$/q' $file
   [ "$(tail -n1 $file)" = '[lints]' ] || printf '\n[lints]\n' >> $file
-  # TODO(https://github.com/rust-lang/rust-clippy/issues/13994): Remove when fixed.
-  add_lint $file allow clippy.literal-string-with-formatting-args
   add_lint $file warn clippy.mod-module-files
   [ $crate = $dir ] || add_lint $file allow clippy.uninlined_format_args
   add_lint $file allow clippy.unit-arg

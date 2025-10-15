@@ -23,7 +23,6 @@ wasefire-cli-tools = { path = "../cli-tools", features = ["action", "changelog"]
 wasefire-error = { path = "../error", features = ["std"] }
 
 [lints]
-clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"

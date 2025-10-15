@@ -13,7 +13,6 @@ wasefire-stub = { path = "../../../crates/stub", optional = true }
 test = ["dep:wasefire-stub", "wasefire/test"]
 
 [lints]
-clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"

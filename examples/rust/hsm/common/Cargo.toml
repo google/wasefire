@@ -12,7 +12,6 @@ thiserror = { version = "2.0.17", optional = true }
 std = ["dep:thiserror"]
 
 [lints]
-clippy.literal-string-with-formatting-args = "allow"
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
