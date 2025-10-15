@@ -71,12 +71,8 @@ features = [
 [features]
 aes128-ccm = ["_crypto", "dep:typenum", "wasefire-scheduler/board-api-crypto-aes128-ccm"]
 ble-adv = ["_vendor", "dep:ble-adv", "dep:rubble", "dep:rubble-nrf5x"]
-fpc2534 = [
-  "_gpio_port1",
-  "dep:bytemuck",
-  "wasefire-scheduler/board-api-fingerprint-matcher",
-  "wasefire-scheduler/board-api-fingerprint-sensor",
-]
+fpc2534 = ["fpc2534-sensor", "wasefire-scheduler/board-api-fingerprint-matcher"]
+fpc2534-sensor = ["_gpio_port1", "dep:bytemuck", "wasefire-scheduler/board-api-fingerprint-sensor"]
 gpio = ["_gpio_port1", "_vendor", "wasefire-scheduler/board-api-gpio"]
 test-vendor = ["_vendor", "dep:data-encoding", "dep:syscall-test"]
 uart = ["wasefire-scheduler/board-api-uart"]

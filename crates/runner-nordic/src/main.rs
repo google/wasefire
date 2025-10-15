@@ -85,7 +85,7 @@ use crate::storage::Storage;
 exactly_one_of!["debug", "release"];
 exactly_one_of!["native", "pulley", "wasm"];
 exactly_one_of!["board-devkit", "board-dongle", "board-makerdiary"];
-at_most_one_of!["fpc2534", "gpio"]; // they are incompatible
+at_most_one_of!["fpc2534-sensor", "gpio"]; // they are incompatible
 
 #[cfg(feature = "debug")]
 #[defmt::panic_handler]
@@ -111,7 +111,7 @@ struct State {
     ble: Ble,
     #[cfg(feature = "aes128-ccm")]
     ccm: Ccm,
-    #[cfg(feature = "fpc2534")]
+    #[cfg(feature = "fpc2534-sensor")]
     fpc2534: board::fpc2534::State,
     #[cfg(feature = "gpio")]
     gpios: [Gpio; <board::gpio::Impl as Support<usize>>::SUPPORT],
@@ -191,9 +191,9 @@ fn main() -> ! {
     let clock = Clock::new(p.TIMER1);
     let timers = Timers::new(p.TIMER2, p.TIMER3, p.TIMER4);
     let gpiote = Gpiote::new(p.GPIOTE);
-    #[cfg_attr(not(feature = "fpc2534"), allow(unused_mut))]
+    #[cfg_attr(not(feature = "fpc2534-sensor"), allow(unused_mut))]
     let mut channels = Channels::default();
-    #[cfg(feature = "fpc2534")]
+    #[cfg(feature = "fpc2534-sensor")]
     let fpc2534 = {
         use nrf52840_hal::spi;
         let pins = spi::Pins {
@@ -267,7 +267,7 @@ fn main() -> ! {
         ble,
         #[cfg(feature = "aes128-ccm")]
         ccm,
-        #[cfg(feature = "fpc2534")]
+        #[cfg(feature = "fpc2534-sensor")]
         fpc2534,
         #[cfg(feature = "gpio")]
         gpios,
@@ -331,7 +331,7 @@ fn gpiote() {
                     let pressed = state.buttons[*button].pin.is_low().unwrap();
                     state.events.push(wasefire_board_api::button::Event { button, pressed }.into());
                 }
-                #[cfg(feature = "fpc2534")]
+                #[cfg(feature = "fpc2534-sensor")]
                 button::Channel::Fpc2534 => board::fpc2534::interrupt(state),
                 #[cfg(feature = "gpio")]
                 button::Channel::Gpio(gpio) => {
