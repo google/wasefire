@@ -14,6 +14,8 @@
 
 //! Fingerprint interface.
 
+use crate::Error;
+
 #[cfg(feature = "api-fingerprint-matcher")]
 pub mod matcher;
 #[cfg(feature = "api-fingerprint-sensor")]
@@ -30,6 +32,9 @@ pub enum Event {
     /// Fingerprint sensor event.
     #[cfg(feature = "api-fingerprint-sensor")]
     Sensor(sensor::Event),
+
+    /// A finger was detected.
+    FingerDetected,
 }
 
 impl<B: crate::Api> From<Event> for crate::Event<B> {
@@ -47,6 +52,12 @@ pub trait Api: Send {
     /// Fingerprint sensor interface.
     #[cfg(feature = "api-fingerprint-sensor")]
     type Sensor: sensor::Api;
+
+    /// Enables finger detection.
+    fn enable() -> Result<(), Error>;
+
+    /// Disables finger detection.
+    fn disable() -> Result<(), Error>;
 }
 
 /// Fingerprint matcher interface.

@@ -36,7 +36,7 @@ features = ["getrandom"]
 
 [dependencies.wasefire-applet-api]
 features = ["full-api", "native", "wasm"]
-version = "0.8.1-git"
+version = "0.9.0-git"
 path = "../api"
 
 [lints]

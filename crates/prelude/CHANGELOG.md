@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `fingerprint::{Handler,Listener}` for finger detection
 - Implement `Sync` for `fingerprint::{matcher::{Enroll,Identify},sensor::Capture}`
 
 ### Patch

@@ -14,8 +14,8 @@
 
 use alloc::vec::Vec;
 
-use wasefire_board_api::Api as Board;
-use wasefire_board_api::fingerprint::Event;
+use wasefire_board_api::fingerprint::{Api as _, Event};
+use wasefire_board_api::{self as board, Api as Board};
 use wasefire_error::Error;
 
 use crate::applet::Applet;
@@ -33,6 +33,8 @@ pub enum Key {
 
     #[cfg(feature = "board-api-fingerprint-sensor")]
     Sensor(sensor::Key),
+
+    FingerDetected,
 }
 
 impl<B: Board> From<Key> for crate::event::Key<B> {
@@ -48,6 +50,7 @@ impl<'a> From<&'a Event> for Key {
             Event::Matcher(event) => Key::Matcher(event.into()),
             #[cfg(feature = "board-api-fingerprint-sensor")]
             Event::Sensor(event) => Key::Sensor(event.into()),
+            Event::FingerDetected => Key::FingerDetected,
         }
     }
 }
@@ -59,6 +62,7 @@ impl Key {
             Key::Matcher(x) => x.disable::<B>(),
             #[cfg(feature = "board-api-fingerprint-sensor")]
             Key::Sensor(x) => x.disable::<B>(),
+            Key::FingerDetected => board::Fingerprint::<B>::disable(),
         }
     }
 }
@@ -69,5 +73,6 @@ pub fn process<B: Board>(event: Event, params: &mut Vec<u32>, applet: &mut Apple
         Event::Matcher(event) => matcher::process(event, params, applet),
         #[cfg(feature = "board-api-fingerprint-sensor")]
         Event::Sensor(event) => sensor::process(event, params, applet),
+        Event::FingerDetected => (),
     }
 }

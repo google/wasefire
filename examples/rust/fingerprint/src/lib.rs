@@ -28,6 +28,7 @@ use wasefire::fingerprint::matcher::{
     self, Enroll, EnrollProgress, Identify, IdentifyResult, delete_template, list_templates,
 };
 use wasefire::fingerprint::sensor::{self, Capture, Image};
+use wasefire::fingerprint::{Handler, Listener};
 use wasefire::sync::Mutex;
 
 fn main() {
@@ -111,6 +112,24 @@ fn handler_(request: &[u8]) -> Result<Response, Error> {
             Ok(Response::List(list_templates()?.iter().map(|x| x.to_vec()).collect()))
         }
         Request::List => Err(Error::world(Code::NotImplemented)),
+        Request::DetectStart if sensor::is_supported() => {
+            *state = State::Detect(Listener::new(Touch)?, false);
+            Ok(Response::DetectStart)
+        }
+        Request::DetectStart => Err(Error::world(Code::NotImplemented)),
+        Request::DetectConsume => {
+            let State::Detect(_, touched) = &mut *state else {
+                return Err(Error::user(Code::InvalidState));
+            };
+            Ok(Response::DetectConsume(core::mem::take(touched)))
+        }
+        Request::DetectStop => {
+            let State::Detect(listener, _) = core::mem::take(&mut *state) else {
+                return Err(Error::user(Code::InvalidState));
+            };
+            listener.stop();
+            Ok(Response::DetectStop)
+        }
     }
 }
 
@@ -122,6 +141,17 @@ enum State {
     Image(Vec<u8>),
     Enroll(Enroll),
     Identify(Identify),
+    Detect(Listener<Touch>, bool),
 }
 
 static STATE: Mutex<State> = Mutex::new(State::Idle);
+
+struct Touch;
+
+impl Handler for Touch {
+    fn event(&self) {
+        if let State::Detect(_, touched) = &mut *STATE.lock() {
+            *touched = true;
+        }
+    }
+}

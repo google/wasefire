@@ -2,6 +2,10 @@
 
 ## 0.2.3-git
 
+### Minor
+
+- Add `fingerprint::{register,unregister}()` for finger detection
+
 ### Patch
 
 - Update dependencies

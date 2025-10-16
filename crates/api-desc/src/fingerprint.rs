@@ -29,6 +29,22 @@ pub(crate) fn new() -> Item {
         matcher::new(),
         #[cfg(feature = "api-fingerprint-sensor")]
         sensor::new(),
+        item! {
+            /// Register a handler for finger detection.
+            fn register "fr" {
+                /// Function called on finger detection.
+                ///
+                /// The function takes its opaque `data` as argument.
+                handler_func: fn { data: *const void },
+
+                /// The opaque data to use when calling the handler function.
+                handler_data: *const void,
+            } -> ()
+        },
+        item! {
+            /// Unregister handlers for finger detection.
+            fn unregister "fu" {} -> ()
+        },
     ];
     Item::Mod(Mod { docs, name, items })
 }

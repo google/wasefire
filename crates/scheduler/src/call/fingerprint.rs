@@ -12,10 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(feature = "internal-board-api-fingerprint")]
+use wasefire_applet_api::fingerprint as api;
 use wasefire_applet_api::fingerprint::Api;
 use wasefire_board_api::Api as Board;
+#[cfg(feature = "internal-board-api-fingerprint")]
+use wasefire_board_api::{self as board, fingerprint::Api as _};
+#[cfg(feature = "internal-board-api-fingerprint")]
+use wasefire_error::{Code, Error};
 
 use crate::DispatchSchedulerCall;
+#[cfg(feature = "internal-board-api-fingerprint")]
+use crate::SchedulerCall;
+#[cfg(feature = "internal-board-api-fingerprint")]
+use crate::event::{Handler, fingerprint::Key};
 
 #[cfg(feature = "applet-api-fingerprint-matcher")]
 mod matcher;
@@ -28,5 +38,37 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
         Api::Matcher(call) => matcher::process(call),
         #[cfg(feature = "applet-api-fingerprint-sensor")]
         Api::Sensor(call) => sensor::process(call),
+        Api::Register(call) => or_fail!("internal-board-api-fingerprint", register(call)),
+        Api::Unregister(call) => or_fail!("internal-board-api-fingerprint", unregister(call)),
     }
+}
+
+#[cfg(feature = "internal-board-api-fingerprint")]
+fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
+    let api::register::Params { handler_func, handler_data } = call.read();
+    let inst = call.inst();
+    let result = try {
+        call.applet()
+            .enable(Handler {
+                key: Key::FingerDetected.into(),
+                inst,
+                func: *handler_func,
+                data: *handler_data,
+            })
+            .map_err(|_| Error::user(Code::InvalidState))?;
+        board::Fingerprint::<B>::enable()?;
+    };
+    call.reply(result);
+}
+
+#[cfg(feature = "internal-board-api-fingerprint")]
+fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
+    let api::unregister::Params {} = call.read();
+    let result = try {
+        board::Fingerprint::<B>::disable()?;
+        call.scheduler()
+            .disable_event(Key::FingerDetected.into())
+            .map_err(|_| Error::user(Code::InvalidState))?;
+    };
+    call.reply(result);
 }

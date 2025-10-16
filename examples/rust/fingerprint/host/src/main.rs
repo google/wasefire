@@ -15,6 +15,8 @@
 #![feature(exit_status_error)]
 
 use std::io::Write;
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
 use anyhow::{Result, bail};
@@ -55,8 +57,11 @@ enum Command {
         id: Option<String>,
     },
 
-    /// List all templates.
+    /// Lists all templates.
     List,
+
+    /// Prints each time a finger is detected.
+    Detect,
 }
 
 macro_rules! call {
@@ -169,6 +174,23 @@ async fn main() -> Result<()> {
                 println!("- {}", HEX.encode_display(id));
             }
         }
+        Command::Detect => {
+            call!(DetectStart(&mut connection): () -> ()).get();
+            let stop = Arc::new(AtomicBool::new(false));
+            signal_hook::flag::register(signal_hook::consts::SIGINT, stop.clone())?;
+            let mut stdout = std::io::stdout().lock();
+            write!(stdout, "Waiting for touch").unwrap();
+            while !stop.load(std::sync::atomic::Ordering::Relaxed) {
+                if *call!(DetectConsume(&mut connection): () -> (_)).get() {
+                    writeln!(stdout, "touched").unwrap();
+                    continue;
+                }
+                write!(stdout, ".").unwrap();
+                stdout.flush().unwrap();
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+            call!(DetectStop(&mut connection): () -> ()).get();
+        }
     }
     Ok(())
 }
@@ -196,6 +218,6 @@ async fn call_raw(
         if let Ok(response) = response.try_map(|x| x.ok_or(())) {
             break Ok(response);
         }
-        tokio::time::sleep(Duration::from_millis(300)).await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
     }
 }

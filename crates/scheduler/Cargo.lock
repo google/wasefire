@@ -1213,7 +1213,7 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "wasefire-applet-api"
-version = "0.8.1-git"
+version = "0.9.0-git"
 dependencies = [
  "bytemuck",
  "derive-where",
@@ -1236,14 +1236,14 @@ dependencies = [
 
 [[package]]
 name = "wasefire-applet-api-macro"
-version = "0.8.1-git"
+version = "0.9.0-git"
 dependencies = [
  "wasefire-applet-api-desc",
 ]
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.9.1-git"
+version = "0.10.0-git"
 dependencies = [
  "aead",
  "aes",
