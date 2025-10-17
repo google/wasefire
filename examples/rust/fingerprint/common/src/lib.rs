@@ -31,6 +31,9 @@ pub enum Request {
     IdentifyDone,
     Delete(Option<Vec<u8>>), // id
     List,
+    DetectStart,
+    DetectConsume,
+    DetectStop,
 }
 
 #[derive(Debug, Clone, Wire)]
@@ -44,4 +47,7 @@ pub enum Response {
     IdentifyDone(Option<Option<Vec<u8>>>), // done, match/no-match
     Delete,
     List(Vec<Vec<u8>>),
+    DetectStart,
+    DetectConsume(bool), // was touched since last consume
+    DetectStop,
 }

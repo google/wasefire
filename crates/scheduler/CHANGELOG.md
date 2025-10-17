@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support `fingerprint::{register,unregister}()` functions
 - Fix panic when the applet crashes during init
 - Fix callbacks accessing memory when no threads are running
 

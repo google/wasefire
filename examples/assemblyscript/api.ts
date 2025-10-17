@@ -1261,6 +1261,23 @@
     export declare function fingerprint_sensor_abort_capture(
     ): i32
   // END OF MODULE fingerprint_sensor
+
+  // Register a handler for finger detection.
+  @external("env", "fr")
+  export declare function fingerprint_register(
+    // Function called on finger detection.
+    //
+    // The function takes its opaque `data` as argument.
+    handler_func: usize,
+
+    // The opaque data to use when calling the handler function.
+    handler_data: usize,
+  ): i32
+
+  // Unregister handlers for finger detection.
+  @external("env", "fu")
+  export declare function fingerprint_unregister(
+  ): i32
 // END OF MODULE fingerprint
 
 // START OF MODULE gpio

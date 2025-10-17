@@ -25,7 +25,7 @@ use nrf52840_hal::spi::Spi;
 use wasefire_board_api::Supported;
 #[cfg(feature = "fpc2534")]
 use wasefire_board_api::fingerprint::matcher;
-use wasefire_board_api::fingerprint::{Api, sensor};
+use wasefire_board_api::fingerprint::{Api, Event, sensor};
 use wasefire_error::{Code, Error};
 use wasefire_logger as log;
 use wasefire_sync::AtomicBool;
@@ -76,6 +76,34 @@ impl Api for Impl {
     #[cfg(feature = "fpc2534")]
     type Matcher = Self;
     type Sensor = Self;
+
+    fn enable() -> Result<(), Error> {
+        OpResult::set_state(OpResult::Navigation)?;
+        WAIT.store(true, Ordering::Relaxed);
+        let mut frame = FrameBuilder::new(Cmd::Navigation, 4);
+        frame.push(&0u32);
+        frame.send();
+        while WAIT.load(Ordering::Acquire) {}
+        with_state(|state| match core::mem::take(&mut state.fpc2534.result) {
+            OpResult::Navigation => {
+                state.fpc2534.result = OpResult::Navigation;
+                Ok(())
+            }
+            OpResult::NavigationError(error) => Err(error),
+            _ => {
+                log::warn!("Invalid state in enable()");
+                Err(Error::internal(Code::InvalidState))
+            }
+        })
+    }
+
+    fn disable() -> Result<(), Error> {
+        OpResult::take_state(|x| match x {
+            OpResult::Navigation => Ok(()),
+            x => Err(x),
+        })?;
+        abort_common(true)
+    }
 }
 
 #[cfg(feature = "fpc2534")]
@@ -245,6 +273,7 @@ enum Cmd {
     #[cfg(feature = "fpc2534")]
     DeleteTemplate = 0x0061,
     DataGet = 0x0101,
+    Navigation = 0x0200,
 }
 
 #[derive(Clone, Copy)]
@@ -257,6 +286,7 @@ enum IdType {
 
 #[derive(Clone, Copy)]
 enum StatusEvent {
+    FingerDetect = 3,
     CmdFailed = 6,
 }
 
@@ -281,6 +311,8 @@ enum OpResult {
     Delete(Option<Option<Error>>),
     #[cfg(feature = "fpc2534")]
     List(Option<Result<Vec<u8>, Error>>),
+    Navigation,
+    NavigationError(Error),
 }
 
 impl OpResult {
@@ -445,6 +477,7 @@ fn handle_frame(state: &mut crate::State) -> Result<(), Error> {
         #[cfg(feature = "fpc2534")]
         x if x == Cmd::ListTemplates as u16 => handle_list_templates(state, &mut frame)?,
         x if x == Cmd::DataGet as u16 => handle_data_get(state, &mut frame)?,
+        x if x == Cmd::Navigation as u16 => handle_navigation(state, &mut frame)?,
         x => {
             log::warn!("Unknown command {:04x}", x);
             return Err(Error::internal(Code::NotImplemented));
@@ -508,6 +541,13 @@ fn handle_status(state: &mut crate::State, frame: &mut FrameParser) -> Result<()
                 WAIT.store(false, Ordering::Release);
                 None
             }
+            OpResult::Navigation => {
+                if let Some(error) = error {
+                    state.fpc2534.result = OpResult::NavigationError(error);
+                }
+                WAIT.store(false, Ordering::Release);
+                None
+            }
             _ => {
                 log::warn!("Unexpected status response");
                 return Err(Error::world(Code::InvalidState));
@@ -538,6 +578,11 @@ fn handle_status(state: &mut crate::State, frame: &mut FrameParser) -> Result<()
         state.fpc2534.result = OpResult::Empty;
         state.events.push(event.into());
         return Ok(());
+    }
+    if matches!(state.fpc2534.result, OpResult::Navigation)
+        && status_event == StatusEvent::FingerDetect as u16
+    {
+        state.events.push(Event::FingerDetected.into());
     }
     if system_state & SystemState::ImageAvailable as u16 != 0
         && matches!(state.fpc2534.result, OpResult::Capture)
@@ -655,5 +700,15 @@ fn handle_data_get(state: &mut crate::State, frame: &mut FrameParser) -> Result<
     state.fpc2534.result = OpResult::CaptureDataGet(Some(data));
     state.events.push(sensor::Event::CaptureDone.into());
     WAIT.store(false, Ordering::Release);
+    Ok(())
+}
+
+fn handle_navigation(_state: &mut crate::State, frame: &mut FrameParser) -> Result<(), Error> {
+    Error::world(Code::InvalidArgument).check(is_event(frame)?)?;
+    let _gesture = frame.pop::<u16>()?;
+    let n_samples = frame.pop::<u16>()?;
+    for _ in 0 .. n_samples {
+        frame.pop::<u16>()?;
+    }
     Ok(())
 }

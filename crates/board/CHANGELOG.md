@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.9.1-git
+## 0.10.0-git
+
+### Major
+
+- Add `fingerprint::Api::{enable,disable}()` for finger detection
 
 ### Patch
 

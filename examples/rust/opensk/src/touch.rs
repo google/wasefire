@@ -15,7 +15,10 @@
 use core::sync::atomic::Ordering::Relaxed;
 
 use portable_atomic_util::Arc;
+#[cfg(not(feature = "fingerprint"))]
 use wasefire::button;
+#[cfg(feature = "fingerprint")]
+use wasefire::fingerprint as button;
 use wasefire::sync::{AtomicBool, Mutex};
 
 pub(crate) struct Touch {
@@ -44,7 +47,10 @@ impl State {
     fn start(this: &mut Option<State>) -> Arc<AtomicBool> {
         match this {
             None => {
+                #[cfg(not(feature = "fingerprint"))]
                 let button = button::Listener::new(0, Handler).unwrap();
+                #[cfg(feature = "fingerprint")]
+                let button = button::Listener::new(Handler).unwrap();
                 let blink = crate::blink::Blink::new_ms(500);
                 let touched = Arc::new(AtomicBool::new(false));
                 *this = Some(State { button, _blink: blink, touched: touched.clone() });
@@ -64,9 +70,14 @@ impl State {
 struct Handler;
 
 impl button::Handler for Handler {
+    #[cfg(not(feature = "fingerprint"))]
     fn event(&self, state: button::State) {
         if matches!(state, button::State::Pressed) {
             State::touch(&mut STATE.lock());
         }
+    }
+    #[cfg(feature = "fingerprint")]
+    fn event(&self) {
+        State::touch(&mut STATE.lock());
     }
 }

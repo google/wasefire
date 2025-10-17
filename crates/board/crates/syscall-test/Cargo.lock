@@ -233,7 +233,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.9.1-git"
+version = "0.10.0-git"
 dependencies = [
  "bytemuck",
  "data-encoding",
