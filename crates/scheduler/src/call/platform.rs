@@ -81,5 +81,5 @@ fn version<B: Board>(mut call: SchedulerCall<B, api::version::Sig>) {
 #[cfg(feature = "applet-api-platform")]
 fn reboot<B: Board>(call: SchedulerCall<B, api::reboot::Sig>) {
     let api::reboot::Params {} = call.read();
-    call.reply(board::Platform::<B>::reboot().map_err(|x| x.into()));
+    call.reply(try { board::Platform::<B>::reboot()? });
 }
