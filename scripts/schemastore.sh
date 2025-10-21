@@ -27,7 +27,7 @@ TARGET=target/schemastore
 convert() {
   PATTERN='\(Cargo\|rustfmt\|rust-toolchain\).toml'
   sed -n '/^    /!p;/^    {/{:a;N;/\n    },\?$/!ba;/'"$PATTERN"'/p}' \
-    | sed '/"url"/s#https://json.schemastore.org#file://'"$PWD/$TARGET"'#' \
+    | sed '/"url"/s#https://[^/]*schemastore\.org#file://'"$PWD/$TARGET"'#' \
     | sed '/^    },$/{N;s/},\n  ]/}\n  ]/}'
 }
 
