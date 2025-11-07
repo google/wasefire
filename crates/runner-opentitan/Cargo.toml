@@ -7,7 +7,7 @@ publish = false
 edition = "2024"
 
 [dependencies]
-bytemuck = { version = "1.23.2", default-features = false }
+bytemuck = { version = "1.24.0", default-features = false }
 critical-section = "1.2.0"
 crypto-common = { version = "0.1.6", default-features = false }
 defmt = { version = "1.0.1", optional = true }
@@ -17,7 +17,7 @@ embedded-alloc = "0.6.0"
 syscall-test = { path = "../board/crates/syscall-test", optional = true }
 typenum = { version = "1.19.0", default-features = false }
 usb-device = { version = "0.3.2", default-features = false }
-usbd-hid = { version = "0.8.2", optional = true }
+usbd-hid = { version = "0.9.0", optional = true }
 wasefire-board-api = { path = "../board" }
 wasefire-common = { path = "../common" }
 wasefire-error = { path = "../error" }

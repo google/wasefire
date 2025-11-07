@@ -33,3 +33,7 @@ pub fn init() {
 unsafe extern "C" {
     fn entropy_complex_init() -> i32;
 }
+
+// This constant is used by cryptolib through security_config_check().
+#[unsafe(no_mangle)]
+static kDeviceType: i32 = 5; // kDeviceSilicon

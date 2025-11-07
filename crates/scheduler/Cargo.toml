@@ -16,7 +16,7 @@ categories = ["embedded", "no-std", "wasm"]
 features = ["std", "wasm"]
 
 [dependencies]
-bytemuck = { version = "1.23.2", default-features = false, optional = true }
+bytemuck = { version = "1.24.0", default-features = false, optional = true }
 defmt = { version = "1.0.1", default-features = false, optional = true }
 derive-where = { version = "1.6.0", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
@@ -40,7 +40,7 @@ features = ["toctou"]
 optional = true
 
 [dependencies.wasmtime]
-version = "37.0.1"
+version = "38.0.3"
 default-features = false
 features = ["async", "runtime"]
 optional = true
