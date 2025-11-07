@@ -34,8 +34,8 @@ done
 x sed -i 's/^\(channel = "nightly-\)[^"]*"$/\1'$(date +%F)'"/' \
   rust-toolchain.toml
 
-get_crates() { sed -n 's/^.*ensure_cargo \([^ ]\+\) .*$/\1/p' scripts/wrapper.sh; }
-update_crate() { x sed -i 's/\(ensure_cargo '"$1"'\) [0-9.]*/\1 '"$2"'/' scripts/wrapper.sh; }
+get_crates() { sed -En 's/^.*ensure_cargo ([^ ]+) .*$/\1/p' scripts/wrapper.sh; }
+update_crate() { x sed -Ei 's/(ensure_cargo '"$1"') [^ ]+ /\1 '"$2"' /' scripts/wrapper.sh; }
 for crate in $(get_crates); do
   update_crate "$crate" "$(cargo_info_version "$crate")"
 done

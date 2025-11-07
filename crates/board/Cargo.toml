@@ -18,7 +18,7 @@ features = ["full-api", "std"]
 aead = { version = "0.5.2", default-features = false, optional = true }
 aes = { version = "0.8.4", default-features = false, optional = true }
 aes-gcm = { version = "0.10.3", default-features = false, optional = true }
-bytemuck = { version = "1.23.2", default-features = false }
+bytemuck = { version = "1.24.0", default-features = false }
 cbc = { version = "0.1.2", default-features = false, optional = true }
 ccm = { version = "0.5.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.6", default-features = false, optional = true }
@@ -36,7 +36,7 @@ sha2 = { version = "0.10.9", default-features = false, optional = true }
 signature = { version = "2.2.0", default-features = false, optional = true }
 typenum = { version = "1.19.0", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false }
-usbd-hid = { version = "0.8.2", default-features = false, optional = true }
+usbd-hid = { version = "0.9.0", default-features = false, optional = true }
 usbd-serial = { version = "0.2.2", default-features = false, optional = true }
 wasefire-common = { version = "0.1.1-git", path = "../common" }
 wasefire-error = { version = "0.1.4-git", path = "../error" }

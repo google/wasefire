@@ -21,7 +21,7 @@ use crate::error::unwrap_status;
 
 // otcrypto_sha2_context_t
 pub struct Context {
-    data: [u32; 87],
+    data: [u32; 88],
 }
 
 impl Context {
