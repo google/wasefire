@@ -114,7 +114,8 @@ pub async fn execute(main: &MainOptions, attach_options: &AttachOptions, elf: &s
 
     // Bootstrap the image.
     let mut opentitan = Command::new("opentitantool");
-    opentitan.args(["--interface=teacup-bga69", "--exec=transport init", "bootstrap", &img]);
+    opentitan.args(["--interface=teacup-bga69", "--exec=transport init"]);
+    opentitan.args(["bootstrap", "--speed=8000000", &img]);
     cmd::execute(&mut opentitan).await?;
 
     // Read the serial.
