@@ -430,8 +430,9 @@ dependencies = [
 
 [[package]]
 name = "riscv"
-version = "0.13.0"
-source = "git+https://github.com/rust-embedded/riscv.git?rev=23be2d1dd22773906c57584830bdd0afbf83f0e3#23be2d1dd22773906c57584830bdd0afbf83f0e3"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b05cfa3f7b30c84536a9025150d44d26b8e1cc20ddf436448d74cd9591eefb25"
 dependencies = [
  "critical-section",
  "embedded-hal",
@@ -442,8 +443,9 @@ dependencies = [
 
 [[package]]
 name = "riscv-macros"
-version = "0.2.0"
-source = "git+https://github.com/rust-embedded/riscv.git?rev=23be2d1dd22773906c57584830bdd0afbf83f0e3#23be2d1dd22773906c57584830bdd0afbf83f0e3"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d323d13972c1b104aa036bc692cd08b822c8bbf23d79a27c526095856499799"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -453,12 +455,14 @@ dependencies = [
 [[package]]
 name = "riscv-pac"
 version = "0.2.0"
-source = "git+https://github.com/rust-embedded/riscv.git?rev=23be2d1dd22773906c57584830bdd0afbf83f0e3#23be2d1dd22773906c57584830bdd0afbf83f0e3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8188909339ccc0c68cfb5a04648313f09621e8b87dc03095454f1a11f6c5d436"
 
 [[package]]
 name = "riscv-rt"
-version = "0.14.0"
-source = "git+https://github.com/rust-embedded/riscv.git?rev=23be2d1dd22773906c57584830bdd0afbf83f0e3#23be2d1dd22773906c57584830bdd0afbf83f0e3"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d07b9f3a0eff773fc4df11f44ada4fa302e529bff4b7fe7e6a4b98a65ce9174"
 dependencies = [
  "riscv",
  "riscv-pac",
@@ -468,8 +472,9 @@ dependencies = [
 
 [[package]]
 name = "riscv-rt-macros"
-version = "0.4.0"
-source = "git+https://github.com/rust-embedded/riscv.git?rev=23be2d1dd22773906c57584830bdd0afbf83f0e3#23be2d1dd22773906c57584830bdd0afbf83f0e3"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15c3138fdd8d128b2d81829842a3e0ce771b3712f7b6318ed1476b0695e7d330"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -478,8 +483,9 @@ dependencies = [
 
 [[package]]
 name = "riscv-target-parser"
-version = "0.1.1"
-source = "git+https://github.com/rust-embedded/riscv.git?rev=23be2d1dd22773906c57584830bdd0afbf83f0e3#23be2d1dd22773906c57584830bdd0afbf83f0e3"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1376b15f3ff160e9b1e8ea564ce427f2f6fcf77528cc0a8bf405cb476f9cea7"
 
 [[package]]
 name = "rlsf"
@@ -812,7 +818,6 @@ dependencies = [
  "digest",
  "ed25519-dalek",
  "signature",
- "ssmarshal",
  "typenum",
  "usb-device",
  "usbd-hid",

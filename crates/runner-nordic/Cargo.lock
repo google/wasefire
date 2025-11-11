@@ -540,6 +540,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 
 [[package]]
+name = "embedded-io"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9eb1aa714776b75c7e67e1da744b81a129b3ff919c8712b5e1b32252c1f07cc7"
+
+[[package]]
 name = "embedded-storage"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -860,8 +866,9 @@ checksum = "8d5439c4ad607c3c23abf66de8c8bf57ba8adcd1f129e699851a6e43935d339d"
 
 [[package]]
 name = "nrf-hal-common"
-version = "0.18.0"
-source = "git+https://github.com/nrf-rs/nrf-hal.git?rev=7e25fddfba533d81b28d551a485ea16c53285d5a#7e25fddfba533d81b28d551a485ea16c53285d5a"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d8100d0bf6d732ea9b0a294fa2d2dad9cba4fbc5bb655d0afaa984d03d528fe"
 dependencies = [
  "cast",
  "cfg-if",
@@ -869,7 +876,7 @@ dependencies = [
  "embedded-dma",
  "embedded-hal 0.2.7",
  "embedded-hal 1.0.0",
- "embedded-io 0.6.1",
+ "embedded-io 0.7.1",
  "embedded-storage",
  "fixed",
  "nb 1.1.0",
@@ -893,8 +900,9 @@ dependencies = [
 
 [[package]]
 name = "nrf52840-hal"
-version = "0.18.0"
-source = "git+https://github.com/nrf-rs/nrf-hal.git?rev=7e25fddfba533d81b28d551a485ea16c53285d5a#7e25fddfba533d81b28d551a485ea16c53285d5a"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2297dc31df743012c721033a962ae21813611ee6b8062577b36031baa641d331"
 dependencies = [
  "nrf-hal-common",
  "nrf52840-pac",
@@ -1638,7 +1646,6 @@ dependencies = [
  "p256",
  "sha2",
  "signature",
- "ssmarshal",
  "typenum",
  "usb-device",
  "usbd-hid",

@@ -20,6 +20,7 @@ embedded-hal = "1.0.0"
 embedded-hal-02 = { version = "0.2.7", package = "embedded-hal" }
 embedded-storage = "0.3.1"
 header = { path = "crates/header" }
+nrf52840-hal = { version = "0.19.0", features = ["embedded-hal-02"] }
 panic-abort = { version = "0.3.2", optional = true }
 panic-probe = { version = "1.0.0", features = ["print-defmt"], optional = true }
 syscall-test = { path = "../board/crates/syscall-test", optional = true }
@@ -36,12 +37,6 @@ wasefire-one-of = { path = "../one-of" }
 wasefire-protocol-usb = { path = "../protocol-usb", features = ["device"] }
 wasefire-store = { path = "../store" }
 wasefire-sync = { path = "../sync" }
-
-# TODO(nrf52840-hal > 0.18.0): Use crates.io
-[dependencies.nrf52840-hal]
-git = "https://github.com/nrf-rs/nrf-hal.git"
-rev = "7e25fddfba533d81b28d551a485ea16c53285d5a"
-features = ["embedded-hal-02"]
 
 [dependencies.rubble]
 git = "https://github.com/ia0/rubble.git"

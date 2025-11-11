@@ -14,6 +14,8 @@ defmt = { version = "1.0.1", optional = true }
 digest = { version = "0.10.7", default-features = false }
 earlgrey = { path = "crates/earlgrey" }
 embedded-alloc = "0.6.0"
+riscv = { version = "0.15.0", features = ["critical-section-single-hart"] }
+riscv-rt = { version = "0.16.0", features = ["single-hart", "v-trap"] }
 syscall-test = { path = "../board/crates/syscall-test", optional = true }
 typenum = { version = "1.19.0", default-features = false }
 usb-device = { version = "0.3.2", default-features = false }
@@ -27,18 +29,6 @@ wasefire-one-of = { path = "../one-of" }
 wasefire-protocol-usb = { path = "../protocol-usb", features = ["device"] }
 wasefire-store = { path = "../store" }
 wasefire-sync = { path = "../sync", features = ["unsafe-assume-single-core"] }
-
-# TODO(riscv > 0.13.0): Use crates.io
-[dependencies.riscv]
-git = "https://github.com/rust-embedded/riscv.git"
-rev = "23be2d1dd22773906c57584830bdd0afbf83f0e3"
-features = ["critical-section-single-hart"]
-
-# TODO(riscv-rt > 0.14.0): Use crates.io
-[dependencies.riscv-rt]
-git = "https://github.com/rust-embedded/riscv.git"
-rev = "23be2d1dd22773906c57584830bdd0afbf83f0e3"
-features = ["single-hart", "v-trap"]
 
 [dependencies.wasefire-scheduler]
 path = "../scheduler"

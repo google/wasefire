@@ -18,7 +18,7 @@ use usb_device::bus::UsbBus;
 use usbd_hid::UsbError;
 use usbd_hid::hid_class::HIDClass;
 use wasefire_error::Code;
-use {ssmarshal as _, wasefire_logger as log};
+use wasefire_logger as log;
 
 use crate::Error;
 

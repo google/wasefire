@@ -2806,7 +2806,6 @@ dependencies = [
  "p384",
  "sha2",
  "signature",
- "ssmarshal",
  "typenum",
  "usb-device",
  "usbd-hid",

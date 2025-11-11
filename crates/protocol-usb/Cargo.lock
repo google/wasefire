@@ -429,7 +429,6 @@ dependencies = [
  "data-encoding",
  "defmt 1.0.1",
  "derive-where",
- "ssmarshal",
  "usb-device",
  "usbd-hid",
  "wasefire-common",
