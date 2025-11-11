@@ -214,7 +214,6 @@ fn hkdf_expand<B: Board>(mut call: SchedulerCall<B, api::hkdf_expand::Sig>) {
     call.reply(result);
 }
 
-// TODO(https://github.com/RustCrypto/KDFs/issues/80): We should ideally use the hkdf crate.
 #[allow(dead_code)]
 #[cfg(feature = "applet-api-crypto-hkdf")]
 fn hkdf<H: KeyInit + Update + FixedOutput>(
