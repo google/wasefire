@@ -2,6 +2,12 @@
 
 ## 0.3.1-git
 
+### Minor
+
+- Expose fields of `common::Packet`
+- Only require at most one of the `device` or `host` feature
+- Support WebUSB with its URL defined by the `WASEFIRE_WEBUSB_URL` environment variable
+
 ### Patch
 
 - Update dependencies
