@@ -5,7 +5,10 @@ updates:
       - "/crates/**/*"
       - "/examples/rust/**/*"
     schedule: { interval: "monthly" }
-    groups: { all: { patterns: ["*"] } }
+    groups:
+      all:
+        applies-to: security-updates
+        patterns: ["*"]
     labels: []
     # Version updates are done with ./scripts/upgrade.sh.
     open-pull-requests-limit: 0
