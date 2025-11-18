@@ -3,6 +3,21 @@
 This applet is an example of how to implement a security key on Wasefire. It depends on the
 [OpenSK](https://github.com/google/OpenSK) library to implement the authenticator side of CTAP.
 
+## Setup
+
+To follow any of the instructions below, you need to clone the repository and execute the setup
+script (which assumes a Debian-like system like Ubuntu to install USB-, SSL-, and build-related
+packages):
+
+```shell
+git clone https://github.com/google/wasefire.git
+cd wasefire
+./scripts/setup.sh
+```
+
+The setup script is idempotent, so you can always rerun it, either because you don't remember you've
+run it or because you just pulled a newer version of the `main` branch with `git pull`.
+
 ## Features
 
 The applet provides a few customization features (all disabled by default):
