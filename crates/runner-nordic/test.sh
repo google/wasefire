@@ -22,7 +22,7 @@ ensure_applet
 for feature in $(package_features); do
   case $feature in _*|board-*|debug|release|native|pulley|wasm) continue ;; esac
   x cargo clippy --bin=runner-nordic --target=thumbv7em-none-eabi \
---features=wasm,debug,board-devkit,$feature
+--features=wasm,debug,board-devkit,$feature -- --deny=warnings
 done
 
 test_helper
