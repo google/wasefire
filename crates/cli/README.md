@@ -4,7 +4,7 @@
 
 You can install the CLI from crates.io with cargo:
 
-```shell
+```sh
 cargo install wasefire-cli
 ```
 
@@ -17,7 +17,7 @@ published and must be built separately.
 
 The CLI is self-descriptive:
 
-```shell
+```sh
 wasefire help
 ```
 
@@ -25,13 +25,13 @@ wasefire help
 
 You can generate a completion file for your shell:
 
-```shell
+```sh
 wasefire completion --output=path/to/completion/dir/wasefire
 ```
 
 If you don't know the completion directory for your shell, you may install it at the system level.
 For example, for bash:
 
-```shell
+```sh
 sudo wasefire completion bash --output=/etc/bash_completion.d/wasefire
 ```

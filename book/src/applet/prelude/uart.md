@@ -22,7 +22,7 @@ UART by connecting to the UNIX socket. In a terminal dedicated for the connectio
 close the terminal to close the connection) and from the directory where the host platform is
 running, you can run:
 
-```shell
+```sh
 socat -,cfmakeraw UNIX-CONNECT:wasefire/host/uart0
 ```
 

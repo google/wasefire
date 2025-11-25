@@ -146,13 +146,13 @@ The final code looks like this:
 
 The host platform doesn't enable USB serial by default. Pass `--usb-serial` to enable it:
 
-```shell
+```sh
 wasefire host --usb-serial
 ```
 
 Once the applet is running, you can connect to the USB serial with the following command:
 
-```shell
+```sh
 picocom -q /dev/ttyACM0
 ```
 

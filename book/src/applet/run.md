@@ -5,7 +5,7 @@ according to the [quick start](../quick/index.html) instructions.
 
 You can install a Rust applet with the following command:
 
-```shell
+```sh
 wasefire rust-applet-install
 ```
 

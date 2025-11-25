@@ -11,7 +11,7 @@ CLI for your platform. The code sample below assumes that your platform is
 `x86_64-unknown-linux-gnu` and that your `PATH` contains `~/.local/bin`. You may need to adapt the
 commands for a different platform or environment.
 
-```shell
+```sh
 tar xf wasefire-x86_64-unknown-linux-gnu.tar.gz
 rm wasefire-x86_64-unknown-linux-gnu.tar.gz
 mkdir -p ~/.local/bin
@@ -36,7 +36,7 @@ and have root access, you can copy it to `/etc/bash_completion.d/wasefire` or
 You can start a host platform for development with the following command (it will run until
 interrupted or killed, so you will need a dedicated terminal):
 
-```shell
+```sh
 wasefire host --interface=web
 ```
 
@@ -55,7 +55,7 @@ pass `--protocol=unix` or `--protocol=tcp` to most `wasefire` commands or set th
 
 You can create a new Rust applet with:
 
-```shell
+```sh
 wasefire rust-applet-new hello
 cd hello
 ```
@@ -64,33 +64,33 @@ This will create a directory called `hello` with an example "hello world" applet
 
 You can build this applet (from the `hello` directory) with:
 
-```shell
+```sh
 wasefire rust-applet-build
 ```
 
 You can also run the unit tests with:
 
-```shell
+```sh
 wasefire rust-applet-test
 ```
 
 And you can install it (building it if needed) on a connected platform (for example the host
 platform started earlier) with:
 
-```shell
+```sh
 wasefire rust-applet-install
 ```
 
 Regardless of the programming language, if you already built an applet (by default under
 `wasefire/applet.wasm`), you can install it with:
 
-```shell
+```sh
 wasefire applet-install wasefire/applet.wasm
 ```
 
 And you can uninstall an applet (regardless of programming language) with:
 
-```shell
+```sh
 wasefire applet-uninstall
 ```
 

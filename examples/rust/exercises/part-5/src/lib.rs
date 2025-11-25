@@ -16,7 +16,7 @@
 //!
 //! If you are using a host platform, it is recommended to use the web UI:
 //!
-//! ```shell
+//! ```sh
 //! wasefire host --interface=web
 //! ```
 

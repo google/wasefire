@@ -50,7 +50,7 @@ configurable.
 
 To build and install the applet on a connected platform:
 
-```shell
+```sh
 wasefire rust-applet-install
 ```
 

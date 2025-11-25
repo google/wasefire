@@ -5,7 +5,7 @@ advanced users for functionalities not yet available to normal users.
 
 After cloning the repository and for your convenience, you may run the setup script:
 
-```shell
+```sh
 ./scripts/setup.sh
 ```
 

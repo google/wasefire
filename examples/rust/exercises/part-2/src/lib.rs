@@ -18,7 +18,7 @@
 //! If you are running the applet on a host platform, you can test your applet with the client (you
 //! first need to build it and copy it to the host platform directory):
 //!
-//! ```shell
+//! ```sh
 //! cd $WASEFIRE_REPO/examples/rust/exercises/client
 //! cargo build --release
 //! cd $HOST_PLATFORM
