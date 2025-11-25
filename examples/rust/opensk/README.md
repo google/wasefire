@@ -9,7 +9,7 @@ To follow any of the instructions below, you need to clone the repository and ex
 script (which assumes a Debian-like system like Ubuntu to install USB-, SSL-, and build-related
 packages):
 
-```shell
+```sh
 git clone https://github.com/google/wasefire.git
 cd wasefire
 ./scripts/setup.sh
@@ -75,13 +75,13 @@ replacing `--native` with `--pulley` and:
 
 For example, if the native command is:
 
-```shell
+```sh
 cargo xtask --native applet rust opensk $APPLET_FEATURES runner foo $PLATFORM_FEATURES flash
 ```
 
 Then the 2 pulley commands (respectively for the platform and the applet) would be:
 
-```shell
+```sh
 cargo xtask --pulley runner foo $PLATFORM_FEATURES flash
 cargo xtask --pulley applet rust opensk $APPLET_FEATURES install
 ```
@@ -102,7 +102,7 @@ The applet feature `fingerprint` is not supported.
 
 #### Target: native
 
-```shell
+```sh
 cargo xtask --native applet rust opensk $APPLET_FEATURES \
   runner host flash --usb-ctap --interface=web
 ```
@@ -111,13 +111,13 @@ cargo xtask --native applet rust opensk $APPLET_FEATURES \
 
 Start the platform in its own terminal:
 
-```shell
+```sh
 cargo xtask --pulley runner host flash --usb-ctap --interface=web
 ```
 
 Install the applet from another terminal:
 
-```shell
+```sh
 cargo xtask --pulley applet rust opensk $APPLET_FEATURES install
 ```
 
@@ -142,7 +142,7 @@ feature.
 
 #### Board: Development kit
 
-```shell
+```sh
 cargo xtask --release --native \
   applet rust opensk --opt-level=z $APPLET_FEATURES \
   runner nordic --opt-level=z --features=usb-ctap $PLATFORM_FEATURES \
@@ -155,7 +155,7 @@ cargo xtask --release --native \
 
 Make sure the dongle is in DFU mode by plugging it while holding the reset button.
 
-```shell
+```sh
 cargo xtask --release --native \
   applet rust opensk --opt-level=z $APPLET_FEATURES \
   runner nordic --board=dongle --opt-level=z --features=usb-ctap $PLATFORM_FEATURES \
@@ -166,7 +166,7 @@ cargo xtask --release --native \
 
 If the board was used before, it may be necessary to clear the storage and reboot:
 
-```shell
+```sh
 cargo wasefire platform-clear-store
 cargo wasefire platform-reboot
 ```
@@ -174,7 +174,7 @@ cargo wasefire platform-reboot
 If you want a Wasefire platform that supports platform update, you'll need to pass the
 `--dongle-update-support` flag:
 
-```shell
+```sh
 cargo xtask --release --native \
   applet rust opensk --opt-level=z $APPLET_FEATURES \
   runner nordic --board=dongle --opt-level=z --features=usb-ctap $PLATFORM_FEATURES \
@@ -192,7 +192,7 @@ Make sure the [makerdiary](https://makerdiary.com/products/nrf52840-mdk-usb-dong
 mode by plugging it while holding the button. The LED should be green. Also make sure the USB mass
 storage device class is mounted. It should appear as UF2BOOT.
 
-```shell
+```sh
 cargo xtask --release --native \
   applet rust opensk --opt-level=z --features=led-1 $APPLET_FEATURES \
   runner nordic --board=makerdiary --opt-level=z --features=usb-ctap $PLATFORM_FEATURES \
@@ -203,7 +203,7 @@ cargo xtask --release --native \
 
 If the board was used before, it may be necessary to clear the storage and reboot:
 
-```shell
+```sh
 cargo wasefire platform-clear-store
 cargo wasefire platform-reboot
 ```
@@ -228,7 +228,7 @@ The applet feature `fingerprint` is not supported.
 
 A LED (active high) needs to be connected to R10. A capacitive touch needs to be connected to R13.
 
-```shell
+```sh
 cargo xtask --release --native \
   applet rust opensk --opt-level=z $APPLET_FEATURES \
   runner opentitan --opt-level=z --features=usb-ctap $PLATFORM_FEATURES \
@@ -237,7 +237,7 @@ cargo xtask --release --native \
 
 If the board was used before, it may be necessary to clear the storage and reboot:
 
-```shell
+```sh
 cargo wasefire platform-clear-store
 cargo wasefire platform-reboot
 ```

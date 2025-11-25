@@ -5,7 +5,7 @@ This is a fairly minimal web app for interacting with the host runner. It is bui
 
 ## Running
 
-```bash
+```sh
 trunk serve
 ```
 
@@ -15,7 +15,7 @@ There's also the `trunk watch` command which does the same thing but without hos
 
 ## Release
 
-```bash
+```sh
 trunk build --release
 ```
 

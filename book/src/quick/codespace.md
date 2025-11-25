@@ -4,7 +4,7 @@
 
 For rust-analyzer to work properly, you need to open the applet in its own workspace, for example:
 
-```shell
+```sh
 code examples/rust/exercises/part-1
 ```
 

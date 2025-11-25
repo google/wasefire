@@ -101,7 +101,7 @@ The final code looks like this:
 
 We can use the following command to interact with the applet:
 
-```shell
+```sh
 ( echo help; cat ) | wasefire applet-rpc --repl
 ```
 

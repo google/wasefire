@@ -2,7 +2,7 @@
 
 You can create a Rust applet called `tutorial` with the following command:
 
-```shell
+```sh
 wasefire rust-applet-new tutorial
 ```
 
@@ -26,6 +26,6 @@ And now let's look at `src/lib.rs`:
 Since most commands assume they are running from the root directory of the Rust applet (unless
 `--crate-dir` is provided), you can change the working directory to the crate:
 
-```shell
+```sh
 cd tutorial
 ```

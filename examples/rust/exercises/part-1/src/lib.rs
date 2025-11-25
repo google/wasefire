@@ -18,7 +18,7 @@
 //! If you are running the applet on a host platform, you can connect to the UART (from the
 //! directory of the host platform) with:
 //!
-//! ```shell
+//! ```sh
 //! socat -,cfmakeraw UNIX-CONNECT:wasefire/host/uart0
 //! ```
 //!
