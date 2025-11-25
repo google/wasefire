@@ -1,10 +1,10 @@
-# How to test code?
+# Testing
 
 The goal of testing is to provide confidence that the code is correct, i.e. the code implements its
-specification as described in its [documentation]. However, there is a trade-off between testing
-benefits (confidence in code correctness) and testing costs (testing time). Note that maintainance
-and development velocity are impacted both positively and negatively by testing: good confidence
-permits developing faster, but too much testing time slows down development.
+specification as described in its [documentation](documentation.md). However, there is a trade-off
+between testing benefits (confidence in code correctness) and testing costs (testing time). Note
+that maintainance and development velocity are impacted both positively and negatively by testing:
+good confidence permits developing faster, but too much testing time slows down development.
 
 ## Guidelines
 
@@ -38,6 +38,5 @@ Fuzzing is not yet automated on GitHub (see the [tracking issue][#496] for conti
 is manually run using `cargo fuzz`. The fuzzing targets can be listed with `cargo fuzz list` and a
 specific target may be fuzzed with `cargo fuzz run TARGET`.
 
-[documentation]: ./documentation.md
 [#496]: https://github.com/google/wasefire/issues/496
 [#559]: https://github.com/google/wasefire/issues/559

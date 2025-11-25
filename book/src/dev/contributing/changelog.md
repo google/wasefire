@@ -1,4 +1,4 @@
-# How to log a change?
+# Changelog
 
 All changes in this repository should go through a pull request. If a pull request modifies a
 published crate, the change should be logged in the `CHANGELOG.md` file of that crate. Those files
@@ -9,8 +9,7 @@ integration and the release process.
 
 A changelog file is a Markdown file named `CHANGELOG.md` at the root of a publish crate, i.e. next
 to a `Cargo.toml` file with `package.publish = true` (which is the default but always explicit in
-this repository). Its content is formatted as follows (see the [prelude
-changelog](../../crates/prelude/CHANGELOG.md) for an example):
+this repository). Its content is formatted as follows (see the [prelude changelog] for an example):
 
 - It starts with a level-1 header titled `Changelog`.
 - It contains a sequence of versions ordered by [SemVer] precedence (highest first).
@@ -44,3 +43,4 @@ work. There should ultimately be a tool to update a changelog (and so recursivel
 [#448]: https://github.com/google/wasefire/issues/448
 [Cargo Book]: https://doc.rust-lang.org/cargo/reference/resolver.html#semver-compatibility
 [SemVer]: https://semver.org/
+[prelude changelog]: https://github.com/google/wasefire/blob/main/crates/prelude/CHANGELOG.md

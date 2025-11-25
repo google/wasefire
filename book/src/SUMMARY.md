@@ -27,7 +27,14 @@
 - [Runner user guide](runner/README.md)
    - [API](runner/api.md)
 
-- [Developer guide]()
+- [Developer guide](dev/README.md)
+   - [Tooling](dev/tooling/README.md)
+      - [Compile a platform](dev/tooling/runner.md)
+      - [Compile an applet](dev/tooling/applet.md)
+   - [Contributing](dev/contributing/README.md)
+      - [Documentation](dev/contributing/documentation.md)
+      - [Testing](dev/contributing/testing.md)
+      - [Changelog](dev/contributing/changelog.md)
    - [Design]()
 
 [FAQ](faq.md)
