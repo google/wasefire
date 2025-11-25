@@ -79,7 +79,7 @@ full() {
   trap "trap 'exit 1' TERM && kill -- -$$" EXIT
   cargo wasefire platform-lock --timeout=200ms $protocol 2>/dev/null || true
   for release in '' --release; do
-    y cargo xtask --setsid $release runner "$@" flash --reset-flash $FLASH_ARGS
+    y cargo xtask --setsid $release runner "$@" flash $FLASH_ARGS
     pid=$!
     x cargo xtask wait-platform $protocol
     run $protocol "$release"
