@@ -1,4 +1,4 @@
-# How to document code?
+# Documentation
 
 The goal of documentation is to specify what the code should do, for both those using and those
 implementing the API. However, there is a trade-off between documentation benefits (specification

@@ -28,8 +28,8 @@ issues](https://github.com/google/wasefire/contribute) to find something you lik
 on the issue mentioning your interest, or open a pull request directly.
 
 **If you have a specific change ready**, feel free to send the pull request for review. Make sure
-you follow the steps for [creating a pull request](docs/contributing/pull-request.md) in this
-repository.
+you follow the steps for
+[contributing](https://google.github.io/wasefire/dev/contributing/index.html) in this repository.
 
 **In all other cases**, feel free to open a new issue for discussion. Depending on the type of
 issue, the initial comment would describe a specific problem you encountered, the motivation for a
@@ -38,5 +38,4 @@ change or feature request you would like, possible design or implementation idea
 You can find more information on how to [open an
 issue](https://help.github.com/articles/about-issues) or [create a pull
 request](https://help.github.com/articles/about-pull-requests) in the [GitHub
-Help](https://help.github.com). You can also find information specific to this repository in [this
-folder](docs/contributing).
+Help](https://help.github.com).
