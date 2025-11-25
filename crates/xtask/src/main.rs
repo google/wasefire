@@ -336,7 +336,7 @@ enum RunnerCommand {
     /// Updates the runner.
     Update(Update),
 
-    /// Flashes the runner.
+    /// Flashes the runner (after erasing the device).
     Flash(Flash),
 
     /// Produces target/wasefire/platform{,_a,_b}.bin files instead of flashing.
@@ -372,14 +372,6 @@ enum UpdateCommand {
 
 #[derive(clap::Args)]
 struct Flash {
-    /// Resets the flash before running.
-    ///
-    /// This is not supported by the following boards:
-    /// - Nordic: dongle and makerdiary
-    /// - OpenTitan
-    #[clap(long, verbatim_doc_comment)]
-    reset_flash: bool,
-
     /// Make sure the Nordic dongle bootloader doesn't check the runner CRC.
     ///
     /// This is for the Nordic dongle only. This option will first flash the Wasefire bootloader
@@ -793,13 +785,8 @@ impl RunnerOptions {
         if flash.is_some() && self.name == RunnerName::Host {
             let Some(RunnerCommand::Flash(flash)) = cmd else { unreachable!() };
             const HOST: &str = "target/wasefire/host";
-            if flash.reset_flash {
-                for file in ["applet.bin", "storage.bin"] {
-                    let path = format!("{HOST}/{file}");
-                    if fs::exists(&path).await {
-                        fs::remove_file(&path).await?;
-                    }
-                }
+            if fs::exists(HOST).await {
+                fs::remove_dir_all(HOST).await?;
             }
             cargo.arg("--");
             cargo.arg(format!("../../{HOST}"));
@@ -971,9 +958,7 @@ impl RunnerOptions {
             opentitan::execute(main, &flash.attach, &elf).await?;
         }
         let attach = Attach { name: self.name, log: None, options: flash.attach };
-        if flash.reset_flash {
-            cmd::execute(&mut attach.probe_rs("erase").await?).await?;
-        }
+        cmd::execute(&mut attach.probe_rs("erase").await?).await?;
         if self.name == RunnerName::Nordic {
             let mut probe_rs = attach.probe_rs("download").await?;
             probe_rs.arg("target/thumbv7em-none-eabi/release/bootloader");

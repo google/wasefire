@@ -104,7 +104,7 @@ The applet feature `fingerprint` is not supported.
 
 ```shell
 cargo xtask --native applet rust opensk $APPLET_FEATURES \
-  runner host flash --reset-flash --usb-ctap --interface=web
+  runner host flash --usb-ctap --interface=web
 ```
 
 #### Target: pulley
@@ -112,7 +112,7 @@ cargo xtask --native applet rust opensk $APPLET_FEATURES \
 Start the platform in its own terminal:
 
 ```shell
-cargo xtask --pulley runner host flash --reset-flash --usb-ctap --interface=web
+cargo xtask --pulley runner host flash --usb-ctap --interface=web
 ```
 
 Install the applet from another terminal:
@@ -148,7 +148,7 @@ cargo xtask --release --native \
   runner nordic --opt-level=z --features=usb-ctap $PLATFORM_FEATURES \
     --features=software-crypto-aes256-cbc,software-crypto-hmac-sha256 \
     --features=software-crypto-p256-ecdh,software-crypto-p256-ecdsa \
-  flash --reset-flash
+  flash
 ```
 
 #### Board: Dongle
