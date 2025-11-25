@@ -50,7 +50,8 @@ for dir in $(find crates examples/rust -name Cargo.toml -printf '%h\n' | sort); 
     [ -n "$ref" ] || ref=origin/main
     lock=Cargo.lock
     [ -e src/main.rs ] || lock=
-    git diff --quiet $ref -- Cargo.toml $lock src || e "CHANGELOG.md for $dir is not up-to-date"
+    git diff --quiet $ref -- Cargo.toml $lock README.md src \
+      || e "CHANGELOG.md for $dir is not up-to-date"
     ver="$(sed -n '3s/^## //p' CHANGELOG.md)"
     [ -n "$ver" ] || e "CHANGELOG.md for $dir does not start with version"
     [ "$(package_version)" = "$ver" ] \
