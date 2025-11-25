@@ -51,7 +51,7 @@ provided by this repository. Those instructions assume that the environment vari
 enabled. If set, it should start with `--features=` and continue with a non-empty comma-separated
 list of the applet features to enable. For example:
 
-```rust
+```sh
 export APPLET_FEATURES=--features=ctap1,ed25519
 ```
 
