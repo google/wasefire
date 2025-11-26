@@ -18,7 +18,7 @@ use wasefire_common::addr_of_symbol;
 use wasefire_common::platform::Side;
 use wasefire_one_of::exactly_one_of;
 
-exactly_one_of!["board-devkit", "board-dongle", "board-makerdiary"];
+exactly_one_of!["board-devkit", "board-dongle"];
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Header(u32);
@@ -87,7 +87,6 @@ unsafe fn read(addr: u32) -> u32 {
     unsafe { (addr as *const u32).read_volatile() }
 }
 
-// Keep those values in sync with the memory-{devkit,dongle,makerdiary}.x linker scripts.
 const HEADER_LEN: u32 = 0x00000100;
 
 #[cfg(feature = "board-devkit")]
@@ -95,7 +94,10 @@ const FIRMWARE_A: u32 = 0x00010000;
 #[cfg(feature = "board-devkit")]
 const FIRMWARE_B: u32 = 0x00064000;
 
-#[cfg(any(feature = "board-dongle", feature = "board-makerdiary"))]
+#[cfg(feature = "board-dongle")]
 const FIRMWARE_A: u32 = 0x00008000;
-#[cfg(any(feature = "board-dongle", feature = "board-makerdiary"))]
+#[cfg(feature = "board-dongle")]
 const FIRMWARE_B: u32 = 0x00050000;
+
+#[cfg(feature = "board-dongle")]
+pub const STORE_RANGE: core::ops::Range<u32> = 0x000da000 .. 0x000e0000;

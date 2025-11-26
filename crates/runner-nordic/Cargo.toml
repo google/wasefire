@@ -90,7 +90,7 @@ software-crypto-sha256 = ["_crypto", "wasefire-scheduler/software-crypto-sha256"
 # Exactly one is enabled by xtask.
 board-devkit = ["header/board-devkit"]
 board-dongle = ["_gpio_port1", "header/board-dongle"]
-board-makerdiary = ["header/board-makerdiary"]
+board-makerdiary = ["header/board-dongle"]
 # Exactly one is enabled by xtask.
 debug = [
   "ble-adv?/defmt",

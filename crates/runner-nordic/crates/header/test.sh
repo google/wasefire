@@ -21,4 +21,3 @@ test_helper
 
 cargo check --lib --target=thumbv7em-none-eabi --features=board-devkit
 cargo check --lib --target=thumbv7em-none-eabi --features=board-dongle
-cargo check --lib --target=thumbv7em-none-eabi --features=board-makerdiary
