@@ -38,7 +38,7 @@ impl Header {
 
     pub fn attempt(self, index: u32) -> Attempt {
         assert!(index < 3);
-        Attempt(self.0 + 4 * index)
+        Attempt(self.0 + 4 + 4 * index)
     }
 
     pub fn has_firmware(self) -> bool {
