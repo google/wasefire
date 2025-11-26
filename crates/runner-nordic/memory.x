@@ -32,8 +32,7 @@ SECTIONS {
     LONG(0xffffffff);
     /* We fill the unused part of the header to keep it erased. */
     FILL(0xffffffff);
-    . = ORIGIN(FLASH) - 1;
-    BYTE(0xff);
+    . = ORIGIN(FLASH);
   } > HEADER
 }
 
