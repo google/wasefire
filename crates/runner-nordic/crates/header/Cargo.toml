@@ -14,7 +14,6 @@ wasefire-one-of = { path = "../../../one-of" }
 # Exactly one must be enabled.
 board-devkit = []
 board-dongle = []
-board-makerdiary = []
 
 [lints]
 clippy.mod-module-files = "warn"

@@ -25,7 +25,7 @@ use panic_abort as _;
 use wasefire_common::platform::Side;
 use wasefire_one_of::exactly_one_of;
 
-exactly_one_of!["board-devkit", "board-dongle", "board-makerdiary"];
+exactly_one_of!["board-devkit", "board-dongle"];
 
 #[entry]
 fn main() -> ! {
@@ -46,19 +46,37 @@ fn main() -> ! {
     unsafe { asm::bootload(cur.firmware() as *const u32) };
 }
 
+const PAGE_SIZE: usize = <Nvmc<NVMC> as NorFlash>::ERASE_SIZE;
+
 fn mark(header: Header) -> bool {
+    let nvmc = Peripherals::take().unwrap().NVMC;
     if !header.has_firmware() {
+        // We erase the storage on the very first run for the dongle, since we can't erase the
+        // device from DFU.
+        #[cfg(feature = "board-dongle")]
+        if header.attempt(0).free() {
+            let ptr = header::STORE_RANGE.start as *mut u8;
+            let len = header::STORE_RANGE.len();
+            let storage = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
+            let mut nvmc = Nvmc::new(nvmc, storage);
+            nvmc.erase(0, len as u32).unwrap();
+            let attempt = header.attempt(0).addr();
+            mark_word(header, nvmc.free().0, attempt);
+        }
         return false;
     }
     let attempt = match (0 .. 3).map(|i| header.attempt(i)).find(|x| x.free()) {
         Some(x) => x.addr(),
         None => return false,
     };
-    const PAGE_SIZE: usize = <Nvmc<NVMC> as NorFlash>::ERASE_SIZE;
+    mark_word(header, nvmc, attempt);
+    true
+}
+
+fn mark_word(header: Header, nvmc: NVMC, attempt: u32) {
     let header = header.addr();
     assert_eq!(header % PAGE_SIZE as u32, 0);
     let storage = unsafe { core::slice::from_raw_parts_mut(header as *mut u8, PAGE_SIZE) };
-    let mut nvmc = Nvmc::new(Peripherals::take().unwrap().NVMC, storage);
+    let mut nvmc = Nvmc::new(nvmc, storage);
     nvmc.write(attempt - header, &[0; 4]).unwrap();
-    true
 }

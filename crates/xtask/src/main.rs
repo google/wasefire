@@ -913,10 +913,14 @@ impl RunnerOptions {
         };
         if self.name == RunnerName::Nordic {
             let board = board.unwrap();
+            let board_feature = match board {
+                "makerdiary" => "dongle",
+                _ => board,
+            };
             let mut cargo = Command::new("cargo");
             cargo.current_dir("crates/runner-nordic/crates/bootloader");
             cargo.args(["build", "--release", "--target=thumbv7em-none-eabi"]);
-            cargo.arg(format!("--features=board-{board}"));
+            cargo.arg(format!("--features=board-{board_feature}"));
             if self.single_sided {
                 cargo.arg("--features=single-sided");
             }
