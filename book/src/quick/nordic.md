@@ -86,7 +86,7 @@ Make sure the device is in DFU mode by plugging it while holding the button. The
 green. Also make sure the USB mass storage device class is mounted. It should appear as `UF2BOOT`.
 Flash the device:
 
-```
+```sh
 python3 uf2conv.py --family=0xADA52840 platform-nordic-makerdiary.hex
 ```
 
