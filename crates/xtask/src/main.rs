@@ -339,7 +339,7 @@ enum RunnerCommand {
     /// Flashes the runner (after erasing the device).
     Flash(Flash),
 
-    /// Produces target/wasefire/platform{,_a,_b}.bin files instead of flashing.
+    /// Produces the target/wasefire/platform{,_a,_b}.bin files for platform update.
     Bundle {
         #[clap(skip)]
         step: usize,
@@ -372,15 +372,12 @@ enum UpdateCommand {
 
 #[derive(clap::Args)]
 struct Flash {
-    /// Make sure the Nordic dongle bootloader doesn't check the runner CRC.
+    /// Only produce artifacts and do not flash them.
     ///
-    /// This is for the Nordic dongle only. This option will first flash the Wasefire bootloader
-    /// and runner together, then flash the Wasefire bootloader alone, such that the Nordic
-    /// bootloader only checks the CRC of the Wasefire bootloader. This permits updating the
-    /// platform without invalidating the CRC. This requires a user interaction during the DFU
-    /// process.
+    /// This is different from the bundle command which produces artifacts for the purpose of
+    /// updating the platform. The artifacts here are meant for flashing the platform.
     #[clap(long)]
-    dongle_update_support: bool,
+    artifacts: bool,
 
     #[clap(flatten)]
     attach: AttachOptions,
@@ -631,6 +628,13 @@ impl RunnerOptions {
             Some(RunnerCommand::Flash(x)) => Some(x),
             _ => None,
         };
+        if flash.is_some_and(|x| x.artifacts) {
+            match self.name {
+                RunnerName::Host => bail!("--artifacts is not supported for host"),
+                RunnerName::Nordic => (),
+                x => bail!("--artifacts is not implemented for {x}"),
+            }
+        }
         let update = match &cmd {
             Some(RunnerCommand::Update(Update { options, both, step: next_step, .. })) => {
                 ensure!(
@@ -927,35 +931,77 @@ impl RunnerOptions {
                 objcopy.args(["rust-objcopy", bootloader]);
                 objcopy.arg(format!("--update-section=.runner={runner}"));
                 cmd::execute(&mut objcopy).await?;
-                if board == "dongle" && flash.dongle_update_support {
+                let artifact = "target/wasefire/platform.hex";
+                produce_hex(bootloader, artifact).await?;
+                if flash.artifacts {
+                    instruction(&format!("Flash {artifact}")).await?;
+                } else {
+                    let mut flash = wrap_command().await?;
+                    if board == "dongle" {
+                        flash.args(["nrfdfu", bootloader]);
+                    } else {
+                        flash.args(["uf2conv.py", "--family=0xADA52840", artifact]);
+                    }
+                    cmd::execute(&mut flash).await?;
+                }
+                if board != "dongle" {
+                    return Ok(());
+                }
+                // Because the Nordic dongle bootloader checks that the firmware did not change
+                // before booting it, we additionally flash the Wasefire bootloader alone so the
+                // Nordic bootloader will only check that the Wasefire bootloader did not change.
+                // This permits updating the platform.
+                instruction("Press the RESET button on the dongle to enter DFU mode").await?;
+                let mut objcopy = wrap_command().await?;
+                objcopy.args(["rust-objcopy", bootloader]);
+                objcopy.arg("--remove-section=.runner");
+                objcopy.arg("--remove-section=.header");
+                cmd::execute(&mut objcopy).await?;
+                if flash.artifacts {
+                    let artifact = "target/wasefire/bootloader.hex";
+                    produce_hex(bootloader, artifact).await?;
+                    instruction(&format!("Flash {artifact}")).await?;
+                } else {
                     let mut nrfdfu = wrap_command().await?;
                     nrfdfu.args(["nrfdfu", bootloader]);
                     cmd::execute(&mut nrfdfu).await?;
-                    println!(
-                        "Press the RESET button on the dongle to enter DFU mode, then hit ENTER."
-                    );
-                    std::io::stdin().read_line(&mut String::new())?;
-                    let mut objcopy = wrap_command().await?;
-                    objcopy.args(["rust-objcopy", bootloader]);
-                    objcopy.arg("--remove-section=.runner");
-                    cmd::execute(&mut objcopy).await?;
                 }
-                let mut flash = wrap_command().await?;
-                if board == "dongle" {
-                    flash.args(["nrfdfu", bootloader]);
-                } else {
-                    assert_eq!(board, "makerdiary");
-                    let hex = format!("{bootloader}.hex");
-                    let mut objcopy = wrap_command().await?;
-                    objcopy.args(["rust-objcopy", "--output-target=ihex", bootloader, &hex]);
-                    cmd::execute(&mut objcopy).await?;
-                    flash.args(["uf2conv.py", "--family=0xADA52840", &hex]);
-                }
-                cmd::replace(flash);
+                return Ok(());
             }
         }
         if self.name == RunnerName::OpenTitan {
             opentitan::execute(main, &flash.attach, &elf).await?;
+        }
+        if flash.artifacts {
+            let artifact = "target/wasefire/platform.hex";
+            produce_hex("target/thumbv7em-none-eabi/release/bootloader", artifact).await?;
+            let mut bootloader = tokio::fs::read(artifact).await?;
+            assert_eq!(bootloader.pop(), Some(b'\n'));
+            produce_hex(&elf, artifact).await?;
+            let mut platform = tokio::fs::read(artifact).await?;
+            assert_eq!(platform.pop(), Some(b'\n'));
+            let mut merged = Vec::with_capacity(bootloader.len() + platform.len());
+            let mut start: &[u8] = b"";
+            for line in bootloader.split(|&x| x == b'\n') {
+                match &line[7 .. 9] {
+                    b"01" => (),
+                    b"03" => start = line,
+                    _ => {
+                        merged.extend_from_slice(line);
+                        merged.push(b'\n');
+                    }
+                }
+            }
+            for line in platform.split(|&x| x == b'\n') {
+                match &line[7 .. 9] {
+                    b"03" => merged.extend_from_slice(start),
+                    _ => merged.extend_from_slice(line),
+                }
+                merged.push(b'\n');
+            }
+            tokio::fs::write(artifact, &merged).await?;
+            instruction(&format!("Erase the device, flash {artifact}")).await?;
+            return Ok(());
         }
         let attach = Attach { name: self.name, log: None, options: flash.attach };
         cmd::execute(&mut attach.probe_rs("erase").await?).await?;
@@ -1118,6 +1164,18 @@ fn section_offset(elf: &[u8], name: &str) -> Result<usize> {
         .section_by_name(file.endian(), name.as_bytes())
         .with_context(|| anyhow!("no {name} section"))?;
     Ok(header.sh_offset(file.endian()) as usize)
+}
+
+async fn produce_hex(elf: &str, hex: &str) -> Result<()> {
+    let mut objcopy = wrap_command().await?;
+    objcopy.args(["rust-objcopy", "--output-target=ihex", elf, hex]);
+    cmd::execute(&mut objcopy).await
+}
+
+async fn instruction(msg: &str) -> Result<()> {
+    println!("\x1b[1;33mTODO\x1b[m: {msg}, then hit ENTER.");
+    std::io::stdin().read_line(&mut String::new())?;
+    Ok(())
 }
 
 #[tokio::main]
