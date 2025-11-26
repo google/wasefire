@@ -39,6 +39,11 @@ EOF
 
 x mkdir artifacts
 
+cp_artifact() {
+  [ -z "$1" ] || x cp "$1" "artifacts/$2"
+  echo "artifacts/$2#$3" >> artifacts.txt
+}
+
 i "Build web-client once for all supported targets"
 ( cd crates/runner-host/crates/web-client && make )
 
@@ -63,5 +68,18 @@ for target in $TARGETS; do
     tar czf wasefire-$target.tar.gz wasefire-$target
     rm wasefire-$target
   )
-  echo "artifacts/wasefire-$target.tar.gz#Wasefire CLI ($target)" >> artifacts.txt
+  cp_artifact '' wasefire-$target.tar.gz "Wasefire CLI ($target)"
 done
+
+i "Build a simple Nordic platform for each supported board"
+yes | x cargo xtask --release runner nordic flash --artifacts
+cp_artifact target/wasefire/platform.hex platform-nordic-devkit.hex \
+  'Wasefire platform (nRF52840 DK)'
+yes | x cargo xtask --release runner nordic --board=dongle flash --artifacts
+cp_artifact target/wasefire/platform.hex platform-nordic-dongle-1.hex \
+  'Wasefire platform (nRF52840 Dongle) step 1'
+cp_artifact target/wasefire/bootloader.hex platform-nordic-dongle-2.hex \
+  'Wasefire platform (nRF52840 Dongle) step 2'
+yes | x cargo xtask --release runner nordic --board=makerdiary flash --artifacts
+cp_artifact target/wasefire/platform.hex platform-nordic-makerdiary.hex \
+  'Wasefire platform (nRF52840 MDK USB Dongle)'
