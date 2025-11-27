@@ -20,6 +20,7 @@ use tokio::process::{Child, Command};
 use usb_device::UsbError;
 use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
+use usb_device::device::UsbDeviceState;
 use usb_device::prelude::UsbDevice;
 use usbd_hid::hid_class::HIDClass;
 use usbd_serial::SerialPort;
@@ -72,6 +73,9 @@ pub async fn init() -> Result<()> {
             tokio::time::sleep(Duration::from_millis(1)).await;
             with_state(|state| {
                 let polled = state.usb.poll();
+                if state.usb.usb_dev.as_mut().unwrap().state() != UsbDeviceState::Configured {
+                    return;
+                }
                 let crate::board::State {
                     sender, usb: State { protocol, ctap, serial, .. }, ..
                 } = state;

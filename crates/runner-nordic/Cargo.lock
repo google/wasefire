@@ -889,8 +889,7 @@ dependencies = [
 [[package]]
 name = "nrf-usbd"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aedf862f941154442271ae9914777bd1c93f6d2e0dc9db4cafa160e55ffb9085"
+source = "git+https://github.com/ia0/nrf-usbd.git?rev=8ddc8d3e815157c639b979e3ae2fb74d167d7281#8ddc8d3e815157c639b979e3ae2fb74d167d7281"
 dependencies = [
  "cortex-m",
  "critical-section",
