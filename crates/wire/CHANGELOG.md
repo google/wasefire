@@ -2,6 +2,10 @@
 
 ## 0.1.3-git
 
+### Minor
+
+- Optimize memory usage when encoding slices in particular of small elements like `Vec<u8>`
+
 ### Patch
 
 - Update dependencies
@@ -32,4 +36,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 3 -->
+<!-- Increment to skip CHANGELOG.md test: 4 -->

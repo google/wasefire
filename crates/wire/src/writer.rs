@@ -30,10 +30,18 @@ impl<'a> Writer<'a> {
     }
 
     pub(crate) fn put_copy(&mut self, data: &[u8]) {
-        let offset = self.owned.len();
+        // We reuse the last owned chunk to avoid having too many chunks. This is particularly
+        // important when encoding slices of small objects like bytes, because we have an 8 bytes
+        // (the size of a chunk) overhead for each element otherwise.
+        if !matches!(self.chunks.last(), Some(Chunk::Owned { .. })) {
+            self.chunks.push(Chunk::Owned { offset: self.owned.len(), length: 0 });
+        }
+        let length = match self.chunks.last_mut() {
+            Some(Chunk::Owned { length, .. }) => length,
+            _ => unreachable!(),
+        };
         self.owned.extend_from_slice(data);
-        let length = data.len();
-        self.chunks.push(Chunk::Owned { offset, length });
+        *length += data.len();
     }
 
     pub(crate) fn finalize(self, data: &mut Vec<u8>) {
