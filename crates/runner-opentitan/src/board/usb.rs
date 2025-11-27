@@ -16,7 +16,7 @@ use alloc::boxed::Box;
 
 use usb_device::bus::UsbBusAllocator;
 use usb_device::class::UsbClass;
-use usb_device::device::UsbDevice;
+use usb_device::device::{UsbDevice, UsbDeviceState};
 #[cfg(feature = "usb-ctap")]
 use usbd_hid::hid_class::HIDClass;
 #[cfg(feature = "_usb")]
@@ -133,6 +133,9 @@ pub fn interrupt() {
         ];
         #[cfg_attr(not(feature = "usb-ctap"), allow(unused_variables))]
         let polled = state.usb.device.poll(&mut classes);
+        if state.usb.device.state() != UsbDeviceState::Configured {
+            return;
+        }
         state.usb.protocol.tick(|event| state.events.push(event.into()));
         #[cfg(feature = "usb-ctap")]
         state.usb.ctap.tick(polled, |event| state.events.push(event.into()));

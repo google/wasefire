@@ -53,7 +53,7 @@ use rubble::link::MIN_PDU_BUF;
 use rubble_nrf5x::radio::BleRadio;
 use usb_device::class::UsbClass;
 use usb_device::class_prelude::UsbBusAllocator;
-use usb_device::device::UsbDevice;
+use usb_device::device::{UsbDevice, UsbDeviceState};
 #[cfg(feature = "usb-ctap")]
 use usbd_hid::hid_class::HIDClass;
 #[cfg(feature = "usb-serial")]
@@ -383,6 +383,9 @@ fn usbd() {
         ];
         #[cfg_attr(not(feature = "usb-serial"), allow(unused_variables))]
         let polled = state.usb_dev.poll(&mut classes);
+        if state.usb_dev.state() != UsbDeviceState::Configured {
+            return;
+        }
         state.protocol.tick(|event| state.events.push(event.into()));
         #[cfg(feature = "usb-ctap")]
         state.ctap.tick(polled, |event| state.events.push(event.into()));

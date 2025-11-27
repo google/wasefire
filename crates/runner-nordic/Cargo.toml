@@ -63,6 +63,12 @@ features = [
   "board-api-timer",
 ]
 
+# TODO(https://github.com/nrf-rs/nrf-usbd/pull/29): Use official repo.
+# TODO(nrf-usbd > 0.3.0): Remove (it's an indirect dependency).
+[patch.crates-io.nrf-usbd]
+git = "https://github.com/ia0/nrf-usbd.git"
+rev = "8ddc8d3e815157c639b979e3ae2fb74d167d7281"
+
 [features]
 aes128-ccm = ["_crypto", "dep:typenum", "wasefire-scheduler/board-api-crypto-aes128-ccm"]
 ble-adv = ["_vendor", "dep:ble-adv", "dep:rubble", "dep:rubble-nrf5x"]
@@ -98,6 +104,7 @@ debug = [
   "dep:defmt-rtt",
   "dep:panic-probe",
   "syscall-test?/defmt",
+  "usb-device/defmt",
   "usbd-hid?/defmt",
   "wasefire-board-api/defmt",
   "wasefire-error/defmt",
