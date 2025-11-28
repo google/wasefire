@@ -63,11 +63,10 @@ features = [
   "board-api-timer",
 ]
 
-# TODO(https://github.com/nrf-rs/nrf-usbd/pull/29): Use official repo.
-# TODO(nrf-usbd > 0.3.0): Remove (it's an indirect dependency).
+# TODO(nrf-usbd > 0.3.0): Remove and update Cargo.lock to use the new version.
 [patch.crates-io.nrf-usbd]
-git = "https://github.com/ia0/nrf-usbd.git"
-rev = "8ddc8d3e815157c639b979e3ae2fb74d167d7281"
+git = "https://github.com/nrf-rs/nrf-usbd.git"
+rev = "c615907ae87252d95a6a6ac04fcfdc8366ac3fb1"
 
 [features]
 aes128-ccm = ["_crypto", "dep:typenum", "wasefire-scheduler/board-api-crypto-aes128-ccm"]
