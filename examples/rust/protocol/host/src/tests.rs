@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::hash::{DefaultHasher, Hash as _, Hasher as _};
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
 use anyhow::Result;
@@ -68,6 +70,12 @@ fn read_timeout(connection: &Connection<GlobalContext>) {
 }
 
 async fn ping_pong(connection: &mut Connection<GlobalContext>) {
-    connection.write(b"ping").await.unwrap();
-    assert_eq!(connection.read().await.unwrap()[..], *b"PONG");
+    static ID: AtomicU32 = AtomicU32::new(0);
+    let id = {
+        let mut hasher = DefaultHasher::new();
+        ID.fetch_add(1, Ordering::Relaxed).hash(&mut hasher);
+        hasher.finish()
+    };
+    connection.write(format!("ping {id}.").as_bytes()).await.unwrap();
+    assert_eq!(connection.read().await.unwrap()[..], *format!("PONG {id}.").as_bytes());
 }
