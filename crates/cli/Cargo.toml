@@ -17,8 +17,8 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = { version = "1.0.100", default-features = false }
-clap = { version = "4.5.51", default-features = false, features = ["default", "derive", "env"] }
-clap_complete = { version = "4.5.60", default-features = false }
+clap = { version = "4.5.53", default-features = false, features = ["default", "derive", "env"] }
+clap_complete = { version = "4.5.61", default-features = false }
 env_logger = { version = "0.11.8", default-features = false, features = ["default"] }
 target-triple = { version = "1.0.0", default-features = false }
 wasefire-cli-tools = { version = "0.3.1-git", path = "../cli-tools", features = ["action"] }

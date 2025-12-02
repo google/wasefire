@@ -7,7 +7,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
-clap = { version = "4.5.51", features = ["derive"] }
+clap = { version = "4.5.53", features = ["derive"] }
 data-encoding = { version = "2.9.0", default-features = false, features = ["alloc"] }
 tokio = { version = "1.48.0", features = ["full"] }
 wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["action"] }

@@ -7,7 +7,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
-clap = { version = "4.5.51", features = ["derive"] }
+clap = { version = "4.5.53", features = ["derive"] }
 common = { path = "../common" }
 data-encoding = "2.9.0"
 signal-hook = "0.3.18"

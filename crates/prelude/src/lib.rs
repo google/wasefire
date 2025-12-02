@@ -33,7 +33,6 @@
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(negative_impls)]
 #![feature(never_type)]
-#![feature(vec_into_raw_parts)]
 
 extern crate alloc;
 
