@@ -72,10 +72,11 @@ fn read_timeout(connection: &Connection<GlobalContext>) {
 async fn ping_pong(connection: &mut Connection<GlobalContext>) {
     static ID: AtomicU32 = AtomicU32::new(0);
     let id = {
+        // This is just a way to have deterministic randomness.
         let mut hasher = DefaultHasher::new();
         ID.fetch_add(1, Ordering::Relaxed).hash(&mut hasher);
         hasher.finish()
     };
     connection.write(format!("ping {id}.").as_bytes()).await.unwrap();
-    assert_eq!(connection.read().await.unwrap()[..], *format!("PONG {id}.").as_bytes());
+    assert_eq!(connection.read().await.unwrap().as_ref(), format!("PONG {id}.").as_bytes());
 }
