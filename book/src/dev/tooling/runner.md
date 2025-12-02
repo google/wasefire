@@ -32,7 +32,7 @@ cargo xtask runner nordic --features=gpio,uart,usb-serial
 cargo xtask --release runner nordic
 
 # Compile and flash a Nordic platform for the dongle (instead of the dev-kit).
-cargo xtask --release runner nordic --board=dongle flash --dongle-update-support
+cargo xtask --release runner nordic --board=dongle flash
 ```
 
 To verify that a platform was correctly flashed, you can list all connected Wasefire devices:

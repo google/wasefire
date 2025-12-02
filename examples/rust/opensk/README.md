@@ -164,27 +164,8 @@ cargo xtask --release --native \
   flash
 ```
 
-If the board was used before, it may be necessary to clear the storage and reboot:
-
-```sh
-cargo wasefire platform-clear-store
-cargo wasefire platform-reboot
-```
-
-If you want a Wasefire platform that supports platform update, you'll need to pass the
-`--dongle-update-support` flag:
-
-```sh
-cargo xtask --release --native \
-  applet rust opensk --opt-level=z $APPLET_FEATURES \
-  runner nordic --board=dongle --opt-level=z --features=usb-ctap $PLATFORM_FEATURES \
-    --features=software-crypto-aes256-cbc,software-crypto-hmac-sha256 \
-    --features=software-crypto-p256-ecdsa,software-crypto-p256-ecdh \
-  flash --dongle-update-support
-```
-
-This requires pushing the reset button one additional time during the process (and hitting the Enter
-key on the keyboard). Instructions will be printed to the standard output.
+This command will eventually pause and instruct you to enter DFU mode again (by pressing the reset
+button) then hit Enter to continue.
 
 #### Board: Makerdiary
 
@@ -199,13 +180,6 @@ cargo xtask --release --native \
     --features=software-crypto-aes256-cbc,software-crypto-hmac-sha256 \
     --features=software-crypto-p256-ecdsa,software-crypto-p256-ecdh \
   flash
-```
-
-If the board was used before, it may be necessary to clear the storage and reboot:
-
-```sh
-cargo wasefire platform-clear-store
-cargo wasefire platform-reboot
 ```
 
 ### OpenTitan
@@ -233,11 +207,4 @@ cargo xtask --release --native \
   applet rust opensk --opt-level=z $APPLET_FEATURES \
   runner opentitan --opt-level=z --features=usb-ctap $PLATFORM_FEATURES \
   flash
-```
-
-If the board was used before, it may be necessary to clear the storage and reboot:
-
-```sh
-cargo wasefire platform-clear-store
-cargo wasefire platform-reboot
 ```
