@@ -19,6 +19,13 @@ set -e
 
 # This script upgrades all dependencies.
 
+[ -z "$(git status -s)" ] || e "Repository is not clean"
+case "$(git branch --show-current)" in
+  upgrade) ;;
+  main) x git checkout -b upgrade ;;
+  *) e "Not on main or upgrade branch" ;;
+esac
+
 for submodule in $(git submodule status | cut -d' ' -f3); do
   # The rustup script is checked in the sync.sh script.
   [ $submodule = third_party/rust-lang/rustup ] && continue
