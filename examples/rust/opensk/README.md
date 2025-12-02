@@ -164,8 +164,8 @@ cargo xtask --release --native \
   flash
 ```
 
-You'll need to push the reset button one additional time during the process (and hitting the Enter
-key on the keyboard). Instructions will be printed to the standard output.
+This command will eventually pause and instruct you to enter DFU mode again (by pressing the reset
+button) then hit Enter to continue.
 
 #### Board: Makerdiary
 
