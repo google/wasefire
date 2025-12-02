@@ -6,7 +6,7 @@ license = "Apache-2.0"
 edition = "2024"
 
 [dependencies]
-clap = { version = "4.5.51", features = ["derive"] }
+clap = { version = "4.5.53", features = ["derive"] }
 interface = { path = "../interface" }
 p256 = "0.13.2"
 rand = "0.9.2"
