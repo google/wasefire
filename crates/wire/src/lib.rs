@@ -44,6 +44,7 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+use alloc::borrow::Cow;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::convert::Infallible;
@@ -267,6 +268,28 @@ impl<'a> internal::Wire<'a> for &'a [u8] {
     fn decode(reader: &mut Reader<'a>) -> Result<Self, Error> {
         let len = helper::decode_length(reader)?;
         reader.get(len)
+    }
+}
+
+impl<'a> internal::Wire<'a> for Cow<'a, [u8]> {
+    type Type<'b> = Cow<'b, [u8]>;
+    #[cfg(feature = "schema")]
+    fn schema(rules: &mut Rules) {
+        if rules.slice::<Self::Type<'static>, u8>() {
+            internal::schema::<u8>(rules);
+        }
+    }
+    fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
+        helper::encode_length(self.len(), writer)?;
+        match self {
+            Cow::Borrowed(x) => writer.put_share(x),
+            Cow::Owned(x) => writer.put_copy(x),
+        }
+        Ok(())
+    }
+    fn decode(reader: &mut Reader<'a>) -> Result<Self, Error> {
+        let len = helper::decode_length(reader)?;
+        Ok(Cow::Borrowed(reader.get(len)?))
     }
 }
 
