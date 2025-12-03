@@ -46,7 +46,7 @@ fn handler_(request: &[u8]) -> Result<Response, Error> {
     let mut state = STATE.lock();
     match wasefire_wire::decode::<Request>(request)? {
         Request::CaptureStart if sensor::is_supported() => {
-            *state = State::Capture(Capture::new()?);
+            state.set(|| Ok(State::Capture(Capture::new()?)))?;
             Ok(Response::CaptureStart)
         }
         Request::CaptureStart => Err(Error::world(Code::NotImplemented)),
@@ -70,7 +70,7 @@ fn handler_(request: &[u8]) -> Result<Response, Error> {
             Ok(Response::CaptureImage(data))
         }
         Request::EnrollStart if matcher::is_supported() => {
-            *state = State::Enroll(Enroll::new()?);
+            state.set(|| Ok(State::Enroll(Enroll::new()?)))?;
             Ok(Response::EnrollStart)
         }
         Request::EnrollStart => Err(Error::world(Code::NotImplemented)),
@@ -85,7 +85,7 @@ fn handler_(request: &[u8]) -> Result<Response, Error> {
             Ok(Response::EnrollDone(Ok(enroll.result()?.into())))
         }
         Request::IdentifyStart(id) if matcher::is_supported() => {
-            *state = State::Identify(Identify::new(id.as_deref())?);
+            state.set(|| Ok(State::Identify(Identify::new(id.as_deref())?)))?;
             Ok(Response::IdentifyStart)
         }
         Request::IdentifyStart(_) => Err(Error::world(Code::NotImplemented)),
@@ -113,7 +113,7 @@ fn handler_(request: &[u8]) -> Result<Response, Error> {
         }
         Request::List => Err(Error::world(Code::NotImplemented)),
         Request::DetectStart if sensor::is_supported() => {
-            *state = State::Detect(Listener::new(Touch)?, false);
+            state.set(|| Ok(State::Detect(Listener::new(Touch)?, false)))?;
             Ok(Response::DetectStart)
         }
         Request::DetectStart => Err(Error::world(Code::NotImplemented)),
@@ -142,6 +142,14 @@ enum State {
     Enroll(Enroll),
     Identify(Identify),
     Detect(Listener<Touch>, bool),
+}
+
+impl State {
+    fn set(&mut self, new: impl FnOnce() -> Result<Self, Error>) -> Result<(), Error> {
+        drop(core::mem::take(self));
+        *self = new()?;
+        Ok(())
+    }
 }
 
 static STATE: Mutex<State> = Mutex::new(State::Idle);
