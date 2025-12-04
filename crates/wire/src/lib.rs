@@ -128,12 +128,12 @@ impl<T: Wire<'static>> Yoke<T> {
         unsafe { core::mem::transmute(&self.value) }
     }
 
-    pub fn map<S: Wire<'static>, F: for<'a> FnOnce(T) -> S>(self, f: F) -> Yoke<S> {
+    pub fn map<S: Wire<'static>, F: FnOnce(T) -> S>(self, f: F) -> Yoke<S> {
         let (value, data) = self.take();
         Yoke { value: MaybeUninit::new(f(value)), data }
     }
 
-    pub fn try_map<S: Wire<'static>, E, F: for<'a> FnOnce(T) -> Result<S, E>>(
+    pub fn try_map<S: Wire<'static>, E, F: FnOnce(T) -> Result<S, E>>(
         self, f: F,
     ) -> Result<Yoke<S>, E> {
         let (value, data) = self.take();
