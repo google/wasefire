@@ -14,6 +14,7 @@
 
 use wasefire_board_api::Error;
 use wasefire_board_api::applet::Api;
+use wasefire_error::Code;
 use wasefire_store::{Storage as _, StorageIndex};
 use wasefire_sync::TakeCell;
 
@@ -29,7 +30,7 @@ impl Api for Impl {
     unsafe fn get() -> Result<&'static [u8], Error> {
         STATE.with(|state| {
             let storage = unsafe { state.writer.get() }?;
-            Ok(&storage[.. state.size])
+            storage.get(.. state.size).ok_or(Error::internal(Code::InvalidState))
         })
     }
 }
