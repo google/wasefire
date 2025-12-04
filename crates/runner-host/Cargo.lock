@@ -2788,6 +2788,7 @@ dependencies = [
 name = "wasefire-common"
 version = "0.1.1-git"
 dependencies = [
+ "serde",
  "wasefire-error",
  "wasefire-sync",
 ]
@@ -2797,6 +2798,7 @@ name = "wasefire-error"
 version = "0.1.4-git"
 dependencies = [
  "num_enum",
+ "serde",
 ]
 
 [[package]]
@@ -2823,7 +2825,7 @@ version = "0.1.2-git"
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.3.1-git"
+version = "0.4.0-git"
 dependencies = [
  "serde",
  "wasefire-common",

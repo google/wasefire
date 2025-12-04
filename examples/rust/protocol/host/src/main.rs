@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use std::any::Any;
+use std::borrow::Cow;
 use std::io::Read;
 
 use anyhow::{Context, Result, bail};
@@ -61,7 +62,7 @@ async fn main() -> Result<()> {
         Command::Call => {
             let mut request = Vec::new();
             std::io::stdin().read_to_end(&mut request)?;
-            let request = applet::Request { applet_id: AppletId, request: &request };
+            let request = applet::Request { applet_id: AppletId, request: Cow::Owned(request) };
             connection.call::<service::AppletRequest>(request).await?.get();
             loop {
                 let response = connection.call::<service::AppletResponse>(AppletId).await?;
@@ -73,7 +74,8 @@ async fn main() -> Result<()> {
         }
         Command::Tunnel { delimiter } => {
             let delimiter = delimiter.as_bytes();
-            let tunnel = applet::Tunnel { applet_id: applet::AppletId, delimiter };
+            let tunnel =
+                applet::Tunnel { applet_id: applet::AppletId, delimiter: Cow::Borrowed(delimiter) };
             send(&mut connection, &Api::<Request>::AppletTunnel(tunnel)).await?;
             read_tunnel(&mut connection).await?;
             for line in std::io::stdin().lines() {

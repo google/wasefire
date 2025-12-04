@@ -13,11 +13,13 @@ categories = ["embedded", "no-std"]
 
 [dependencies]
 defmt = { version = "1.0.1", default-features = false, optional = true }
+serde = { version = "1.0.228", default-features = false, features = ["derive"], optional = true }
 wasefire-error = { version = "0.1.4-git", path = "../error" }
 wasefire-sync = { version = "0.1.3-git", path = "../sync" }
 
 [features]
 defmt = ["dep:defmt"]
+serde = ["dep:serde"]
 
 [lints]
 clippy.mod-module-files = "warn"

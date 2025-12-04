@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::borrow::Cow;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -295,9 +296,9 @@ impl AppletRpc {
         wait.ensure_wait();
         let mut rpc = rpc.start().await?;
         while let Some(request) = rpc.read().await? {
-            let request = applet::Request { applet_id, request: &request };
+            let request = applet::Request { applet_id, request: Cow::Borrowed(&request) };
             connection.call::<service::AppletRequest>(request).await?.get();
-            match wait.run::<service::AppletResponse, &[u8]>(connection, applet_id).await? {
+            match wait.run::<service::AppletResponse, Cow<[u8]>>(connection, applet_id).await? {
                 None => bail!("did not receive a response"),
                 Some(response) => rpc.write(response.get()).await?,
             }
@@ -515,7 +516,7 @@ impl Transfer {
             progress.set_style(style.clone());
             progress.set_message("Writing");
             for chunk in payload.chunks(chunk_size) {
-                connection.call::<S>(Request::Write { chunk }).await?.get();
+                connection.call::<S>(Request::Write { chunk: Cow::Borrowed(chunk) }).await?.get();
                 progress.inc(chunk.len() as u64);
             }
         }
@@ -589,7 +590,8 @@ impl PlatformRpc {
         let PlatformRpc { rpc } = self;
         let mut rpc = rpc.start().await?;
         while let Some(request) = rpc.read().await? {
-            let response = connection.call::<service::PlatformVendor>(&request).await?;
+            let request = Cow::Owned(request);
+            let response = connection.call::<service::PlatformVendor>(request).await?;
             rpc.write(response.get()).await?;
         }
         Ok(())

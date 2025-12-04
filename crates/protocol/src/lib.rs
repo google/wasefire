@@ -33,6 +33,7 @@
 
 extern crate alloc;
 
+use alloc::borrow::Cow;
 #[cfg(any(feature = "device", feature = "host"))]
 use alloc::boxed::Box;
 
@@ -69,9 +70,9 @@ impl sealed::Direction for Request {
 }
 
 #[derive(Debug)]
-#[cfg(feature = "_descriptor")]
+#[cfg(any(feature = "_descriptor", feature = "serde"))]
 pub enum Response {}
-#[cfg(feature = "_descriptor")]
+#[cfg(any(feature = "_descriptor", feature = "serde"))]
 impl sealed::Direction for Response {
     type Type<'a, T: Service> = T::Response<'a>;
 }
@@ -164,6 +165,18 @@ impl core::fmt::Display for Descriptor {
     }
 }
 
+#[cfg(all(test, feature = "serde"))]
+fn _api_serde() {
+    fn is_serializable<T: serde::Serialize>() {}
+    fn is_deserializable_owned<T>()
+    where for<'a> T: serde::Deserialize<'a> {
+    }
+    is_serializable::<Api<Request>>();
+    is_deserializable_owned::<Api<Request>>();
+    is_serializable::<Api<Response>>();
+    is_deserializable_owned::<Api<Response>>();
+}
+
 macro_rules! api {
     ($(#![$api:meta])* $(
         $(#[doc = $doc:literal])*
@@ -173,6 +186,7 @@ macro_rules! api {
         #[wire(static = T)]
         #[cfg_attr(feature = "host", wire(range = $next))]
         #[cfg_attr(not(feature = "_exhaustive"), non_exhaustive)]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         pub enum Api<'a, T: sealed::Direction> {
             $(
                 $(#[doc = $doc])* $(#[cfg(feature = "host")] ${ignore($max)})? #[wire(tag = $tag)]
@@ -223,7 +237,7 @@ api! {
     1 [0 -] AppletRequest: applet::Request<'a> => (),
 
     /// Reads a response from an applet.
-    2 [0 -] AppletResponse: applet::AppletId => Option<&'a [u8]>,
+    2 [0 -] AppletResponse: applet::AppletId => Option<Cow<'a, [u8]>>,
 
     /// Reboots the platform.
     3 [0 -] PlatformReboot: () => !,
@@ -237,13 +251,13 @@ api! {
     5 [1 - 4] _PlatformInfo0: () => platform::_Info0<'a>,
 
     /// Calls a vendor-specific platform command.
-    6 [2 -] PlatformVendor: &'a [u8] => &'a [u8],
+    6 [2 -] PlatformVendor: Cow<'a, [u8]> => Cow<'a, [u8]>,
 
     /// (deprecated) Returns the metadata for platform update.
     ///
     /// This message is deprecated in favor of [`PlatformVendor`], which is the message for
     /// vendor-specific messages.
-    7 [3 - 4] _PlatformUpdateMetadata: () => &'a [u8],
+    7 [3 - 4] _PlatformUpdateMetadata: () => Cow<'a, [u8]>,
 
     /// (deprecated) Updates the platform.
     ///

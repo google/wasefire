@@ -14,10 +14,13 @@
 
 //! Protocol to transfer data from the host to the device.
 
+use alloc::borrow::Cow;
+
 use wasefire_wire::Wire;
 
 /// Requests to transfer data.
 #[derive(Debug, Wire)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Request<'a> {
     /// Starts a transfer.
     Start {
@@ -37,7 +40,7 @@ pub enum Request<'a> {
         /// The next chunk of data to transfer.
         ///
         /// It should have [`Response::Start::chunk_size`] bytes unless it's the last chunk.
-        chunk: &'a [u8],
+        chunk: Cow<'a, [u8]>,
     },
 
     /// Finishes a transfer.
@@ -45,6 +48,7 @@ pub enum Request<'a> {
 }
 
 #[derive(Debug, Wire)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Response {
     Start {
         /// Size in bytes of a complete chunk.
@@ -59,8 +63,9 @@ pub enum Response {
 }
 
 #[derive(Debug, Wire)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum _Request0<'a> {
     Start { dry_run: bool },
-    Write { chunk: &'a [u8] },
+    Write { chunk: Cow<'a, [u8]> },
     Finish,
 }

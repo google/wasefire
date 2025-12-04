@@ -14,6 +14,7 @@
 
 #![feature(exit_status_error)]
 
+use std::borrow::Cow;
 use std::io::Write;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
@@ -200,7 +201,7 @@ async fn call<T: Wire<'static>>(
     extract: impl FnOnce(Response) -> Result<T, Response>,
 ) -> Result<Yoke<T>> {
     let response = call_raw(connection, request).await?;
-    let response = response.try_map(|x| wasefire_wire::decode::<Result<Response, Error>>(x)?)?;
+    let response = response.try_map(|x| wasefire_wire::decode::<Result<Response, Error>>(&x)?)?;
     match response.try_map(extract) {
         Ok(x) => Ok(x),
         Err(x) => bail!("unexpected response {x:?} for {name}"),
@@ -209,9 +210,9 @@ async fn call<T: Wire<'static>>(
 
 async fn call_raw(
     connection: &mut dyn Connection, request: &Request,
-) -> Result<Yoke<&'static [u8]>> {
-    let request = wasefire_wire::encode(request)?;
-    let request = applet::Request { applet_id: AppletId, request: &request };
+) -> Result<Yoke<Cow<'static, [u8]>>> {
+    let request = wasefire_wire::encode(request)?.into_vec();
+    let request = applet::Request { applet_id: AppletId, request: Cow::Owned(request) };
     connection.call::<service::AppletRequest>(request).await?.get();
     loop {
         let response = connection.call::<service::AppletResponse>(AppletId).await?;

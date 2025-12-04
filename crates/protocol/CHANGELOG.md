@@ -1,6 +1,14 @@
 # Changelog
 
-## 0.3.1-git
+## 0.4.0-git
+
+### Major
+
+- Use `Cow<'a, [u8]>` intead of `&'a [u8]` to support `serde`
+
+### Minor
+
+- Implement `Serialize` and `Deserialize` for `Api` with `serde` feature
 
 ### Patch
 
