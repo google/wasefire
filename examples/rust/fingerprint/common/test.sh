@@ -19,5 +19,5 @@ set -e
 
 test_helper
 
-cargo test --lib
+cargo test --lib --features=serde
 cargo check --lib --target=wasm32-unknown-unknown

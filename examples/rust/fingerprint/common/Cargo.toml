@@ -8,6 +8,15 @@ edition = "2024"
 [dependencies]
 wasefire-wire = { path = "../../../../crates/wire" }
 
+[dependencies.serde]
+version = "1.0.228"
+default-features = false
+features = ["alloc", "derive"]
+optional = true
+
+[features]
+serde = ["dep:serde"]
+
 [lints]
 clippy.mod-module-files = "warn"
 clippy.unit-arg = "allow"
