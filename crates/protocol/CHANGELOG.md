@@ -4,7 +4,7 @@
 
 ### Major
 
-- Use `Cow<'a, [u8]>` intead of `&'a [u8]` to support `serde`
+- Use `Cow<'a, [u8]>` instead of `&'a [u8]` to support `serde`
 
 ### Minor
 

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::borrow::Cow;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -57,12 +58,13 @@ struct Stats {
 }
 
 async fn checkpoint(connection: &mut dyn Connection) -> Result<Stats> {
-    let request = applet::Request { applet_id: AppletId, request: &[] };
+    let request = applet::Request { applet_id: AppletId, request: Cow::Borrowed(&[]) };
     connection.call::<service::AppletRequest>(request).await?.get();
     let mut yoke_response;
     let mut response = loop {
         yoke_response = connection.call::<service::AppletResponse>(AppletId).await?;
         if let Some(response) = yoke_response.get() {
+            let Cow::Borrowed(response) = response else { unreachable!() };
             break *response;
         }
     };
