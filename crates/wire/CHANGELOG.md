@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Implement `Wire` for `alloc::borrow::Cow`
 - Remove useless quantification on `Yoke::{try_,}map()` function argument
 - Optimize memory usage when encoding slices in particular of small elements like `Vec<u8>`
 
