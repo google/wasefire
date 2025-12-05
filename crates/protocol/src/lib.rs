@@ -61,6 +61,8 @@ pub trait Service: 'static {
     type Response<'a>: Wire<'a>;
     #[cfg(feature = "host")]
     fn request(x: Self::Request<'_>) -> Api<'_, Request>;
+    #[cfg(feature = "serde")]
+    fn response(x: Self::Response<'_>) -> Api<'_, Response>;
 }
 
 #[derive(Debug)]
@@ -206,6 +208,10 @@ macro_rules! api {
                 type Response<'a> = $response;
                 #[cfg(feature = "host")]
                 fn request(x: Self::Request<'_>) -> Api<'_, Request> { Api::$Name(x) }
+                #[cfg(feature = "serde")]
+                fn response(x: Self::Response<'_>) -> Api<'_, Response> {
+                    #[allow(unreachable_code)] Api::$Name(x)
+                }
             }
         )*
         /// Device API version (or maximum supported device API version for host).

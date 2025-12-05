@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `Service::response()` with `serde` feature
 - Implement `Serialize` and `Deserialize` for `Api` with `serde` feature
 
 ### Patch
