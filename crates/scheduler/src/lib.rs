@@ -327,6 +327,8 @@ impl<B: Board> Scheduler<B> {
         <board::Applet<B> as board::applet::Api>::notify_exit(status);
         applet.free();
         self.applet = applet::Slot::Exited(status);
+        #[cfg(feature = "board-api-timer")]
+        self.timers.iter_mut().for_each(|x| *x = None); // TODO: filter by AppletId
         #[cfg(feature = "native")]
         {
             log::debug!("Applet stopped, executing protocol events only.");
