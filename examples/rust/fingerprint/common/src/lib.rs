@@ -18,10 +18,14 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use wasefire_wire::Wire;
 
 #[derive(Debug, Clone, Wire)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Request {
+    Reset,
     CaptureStart,
     CaptureDone,
     CaptureImage, // response is raw
@@ -37,7 +41,9 @@ pub enum Request {
 }
 
 #[derive(Debug, Clone, Wire)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Response {
+    Reset,
     CaptureStart,
     CaptureDone(Option<usize>), // width
     CaptureImage(Vec<u8>),      // fake variant (response is raw)

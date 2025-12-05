@@ -45,6 +45,10 @@ fn handler(request: Vec<u8>) -> Vec<u8> {
 fn handler_(request: &[u8]) -> Result<Response, Error> {
     let mut state = STATE.lock();
     match wasefire_wire::decode::<Request>(request)? {
+        Request::Reset => {
+            *state = State::Idle;
+            Ok(Response::Reset)
+        }
         Request::CaptureStart if sensor::is_supported() => {
             state.set(|| Ok(State::Capture(Capture::new()?)))?;
             Ok(Response::CaptureStart)

@@ -18,6 +18,7 @@ use std::borrow::Cow;
 use std::io::Write;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering::Relaxed;
 use std::time::Duration;
 
 use anyhow::{Result, bail};
@@ -96,12 +97,26 @@ macro_rules! call {
 async fn main() -> Result<()> {
     let flags = Flags::parse();
     let mut connection = flags.options.connect().await?;
+    let stop = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(signal_hook::consts::SIGINT, stop.clone())?;
+    macro_rules! loop_stop {
+        ($($body:tt)*) => {
+            loop {
+                if stop.load(Relaxed) {
+                    call!(Reset(&mut connection): () -> ()).get();
+                    return Ok(());
+                }
+                $($body)*
+            }
+
+        };
+    }
     match flags.command {
         Command::Capture => {
             call!(CaptureStart(&mut connection): () -> ()).get();
             let mut stdout = std::io::stdout().lock();
             write!(stdout, "Waiting for touch").unwrap();
-            let width = loop {
+            let width = loop_stop! {
                 let width = call!(CaptureDone(&mut connection): () -> (_));
                 match width.try_map(|x| x.ok_or(())) {
                     Ok(width) => break *width.get(),
@@ -123,7 +138,7 @@ async fn main() -> Result<()> {
         Command::Enroll => {
             call!(EnrollStart(&mut connection): () -> ()).get();
             let mut stdout = std::io::stdout().lock();
-            loop {
+            loop_stop! {
                 match call!(EnrollDone(&mut connection): () -> (_)).try_map(|x| x) {
                     Ok(id) => {
                         drop(stdout);
@@ -147,7 +162,7 @@ async fn main() -> Result<()> {
             call!(IdentifyStart(&mut connection): (id) -> ()).get();
             let mut stdout = std::io::stdout().lock();
             write!(stdout, "Waiting for touch").unwrap();
-            let result = loop {
+            let result = loop_stop! {
                 let result = call!(IdentifyDone(&mut connection): () -> (_));
                 match result.try_map(|x| x.ok_or(())) {
                     Ok(result) => break result,
@@ -177,11 +192,9 @@ async fn main() -> Result<()> {
         }
         Command::Detect => {
             call!(DetectStart(&mut connection): () -> ()).get();
-            let stop = Arc::new(AtomicBool::new(false));
-            signal_hook::flag::register(signal_hook::consts::SIGINT, stop.clone())?;
             let mut stdout = std::io::stdout().lock();
             write!(stdout, "Waiting for touch").unwrap();
-            while !stop.load(std::sync::atomic::Ordering::Relaxed) {
+            while !stop.load(Relaxed) {
                 if *call!(DetectConsume(&mut connection): () -> (_)).get() {
                     writeln!(stdout, "touched").unwrap();
                     continue;
