@@ -19,9 +19,9 @@
 #![no_std]
 #![feature(never_type)]
 
-use wasefire_one_of::exactly_one_of;
+use wasefire_one_of::at_most_one_of;
 
-exactly_one_of!["device", "host"];
+at_most_one_of!["device", "host"];
 
 extern crate alloc;
 #[cfg(feature = "std")]

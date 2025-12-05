@@ -241,9 +241,17 @@ impl<B: UsbBus> UsbClass<B> for Rpc<'_, B> {
         Ok(())
     }
 
-    fn get_bos_descriptors(&self, _: &mut BosWriter) -> usb_device::Result<()> {
-        // We don't have any capabilities.
-        Ok(())
+    fn get_bos_descriptors(&self, writer: &mut BosWriter) -> usb_device::Result<()> {
+        // Advertise WebUSB.
+        let mut data = Vec::with_capacity(24);
+        data.push(0); // bReserved
+        // PlatformCapabilityUUID
+        data.extend_from_slice(b"\x38\xb6\x08\x34\xa9\x09\xa0\x47\x8b\xfd\xa0\x76\x88\x15\xb6\x65");
+        data.extend_from_slice(&[0x00, 0x01]); // bcdVersion
+        data.push(WEBUSB_VENDOR_CODE); // bVendorCode
+        data.push(WEBUSB_URL_DESC.is_some() as u8); // iLandingPage
+        // bDevCapabilityType = PLATFORM
+        writer.capability(0x05, &data)
     }
 
     fn get_string(&self, _: StringIndex, _id: LangID) -> Option<&str> {
@@ -266,8 +274,21 @@ impl<B: UsbBus> UsbClass<B> for Rpc<'_, B> {
         // We probably don't need to do anything here.
     }
 
-    fn control_in(&mut self, _: ControlIn<B>) {
-        // We probably don't need to do anything here.
+    fn control_in(&mut self, xfer: ControlIn<B>) {
+        let req = xfer.request();
+        if req.request_type != usb_device::control::RequestType::Vendor
+            || req.recipient != usb_device::control::Recipient::Device
+            || req.request != WEBUSB_VENDOR_CODE
+        {
+            return; // Only handle WebUSB requests.
+        }
+        // Stall on invalid requests.
+        let Some(descriptor) = WEBUSB_URL_DESC else { return xfer.reject().unwrap() };
+        const GET_URL: u16 = 2;
+        if req.index != GET_URL || req.value != 1 {
+            return xfer.reject().unwrap();
+        }
+        xfer.accept_with_static(descriptor).unwrap();
     }
 
     fn endpoint_setup(&mut self, _: EndpointAddress) {
@@ -287,4 +308,57 @@ impl<B: UsbBus> UsbClass<B> for Rpc<'_, B> {
         }
         self.state.send(&self.write_ep);
     }
+}
+
+const WEBUSB_VENDOR_CODE: u8 = 1;
+
+const WEBUSB_URL_DESC: Option<&[u8]> = {
+    const SPLIT: (Option<u8>, &[u8]) = split_webusb_url(option_env!("WASEFIRE_WEBUSB_URL"));
+    match SPLIT.0 {
+        None => None,
+        Some(scheme) => Some(&make_webusb_url::<{ 3 + SPLIT.1.len() }>(scheme, SPLIT.1)),
+    }
+};
+
+const fn make_webusb_url<const LEN: usize>(scheme: u8, data: &[u8]) -> [u8; LEN] {
+    assert!(LEN < 256);
+    let mut result = [0; LEN];
+    result[0] = LEN as u8; // bLength
+    result[1] = 3; // bDescriptorType = WEBUSB_URL
+    result[2] = scheme; // bScheme
+    let mut i = 0;
+    while 3 + i < LEN {
+        result[3 + i] = data[i];
+        i += 1;
+    }
+    result
+}
+
+const fn split_webusb_url(url: Option<&'static str>) -> (Option<u8>, &'static [u8]) {
+    let Some(url) = url else { return (None, &[]) };
+    let url = url.as_bytes();
+    let (scheme, data) = if let Some(data) = strip_prefix(url, b"http://") {
+        (0, data)
+    } else if let Some(data) = strip_prefix(url, b"https://") {
+        (1, data)
+    } else {
+        (255, url)
+    };
+    (Some(scheme), data)
+}
+
+const fn strip_prefix(data: &'static [u8], prefix: &'static [u8]) -> Option<&'static [u8]> {
+    if data.len() < prefix.len() {
+        return None;
+    }
+    let mut i = 0;
+    while i < prefix.len() {
+        if data[i] != prefix[i] {
+            return None;
+        }
+        i += 1;
+    }
+    let ptr = unsafe { data.as_ptr().add(prefix.len()) };
+    let len = data.len() - prefix.len();
+    Some(unsafe { core::slice::from_raw_parts(ptr, len) })
 }

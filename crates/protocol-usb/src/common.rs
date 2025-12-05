@@ -36,8 +36,8 @@ pub const PACKET_NO_REQUEST: [u8; 64] = [0; 64];
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Packet<'a> {
-    order: Order,
-    content: &'a [u8],
+    pub order: Order,
+    pub content: &'a [u8],
 }
 
 impl<'a> Packet<'a> {
