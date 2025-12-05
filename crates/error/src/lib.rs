@@ -29,6 +29,8 @@ use num_enum::{IntoPrimitive, TryFromPrimitive, TryFromPrimitiveError};
 /// least significant bits. Non-negative values encode success, while negative values encode the
 /// error by taking its bitwise complement (thus setting the 8 most significant bits to 1).
 #[derive(Default, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(from = "ParsedError", into = "ParsedError"))]
 #[repr(transparent)]
 pub struct Error(u32);
 
@@ -241,6 +243,27 @@ impl core::error::Error for Error {}
 impl From<std::io::Error> for Error {
     fn from(_: std::io::Error) -> Self {
         Error::world(Code::Generic)
+    }
+}
+
+#[cfg(feature = "serde")]
+#[derive(serde::Serialize, serde::Deserialize)]
+struct ParsedError {
+    space: u8,
+    code: u16,
+}
+
+#[cfg(feature = "serde")]
+impl From<ParsedError> for Error {
+    fn from(x: ParsedError) -> Self {
+        Error::new(x.space, x.code)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl From<Error> for ParsedError {
+    fn from(x: Error) -> Self {
+        ParsedError { space: x.space(), code: x.code() }
     }
 }
 

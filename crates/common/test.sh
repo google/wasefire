@@ -20,5 +20,6 @@ set -e
 test_helper
 
 cargo test --lib
+cargo check --lib --features=serde
 cargo check --lib --target=thumbv7em-none-eabi --features=defmt
 cargo check --lib --target=wasm32-unknown-unknown

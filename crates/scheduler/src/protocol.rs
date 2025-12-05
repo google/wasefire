@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::borrow::Cow;
 use alloc::boxed::Box;
 
 #[cfg(feature = "applet-api-platform-protocol")]
@@ -78,7 +79,7 @@ fn process_event_<B: Board>(
         Api::AppletRequest(_) => return Err(Error::world(Code::NotImplemented)),
         #[cfg(feature = "applet-api-platform-protocol")]
         Api::AppletRequest(service::applet::Request { applet_id, request }) => {
-            applet::<B>(scheduler, applet_id)?.put_request(event, request)?;
+            applet::<B>(scheduler, applet_id)?.put_request(event, &request)?;
             reply::<B, service::AppletRequest>(());
         }
         #[cfg(not(feature = "applet-api-platform-protocol"))]
@@ -86,7 +87,8 @@ fn process_event_<B: Board>(
         #[cfg(feature = "applet-api-platform-protocol")]
         Api::AppletResponse(applet_id) => {
             let response = applet::<B>(scheduler, applet_id)?.get_response()?;
-            reply::<B, service::AppletResponse>(response.as_deref());
+            let response = response.map(|x| Cow::Owned(x.into_vec()));
+            reply::<B, service::AppletResponse>(response);
         }
         Api::PlatformReboot(()) => {
             use wasefire_board_api::platform::Api as _;
@@ -103,19 +105,16 @@ fn process_event_<B: Board>(
         Api::PlatformInfo(()) => {
             use wasefire_board_api::platform::Api as _;
             reply::<B, service::PlatformInfo>(service::platform::Info {
-                serial: &board::Platform::<B>::serial(),
+                serial: board::Platform::<B>::serial(),
                 running_side: board::Platform::<B>::running_side(),
-                running_version: &board::Platform::<B>::running_version(),
-                opposite_version: match &board::Platform::<B>::opposite_version() {
-                    Ok(x) => Ok(x),
-                    Err(e) => Err(*e),
-                },
+                running_version: board::Platform::<B>::running_version(),
+                opposite_version: board::Platform::<B>::opposite_version(),
             });
         }
         Api::PlatformVendor(request) => {
             use wasefire_board_api::platform::protocol::Api as _;
-            let response = board::platform::Protocol::<B>::vendor(request)?;
-            reply::<B, service::PlatformVendor>(&response);
+            let response = board::platform::Protocol::<B>::vendor(&request)?;
+            reply::<B, service::PlatformVendor>(Cow::Owned(response.into_vec()));
         }
         Api::PlatformUpdate(request) => {
             process_transfer::<B, service::PlatformUpdate>(scheduler, request)?
@@ -244,7 +243,7 @@ fn process_transfer<B: Board, T: TransferKind<B>>(
         }
         service::transfer::Request::Write { chunk } => {
             let _ = T::state(scheduler).dry_run()?;
-            T::Api::write(chunk)?;
+            T::Api::write(&chunk)?;
             service::transfer::Response::Write
         }
         service::transfer::Request::Finish => {

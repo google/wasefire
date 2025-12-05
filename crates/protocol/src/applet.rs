@@ -12,23 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::borrow::Cow;
 use core::fmt::Display;
 
 use wasefire_wire::Wire;
 
 #[derive(Debug, Wire)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Request<'a> {
     pub applet_id: AppletId,
-    pub request: &'a [u8],
+    pub request: Cow<'a, [u8]>,
 }
 
 #[derive(Debug, Copy, Clone, Wire)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AppletId;
 
 #[derive(Debug, Wire)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Tunnel<'a> {
     pub applet_id: AppletId,
-    pub delimiter: &'a [u8],
+    pub delimiter: Cow<'a, [u8]>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Wire)]

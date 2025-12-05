@@ -14,6 +14,7 @@
 
 #![feature(exit_status_error)]
 
+use std::borrow::Cow;
 use std::io::Write;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
@@ -210,13 +211,16 @@ async fn call<T: Wire<'static>>(
 async fn call_raw(
     connection: &mut dyn Connection, request: &Request,
 ) -> Result<Yoke<&'static [u8]>> {
-    let request = wasefire_wire::encode(request)?;
-    let request = applet::Request { applet_id: AppletId, request: &request };
+    let request = wasefire_wire::encode(request)?.into_vec();
+    let request = applet::Request { applet_id: AppletId, request: Cow::Owned(request) };
     connection.call::<service::AppletRequest>(request).await?.get();
     loop {
         let response = connection.call::<service::AppletResponse>(AppletId).await?;
         if let Ok(response) = response.try_map(|x| x.ok_or(())) {
-            break Ok(response);
+            break Ok(response.map(|x| match x {
+                Cow::Borrowed(x) => x,
+                Cow::Owned(_) => unreachable!(),
+            }));
         }
         tokio::time::sleep(Duration::from_millis(10)).await;
     }

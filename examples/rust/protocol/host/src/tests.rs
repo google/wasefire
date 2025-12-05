@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::borrow::Cow;
 use std::hash::{DefaultHasher, Hash as _, Hasher as _};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
@@ -25,7 +26,7 @@ pub(crate) async fn main(mut connection: Connection<GlobalContext>) -> Result<()
     connection.set_timeout(Duration::from_millis(200));
     let connection = &mut connection;
     println!("Enter tunnel.");
-    let tunnel = applet::Tunnel { applet_id: applet::AppletId, delimiter: b"EOF" };
+    let tunnel = applet::Tunnel { applet_id: applet::AppletId, delimiter: Cow::Borrowed(b"EOF") };
     crate::send(connection, &Api::<Request>::AppletTunnel(tunnel)).await?;
     crate::read_tunnel(connection).await?;
 

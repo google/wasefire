@@ -469,7 +469,7 @@ version = "0.1.2-git"
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.3.1-git"
+version = "0.4.0-git"
 dependencies = [
  "anyhow",
  "data-encoding",

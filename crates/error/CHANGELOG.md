@@ -2,6 +2,10 @@
 
 ## 0.1.4-git
 
+### Minor
+
+- Add `serde` feature to implement `Serialize` and `Deserialize` for `Error`
+
 ### Patch
 
 - No visible change
