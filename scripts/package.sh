@@ -56,6 +56,7 @@ protocol-tokio
 protocol-usb
 cli-tools
 cli
+webui
 xtask
 protocol/crates/schema
 board/crates/syscall-test
