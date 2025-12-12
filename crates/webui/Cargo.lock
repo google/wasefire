@@ -883,7 +883,7 @@ version = "0.1.2"
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.4.0"
+version = "0.4.1-git"
 dependencies = [
  "anyhow",
  "data-encoding",
@@ -894,7 +894,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-protocol-usb"
-version = "0.3.1"
+version = "0.3.2-git"
 dependencies = [
  "wasefire-logger",
  "wasefire-one-of",

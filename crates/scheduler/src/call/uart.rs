@@ -52,7 +52,7 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
 #[cfg(feature = "board-api-uart")]
 fn set_baudrate<B: Board>(call: SchedulerCall<B, api::set_baudrate::Sig>) {
     let api::set_baudrate::Params { uart, baudrate } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let uart = Id::new(*uart as usize)?;
         board::Uart::<B>::set_baudrate(uart, *baudrate as usize)?
     };
@@ -62,7 +62,7 @@ fn set_baudrate<B: Board>(call: SchedulerCall<B, api::set_baudrate::Sig>) {
 #[cfg(feature = "board-api-uart")]
 fn start<B: Board>(call: SchedulerCall<B, api::start::Sig>) {
     let api::start::Params { uart } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let uart = Id::new(*uart as usize)?;
         board::Uart::<B>::start(uart)?
     };
@@ -72,7 +72,7 @@ fn start<B: Board>(call: SchedulerCall<B, api::start::Sig>) {
 #[cfg(feature = "board-api-uart")]
 fn stop<B: Board>(call: SchedulerCall<B, api::stop::Sig>) {
     let api::stop::Params { uart } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let uart = Id::new(*uart as usize)?;
         board::Uart::<B>::stop(uart)?
     };
@@ -84,7 +84,7 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { uart, ptr, len } = call.read();
     let applet = call.applet();
     let memory = applet.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let uart = Id::new(*uart as usize)?;
         let output = memory.get_mut(*ptr, *len)?;
         board::Uart::<B>::read(uart, output)? as u32
@@ -97,7 +97,7 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let api::write::Params { uart, ptr, len } = call.read();
     let applet = call.applet();
     let memory = applet.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let uart = Id::new(*uart as usize)?;
         let input = memory.get(*ptr, *len)?;
         board::Uart::<B>::write(uart, input)? as u32
@@ -110,7 +110,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { uart, event, handler_func, handler_data } = call.read();
     let inst = call.inst();
     let applet = call.applet();
-    let result = try {
+    let result = try bikeshed _ {
         let uart = Id::new(*uart as usize)?;
         let event = convert_event(uart, *event)?;
         applet.enable(Handler {
@@ -127,7 +127,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
 #[cfg(feature = "board-api-uart")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { uart, event } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let uart = Id::new(*uart as usize)?;
         let event = convert_event(uart, *event)?;
         board::Uart::<B>::disable(uart, event.direction)?;

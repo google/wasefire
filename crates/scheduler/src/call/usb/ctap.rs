@@ -43,7 +43,7 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { ptr } = call.read();
     let applet = call.applet();
     let memory = applet.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let output = memory.get_array_mut(*ptr)?;
         board::usb::Ctap::<B>::read(output)? as u32
     };
@@ -55,7 +55,7 @@ fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let api::write::Params { ptr } = call.read();
     let applet = call.applet();
     let memory = applet.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let input = memory.get_array(*ptr)?;
         board::usb::Ctap::<B>::write(input)? as u32
     };
@@ -67,7 +67,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { event, handler_func, handler_data } = call.read();
     let inst = call.inst();
     let applet = call.applet();
-    let result = try {
+    let result = try bikeshed _ {
         let event = convert_event(*event)?;
         applet.enable(Handler {
             key: Key::from(&event).into(),
@@ -83,7 +83,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
 #[cfg(feature = "board-api-usb-ctap")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { event } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let event = convert_event(*event)?;
         board::usb::Ctap::<B>::disable(&event).map_err(|_| Trap)?;
         call.scheduler().disable_event(Key::from(&event).into())?;

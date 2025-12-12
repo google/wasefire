@@ -54,13 +54,13 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 #[cfg(feature = "applet-api-crypto-hash")]
 fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
     let api::is_supported::Params { algorithm } = call.read();
-    call.reply(try { convert_hash_algorithm::<B>(*algorithm)?.is_ok() })
+    call.reply(try bikeshed _ { convert_hash_algorithm::<B>(*algorithm)?.is_ok() })
 }
 
 #[cfg(feature = "applet-api-crypto-hash")]
 fn initialize<B: Board>(mut call: SchedulerCall<B, api::initialize::Sig>) {
     let api::initialize::Params { algorithm } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let context = match convert_hash_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-sha256")]
             Algorithm::Sha256 => board::crypto::HashApi::new().map(HashContext::Sha256)?,
@@ -79,7 +79,7 @@ fn update<B: Board>(mut call: SchedulerCall<B, api::update::Sig>) {
     let api::update::Params { id, data, length } = call.read();
     let applet = call.applet();
     let memory = applet.store.memory();
-    let result: Result<(), _> = try {
+    let result = try bikeshed Result<(), _> {
         let data = memory.get(*data, *length)?;
         match applet.hashes.get_mut(*id as usize)? {
             #[cfg(feature = "board-api-crypto-sha256")]
@@ -97,7 +97,7 @@ fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
     let api::finalize::Params { id, digest } = call.read();
     let applet = call.applet();
     let memory = applet.store.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let context = applet.hashes.take(*id as usize)?;
         match context {
             _ if *digest == 0 => (),
@@ -120,7 +120,7 @@ fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
 #[cfg(feature = "applet-api-crypto-hmac")]
 fn is_hmac_supported<B: Board>(call: SchedulerCall<B, api::is_hmac_supported::Sig>) {
     let api::is_hmac_supported::Params { algorithm } = call.read();
-    call.reply(try { convert_hmac_algorithm::<B>(*algorithm)?.is_ok() })
+    call.reply(try bikeshed _ { convert_hmac_algorithm::<B>(*algorithm)?.is_ok() })
 }
 
 #[cfg(feature = "applet-api-crypto-hmac")]
@@ -128,7 +128,7 @@ fn hmac_initialize<B: Board>(mut call: SchedulerCall<B, api::hmac_initialize::Si
     let api::hmac_initialize::Params { algorithm, key, key_len } = call.read();
     let applet = call.applet();
     let memory = applet.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let key = memory.get(*key, *key_len)?;
         let context = match convert_hmac_algorithm::<B>(*algorithm)?? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
@@ -148,7 +148,7 @@ fn hmac_update<B: Board>(mut call: SchedulerCall<B, api::hmac_update::Sig>) {
     let api::hmac_update::Params { id, data, length } = call.read();
     let applet = call.applet();
     let memory = applet.store.memory();
-    let result: Result<(), _> = try {
+    let result = try bikeshed Result<(), _> {
         let data = memory.get(*data, *length)?;
         match applet.hashes.get_mut(*id as usize)? {
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
@@ -166,7 +166,7 @@ fn hmac_finalize<B: Board>(mut call: SchedulerCall<B, api::hmac_finalize::Sig>) 
     let api::hmac_finalize::Params { id, hmac } = call.read();
     let applet = call.applet();
     let memory = applet.store.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let context = applet.hashes.take(*id as usize)?;
         match context {
             _ if *hmac == 0 => (),
@@ -189,7 +189,7 @@ fn hmac_finalize<B: Board>(mut call: SchedulerCall<B, api::hmac_finalize::Sig>) 
 #[cfg(feature = "applet-api-crypto-hkdf")]
 fn is_hkdf_supported<B: Board>(call: SchedulerCall<B, api::is_hkdf_supported::Sig>) {
     let api::is_hkdf_supported::Params { algorithm } = call.read();
-    call.reply(try { convert_hmac_algorithm::<B>(*algorithm)?.is_ok() })
+    call.reply(try bikeshed _ { convert_hmac_algorithm::<B>(*algorithm)?.is_ok() })
 }
 
 #[cfg(feature = "applet-api-crypto-hkdf")]
@@ -198,7 +198,7 @@ fn hkdf_expand<B: Board>(mut call: SchedulerCall<B, api::hkdf_expand::Sig>) {
         call.read();
     let applet = call.applet();
     let memory = applet.memory();
-    let result: Result<(), Failure> = try {
+    let result = try bikeshed Result<(), _> {
         let prk = memory.get(*prk, *prk_len)?;
         let info = memory.get(*info, *info_len)?;
         let okm = memory.get_mut(*okm, *okm_len)?;

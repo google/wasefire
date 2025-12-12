@@ -38,7 +38,7 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let api::insert::Params { keys, ptr, len } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.get().unwrap().memory();
-    let result = try {
+    let result = try bikeshed _ {
         let keys = decode_keys(keys)?;
         let value = memory.get(*ptr, *len)?;
         fragment::write(&mut scheduler.store, &keys, value)?
@@ -49,7 +49,8 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
 #[cfg(feature = "board-api-storage")]
 fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
     let api::remove::Params { keys } = call.read();
-    let result = try { fragment::delete(&mut call.scheduler().store, &decode_keys(keys)?)? };
+    let result =
+        try bikeshed _ { fragment::delete(&mut call.scheduler().store, &decode_keys(keys)?)? };
     call.reply(result);
 }
 
@@ -58,7 +59,7 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let api::find::Params { keys, ptr: ptr_ptr, len: len_ptr } = call.read();
     let scheduler = call.scheduler();
     let mut memory = scheduler.applet.get().unwrap().memory();
-    let result = try {
+    let result = try bikeshed _ {
         match fragment::read(&scheduler.store, &decode_keys(keys)?)? {
             None => false,
             Some(value) => {

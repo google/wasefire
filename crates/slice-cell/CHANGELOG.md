@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2-git
+
+### Patch
+
+- Remove now stable `array_windows` nightly feature
+
 ## 0.1.1
 
 ### Patch

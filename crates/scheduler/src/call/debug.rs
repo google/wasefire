@@ -30,7 +30,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 fn println<B: Board>(mut call: SchedulerCall<B, api::println::Sig>) {
     let api::println::Params { ptr, len } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let line = core::str::from_utf8(memory.get(*ptr, *len)?).map_err(|_| Trap)?;
         board::Debug::<B>::println(line);
     };
@@ -40,7 +40,7 @@ fn println<B: Board>(mut call: SchedulerCall<B, api::println::Sig>) {
 fn time<B: Board>(mut call: SchedulerCall<B, api::time::Sig>) {
     let api::time::Params { ptr } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let time = board::Debug::<B>::time();
         if *ptr != 0 {
             memory.get_mut(*ptr, 8)?.copy_from_slice(&time.to_le_bytes());
@@ -57,7 +57,7 @@ fn perf<B: Board>(mut call: SchedulerCall<B, api::perf::Sig>) {
     #[cfg(not(feature = "internal-debug"))]
     let perf = Perf { platform: 0, applets: 0, waiting: 0 };
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         *memory.from_bytes_mut::<Perf>(*ptr)? = perf;
     };
     call.reply(result)

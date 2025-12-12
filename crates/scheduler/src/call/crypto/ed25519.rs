@@ -60,7 +60,7 @@ fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
 fn get_layout<B: Board>(mut call: SchedulerCall<B, api::get_layout::Sig>) {
     let api::get_layout::Params { kind, size, align } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let layout = layout::<B>(convert_kind(*kind)?);
         memory.get_mut(*size, 4)?.copy_from_slice(&(layout.size() as u32).to_le_bytes());
         memory.get_mut(*align, 4)?.copy_from_slice(&(layout.align() as u32).to_le_bytes());
@@ -78,7 +78,7 @@ fn wrapped_length<B: Board>(call: SchedulerCall<B, api::wrapped_length::Sig>) {
 fn generate<B: Board>(mut call: SchedulerCall<B, api::generate::Sig>) {
     let api::generate::Params { private } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let private = get_kind_mut::<B>(&memory, *private, Kind::Private)?;
         board::crypto::Ed25519::<B>::generate(private)?;
     };
@@ -89,7 +89,7 @@ fn generate<B: Board>(mut call: SchedulerCall<B, api::generate::Sig>) {
 fn public<B: Board>(mut call: SchedulerCall<B, api::public::Sig>) {
     let api::public::Params { private, public } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let private = get_kind::<B>(&memory, *private, Kind::Private)?;
         let public = get_kind_mut::<B>(&memory, *public, Kind::Public)?;
         board::crypto::Ed25519::<B>::public(private, public)?;
@@ -101,7 +101,7 @@ fn public<B: Board>(mut call: SchedulerCall<B, api::public::Sig>) {
 fn sign<B: Board>(mut call: SchedulerCall<B, api::sign::Sig>) {
     let api::sign::Params { private, message, message_len, r, s } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let private = get_kind::<B>(&memory, *private, Kind::Private)?;
         let message = memory.get(*message, *message_len)?;
         let r = memory.get_array_mut::<32>(*r)?;
@@ -115,7 +115,7 @@ fn sign<B: Board>(mut call: SchedulerCall<B, api::sign::Sig>) {
 fn verify<B: Board>(mut call: SchedulerCall<B, api::verify::Sig>) {
     let api::verify::Params { public, message, message_len, r, s } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let public = get_kind::<B>(&memory, *public, Kind::Public)?;
         let message = memory.get(*message, *message_len)?;
         let r = memory.get_array::<32>(*r)?;
@@ -129,7 +129,7 @@ fn verify<B: Board>(mut call: SchedulerCall<B, api::verify::Sig>) {
 fn drop<B: Board>(mut call: SchedulerCall<B, api::drop::Sig>) {
     let api::drop::Params { private } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let private = get_kind_mut::<B>(&memory, *private, Kind::Private)?;
         board::crypto::Ed25519::<B>::drop_private(private)?;
     };
@@ -140,7 +140,7 @@ fn drop<B: Board>(mut call: SchedulerCall<B, api::drop::Sig>) {
 fn wrap<B: Board>(mut call: SchedulerCall<B, api::wrap::Sig>) {
     let api::wrap::Params { private, wrapped } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let private = get_kind::<B>(&memory, *private, Kind::Private)?;
         let wrapped = memory.get_mut(*wrapped, board::crypto::Ed25519::<B>::WRAPPED as u32)?;
         board::crypto::Ed25519::<B>::export_private(private, wrapped)?;
@@ -152,7 +152,7 @@ fn wrap<B: Board>(mut call: SchedulerCall<B, api::wrap::Sig>) {
 fn unwrap<B: Board>(mut call: SchedulerCall<B, api::unwrap::Sig>) {
     let api::unwrap::Params { wrapped, private } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let private = get_kind_mut::<B>(&memory, *private, Kind::Private)?;
         let wrapped = memory.get(*wrapped, board::crypto::Ed25519::<B>::WRAPPED as u32)?;
         board::crypto::Ed25519::<B>::import_private(wrapped, private)?;
@@ -164,7 +164,7 @@ fn unwrap<B: Board>(mut call: SchedulerCall<B, api::unwrap::Sig>) {
 fn export<B: Board>(mut call: SchedulerCall<B, api::export::Sig>) {
     let api::export::Params { public, a } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let public = get_kind::<B>(&memory, *public, Kind::Public)?;
         let a = memory.get_array_mut::<32>(*a)?;
         board::crypto::Ed25519::<B>::export_public(public, a)?;
@@ -176,7 +176,7 @@ fn export<B: Board>(mut call: SchedulerCall<B, api::export::Sig>) {
 fn import<B: Board>(mut call: SchedulerCall<B, api::import::Sig>) {
     let api::import::Params { a, public } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let public = get_kind_mut::<B>(&memory, *public, Kind::Public)?;
         let a = memory.get_array::<32>(*a)?;
         board::crypto::Ed25519::<B>::import_public(a, public)?;

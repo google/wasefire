@@ -1237,7 +1237,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.10.0"
+version = "0.10.1-git"
 dependencies = [
  "aead",
  "aes",
@@ -1312,7 +1312,7 @@ version = "0.1.2"
 
 [[package]]
 name = "wasefire-protocol"
-version = "0.4.0"
+version = "0.4.1-git"
 dependencies = [
  "wasefire-common",
  "wasefire-error",
@@ -1321,7 +1321,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-scheduler"
-version = "0.5.1"
+version = "0.5.2-git"
 dependencies = [
  "bytemuck",
  "defmt 1.0.1",
@@ -1345,7 +1345,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-slice-cell"
-version = "0.1.1"
+version = "0.1.2-git"
 
 [[package]]
 name = "wasefire-store"

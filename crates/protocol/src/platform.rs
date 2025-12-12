@@ -77,21 +77,29 @@ impl DynInfo {
     }
 
     pub fn opposite_name(&self) -> Option<Result<&Name<'_>, Error>> {
-        Some(match self {
-            DynInfo::V3(x) => try { &x.get().opposite_info.as_ref()?.name },
-            DynInfo::V2(_) => return None,
-            DynInfo::V1(_) => return None,
-            DynInfo::V0(_) => return None,
-        })
+        Some(
+            try bikeshed _ {
+                match self {
+                    DynInfo::V3(x) => &x.get().opposite_info.as_ref()?.name,
+                    DynInfo::V2(_) => return None,
+                    DynInfo::V1(_) => return None,
+                    DynInfo::V0(_) => return None,
+                }
+            },
+        )
     }
 
     pub fn opposite_version(&self) -> Option<Result<&Hexa<'_>, Error>> {
-        Some(match self {
-            DynInfo::V3(x) => try { &x.get().opposite_info.as_ref()?.version },
-            DynInfo::V2(x) => try { x.get().opposite_version.as_ref()? },
-            DynInfo::V1(x) => try { x.get().opposite_version.as_ref()? },
-            DynInfo::V0(_) => return None,
-        })
+        Some(
+            try bikeshed _ {
+                match self {
+                    DynInfo::V3(x) => &x.get().opposite_info.as_ref()?.version,
+                    DynInfo::V2(x) => x.get().opposite_version.as_ref()?,
+                    DynInfo::V1(x) => x.get().opposite_version.as_ref()?,
+                    DynInfo::V0(_) => return None,
+                }
+            },
+        )
     }
 }
 

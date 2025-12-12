@@ -25,6 +25,7 @@
 
 #![no_std]
 #![feature(try_blocks)]
+#![feature(try_blocks_heterogeneous)]
 wasefire::applet!();
 
 use alloc::boxed::Box;
@@ -41,7 +42,7 @@ fn main() {
 
 fn handler(request: Vec<u8>) -> Vec<u8> {
     // Parse and process the request.
-    let result: Result<String, String> = try {
+    let result = try bikeshed Result<String, String> {
         let request = String::from_utf8(request).map_err(|_| "Request is not UTF-8")?;
         Command::parse(&request)?.process()?
     };

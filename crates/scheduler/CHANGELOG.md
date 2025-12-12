@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.2-git
+
+### Patch
+
+- Use heterogeneous try blocks when needed
+- Update dependencies
+
 ## 0.5.1
 
 ### Minor
