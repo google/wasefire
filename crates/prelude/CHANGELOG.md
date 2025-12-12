@@ -9,6 +9,7 @@
 
 ### Patch
 
+- Use `Box<[u8]>` instead of `*mut u8` for templates in `fingerprint::matcher`
 - Update dependencies
 
 ## 0.8.0

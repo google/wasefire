@@ -18,7 +18,7 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 use wasefire_applet_api::fingerprint::matcher as api;
-use wasefire_common::ptr::{OwnedPtr, SharedPtr};
+use wasefire_common::ptr::SharedPtr;
 use wasefire_error::Code;
 use wasefire_sync::{Lazy, Mutex};
 
@@ -63,7 +63,7 @@ pub struct EnrollProgress {
 
 enum EnrollState {
     Running(EnrollProgress),
-    Done { template: OwnedPtr<u8> },
+    Done { template: Box<[u8]> },
     Failed { error: Error },
 }
 
@@ -107,7 +107,7 @@ impl Enroll {
                 let _ = self.abort();
                 Err(Error::user(Code::InvalidState))
             }
-            EnrollState::Done { template } => Ok(new_template(template)),
+            EnrollState::Done { template } => Ok(template),
             EnrollState::Failed { error } => Err(error),
         }
     }
@@ -137,7 +137,7 @@ impl Enroll {
 
     extern "C" fn done(data: *const u8, result: isize, template: *mut u8) {
         *Self::state(data).lock() = match convert_unit(result) {
-            Ok(()) => EnrollState::Done { template: OwnedPtr(template) },
+            Ok(()) => EnrollState::Done { template: new_template(template) },
             Err(error) => EnrollState::Failed { error },
         }
     }
@@ -177,7 +177,7 @@ impl Drop for Identify {
 
 enum IdentifyState {
     Started,
-    Done { matched: bool, template: OwnedPtr<u8> },
+    Done { template: Option<Box<[u8]>> },
     Failed { error: Error },
 }
 
@@ -221,9 +221,9 @@ impl Identify {
                 let _ = self.abort();
                 Err(Error::user(Code::InvalidState))
             }
-            IdentifyState::Done { matched: false, .. } => Ok(IdentifyResult::NoMatch),
-            IdentifyState::Done { matched: true, template } => {
-                Ok(IdentifyResult::Match { template: new_template(template) })
+            IdentifyState::Done { template: None } => Ok(IdentifyResult::NoMatch),
+            IdentifyState::Done { template: Some(template) } => {
+                Ok(IdentifyResult::Match { template })
             }
             IdentifyState::Failed { error } => Err(error),
         }
@@ -243,7 +243,8 @@ impl Identify {
 
     extern "C" fn call(data: *const u8, result: isize, template: *mut u8) {
         *Self::state(data).lock() = match convert_bool(result) {
-            Ok(matched) => IdentifyState::Done { matched, template: OwnedPtr(template) },
+            Ok(false) => IdentifyState::Done { template: None },
+            Ok(true) => IdentifyState::Done { template: Some(new_template(template)) },
             Err(error) => IdentifyState::Failed { error },
         }
     }
@@ -303,9 +304,9 @@ impl Templates {
     }
 }
 
-fn new_template(template: OwnedPtr<u8>) -> Box<[u8]> {
+fn new_template(template: *mut u8) -> Box<[u8]> {
     let len = template_length();
-    let ptr = core::ptr::slice_from_raw_parts_mut(template.0, len);
+    let ptr = core::ptr::slice_from_raw_parts_mut(template, len);
     unsafe { Box::from_raw(ptr) }
 }
 

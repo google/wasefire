@@ -5,7 +5,6 @@
 ### Minor
 
 - Add `serde` feature to implement `Serialize` and `Deserialize` for `platform::Side`
-- Add `ptr::OwnedPtr` similar to `ptr::ExclusivePtr` but with ownership
 - Add `addr_of_symbol!()` to get the address of a linker symbol
 
 ## 0.1.0
