@@ -53,7 +53,7 @@ fn is_supported<B: Board>(call: SchedulerCall<B, api::is_supported::Sig>) {
 fn get_layout<B: Board>(mut call: SchedulerCall<B, api::get_layout::Sig>) {
     let api::get_layout::Params { curve, kind, size, align } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let layout = layout::<B>(convert_curve::<B>(*curve)?, convert_kind(*kind)?);
         memory.get_mut(*size, 4)?.copy_from_slice(&(layout.size() as u32).to_le_bytes());
         memory.get_mut(*align, 4)?.copy_from_slice(&(layout.align() as u32).to_le_bytes());
@@ -65,7 +65,7 @@ fn get_layout<B: Board>(mut call: SchedulerCall<B, api::get_layout::Sig>) {
 fn generate<B: Board>(mut call: SchedulerCall<B, api::generate::Sig>) {
     let api::generate::Params { curve, private } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let curve = convert_curve::<B>(*curve)?;
         let private = get_kind_mut::<B>(&memory, *private, curve, Kind::Private)?;
         match curve {
@@ -84,7 +84,7 @@ fn generate<B: Board>(mut call: SchedulerCall<B, api::generate::Sig>) {
 fn public<B: Board>(mut call: SchedulerCall<B, api::public::Sig>) {
     let api::public::Params { curve, private, public } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let curve = convert_curve::<B>(*curve)?;
         let private = get_kind::<B>(&memory, *private, curve, Kind::Private)?;
         let public = get_kind_mut::<B>(&memory, *public, curve, Kind::Public)?;
@@ -104,7 +104,7 @@ fn public<B: Board>(mut call: SchedulerCall<B, api::public::Sig>) {
 fn shared<B: Board>(mut call: SchedulerCall<B, api::shared::Sig>) {
     let api::shared::Params { curve, private, public, shared } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let curve = convert_curve::<B>(*curve)?;
         let private = get_kind::<B>(&memory, *private, curve, Kind::Private)?;
         let public = get_kind::<B>(&memory, *public, curve, Kind::Public)?;
@@ -125,7 +125,7 @@ fn shared<B: Board>(mut call: SchedulerCall<B, api::shared::Sig>) {
 fn drop<B: Board>(mut call: SchedulerCall<B, api::drop::Sig>) {
     let api::drop::Params { curve, kind, object } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let curve = convert_curve::<B>(*curve)?;
         let kind = convert_kind(*kind)?;
         Error::user(Code::InvalidArgument).check(matches!(kind, Kind::Private | Kind::Shared))?;
@@ -154,7 +154,7 @@ fn drop<B: Board>(mut call: SchedulerCall<B, api::drop::Sig>) {
 fn export<B: Board>(mut call: SchedulerCall<B, api::export::Sig>) {
     let api::export::Params { curve, public, x, y } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let curve = convert_curve::<B>(*curve)?;
         let public = get_kind::<B>(&memory, *public, curve, Kind::Public)?;
         match curve {
@@ -181,7 +181,7 @@ fn export<B: Board>(mut call: SchedulerCall<B, api::export::Sig>) {
 fn import<B: Board>(mut call: SchedulerCall<B, api::import::Sig>) {
     let api::import::Params { curve, x, y, public } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let curve = convert_curve::<B>(*curve)?;
         let public = get_kind_mut::<B>(&memory, *public, curve, Kind::Public)?;
         match curve {
@@ -208,7 +208,7 @@ fn import<B: Board>(mut call: SchedulerCall<B, api::import::Sig>) {
 fn access<B: Board>(mut call: SchedulerCall<B, api::access::Sig>) {
     let api::access::Params { curve, shared, x } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let curve = convert_curve::<B>(*curve)?;
         let shared = get_kind::<B>(&memory, *shared, curve, Kind::Shared)?;
         match curve {
