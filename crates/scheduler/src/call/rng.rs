@@ -38,7 +38,7 @@ fn fill_bytes<B: Board>(mut call: SchedulerCall<B, api::fill_bytes::Sig>) {
     let api::fill_bytes::Params { ptr, len } = call.read();
     let applet = call.applet();
     let memory = applet.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let output = memory.get_mut(*ptr, *len)?;
         board::Rng::<B>::fill_bytes(output)?
     };

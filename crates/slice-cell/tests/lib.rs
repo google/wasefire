@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(array_windows)]
 #![feature(get_disjoint_mut_helpers)]
 #![allow(clippy::reversed_empty_ranges)]
 #![allow(clippy::single_range_in_vec_init)]
