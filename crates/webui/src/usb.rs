@@ -16,7 +16,7 @@ use webusb_web::{OpenUsbDevice, UsbDevice};
 
 pub(crate) async fn list_devices() -> webusb_web::Result<Vec<UsbDevice>> {
     let mut devices = webusb_web::Usb::new()?.devices().await;
-    devices.sort_by_cached_key(|x| x.serial_number().unwrap());
+    devices.sort_by_cached_key(serial_number);
     Ok(devices)
 }
 
@@ -43,6 +43,10 @@ pub(crate) async fn forget_device(device: UsbDevice) {
 
 pub(crate) fn is_wasefire(device: &UsbDevice) -> bool {
     device.vendor_id() == VID_GOOGLE && device.product_id() == PID_WASEFIRE
+}
+
+pub(crate) fn serial_number(device: &UsbDevice) -> String {
+    device.serial_number().unwrap_or_else(|| "N/A".to_string())
 }
 
 const VID_GOOGLE: u16 = 0x18d1;

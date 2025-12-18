@@ -29,6 +29,7 @@ use yew::platform::time::sleep;
 use yew::{AttrValue, Callback, Html, UseStateHandle, UseStateSetter, html};
 
 use crate::protocol::call;
+use crate::usb::serial_number;
 
 pub(crate) enum Page {
     Error { error: String, device: Option<Rc<OpenUsbDevice>> },
@@ -45,7 +46,7 @@ pub(crate) enum Page {
 pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
     let close = |device: Option<Rc<OpenUsbDevice>>| {
         Callback::from({
-            let page = page.clone();
+            let page = page.setter();
             move |_| match device.clone() {
                 None => page.set(Page::ListDevices),
                 Some(device) => page.set(Page::Connected { device }),
@@ -55,9 +56,7 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
     match &*page {
         Page::Error { error, device } => {
             let close = close(device.clone());
-            html_error(html! {<>
-                { error }{ " " }<button onclick={close}>{ "Close" }</button>
-            </>})
+            html_error(html!(<>{ error }{ " " }<button onclick={close}>{ "Close" }</button></>))
         }
         Page::Feedback { content } => html_running(content.clone()),
         Page::Result { content, device } => {
@@ -65,41 +64,38 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
             html_idle(html!(<>{ content.clone() }<button onclick={close}>{ "Close" }</button></>))
         }
         Page::ListDevices => {
-            spawn_local({
-                let page = page.clone();
-                async move {
-                    match crate::usb::list_devices().await {
-                        Ok(devices) => page.set(Page::ChooseDevice { devices }),
-                        Err(error) => page.set(Page::error(error)),
-                    }
+            spawn_local(async move {
+                match crate::usb::list_devices().await {
+                    Ok(devices) => page.set(Page::ChooseDevice { devices }),
+                    Err(error) => page.set(Page::error(error)),
                 }
             });
             html_running("Looking for paired USB devices...".into())
         }
         Page::ChooseDevice { devices } => {
             let refresh = Callback::from({
-                let page = page.clone();
+                let page = page.setter();
                 move |_| page.set(Page::ListDevices)
             });
             let request = Callback::from({
-                let page = page.clone();
+                let page = page.setter();
                 move |_| page.set(Page::RequestDevice)
             });
             let device_list = devices.iter().map(|device| {
                 let connect = Callback::from({
-                    let page = page.clone();
+                    let page = page.setter();
                     let device = device.clone();
                     move |_| page.set(Page::OpenDevice { device: device.clone() })
                 });
                 let forget = Callback::from({
-                    let page = page.clone();
+                    let page = page.setter();
                     let device = device.clone();
                     move |_| page.set(Page::ForgetDevice { device: device.clone() })
                 });
                 html! {
                     <li>
                         <button onclick={connect}>{ "Connect" }</button>{ " to device " }
-                        <code>{ device.serial_number().unwrap() }</code>{ " or " }
+                        <code>{ serial_number(device) }</code>{ " or " }
                         <button onclick={forget}>{ "Forget" }</button>{ " it." }
                     </li>
                 }
@@ -116,54 +112,46 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
             </>})
         }
         Page::RequestDevice => {
-            spawn_local({
-                let page = page.clone();
-                async move {
-                    match crate::usb::request_device().await {
-                        Ok(device) => page.set(Page::OpenDevice { device }),
-                        Err(error) => page.set(Page::error(error)),
-                    }
+            spawn_local(async move {
+                match crate::usb::request_device().await {
+                    Ok(device) => page.set(Page::OpenDevice { device }),
+                    Err(error) => page.set(Page::error(error)),
                 }
             });
             html_running("Pairing a new device...".into())
         }
         Page::OpenDevice { device } => {
-            spawn_local({
-                let page = page.clone();
-                let device = device.clone();
-                async move {
-                    match crate::usb::open_device(&device).await {
-                        Ok(device) => page.set(Page::Connected { device: Rc::new(device) }),
-                        Err(error) => page.set(Page::error(error)),
-                    }
+            let device = device.clone();
+            spawn_local(async move {
+                match crate::usb::open_device(&device).await {
+                    Ok(device) => page.set(Page::Connected { device: Rc::new(device) }),
+                    Err(error) => page.set(Page::error(error)),
                 }
             });
             html_running("Connecting to device...".into())
         }
         Page::ForgetDevice { device } => {
-            spawn_local({
-                let device = device.clone();
-                async move {
-                    crate::usb::forget_device(device).await;
-                    gloo::utils::window().location().reload().unwrap();
-                }
+            let device = device.clone();
+            spawn_local(async move {
+                crate::usb::forget_device(device).await;
+                gloo::utils::window().location().reload().unwrap();
             });
             html_running("Forgetting device...".into())
         }
         Page::Connected { device } => {
             let disconnect = Callback::from({
-                let page = page.clone();
+                let page = page.setter();
                 move |_| page.set(Page::ListDevices)
             });
             let platform = [
-                service::PlatformInfo::input(page.clone(), device.clone()),
-                service::PlatformReboot::input(page.clone(), device.clone()),
-                service::PlatformUpdate::input(page.clone(), device.clone()),
+                service::PlatformInfo::input(page.setter(), device.clone()),
+                service::PlatformReboot::input(page.setter(), device.clone()),
+                service::PlatformUpdate::input(page.setter(), device.clone()),
             ];
             let applet = [
-                service::AppletExitStatus::input(page.clone(), device.clone()),
-                service::AppletReboot::input(page.clone(), device.clone()),
-                service::AppletInstall::input(page.clone(), device.clone()),
+                service::AppletExitStatus::input(page.setter(), device.clone()),
+                service::AppletReboot::input(page.setter(), device.clone()),
+                service::AppletInstall::input(page.setter(), device.clone()),
             ];
             html_idle(html! {<>
                 <div class="columns">
@@ -173,7 +161,7 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
                         <ul class="commands">{ for applet }</ul></div>
                 </div>
                 <button onclick={disconnect}>{ "Disconnect" }</button>{ " from device " }
-                <code>{ device.device().serial_number().unwrap() }</code>{ "." }
+                <code>{ serial_number(device.device()) }</code>{ "." }
             </>})
         }
     }
@@ -245,31 +233,23 @@ fn convert_not_found<T>(
 }
 
 trait Command: Service {
-    fn input(page: UseStateHandle<Page>, device: Rc<OpenUsbDevice>) -> Html;
+    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html;
 }
 
 impl Command for service::PlatformInfo {
-    fn input(page: UseStateHandle<Page>, device: Rc<OpenUsbDevice>) -> Html {
-        let click = Callback::from({
+    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html {
+        let click = Callback::from(move |_| {
+            page.set(Page::Feedback { content: "Requesting platform info...".into() });
             let page = page.clone();
             let device = device.clone();
-            move |_| {
-                page.set(Page::Feedback { content: "Requesting platform info...".into() });
-                spawn_local({
-                    let page = page.clone();
-                    let device = device.clone();
-                    async move {
-                        let info = call::<service::PlatformInfo>(&device, ()).await;
-                        let info = unwrap!(page, device, info);
-                        let content = platform_info(info.get());
-                        page.set(Page::Result { content, device: Some(device) });
-                    }
-                });
-            }
+            spawn_local(async move {
+                let info = call::<service::PlatformInfo>(&device, ()).await;
+                let info = unwrap!(page, device, info);
+                let content = platform_info(info.get());
+                page.set(Page::Result { content, device: Some(device) });
+            });
         });
-        html! {
-            <li><button onclick={click}>{ "Read" }</button>{ " platform info" }</li>
-        }
+        html!(<li><button onclick={click}>{ "Read" }</button>{ " platform info" }</li>)
     }
 }
 
@@ -290,32 +270,24 @@ fn platform_info(info: &wasefire_protocol::platform::Info) -> Html {
 }
 
 impl Command for service::PlatformReboot {
-    fn input(page: UseStateHandle<Page>, device: Rc<OpenUsbDevice>) -> Html {
-        let click = Callback::from({
+    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html {
+        let click = Callback::from(move |_| {
+            page.set(Page::Feedback { content: "Rebooting platform...".into() });
             let page = page.clone();
             let device = device.clone();
-            move |_| {
-                page.set(Page::Feedback { content: "Rebooting platform...".into() });
-                spawn_local({
-                    let page = page.clone();
-                    let device = device.clone();
-                    async move {
-                        let reboot = call::<service::PlatformReboot>(&device, ()).await;
-                        match unwrap!(page, device, convert_final(reboot)) {
-                            Some(never) => *never.get(),
-                            None => platform_reboot(page, device.device().clone()).await,
-                        }
-                    }
-                });
-            }
+            spawn_local(async move {
+                let reboot = call::<service::PlatformReboot>(&device, ()).await;
+                match unwrap!(page, device, convert_final(reboot)) {
+                    Some(never) => *never.get(),
+                    None => platform_reboot(page, device.device().clone()).await,
+                }
+            });
         });
-        html! {
-            <li><button onclick={click}>{ "Reboot" }</button>{ " platform" }</li>
-        }
+        html!(<li><button onclick={click}>{ "Reboot" }</button>{ " platform" }</li>)
     }
 }
 
-async fn platform_reboot(page: UseStateHandle<Page>, device: UsbDevice) {
+async fn platform_reboot(page: UseStateSetter<Page>, device: UsbDevice) {
     for _ in 0 .. 10 {
         if !device.opened() {
             return page.set(Page::Result { content: "Platform rebooted. ".into(), device: None });
@@ -326,9 +298,9 @@ async fn platform_reboot(page: UseStateHandle<Page>, device: UsbDevice) {
 }
 
 impl Command for service::AppletInstall {
-    fn input(page: UseStateHandle<Page>, device: Rc<OpenUsbDevice>) -> Html {
+    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html {
         let uninstall = Callback::from({
-            let page = page.setter();
+            let page = page.clone();
             let device = device.clone();
             move |_| {
                 let page = page.clone();
@@ -342,12 +314,10 @@ impl Command for service::AppletInstall {
             }
         });
         let device = Irrelevant::hide(device);
-        html! {
-            <>
-                <li><AppletInstall page={page.setter()} device={device.clone()} /></li>
-                <li><button onclick={uninstall}>{ "Uninstall" }</button>{ " applet" }</li>
-            </>
-        }
+        html! {<>
+            <li><AppletInstall page={page} device={device.clone()} /></li>
+            <li><button onclick={uninstall}>{ "Uninstall" }</button>{ " applet" }</li>
+        </>}
     }
 }
 
@@ -356,7 +326,6 @@ impl Command for service::AppletInstall {
 fn applet_install(page: UseStateSetter<Page>, device: Rc<Irrelevant<OpenUsbDevice>>) -> Html {
     let file = yew::use_node_ref();
     let install = Callback::from({
-        let page = page.clone();
         let file = file.clone();
         move |_| {
             let device = Irrelevant::open(device.clone());
@@ -366,28 +335,23 @@ fn applet_install(page: UseStateSetter<Page>, device: Rc<Irrelevant<OpenUsbDevic
             };
             page.set(Page::Feedback { content: "Reading file...".into() });
             let file = File::from(file);
-            spawn_local({
-                let page = page.clone();
-                let device = device.clone();
-                async move {
-                    let content = match gloo::file::futures::read_as_bytes(&file).await {
-                        Ok(x) => x,
-                        Err(error) => return page.set(Page::error_device(error, &device)),
-                    };
-                    if transfer::<service::AppletInstall>(&page, &device, &content, None).await {
-                        let content = "Applet installed. ".into();
-                        page.set(Page::Result { content, device: Some(device) });
-                    }
+            let page = page.clone();
+            let device = device.clone();
+            spawn_local(async move {
+                let content = match gloo::file::futures::read_as_bytes(&file).await {
+                    Ok(x) => x,
+                    Err(error) => return page.set(Page::error_device(error, &device)),
+                };
+                if transfer::<service::AppletInstall>(&page, &device, &content, None).await {
+                    let content = "Applet installed. ".into();
+                    page.set(Page::Result { content, device: Some(device) });
                 }
             });
         }
     });
-
     html! {<>
         <button onclick={install}>{ "Install" }</button>{ " applet:" }
-        <ul class="commands">
-            <li><input ref={file} type="file" /></li>
-        </ul>
+        <ul class="commands"><li><input ref={file} type="file" /></li></ul>
     </>}
 }
 
@@ -412,13 +376,10 @@ async fn transfer<
     let n = *num_pages;
     for i in 0 .. n {
         page.set(Page::Feedback {
-            content: html! {
-                <>
-                    <h2>{ &title }</h2>
-                    { "Erasing: " }
-                    <progress value={i.to_string()} max={n.to_string()}></progress>
-                </>
-            },
+            content: html! {<>
+                <h2>{ &title }</h2>
+                { "Erasing: " }<progress value={i.to_string()} max={n.to_string()}></progress>
+            </>},
         });
         let erase = call::<T>(device, transfer::Request::Erase).await;
         let transfer::Response::Erase = unwrap!(page, device, erase).get() else {
@@ -430,13 +391,9 @@ async fn transfer<
     for (i, chunk) in content.chunks(*chunk_size).enumerate() {
         let value = (*chunk_size * i).to_string();
         page.set(Page::Feedback {
-            content: html! {
-                <>
-                    <h2>{ &title }</h2>
-                    { "Writing: " }
-                    <progress value={value} max={&len}></progress>
-                </>
-            },
+            content: html! {<>
+                <h2>{ &title }</h2>{ "Writing: " }<progress value={value} max={&len}></progress>
+            </>},
         });
         let chunk = Cow::Borrowed(chunk);
         let write = call::<T>(device, transfer::Request::Write { chunk }).await;
@@ -457,64 +414,48 @@ async fn transfer<
 }
 
 impl Command for service::AppletExitStatus {
-    fn input(page: UseStateHandle<Page>, device: Rc<OpenUsbDevice>) -> Html {
-        let click = Callback::from({
+    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html {
+        let click = Callback::from(move |_| {
+            page.set(Page::Feedback { content: "Requesting applet status...".into() });
             let page = page.clone();
             let device = device.clone();
-            move |_| {
-                page.set(Page::Feedback { content: "Requesting applet status...".into() });
-                spawn_local({
-                    let page = page.clone();
-                    let device = device.clone();
-                    async move {
-                        let status = call::<service::AppletExitStatus>(&device, AppletId).await;
-                        let content = match unwrap!(page, device, convert_not_found(status)) {
-                            None => "There is no applet installed. ".into(),
-                            Some(x) => match x.get() {
-                                None => "The applet is running. ".into(),
-                                Some(x) => format!("{x}. ").into(),
-                            },
-                        };
-                        page.set(Page::Result { content, device: Some(device) });
-                    }
-                });
-            }
+            spawn_local(async move {
+                let status = call::<service::AppletExitStatus>(&device, AppletId).await;
+                let content = match unwrap!(page, device, convert_not_found(status)) {
+                    None => "There is no applet installed. ".into(),
+                    Some(x) => match x.get() {
+                        None => "The applet is running. ".into(),
+                        Some(x) => format!("{x}. ").into(),
+                    },
+                };
+                page.set(Page::Result { content, device: Some(device) });
+            });
         });
-        html! {
-            <li><button onclick={click}>{ "Read" }</button>{ " applet status" }</li>
-        }
+        html!(<li><button onclick={click}>{ "Read" }</button>{ " applet status" }</li>)
     }
 }
 
 impl Command for service::AppletReboot {
-    fn input(page: UseStateHandle<Page>, device: Rc<OpenUsbDevice>) -> Html {
-        let click = Callback::from({
+    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html {
+        let click = Callback::from(move |_| {
+            page.set(Page::Feedback { content: "Rebooting applet...".into() });
             let page = page.clone();
             let device = device.clone();
-            move |_| {
-                page.set(Page::Feedback { content: "Rebooting applet...".into() });
-                spawn_local({
-                    let page = page.clone();
-                    let device = device.clone();
-                    async move {
-                        let reboot = call::<service::AppletReboot>(&device, AppletId).await;
-                        unwrap!(page, device, reboot).get();
-                        let content = "Applet rebooted. ".into();
-                        page.set(Page::Result { content, device: Some(device) });
-                    }
-                });
-            }
+            spawn_local(async move {
+                let reboot = call::<service::AppletReboot>(&device, AppletId).await;
+                unwrap!(page, device, reboot).get();
+                let content = "Applet rebooted. ".into();
+                page.set(Page::Result { content, device: Some(device) });
+            });
         });
-        html! {
-            <li><button onclick={click}>{ "Reboot" }</button>{ " applet" }</li>
-        }
+        html!(<li><button onclick={click}>{ "Reboot" }</button>{ " applet" }</li>)
     }
 }
 
 impl Command for service::PlatformUpdate {
-    fn input(page: UseStateHandle<Page>, device: Rc<OpenUsbDevice>) -> Html {
+    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html {
         let device = Irrelevant::hide(device);
-        html!(<li><PlatformUpdate page={page.setter()} device={device.clone()} /></li>)
+        html!(<li><PlatformUpdate page={page} device={device.clone()} /></li>)
     }
 }
 
@@ -524,7 +465,6 @@ fn platform_update(page: UseStateSetter<Page>, device: Rc<Irrelevant<OpenUsbDevi
     let side_a = yew::use_node_ref();
     let side_b = yew::use_node_ref();
     let install = Callback::from({
-        let page = page.clone();
         let side_a = side_a.clone();
         let side_b = side_b.clone();
         move |_| {
@@ -543,7 +483,6 @@ fn platform_update(page: UseStateSetter<Page>, device: Rc<Irrelevant<OpenUsbDevi
             spawn_local(platform_update_(page.clone(), device.clone(), file_a, file_b));
         }
     });
-
     html! {<>
         <button onclick={install}>{ "Update" }</button>{ " platform:" }
         <ul class="commands">
@@ -589,7 +528,7 @@ async fn platform_update_(
 }
 
 async fn reconnect(device: &UsbDevice) -> Result<Rc<OpenUsbDevice>, String> {
-    let serial = device.serial_number().unwrap();
+    let serial = serial_number(device);
     let usb = webusb_web::Usb::new().map_err(|x| x.to_string())?;
     let mut events = usb.events();
     while let Some(event) = events.next().await {
@@ -597,7 +536,7 @@ async fn reconnect(device: &UsbDevice) -> Result<Rc<OpenUsbDevice>, String> {
             webusb_web::UsbEvent::Connected(x) => x,
             _ => continue,
         };
-        if crate::usb::is_wasefire(&device) && device.serial_number().unwrap() == serial {
+        if crate::usb::is_wasefire(&device) && serial_number(&device) == serial {
             return match crate::usb::open_device(&device).await {
                 Ok(device) => Ok(Rc::new(device)),
                 Err(error) => Err(error.to_string()),
@@ -617,10 +556,12 @@ impl<T> PartialEq for Irrelevant<T> {
 }
 impl<T> Irrelevant<T> {
     fn hide(x: Rc<T>) -> Rc<Self> {
+        // SAFETY: Irrelevant<T> is a transparent wrapper of T.
         unsafe { Rc::from_raw(Rc::into_raw(x).cast()) }
     }
 
     fn open(x: Rc<Self>) -> Rc<T> {
+        // SAFETY: Irrelevant<T> is a transparent wrapper of T.
         unsafe { Rc::from_raw(Rc::into_raw(x).cast()) }
     }
 }
