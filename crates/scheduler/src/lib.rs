@@ -355,6 +355,7 @@ impl<B: Board> Scheduler<B> {
         let pulley = unsafe { <board::Applet<B> as board::applet::Api>::get()? };
         if pulley.is_empty() {
             log::info!("No applet to start.");
+            self.applet = applet::Slot::Empty;
             return Ok(());
         }
         // TODO: Check the wasmtime version. Or is it done by wasmtime already?
@@ -402,6 +403,7 @@ impl<B: Board> Scheduler<B> {
         let wasm = unsafe { <board::Applet<B> as board::applet::Api>::get()? };
         if wasm.is_empty() {
             log::info!("No applet to start.");
+            self.applet = applet::Slot::Empty;
             return Ok(());
         }
         log::info!("Starting applet.");
