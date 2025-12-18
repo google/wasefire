@@ -4,6 +4,9 @@
 
 ### Major
 
+- Change `action::RustAppletBuild` to return the destination path which is now a bundle
+- Change `output_dir: PathBuf` to `output: BundleOutput` in `action::RustAppletBuild`
+- Change `action::AppletInstall` to use a bundle instead of a wasm or pulley file
 - Rename `action::PlatformInfo::print()` to `action::PlatformInfo::run()`
 - Remove `action::PlatformInfo::run()` in favor of `wasefire_protocol::Device::platform_info()`
 - Remove `action::PlatformApiVersion` in favor of `wasefire_protocol::Device::version()`
@@ -12,6 +15,9 @@
 
 ### Minor
 
+- Add `action::BundleOutput` to control where to write a bundle file
+- Add `action::BundleInfo` to print information about a bundle
+- Add `name` and `version` flags to `action::RustAppletBuild`
 - Add `action::AppletMetadata` to print the metadata of an applet
 - Use the toolchain of the release if `rustup` is installed
 - Use the `immediate-abort` panic strategy instead of `build-std-features`

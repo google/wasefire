@@ -38,6 +38,9 @@ You can use one of the following commands to verify a downloaded asset:
     gh attestation verify --repo=google/wasefire ASSET_PATH
     gh attestation verify --owner=google --bundle=attestation.intoto.jsonl ASSET_PATH
 
+You can use the [Web UI] to update your platform.
+
+[Web UI]: https://google.github.io/wasefire/webui
 [changelog]: https://github.com/google/wasefire/blob/main/docs/releases/$DATE.md
 EOF
 

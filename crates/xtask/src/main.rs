@@ -31,7 +31,9 @@ use tokio::process::Command;
 use tokio::sync::OnceCell;
 use wasefire_cli_tools::error::root_cause_is;
 use wasefire_cli_tools::{action, changelog, cmd, fs};
-use wasefire_protocol::common::{Hexa, Name};
+use wasefire_protocol::bundle::Bundle;
+use wasefire_protocol::common::{AppletKind, Hexa, Name};
+use wasefire_protocol::{bundle, platform};
 
 mod footprint;
 mod opentitan;
@@ -141,6 +143,10 @@ struct AppletOptions {
 
     /// Applet name or path (if starts with dot or slash).
     name: String,
+
+    /// Applet version.
+    #[arg(long, default_value_t)]
+    version: Hexa<'static>,
 
     /// Cargo profile.
     #[arg(long)]
@@ -356,8 +362,11 @@ enum RunnerCommand {
     /// Flashes the runner (after erasing the device).
     Flash(Flash),
 
-    /// Produces the target/wasefire/platform{,_a,_b}.bin files for platform update.
+    /// Produces the bundle file to update the platform.
     Bundle {
+        #[command(flatten)]
+        output: action::BundleOutput,
+
         #[arg(skip)]
         step: usize,
     },
@@ -513,10 +522,13 @@ impl AppletOptions {
     }
 
     async fn execute_rust(self, main: &MainOptions, command: &Option<AppletCommand>) -> Result<()> {
-        let dir: PathBuf = if self.name.starts_with(['.', '/']) {
-            self.name.into()
+        let (dir, name): (PathBuf, _) = if self.name.starts_with(['.', '/']) {
+            (self.name.into(), Name::new("noname".into()).unwrap())
         } else {
-            ["examples", &self.lang, &self.name].into_iter().collect()
+            (
+                ["examples", &self.lang, &self.name].into_iter().collect(),
+                Name::new(self.name.into()).unwrap(),
+            )
         };
         ensure!(fs::exists(&dir).await, "{} does not exist", dir.display());
         let native = match (main.native, &main.native_target, command) {
@@ -535,12 +547,14 @@ impl AppletOptions {
         };
         let mut action = action::RustAppletBuild {
             prod: main.release,
+            name,
+            version: self.version,
             native: native.map(|x| x.to_string()),
             pulley: main.pulley,
             opt_level: self.opt_level,
             stack_size: self.stack_size,
             crate_dir: dir,
-            output_dir: "target/wasefire".into(),
+            output: Self::bundle_output(),
             ..action::RustAppletBuild::parse_from::<_, OsString>([])
         };
         if let Some(profile) = self.profile {
@@ -555,10 +569,10 @@ impl AppletOptions {
         }
         let size = match native {
             Some(_) => footprint::rust_size("target/wasefire/libapplet.a").await?,
-            None if main.pulley => {
-                fs::metadata("target/wasefire/applet.pulley").await?.len() as usize
+            None => {
+                let kind = if main.pulley { AppletKind::Pulley } else { AppletKind::Wasm };
+                fs::metadata(format!("target/wasefire/applet.{kind}")).await?.len() as usize
             }
-            None => fs::metadata("target/wasefire/applet.wasm").await?.len() as usize,
         };
         if main.size {
             println!("Size: {size}");
@@ -590,16 +604,20 @@ impl AppletOptions {
         asc.arg(format!("{}/main.ts", self.name));
         asc.current_dir(dir);
         cmd::execute(&mut asc).await?;
-        let opt = "target/wasefire/applet-opt.wasm";
-        action::optimize_wasm(src, self.opt_level, opt).await?;
-        if main.pulley {
-            let dst = "target/wasefire/applet.pulley";
-            action::compile_pulley(opt, dst).await?;
-        } else {
-            let dst = "target/wasefire/applet.wasm";
-            action::compute_sidetable(opt, dst).await?;
-        }
+        let kind = if main.pulley { AppletKind::Pulley } else { AppletKind::Wasm };
+        let name = Name::new((&self.name).into()).unwrap();
+        let version = self.version.reborrow();
+        Self::bundle_output()
+            .bundle_applet(src, "target", self.opt_level, kind, name, version)
+            .await?;
         Ok(())
+    }
+
+    fn bundle_output() -> action::BundleOutput {
+        action::BundleOutput {
+            output: "target/wasefire/".into(),
+            ..action::BundleOutput::parse_from::<_, OsString>([])
+        }
     }
 }
 
@@ -608,11 +626,7 @@ impl AppletCommand {
         match self {
             AppletCommand::Runner(runner) => runner.execute(main).await,
             AppletCommand::Install { options, transfer, mut wait } => {
-                let applet = if main.pulley {
-                    "target/wasefire/applet.pulley".into()
-                } else {
-                    "target/wasefire/applet.wasm".into()
-                };
+                let applet = "target/wasefire/applet.wfb".into();
                 if let Some(action::AppletInstallWait::Wait { action }) = &mut wait {
                     action.ensure_exit();
                 }
@@ -637,7 +651,7 @@ impl RunnerOptions {
             "unsupported runner command for single-sided platforms"
         );
         let mut step = match &cmd {
-            Some(RunnerCommand::Bundle { step }) => *step,
+            Some(RunnerCommand::Bundle { step, .. }) => *step,
             _ => 0,
         };
         let flash = match &cmd {
@@ -825,9 +839,12 @@ impl RunnerOptions {
         let elf = self.name.elf(main).await;
         if self.name == RunnerName::Nordic {
             let name = self.name(24)?;
-            let mut version = self.version.clone().unwrap_or_default();
+            let version = self.version.get_or_insert_default();
             version.extend(4);
-            ensure!(version < Hexa((&[0xff; 4]).into()), "--version must be smaller than ffffffff");
+            ensure!(
+                *version < Hexa((&[0xff; 4]).into()),
+                "--version must be smaller than ffffffff"
+            );
             let version = u32::from_be_bytes(version[.. 4].try_into()?);
             let mut content = fs::read(&elf).await?;
             let pos = section_offset(&content, ".header")?;
@@ -837,10 +854,10 @@ impl RunnerOptions {
         }
         if self.name == RunnerName::OpenTitan {
             let _name = self.name(0)?;
-            let mut version = self.version.clone().unwrap_or_default();
+            let version = self.version.get_or_insert_default();
             version.extend(20);
             ensure!(
-                version < Hexa((&[0xff; 20]).into()),
+                *version < Hexa((&[0xff; 20]).into()),
                 "--version must be smaller than [0xff; 20]"
             );
             let len = [4, 4, 4, 8].into_iter().fold(0, |pos, len| {
@@ -849,7 +866,7 @@ impl RunnerOptions {
             });
             let mut content = fs::read(&elf).await?;
             let pos = section_offset(&content, ".manifest")? + 836;
-            content[pos ..][.. len].copy_from_slice(&version);
+            content[pos ..][.. len].copy_from_slice(version);
             fs::write(&elf, content).await?;
         }
         if self.measure_bloat {
@@ -927,13 +944,30 @@ impl RunnerOptions {
                 return Box::pin(self.execute(main, Some(cmd))).await;
             }
             RunnerCommand::Flash(x) => x,
-            RunnerCommand::Bundle { ref mut step } => {
+            RunnerCommand::Bundle { ref output, ref mut step } => {
                 self.bundle(&elf, side).await?;
                 if *step < max_step {
                     *step += 1;
                     return Box::pin(self.execute(main, Some(cmd))).await;
                 }
-                return Ok(());
+                let name = self.name_.unwrap_or_default();
+                let version = self.version.unwrap();
+                let path = output.path("platform.wfb").await?;
+                let metadata = platform::SideInfo0 { name, version };
+                let (side_a, side_b) = match max_step {
+                    0 => (tokio::fs::read("target/wasefire/platform.bin").await?, Vec::new()),
+                    1 => (
+                        tokio::fs::read("target/wasefire/platform_a.bin").await?,
+                        tokio::fs::read("target/wasefire/platform_b.bin").await?,
+                    ),
+                    _ => unreachable!(),
+                };
+                let bundle = Bundle::Platform0(bundle::Platform0 {
+                    metadata,
+                    side_a: side_a.into(),
+                    side_b: side_b.into(),
+                });
+                return fs::write(path, bundle.encode()?).await;
             }
         };
         if self.name == RunnerName::Nordic {

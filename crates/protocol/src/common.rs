@@ -64,6 +64,10 @@ impl<'a> Name<'a> {
     pub fn static_clone(&self) -> Name<'static> {
         Name(Cow::Owned(<str as ToOwned>::to_owned(self)))
     }
+
+    pub fn reborrow(&self) -> Name<'_> {
+        Name(<&str>::into(self))
+    }
 }
 
 /// Natural number represented in big-endian (possibly with leading zeroes).
@@ -130,6 +134,9 @@ impl<'a> PartialEq for Hexa<'a> {
 impl<'a> Eq for Hexa<'a> {}
 
 impl<'a> Hexa<'a> {
+    pub fn reborrow(&self) -> Hexa<'_> {
+        Hexa(<&[u8]>::into(self))
+    }
     /// Strips the leading zeroes.
     pub fn shrink(&self) -> &[u8] {
         let mut result = &*self.0;

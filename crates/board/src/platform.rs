@@ -56,7 +56,7 @@ pub trait Api: Send {
     fn running_side() -> wasefire_common::platform::Side;
 
     /// Returns the platform information of the running side.
-    fn running_info() -> wasefire_protocol::platform::SideInfo<'static>;
+    fn running_info() -> wasefire_protocol::platform::SideInfo0<'static>;
 
     /// Returns the platform information of the opposite side, if any.
     ///
@@ -65,7 +65,7 @@ pub trait Api: Send {
     /// There is a precise meaning to the following errors:
     /// - `World:NotEnough`: This platform has only one side.
     /// - `World:NotFound`: The other side is empty.
-    fn opposite_info() -> Result<wasefire_protocol::platform::SideInfo<'static>, Error>;
+    fn opposite_info() -> Result<wasefire_protocol::platform::SideInfo0<'static>, Error>;
 
     /// Reboots the device (thus platform and applets).
     fn reboot() -> Result<!, Error>;

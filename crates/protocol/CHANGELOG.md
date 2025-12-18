@@ -8,15 +8,16 @@
 - Restrict `platform::_Info0` and `transfer::_Request0` to `host` feature
 - Remove `Display` implementation of `platform::_Info1`
 - Deprecate `platform::Info` to `platform::_Info1`
-- Deprecate `Api::PlatformInfo` to `Api::_PlatformInfo1`
+- Deprecate `Api::PlatformInfo` to `Api::_PlatformInfo1` in favor of `Api::PlatformInfo3`
+- Deprecate `Api::AppletInstall` to `Api::_AppletInstall1` in favor of `Api::AppletInstall2`
 - Remove `Send` bound on `Connection`
 - Change `Connection{,Ext}` to take `&self` instead of `&mut self`
 - Use `{Name,Hexa}<'a, [u8]>` instead of `&'a [u8]` to support `serde`
 
 ### Minor
 
-- Add `Api::AppletMetadata` and `applet::Metadata` for the metadata of an applet
-- Bump `Api::AppletInstall` tag to make sure `AppletMetadata` is checked
+- Add `bundle::Bundle` for file bundles to `host` feature
+- Add `Api::AppletMetadata0` and `applet::Metadata0` for the metadata of an applet
 - Add `common::{Name,Hexa}` for graphic ASCII strings and hexadecimal numbers
 - Add `platform::DynInfo` to access the platform info regardless of the device version
 - Add `platform::Info` to also return `common::AppletKind` and platform name

@@ -21,7 +21,7 @@ use crate::common::{Hexa, Name};
 
 #[derive(Debug, Default, Clone, Wire)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Metadata<'a> {
+pub struct Metadata0<'a> {
     /// Name of the applet.
     pub name: Name<'a>,
 
@@ -29,14 +29,14 @@ pub struct Metadata<'a> {
     pub version: Hexa<'a>,
 }
 
-impl<'a> Metadata<'a> {
+impl<'a> Metadata0<'a> {
     /// Extracts the metadata suffix from an applet payload.
     ///
     /// The payload is the concatenation of:
     /// - The applet (N bytes). After the call, the payload will be the applet.
     /// - The metadata.
     /// - The value N encoded as 4 bytes in big-endian.
-    pub fn new(payload: &mut &'a [u8]) -> Result<Metadata<'a>, Error> {
+    pub fn new(payload: &mut &'a [u8]) -> Result<Metadata0<'a>, Error> {
         let (data, len) =
             payload.split_last_chunk::<4>().ok_or(Error::user(Code::InvalidLength))?;
         let len = u32::from_be_bytes(*len) as usize;

@@ -46,6 +46,8 @@ use wasefire_wire::Wire;
 use wasefire_wire::Yoke;
 
 pub mod applet;
+#[cfg(feature = "host")]
+pub mod bundle;
 pub mod common;
 #[cfg(feature = "host")]
 mod connection;
@@ -255,7 +257,7 @@ api! {
 
     /// (deprecated) Returns platform information (e.g. serial and version).
     ///
-    /// This message is deprecated in favor of [`PlatformInfo`].
+    /// This message is deprecated in favor of [`_PlatformInfo1`].
     5 [1 - 4] _PlatformInfo0: () => platform::_Info0<'a>,
 
     /// Calls a vendor-specific platform command.
@@ -274,12 +276,12 @@ api! {
 
     /// (deprecated) Installs an applet.
     ///
-    /// This message is deprecated in favor of [`AppletInstall`].
+    /// This message is deprecated in favor of [`_AppletInstall1`].
     9 [4 - 6] _AppletInstall0: transfer::_Request0<'a> => (),
 
     /// (deprecated) Uninstalls an applet.
     ///
-    /// This message is deprecated in favor of [`AppletInstall`] with an empty transfer.
+    /// This message is deprecated in favor of [`_AppletInstall1`] with an empty transfer.
     10 [4 - 6] _AppletUninstall0: () => (),
 
     /// Returns the exit status of an applet, if not running.
@@ -292,7 +294,7 @@ api! {
 
     /// (deprecated) Returns platform information.
     ///
-    /// This message is deprecated in favor of [`PlatformInfo`].
+    /// This message is deprecated in favor of [`_PlatformInfo2`].
     13 [5 - 8] _PlatformInfo1: () => platform::_Info1<'a>,
 
     /// Clears the store for the platform and all applets.
@@ -305,7 +307,7 @@ api! {
 
     /// (deprecated) Installs or uninstalls an applet.
     ///
-    /// This message is deprecated in favor of [`AppletInstall`].
+    /// This message is deprecated in favor of [`AppletInstall2`].
     16 [7 - 10] _AppletInstall1: transfer::Request<'a> => transfer::Response,
 
     /// Reboots an applet.
@@ -313,21 +315,20 @@ api! {
 
     /// (deprecated) Returns information about the platform.
     ///
-    /// This message is deprecated in favor of [`PlatformInfo`].
+    /// This message is deprecated in favor of [`PlatformInfo3`].
     18 [9 - 9] _PlatformInfo2: () => platform::_Info2<'a>,
 
     /// Returns information about the platform.
-    19 [10 -] PlatformInfo: () => platform::Info<'a>,
+    19 [10 -] PlatformInfo3: () => platform::Info3<'a>,
 
     /// Returns the metadata of an applet.
-    20 [11 -] AppletMetadata: applet::AppletId => applet::Metadata<'a>,
+    20 [11 -] AppletMetadata0: applet::AppletId => applet::Metadata0<'a>,
 
     /// Installs or uninstalls an applet.
     ///
-    /// The payload must be the concatenation of the applet, its metadata, and 4 big-endian bytes
-    /// encoding the size (in bytes) of the applet. The metadata must match what [`AppletMetadata`]
-    /// returns.
-    21 [11 -] AppletInstall: transfer::Request<'a> => transfer::Response,
+    /// The payload must be the concatenation of the applet, its metadata (serialized from
+    /// [`applet::Metadata0`]), and 4 big-endian bytes encoding the size (in bytes) of the applet.
+    21 [11 -] AppletInstall2: transfer::Request<'a> => transfer::Response,
 
     next 22 [12 -]
 }

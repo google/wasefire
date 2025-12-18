@@ -20,7 +20,8 @@ use futures_util::StreamExt;
 use gloo::file::File;
 use wasefire_common::platform::Side;
 use wasefire_error::Code;
-use wasefire_protocol::applet::{AppletId, Metadata as AppletMetadata};
+use wasefire_protocol::applet::AppletId;
+use wasefire_protocol::bundle::Bundle;
 use wasefire_protocol::{self as service, ConnectionExt as _, Service, transfer};
 use webusb_web::UsbDevice;
 use yew::platform::spawn_local;
@@ -142,15 +143,15 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
                 move |_| page.set(Page::ListDevices)
             });
             let platform = [
-                service::PlatformInfo::input(page.setter(), device.clone()),
+                service::PlatformInfo3::input(page.setter(), device.clone()),
                 service::PlatformReboot::input(page.setter(), device.clone()),
                 service::PlatformUpdate::input(page.setter(), device.clone()),
             ];
             let applet = [
                 service::AppletExitStatus::input(page.setter(), device.clone()),
-                service::AppletMetadata::input(page.setter(), device.clone()),
+                service::AppletMetadata0::input(page.setter(), device.clone()),
                 service::AppletReboot::input(page.setter(), device.clone()),
-                service::AppletInstall::input(page.setter(), device.clone()),
+                service::AppletInstall2::input(page.setter(), device.clone()),
             ];
             html_idle(html! {<>
                 <div class="columns">
@@ -224,7 +225,7 @@ trait Command: Service {
     fn input(page: UseStateSetter<Page>, device: Device) -> Html;
 }
 
-impl Command for service::PlatformInfo {
+impl Command for service::PlatformInfo3 {
     fn input(page: UseStateSetter<Page>, device: Device) -> Html {
         let click = Callback::from(move |_| {
             page.set(Page::Feedback { content: "Requesting platform info...".into() });
@@ -302,7 +303,7 @@ async fn platform_reboot(page: UseStateSetter<Page>, device: UsbDevice) {
     page.set(Page::error("Reboot seems to have failed."));
 }
 
-impl Command for service::AppletInstall {
+impl Command for service::AppletInstall2 {
     fn input(page: UseStateSetter<Page>, device: Device) -> Html {
         let uninstall = Callback::from({
             let page = page.clone();
@@ -311,7 +312,7 @@ impl Command for service::AppletInstall {
                 let page = page.clone();
                 let device = device.clone();
                 spawn_local(async move {
-                    if transfer::<service::AppletInstall>(&page, &device, &[], None).await {
+                    if transfer::<service::AppletInstall2>(&page, &device, &[], None).await {
                         let content = "Applet uninstalled. ".into();
                         page.set(Page::Result { content, device: Some(device) });
                     }
@@ -341,14 +342,16 @@ fn applet_install(page: UseStateSetter<Page>, device: Device) -> Html {
             let page = page.clone();
             let device = device.clone();
             spawn_local(async move {
-                let mut content = match gloo::file::futures::read_as_bytes(&file).await {
+                let content = match gloo::file::futures::read_as_bytes(&file).await {
                     Ok(x) => x,
                     Err(error) => return page.set(Page::error_device(error, &device)),
                 };
-                let len = content.len() as u32;
-                wasefire_wire::encode_suffix(&mut content, &AppletMetadata::default()).unwrap();
-                content.extend_from_slice(&len.to_be_bytes());
-                if transfer::<service::AppletInstall>(&page, &device, &content, None).await {
+                let content =
+                    match try { Bundle::decode(&content)?.applet()?.payload(device.version())? } {
+                        Result::<_, wasefire_error::Error>::Ok(x) => x,
+                        Err(error) => return page.set(Page::error_device(error, &device)),
+                    };
+                if transfer::<service::AppletInstall2>(&page, &device, &content, None).await {
                     let content = "Applet installed. ".into();
                     page.set(Page::Result { content, device: Some(device) });
                 }
@@ -441,7 +444,7 @@ impl Command for service::AppletExitStatus {
     }
 }
 
-impl Command for service::AppletMetadata {
+impl Command for service::AppletMetadata0 {
     fn input(page: UseStateSetter<Page>, device: Device) -> Html {
         if !Self::VERSIONS.contains(device.version()).unwrap() {
             return html!();
@@ -451,7 +454,7 @@ impl Command for service::AppletMetadata {
             let page = page.clone();
             let device = device.clone();
             spawn_local(async move {
-                let metadata = device.call::<service::AppletMetadata>(AppletId).await;
+                let metadata = device.call::<service::AppletMetadata0>(AppletId).await;
                 let metadata = unwrap!(page, device, metadata);
                 let rows = vec![
                     ("Name", Ok(metadata.get().name.to_string().into())),
@@ -491,42 +494,32 @@ impl Command for service::PlatformUpdate {
 #[yew_autoprops::autoprops(PlatformUpdateProps)]
 #[yew::component(PlatformUpdate)]
 fn platform_update(page: UseStateSetter<Page>, device: Device) -> Html {
-    let side_a = yew::use_node_ref();
-    let side_b = yew::use_node_ref();
+    let file = yew::use_node_ref();
     let install = Callback::from({
-        let side_a = side_a.clone();
-        let side_b = side_b.clone();
+        let file = file.clone();
         move |_| {
-            let side_a = side_a.cast::<web_sys::HtmlInputElement>().unwrap();
-            let side_b = side_b.cast::<web_sys::HtmlInputElement>().unwrap();
-            let Some(file_a) = side_a.files().and_then(|x| x.item(0)) else {
-                return page.set(Page::error_device("No file selected for side A.", &device));
+            let node = file.cast::<web_sys::HtmlInputElement>().unwrap();
+            let Some(file) = node.files().and_then(|x| x.item(0)) else {
+                return page.set(Page::error_device("No file selected.", &device));
             };
-            let Some(file_b) = side_b.files().and_then(|x| x.item(0)) else {
-                return page.set(Page::error_device("No file selected for side B.", &device));
-            };
-            page.set(Page::Feedback { content: "Reading files...".into() });
-            let file_a = File::from(file_a);
-            let file_b = File::from(file_b);
-            spawn_local(platform_update_(page.clone(), device.clone(), file_a, file_b));
+            page.set(Page::Feedback { content: "Reading file...".into() });
+            let file = File::from(file);
+            spawn_local(platform_update_(page.clone(), device.clone(), file));
         }
     });
     html! {<>
         <button onclick={install}>{ "Update" }</button>{ " platform:" }
-        <ul class="commands">
-            <li>{ "Side A: " }<input ref={side_a} type="file" /></li>
-            <li>{ "Side B: " }<input ref={side_b} type="file" /></li>
-        </ul>
+        <ul class="commands"><li><input ref={file} type="file" /></li></ul>
     </>}
 }
 
-async fn platform_update_(page: UseStateSetter<Page>, device: Device, file_a: File, file_b: File) {
-    let side_a = match gloo::file::futures::read_as_bytes(&file_a).await {
+async fn platform_update_(page: UseStateSetter<Page>, device: Device, file: File) {
+    let content = match gloo::file::futures::read_as_bytes(&file).await {
         Ok(x) => x,
         Err(error) => return page.set(Page::error_device(error, &device)),
     };
-    let side_b = match gloo::file::futures::read_as_bytes(&file_b).await {
-        Ok(x) => x,
+    let (side_a, side_b) = match try { Bundle::decode(&content)?.platform()?.payloads() } {
+        Result::<_, wasefire_error::Error>::Ok(x) => x,
         Err(error) => return page.set(Page::error_device(error, &device)),
     };
     let info1 = unwrap!(page, device, device.platform_info().await);

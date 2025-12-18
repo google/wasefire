@@ -23,7 +23,7 @@ use crate::common::{AppletKind, Hexa, Name};
 #[derive(Debug)]
 #[cfg(feature = "host")]
 pub enum DynInfo {
-    V3(Yoke<Info<'static>>),
+    V3(Yoke<Info3<'static>>),
     V2(Yoke<_Info2<'static>>),
     V1(Yoke<_Info1<'static>>),
     V0(Yoke<_Info0<'static>>),
@@ -97,18 +97,18 @@ impl DynInfo {
 
 #[derive(Debug, Wire)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Info<'a> {
+pub struct Info3<'a> {
     pub serial: Hexa<'a>,
     pub applet_kind: AppletKind,
     pub running_side: Side,
-    pub running_info: SideInfo<'a>,
-    pub opposite_info: Result<SideInfo<'a>, Error>,
+    pub running_info: SideInfo0<'a>,
+    pub opposite_info: Result<SideInfo0<'a>, Error>,
 }
 
 /// Information about a platform side.
 #[derive(Debug, Wire)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SideInfo<'a> {
+pub struct SideInfo0<'a> {
     /// Name of the platform.
     ///
     /// This field has no particular interpretation.

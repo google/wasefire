@@ -19,7 +19,7 @@ use wasefire_board_api::platform::Api;
 use wasefire_common::platform::Side;
 use wasefire_error::{Code, Error};
 use wasefire_protocol::common::{Hexa, Name};
-use wasefire_protocol::platform::SideInfo;
+use wasefire_protocol::platform::SideInfo0;
 use wasefire_sync::Lazy;
 
 mod update;
@@ -57,21 +57,21 @@ impl Api for Impl {
         crate::flash::active()
     }
 
-    fn running_info() -> SideInfo<'static> {
+    fn running_info() -> SideInfo0<'static> {
         static VERSION: Lazy<[u8; 20]> = Lazy::new(|| version(true));
         let name = Name::default();
         let version = Hexa(Cow::Borrowed(&VERSION[..]));
-        SideInfo { name, version }
+        SideInfo0 { name, version }
     }
 
-    fn opposite_info() -> Result<SideInfo<'static>, Error> {
+    fn opposite_info() -> Result<SideInfo0<'static>, Error> {
         let version = version(false);
         if version == [0xff; 20] {
             return Err(Error::world(Code::NotFound));
         }
         let name = Name::default();
         let version = Hexa(Cow::Owned(version.to_vec()));
-        Ok(SideInfo { name, version })
+        Ok(SideInfo0 { name, version })
     }
 
     fn reboot() -> Result<!, Error> {

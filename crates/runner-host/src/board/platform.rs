@@ -20,7 +20,7 @@ use wasefire_board_api::platform::Api;
 use wasefire_common::platform::Side;
 use wasefire_error::Code;
 use wasefire_protocol::common::{Hexa, Name};
-use wasefire_protocol::platform::SideInfo;
+use wasefire_protocol::platform::SideInfo0;
 
 use crate::FLAGS;
 
@@ -42,14 +42,14 @@ impl Api for Impl {
         Side::B
     }
 
-    fn running_info() -> SideInfo<'static> {
+    fn running_info() -> SideInfo0<'static> {
         let name = String::from_utf8(from_hex(FLAGS.name.as_deref()).into_owned()).unwrap();
         let name = Name::new(name.into()).unwrap();
         let version = Hexa(from_hex(FLAGS.version.as_deref()));
-        SideInfo { name, version }
+        SideInfo0 { name, version }
     }
 
-    fn opposite_info() -> Result<SideInfo<'static>, Error> {
+    fn opposite_info() -> Result<SideInfo0<'static>, Error> {
         Err(Error::world(Code::NotEnough))
     }
 

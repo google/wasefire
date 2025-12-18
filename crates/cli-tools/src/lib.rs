@@ -19,6 +19,7 @@
 #![feature(async_fn_track_caller)]
 #![feature(doc_cfg)]
 #![feature(never_type)]
+#![feature(path_trailing_sep)]
 #![feature(try_blocks)]
 #![feature(try_find)]
 
