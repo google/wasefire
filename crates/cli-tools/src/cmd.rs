@@ -15,10 +15,19 @@
 //! Helpers around `tokio::process::Command`.
 
 use std::os::unix::process::CommandExt;
-use std::process::Output;
+use std::process::{Output, Stdio};
 
 use anyhow::{Context, Result, ensure};
 use tokio::process::{Child, Command};
+
+/// Returns whether a command exists.
+pub async fn exists(command: &str) -> bool {
+    let mut command = Command::new(command);
+    command.arg("--version");
+    command.stdout(Stdio::null());
+    command.stderr(Stdio::null());
+    command.status().await.is_ok_and(|x| x.success())
+}
 
 /// Spawns a command.
 pub fn spawn(command: &mut Command) -> Result<Child> {
