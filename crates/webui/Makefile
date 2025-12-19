@@ -1,4 +1,4 @@
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-all
-
-rule 'MD013', :line_length => 100 # Line length
-rule 'MD026', :punctuation => '.,;!' # Trailing punctuation in header
-rule 'MD033', :allowed_elements => 'iframe' # Web UI iframe in book
-
-exclude_rule 'MD001' # Header levels should only increment by one level at a time
-exclude_rule 'MD002' # First header should be a top level header
-exclude_rule 'MD024' # Multiple headers with the same content
-exclude_rule 'MD041' # First line in file should be a top level header
+.PHONY: build
+build:
+	../../scripts/wrapper.sh trunk build --release \
+	  --public-url=$(if $(CI),/wasefire)/webui/ --dist=../../book/src/webui
