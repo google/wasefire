@@ -288,8 +288,10 @@ api! {
     /// This is useful for testing purposes by locking a platform before flashing a new one.
     12 [4 -] PlatformLock: () => (),
 
-    /// Returns platform information (serial, version, running side, opposite version, etc).
-    13 [5 -] PlatformInfo: () => platform::Info<'a>,
+    /// (deprecated) Returns platform information.
+    ///
+    /// This message is deprecated in favor of [`PlatformInfo`].
+    13 [5 - 8] _PlatformInfo1: () => platform::_Info1<'a>,
 
     /// Clears the store for the platform and all applets.
     ///
@@ -305,5 +307,8 @@ api! {
     /// Reboots an applet.
     17 [8 -] AppletReboot: applet::AppletId => (),
 
-    next 18 [9 -]
+    /// Returns information about the platform.
+    18 [9 -] PlatformInfo: () => platform::Info<'a>,
+
+    next 19 [10 -]
 }

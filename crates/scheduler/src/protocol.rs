@@ -26,6 +26,7 @@ use wasefire_logger as log;
 use wasefire_protocol::applet::AppletId;
 #[cfg(any(feature = "pulley", feature = "wasm"))]
 use wasefire_protocol::applet::ExitStatus;
+use wasefire_protocol::platform::AppletKind;
 use wasefire_protocol::{self as service, Api, ApiResult, Request, Service, VERSION};
 
 use crate::Scheduler;
@@ -106,6 +107,12 @@ fn process_event_<B: Board>(
             use wasefire_board_api::platform::Api as _;
             reply::<B, service::PlatformInfo>(service::platform::Info {
                 serial: board::Platform::<B>::serial(),
+                #[cfg(feature = "wasm")]
+                applet_kind: AppletKind::Wasm,
+                #[cfg(feature = "pulley")]
+                applet_kind: AppletKind::Pulley,
+                #[cfg(feature = "native")]
+                applet_kind: AppletKind::Native,
                 running_side: board::Platform::<B>::running_side(),
                 running_version: board::Platform::<B>::running_version(),
                 opposite_version: board::Platform::<B>::opposite_version(),

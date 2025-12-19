@@ -20,6 +20,7 @@ use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow, bail, ensure};
 use clap::{ValueEnum, ValueHint};
+use data_encoding::HEXLOWER as HEX;
 use rusb::GlobalContext;
 use tokio::fs::File;
 use tokio::io::{AsyncBufRead, AsyncBufReadExt as _, AsyncWrite, AsyncWriteExt, BufReader};
@@ -364,13 +365,24 @@ impl PlatformClearStore {
 pub struct PlatformInfo {}
 
 impl PlatformInfo {
-    pub async fn print(self, device: &DynDevice) -> Result<()> {
-        Ok(print!("{}", self.run(device).await?.get()))
-    }
-
-    pub async fn run(self, device: &DynDevice) -> Result<Yoke<service::platform::Info<'static>>> {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
         let PlatformInfo {} = self;
-        device.call::<service::PlatformInfo>(()).await
+        let info = device.platform_info().await?;
+        println!("  serial: {}", HEX.encode_display(info.serial()));
+        if let Some(applet_kind) = info.applet_kind() {
+            println!("  applet: {}", applet_kind.name());
+        }
+        if let Some(running_side) = info.running_side() {
+            println!("    side: {running_side}");
+        }
+        println!(" version: {}", HEX.encode_display(info.running_version()));
+        if let Some(opposite_version) = info.opposite_version() {
+            match opposite_version {
+                Ok(x) => println!("opposite: {}", HEX.encode_display(x)),
+                Err(e) => println!("opposite: {e}"),
+            }
+        }
+        Ok(())
     }
 }
 
@@ -424,9 +436,10 @@ impl PlatformUpdate {
     pub async fn run(self, device: &DynDevice) -> Result<()> {
         let PlatformUpdate { platform_a, platform_b, transfer } = self;
         let platform = match platform_b {
-            Some(platform_b) => match (PlatformInfo {}).run(device).await?.get().running_side {
-                Side::A => platform_b,
-                Side::B => platform_a,
+            Some(platform_b) => match device.platform_info().await?.running_side() {
+                None => bail!("device does not support platform update"),
+                Some(Side::A) => platform_b,
+                Some(Side::B) => platform_a,
             },
             None => platform_a,
         };

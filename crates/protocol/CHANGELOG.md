@@ -4,12 +4,18 @@
 
 ### Major
 
+- Remove `Display` implementation of `platform::_Info1`
+- Deprecate `platform::Info` to `platform::_Info1`
+- Deprecate `Api::PlatformInfo` to `Api::_PlatformInfo1`
 - Remove `Send` bound on `Connection`
 - Change `Connection{,Ext}` to take `&self` instead of `&mut self`
 - Use `Cow<'a, [u8]>` instead of `&'a [u8]` to support `serde`
 
 ### Minor
 
+- Add `platform::DynInfo` to access the platform info regardless of the device version
+- Add `platform::Info` to also return `platform::AppletKind`
+- Add `platform::AppletKind` to describe the applets a platform supports
 - Add `{Dyn,}Device` with `host` feature to cache the API version over a `Connection`
 - Add `Service::response()` with `serde` feature
 - Implement `Serialize` and `Deserialize` for `Api` with `serde` feature

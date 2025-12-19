@@ -4,7 +4,9 @@
 
 ### Major
 
-- Remove `action::PlatformApiVersion` in favor of `wasefire_protocol::DynDevice::version()`
+- Rename `action::PlatformInfo::print()` to `action::PlatformInfo::run()`
+- Remove `action::PlatformInfo::run()` in favor of `wasefire_protocol::Device::platform_info()`
+- Remove `action::PlatformApiVersion` in favor of `wasefire_protocol::Device::version()`
 - Use `&wasefire_protocol::DynDevice` instead of `&mut dyn wasefire_protocol::Connection` for all
   the functions of the `action` module
 

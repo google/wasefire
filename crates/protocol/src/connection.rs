@@ -56,6 +56,18 @@ impl<T: Connection> Device<T> {
         // The device is not newer than the host by invariant.
         S::VERSIONS.contains(self.version).unwrap()
     }
+
+    pub async fn platform_info(&self) -> anyhow::Result<crate::platform::DynInfo> {
+        if self.supports::<crate::PlatformInfo>() {
+            Ok(crate::platform::DynInfo::V2(self.call::<crate::PlatformInfo>(()).await?))
+        } else if self.supports::<crate::_PlatformInfo1>() {
+            Ok(crate::platform::DynInfo::V1(self.call::<crate::_PlatformInfo1>(()).await?))
+        } else if self.supports::<crate::_PlatformInfo0>() {
+            Ok(crate::platform::DynInfo::V0(self.call::<crate::_PlatformInfo0>(()).await?))
+        } else {
+            Err(wasefire_error::Error::world(wasefire_error::Code::NotImplemented).into())
+        }
+    }
 }
 
 impl<T: Connection> Deref for Device<T> {
