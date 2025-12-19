@@ -21,9 +21,13 @@ set -e
 # This script generates release artifacts.
 
 DATE=$(git log -1 --pretty=%cs)
+TOOLCHAIN=$(sed -n 's/"/`/g;s/^channel = //p' rust-toolchain.toml)
 i "Generate notes.txt"
 cat <<EOF > notes.txt
 See the [changelog] for the list of changes in this release.
+
+This release was built with the $TOOLCHAIN toolchain. Applets may need to be built with the same
+toolchain. The CLI will install and use this toolchain if \`rustup\` is installed.
 
 You can use the following command to check your downloaded assets:
 

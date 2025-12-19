@@ -684,6 +684,7 @@ impl RustAppletBuild {
             fs::try_relative(std::env::current_dir()?, &metadata.target_directory).await?;
         let name = package.name.replace('-', "_");
         let mut cargo = Command::new("cargo");
+        nightly_toolchain(&mut cargo).await;
         let mut rustflags = Vec::new();
         cargo.args(["rustc", "--lib"]);
         // We deliberately don't use the provided profile for those configs because they don't
@@ -767,6 +768,7 @@ impl RustAppletTest {
         let package = &metadata.packages[0];
         ensure!(package.features.contains_key("test"), "missing test feature");
         let mut cargo = Command::new("cargo");
+        nightly_toolchain(&mut cargo).await;
         cargo.args(["test", "--features=test"]);
         cargo.args(&self.cargo);
         cargo.current_dir(&self.crate_dir);
@@ -829,6 +831,17 @@ impl Display for OptLevel {
         } else {
             write!(f, "{name:?}")
         }
+    }
+}
+
+async fn nightly_toolchain(cargo: &mut Command) {
+    const TOOLCHAIN: &str = "nightly-2025-11-07";
+    let mut rustup = Command::new("rustup");
+    rustup.arg("--version");
+    rustup.stdout(std::process::Stdio::null());
+    rustup.stderr(std::process::Stdio::null());
+    if rustup.status().await.is_ok_and(|x| x.success()) {
+        cargo.arg(format!("+{TOOLCHAIN}"));
     }
 }
 

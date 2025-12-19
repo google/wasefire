@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Use the toolchain of the release if `rustup` is installed
 - Use the `immediate-abort` panic strategy instead of `build-std-features`
 - Test in `changelog::execute_ci()` that skip counter is zero for releases
 
