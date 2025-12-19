@@ -9,6 +9,7 @@
 - [Quick start](quick/README.md)
    - [GitHub Codespace tips](quick/codespace.md)
    - [Nordic bootstrap](quick/nordic.md)
+   - [Web UI](quick/webui.md)
 
 - [Applet user guide](applet/README.md)
    - [Create a new applet](applet/create.md)

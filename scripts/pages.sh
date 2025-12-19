@@ -30,16 +30,9 @@ fi
 COMMIT="$(git rev-parse -q --verify HEAD)"
 [ -n "$COMMIT" ] || e 'failed to get commit hash'
 
-git diff --quiet "$(git log --pretty=format:%f origin/gh-pages)".. -- book \
-  && d "origin/gh-pages is already up-to-date"
-
-WASEFIRE_WRAPPER_EXEC=n ./scripts/wrapper.sh mdbook
-( cd book
-  ../scripts/wrapper.sh mdbook build 2>/dev/null )
+( cd crates/webui && make )
+( cd book && ../scripts/wrapper.sh mdbook build )
 mv book/book html
-( cd crates/webui
-  ../../scripts/wrapper.sh trunk build --release --public-url=/webui/ 2>/dev/null )
-mv crates/webui/dist html/webui
 
 git show-ref -q --verify refs/heads/gh-pages && git branch -qD gh-pages
 git checkout -q --orphan gh-pages
