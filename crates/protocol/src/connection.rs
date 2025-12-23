@@ -25,6 +25,7 @@ use wasefire_wire::Yoke;
 use crate::{Api, ApiResult, Request, Service, VERSION};
 
 /// Connection with a cached API version.
+#[derive(PartialEq, Eq)]
 pub struct Device<T: Connection> {
     version: u32,
     connection: T,
@@ -67,7 +68,7 @@ impl<T: Connection> Deref for Device<T> {
 
 pub type DynFuture<'a, T> = Pin<Box<dyn Future<Output = anyhow::Result<T>> + 'a>>;
 
-pub trait Connection: Any + Send {
+pub trait Connection: Any {
     /// Sends a raw request (possibly tunneled) to the device.
     fn write<'a>(&'a self, request: &'a [u8]) -> DynFuture<'a, ()>;
 
