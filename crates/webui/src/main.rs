@@ -18,7 +18,6 @@
 use page::Page;
 
 mod page;
-mod protocol;
 mod usb;
 
 fn main() {

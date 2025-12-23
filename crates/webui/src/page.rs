@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use std::borrow::Cow;
-use std::rc::Rc;
 use std::time::Duration;
 
 use data_encoding::HEXLOWER as HEX;
@@ -22,29 +21,28 @@ use gloo::file::File;
 use wasefire_common::platform::Side;
 use wasefire_error::Code;
 use wasefire_protocol::applet::AppletId;
-use wasefire_protocol::{self as service, Service, transfer};
-use webusb_web::{OpenUsbDevice, UsbDevice};
+use wasefire_protocol::{self as service, ConnectionExt as _, Service, transfer};
+use webusb_web::UsbDevice;
 use yew::platform::spawn_local;
 use yew::platform::time::sleep;
 use yew::{AttrValue, Callback, Html, UseStateHandle, UseStateSetter, html};
 
-use crate::protocol::call;
-use crate::usb::serial_number;
+use crate::usb::{Device, serial_number};
 
 pub(crate) enum Page {
-    Error { error: String, device: Option<Rc<OpenUsbDevice>> },
+    Error { error: String, device: Option<Device> },
     Feedback { content: Html },
-    Result { content: Html, device: Option<Rc<OpenUsbDevice>> },
+    Result { content: Html, device: Option<Device> },
     ListDevices,
     ChooseDevice { devices: Vec<UsbDevice> },
     RequestDevice,
     OpenDevice { device: UsbDevice },
     ForgetDevice { device: UsbDevice },
-    Connected { device: Rc<OpenUsbDevice> },
+    Connected { device: Device },
 }
 
 pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
-    let close = |device: Option<Rc<OpenUsbDevice>>| {
+    let close = |device: Option<Device>| {
         Callback::from({
             let page = page.setter();
             move |_| match device.clone() {
@@ -124,7 +122,7 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
             let device = device.clone();
             spawn_local(async move {
                 match crate::usb::open_device(&device).await {
-                    Ok(device) => page.set(Page::Connected { device: Rc::new(device) }),
+                    Ok(device) => page.set(Page::Connected { device }),
                     Err(error) => page.set(Page::error(error)),
                 }
             });
@@ -172,7 +170,7 @@ impl Page {
         Page::Error { error: error.to_string(), device: None }
     }
 
-    fn error_device(error: impl ToString, device: &Rc<OpenUsbDevice>) -> Self {
+    fn error_device(error: impl ToString, device: &Device) -> Self {
         Page::Error { error: error.to_string(), device: Some(device.clone()) }
     }
 }
@@ -194,8 +192,10 @@ macro_rules! unwrap {
         match $x {
             Ok(x) => x,
             Err(e) => {
-                let (error, b) = e.convert();
-                let device = b.then(|| $d.clone());
+                let (error, device) = match e.downcast_ref::<wasefire_error::Error>() {
+                    None => (e.to_string(), None),
+                    Some(e) => (e.to_string(), Some($d.clone())),
+                };
                 $p.set(Page::Error { error, device });
                 return Default::default();
             }
@@ -203,47 +203,36 @@ macro_rules! unwrap {
     };
 }
 
-fn convert_if<T>(
-    x: Result<T, crate::protocol::Error>, p: impl Fn(&crate::protocol::Error) -> bool,
-) -> Result<Option<T>, crate::protocol::Error> {
+fn convert_if<T, E: std::error::Error + Send + Sync + 'static>(
+    x: anyhow::Result<T>, p: impl Fn(&E) -> bool,
+) -> anyhow::Result<Option<T>> {
     match x {
         Ok(x) => Ok(Some(x)),
-        Err(e) if p(&e) => Ok(None),
+        Err(e) if e.downcast_ref().is_some_and(p) => Ok(None),
         Err(e) => Err(e),
     }
 }
 
-fn convert_final<T>(
-    x: Result<T, crate::protocol::Error>,
-) -> Result<Option<T>, crate::protocol::Error> {
-    convert_if(x, |e| {
-        matches!(e,
-        crate::protocol::Error::Usb(e)
-            if e.kind() == webusb_web::ErrorKind::Transfer && e.msg().contains("transferIn"))
-    })
+fn convert_final<T>(x: anyhow::Result<T>) -> anyhow::Result<Option<T>> {
+    convert_if::<_, webusb_web::Error>(x, crate::usb::is_transfer_in_error)
 }
 
-fn convert_not_found<T>(
-    x: Result<T, crate::protocol::Error>,
-) -> Result<Option<T>, crate::protocol::Error> {
-    convert_if(x, |e| {
-        matches!(e, crate::protocol::Error::Protocol(e)
-            if e == &wasefire_error::Error::user(Code::NotFound))
-    })
+fn convert_not_found<T>(x: anyhow::Result<T>) -> anyhow::Result<Option<T>> {
+    convert_if::<_, wasefire_error::Error>(x, |e| e == &wasefire_error::Error::user(Code::NotFound))
 }
 
 trait Command: Service {
-    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html;
+    fn input(page: UseStateSetter<Page>, device: Device) -> Html;
 }
 
 impl Command for service::PlatformInfo {
-    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html {
+    fn input(page: UseStateSetter<Page>, device: Device) -> Html {
         let click = Callback::from(move |_| {
             page.set(Page::Feedback { content: "Requesting platform info...".into() });
             let page = page.clone();
             let device = device.clone();
             spawn_local(async move {
-                let info = call::<service::PlatformInfo>(&device, ()).await;
+                let info = device.call::<service::PlatformInfo>(()).await;
                 let info = unwrap!(page, device, info);
                 let content = platform_info(info.get());
                 page.set(Page::Result { content, device: Some(device) });
@@ -270,13 +259,13 @@ fn platform_info(info: &wasefire_protocol::platform::Info) -> Html {
 }
 
 impl Command for service::PlatformReboot {
-    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html {
+    fn input(page: UseStateSetter<Page>, device: Device) -> Html {
         let click = Callback::from(move |_| {
             page.set(Page::Feedback { content: "Rebooting platform...".into() });
             let page = page.clone();
             let device = device.clone();
             spawn_local(async move {
-                let reboot = call::<service::PlatformReboot>(&device, ()).await;
+                let reboot = device.call::<service::PlatformReboot>(()).await;
                 match unwrap!(page, device, convert_final(reboot)) {
                     Some(never) => *never.get(),
                     None => platform_reboot(page, device.device().clone()).await,
@@ -298,7 +287,7 @@ async fn platform_reboot(page: UseStateSetter<Page>, device: UsbDevice) {
 }
 
 impl Command for service::AppletInstall {
-    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html {
+    fn input(page: UseStateSetter<Page>, device: Device) -> Html {
         let uninstall = Callback::from({
             let page = page.clone();
             let device = device.clone();
@@ -313,9 +302,8 @@ impl Command for service::AppletInstall {
                 });
             }
         });
-        let device = Irrelevant::hide(device);
         html! {<>
-            <li><AppletInstall page={page} device={device.clone()} /></li>
+            <li><AppletInstall page={page} device={device} /></li>
             <li><button onclick={uninstall}>{ "Uninstall" }</button>{ " applet" }</li>
         </>}
     }
@@ -323,12 +311,11 @@ impl Command for service::AppletInstall {
 
 #[yew_autoprops::autoprops(AppletInstallProps)]
 #[yew::component(AppletInstall)]
-fn applet_install(page: UseStateSetter<Page>, device: Rc<Irrelevant<OpenUsbDevice>>) -> Html {
+fn applet_install(page: UseStateSetter<Page>, device: Device) -> Html {
     let file = yew::use_node_ref();
     let install = Callback::from({
         let file = file.clone();
         move |_| {
-            let device = Irrelevant::open(device.clone());
             let node = file.cast::<web_sys::HtmlInputElement>().unwrap();
             let Some(file) = node.files().and_then(|x| x.item(0)) else {
                 return page.set(Page::error_device("No file selected.", &device));
@@ -358,7 +345,7 @@ fn applet_install(page: UseStateSetter<Page>, device: Rc<Irrelevant<OpenUsbDevic
 async fn transfer<
     T: for<'a> Service<Request<'a> = transfer::Request<'a>, Response<'a> = transfer::Response>,
 >(
-    page: &UseStateSetter<Page>, device: &Rc<OpenUsbDevice>, content: &[u8], kind: Option<bool>,
+    page: &UseStateSetter<Page>, device: &Device, content: &[u8], kind: Option<bool>,
 ) -> bool {
     let title = match kind {
         None if content.is_empty() => AttrValue::Static("Uninstalling applet"),
@@ -367,7 +354,7 @@ async fn transfer<
         Some(true) => AttrValue::Static("Updating platform (side 2 of 2)"),
     };
     page.set(Page::Feedback { content: html!(<h2>{ &title }</h2>) });
-    let start = call::<T>(device, transfer::Request::Start { dry_run: false }).await;
+    let start = device.call::<T>(transfer::Request::Start { dry_run: false }).await;
     let start = unwrap!(page, device, start);
     let transfer::Response::Start { chunk_size, num_pages } = start.get() else {
         page.set(Page::error_device("Invalid transfer response for Start.", device));
@@ -381,7 +368,7 @@ async fn transfer<
                 { "Erasing: " }<progress value={i.to_string()} max={n.to_string()}></progress>
             </>},
         });
-        let erase = call::<T>(device, transfer::Request::Erase).await;
+        let erase = device.call::<T>(transfer::Request::Erase).await;
         let transfer::Response::Erase = unwrap!(page, device, erase).get() else {
             page.set(Page::error_device("Invalid transfer response for Erase.", device));
             return false;
@@ -396,13 +383,13 @@ async fn transfer<
             </>},
         });
         let chunk = Cow::Borrowed(chunk);
-        let write = call::<T>(device, transfer::Request::Write { chunk }).await;
+        let write = device.call::<T>(transfer::Request::Write { chunk }).await;
         let transfer::Response::Write = unwrap!(page, device, write).get() else {
             page.set(Page::error_device("Invalid transfer response for Write.", device));
             return false;
         };
     }
-    let finish = call::<T>(device, transfer::Request::Finish).await;
+    let finish = device.call::<T>(transfer::Request::Finish).await;
     let result = match kind {
         None => matches!(unwrap!(page, device, finish).get(), transfer::Response::Finish),
         Some(_) => unwrap!(page, device, convert_final(finish)).is_none(),
@@ -414,13 +401,13 @@ async fn transfer<
 }
 
 impl Command for service::AppletExitStatus {
-    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html {
+    fn input(page: UseStateSetter<Page>, device: Device) -> Html {
         let click = Callback::from(move |_| {
             page.set(Page::Feedback { content: "Requesting applet status...".into() });
             let page = page.clone();
             let device = device.clone();
             spawn_local(async move {
-                let status = call::<service::AppletExitStatus>(&device, AppletId).await;
+                let status = device.call::<service::AppletExitStatus>(AppletId).await;
                 let content = match unwrap!(page, device, convert_not_found(status)) {
                     None => "There is no applet installed. ".into(),
                     Some(x) => match x.get() {
@@ -436,13 +423,13 @@ impl Command for service::AppletExitStatus {
 }
 
 impl Command for service::AppletReboot {
-    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html {
+    fn input(page: UseStateSetter<Page>, device: Device) -> Html {
         let click = Callback::from(move |_| {
             page.set(Page::Feedback { content: "Rebooting applet...".into() });
             let page = page.clone();
             let device = device.clone();
             spawn_local(async move {
-                let reboot = call::<service::AppletReboot>(&device, AppletId).await;
+                let reboot = device.call::<service::AppletReboot>(AppletId).await;
                 unwrap!(page, device, reboot).get();
                 let content = "Applet rebooted. ".into();
                 page.set(Page::Result { content, device: Some(device) });
@@ -453,22 +440,20 @@ impl Command for service::AppletReboot {
 }
 
 impl Command for service::PlatformUpdate {
-    fn input(page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>) -> Html {
-        let device = Irrelevant::hide(device);
-        html!(<li><PlatformUpdate page={page} device={device.clone()} /></li>)
+    fn input(page: UseStateSetter<Page>, device: Device) -> Html {
+        html!(<li><PlatformUpdate page={page} device={device} /></li>)
     }
 }
 
 #[yew_autoprops::autoprops(PlatformUpdateProps)]
 #[yew::component(PlatformUpdate)]
-fn platform_update(page: UseStateSetter<Page>, device: Rc<Irrelevant<OpenUsbDevice>>) -> Html {
+fn platform_update(page: UseStateSetter<Page>, device: Device) -> Html {
     let side_a = yew::use_node_ref();
     let side_b = yew::use_node_ref();
     let install = Callback::from({
         let side_a = side_a.clone();
         let side_b = side_b.clone();
         move |_| {
-            let device = Irrelevant::open(device.clone());
             let side_a = side_a.cast::<web_sys::HtmlInputElement>().unwrap();
             let side_b = side_b.cast::<web_sys::HtmlInputElement>().unwrap();
             let Some(file_a) = side_a.files().and_then(|x| x.item(0)) else {
@@ -492,9 +477,7 @@ fn platform_update(page: UseStateSetter<Page>, device: Rc<Irrelevant<OpenUsbDevi
     </>}
 }
 
-async fn platform_update_(
-    page: UseStateSetter<Page>, device: Rc<OpenUsbDevice>, file_a: File, file_b: File,
-) {
+async fn platform_update_(page: UseStateSetter<Page>, device: Device, file_a: File, file_b: File) {
     let side_a = match gloo::file::futures::read_as_bytes(&file_a).await {
         Ok(x) => x,
         Err(error) => return page.set(Page::error_device(error, &device)),
@@ -503,7 +486,7 @@ async fn platform_update_(
         Ok(x) => x,
         Err(error) => return page.set(Page::error_device(error, &device)),
     };
-    let info1 = call::<service::PlatformInfo>(&device, ()).await;
+    let info1 = device.call::<service::PlatformInfo>(()).await;
     let info1 = unwrap!(page, device, info1);
     let (side_1, side_2) = match info1.get().running_side {
         Side::A => (side_b, side_a),
@@ -517,7 +500,7 @@ async fn platform_update_(
         Ok(x) => x,
         Err(error) => return page.set(Page::Error { error, device: None }),
     };
-    let info2 = call::<service::PlatformInfo>(&device, ()).await;
+    let info2 = device.call::<service::PlatformInfo>(()).await;
     let info2 = unwrap!(page, device, info2);
     if info2.get().running_side != info1.get().running_side.opposite() {
         return page.set(Page::error_device("Failed to boot the new platform.", &device));
@@ -527,7 +510,7 @@ async fn platform_update_(
     }
 }
 
-async fn reconnect(device: &UsbDevice) -> Result<Rc<OpenUsbDevice>, String> {
+async fn reconnect(device: &UsbDevice) -> Result<Device, String> {
     let serial = serial_number(device);
     let usb = webusb_web::Usb::new().map_err(|x| x.to_string())?;
     let mut events = usb.events();
@@ -537,31 +520,8 @@ async fn reconnect(device: &UsbDevice) -> Result<Rc<OpenUsbDevice>, String> {
             _ => continue,
         };
         if crate::usb::is_wasefire(&device) && serial_number(&device) == serial {
-            return match crate::usb::open_device(&device).await {
-                Ok(device) => Ok(Rc::new(device)),
-                Err(error) => Err(error.to_string()),
-            };
+            return crate::usb::open_device(&device).await.map_err(|x| x.to_string());
         }
     }
     Err("Stopped receiving USB events.".to_string())
-}
-
-#[derive(Clone)]
-#[repr(transparent)]
-struct Irrelevant<T>(T);
-impl<T> PartialEq for Irrelevant<T> {
-    fn eq(&self, _: &Self) -> bool {
-        true
-    }
-}
-impl<T> Irrelevant<T> {
-    fn hide(x: Rc<T>) -> Rc<Self> {
-        // SAFETY: Irrelevant<T> is a transparent wrapper of T.
-        unsafe { Rc::from_raw(Rc::into_raw(x).cast()) }
-    }
-
-    fn open(x: Rc<Self>) -> Rc<T> {
-        // SAFETY: Irrelevant<T> is a transparent wrapper of T.
-        unsafe { Rc::from_raw(Rc::into_raw(x).cast()) }
-    }
 }
