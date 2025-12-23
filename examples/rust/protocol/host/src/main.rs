@@ -20,7 +20,9 @@ use anyhow::{Context, Result, bail};
 use clap::Parser;
 use rusb::GlobalContext;
 use wasefire_protocol::applet::{self, AppletId};
-use wasefire_protocol::{self as service, Api, Connection as _, ConnectionExt, Request, Service};
+use wasefire_protocol::{
+    self as service, Api, Connection as _, ConnectionExt as _, Request, Service,
+};
 use wasefire_protocol_usb::Connection;
 use wasefire_wire::Yoke;
 
@@ -53,7 +55,7 @@ enum Command {
 async fn main() -> Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let flags = Flags::parse();
-    let connection = flags.options.connect().await? as Box<dyn Any>;
+    let connection = flags.options.connect().await?.connection() as Box<dyn Any>;
     let mut connection = match connection.downcast::<Connection<GlobalContext>>() {
         Ok(x) => *x,
         Err(_) => bail!("only usb protocol is supported"),

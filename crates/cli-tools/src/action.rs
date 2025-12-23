@@ -25,7 +25,7 @@ use tokio::fs::File;
 use tokio::io::{AsyncBufRead, AsyncBufReadExt as _, AsyncWrite, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use wasefire_common::platform::Side;
-use wasefire_protocol::{self as service, Connection, ConnectionExt as _, applet};
+use wasefire_protocol::{self as service, ConnectionExt as _, DynDevice, applet};
 use wasefire_wire::{self as wire, Yoke};
 
 use crate::cargo::metadata;
@@ -56,7 +56,7 @@ pub struct ConnectionOptions {
 
 impl ConnectionOptions {
     /// Establishes a connection.
-    pub async fn connect(&self) -> Result<Box<dyn Connection>> {
+    pub async fn connect(&self) -> Result<DynDevice> {
         self.protocol.connect(*self.timeout).await
     }
 
@@ -71,17 +71,6 @@ impl ConnectionOptions {
             protocol::Protocol::Unix(_) => true,
             protocol::Protocol::Tcp(_) => true,
         }
-    }
-}
-
-/// Returns the API version of a platform.
-#[derive(clap::Args)]
-pub struct PlatformApiVersion {}
-
-impl PlatformApiVersion {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<u32> {
-        let PlatformApiVersion {} = self;
-        connection.call::<service::ApiVersion>(()).await.map(|x| *x.get())
     }
 }
 
@@ -110,20 +99,15 @@ pub enum AppletInstallWait {
 }
 
 impl AppletInstall {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
         let AppletInstall { applet, transfer, wait } = self;
         transfer
-            .run::<service::AppletInstall>(
-                connection,
-                Some(applet),
-                "Installed",
-                None::<fn(_) -> _>,
-            )
+            .run::<service::AppletInstall>(device, Some(applet), "Installed", None::<fn(_) -> _>)
             .await?;
         match wait {
             Some(AppletInstallWait::Wait { mut action }) => {
                 action.wait.ensure_wait();
-                action.run(connection).await
+                action.run(device).await
             }
             None => Ok(()),
         }
@@ -135,10 +119,10 @@ impl AppletInstall {
 pub struct AppletUninstall {}
 
 impl AppletUninstall {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
         let AppletUninstall {} = self;
         let transfer = Transfer { dry_run: false };
-        transfer.run::<service::AppletInstall>(connection, None, "Erased", None::<fn(_) -> _>).await
+        transfer.run::<service::AppletInstall>(device, None, "Erased", None::<fn(_) -> _>).await
     }
 }
 
@@ -176,10 +160,10 @@ impl AppletExitStatus {
         self.exit_code = true;
     }
 
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
         let AppletExitStatus { wait, exit_code } = self;
         let status = wait
-            .run::<service::AppletExitStatus, applet::ExitStatus>(connection, applet::AppletId)
+            .run::<service::AppletExitStatus, applet::ExitStatus>(device, applet::AppletId)
             .await?
             .map(|x| *x.get());
         Self::print(status);
@@ -195,9 +179,9 @@ impl AppletExitStatus {
 pub struct AppletReboot {}
 
 impl AppletReboot {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
         let AppletReboot {} = self;
-        connection.call::<service::AppletReboot>(applet::AppletId).await.map(|x| *x.get())
+        device.call::<service::AppletReboot>(applet::AppletId).await.map(|x| *x.get())
     }
 }
 
@@ -287,7 +271,7 @@ pub struct AppletRpc {
 }
 
 impl AppletRpc {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
         let AppletRpc { applet, rpc, mut wait } = self;
         let applet_id = match applet {
             Some(_) => bail!("applet identifiers are not supported yet"),
@@ -297,8 +281,8 @@ impl AppletRpc {
         let mut rpc = rpc.start().await?;
         while let Some(request) = rpc.read().await? {
             let request = applet::Request { applet_id, request: Cow::Borrowed(&request) };
-            connection.call::<service::AppletRequest>(request).await?.get();
-            match wait.run::<service::AppletResponse, Cow<[u8]>>(connection, applet_id).await? {
+            device.call::<service::AppletRequest>(request).await?.get();
+            match wait.run::<service::AppletResponse, Cow<[u8]>>(device, applet_id).await? {
                 None => bail!("did not receive a response"),
                 Some(response) => rpc.write(response.get()).await?,
             }
@@ -337,7 +321,7 @@ impl Wait {
     }
 
     pub async fn run<S, T: wire::Wire<'static>>(
-        &self, connection: &mut dyn Connection, request: S::Request<'_>,
+        &self, device: &mut DynDevice, request: S::Request<'_>,
     ) -> Result<Option<Yoke<T::Type<'static>>>>
     where S: for<'a> service::Service<Response<'a> = Option<T::Type<'a>>> {
         let Wait { wait, period } = self;
@@ -349,7 +333,7 @@ impl Wait {
         };
         let request = S::request(request);
         loop {
-            match connection.call_ref::<S>(&request).await?.try_map(|x| x.ok_or(())) {
+            match device.call_ref::<S>(&request).await?.try_map(|x| x.ok_or(())) {
                 Ok(x) => break Ok(Some(x)),
                 Err(()) => match period {
                     Some(period) => tokio::time::sleep(period).await,
@@ -369,9 +353,9 @@ pub struct PlatformClearStore {
 }
 
 impl PlatformClearStore {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
         let PlatformClearStore { min_key } = self;
-        connection.call::<service::PlatformClearStore>(min_key).await.map(|x| *x.get())
+        device.call::<service::PlatformClearStore>(min_key).await.map(|x| *x.get())
     }
 }
 
@@ -380,15 +364,15 @@ impl PlatformClearStore {
 pub struct PlatformInfo {}
 
 impl PlatformInfo {
-    pub async fn print(self, connection: &mut dyn Connection) -> Result<()> {
-        Ok(print!("{}", self.run(connection).await?.get()))
+    pub async fn print(self, device: &mut DynDevice) -> Result<()> {
+        Ok(print!("{}", self.run(device).await?.get()))
     }
 
     pub async fn run(
-        self, connection: &mut dyn Connection,
+        self, device: &mut DynDevice,
     ) -> Result<Yoke<service::platform::Info<'static>>> {
         let PlatformInfo {} = self;
-        connection.call::<service::PlatformInfo>(()).await
+        device.call::<service::PlatformInfo>(()).await
     }
 }
 
@@ -439,10 +423,10 @@ pub struct PlatformUpdate {
 }
 
 impl PlatformUpdate {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
         let PlatformUpdate { platform_a, platform_b, transfer } = self;
         let platform = match platform_b {
-            Some(platform_b) => match (PlatformInfo {}).run(connection).await?.get().running_side {
+            Some(platform_b) => match (PlatformInfo {}).run(device).await?.get().running_side {
                 Side::A => platform_b,
                 Side::B => platform_a,
             },
@@ -450,7 +434,7 @@ impl PlatformUpdate {
         };
         transfer
             .run::<service::PlatformUpdate>(
-                connection,
+                device,
                 Some(platform),
                 "Updated",
                 Some(|_| bail!("device responded to a transfer finish")),
@@ -469,7 +453,7 @@ pub struct Transfer {
 
 impl Transfer {
     async fn run<S>(
-        self, connection: &mut dyn Connection, payload: Option<PathBuf>, message: &'static str,
+        self, device: &mut DynDevice, payload: Option<PathBuf>, message: &'static str,
         finish: Option<impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>>,
     ) -> Result<()>
     where
@@ -485,7 +469,7 @@ impl Transfer {
             Some(x) => fs::read(x).await?,
         };
         let Response::Start { chunk_size, num_pages } =
-            *connection.call::<S>(Request::Start { dry_run }).await?.get()
+            *device.call::<S>(Request::Start { dry_run }).await?.get()
         else {
             bail!("received unexpected response");
         };
@@ -503,7 +487,7 @@ impl Transfer {
             progress.set_style(style.clone());
             progress.set_message("Erasing");
             for _ in 0 .. num_pages {
-                connection.call::<S>(Request::Erase).await?.get();
+                device.call::<S>(Request::Erase).await?.get();
                 progress.inc(chunk_size as u64);
             }
         }
@@ -516,15 +500,15 @@ impl Transfer {
             progress.set_style(style.clone());
             progress.set_message("Writing");
             for chunk in payload.chunks(chunk_size) {
-                connection.call::<S>(Request::Write { chunk: Cow::Borrowed(chunk) }).await?.get();
+                device.call::<S>(Request::Write { chunk: Cow::Borrowed(chunk) }).await?.get();
                 progress.inc(chunk.len() as u64);
             }
         }
         let progress = progress.unwrap_or_else(|| indicatif::ProgressBar::new(0).with_style(style));
         progress.set_message("Finishing");
         match (dry_run, finish) {
-            (false, Some(finish)) => final_call::<S>(connection, Request::Finish, finish).await?,
-            _ => drop(connection.call::<S>(Request::Finish).await?.get()),
+            (false, Some(finish)) => final_call::<S>(device, Request::Finish, finish).await?,
+            _ => drop(device.call::<S>(Request::Finish).await?.get()),
         }
         progress.finish_with_message(message);
         Ok(())
@@ -532,11 +516,11 @@ impl Transfer {
 }
 
 async fn final_call<S: service::Service>(
-    connection: &mut dyn Connection, request: S::Request<'_>,
+    device: &mut DynDevice, request: S::Request<'_>,
     proof: impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>,
 ) -> Result<()> {
-    connection.send(&S::request(request)).await?;
-    match connection.receive::<S>().await {
+    device.send(&S::request(request)).await?;
+    match device.receive::<S>().await {
         Ok(x) => proof(x)?,
         Err(e) => {
             if root_cause_is::<rusb::Error>(&e, |x| {
@@ -561,9 +545,9 @@ async fn final_call<S: service::Service>(
 pub struct PlatformReboot {}
 
 impl PlatformReboot {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
         let PlatformReboot {} = self;
-        final_call::<service::PlatformReboot>(connection, (), |x| match *x.get() {}).await
+        final_call::<service::PlatformReboot>(device, (), |x| match *x.get() {}).await
     }
 }
 
@@ -572,9 +556,9 @@ impl PlatformReboot {
 pub struct PlatformLock {}
 
 impl PlatformLock {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
         let PlatformLock {} = self;
-        connection.call::<service::PlatformLock>(()).await.map(|x| *x.get())
+        device.call::<service::PlatformLock>(()).await.map(|x| *x.get())
     }
 }
 
@@ -586,12 +570,12 @@ pub struct PlatformRpc {
 }
 
 impl PlatformRpc {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
         let PlatformRpc { rpc } = self;
         let mut rpc = rpc.start().await?;
         while let Some(request) = rpc.read().await? {
             let request = Cow::Owned(request);
-            let response = connection.call::<service::PlatformVendor>(request).await?;
+            let response = device.call::<service::PlatformVendor>(request).await?;
             rpc.write(response.get()).await?;
         }
         Ok(())
@@ -790,12 +774,12 @@ pub struct RustAppletInstall {
 }
 
 impl RustAppletInstall {
-    pub async fn run(self, connection: &mut dyn Connection) -> Result<()> {
+    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
         let RustAppletInstall { build, transfer, wait } = self;
         let output = build.output_dir.clone();
         build.run().await?;
         let install = AppletInstall { applet: output.join("applet.wasm"), transfer, wait };
-        install.run(connection).await
+        install.run(device).await
     }
 }
 

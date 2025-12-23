@@ -19,7 +19,7 @@ use anyhow::Result;
 use clap::Parser;
 use data_encoding::HEXLOWER;
 use wasefire_protocol::applet::{self, AppletId};
-use wasefire_protocol::{self as service, Connection, ConnectionExt as _};
+use wasefire_protocol::{self as service, ConnectionExt as _, DynDevice};
 
 #[derive(Parser)]
 struct Flags {
@@ -30,9 +30,9 @@ struct Flags {
 #[tokio::main]
 async fn main() -> Result<()> {
     let flags = Flags::parse();
-    let mut connection = flags.options.connect().await?;
+    let mut device = flags.options.connect().await?;
     loop {
-        let Stats { start, end, wait, stats } = checkpoint(&mut connection).await?;
+        let Stats { start, end, wait, stats } = checkpoint(&mut device).await?;
         let delta = (end - start) as f64 / 1000000.;
         let wait = wait as f64 / 1000000.;
         let mut total = 0;
@@ -57,12 +57,12 @@ struct Stats {
     stats: Vec<([u8; 6], i32, u32)>,
 }
 
-async fn checkpoint(connection: &mut dyn Connection) -> Result<Stats> {
+async fn checkpoint(device: &mut DynDevice) -> Result<Stats> {
     let request = applet::Request { applet_id: AppletId, request: Cow::Borrowed(&[]) };
-    connection.call::<service::AppletRequest>(request).await?.get();
+    device.call::<service::AppletRequest>(request).await?.get();
     let mut yoke_response;
     let mut response = loop {
-        yoke_response = connection.call::<service::AppletResponse>(AppletId).await?;
+        yoke_response = device.call::<service::AppletResponse>(AppletId).await?;
         if let Some(response) = yoke_response.get() {
             let Cow::Borrowed(response) = response else { unreachable!() };
             break *response;

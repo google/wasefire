@@ -16,12 +16,60 @@ use alloc::boxed::Box;
 use alloc::format;
 use core::any::Any;
 use core::future::Future;
+use core::ops::{Deref, DerefMut};
 use core::pin::Pin;
 
-use anyhow::Context;
+use anyhow::{Context, ensure};
 use wasefire_wire::Yoke;
 
-use crate::{Api, ApiResult, Request, Service};
+use crate::{Api, ApiResult, Request, Service, VERSION};
+
+/// Connection with a cached API version.
+pub struct Device<T: Connection> {
+    version: u32,
+    connection: T,
+}
+
+pub type DynDevice = Device<Box<dyn Connection>>;
+
+impl<T: Connection> Device<T> {
+    /// Checks whether the device is supported and caches the API version.
+    pub async fn new(mut connection: T) -> anyhow::Result<Self> {
+        let version = *connection.call::<crate::ApiVersion>(()).await?.get();
+        ensure!(version <= VERSION, "the device is more recent than the host");
+        Ok(Device { version, connection })
+    }
+
+    /// Returns the cached API version.
+    pub fn version(&self) -> u32 {
+        self.version
+    }
+
+    /// Extracts the connection.
+    pub fn connection(self) -> T {
+        self.connection
+    }
+
+    /// Returns whether the device supports a service.
+    pub fn supports<S: Service>(&self) -> bool {
+        // The device is not newer than the host by invariant.
+        S::VERSIONS.contains(self.version).unwrap()
+    }
+}
+
+impl<T: Connection> Deref for Device<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.connection
+    }
+}
+
+impl<T: Connection> DerefMut for Device<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.connection
+    }
+}
 
 pub type DynFuture<'a, T> = Pin<Box<dyn Future<Output = anyhow::Result<T>> + 'a>>;
 
