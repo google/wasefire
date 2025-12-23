@@ -99,7 +99,7 @@ pub enum AppletInstallWait {
 }
 
 impl AppletInstall {
-    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
         let AppletInstall { applet, transfer, wait } = self;
         transfer
             .run::<service::AppletInstall>(device, Some(applet), "Installed", None::<fn(_) -> _>)
@@ -119,7 +119,7 @@ impl AppletInstall {
 pub struct AppletUninstall {}
 
 impl AppletUninstall {
-    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
         let AppletUninstall {} = self;
         let transfer = Transfer { dry_run: false };
         transfer.run::<service::AppletInstall>(device, None, "Erased", None::<fn(_) -> _>).await
@@ -160,7 +160,7 @@ impl AppletExitStatus {
         self.exit_code = true;
     }
 
-    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
         let AppletExitStatus { wait, exit_code } = self;
         let status = wait
             .run::<service::AppletExitStatus, applet::ExitStatus>(device, applet::AppletId)
@@ -179,7 +179,7 @@ impl AppletExitStatus {
 pub struct AppletReboot {}
 
 impl AppletReboot {
-    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
         let AppletReboot {} = self;
         device.call::<service::AppletReboot>(applet::AppletId).await.map(|x| *x.get())
     }
@@ -271,7 +271,7 @@ pub struct AppletRpc {
 }
 
 impl AppletRpc {
-    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
         let AppletRpc { applet, rpc, mut wait } = self;
         let applet_id = match applet {
             Some(_) => bail!("applet identifiers are not supported yet"),
@@ -321,7 +321,7 @@ impl Wait {
     }
 
     pub async fn run<S, T: wire::Wire<'static>>(
-        &self, device: &mut DynDevice, request: S::Request<'_>,
+        &self, device: &DynDevice, request: S::Request<'_>,
     ) -> Result<Option<Yoke<T::Type<'static>>>>
     where S: for<'a> service::Service<Response<'a> = Option<T::Type<'a>>> {
         let Wait { wait, period } = self;
@@ -353,7 +353,7 @@ pub struct PlatformClearStore {
 }
 
 impl PlatformClearStore {
-    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
         let PlatformClearStore { min_key } = self;
         device.call::<service::PlatformClearStore>(min_key).await.map(|x| *x.get())
     }
@@ -364,13 +364,11 @@ impl PlatformClearStore {
 pub struct PlatformInfo {}
 
 impl PlatformInfo {
-    pub async fn print(self, device: &mut DynDevice) -> Result<()> {
+    pub async fn print(self, device: &DynDevice) -> Result<()> {
         Ok(print!("{}", self.run(device).await?.get()))
     }
 
-    pub async fn run(
-        self, device: &mut DynDevice,
-    ) -> Result<Yoke<service::platform::Info<'static>>> {
+    pub async fn run(self, device: &DynDevice) -> Result<Yoke<service::platform::Info<'static>>> {
         let PlatformInfo {} = self;
         device.call::<service::PlatformInfo>(()).await
     }
@@ -391,8 +389,8 @@ impl PlatformList {
         let candidates = wasefire_protocol_usb::list(&context)?;
         println!("There are {} connected platforms on USB:", candidates.len());
         for candidate in candidates {
-            let mut connection = candidate.connect(*timeout)?;
-            let serial = protocol::ProtocolUsb::Serial(protocol::serial(&mut connection).await?);
+            let connection = candidate.connect(*timeout)?;
+            let serial = protocol::ProtocolUsb::Serial(protocol::serial(&connection).await?);
             let bus = connection.device().bus_number();
             let dev = connection.device().address();
             let busdev = protocol::ProtocolUsb::BusDev { bus, dev };
@@ -423,7 +421,7 @@ pub struct PlatformUpdate {
 }
 
 impl PlatformUpdate {
-    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
         let PlatformUpdate { platform_a, platform_b, transfer } = self;
         let platform = match platform_b {
             Some(platform_b) => match (PlatformInfo {}).run(device).await?.get().running_side {
@@ -453,7 +451,7 @@ pub struct Transfer {
 
 impl Transfer {
     async fn run<S>(
-        self, device: &mut DynDevice, payload: Option<PathBuf>, message: &'static str,
+        self, device: &DynDevice, payload: Option<PathBuf>, message: &'static str,
         finish: Option<impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>>,
     ) -> Result<()>
     where
@@ -516,7 +514,7 @@ impl Transfer {
 }
 
 async fn final_call<S: service::Service>(
-    device: &mut DynDevice, request: S::Request<'_>,
+    device: &DynDevice, request: S::Request<'_>,
     proof: impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>,
 ) -> Result<()> {
     device.send(&S::request(request)).await?;
@@ -545,7 +543,7 @@ async fn final_call<S: service::Service>(
 pub struct PlatformReboot {}
 
 impl PlatformReboot {
-    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
         let PlatformReboot {} = self;
         final_call::<service::PlatformReboot>(device, (), |x| match *x.get() {}).await
     }
@@ -556,7 +554,7 @@ impl PlatformReboot {
 pub struct PlatformLock {}
 
 impl PlatformLock {
-    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
         let PlatformLock {} = self;
         device.call::<service::PlatformLock>(()).await.map(|x| *x.get())
     }
@@ -570,7 +568,7 @@ pub struct PlatformRpc {
 }
 
 impl PlatformRpc {
-    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
         let PlatformRpc { rpc } = self;
         let mut rpc = rpc.start().await?;
         while let Some(request) = rpc.read().await? {
@@ -774,7 +772,7 @@ pub struct RustAppletInstall {
 }
 
 impl RustAppletInstall {
-    pub async fn run(self, device: &mut DynDevice) -> Result<()> {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
         let RustAppletInstall { build, transfer, wait } = self;
         let output = build.output_dir.clone();
         build.run().await?;

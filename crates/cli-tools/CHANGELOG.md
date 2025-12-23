@@ -5,8 +5,8 @@
 ### Major
 
 - Remove `action::PlatformApiVersion` in favor of `wasefire_protocol::DynDevice::version()`
-- Use `wasefire_protocol::DynDevice` instead of `dyn wasefire_protocol::Connection` for all the
-  functions of the `action` module
+- Use `&wasefire_protocol::DynDevice` instead of `&mut dyn wasefire_protocol::Connection` for all
+  the functions of the `action` module
 
 ### Minor
 

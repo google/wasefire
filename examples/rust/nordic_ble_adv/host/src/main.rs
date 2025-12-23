@@ -30,9 +30,9 @@ struct Flags {
 #[tokio::main]
 async fn main() -> Result<()> {
     let flags = Flags::parse();
-    let mut device = flags.options.connect().await?;
+    let device = flags.options.connect().await?;
     loop {
-        let Stats { start, end, wait, stats } = checkpoint(&mut device).await?;
+        let Stats { start, end, wait, stats } = checkpoint(&device).await?;
         let delta = (end - start) as f64 / 1000000.;
         let wait = wait as f64 / 1000000.;
         let mut total = 0;
@@ -57,7 +57,7 @@ struct Stats {
     stats: Vec<([u8; 6], i32, u32)>,
 }
 
-async fn checkpoint(device: &mut DynDevice) -> Result<Stats> {
+async fn checkpoint(device: &DynDevice) -> Result<Stats> {
     let request = applet::Request { applet_id: AppletId, request: Cow::Borrowed(&[]) };
     device.call::<service::AppletRequest>(request).await?.get();
     let mut yoke_response;

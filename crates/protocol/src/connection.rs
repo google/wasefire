@@ -16,7 +16,7 @@ use alloc::boxed::Box;
 use alloc::format;
 use core::any::Any;
 use core::future::Future;
-use core::ops::{Deref, DerefMut};
+use core::ops::Deref;
 use core::pin::Pin;
 
 use anyhow::{Context, ensure};
@@ -34,7 +34,7 @@ pub type DynDevice = Device<Box<dyn Connection>>;
 
 impl<T: Connection> Device<T> {
     /// Checks whether the device is supported and caches the API version.
-    pub async fn new(mut connection: T) -> anyhow::Result<Self> {
+    pub async fn new(connection: T) -> anyhow::Result<Self> {
         let version = *connection.call::<crate::ApiVersion>(()).await?.get();
         ensure!(version <= VERSION, "the device is more recent than the host");
         Ok(Device { version, connection })
@@ -65,42 +65,36 @@ impl<T: Connection> Deref for Device<T> {
     }
 }
 
-impl<T: Connection> DerefMut for Device<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.connection
-    }
-}
-
 pub type DynFuture<'a, T> = Pin<Box<dyn Future<Output = anyhow::Result<T>> + 'a>>;
 
 pub trait Connection: Any + Send {
-    /// Receives a raw response (possibly tunneled) from the device.
-    fn read(&mut self) -> DynFuture<'_, Box<[u8]>>;
-
     /// Sends a raw request (possibly tunneled) to the device.
-    fn write<'a>(&'a mut self, response: &'a [u8]) -> DynFuture<'a, ()>;
+    fn write<'a>(&'a self, request: &'a [u8]) -> DynFuture<'a, ()>;
+
+    /// Receives a raw response (possibly tunneled) from the device.
+    fn read(&self) -> DynFuture<'_, Box<[u8]>>;
 }
 
 impl Connection for Box<dyn Connection> {
-    fn read(&mut self) -> DynFuture<'_, Box<[u8]>> {
-        (**self).read()
+    fn write<'a>(&'a self, request: &'a [u8]) -> DynFuture<'a, ()> {
+        (**self).write(request)
     }
 
-    fn write<'a>(&'a mut self, response: &'a [u8]) -> DynFuture<'a, ()> {
-        (**self).write(response)
+    fn read(&self) -> DynFuture<'_, Box<[u8]>> {
+        (**self).read()
     }
 }
 
 pub trait ConnectionExt: Connection {
     /// Calls a service on the device.
     fn call<S: Service>(
-        &mut self, request: S::Request<'_>,
+        &self, request: S::Request<'_>,
     ) -> impl Future<Output = anyhow::Result<Yoke<S::Response<'static>>>> {
         async { self.call_ref::<S>(&S::request(request)).await }
     }
 
     fn call_ref<S: Service>(
-        &mut self, request: &Api<Request>,
+        &self, request: &Api<Request>,
     ) -> impl Future<Output = anyhow::Result<Yoke<S::Response<'static>>>> {
         async {
             self.send(request).await.with_context(|| format!("sending {}", S::NAME))?;
@@ -109,7 +103,7 @@ pub trait ConnectionExt: Connection {
     }
 
     /// Sends a request to the device.
-    fn send(&mut self, request: &Api<'_, Request>) -> impl Future<Output = anyhow::Result<()>> {
+    fn send(&self, request: &Api<'_, Request>) -> impl Future<Output = anyhow::Result<()>> {
         async {
             let request = request.encode().context("encoding request")?;
             self.write(&request).await
@@ -118,7 +112,7 @@ pub trait ConnectionExt: Connection {
 
     /// Receives a response from the device.
     fn receive<S: Service>(
-        &mut self,
+        &self,
     ) -> impl Future<Output = anyhow::Result<Yoke<S::Response<'static>>>> {
         async {
             let response = self.read().await?;

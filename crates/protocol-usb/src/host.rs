@@ -199,7 +199,7 @@ impl<T: UsbContext> Connection<T> {
 }
 
 impl<T: UsbContext + 'static> wasefire_protocol::Connection for Connection<T> {
-    fn write<'a>(&'a mut self, request: &'a [u8]) -> DynFuture<'a, ()> {
+    fn write<'a>(&'a self, request: &'a [u8]) -> DynFuture<'a, ()> {
         Box::pin(async move {
             for packet in Encoder::new(request) {
                 let written = self.handle.write_bulk(EP_OUT, &packet, self.timeout)?;
@@ -212,7 +212,7 @@ impl<T: UsbContext + 'static> wasefire_protocol::Connection for Connection<T> {
         })
     }
 
-    fn read(&mut self) -> DynFuture<'_, Box<[u8]>> {
+    fn read(&self) -> DynFuture<'_, Box<[u8]>> {
         Box::pin(async move {
             let mut decoder = Decoder::default();
             loop {

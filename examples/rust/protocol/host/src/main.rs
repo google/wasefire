@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let flags = Flags::parse();
     let connection = flags.options.connect().await?.connection() as Box<dyn Any>;
-    let mut connection = match connection.downcast::<Connection<GlobalContext>>() {
+    let connection = match connection.downcast::<Connection<GlobalContext>>() {
         Ok(x) => *x,
         Err(_) => bail!("only usb protocol is supported"),
     };
@@ -78,8 +78,8 @@ async fn main() -> Result<()> {
             let delimiter = delimiter.as_bytes();
             let tunnel =
                 applet::Tunnel { applet_id: applet::AppletId, delimiter: Cow::Borrowed(delimiter) };
-            send(&mut connection, &Api::<Request>::AppletTunnel(tunnel)).await?;
-            read_tunnel(&mut connection).await?;
+            send(&connection, &Api::<Request>::AppletTunnel(tunnel)).await?;
+            read_tunnel(&connection).await?;
             for line in std::io::stdin().lines() {
                 let request = line.context("reading line")?.into_bytes();
                 if request == delimiter {
@@ -90,25 +90,23 @@ async fn main() -> Result<()> {
                 println!("{}", String::from_utf8(response.into()).unwrap());
             }
             connection.write(delimiter).await?;
-            read_tunnel(&mut connection).await
+            read_tunnel(&connection).await
         }
         Command::Test => tests::main(connection).await,
     }
 }
 
-async fn send(
-    connection: &mut Connection<GlobalContext>, request: &Api<'_, Request>,
-) -> Result<()> {
+async fn send(connection: &Connection<GlobalContext>, request: &Api<'_, Request>) -> Result<()> {
     connection.send(request).await.context("sending request")
 }
 
 async fn receive<T: Service>(
-    connection: &mut Connection<GlobalContext>,
+    connection: &Connection<GlobalContext>,
 ) -> Result<Yoke<T::Response<'static>>> {
     connection.receive::<T>().await.context("receiving response")
 }
 
-async fn read_tunnel(connection: &mut Connection<GlobalContext>) -> Result<()> {
+async fn read_tunnel(connection: &Connection<GlobalContext>) -> Result<()> {
     let () = receive::<service::AppletTunnel>(connection).await?.get();
     Ok(())
 }
