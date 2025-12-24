@@ -600,7 +600,7 @@ impl AppletCommand {
                     action.ensure_exit();
                 }
                 let action = action::AppletInstall { applet, transfer, wait };
-                action.run(&mut options.connect().await?).await
+                action.run(&options.connect().await?).await
             }
         }
     }
@@ -641,7 +641,7 @@ impl RunnerOptions {
                     !both || options.reboot_stable(),
                     "--both requires a reboot-stable protocol"
                 );
-                let mut connection = match next_step {
+                let connection = match next_step {
                     None => options.connect().await?,
                     Some(_) => loop {
                         tokio::time::sleep(Duration::from_millis(300)).await;
@@ -651,7 +651,7 @@ impl RunnerOptions {
                     },
                 };
                 let action = action::PlatformInfo {};
-                let info = action.run(&mut connection).await?;
+                let info = action.run(&connection).await?;
                 let info = info.get();
                 match next_step {
                     None => {
@@ -887,7 +887,7 @@ impl RunnerOptions {
                 let platform_a = self.bundle(&elf, side).await?.into();
                 let transfer = cmd_update.transfer.clone();
                 let action = action::PlatformUpdate { platform_a, platform_b: None, transfer };
-                action.run(&mut update.unwrap()).await?;
+                action.run(&update.unwrap()).await?;
                 if !cmd_update.both || cmd_update.step.is_some() {
                     match cmd_update.command {
                         Some(UpdateCommand::Attach(options)) => {
@@ -1115,11 +1115,11 @@ impl Wait {
             if applet {
                 action.ensure_exit();
             }
-            let mut connection = match self.options.connect().await {
+            let connection = match self.options.connect().await {
                 Ok(x) => x,
                 Err(_) => continue,
             };
-            let error = match action.run(&mut connection).await {
+            let error = match action.run(&connection).await {
                 Err(x) => x,
                 Ok(()) => continue,
             };
