@@ -21,7 +21,7 @@ use std::time::Duration;
 use anyhow::{Result, bail, ensure};
 use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use rusb::{Device, GlobalContext};
-use wasefire_protocol::Connection;
+use wasefire_protocol::{Connection, DynDevice};
 
 #[derive(Clone)]
 pub(crate) enum Protocol {
@@ -41,21 +41,18 @@ pub(crate) enum ProtocolUsb {
 pub(crate) struct Hex(pub(crate) Vec<u8>);
 
 impl Protocol {
-    pub(crate) async fn connect(&self, timeout: Duration) -> Result<Box<dyn Connection>> {
-        match self {
-            Protocol::Usb(x) => x.connect(timeout).await,
-            Protocol::Unix(x) => {
-                Ok(Box::new(wasefire_protocol_tokio::Connection::new_unix(x).await?))
-            }
-            Protocol::Tcp(x) => {
-                Ok(Box::new(wasefire_protocol_tokio::Connection::new_tcp(*x).await?))
-            }
-        }
+    pub(crate) async fn connect(&self, timeout: Duration) -> Result<DynDevice> {
+        let connection: Box<dyn Connection> = match self {
+            Protocol::Usb(x) => return x.connect(timeout).await,
+            Protocol::Unix(x) => Box::new(wasefire_protocol_tokio::Connection::new_unix(x).await?),
+            Protocol::Tcp(x) => Box::new(wasefire_protocol_tokio::Connection::new_tcp(*x).await?),
+        };
+        DynDevice::new(connection).await
     }
 }
 
 impl ProtocolUsb {
-    async fn connect(&self, timeout: Duration) -> Result<Box<dyn Connection>> {
+    async fn connect(&self, timeout: Duration) -> Result<DynDevice> {
         let context = GlobalContext::default();
         let mut matches = Vec::new();
         for candidate in wasefire_protocol_usb::list(&context)? {
@@ -67,7 +64,7 @@ impl ProtocolUsb {
             matches.push((connection, serial));
         }
         match matches.len() {
-            1 => Ok(Box::new(matches.pop().unwrap().0)),
+            1 => DynDevice::new(Box::new(matches.pop().unwrap().0)).await,
             0 => bail!("no connected platforms matching {self}"),
             _ => {
                 eprintln!("Multiple connected platforms matching {self}:");
@@ -167,13 +164,6 @@ impl FromStr for Hex {
 pub(crate) async fn serial(
     connection: &mut wasefire_protocol_usb::Connection<GlobalContext>,
 ) -> Result<Hex> {
-    // Detect if it's a USB/IP device and use the Wasefire protocol in that case. There seems to be
-    // an issue reading strings and languages from a USB/IP device (probably something unsupported
-    // in the usbip-device crate). This is an ugly heuristic but good enough to progress.
-    if connection.device().bus_number() == 3 {
-        let info = crate::action::PlatformInfo {}.run(connection).await?;
-        return Ok(Hex(info.get().serial.to_vec()));
-    }
     let desc = connection.device().device_descriptor()?;
     let serial = connection.handle().read_serial_number_string_ascii(&desc)?;
     Ok(Hex(HEX.decode(serial.as_bytes())?))

@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `{Dyn,}Device` with `host` feature to cache the API version over a `Connection`
 - Add `Service::response()` with `serde` feature
 - Implement `Serialize` and `Deserialize` for `Api` with `serde` feature
 

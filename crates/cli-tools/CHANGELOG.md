@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.3.1-git
+## 0.4.0-git
+
+### Major
+
+- Remove `action::PlatformApiVersion` in favor of `wasefire_protocol::DynDevice::version()`
+- Use `wasefire_protocol::DynDevice` instead of `dyn wasefire_protocol::Connection` for all the
+  functions of the `action` module
 
 ### Minor
 

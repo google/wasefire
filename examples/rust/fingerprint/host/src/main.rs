@@ -28,7 +28,7 @@ use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use wasefire_cli_tools::action::ConnectionOptions;
 use wasefire_error::Error;
 use wasefire_protocol::applet::{self, AppletId};
-use wasefire_protocol::{self as service, Connection, ConnectionExt as _};
+use wasefire_protocol::{self as service, ConnectionExt as _, DynDevice};
 use wasefire_wire::{Wire, Yoke};
 
 #[derive(Parser)]
@@ -96,14 +96,14 @@ macro_rules! call {
 #[tokio::main]
 async fn main() -> Result<()> {
     let flags = Flags::parse();
-    let mut connection = flags.options.connect().await?;
+    let mut device = flags.options.connect().await?;
     let stop = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGINT, stop.clone())?;
     macro_rules! loop_stop {
         ($($body:tt)*) => {
             loop {
                 if stop.load(Relaxed) {
-                    call!(Reset(&mut connection): () -> ()).get();
+                    call!(Reset(&mut device): () -> ()).get();
                     return Ok(());
                 }
                 $($body)*
@@ -113,11 +113,11 @@ async fn main() -> Result<()> {
     }
     match flags.command {
         Command::Capture => {
-            call!(CaptureStart(&mut connection): () -> ()).get();
+            call!(CaptureStart(&mut device): () -> ()).get();
             let mut stdout = std::io::stdout().lock();
             write!(stdout, "Waiting for touch").unwrap();
             let width = loop_stop! {
-                let width = call!(CaptureDone(&mut connection): () -> (_));
+                let width = call!(CaptureDone(&mut device): () -> (_));
                 match width.try_map(|x| x.ok_or(())) {
                     Ok(width) => break *width.get(),
                     Err(()) => tokio::time::sleep(Duration::from_millis(300)).await,
@@ -127,7 +127,7 @@ async fn main() -> Result<()> {
             };
             drop(stdout);
             println!("\nSaved as image.raw and image.png");
-            let data = call_raw(&mut connection, &Request::CaptureImage).await?;
+            let data = call_raw(&mut device, &Request::CaptureImage).await?;
             tokio::fs::write("image.raw", data.get()).await?;
             let height = data.get().len() / width;
             let size = format!("{width}x{height}");
@@ -136,10 +136,10 @@ async fn main() -> Result<()> {
             convert.status().await?.exit_ok()?;
         }
         Command::Enroll => {
-            call!(EnrollStart(&mut connection): () -> ()).get();
+            call!(EnrollStart(&mut device): () -> ()).get();
             let mut stdout = std::io::stdout().lock();
             loop_stop! {
-                match call!(EnrollDone(&mut connection): () -> (_)).try_map(|x| x) {
+                match call!(EnrollDone(&mut device): () -> (_)).try_map(|x| x) {
                     Ok(id) => {
                         drop(stdout);
                         println!(
@@ -159,11 +159,11 @@ async fn main() -> Result<()> {
         }
         Command::Identify { id } => {
             let id = id.map(|x| HEX.decode(x.as_bytes())).transpose()?;
-            call!(IdentifyStart(&mut connection): (id) -> ()).get();
+            call!(IdentifyStart(&mut device): (id) -> ()).get();
             let mut stdout = std::io::stdout().lock();
             write!(stdout, "Waiting for touch").unwrap();
             let result = loop_stop! {
-                let result = call!(IdentifyDone(&mut connection): () -> (_));
+                let result = call!(IdentifyDone(&mut device): () -> (_));
                 match result.try_map(|x| x.ok_or(())) {
                     Ok(result) => break result,
                     Err(()) => tokio::time::sleep(Duration::from_millis(300)).await,
@@ -180,22 +180,22 @@ async fn main() -> Result<()> {
         }
         Command::Delete { id } => {
             let id = id.map(|x| HEX.decode(x.as_bytes())).transpose()?;
-            call!(Delete(&mut connection): (id) -> ()).get();
+            call!(Delete(&mut device): (id) -> ()).get();
             println!("Deleted");
         }
         Command::List => {
-            let ids = call!(List(&mut connection): () -> (_));
+            let ids = call!(List(&mut device): () -> (_));
             println!("There are {} template ids:", ids.get().len());
             for id in ids.get() {
                 println!("- {}", HEX.encode_display(id));
             }
         }
         Command::Detect => {
-            call!(DetectStart(&mut connection): () -> ()).get();
+            call!(DetectStart(&mut device): () -> ()).get();
             let mut stdout = std::io::stdout().lock();
             write!(stdout, "Waiting for touch").unwrap();
             while !stop.load(Relaxed) {
-                if *call!(DetectConsume(&mut connection): () -> (_)).get() {
+                if *call!(DetectConsume(&mut device): () -> (_)).get() {
                     writeln!(stdout, "touched").unwrap();
                     continue;
                 }
@@ -203,17 +203,17 @@ async fn main() -> Result<()> {
                 stdout.flush().unwrap();
                 tokio::time::sleep(Duration::from_millis(10)).await;
             }
-            call!(DetectStop(&mut connection): () -> ()).get();
+            call!(DetectStop(&mut device): () -> ()).get();
         }
     }
     Ok(())
 }
 
 async fn call<T: Wire<'static>>(
-    connection: &mut dyn Connection, name: &str, request: &Request,
+    device: &mut DynDevice, name: &str, request: &Request,
     extract: impl FnOnce(Response) -> Result<T, Response>,
 ) -> Result<Yoke<T>> {
-    let response = call_raw(connection, request).await?;
+    let response = call_raw(device, request).await?;
     let response = response.try_map(|x| wasefire_wire::decode::<Result<Response, Error>>(x)?)?;
     match response.try_map(extract) {
         Ok(x) => Ok(x),
@@ -221,14 +221,12 @@ async fn call<T: Wire<'static>>(
     }
 }
 
-async fn call_raw(
-    connection: &mut dyn Connection, request: &Request,
-) -> Result<Yoke<&'static [u8]>> {
+async fn call_raw(device: &mut DynDevice, request: &Request) -> Result<Yoke<&'static [u8]>> {
     let request = wasefire_wire::encode(request)?.into_vec();
     let request = applet::Request { applet_id: AppletId, request: Cow::Owned(request) };
-    connection.call::<service::AppletRequest>(request).await?.get();
+    device.call::<service::AppletRequest>(request).await?.get();
     loop {
-        let response = connection.call::<service::AppletResponse>(AppletId).await?;
+        let response = device.call::<service::AppletResponse>(AppletId).await?;
         if let Ok(response) = response.try_map(|x| x.ok_or(())) {
             break Ok(response.map(|x| match x {
                 Cow::Borrowed(x) => x,
