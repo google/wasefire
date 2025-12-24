@@ -96,14 +96,14 @@ macro_rules! call {
 #[tokio::main]
 async fn main() -> Result<()> {
     let flags = Flags::parse();
-    let mut device = flags.options.connect().await?;
+    let device = flags.options.connect().await?;
     let stop = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGINT, stop.clone())?;
     macro_rules! loop_stop {
         ($($body:tt)*) => {
             loop {
                 if stop.load(Relaxed) {
-                    call!(Reset(&mut device): () -> ()).get();
+                    call!(Reset(&device): () -> ()).get();
                     return Ok(());
                 }
                 $($body)*
@@ -113,11 +113,11 @@ async fn main() -> Result<()> {
     }
     match flags.command {
         Command::Capture => {
-            call!(CaptureStart(&mut device): () -> ()).get();
+            call!(CaptureStart(&device): () -> ()).get();
             let mut stdout = std::io::stdout().lock();
             write!(stdout, "Waiting for touch").unwrap();
             let width = loop_stop! {
-                let width = call!(CaptureDone(&mut device): () -> (_));
+                let width = call!(CaptureDone(&device): () -> (_));
                 match width.try_map(|x| x.ok_or(())) {
                     Ok(width) => break *width.get(),
                     Err(()) => tokio::time::sleep(Duration::from_millis(300)).await,
@@ -127,7 +127,7 @@ async fn main() -> Result<()> {
             };
             drop(stdout);
             println!("\nSaved as image.raw and image.png");
-            let data = call_raw(&mut device, &Request::CaptureImage).await?;
+            let data = call_raw(&device, &Request::CaptureImage).await?;
             tokio::fs::write("image.raw", data.get()).await?;
             let height = data.get().len() / width;
             let size = format!("{width}x{height}");
@@ -136,10 +136,10 @@ async fn main() -> Result<()> {
             convert.status().await?.exit_ok()?;
         }
         Command::Enroll => {
-            call!(EnrollStart(&mut device): () -> ()).get();
+            call!(EnrollStart(&device): () -> ()).get();
             let mut stdout = std::io::stdout().lock();
             loop_stop! {
-                match call!(EnrollDone(&mut device): () -> (_)).try_map(|x| x) {
+                match call!(EnrollDone(&device): () -> (_)).try_map(|x| x) {
                     Ok(id) => {
                         drop(stdout);
                         println!(
@@ -159,11 +159,11 @@ async fn main() -> Result<()> {
         }
         Command::Identify { id } => {
             let id = id.map(|x| HEX.decode(x.as_bytes())).transpose()?;
-            call!(IdentifyStart(&mut device): (id) -> ()).get();
+            call!(IdentifyStart(&device): (id) -> ()).get();
             let mut stdout = std::io::stdout().lock();
             write!(stdout, "Waiting for touch").unwrap();
             let result = loop_stop! {
-                let result = call!(IdentifyDone(&mut device): () -> (_));
+                let result = call!(IdentifyDone(&device): () -> (_));
                 match result.try_map(|x| x.ok_or(())) {
                     Ok(result) => break result,
                     Err(()) => tokio::time::sleep(Duration::from_millis(300)).await,
@@ -180,22 +180,22 @@ async fn main() -> Result<()> {
         }
         Command::Delete { id } => {
             let id = id.map(|x| HEX.decode(x.as_bytes())).transpose()?;
-            call!(Delete(&mut device): (id) -> ()).get();
+            call!(Delete(&device): (id) -> ()).get();
             println!("Deleted");
         }
         Command::List => {
-            let ids = call!(List(&mut device): () -> (_));
+            let ids = call!(List(&device): () -> (_));
             println!("There are {} template ids:", ids.get().len());
             for id in ids.get() {
                 println!("- {}", HEX.encode_display(id));
             }
         }
         Command::Detect => {
-            call!(DetectStart(&mut device): () -> ()).get();
+            call!(DetectStart(&device): () -> ()).get();
             let mut stdout = std::io::stdout().lock();
             write!(stdout, "Waiting for touch").unwrap();
             while !stop.load(Relaxed) {
-                if *call!(DetectConsume(&mut device): () -> (_)).get() {
+                if *call!(DetectConsume(&device): () -> (_)).get() {
                     writeln!(stdout, "touched").unwrap();
                     continue;
                 }
@@ -203,14 +203,14 @@ async fn main() -> Result<()> {
                 stdout.flush().unwrap();
                 tokio::time::sleep(Duration::from_millis(10)).await;
             }
-            call!(DetectStop(&mut device): () -> ()).get();
+            call!(DetectStop(&device): () -> ()).get();
         }
     }
     Ok(())
 }
 
 async fn call<T: Wire<'static>>(
-    device: &mut DynDevice, name: &str, request: &Request,
+    device: &DynDevice, name: &str, request: &Request,
     extract: impl FnOnce(Response) -> Result<T, Response>,
 ) -> Result<Yoke<T>> {
     let response = call_raw(device, request).await?;
@@ -221,7 +221,7 @@ async fn call<T: Wire<'static>>(
     }
 }
 
-async fn call_raw(device: &mut DynDevice, request: &Request) -> Result<Yoke<&'static [u8]>> {
+async fn call_raw(device: &DynDevice, request: &Request) -> Result<Yoke<&'static [u8]>> {
     let request = wasefire_wire::encode(request)?.into_vec();
     let request = applet::Request { applet_id: AppletId, request: Cow::Owned(request) };
     device.call::<service::AppletRequest>(request).await?.get();

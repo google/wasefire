@@ -281,39 +281,27 @@ async fn main() -> Result<()> {
     let flags = Flags::parse();
     match flags.action {
         Action::AppletList => bail!("not implemented yet"),
-        Action::AppletInstall { options, action } => {
-            action.run(&mut options.connect().await?).await
-        }
+        Action::AppletInstall { options, action } => action.run(&options.connect().await?).await,
         Action::AppletUpdate => bail!("not implemented yet"),
-        Action::AppletUninstall { options, action } => {
-            action.run(&mut options.connect().await?).await
-        }
-        Action::AppletExitStatus { options, action } => {
-            action.run(&mut options.connect().await?).await
-        }
-        Action::AppletReboot { options, action } => action.run(&mut options.connect().await?).await,
-        Action::AppletRpc { options, action } => action.run(&mut options.connect().await?).await,
+        Action::AppletUninstall { options, action } => action.run(&options.connect().await?).await,
+        Action::AppletExitStatus { options, action } => action.run(&options.connect().await?).await,
+        Action::AppletReboot { options, action } => action.run(&options.connect().await?).await,
+        Action::AppletRpc { options, action } => action.run(&options.connect().await?).await,
         Action::Host(x) => x.run().await?,
         Action::PlatformClearStore { options, action } => {
-            action.run(&mut options.connect().await?).await
+            action.run(&options.connect().await?).await
         }
-        Action::PlatformInfo { options, action } => {
-            action.print(&mut options.connect().await?).await
-        }
+        Action::PlatformInfo { options, action } => action.print(&options.connect().await?).await,
         Action::PlatformList(x) => x.run().await,
-        Action::PlatformUpdate { options, action } => {
-            action.run(&mut options.connect().await?).await
-        }
-        Action::PlatformReboot { options, action } => {
-            action.run(&mut options.connect().await?).await
-        }
-        Action::PlatformLock { options, action } => action.run(&mut options.connect().await?).await,
-        Action::PlatformRpc { options, action } => action.run(&mut options.connect().await?).await,
+        Action::PlatformUpdate { options, action } => action.run(&options.connect().await?).await,
+        Action::PlatformReboot { options, action } => action.run(&options.connect().await?).await,
+        Action::PlatformLock { options, action } => action.run(&options.connect().await?).await,
+        Action::PlatformRpc { options, action } => action.run(&options.connect().await?).await,
         Action::RustAppletNew(x) => x.run().await,
         Action::RustAppletBuild(x) => x.run().await,
         Action::RustAppletTest(x) => x.run().await,
         Action::RustAppletInstall { options, action } => {
-            action.run(&mut options.connect().await?).await
+            action.run(&options.connect().await?).await
         }
         Action::SelfUpdate => self_update().await.map(|_| ()),
         Action::Completion(x) => x.run().await,

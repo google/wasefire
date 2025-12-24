@@ -56,8 +56,8 @@ impl ProtocolUsb {
         let context = GlobalContext::default();
         let mut matches = Vec::new();
         for candidate in wasefire_protocol_usb::list(&context)? {
-            let Ok(mut connection) = candidate.connect(timeout) else { continue };
-            let Ok(serial) = serial(&mut connection).await else { continue };
+            let Ok(connection) = candidate.connect(timeout) else { continue };
+            let Ok(serial) = serial(&connection).await else { continue };
             if !self.matches(connection.device(), &serial) {
                 continue;
             }
@@ -162,7 +162,7 @@ impl FromStr for Hex {
 }
 
 pub(crate) async fn serial(
-    connection: &mut wasefire_protocol_usb::Connection<GlobalContext>,
+    connection: &wasefire_protocol_usb::Connection<GlobalContext>,
 ) -> Result<Hex> {
     let desc = connection.device().device_descriptor()?;
     let serial = connection.handle().read_serial_number_string_ascii(&desc)?;
