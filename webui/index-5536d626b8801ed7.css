@@ -1,0 +1,46 @@
+.box, .idle, .columns .column, .running, .error {
+  border: 1px solid #000;
+  border-radius: 5px;
+  padding: 3px 7px 3px 7px;
+  margin: 2px;
+}
+
+.error {
+  border-color: #d22;
+  background-color: #fdd;
+}
+
+.running {
+  border-color: #dd2;
+  background-color: #ffd;
+}
+
+.idle, .columns .column {
+  border-color: #2d2;
+  background-color: #dfd;
+}
+
+.devices li, .commands li {
+  margin-bottom: 5px;
+}
+.devices li:last-child, .commands li:last-child {
+  margin-bottom: 0;
+}
+.devices ul, .commands ul {
+  margin-top: 5px;
+}
+
+.columns {
+  display: flex;
+  margin-bottom: 5px;
+}
+.columns .column {
+  flex: 1;
+}
+
+code {
+  border: 1px solid #99f;
+  border-radius: 3px;
+  background-color: #ddf;
+  padding: 0px 2px 0px 2px;
+}
