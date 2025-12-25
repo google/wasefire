@@ -4,7 +4,7 @@
 
 ### Patch
 
-- No change
+- Remove now stable `array_windows` nightly feature
 
 ## 0.1.0
 

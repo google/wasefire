@@ -49,7 +49,7 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
 #[cfg(feature = "board-api-gpio")]
 fn configure<B: Board>(call: SchedulerCall<B, api::configure::Sig>) {
     let api::configure::Params { gpio, mode } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let gpio = Id::new(*gpio as usize)?;
         let config = *bytemuck::checked::try_from_bytes(&mode.to_le_bytes())
             .map_err(|_| Error::user(Code::InvalidArgument))?;
@@ -61,7 +61,7 @@ fn configure<B: Board>(call: SchedulerCall<B, api::configure::Sig>) {
 #[cfg(feature = "board-api-gpio")]
 fn read<B: Board>(call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { gpio } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let gpio = Id::new(*gpio as usize)?;
         board::Gpio::<B>::read(gpio)?
     };
@@ -71,7 +71,7 @@ fn read<B: Board>(call: SchedulerCall<B, api::read::Sig>) {
 #[cfg(feature = "board-api-gpio")]
 fn write<B: Board>(call: SchedulerCall<B, api::write::Sig>) {
     let api::write::Params { gpio, val } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let gpio = Id::new(*gpio as usize)?;
         let value = match *val {
             0 => false,
@@ -86,7 +86,7 @@ fn write<B: Board>(call: SchedulerCall<B, api::write::Sig>) {
 #[cfg(feature = "board-api-gpio")]
 fn last_write<B: Board>(call: SchedulerCall<B, api::last_write::Sig>) {
     let api::last_write::Params { gpio } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let gpio = Id::new(*gpio as usize)?;
         board::Gpio::<B>::last_write(gpio)?
     };
@@ -98,7 +98,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { gpio, event, handler_func, handler_data } = call.read();
     let inst = call.inst();
     let applet = call.applet();
-    let result = try {
+    let result = try bikeshed _ {
         let gpio = Id::new(*gpio as usize)?;
         let (falling, rising) = match api::Event::try_from(*event)? {
             api::Event::FallingEdge => (true, false),
@@ -119,7 +119,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
 #[cfg(feature = "board-api-gpio")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { gpio } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let gpio = Id::new(*gpio as usize)?;
         board::Gpio::<B>::disable(gpio)?;
         call.scheduler().disable_event(Key::from(&Event { gpio }).into())?;
