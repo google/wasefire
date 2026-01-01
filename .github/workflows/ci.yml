@@ -16,7 +16,7 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Compute the checks for ${{ github.event_name }}
         id: checks
         run: |
@@ -62,7 +62,7 @@ jobs:
   cache:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - id: cache
         name: Restore (then save) the cache
         uses: ./.github/actions/ci-cache
@@ -82,7 +82,7 @@ jobs:
         check: ${{ fromJSON(needs.checks.outputs.checks) }}
     name: ${{ matrix.check }}
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Run the ${{ matrix.check }} check
         uses: ./.github/actions/ci-checks
         with:
@@ -101,7 +101,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
       - name: Restore the cache
@@ -118,9 +118,9 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - run: ./scripts/artifacts.sh
-      - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
+      - uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
         id: attest
         with:
           subject-path: 'artifacts/*'
