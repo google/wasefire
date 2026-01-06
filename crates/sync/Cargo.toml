@@ -12,7 +12,7 @@ keywords = ["framework", "mutex", "no-std"]
 categories = ["concurrency", "no-std"]
 
 [dependencies]
-portable-atomic = { version = "1.11.1", default-features = false }
+portable-atomic = { version = "1.13.0", default-features = false }
 
 [dependencies.spin]
 version = "0.10.0"

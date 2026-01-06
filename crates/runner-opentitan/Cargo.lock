@@ -58,7 +58,7 @@ checksum = "f9abbd1bc6865053c427f7198e6af43bfdedc55ab791faed4fbd361d789575ff"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
@@ -127,7 +127,7 @@ checksum = "f46882e17999c6cc590af592290432be3bce0428cb0d5f8b6715e4dc7b383eb3"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
@@ -153,7 +153,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d162beedaa69905488a8da94f5ac3edb4dd4788b732fadb7bd120b2625c1976"
 dependencies = [
  "data-encoding",
- "syn 1.0.109",
+ "syn 2.0.113",
 ]
 
 [[package]]
@@ -185,7 +185,7 @@ dependencies = [
  "proc-macro-error2",
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
@@ -205,7 +205,7 @@ checksum = "ef941ded77d15ca19b40374869ac6000af1c9f2a4c0f3d4c70926287e6364a8f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
@@ -251,9 +251,9 @@ dependencies = [
 
 [[package]]
 name = "embedded-alloc"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f2de9133f68db0d4627ad69db767726c99ff8585272716708227008d3f1bddd"
+checksum = "2db634e07f552215f7a3572dc0a4d29760c637fcea5a8c18d2cc291f782c216c"
 dependencies = [
  "const-default",
  "critical-section",
@@ -319,9 +319,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.169"
+version = "0.2.179"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5aba8db14291edd000dfcc4d620c7ebfb122c613afb886ca8803fa4e128a20a"
+checksum = "c5a2d376baa530d1238d133232d15e239abad80d05838b4b59354e5268af431f"
 
 [[package]]
 name = "linked_list_allocator"
@@ -353,7 +353,7 @@ checksum = "ff32365de1b6743cb203b710788263c44a03de03802daf96092f2da4fe6ba4d7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
@@ -370,9 +370,9 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "portable-atomic"
-version = "1.11.1"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f84267b20a16ea918e43c6a88433c2d54fa145c92a811b5b047ccbe153674483"
+checksum = "f89776e4d69bb58bc6993e99ffa1d11f228b839984854c7daeb5d37f87cbe950"
 
 [[package]]
 name = "proc-macro-error-attr2"
@@ -393,23 +393,23 @@ dependencies = [
  "proc-macro-error-attr2",
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.103"
+version = "1.0.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ee95bc4ef87b8d5ba32e8b7714ccc834865276eab0aed5c9958d00ec45f49e8"
+checksum = "535d180e0ecab6268a3e718bb9fd44db66bbbc256257165fc699dadf70d16fe7"
 dependencies = [
  "unicode-ident",
 ]
 
 [[package]]
 name = "quote"
-version = "1.0.42"
+version = "1.0.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a338cc41d27e6cc6dce6cefc13a0729dfbb81c262b1f519331575dd80ef3067f"
+checksum = "dc74d9a594b72ae6656596548f56f667211f8a97b3d4c3d467150794690dc40a"
 dependencies = [
  "proc-macro2",
 ]
@@ -430,55 +430,49 @@ dependencies = [
 
 [[package]]
 name = "riscv"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b05cfa3f7b30c84536a9025150d44d26b8e1cc20ddf436448d74cd9591eefb25"
+checksum = "9251433e48c39d2133cbaff3ae7809ce6a1ecbc8225ca7da33d96d10cf360582"
 dependencies = [
  "critical-section",
  "embedded-hal",
  "paste",
  "riscv-macros",
- "riscv-pac",
+ "riscv-types",
 ]
 
 [[package]]
 name = "riscv-macros"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d323d13972c1b104aa036bc692cd08b822c8bbf23d79a27c526095856499799"
+checksum = "d47d1fb716349455b8e5e3ebbf1eff95344dbdf9f782a4e1359d2f16f51e3dce"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
-name = "riscv-pac"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8188909339ccc0c68cfb5a04648313f09621e8b87dc03095454f1a11f6c5d436"
-
-[[package]]
 name = "riscv-rt"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d07b9f3a0eff773fc4df11f44ada4fa302e529bff4b7fe7e6a4b98a65ce9174"
+checksum = "62c31b5956eca36b0bd5b769454adfc85637b2e7a40dbb3cb83fee850160f2d2"
 dependencies = [
  "riscv",
- "riscv-pac",
  "riscv-rt-macros",
  "riscv-target-parser",
+ "riscv-types",
 ]
 
 [[package]]
 name = "riscv-rt-macros"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15c3138fdd8d128b2d81829842a3e0ce771b3712f7b6318ed1476b0695e7d330"
+checksum = "def519ddeeb5e43c2b4fc3952c27b3a86782fc05192f322b2309125cd85b1fc3"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
@@ -486,6 +480,12 @@ name = "riscv-target-parser"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1376b15f3ff160e9b1e8ea564ce427f2f6fcf77528cc0a8bf405cb476f9cea7"
+
+[[package]]
+name = "riscv-types"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3f2ad9f15a07f4a0e1677124f9120ce7e83ab7e1ca7186af0ca9da529b62e80"
 
 [[package]]
 name = "rlsf"
@@ -551,7 +551,7 @@ checksum = "22f968c5ea23d555e670b449c1c5e7b2fc399fdaec1d304a17cd48e288abc107"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
@@ -586,7 +586,7 @@ checksum = "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
@@ -666,9 +666,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.111"
+version = "2.0.113"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "390cc9a294ab71bdb1aa2e99d13be9c753cd2d7bd6560c77118597410c4d2e87"
+checksum = "678faa00651c9eb72dd2020cbdf275d92eccb2400d568e419efdd64838145cb4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -700,7 +700,7 @@ checksum = "3ff15c8ecd7de3849db632e14d18d2571fa09dfc5ed93479bc4485c7a517c913"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
@@ -796,7 +796,7 @@ dependencies = [
  "data-encoding-macro",
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
@@ -945,7 +945,7 @@ version = "0.1.3-git"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
@@ -965,7 +965,7 @@ checksum = "88d2b8d9c68ad2b9e4340d7832716a4d21a22a1154777ad56ea55c51a9cf3831"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.111",
+ "syn 2.0.113",
 ]
 
 [[package]]
