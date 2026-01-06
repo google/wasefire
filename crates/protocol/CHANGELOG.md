@@ -4,6 +4,7 @@
 
 ### Major
 
+- Remove `Send` bound on `Connection`
 - Change `Connection{,Ext}` to take `&self` instead of `&mut self`
 - Use `Cow<'a, [u8]>` instead of `&'a [u8]` to support `serde`
 
