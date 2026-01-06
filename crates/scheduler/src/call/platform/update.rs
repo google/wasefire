@@ -29,7 +29,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 
 fn initialize<B: Board>(call: SchedulerCall<B, api::initialize::Sig>) {
     let api::initialize::Params { dry_run } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let dry_run = match *dry_run {
             0 => false,
             1 => true,
@@ -47,7 +47,7 @@ fn process_<B: Board>(mut call: SchedulerCall<B, api::process::Sig>) {
     let api::process::Params { ptr, len } = call.read();
     let applet = call.applet();
     let memory = applet.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let chunk = memory.get(*ptr, *len)?;
         board::platform::Update::<B>::write(chunk)?
     };
@@ -56,5 +56,5 @@ fn process_<B: Board>(mut call: SchedulerCall<B, api::process::Sig>) {
 
 fn finalize<B: Board>(call: SchedulerCall<B, api::finalize::Sig>) {
     let api::finalize::Params {} = call.read();
-    call.reply(try { board::platform::Update::<B>::finish()? });
+    call.reply(try bikeshed _ { board::platform::Update::<B>::finish()? });
 }

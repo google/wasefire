@@ -46,7 +46,7 @@ fn allocate<B: Board>(call: SchedulerCall<B, api::allocate::Sig>) {
 fn allocate<B: Board>(mut call: SchedulerCall<B, api::allocate::Sig>) {
     let api::allocate::Params { handler_func, handler_data } = call.read();
     let inst = call.inst();
-    let result = try {
+    let result = try bikeshed _ {
         let timers = &mut call.scheduler().timers;
         let timer = timers.iter().position(|x| x.is_none()).ok_or(Trap)?;
         timers[timer] = Some(Timer {});
@@ -65,7 +65,7 @@ fn allocate<B: Board>(mut call: SchedulerCall<B, api::allocate::Sig>) {
 fn start<B: Board>(mut call: SchedulerCall<B, api::start::Sig>) {
     let api::start::Params { id, mode, duration_ms } = call.read();
     let timer = *id as usize;
-    let result = try {
+    let result = try bikeshed _ {
         let id = get_timer(call.scheduler(), timer)?;
         let periodic = matches!(api::Mode::try_from(*mode).map_err(|_| Trap)?, api::Mode::Periodic);
         let duration_ms = *duration_ms as usize;
@@ -79,7 +79,7 @@ fn start<B: Board>(mut call: SchedulerCall<B, api::start::Sig>) {
 fn stop<B: Board>(mut call: SchedulerCall<B, api::stop::Sig>) {
     let api::stop::Params { id } = call.read();
     let timer = *id as usize;
-    let result = try {
+    let result = try bikeshed _ {
         let id = get_timer(call.scheduler(), timer)?;
         board::Timer::<B>::disarm(id)?
     };
@@ -90,7 +90,7 @@ fn stop<B: Board>(mut call: SchedulerCall<B, api::stop::Sig>) {
 fn free<B: Board>(mut call: SchedulerCall<B, api::free::Sig>) {
     let api::free::Params { id } = call.read();
     let timer = *id as usize;
-    let result = try {
+    let result = try bikeshed _ {
         let timer = get_timer(call.scheduler(), timer)?;
         call.scheduler().disable_event(Key { timer }.into())?;
         call.scheduler().timers[*timer] = None;

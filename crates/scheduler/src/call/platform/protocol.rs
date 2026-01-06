@@ -33,7 +33,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
     let api::read::Params { ptr: ptr_ptr, len: len_ptr } = call.read();
     let applet = call.applet();
-    let result = try {
+    let result = try bikeshed _ {
         match applet.get_request()? {
             None => false,
             Some(value) => {
@@ -47,7 +47,7 @@ fn read<B: Board>(mut call: SchedulerCall<B, api::read::Sig>) {
 
 fn write<B: Board>(mut call: SchedulerCall<B, api::write::Sig>) {
     let api::write::Params { ptr, len } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let input = call.memory().get(*ptr, *len)?.into();
         crate::protocol::put_response(&mut call, input)?
     };
@@ -58,7 +58,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { handler_func, handler_data } = call.read();
     let inst = call.inst();
     let applet = call.applet();
-    let result = try {
+    let result = try bikeshed _ {
         // We don't need to enable the event at the board level because it's always enabled.
         applet.enable(Handler {
             key: Key::Request.into(),
@@ -72,7 +72,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
 
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params {} = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         // We only disable the applet handler because we still need to process non-applet requests.
         call.scheduler().disable_event(Key::Request.into())?
     };
