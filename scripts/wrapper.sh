@@ -62,7 +62,7 @@ case "$1" in
     esac
     ;;
   defmt-print) ensure_cargo defmt-print 1.0.0 ;;
-  mdbook) ensure_cargo mdbook 0.5.1 ;;
+  mdbook) ensure_cargo mdbook 0.5.2 ;;
   nrfdfu) ensure_cargo nrfdfu 0.2.1 ;;
   probe-rs) ensure_cargo probe-rs-tools 0.30.0 ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.4.0 ;;

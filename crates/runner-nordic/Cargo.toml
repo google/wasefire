@@ -15,7 +15,7 @@ critical-section = "1.2.0"
 data-encoding = { version = "2.9.0", default-features = false, optional = true }
 defmt = { version = "1.0.1", features = ["avoid-default-panic"], optional = true }
 defmt-rtt = { version = "1.1.0", optional = true }
-embedded-alloc = "0.6.0"
+embedded-alloc = "0.7.0"
 embedded-hal = "1.0.0"
 embedded-hal-02 = { version = "0.2.7", package = "embedded-hal" }
 embedded-storage = "0.3.1"
