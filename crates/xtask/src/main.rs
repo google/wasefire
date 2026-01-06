@@ -641,7 +641,7 @@ impl RunnerOptions {
                     !both || options.reboot_stable(),
                     "--both requires a reboot-stable protocol"
                 );
-                let connection = match next_step {
+                let device = match next_step {
                     None => options.connect().await?,
                     Some(_) => loop {
                         tokio::time::sleep(Duration::from_millis(300)).await;
@@ -650,13 +650,14 @@ impl RunnerOptions {
                         }
                     },
                 };
-                let action = action::PlatformInfo {};
-                let info = action.run(&connection).await?;
-                let info = info.get();
+                let info = device.platform_info().await?;
+                let Some(running_side) = info.running_side() else {
+                    bail!("device does not support platform update")
+                };
                 match next_step {
                     None => {
                         if version.is_none() {
-                            let mut next_version = info.running_version.to_vec();
+                            let mut next_version = info.running_version().to_vec();
                             for byte in next_version.iter_mut().rev() {
                                 *byte = byte.wrapping_add(1);
                                 if 0 < *byte {
@@ -665,16 +666,16 @@ impl RunnerOptions {
                             }
                             version = Some(Cow::Owned(HEX.encode(&next_version)));
                         }
-                        step = info.running_side.opposite() as usize;
+                        step = running_side.opposite() as usize;
                     }
                     Some(next_step) => {
                         let version = HEX.decode(version.as_ref().unwrap().as_bytes())?;
                         step = *next_step;
-                        ensure!(info.running_version == version, "first update failed");
-                        ensure!(info.running_side as usize == 1 - step, "first update failed");
+                        ensure!(info.running_version() == version, "first update failed");
+                        ensure!(running_side as usize == 1 - step, "first update failed");
                     }
                 }
-                Some(connection)
+                Some(device)
             }
             _ => None,
         };

@@ -291,7 +291,7 @@ async fn main() -> Result<()> {
         Action::PlatformClearStore { options, action } => {
             action.run(&options.connect().await?).await
         }
-        Action::PlatformInfo { options, action } => action.print(&options.connect().await?).await,
+        Action::PlatformInfo { options, action } => action.run(&options.connect().await?).await,
         Action::PlatformList(x) => x.run().await,
         Action::PlatformUpdate { options, action } => action.run(&options.connect().await?).await,
         Action::PlatformReboot { options, action } => action.run(&options.connect().await?).await,

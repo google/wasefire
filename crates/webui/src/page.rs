@@ -160,6 +160,7 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
                 </div>
                 <button onclick={disconnect}>{ "Disconnect" }</button>{ " from device " }
                 <code>{ serial_number(device.device()) }</code>{ "." }
+                <footer>{ format!("Protocol version: {}", device.version()) }</footer>
             </>})
         }
     }
@@ -232,9 +233,7 @@ impl Command for service::PlatformInfo {
             let page = page.clone();
             let device = device.clone();
             spawn_local(async move {
-                let info = device.call::<service::PlatformInfo>(()).await;
-                let info = unwrap!(page, device, info);
-                let content = platform_info(info.get());
+                let content = platform_info(unwrap!(page, device, device.platform_info().await));
                 page.set(Page::Result { content, device: Some(device) });
             });
         });
@@ -242,18 +241,26 @@ impl Command for service::PlatformInfo {
     }
 }
 
-fn platform_info(info: &wasefire_protocol::platform::Info) -> Html {
-    let opposite = match &info.opposite_version {
-        Ok(x) => HEX.encode(x),
-        Err(e) => format!("{e}"),
+fn platform_info(info: wasefire_protocol::platform::DynInfo) -> Html {
+    let serial = HEX.encode(info.serial());
+    let applet = info.applet_kind().map(|x| x.to_string());
+    let side = info.running_side().map(|x| x.to_string());
+    let version = HEX.encode(info.running_version());
+    let opposite = match info.opposite_version() {
+        None => None,
+        Some(Ok(x)) => Some(HEX.encode(x)),
+        Some(Err(e)) => Some(format!("{e}")),
     };
     html! {<>
         { "Platform info:" }
         <ul>
-            <li>{ "Serial: " }<code>{ HEX.encode(&info.serial) }</code></li>
-            <li>{ "Running side: " }<code>{ info.running_side.to_string() }</code></li>
-            <li>{ "Running version: " }<code>{ HEX.encode(&info.running_version) }</code></li>
-            <li>{ "Opposite version: " }<code>{ opposite }</code></li>
+            <li>{ "Serial: " }<code>{ serial }</code></li>
+            if let Some(applet) = applet { <li>{ "Applet kind: " }<code>{ applet }</code></li> }
+            if let Some(side) = side { <li>{ "Running side: " }<code>{ side }</code></li> }
+            <li>{ "Running version: " }<code>{ version }</code></li>
+            if let Some(opposite) = opposite {
+                <li>{ "Opposite version: " }<code>{ opposite }</code></li>
+            }
         </ul>
     </>}
 }
@@ -486,9 +493,11 @@ async fn platform_update_(page: UseStateSetter<Page>, device: Device, file_a: Fi
         Ok(x) => x,
         Err(error) => return page.set(Page::error_device(error, &device)),
     };
-    let info1 = device.call::<service::PlatformInfo>(()).await;
-    let info1 = unwrap!(page, device, info1);
-    let (side_1, side_2) = match info1.get().running_side {
+    let info1 = unwrap!(page, device, device.platform_info().await);
+    let Some(side1) = info1.running_side() else {
+        return page.set(Page::error_device("Device does not expose running side.", &device));
+    };
+    let (side_1, side_2) = match side1 {
         Side::A => (side_b, side_a),
         Side::B => (side_a, side_b),
     };
@@ -498,11 +507,13 @@ async fn platform_update_(page: UseStateSetter<Page>, device: Device, file_a: Fi
     page.set(Page::Feedback { content: "Updated side 1 of 2. Reconnecting...".into() });
     let device = match reconnect(device.device()).await {
         Ok(x) => x,
-        Err(error) => return page.set(Page::Error { error, device: None }),
+        Err(error) => return page.set(Page::error(error)),
     };
-    let info2 = device.call::<service::PlatformInfo>(()).await;
-    let info2 = unwrap!(page, device, info2);
-    if info2.get().running_side != info1.get().running_side.opposite() {
+    let info2 = unwrap!(page, device, device.platform_info().await);
+    let Some(side2) = info2.running_side() else {
+        return page.set(Page::error_device("Update does not expose running side.", &device));
+    };
+    if side2 != side1.opposite() {
         return page.set(Page::error_device("Failed to boot the new platform.", &device));
     }
     if transfer::<service::PlatformUpdate>(&page, &device, &side_2, Some(true)).await {

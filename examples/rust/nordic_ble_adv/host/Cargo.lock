@@ -2209,7 +2209,6 @@ name = "wasefire-protocol"
 version = "0.4.0-git"
 dependencies = [
  "anyhow",
- "data-encoding",
  "wasefire-common",
  "wasefire-error",
  "wasefire-wire",
