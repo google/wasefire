@@ -40,9 +40,9 @@ const IP_BLOCKS: &[&str] = &[
 
 fn main() -> Result<()> {
     // Build all header files.
-    let mut bazel = Command::new("bazel");
+    let mut bazel = Command::new("../../../scripts/wrapper.sh");
     bazel.current_dir(OPENTITAN);
-    bazel.arg("build");
+    bazel.args(["bazel", "build"]);
     bazel.arg("//sw/device/silicon_owner:manifest");
     for name in IP_BLOCKS {
         bazel.arg(IpPath::build(&ip_name(name).to_lowercase()));

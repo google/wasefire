@@ -33,17 +33,6 @@ run() {
   exec "$@"
 }
 
-if [ "$1" = uf2conv.py ]; then
-  if [ ! -e "$CARGO_ROOT/bin/uf2conv.py" ]; then
-    x curl https://raw.githubusercontent.com/microsoft/uf2/refs/heads/master/utils/uf2conv.py \
-      -o "$CARGO_ROOT/bin/uf2conv.py"
-    chmod +x "$CARGO_ROOT/bin/uf2conv.py"
-    x curl https://raw.githubusercontent.com/microsoft/uf2/refs/heads/master/utils/uf2families.json \
-      -o "$CARGO_ROOT/bin/uf2families.json"
-  fi
-  run "$@"
-fi
-
 ensure_cargo() {
   local flags="$1@$2"
   { cargo install --list --root="$CARGO_ROOT" | grep -q "^$1 v$2:\$"; } && return
@@ -72,6 +61,28 @@ case "$1" in
   *) IS_CARGO=n ;;
 esac
 [ $IS_CARGO = y ] && run "$@"
+
+has bin "$1" && run "$@"
+
+# download <URL> [<chmod> [<name>]]
+download() {
+  local name="${3:-${1##*/}}"
+  x curl -fLSso "$CARGO_ROOT/bin/$name" "$1"
+  [ -z "$2" ] || x chmod "$2" "$CARGO_ROOT/bin/$name"
+}
+
+IS_LOCAL=y
+case "$1" in
+  bazel)
+    URL=https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64
+    download $URL +x bazel ;;
+  uf2conv.py)
+    URL=https://raw.githubusercontent.com/microsoft/uf2/refs/heads/master/utils
+    download $URL/uf2conv.py +x
+    download $URL/uf2families.json ;;
+  *) IS_LOCAL=n ;;
+esac
+[ $IS_LOCAL = y ] && run "$@"
 
 ensure bin "$1"
 run "$@"
