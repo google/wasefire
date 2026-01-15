@@ -10,124 +10,34 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
-  checks:
+  test-build:
+    uses: abcxyz/actions/.github/workflows/maybe-build-docker.yml@dc53ac6837416a5942da3d494b9ea6c0997b7c59
+    with:
+      dockerfile: scripts/Dockerfile
+      github_image_name: ghcr.io/${{ github.repository }}/ci
+  test-check:
     runs-on: ubuntu-latest
+    needs: [test-build]
+    container:
+      image: ghcr.io/${{ github.repository }}/ci:${{ needs.test-build.outputs.docker_tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-      - name: Compute the checks for ${{ github.event_name }}
-        id: checks
-        run: |
-          x() {
-            local check=$1
-            [[ $GITHUB_BASE_REF == dev/* && $check == changelog ]] && return
-            while [[ $# -gt 1 ]]; do
-              shift
-              [[ $1 == $GITHUB_EVENT_NAME ]] || continue
-              [[ -z "$CHECKS" ]] || CHECKS+=', '
-              CHECKS+="\"$check\""
-            done
-            true
-          }
-          x   copyright  pull_request
-          x   changelog  pull_request
-          x  textreview  pull_request
-          x        sync  pull_request  push  schedule
-          x     publish  pull_request  push  schedule
-          x    markdown  pull_request  push  schedule
-          x       taplo  pull_request  push  schedule
-          x     applets  pull_request  push  schedule
-          x     runners  pull_request  push  schedule
-          for i in $(seq 0 7); do
-            x  tests-$i  pull_request  push  schedule
-          done
-          x     hw-host  pull_request  push  schedule
-          x        book  pull_request  push  schedule
-          x   footprint  pull_request  push
-          echo "checks=[$CHECKS]" >> $GITHUB_OUTPUT
-          release=$(git log -1 --pretty=%s | sed -n 's/^Release all crates (#\([0-9]*\))$/\1/p')
-          [[ $GITHUB_EVENT_NAME == push ]] || release=
-          [[ $GITHUB_REF == refs/heads/main ]] || release=
-          echo release=${release:-0} >> $GITHUB_OUTPUT
-    outputs:
-      checks: ${{ steps.checks.outputs.checks }}
-      release: ${{ steps.checks.outputs.release }}
-  cache:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-      - id: cache
-        name: Restore (then save) the cache
-        uses: ./.github/actions/ci-cache
-        with:
-          mode: save
-      - if: steps.cache.outputs.cache-hit != 'true'
-        name: Compute the cache
-        run: |
-          sudo apt-get update
-          ./scripts/ci-cache.sh
-  matrix:
-    runs-on: ubuntu-latest
-    needs: [checks, cache]
-    strategy:
-      fail-fast: false
-      matrix:
-        check: ${{ fromJSON(needs.checks.outputs.checks) }}
-    name: ${{ matrix.check }}
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-      - name: Run the ${{ matrix.check }} check
-        uses: ./.github/actions/ci-checks
-        with:
-          check: ${{ matrix.check }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-        timeout-minutes: 15
-  ubuntu:
-    runs-on: ubuntu-latest
-    needs: matrix
-    steps:
-      - run: true
-  pages:
-    runs-on: ubuntu-latest
-    needs: ubuntu
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-        with:
-          fetch-depth: 0
-      - name: Restore the cache
-        uses: ./.github/actions/ci-cache
-      - run: sudo apt-get update
-      - run: ./scripts/setup.sh
-      - run: ./scripts/pages.sh
-  release:
-    runs-on: ubuntu-latest
-    needs: [checks, ubuntu]
-    if: ${{ needs.checks.outputs.release != 0 }}
-    permissions:
-      attestations: write
-      contents: write
-      id-token: write
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-      - run: ./scripts/artifacts.sh
-      - uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
-        id: attest
-        with:
-          subject-path: 'artifacts/*'
-      - run: |
-          mv ${{ steps.attest.outputs.bundle-path }} attestation.intoto.jsonl
-          echo 'attestation.intoto.jsonl#Provenance attestation' >> artifacts.txt
-          ( cd artifacts && sha256sum * > ../sha256sum.txt )
-          echo 'sha256sum.txt#Checksums' >> artifacts.txt
-          COMMIT=$(git rev-parse -q --verify HEAD)
-          DATE=$(git log -1 --pretty=%cs)
-          xargs --arg-file=artifacts.txt --delimiter='\n' \
-            gh release create release/$DATE --target=$COMMIT \
-            --title="Release $DATE" --notes-file=notes.txt
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - run: set -x; pwd; ls -al; env
+    # permissions:
+    #   contents: read
+    #   packages: write
+    # steps:
+    #   - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    #   - run: |
+    #       echo "${{ secrets.GITHUB_TOKEN }}" \
+    #       | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+    #   - run: docker build . --file scripts/Dockerfile --tag ghcr.io/google/wasefire/ci:test
+    #   - run: docker push ghcr.io/google/wasefire/ci:test
+    #   - if: always()
+    #     run: rm /home/runner/.docker/config.json
