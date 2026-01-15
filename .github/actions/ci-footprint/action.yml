@@ -1,6 +1,4 @@
 inputs:
-  upload:
-    required: true
   token:
     required: true
 
@@ -11,7 +9,7 @@ runs:
       shell: bash
     - run: mv footprint.toml footprint-${{ github.event_name }}.toml
       shell: bash
-    - if: github.event_name == 'push' && inputs.upload == 'true'
+    - if: github.event_name == 'push'
       uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
       with:
         name: footprint

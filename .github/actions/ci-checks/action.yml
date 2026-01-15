@@ -1,90 +1,62 @@
 inputs:
-  checks:
+  check:
     required: true
   token:
     required: true
-  use-cache:
-    default: 'true'
 
 runs:
   using: composite
   steps:
-    - if: >-
-        ${{ contains(fromJSON(inputs.checks), 'changelog')
-         || contains(fromJSON(inputs.checks), 'copyright')
-         || contains(fromJSON(inputs.checks), 'sync') }}
+    - if: ${{ contains(fromJSON('["changelog", "copyright", "sync"]'), inputs.check) }}
       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       with:
         fetch-depth: 0
-    - if: inputs.use-cache == 'true'
-      name: Restore the cache
+    - name: Restore the cache
       uses: ./.github/actions/ci-cache
     - run: sudo apt-get update
       shell: bash
     - run: ./scripts/setup.sh
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'copyright') }}
+    - if: ${{ inputs.check == 'copyright' }}
       run: ./scripts/ci-copyright.sh
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'changelog') }}
+    - if: ${{ inputs.check == 'changelog' }}
       run: ./scripts/ci-changelog.sh
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'textreview') }}
+    - if: ${{ inputs.check == 'textreview' }}
       run: cargo xtask textreview
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'sync') }}
+    - if: ${{ inputs.check == 'sync' }}
       run: ./scripts/sync.sh
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'publish') }}
+    - if: ${{ inputs.check == 'publish' }}
       run: ./scripts/publish.sh --dry-run
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'markdown') }}
+    - if: ${{ inputs.check == 'markdown' }}
       run: ./scripts/wrapper.sh mdl -g -s markdownlint.rb .
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'taplo') }}
+    - if: ${{ inputs.check == 'taplo' }}
       run: ./scripts/ci-taplo.sh
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'applets') }}
+    - if: ${{ inputs.check == 'applets' }}
       run: ./scripts/ci-applets.sh
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'runners') }}
+    - if: ${{ inputs.check == 'runners' }}
       run: ./scripts/ci-runners.sh
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'tests-0') }}
-      run: ./scripts/ci-tests.sh 0 8
+    - if: ${{ startsWith(inputs.check, 'tests-') }}
+      run: ./scripts/ci-tests.sh $(sed s/tests-// <<< ${{ inputs.check }}) 8
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'tests-1') }}
-      run: ./scripts/ci-tests.sh 1 8
-      shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'tests-2') }}
-      run: ./scripts/ci-tests.sh 2 8
-      shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'tests-3') }}
-      run: ./scripts/ci-tests.sh 3 8
-      shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'tests-4') }}
-      run: ./scripts/ci-tests.sh 4 8
-      shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'tests-5') }}
-      run: ./scripts/ci-tests.sh 5 8
-      shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'tests-6') }}
-      run: ./scripts/ci-tests.sh 6 8
-      shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'tests-7') }}
-      run: ./scripts/ci-tests.sh 7 8
-      shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'hw-host') }}
+    - if: ${{ inputs.check == 'hw-host' }}
       run: ./scripts/hwci.sh host
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'book') }}
+    - if: ${{ inputs.check == 'book' }}
       run: ./scripts/ci-book.sh
       shell: bash
-    - if: ${{ contains(fromJSON(inputs.checks), 'footprint') }}
+    - if: ${{ inputs.check == 'footprint' }}
       name: Compute footprint
       uses: ./.github/actions/ci-footprint
       with:
-        upload: ${{ toJSON(inputs.use-cache == 'true') }}
         token: ${{ inputs.token }}
     - run: git diff --exit-code
       shell: bash
