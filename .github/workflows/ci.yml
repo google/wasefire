@@ -40,14 +40,9 @@ jobs:
           x       taplo  pull_request  push  schedule
           x     applets  pull_request  push  schedule
           x     runners  pull_request  push  schedule
-          x     tests-0  pull_request  push  schedule
-          x     tests-1  pull_request  push  schedule
-          x     tests-2  pull_request  push  schedule
-          x     tests-3  pull_request  push  schedule
-          x     tests-4  pull_request  push  schedule
-          x     tests-5  pull_request  push  schedule
-          x     tests-6  pull_request  push  schedule
-          x     tests-7  pull_request  push  schedule
+          for i in $(seq 0 7); do
+            x  tests-$i  pull_request  push  schedule
+          done
           x     hw-host  pull_request  push  schedule
           x        book  pull_request  push  schedule
           x   footprint  pull_request  push
@@ -86,7 +81,7 @@ jobs:
       - name: Run the ${{ matrix.check }} check
         uses: ./.github/actions/ci-checks
         with:
-          checks: "[\"${{ matrix.check }}\"]"
+          check: ${{ matrix.check }}
           token: ${{ secrets.GITHUB_TOKEN }}
         timeout-minutes: 15
   ubuntu:
