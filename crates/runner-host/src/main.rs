@@ -92,6 +92,10 @@ struct Flags {
     #[arg(long, default_value = "127.0.0.1:5000")]
     web_addr: SocketAddr,
 
+    /// Platform name (in hexadecimal).
+    #[arg(long, default_value = option_env!("WASEFIRE_HOST_NAME").unwrap_or_default())]
+    name: Option<String>,
+
     /// Platform version (in hexadecimal).
     #[arg(long, default_value = option_env!("WASEFIRE_HOST_VERSION").unwrap_or_default())]
     version: Option<String>,

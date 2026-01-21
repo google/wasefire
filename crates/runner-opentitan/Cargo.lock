@@ -522,6 +522,7 @@ dependencies = [
  "wasefire-interpreter",
  "wasefire-logger",
  "wasefire-one-of",
+ "wasefire-protocol",
  "wasefire-protocol-usb",
  "wasefire-scheduler",
  "wasefire-store",

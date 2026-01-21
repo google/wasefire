@@ -55,19 +55,17 @@ pub trait Api: Send {
     /// Returns the platform running side.
     fn running_side() -> wasefire_common::platform::Side;
 
-    /// Returns the platform running version.
-    ///
-    /// Versions are comparable with lexicographical order.
-    fn running_version() -> alloc::borrow::Cow<'static, [u8]>;
+    /// Returns the platform information of the running side.
+    fn running_info() -> wasefire_protocol::platform::SideInfo<'static>;
 
-    /// Returns the version of the opposite side, if any.
+    /// Returns the platform information of the opposite side, if any.
     ///
     /// # Errors
     ///
     /// There is a precise meaning to the following errors:
     /// - `World:NotEnough`: This platform has only one side.
     /// - `World:NotFound`: The other side is empty.
-    fn opposite_version() -> Result<alloc::borrow::Cow<'static, [u8]>, Error>;
+    fn opposite_info() -> Result<wasefire_protocol::platform::SideInfo<'static>, Error>;
 
     /// Reboots the device (thus platform and applets).
     fn reboot() -> Result<!, Error>;

@@ -13,8 +13,10 @@
 
 ### Minor
 
+- Add `platform::name_str()` to get a platform display name
 - Add `platform::DynInfo` to access the platform info regardless of the device version
-- Add `platform::Info` to also return `platform::AppletKind`
+- Add `platform::Info` to also return `platform::AppletKind` and platform name
+- Add `platform::SideInfo` for platform side information like name and version
 - Add `platform::AppletKind` to describe the applets a platform supports
 - Add `{Dyn,}Device` with `host` feature to cache the API version over a `Connection`
 - Add `Service::response()` with `serde` feature

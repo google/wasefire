@@ -69,8 +69,8 @@ fn version<B: Board>(mut call: SchedulerCall<B, api::version::Sig>) {
     let api::version::Params { running, ptr } = call.read();
     let result = try {
         let version = match running {
-            1 => board::Platform::<B>::running_version(),
-            0 => board::Platform::<B>::opposite_version()?,
+            1 => board::Platform::<B>::running_info().version,
+            0 => board::Platform::<B>::opposite_info()?.version,
             _ => Err(Error::user(Code::InvalidArgument))?,
         };
         call.memory().alloc_copy(*ptr, None, &version)?

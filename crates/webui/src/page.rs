@@ -242,27 +242,56 @@ impl Command for service::PlatformInfo {
 }
 
 fn platform_info(info: wasefire_protocol::platform::DynInfo) -> Html {
-    let serial = HEX.encode(info.serial());
-    let applet = info.applet_kind().map(|x| x.to_string());
-    let side = info.running_side().map(|x| x.to_string());
-    let version = HEX.encode(info.running_version());
-    let opposite = match info.opposite_version() {
-        None => None,
-        Some(Ok(x)) => Some(HEX.encode(x)),
-        Some(Err(e)) => Some(format!("{e}")),
-    };
-    html! {<>
-        { "Platform info:" }
-        <ul>
-            <li>{ "Serial: " }<code>{ serial }</code></li>
-            if let Some(applet) = applet { <li>{ "Applet kind: " }<code>{ applet }</code></li> }
-            if let Some(side) = side { <li>{ "Running side: " }<code>{ side }</code></li> }
-            <li>{ "Running version: " }<code>{ version }</code></li>
-            if let Some(opposite) = opposite {
-                <li>{ "Opposite version: " }<code>{ opposite }</code></li>
-            }
-        </ul>
-    </>}
+    let mut elements = Vec::new();
+    elements.push(html!(<li>{ "Serial number: " }<code>{ HEX.encode(info.serial()) }</code></li>));
+    if let Some(applet) = info.applet_kind() {
+        elements.push(html!(<li>{ "Applet kind: " }<code>{ applet.to_string() }</code></li>));
+    }
+    if let Some(side) = info.running_side() {
+        elements.push(html!(<li>{ "Running side: " }<code>{ side.to_string() }</code></li>));
+    }
+    if let Some(name_hex) = info.running_name() {
+        let mut element = Vec::new();
+        element.push("Running name: ".into());
+        element.push(html!(<code>{ HEX.encode(name_hex) }</code>));
+        if let Some(name_str) = wasefire_protocol::platform::name_str(name_hex) {
+            element.push(" (".into());
+            element.push(html!(<code>{ name_str }</code>));
+            element.push(")".into());
+        }
+        elements.push(html!(<li>{ for element }</li>));
+    }
+    elements.push(
+        html!(<li>{ "Running version: " }<code>{ HEX.encode(info.running_version()) }</code></li>),
+    );
+    fn push<T>(
+        elements: &mut Vec<Html>, title: &str, value: Option<Result<T, wasefire_error::Error>>,
+        action: impl FnOnce(T) -> Html,
+    ) {
+        let Some(value) = value else { return };
+        let value = match value {
+            Ok(x) => action(x),
+            Err(e) => format!("{e}").into(),
+        };
+        elements.push(html!(<li>{ format!("Opposite {title}: ") }{ value }</li>));
+    }
+    push(&mut elements, "name", info.opposite_name(), |x| {
+        let mut element = Vec::new();
+        element.push(html!(<code>{ HEX.encode(x) }</code>));
+        if let Some(x) = wasefire_protocol::platform::name_str(x) {
+            element.push(" (".into());
+            element.push(html!(<code>{ x }</code>));
+            element.push(")".into());
+        }
+        Html::from_iter(element)
+    });
+    push(
+        &mut elements,
+        "version",
+        info.opposite_version(),
+        |x| html!(<code>{ HEX.encode(x) }</code>),
+    );
+    html!(<>{ "Platform info:" }<ul>{ for elements }</ul></>)
 }
 
 impl Command for service::PlatformReboot {

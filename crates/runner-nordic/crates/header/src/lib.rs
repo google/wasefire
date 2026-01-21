@@ -23,6 +23,11 @@ exactly_one_of!["board-devkit", "board-dongle"];
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Header(u32);
 
+// Format (packed):
+// 0x00 version (4 bytes)
+// 0x04 attempts (3 times 4 bytes)
+// 0x10 name (24 bytes)
+// 0x28
 impl Header {
     pub fn new(side: Side) -> Self {
         let addr = match side {
@@ -32,17 +37,21 @@ impl Header {
         Header(addr)
     }
 
-    pub fn timestamp(self) -> u32 {
-        unsafe { read(self.0) }
+    pub fn version(self) -> u32 {
+        unsafe { read(self.0 + 0x00) }
     }
 
     pub fn attempt(self, index: u32) -> Attempt {
         assert!(index < 3);
-        Attempt(self.0 + 4 + 4 * index)
+        Attempt(self.0 + 0x04 + index * 4)
+    }
+
+    pub fn name(self) -> [u8; 24] {
+        unsafe { read(self.0 + 0x10) }
     }
 
     pub fn has_firmware(self) -> bool {
-        self.timestamp() != 0xffffffff
+        self.version() != 0xffffffff
     }
 
     pub fn addr(self) -> u32 {
@@ -75,7 +84,7 @@ pub struct Attempt(u32);
 
 impl Attempt {
     pub fn free(self) -> bool {
-        unsafe { read(self.0) == 0xffffffff }
+        unsafe { read::<u32>(self.0) == 0xffffffff }
     }
 
     pub fn addr(self) -> u32 {
@@ -83,8 +92,8 @@ impl Attempt {
     }
 }
 
-unsafe fn read(addr: u32) -> u32 {
-    unsafe { (addr as *const u32).read_volatile() }
+unsafe fn read<T>(addr: u32) -> T {
+    unsafe { (addr as *const T).read_volatile() }
 }
 
 const HEADER_LEN: u32 = 0x00000100;

@@ -261,6 +261,23 @@ struct RunnerOptions {
     /// Runner name.
     name: RunnerName,
 
+    /// Platform name (in hexadecimal form).
+    ///
+    /// Each runner has its own length constraints:
+    /// - Host supports any number of bytes.
+    /// - Nordic supports 24 bytes.
+    /// - OpenTitan supports 0 bytes.
+    ///
+    /// The default is the shortest name made of null bytes only.
+    #[clap(long, verbatim_doc_comment)]
+    name_hex: Option<String>,
+
+    /// Platform name (in string form).
+    ///
+    /// See --name-hex for the maximum length. Characters should be ASCII and graphic.
+    #[clap(long, conflicts_with("name_hex"))]
+    name_str: Option<String>,
+
     /// Platform version (big-endian hexadecimal number).
     ///
     /// Each runner has its own format:
@@ -697,6 +714,12 @@ impl RunnerOptions {
             if std::env::var_os("PKG_CONFIG_SYSROOT_DIR").is_none() {
                 cargo.env("PKG_CONFIG_SYSROOT_DIR", "/usr/lib/i386-linux-gnu/pkgconfig");
             }
+            if let Some(name_hex) = &self.name_hex {
+                cargo.env("WASEFIRE_HOST_NAME", name_hex);
+            }
+            if let Some(name_str) = &self.name_str {
+                cargo.env("WASEFIRE_HOST_NAME", HEX.encode(name_str.as_bytes()));
+            }
             if let Some(version) = version.as_deref() {
                 cargo.env("WASEFIRE_HOST_VERSION", version);
             }
@@ -802,6 +825,7 @@ impl RunnerOptions {
         }
         let elf = self.name.elf(main).await;
         if self.name == RunnerName::Nordic {
+            let name = self.name(24)?;
             let version = version.as_deref().unwrap_or("00000000");
             ensure!(version.len() == 8, "--version must be a big-endian hexadecimal u32");
             ensure!(version != "ffffffff", "--version must be smaller than u32::MAX");
@@ -809,9 +833,11 @@ impl RunnerOptions {
             let mut content = fs::read(&elf).await?;
             let pos = section_offset(&content, ".header")?;
             content[pos ..][.. 4].copy_from_slice(&version.to_le_bytes());
+            content[pos + 0x10 ..][.. 0x18].copy_from_slice(&name);
             fs::write(&elf, content).await?;
         }
         if self.name == RunnerName::OpenTitan {
+            let _name = self.name(0)?;
             let mut version = match version.as_deref() {
                 Some(x) => HEX.decode(x.as_bytes())?,
                 None => vec![0; 20],
@@ -1047,6 +1073,27 @@ impl RunnerOptions {
             }
         }
         Ok(bundle)
+    }
+
+    fn name(&self, len: usize) -> Result<Vec<u8>> {
+        match (&self.name_hex, &self.name_str) {
+            (None, None) => Ok(vec![0; len]),
+            (None, Some(name)) => {
+                ensure!(name.len() <= len, "--name-str must have at most {len} bytes");
+                ensure!(
+                    name.bytes().all(|x| x.is_ascii_graphic()),
+                    "--name-str must only have graphic ASCII characters"
+                );
+                let mut result = vec![0; len];
+                result[.. name.len()].copy_from_slice(name.as_bytes());
+                Ok(result)
+            }
+            (Some(name), None) => {
+                ensure!(name.len() == 2 * len, "--name-hex must have {len} bytes");
+                Ok(HEX.decode(name.as_bytes())?)
+            }
+            (Some(_), Some(_)) => unreachable!(),
+        }
     }
 }
 

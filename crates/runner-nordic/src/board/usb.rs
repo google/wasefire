@@ -55,8 +55,7 @@ impl HasRpc<'static, Usb> for Impl {
         use alloc::string::String;
         use core::fmt::Write;
 
-        #[cfg(not(feature = "fpc2534-sensor"))]
-        use data_encoding as _;
+        use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 
         if let Some(request) = request.strip_prefix(b"echo ") {
             let mut response = request.to_vec().into_boxed_slice();
@@ -75,9 +74,10 @@ impl HasRpc<'static, Usb> for Impl {
             let running = header::running_side().unwrap();
             for side in wasefire_common::platform::Side::LIST {
                 let header = header::Header::new(side);
-                let timestamp = header.timestamp();
+                let name = HEX.encode(&header.name());
+                let version = header.version();
                 let running = if side == running { "*" } else { " " };
-                write!(&mut response, "{running} {side} {timestamp:08x} ").unwrap();
+                write!(&mut response, "{running} {side} {name} {version:08x} ").unwrap();
                 for i in 0 .. 3 {
                     write!(&mut response, "{}", header.attempt(i).free() as u8).unwrap();
                 }
@@ -103,7 +103,7 @@ impl HasRpc<'static, Usb> for Impl {
         }
         #[cfg(feature = "fpc2534-sensor")]
         if let Some(frame) = request.strip_prefix(b"fpc ") {
-            let mut hex = data_encoding::HEXLOWER_PERMISSIVE.specification();
+            let mut hex = HEX.specification();
             hex.ignore.push_str(" \n");
             let hex = hex.encoding().unwrap();
             let Ok(frame) = hex.decode(frame) else {
