@@ -142,9 +142,10 @@ pub struct Info<'a> {
 pub struct SideInfo<'a> {
     /// Name of the platform.
     ///
-    /// This field has not particular interpretation. However for display purposes, if the content
-    /// is only made of ASCII graphic characters after trimming the longest suffix of null bytes,
-    /// then that graphic prefix will be displayed instead of the full hexadecimal representation.
+    /// This field has no particular interpretation. However for display purposes, if the content
+    /// is only made of ASCII graphic characters after trimming the longest suffix of null
+    /// bytes, then that graphic prefix will be displayed in addition to the full hexadecimal
+    /// representation.
     pub name: Cow<'a, [u8]>,
 
     /// Version of the platform.
