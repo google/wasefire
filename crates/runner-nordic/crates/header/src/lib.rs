@@ -37,6 +37,7 @@ impl Header {
         Header(addr)
     }
 
+    #[allow(clippy::identity_op)]
     pub fn version(self) -> u32 {
         unsafe { read(self.0 + 0x00) }
     }

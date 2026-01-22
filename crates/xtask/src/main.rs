@@ -161,7 +161,7 @@ struct AppletOptions {
 #[derive(clap::Subcommand)]
 enum AppletCommand {
     /// Compiles a runner with the applet.
-    Runner(Runner),
+    Runner(Box<Runner>),
 
     /// Installs the applet on a platform.
     Install {

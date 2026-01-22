@@ -242,6 +242,17 @@ impl Command for service::PlatformInfo {
 }
 
 fn platform_info(info: wasefire_protocol::platform::DynInfo) -> Html {
+    fn render_name(name_hex: &[u8]) -> Html {
+        let mut element = Vec::new();
+        element.push(html!(<code>{ HEX.encode(name_hex) }</code>));
+        if let Some(name_str) = wasefire_protocol::platform::name_str(name_hex) {
+            element.push(" (".into());
+            element.push(html!(<code>{ name_str }</code>));
+            element.push(")".into());
+        }
+        Html::from_iter(element)
+    }
+
     let mut elements = Vec::new();
     elements.push(html!(<li>{ "Serial number: " }<code>{ HEX.encode(info.serial()) }</code></li>));
     if let Some(applet) = info.applet_kind() {
@@ -251,19 +262,12 @@ fn platform_info(info: wasefire_protocol::platform::DynInfo) -> Html {
         elements.push(html!(<li>{ "Running side: " }<code>{ side.to_string() }</code></li>));
     }
     if let Some(name_hex) = info.running_name() {
-        let mut element = Vec::new();
-        element.push("Running name: ".into());
-        element.push(html!(<code>{ HEX.encode(name_hex) }</code>));
-        if let Some(name_str) = wasefire_protocol::platform::name_str(name_hex) {
-            element.push(" (".into());
-            element.push(html!(<code>{ name_str }</code>));
-            element.push(")".into());
-        }
-        elements.push(html!(<li>{ for element }</li>));
+        elements.push(html!(<li>{ "Running name: " }{ render_name(name_hex) }</li>));
     }
     elements.push(
         html!(<li>{ "Running version: " }<code>{ HEX.encode(info.running_version()) }</code></li>),
     );
+
     fn push<T>(
         elements: &mut Vec<Html>, title: &str, value: Option<Result<T, wasefire_error::Error>>,
         action: impl FnOnce(T) -> Html,
@@ -275,16 +279,7 @@ fn platform_info(info: wasefire_protocol::platform::DynInfo) -> Html {
         };
         elements.push(html!(<li>{ format!("Opposite {title}: ") }{ value }</li>));
     }
-    push(&mut elements, "name", info.opposite_name(), |x| {
-        let mut element = Vec::new();
-        element.push(html!(<code>{ HEX.encode(x) }</code>));
-        if let Some(x) = wasefire_protocol::platform::name_str(x) {
-            element.push(" (".into());
-            element.push(html!(<code>{ x }</code>));
-            element.push(")".into());
-        }
-        Html::from_iter(element)
-    });
+    push(&mut elements, "name", info.opposite_name(), render_name);
     push(
         &mut elements,
         "version",
