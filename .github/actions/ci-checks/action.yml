@@ -13,8 +13,6 @@ runs:
         fetch-depth: 0
     - name: Restore the cache
       uses: ./.github/actions/ci-cache
-    - run: sudo apt-get update
-      shell: bash
     - run: ./scripts/setup.sh
       shell: bash
     - if: ${{ inputs.check == 'copyright' }}
