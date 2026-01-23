@@ -1,5 +1,4 @@
-#!/bin/sh
-# Copyright 2022 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,17 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
-. scripts/log.sh
-. scripts/shard.sh
+shard_init() {
+  _SHARD_INDEX=${1:-0}
+  _SHARD_COUNT=${2:-1}
+  _shard_index=$(( _SHARD_COUNT - 1 ))
+}
 
-# This script runs the continuous integration tests.
-
-shard_init "$@"
-for dir in $(git ls-files '*/test.sh'); do
-  shard_next || continue
-  grep -q test-helper $dir || e "$dir doesn't use test-helper.sh"
-  dir=$(dirname $dir)
-  i "Run tests in $dir"
-  ( cd $dir && ./test.sh )
-done
+shard_next() {
+  _shard_index=$(( (_shard_index + 1) % _SHARD_COUNT ))
+  [ $_shard_index -eq $_SHARD_INDEX ]
+}
