@@ -16,6 +16,7 @@
 set -e
 . scripts/log.sh
 . scripts/package.sh
+. scripts/shard.sh
 
 # This script runs the test applets and thus needs a connected platform.
 #
@@ -39,7 +40,9 @@ run() {
   local name name_flags feature features
   local runner_specific runner_feature runner_default
   shift 2
+  shard_init $SHARDING
   for name in $(list); do
+    shard_next || continue
     runner_specific=n
     runner_feature=
     runner_default=n

@@ -43,10 +43,10 @@ runs:
       run: ./scripts/ci-runners.sh
       shell: bash
     - if: ${{ startsWith(inputs.check, 'tests-') }}
-      run: ./scripts/ci-tests.sh $(sed s/tests-// <<< ${{ inputs.check }}) 8
+      run: ./scripts/ci-tests.sh $(sed s/tests-// <<< ${{ inputs.check }}) 11
       shell: bash
-    - if: ${{ inputs.check == 'hw-host' }}
-      run: ./scripts/hwci.sh host
+    - if: ${{ startsWith(inputs.check, 'hw-host-') }}
+      run: SHARDING="$(sed s/hw-host-// <<< ${{ inputs.check }}) 2" ./scripts/hwci.sh host
       shell: bash
     - if: ${{ inputs.check == 'book' }}
       run: ./scripts/ci-book.sh
