@@ -4,6 +4,8 @@
 
 ### Major
 
+- Restrict `Display` implementation for `applet::ExitStatus` to `host` feature
+- Restrict `platform::_Info0` and `transfer::_Request0` to `host` feature
 - Remove `Display` implementation of `platform::_Info1`
 - Deprecate `platform::Info` to `platform::_Info1`
 - Deprecate `Api::PlatformInfo` to `Api::_PlatformInfo1`

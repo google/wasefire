@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use alloc::borrow::Cow;
-use core::fmt::Display;
 
 use wasefire_wire::Wire;
 
@@ -51,7 +50,8 @@ pub enum ExitStatus {
     Kill,
 }
 
-impl Display for ExitStatus {
+#[cfg(feature = "host")]
+impl core::fmt::Display for ExitStatus {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             ExitStatus::Exit => write!(f, "The applet exited"),

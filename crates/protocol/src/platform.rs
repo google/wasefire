@@ -16,9 +16,12 @@ use alloc::borrow::Cow;
 
 use wasefire_common::platform::Side;
 use wasefire_error::Error;
-use wasefire_wire::{Wire, Yoke};
+use wasefire_wire::Wire;
+#[cfg(feature = "host")]
+use wasefire_wire::Yoke;
 
 #[derive(Debug)]
+#[cfg(feature = "host")]
 pub enum DynInfo {
     V3(Yoke<Info<'static>>),
     V2(Yoke<_Info2<'static>>),
@@ -113,6 +116,7 @@ impl DynInfo {
 }
 
 /// Returns whether a platform name can be displayed as a string.
+#[cfg(feature = "host")]
 pub fn name_str(mut name: &[u8]) -> Option<&str> {
     loop {
         match name.split_last() {
@@ -155,6 +159,7 @@ pub struct SideInfo<'a> {
 }
 
 #[derive(Debug, Wire)]
+#[cfg(feature = "host")]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct _Info2<'a> {
     pub serial: Cow<'a, [u8]>,
@@ -165,6 +170,7 @@ pub struct _Info2<'a> {
 }
 
 #[derive(Debug, Wire)]
+#[cfg(feature = "host")]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct _Info1<'a> {
     pub serial: Cow<'a, [u8]>,
@@ -174,6 +180,7 @@ pub struct _Info1<'a> {
 }
 
 #[derive(Debug, Wire)]
+#[cfg(feature = "host")]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct _Info0<'a> {
     pub serial: Cow<'a, [u8]>,
@@ -188,6 +195,7 @@ pub enum AppletKind {
     Native,
 }
 
+#[cfg(feature = "host")]
 impl AppletKind {
     pub fn name(&self) -> &'static str {
         match self {
@@ -198,6 +206,7 @@ impl AppletKind {
     }
 }
 
+#[cfg(feature = "host")]
 impl core::fmt::Display for AppletKind {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.name().fmt(f)

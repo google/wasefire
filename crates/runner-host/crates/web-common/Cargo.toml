@@ -8,7 +8,7 @@ edition = "2024"
 
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
-wasefire-protocol = { path = "../../../protocol", features = ["serde"] }
+wasefire-protocol = { path = "../../../protocol", features = ["host", "serde"] }
 
 [lints]
 clippy.mod-module-files = "warn"

@@ -24,7 +24,7 @@ wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
 wasefire-one-of = { path = "../one-of" }
-wasefire-protocol = { path = "../protocol" }
+wasefire-protocol = { path = "../protocol", features = ["host"] }
 wasefire-protocol-tokio = { path = "../protocol-tokio", features = ["device"] }
 wasefire-protocol-usb = { path = "../protocol-usb", features = ["device", "std"] }
 wasefire-store = { path = "../store", features = ["std"] }

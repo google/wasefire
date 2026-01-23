@@ -63,6 +63,7 @@ pub enum Response {
 }
 
 #[derive(Debug, Wire)]
+#[cfg(feature = "host")]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum _Request0<'a> {
     Start { dry_run: bool },
