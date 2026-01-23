@@ -3,6 +3,12 @@
 version = 4
 
 [[package]]
+name = "anyhow"
+version = "1.0.100"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
+
+[[package]]
 name = "num_enum"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -130,6 +136,7 @@ dependencies = [
 name = "wasefire-protocol"
 version = "0.4.0-git"
 dependencies = [
+ "anyhow",
  "serde",
  "wasefire-common",
  "wasefire-error",
