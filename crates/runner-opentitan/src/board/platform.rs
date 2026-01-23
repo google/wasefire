@@ -18,6 +18,7 @@ use earlgrey::LC_CTRL;
 use wasefire_board_api::platform::Api;
 use wasefire_common::platform::Side;
 use wasefire_error::{Code, Error};
+use wasefire_protocol::platform::SideInfo;
 use wasefire_sync::Lazy;
 
 mod update;
@@ -55,17 +56,21 @@ impl Api for Impl {
         crate::flash::active()
     }
 
-    fn running_version() -> Cow<'static, [u8]> {
+    fn running_info() -> SideInfo<'static> {
         static VERSION: Lazy<[u8; 20]> = Lazy::new(|| version(true));
-        Cow::Borrowed(&*VERSION)
+        let name = Cow::default();
+        let version = Cow::Borrowed(&VERSION[..]);
+        SideInfo { name, version }
     }
 
-    fn opposite_version() -> Result<Cow<'static, [u8]>, Error> {
+    fn opposite_info() -> Result<SideInfo<'static>, Error> {
         let version = version(false);
         if version == [0xff; 20] {
             return Err(Error::world(Code::NotFound));
         }
-        Ok(Cow::Owned(version.to_vec()))
+        let name = Cow::default();
+        let version = Cow::Owned(version.to_vec());
+        Ok(SideInfo { name, version })
     }
 
     fn reboot() -> Result<!, Error> {

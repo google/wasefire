@@ -34,7 +34,7 @@ fn main() -> ! {
         unsafe { asm::bootload(new.firmware() as *const u32) };
     }
     let mut old = Header::new(Side::B);
-    if new.timestamp() < old.timestamp() {
+    if new.version() < old.version() {
         core::mem::swap(&mut new, &mut old);
     }
     // We always try to mark the newest side (or side A in case of equality). The user can make sure

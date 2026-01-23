@@ -114,8 +114,8 @@ fn process_event_<B: Board>(
                 #[cfg(feature = "native")]
                 applet_kind: AppletKind::Native,
                 running_side: board::Platform::<B>::running_side(),
-                running_version: board::Platform::<B>::running_version(),
-                opposite_version: board::Platform::<B>::opposite_version(),
+                running_info: board::Platform::<B>::running_info(),
+                opposite_info: board::Platform::<B>::opposite_info(),
             });
         }
         Api::PlatformVendor(request) => {

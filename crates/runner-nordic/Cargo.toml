@@ -34,6 +34,7 @@ wasefire-error = { path = "../error" }
 wasefire-interpreter = { path = "../interpreter", optional = true }
 wasefire-logger = { path = "../logger" }
 wasefire-one-of = { path = "../one-of" }
+wasefire-protocol = { path = "../protocol" }
 wasefire-protocol-usb = { path = "../protocol-usb", features = ["device"] }
 wasefire-store = { path = "../store" }
 wasefire-sync = { path = "../sync" }

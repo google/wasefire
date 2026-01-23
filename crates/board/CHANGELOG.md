@@ -4,6 +4,8 @@
 
 ### Major
 
+- Add `platform::Api::{running,opposite}_info()` to return platform side information
+- Remove `platform::Api::{running,opposite}_version()` in favor of `{running,opposite}_info()`
 - Add `fingerprint::Api::{enable,disable}()` for finger detection
 
 ### Patch

@@ -375,12 +375,29 @@ impl PlatformInfo {
         if let Some(running_side) = info.running_side() {
             println!("    side: {running_side}");
         }
-        println!(" version: {}", HEX.encode_display(info.running_version()));
-        if let Some(opposite_version) = info.opposite_version() {
-            match opposite_version {
-                Ok(x) => println!("opposite: {}", HEX.encode_display(x)),
-                Err(e) => println!("opposite: {e}"),
+        if let Some(name_hex) = info.running_name() {
+            print!("    name: {}", HEX.encode_display(name_hex));
+            if let Some(name_str) = wasefire_protocol::platform::name_str(name_hex) {
+                print!(" ({name_str})");
             }
+            println!();
+        }
+        println!(" version: {}", HEX.encode_display(info.running_version()));
+        if let Some(version) = info.opposite_version() {
+            let version = match version {
+                Ok(x) => x,
+                Err(e) => return Ok(println!("opposite: {e}")),
+            };
+            println!("--- opposite side ---");
+            if let Some(name_hex) = info.opposite_name() {
+                let name_hex = name_hex.unwrap();
+                print!("    name: {}", HEX.encode_display(name_hex));
+                if let Some(name_str) = wasefire_protocol::platform::name_str(name_hex) {
+                    print!(" ({name_str})");
+                }
+                println!();
+            }
+            println!(" version: {}", HEX.encode_display(version));
         }
         Ok(())
     }

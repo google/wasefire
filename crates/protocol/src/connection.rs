@@ -59,7 +59,9 @@ impl<T: Connection> Device<T> {
 
     pub async fn platform_info(&self) -> anyhow::Result<crate::platform::DynInfo> {
         if self.supports::<crate::PlatformInfo>() {
-            Ok(crate::platform::DynInfo::V2(self.call::<crate::PlatformInfo>(()).await?))
+            Ok(crate::platform::DynInfo::V3(self.call::<crate::PlatformInfo>(()).await?))
+        } else if self.supports::<crate::_PlatformInfo2>() {
+            Ok(crate::platform::DynInfo::V2(self.call::<crate::_PlatformInfo2>(()).await?))
         } else if self.supports::<crate::_PlatformInfo1>() {
             Ok(crate::platform::DynInfo::V1(self.call::<crate::_PlatformInfo1>(()).await?))
         } else if self.supports::<crate::_PlatformInfo0>() {

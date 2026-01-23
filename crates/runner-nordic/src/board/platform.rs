@@ -21,6 +21,7 @@ use wasefire_board_api::platform::Api;
 use wasefire_common::addr_of_symbol;
 use wasefire_common::platform::Side;
 use wasefire_error::Code;
+use wasefire_protocol::platform::SideInfo;
 use wasefire_sync::Once;
 
 pub mod update;
@@ -40,23 +41,26 @@ impl Api for Impl {
         header::running_side().unwrap()
     }
 
-    fn running_version() -> Cow<'static, [u8]> {
+    fn running_info() -> SideInfo<'static> {
         let side = Self::running_side();
         let header = Header::new(side);
-        header.timestamp().to_be_bytes().to_vec().into()
+        let name = header.name().to_vec().into();
+        let version = header.version().to_be_bytes().to_vec().into();
+        SideInfo { name, version }
     }
 
-    fn opposite_version() -> Result<Cow<'static, [u8]>, Error> {
+    fn opposite_info() -> Result<SideInfo<'static>, Error> {
         if addr_of_symbol!(__sother) == addr_of_symbol!(__eother) {
             return Err(Error::world(Code::NotEnough));
         }
         let side = Self::running_side().opposite();
         let header = Header::new(side);
-        if header.has_firmware() {
-            Ok(header.timestamp().to_be_bytes().to_vec().into())
-        } else {
-            Err(Error::world(Code::NotFound))
+        if !header.has_firmware() {
+            return Err(Error::world(Code::NotFound));
         }
+        let name = header.name().to_vec().into();
+        let version = header.version().to_be_bytes().to_vec().into();
+        Ok(SideInfo { name, version })
     }
 
     fn reboot() -> Result<!, Error> {

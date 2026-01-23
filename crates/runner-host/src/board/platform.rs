@@ -19,6 +19,7 @@ use wasefire_board_api::Error;
 use wasefire_board_api::platform::Api;
 use wasefire_common::platform::Side;
 use wasefire_error::Code;
+use wasefire_protocol::platform::SideInfo;
 
 use crate::FLAGS;
 
@@ -40,11 +41,13 @@ impl Api for Impl {
         Side::B
     }
 
-    fn running_version() -> Cow<'static, [u8]> {
-        from_hex(FLAGS.version.as_deref())
+    fn running_info() -> SideInfo<'static> {
+        let name = from_hex(FLAGS.name.as_deref());
+        let version = from_hex(FLAGS.version.as_deref());
+        SideInfo { name, version }
     }
 
-    fn opposite_version() -> Result<Cow<'static, [u8]>, Error> {
+    fn opposite_info() -> Result<SideInfo<'static>, Error> {
         Err(Error::world(Code::NotEnough))
     }
 

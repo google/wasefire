@@ -30,6 +30,7 @@
 #![feature(doc_cfg)]
 #![feature(macro_metavar_expr)]
 #![feature(never_type)]
+#![feature(try_blocks)]
 
 extern crate alloc;
 
@@ -307,8 +308,13 @@ api! {
     /// Reboots an applet.
     17 [8 -] AppletReboot: applet::AppletId => (),
 
-    /// Returns information about the platform.
-    18 [9 -] PlatformInfo: () => platform::Info<'a>,
+    /// (deprecated) Returns information about the platform.
+    ///
+    /// This message is deprecated in favor of [`PlatformInfo`].
+    18 [9 - 9] _PlatformInfo2: () => platform::_Info2<'a>,
 
-    next 19 [10 -]
+    /// Returns information about the platform.
+    19 [10 -] PlatformInfo: () => platform::Info<'a>,
+
+    next 20 [11 -]
 }

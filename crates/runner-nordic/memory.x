@@ -12,7 +12,7 @@ ASSERT(_platform_size % 0x1000 == 0, "_platform_size % 0x1000 != 0");
 
 /* for header */
 __header_origin = _platform + RUNNER_SIDE * _platform_size;
-__header_length = 0x00000100;
+__header_length = 0x00000100; /* keep in sync with the bootloader and header library */
 
 MEMORY {
   HEADER : ORIGIN = __header_origin, LENGTH = __header_length
@@ -23,14 +23,7 @@ MEMORY {
 /* for bootloader */
 SECTIONS {
   .header : {
-    /* Keep this section in sync with the bootloader. */
-    LONG(0x00000000);
-    /* The 3 boot attempts of the newest side. */
-    LONG(0xffffffff);
-    LONG(0xffffffff);
-    LONG(0xffffffff);
-    /* We fill the unused part of the header to keep it erased. */
-    FILL(0xffffffff);
+    FILL(0xffffffff); /* filled by xtask */
     . = ORIGIN(FLASH);
   } > HEADER
 }
