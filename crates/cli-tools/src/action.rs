@@ -847,7 +847,7 @@ impl Display for OptLevel {
 }
 
 async fn nightly_toolchain(cargo: &mut Command) {
-    const TOOLCHAIN: &str = "nightly-2025-11-07";
+    const TOOLCHAIN: &str = "nightly-2025-12-11";
     let mut rustup = Command::new("rustup");
     rustup.arg("--version");
     rustup.stdout(std::process::Stdio::null());
