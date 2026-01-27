@@ -4,6 +4,8 @@
 
 ### Minor
 
+- Change the schema of `str` from builtin to `[u8]`
+- Implement `Wire` for `alloc::string::String`
 - Implement `Wire` for `alloc::borrow::Cow`
 - Remove useless quantification on `Yoke::{try_,}map()` function argument
 - Optimize memory usage when encoding slices in particular of small elements like `Vec<u8>`
@@ -39,4 +41,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 5 -->
+<!-- Increment to skip CHANGELOG.md test: 7 -->

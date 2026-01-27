@@ -44,9 +44,12 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-use alloc::borrow::Cow;
+use alloc::borrow::{Cow, ToOwned};
 use alloc::boxed::Box;
+use alloc::string::String;
 use alloc::vec::Vec;
+#[cfg(feature = "schema")]
+use core::any::TypeId;
 use core::convert::Infallible;
 use core::mem::{ManuallyDrop, MaybeUninit};
 
@@ -178,23 +181,6 @@ impl_builtin!(i64 I64 encode_zigzag decode_zigzag);
 impl_builtin!(usize Usize encode_varint decode_varint);
 impl_builtin!(isize Isize encode_zigzag decode_zigzag);
 
-impl<'a> internal::Wire<'a> for &'a str {
-    type Type<'b> = &'b str;
-    #[cfg(feature = "schema")]
-    fn schema(rules: &mut Rules) {
-        rules.builtin::<Self::Type<'static>>(Builtin::Str);
-    }
-    fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
-        helper::encode_length(self.len(), writer)?;
-        writer.put_share(self.as_bytes());
-        Ok(())
-    }
-    fn decode(reader: &mut Reader<'a>) -> Result<Self, Error> {
-        let len = helper::decode_length(reader)?;
-        core::str::from_utf8(reader.get(len)?).map_err(|_| Error::user(Code::InvalidArgument))
-    }
-}
-
 impl<'a> internal::Wire<'a> for () {
     type Type<'b> = ();
     #[cfg(feature = "schema")]
@@ -267,23 +253,63 @@ impl<'a> internal::Wire<'a> for &'a [u8] {
     }
 }
 
-impl<'a> internal::Wire<'a> for Cow<'a, [u8]> {
-    type Type<'b> = Cow<'b, [u8]>;
+impl<'a> internal::Wire<'a> for &'a str {
+    type Type<'b> = &'b str;
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        rules.slice::<Self::Type<'static>, u8>();
+        rules.alias::<Self::Type<'static>, &[u8]>();
+    }
+    fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
+        self.as_bytes().encode(writer)
+    }
+    fn decode(reader: &mut Reader<'a>) -> Result<Self, Error> {
+        let bytes = <&[u8]>::decode(reader)?;
+        core::str::from_utf8(bytes).map_err(|_| Error::user(Code::InvalidArgument))
+    }
+}
+
+impl<'a> internal::Wire<'a> for String {
+    type Type<'b> = String;
+    #[cfg(feature = "schema")]
+    fn schema(rules: &mut Rules) {
+        rules.alias::<Self::Type<'static>, Vec<u8>>();
     }
     fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
         helper::encode_length(self.len(), writer)?;
-        match self {
-            Cow::Borrowed(x) => writer.put_share(x),
-            Cow::Owned(x) => writer.put_copy(x),
-        }
+        writer.put_copy(self.as_bytes());
         Ok(())
     }
     fn decode(reader: &mut Reader<'a>) -> Result<Self, Error> {
         let len = helper::decode_length(reader)?;
-        Ok(Cow::Borrowed(reader.get(len)?))
+        let bytes = reader.get(len)?.to_vec();
+        String::from_utf8(bytes).map_err(|_| Error::user(Code::InvalidArgument))
+    }
+}
+
+impl<'a, T: ?Sized + ToOwned + 'static> internal::Wire<'a> for Cow<'a, T>
+where
+    for<'b> &'b T: Wire<'b>,
+    for<'b> T::Owned: Wire<'b>,
+{
+    type Type<'b> = Cow<'b, T>;
+    #[cfg(feature = "schema")]
+    fn schema(rules: &mut Rules) {
+        rules.alias::<Self::Type<'static>, &T>();
+        internal::schema::<T::Owned>(rules);
+        assert!(
+            rules.get(TypeId::of::<&T>()) == rules.get(TypeId::of::<T::Owned>()),
+            "Cow<{}> does not have the same wire format for its borrowed and owned variants",
+            core::any::type_name::<T>(),
+        );
+    }
+    fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
+        match self {
+            Cow::Borrowed(x) => x.encode(writer),
+            Cow::Owned(x) => x.encode(writer),
+        }
+    }
+    fn decode(reader: &mut Reader<'a>) -> Result<Self, Error> {
+        Ok(Cow::Borrowed(<&T>::decode(reader)?))
     }
 }
 
@@ -456,8 +482,8 @@ mod tests {
     fn display_schema() {
         assert_schema::<bool>("bool");
         assert_schema::<u8>("u8");
-        assert_schema::<&str>("str");
-        assert_schema::<Result<&str, &[u8]>>("{Ok=0:str Err=1:[u8]}");
+        assert_schema::<&str>("[u8]");
+        assert_schema::<Result<&str, &[u8]>>("{Ok=0:[u8] Err=1:[u8]}");
         assert_schema::<Option<[u8; 42]>>("{None=0:() Some=1:[u8; 42]}");
     }
 
@@ -474,10 +500,10 @@ mod tests {
         #[derive(Wire)]
         #[wire(crate = crate)]
         struct Foo2<'a> {
-            bar: &'a str,
+            bar: Cow<'a, str>,
             baz: Option<&'a [u8]>,
         }
-        assert_schema::<Foo2>("(bar:str baz:{None=0:() Some=1:[u8]})");
+        assert_schema::<Foo2>("(bar:[u8] baz:{None=0:() Some=1:[u8]})");
     }
 
     #[test]
@@ -494,11 +520,11 @@ mod tests {
         #[wire(crate = crate)]
         enum Foo2<'a> {
             #[wire(tag = 1)]
-            Bar(&'a str),
+            Bar(Cow<'a, [u8]>),
             #[wire(tag = 0)]
             Baz((), Option<&'a [u8]>),
         }
-        assert_schema::<Foo2>("{Bar=1:str Baz=0:{None=0:() Some=1:[u8]}}");
+        assert_schema::<Foo2>("{Bar=1:[u8] Baz=0:{None=0:() Some=1:[u8]}}");
     }
 
     #[test]
@@ -525,5 +551,23 @@ mod tests {
         let yoke = decode_yoke::<T>(data).unwrap();
         let bytes = yoke.try_map(|x| x).unwrap();
         assert_eq!(bytes.get(), b"hello");
+    }
+
+    #[test]
+    fn cow() {
+        #[track_caller]
+        fn test<T: ?Sized + ToOwned + Eq + core::fmt::Debug + 'static>(data: &'static T)
+        where
+            for<'b> &'b T: Wire<'b>,
+            for<'b> T::Owned: Wire<'b>,
+            T::Owned: core::fmt::Debug,
+        {
+            let encoded = encode(&Cow::Borrowed(data)).unwrap();
+            assert_eq!(encode(&Cow::Owned(data.to_owned())).unwrap(), encoded);
+            let decoded = decode::<Cow<T>>(&encoded).unwrap();
+            assert_eq!(decoded, Cow::Borrowed(data));
+        }
+        test("hello");
+        test(b"hello");
     }
 }
