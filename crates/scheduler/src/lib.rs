@@ -40,6 +40,8 @@ use wasefire_interpreter::{self as interpreter, Call, Module, RunAnswer, Val};
 use wasefire_logger as log;
 use wasefire_one_of::exactly_one_of;
 use wasefire_protocol::applet::ExitStatus;
+#[cfg(any(feature = "pulley", feature = "wasm"))]
+use wasefire_protocol::applet::Metadata as AppletMetadata;
 #[cfg(feature = "board-api-storage")]
 use wasefire_store as store;
 
@@ -97,6 +99,8 @@ pub struct Scheduler<B: Board> {
     store: store::Store<B::Storage>,
     host_funcs: Vec<Api<Id>>,
     applet: applet::Slot<B>,
+    #[cfg(any(feature = "pulley", feature = "wasm"))]
+    applet_metadata: Option<AppletMetadata<'static>>,
     #[cfg(feature = "board-api-timer")]
     timers: Vec<Option<Timer>>,
     #[cfg(feature = "internal-debug")]
@@ -310,6 +314,8 @@ impl<B: Board> Scheduler<B> {
             applet: applet::Slot::Running(Applet::default()),
             #[cfg(any(feature = "pulley", feature = "wasm"))]
             applet: applet::Slot::Empty,
+            #[cfg(any(feature = "pulley", feature = "wasm"))]
+            applet_metadata: None,
             #[cfg(feature = "board-api-timer")]
             timers: alloc::vec![None; board::Timer::<B>::SUPPORT],
             #[cfg(feature = "internal-debug")]
@@ -352,12 +358,13 @@ impl<B: Board> Scheduler<B> {
     #[cfg(feature = "pulley")]
     fn start_applet_(&mut self) -> Result<(), Error> {
         // SAFETY: We stop the applet before installing a new one.
-        let pulley = unsafe { <board::Applet<B> as board::applet::Api>::get()? };
+        let mut pulley = unsafe { <board::Applet<B> as board::applet::Api>::get()? };
         if pulley.is_empty() {
             log::info!("No applet to start.");
             self.applet = applet::Slot::Empty;
             return Ok(());
         }
+        self.applet_metadata = Some(AppletMetadata::new(&mut pulley)?);
         // TODO: Check the wasmtime version. Or is it done by wasmtime already?
         log::info!("Starting applet.");
         <board::Applet<B> as board::applet::Api>::notify_start();
@@ -400,12 +407,13 @@ impl<B: Board> Scheduler<B> {
         static mut MEMORY: Memory = Memory([0; MEMORY_SIZE]);
 
         // SAFETY: We stop the applet before installing a new one.
-        let wasm = unsafe { <board::Applet<B> as board::applet::Api>::get()? };
+        let mut wasm = unsafe { <board::Applet<B> as board::applet::Api>::get()? };
         if wasm.is_empty() {
             log::info!("No applet to start.");
             self.applet = applet::Slot::Empty;
             return Ok(());
         }
+        self.applet_metadata = Some(AppletMetadata::new(&mut wasm)?);
         log::info!("Starting applet.");
         <board::Applet<B> as board::applet::Api>::notify_start();
         self.applet = applet::Slot::Running(Applet::default());

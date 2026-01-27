@@ -16,6 +16,7 @@ wasefire-common = { path = "../common" }
 wasefire-error = { path = "../error" }
 wasefire-protocol = { path = "../protocol", features = ["host"] }
 wasefire-protocol-usb = { path = "../protocol-usb" }
+wasefire-wire = { path = "../wire" }
 web-sys = "0.3.83"
 webusb-web = "0.4.1"
 yew = { version = "0.22.0", features = ["csr"] }

@@ -19,7 +19,7 @@ use wasefire_error::{Code, Error};
 use wasefire_wire::Wire;
 
 /// String made of ASCII graphic characters only.
-#[derive(Debug, Default, Wire)]
+#[derive(Debug, Default, Clone, Wire)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[wire(refine = Name::new)]
 pub struct Name<'a>(Cow<'a, str>);
