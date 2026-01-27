@@ -40,7 +40,7 @@ features = ["toctou"]
 optional = true
 
 [dependencies.wasmtime]
-version = "40.0.0"
+version = "40.0.3"
 default-features = false
 features = ["async", "runtime"]
 optional = true
