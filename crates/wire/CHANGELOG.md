@@ -10,6 +10,7 @@
 
 ### Patch
 
+- Factorize recursive schema logic
 - Update dependencies
 
 ## 0.1.2

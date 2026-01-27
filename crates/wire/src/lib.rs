@@ -155,7 +155,7 @@ macro_rules! impl_builtin {
             type Type<'b> = $t;
             #[cfg(feature = "schema")]
             fn schema(rules: &mut Rules) {
-                if rules.builtin::<Self::Type<'static>>(Builtin::$T) {}
+                rules.builtin::<Self::Type<'static>>(Builtin::$T);
             }
             fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
                 Ok(helper::$encode(*self, writer))
@@ -182,7 +182,7 @@ impl<'a> internal::Wire<'a> for &'a str {
     type Type<'b> = &'b str;
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.builtin::<Self::Type<'static>>(Builtin::Str) {}
+        rules.builtin::<Self::Type<'static>>(Builtin::Str);
     }
     fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
         helper::encode_length(self.len(), writer)?;
@@ -240,9 +240,7 @@ impl<'a, const N: usize> internal::Wire<'a> for &'a [u8; N] {
     type Type<'b> = &'b [u8; N];
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.array::<Self::Type<'static>, u8>(N) {
-            internal::schema::<u8>(rules);
-        }
+        rules.array::<Self::Type<'static>, u8>(N);
     }
     fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
         Ok(writer.put_share(*self))
@@ -256,9 +254,7 @@ impl<'a> internal::Wire<'a> for &'a [u8] {
     type Type<'b> = &'b [u8];
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.slice::<Self::Type<'static>, u8>() {
-            internal::schema::<u8>(rules);
-        }
+        rules.slice::<Self::Type<'static>, u8>();
     }
     fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
         helper::encode_length(self.len(), writer)?;
@@ -275,9 +271,7 @@ impl<'a> internal::Wire<'a> for Cow<'a, [u8]> {
     type Type<'b> = Cow<'b, [u8]>;
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.slice::<Self::Type<'static>, u8>() {
-            internal::schema::<u8>(rules);
-        }
+        rules.slice::<Self::Type<'static>, u8>();
     }
     fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
         helper::encode_length(self.len(), writer)?;
@@ -297,9 +291,7 @@ impl<'a, T: Wire<'a>, const N: usize> internal::Wire<'a> for [T; N] {
     type Type<'b> = [T::Type<'b>; N];
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.array::<Self::Type<'static>, T::Type<'static>>(N) {
-            internal::schema::<T>(rules);
-        }
+        rules.array::<Self::Type<'static>, T::Type<'static>>(N);
     }
     fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
         helper::encode_array(self, writer, T::encode)
@@ -313,9 +305,7 @@ impl<'a, T: Wire<'a>> internal::Wire<'a> for Vec<T> {
     type Type<'b> = Vec<T::Type<'b>>;
     #[cfg(feature = "schema")]
     fn schema(rules: &mut Rules) {
-        if rules.slice::<Self::Type<'static>, T::Type<'static>>() {
-            internal::schema::<T>(rules);
-        }
+        rules.slice::<Self::Type<'static>, T::Type<'static>>();
     }
     fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
         helper::encode_slice(self, writer, T::encode)
