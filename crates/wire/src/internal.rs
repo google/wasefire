@@ -136,12 +136,13 @@ mod schema {
         }
 
         pub(crate) fn get(&self, mut id: TypeId) -> &Rule {
-            loop {
+            for _ in 0 .. 40 {
                 match self.0.get(&id).unwrap() {
                     Rule::Alias(x) => id = *x,
-                    x => break x,
+                    x => return x,
                 }
             }
+            panic!("possible alias cycle in schema rules");
         }
     }
 }

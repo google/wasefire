@@ -280,7 +280,8 @@ impl<'a> internal::Wire<'a> for String {
         Ok(())
     }
     fn decode(reader: &mut Reader<'a>) -> Result<Self, Error> {
-        let bytes = <Vec<u8>>::decode(reader)?;
+        let len = helper::decode_length(reader)?;
+        let bytes = reader.get(len)?.to_vec();
         String::from_utf8(bytes).map_err(|_| Error::user(Code::InvalidArgument))
     }
 }
