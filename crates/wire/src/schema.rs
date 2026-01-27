@@ -82,7 +82,7 @@ impl<'a> Traverse<'a> {
         let result: Option<_> = try {
             match self.rules.get(id) {
                 Rule::Builtin(x) => View::Builtin(*x),
-                Rule::Alias(x) => self.extract(*x)?,
+                Rule::Alias(_) => unreachable!(),
                 Rule::Array(x, n) => View::Array(Box::new(self.extract(*x)?), *n),
                 Rule::Slice(x) => View::Slice(Box::new(self.extract_or_empty(*x))),
                 Rule::Struct(xs) => View::Struct(self.extract_struct(xs)?),

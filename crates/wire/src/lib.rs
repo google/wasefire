@@ -296,7 +296,7 @@ where
         rules.alias::<Self::Type<'static>, &T>();
         internal::schema::<T::Owned>(rules);
         assert!(
-            rules.get_noalias(TypeId::of::<&T>()) == rules.get_noalias(TypeId::of::<T::Owned>()),
+            rules.get(TypeId::of::<&T>()) == rules.get(TypeId::of::<T::Owned>()),
             "Cow<{}> does not have the same wire format for its borrowed and owned variants",
             core::any::type_name::<T>(),
         );
@@ -562,9 +562,7 @@ mod tests {
             T::Owned: core::fmt::Debug,
         {
             let encoded = encode(&Cow::Borrowed(data)).unwrap();
-            let decoded = decode::<Cow<T>>(&encoded).unwrap();
-            assert_eq!(decoded, Cow::Borrowed(data));
-            let encoded = encode(&Cow::Owned(data.to_owned())).unwrap();
+            assert_eq!(encode(&Cow::Owned(data.to_owned())).unwrap(), encoded);
             let decoded = decode::<Cow<T>>(&encoded).unwrap();
             assert_eq!(decoded, Cow::Borrowed(data));
         }

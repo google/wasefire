@@ -135,11 +135,7 @@ mod schema {
             }
         }
 
-        pub(crate) fn get(&self, id: TypeId) -> &Rule {
-            self.0.get(&id).unwrap()
-        }
-
-        pub(crate) fn get_noalias(&self, mut id: TypeId) -> &Rule {
+        pub(crate) fn get(&self, mut id: TypeId) -> &Rule {
             loop {
                 match self.0.get(&id).unwrap() {
                     Rule::Alias(x) => id = *x,
