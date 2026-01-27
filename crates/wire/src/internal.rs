@@ -61,7 +61,7 @@ mod schema {
     }
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq, wasefire_wire_derive::Wire)]
-    #[wire(crate = crate, range = 12)]
+    #[wire(crate = crate, range = 11)]
     pub enum Builtin {
         Bool,
         U8,
@@ -74,7 +74,6 @@ mod schema {
         I64,
         Usize,
         Isize,
-        Str,
     }
 
     #[derive(Debug, Default)]
@@ -83,6 +82,7 @@ mod schema {
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum Rule {
         Builtin(Builtin),
+        Alias(TypeId),
         Array(TypeId, usize),
         Slice(TypeId),
         Struct(RuleStruct),
@@ -94,6 +94,12 @@ mod schema {
     impl Rules {
         pub(crate) fn builtin<X: 'static>(&mut self, builtin: Builtin) {
             let _ = self.insert::<X>(Rule::Builtin(builtin));
+        }
+
+        pub(crate) fn alias<X: 'static, T: Wire<'static>>(&mut self) {
+            if self.insert::<X>(Rule::Alias(TypeId::of::<T>())) {
+                T::schema(self);
+            }
         }
 
         pub(crate) fn array<X: 'static, T: Wire<'static>>(&mut self, n: usize) {
@@ -131,6 +137,15 @@ mod schema {
 
         pub(crate) fn get(&self, id: TypeId) -> &Rule {
             self.0.get(&id).unwrap()
+        }
+
+        pub(crate) fn get_noalias(&self, mut id: TypeId) -> &Rule {
+            loop {
+                match self.0.get(&id).unwrap() {
+                    Rule::Alias(x) => id = *x,
+                    x => break x,
+                }
+            }
         }
     }
 }

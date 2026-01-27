@@ -82,6 +82,7 @@ impl<'a> Traverse<'a> {
         let result: Option<_> = try {
             match self.rules.get(id) {
                 Rule::Builtin(x) => View::Builtin(*x),
+                Rule::Alias(x) => self.extract(*x)?,
                 Rule::Array(x, n) => View::Array(Box::new(self.extract(*x)?), *n),
                 Rule::Slice(x) => View::Slice(Box::new(self.extract_or_empty(*x))),
                 Rule::Struct(xs) => View::Struct(self.extract_struct(xs)?),
@@ -123,7 +124,6 @@ impl core::fmt::Display for Builtin {
             Builtin::I64 => write!(f, "i64"),
             Builtin::Usize => write!(f, "usize"),
             Builtin::Isize => write!(f, "isize"),
-            Builtin::Str => write!(f, "str"),
         }
     }
 }
@@ -315,7 +315,6 @@ impl View<'_> {
             View::Builtin(Builtin::I64) => drop(i64::decode(reader)?),
             View::Builtin(Builtin::Usize) => drop(usize::decode(reader)?),
             View::Builtin(Builtin::Isize) => drop(isize::decode(reader)?),
-            View::Builtin(Builtin::Str) => drop(<&str>::decode(reader)?),
             View::Array(x, n) => {
                 let _lock = ViewFrameLock::new(None, x);
                 let _ = helper::decode_array_dyn(*n, reader, decode_view)?;
