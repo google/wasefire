@@ -92,16 +92,20 @@ mod schema {
     pub type RuleEnum = Vec<(&'static str, u32, RuleStruct)>;
 
     impl Rules {
-        pub(crate) fn builtin<X: 'static>(&mut self, builtin: Builtin) -> bool {
-            self.insert::<X>(Rule::Builtin(builtin))
+        pub(crate) fn builtin<X: 'static>(&mut self, builtin: Builtin) {
+            let _ = self.insert::<X>(Rule::Builtin(builtin));
         }
 
-        pub(crate) fn array<X: 'static, T: 'static>(&mut self, n: usize) -> bool {
-            self.insert::<X>(Rule::Array(TypeId::of::<T>(), n))
+        pub(crate) fn array<X: 'static, T: Wire<'static>>(&mut self, n: usize) {
+            if self.insert::<X>(Rule::Array(TypeId::of::<T>(), n)) {
+                T::schema(self);
+            }
         }
 
-        pub(crate) fn slice<X: 'static, T: 'static>(&mut self) -> bool {
-            self.insert::<X>(Rule::Slice(TypeId::of::<T>()))
+        pub(crate) fn slice<X: 'static, T: Wire<'static>>(&mut self) {
+            if self.insert::<X>(Rule::Slice(TypeId::of::<T>())) {
+                T::schema(self);
+            }
         }
 
         pub fn struct_<X: 'static>(&mut self, fields: RuleStruct) -> bool {
