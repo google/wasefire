@@ -20,6 +20,8 @@ use wasefire_wire::Wire;
 #[cfg(feature = "host")]
 use wasefire_wire::Yoke;
 
+use crate::common::{AppletKind, Name};
+
 #[derive(Debug)]
 #[cfg(feature = "host")]
 pub enum DynInfo {
@@ -58,7 +60,7 @@ impl DynInfo {
         }
     }
 
-    pub fn running_name(&self) -> Option<&[u8]> {
+    pub fn running_name(&self) -> Option<&str> {
         match self {
             DynInfo::V3(x) => Some(&x.get().running_info.name),
             DynInfo::V2(_) => None,
@@ -76,7 +78,7 @@ impl DynInfo {
         }
     }
 
-    pub fn opposite_name(&self) -> Option<Result<&[u8], Error>> {
+    pub fn opposite_name(&self) -> Option<Result<&str, Error>> {
         Self::opposite(
             |x| &x[..],
             try {
@@ -115,21 +117,6 @@ impl DynInfo {
     }
 }
 
-/// Returns whether a platform name can be displayed as a string.
-#[cfg(feature = "host")]
-pub fn name_str(mut name: &[u8]) -> Option<&str> {
-    loop {
-        match name.split_last() {
-            Some((0, x)) => name = x,
-            Some(_) => break,
-            None => return None,
-        }
-    }
-    name.iter().all(|x| x.is_ascii_graphic()).then(||
-        // SAFETY: We just checked that all bytes are ASCII.
-        unsafe { core::str::from_utf8_unchecked(name) })
-}
-
 #[derive(Debug, Wire)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Info<'a> {
@@ -146,11 +133,8 @@ pub struct Info<'a> {
 pub struct SideInfo<'a> {
     /// Name of the platform.
     ///
-    /// This field has no particular interpretation. However for display purposes, if the content
-    /// is only made of ASCII graphic characters after trimming the longest suffix of null
-    /// bytes, then that graphic prefix will be displayed in addition to the full hexadecimal
-    /// representation.
-    pub name: Cow<'a, [u8]>,
+    /// This field has no particular interpretation.
+    pub name: Name<'a>,
 
     /// Version of the platform.
     ///
@@ -185,30 +169,4 @@ pub struct _Info1<'a> {
 pub struct _Info0<'a> {
     pub serial: Cow<'a, [u8]>,
     pub version: Cow<'a, [u8]>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Wire)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum AppletKind {
-    Wasm,
-    Pulley,
-    Native,
-}
-
-#[cfg(feature = "host")]
-impl AppletKind {
-    pub fn name(&self) -> &'static str {
-        match self {
-            AppletKind::Wasm => "wasm",
-            AppletKind::Pulley => "pulley",
-            AppletKind::Native => "native",
-        }
-    }
-}
-
-#[cfg(feature = "host")]
-impl core::fmt::Display for AppletKind {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.name().fmt(f)
-    }
 }

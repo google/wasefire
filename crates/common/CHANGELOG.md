@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `Side::name()` to get the side name as a static string
 - Add `serde` feature to implement `Serialize` and `Deserialize` for `platform::Side`
 - Add `addr_of_symbol!()` to get the address of a linker symbol
 

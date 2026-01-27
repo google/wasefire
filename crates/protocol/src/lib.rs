@@ -46,6 +46,7 @@ use wasefire_wire::Wire;
 use wasefire_wire::Yoke;
 
 pub mod applet;
+pub mod common;
 #[cfg(feature = "host")]
 mod connection;
 pub mod platform;

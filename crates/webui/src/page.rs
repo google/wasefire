@@ -93,7 +93,7 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
                 html! {
                     <li>
                         <button onclick={connect}>{ "Connect" }</button>{ " to device " }
-                        <code>{ serial_number(device) }</code>{ " or " }
+                        <code class="blue">{ serial_number(device) }</code>{ " or " }
                         <button onclick={forget}>{ "Forget" }</button>{ " it." }
                     </li>
                 }
@@ -153,13 +153,13 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
             ];
             html_idle(html! {<>
                 <div class="columns">
-                    <div class="column">{ "Platform operations:" }
+                    <div class="box green column">{ "Platform operations:" }
                         <ul class="commands">{ for platform }</ul></div>
-                    <div class="column">{ "Applet operations:" }
+                    <div class="box green column">{ "Applet operations:" }
                         <ul class="commands">{ for applet }</ul></div>
                 </div>
                 <button onclick={disconnect}>{ "Disconnect" }</button>{ " from device " }
-                <code>{ serial_number(device.device()) }</code>{ "." }
+                <code class="blue">{ serial_number(device.device()) }</code>{ "." }
                 <footer>{ format!("Protocol version: {}", device.version()) }</footer>
             </>})
         }
@@ -177,15 +177,15 @@ impl Page {
 }
 
 fn html_error(content: Html) -> Html {
-    html!(<div class="error">{ content }</div>)
+    html!(<div class="box red">{ content }</div>)
 }
 
 fn html_running(content: Html) -> Html {
-    html!(<div class="running">{ content }</div>)
+    html!(<div class="box yellow">{ content }</div>)
 }
 
 fn html_idle(content: Html) -> Html {
-    html!(<div class="idle">{ content }</div>)
+    html!(<div class="box green">{ content }</div>)
 }
 
 macro_rules! unwrap {
@@ -242,50 +242,31 @@ impl Command for service::PlatformInfo {
 }
 
 fn platform_info(info: wasefire_protocol::platform::DynInfo) -> Html {
-    fn render_name(name_hex: &[u8]) -> Html {
-        let mut element = Vec::new();
-        element.push(html!(<code>{ HEX.encode(name_hex) }</code>));
-        if let Some(name_str) = wasefire_protocol::platform::name_str(name_hex) {
-            element.push(" (".into());
-            element.push(html!(<code>{ name_str }</code>));
-            element.push(")".into());
-        }
-        Html::from_iter(element)
-    }
-
-    let mut elements = Vec::new();
-    elements.push(html!(<li>{ "Serial number: " }<code>{ HEX.encode(info.serial()) }</code></li>));
+    let mut kvs: Vec<(&str, Result<Cow<str>, wasefire_error::Error>)> = Vec::new();
+    kvs.push(("Serial number", Ok(HEX.encode(info.serial()).into())));
     if let Some(applet) = info.applet_kind() {
-        elements.push(html!(<li>{ "Applet kind: " }<code>{ applet.to_string() }</code></li>));
+        kvs.push(("Applet kind", Ok(applet.name().into())));
     }
     if let Some(side) = info.running_side() {
-        elements.push(html!(<li>{ "Running side: " }<code>{ side.to_string() }</code></li>));
+        kvs.push(("Running side", Ok(side.name().into())));
     }
-    if let Some(name_hex) = info.running_name() {
-        elements.push(html!(<li>{ "Running name: " }{ render_name(name_hex) }</li>));
+    if let Some(name) = info.running_name() {
+        kvs.push(("Running name", Ok(name.to_string().into())));
     }
-    elements.push(
-        html!(<li>{ "Running version: " }<code>{ HEX.encode(info.running_version()) }</code></li>),
-    );
-
-    fn push<T>(
-        elements: &mut Vec<Html>, title: &str, value: Option<Result<T, wasefire_error::Error>>,
-        action: impl FnOnce(T) -> Html,
-    ) {
-        let Some(value) = value else { return };
-        let value = match value {
-            Ok(x) => action(x),
-            Err(e) => format!("{e}").into(),
+    kvs.push(("Running version", Ok(HEX.encode(info.running_version()).into())));
+    if let Some(name) = info.opposite_name() {
+        kvs.push(("Opposite name", name.map(|x| x.to_string().into())));
+    }
+    if let Some(version) = info.opposite_version() {
+        kvs.push(("Opposite version", version.map(|x| HEX.encode(x).into())));
+    }
+    let elements = kvs.into_iter().map(|(k, v)| {
+        let v = match v {
+            Ok(v) => html!(<code class="blue">{ v }</code>),
+            Err(e) => html!(<code class="red">{ format!("{e}") }</code>),
         };
-        elements.push(html!(<li>{ format!("Opposite {title}: ") }{ value }</li>));
-    }
-    push(&mut elements, "name", info.opposite_name(), render_name);
-    push(
-        &mut elements,
-        "version",
-        info.opposite_version(),
-        |x| html!(<code>{ HEX.encode(x) }</code>),
-    );
+        html!(<li>{ k }{ ": " }{ v }</li>)
+    });
     html!(<>{ "Platform info:" }<ul>{ for elements }</ul></>)
 }
 
