@@ -93,7 +93,7 @@ mod schema {
 
     impl Rules {
         pub(crate) fn builtin<X: 'static>(&mut self, builtin: Builtin) {
-            self.insert::<X>(Rule::Builtin(builtin));
+            let _ = self.insert::<X>(Rule::Builtin(builtin));
         }
 
         pub(crate) fn array<X: 'static, T: Wire<'static>>(&mut self, n: usize) {
