@@ -163,6 +163,16 @@ fn process_event_<B: Board>(
             scheduler.start_applet();
             reply::<B, service::AppletReboot>(());
         }
+        #[cfg(feature = "native")]
+        Api::AppletMetadata(_) => return Err(Error::world(Code::NotImplemented)),
+        #[cfg(any(feature = "pulley", feature = "wasm"))]
+        Api::AppletMetadata(applet_id) => {
+            let service::applet::AppletId = applet_id;
+            let Some(metadata) = &scheduler.applet_metadata else {
+                return Err(Error::user(Code::NotFound));
+            };
+            reply::<B, service::AppletMetadata>(metadata.clone());
+        }
         #[cfg(not(feature = "_test"))]
         _ => return Err(Error::internal(Code::NotImplemented)),
     }

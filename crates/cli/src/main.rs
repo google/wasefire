@@ -69,6 +69,14 @@ enum Action {
         action: action::AppletUninstall,
     },
 
+    #[group(id = "Action::AppletMetadata")]
+    AppletMetadata {
+        #[command(flatten)]
+        options: action::ConnectionOptions,
+        #[command(flatten)]
+        action: action::AppletMetadata,
+    },
+
     #[group(id = "Action::AppletExitStatus")]
     AppletExitStatus {
         #[command(flatten)]
@@ -284,6 +292,7 @@ async fn main() -> Result<()> {
         Action::AppletInstall { options, action } => action.run(&options.connect().await?).await,
         Action::AppletUpdate => bail!("not implemented yet"),
         Action::AppletUninstall { options, action } => action.run(&options.connect().await?).await,
+        Action::AppletMetadata { options, action } => action.run(&options.connect().await?).await,
         Action::AppletExitStatus { options, action } => action.run(&options.connect().await?).await,
         Action::AppletReboot { options, action } => action.run(&options.connect().await?).await,
         Action::AppletRpc { options, action } => action.run(&options.connect().await?).await,

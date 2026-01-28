@@ -303,8 +303,10 @@ api! {
     /// Updates the platform.
     15 [7 -] PlatformUpdate: transfer::Request<'a> => transfer::Response,
 
-    /// Installs or uninstalls an applet.
-    16 [7 -] AppletInstall: transfer::Request<'a> => transfer::Response,
+    /// (deprecated )Installs or uninstalls an applet.
+    ///
+    /// This message is deprecated in favor of [`AppletInstall`].
+    16 [7 - 10] _AppletInstall1: transfer::Request<'a> => transfer::Response,
 
     /// Reboots an applet.
     17 [8 -] AppletReboot: applet::AppletId => (),
@@ -317,5 +319,15 @@ api! {
     /// Returns information about the platform.
     19 [10 -] PlatformInfo: () => platform::Info<'a>,
 
-    next 20 [11 -]
+    /// Returns the metadata of an applet.
+    20 [11 -] AppletMetadata: applet::AppletId => applet::Metadata<'a>,
+
+    /// Installs or uninstalls an applet.
+    ///
+    /// The payload must but the concatenation of the applet, its metadata, and the size of the
+    /// applet in bytes encoded as a big-endian 32-bits integer. The metadata must match what
+    /// [`AppletMetadata`] returns (and be converted before install otherwise).
+    21 [11 -] AppletInstall: transfer::Request<'a> => transfer::Response,
+
+    next 22 [12 -]
 }

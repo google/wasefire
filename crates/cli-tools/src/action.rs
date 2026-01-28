@@ -102,8 +102,12 @@ pub enum AppletInstallWait {
 impl AppletInstall {
     pub async fn run(self, device: &DynDevice) -> Result<()> {
         let AppletInstall { applet, transfer, wait } = self;
+        let mut applet = fs::read(applet).await?;
+        let len = applet.len() as u32;
+        wasefire_wire::encode_suffix(&mut applet, &applet::Metadata::default())?;
+        applet.extend_from_slice(&len.to_be_bytes());
         transfer
-            .run::<service::AppletInstall>(device, Some(applet), "Installed", None::<fn(_) -> _>)
+            .run::<service::AppletInstall>(device, applet, "Installed", None::<fn(_) -> _>)
             .await?;
         match wait {
             Some(AppletInstallWait::Wait { mut action }) => {
@@ -123,7 +127,23 @@ impl AppletUninstall {
     pub async fn run(self, device: &DynDevice) -> Result<()> {
         let AppletUninstall {} = self;
         let transfer = Transfer { dry_run: false };
-        transfer.run::<service::AppletInstall>(device, None, "Erased", None::<fn(_) -> _>).await
+        transfer
+            .run::<service::AppletInstall>(device, Vec::new(), "Erased", None::<fn(_) -> _>)
+            .await
+    }
+}
+
+/// Prints the metadata of an applet from a platform.
+#[derive(clap::Args)]
+pub struct AppletMetadata {}
+
+impl AppletMetadata {
+    pub async fn run(self, device: &DynDevice) -> Result<()> {
+        let AppletMetadata {} = self;
+        let metadata = device.call::<service::AppletMetadata>(applet::AppletId).await?;
+        println!("   name: {}", &*metadata.get().name);
+        println!("version: {}", HEX.encode_display(&metadata.get().version));
+        Ok(())
     }
 }
 
@@ -360,7 +380,7 @@ impl PlatformClearStore {
     }
 }
 
-/// Returns information about a platform.
+/// Prints information about a platform.
 #[derive(clap::Args)]
 pub struct PlatformInfo {}
 
@@ -451,10 +471,11 @@ impl PlatformUpdate {
             },
             None => platform_a,
         };
+        let platform = fs::read(platform).await?;
         transfer
             .run::<service::PlatformUpdate>(
                 device,
-                Some(platform),
+                platform,
                 "Updated",
                 Some(|_| bail!("device responded to a transfer finish")),
             )
@@ -472,7 +493,7 @@ pub struct Transfer {
 
 impl Transfer {
     async fn run<S>(
-        self, device: &DynDevice, payload: Option<PathBuf>, message: &'static str,
+        self, device: &DynDevice, payload: Vec<u8>, message: &'static str,
         finish: Option<impl FnOnce(Yoke<S::Response<'static>>) -> Result<!>>,
     ) -> Result<()>
     where
@@ -483,10 +504,6 @@ impl Transfer {
     {
         use wasefire_protocol::transfer::{Request, Response};
         let Transfer { dry_run } = self;
-        let payload = match payload {
-            None => Vec::new(),
-            Some(x) => fs::read(x).await?,
-        };
         let Response::Start { chunk_size, num_pages } =
             *device.call::<S>(Request::Start { dry_run }).await?.get()
         else {

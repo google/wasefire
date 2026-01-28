@@ -14,7 +14,38 @@
 
 use alloc::borrow::Cow;
 
+use wasefire_error::{Code, Error};
 use wasefire_wire::Wire;
+
+use crate::common::Name;
+
+#[derive(Debug, Default, Clone, Wire)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Metadata<'a> {
+    /// Name of the applet.
+    pub name: Name<'a>,
+
+    /// Version of the applet.
+    pub version: Cow<'a, [u8]>,
+}
+
+impl<'a> Metadata<'a> {
+    /// Extracts the metadata suffix from an applet payload.
+    ///
+    /// The payload is the concatenation of:
+    /// - The applet (N bytes). After the call, the payload will be the applet.
+    /// - The metadata.
+    /// - The value N encoded as 4 bytes in big-endian.
+    pub fn new(payload: &mut &'a [u8]) -> Result<Metadata<'a>, Error> {
+        let (data, len) =
+            payload.split_last_chunk::<4>().ok_or(Error::user(Code::InvalidLength))?;
+        let len = u32::from_be_bytes(*len) as usize;
+        let (applet, metadata) =
+            data.split_at_checked(len).ok_or(Error::user(Code::InvalidState))?;
+        *payload = applet;
+        wasefire_wire::decode(metadata)
+    }
+}
 
 #[derive(Debug, Wire)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

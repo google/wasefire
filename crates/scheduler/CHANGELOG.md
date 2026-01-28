@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support `AppletMetadata` protocol call
 - Return `NotFound` for `AppletExitStatus` when an applet is uninstalled
 - Fix timers being leaked on applet exit
 - Support `fingerprint::{register,unregister}()` functions

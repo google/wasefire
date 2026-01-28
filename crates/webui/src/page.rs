@@ -20,7 +20,7 @@ use futures_util::StreamExt;
 use gloo::file::File;
 use wasefire_common::platform::Side;
 use wasefire_error::Code;
-use wasefire_protocol::applet::AppletId;
+use wasefire_protocol::applet::{AppletId, Metadata as AppletMetadata};
 use wasefire_protocol::{self as service, ConnectionExt as _, Service, transfer};
 use webusb_web::UsbDevice;
 use yew::platform::spawn_local;
@@ -337,10 +337,13 @@ fn applet_install(page: UseStateSetter<Page>, device: Device) -> Html {
             let page = page.clone();
             let device = device.clone();
             spawn_local(async move {
-                let content = match gloo::file::futures::read_as_bytes(&file).await {
+                let mut content = match gloo::file::futures::read_as_bytes(&file).await {
                     Ok(x) => x,
                     Err(error) => return page.set(Page::error_device(error, &device)),
                 };
+                let len = content.len() as u32;
+                wasefire_wire::encode_suffix(&mut content, &AppletMetadata::default()).unwrap();
+                content.extend_from_slice(&len.to_be_bytes());
                 if transfer::<service::AppletInstall>(&page, &device, &content, None).await {
                     let content = "Applet installed. ".into();
                     page.set(Page::Result { content, device: Some(device) });
