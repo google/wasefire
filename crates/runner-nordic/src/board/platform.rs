@@ -72,16 +72,15 @@ impl Api for Impl {
 }
 
 fn build_name(input: [u8; 24]) -> Name<'static> {
-    let output = try {
+    let output: Option<_> = try {
         let len = input.iter().position(|&x| x == 0).unwrap_or(input.len());
         input[len ..].iter().all(|&x| x == 0).then_some(())?;
         Name::new(String::from_utf8(input[.. len].to_vec()).ok()?.into()).ok()?
     };
-    if let Some(name) = output {
-        return name;
-    }
-    log::error!("Invalid name: {=[u8]:02x}", input);
-    Name::default()
+    output.unwrap_or_else(|| {
+        log::error!("Invalid name: {=[u8]:02x}", input);
+        Name::default()
+    })
 }
 
 fn reboot() -> ! {
