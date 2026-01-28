@@ -78,7 +78,7 @@ fn derive_item(item: &syn::DeriveInput) -> syn::Result<syn::ItemImpl> {
     }
     let (generics, _, where_clause) = generics.split_for_impl();
     let (schema, encode, decode) = match &item.data {
-        syn::Data::Struct(x) => derive_struct(&wire, &item.ident, x)?,
+        syn::Data::Struct(x) => derive_struct(&mut attrs, &wire, &param, &item.ident, x)?,
         syn::Data::Enum(x) => derive_enum(&mut attrs, &wire, &item.ident, x)?,
         syn::Data::Union(_) => {
             return Err(syn::Error::new(item.span(), "unions are not supported"));
@@ -86,6 +86,9 @@ fn derive_item(item: &syn::DeriveInput) -> syn::Result<syn::ItemImpl> {
     };
     if let Attr::Present(span, _) = attrs.range.take() {
         return Err(syn::Error::new(span, "range is only supported for enums"));
+    }
+    if let Attr::Present(span, _) = attrs.refine.take() {
+        return Err(syn::Error::new(span, "refine is only supported for structs with one field"));
     }
     let ident = &item.ident;
     let statics: Vec<syn::Type> = match attrs.static_.take() {
@@ -108,10 +111,14 @@ fn derive_item(item: &syn::DeriveInput) -> syn::Result<syn::ItemImpl> {
         impl #generics #wire::internal::Wire<#param> for #ident #parameters #where_clause {
             type Type<#type_param> = #type_;
             #schema
-            fn encode(&self, writer: &mut #wire::internal::Writer<#param>) -> #wire::internal::Result<()> {
+            fn encode(
+                &self, writer: &mut #wire::internal::Writer<#param>
+            ) -> #wire::internal::Result<()> {
                 #(#encode)*
             }
-            fn decode(reader: &mut #wire::internal::Reader<#param>) -> #wire::internal::Result<Self> {
+            fn decode(
+                reader: &mut #wire::internal::Reader<#param>
+            ) -> #wire::internal::Result<Self> {
                 #(#decode)*
             }
         }
@@ -120,9 +127,30 @@ fn derive_item(item: &syn::DeriveInput) -> syn::Result<syn::ItemImpl> {
 }
 
 fn derive_struct(
-    wire: &syn::Path, name: &syn::Ident, item: &syn::DataStruct,
+    attrs: &mut Attrs, wire: &syn::Path, param: &syn::Lifetime, name: &syn::Ident,
+    item: &syn::DataStruct,
 ) -> syn::Result<(Vec<syn::Stmt>, Vec<syn::Stmt>, Vec<syn::Stmt>)> {
     let mut types = Types::default();
+    if item.fields.len() == 1
+        && let Attr::Present(_, refine) = attrs.refine.take()
+    {
+        let inner = item.fields.iter().next().unwrap();
+        let ty = &inner.ty;
+        let schema = parse_quote! {
+            rules.alias::<
+                Self::Type<'static>, <#ty as #wire::internal::Wire<#param>>::Type<'static>>();
+        };
+        let encode: syn::Expr = match &inner.ident {
+            None => parse_quote!(self.0.encode(writer)),
+            Some(name) => parse_quote!(self.#name.encode(writer)),
+        };
+        let decode: syn::Expr = parse_quote!(#refine(<#ty>::decode(reader)?));
+        return Ok((
+            vec![schema],
+            vec![syn::Stmt::Expr(encode, None)],
+            vec![syn::Stmt::Expr(decode, None)],
+        ));
+    }
     let (mut schema, mut encode, decode) =
         derive_fields(wire, &parse_quote!(#name), &item.fields, &mut types)?;
     if cfg!(feature = "schema") {
@@ -377,6 +405,7 @@ struct Attrs {
     tag: Attr<u32>,
     static_: Attr<Vec<syn::Ident>>,
     range: Attr<u32>,
+    refine: Attr<syn::Path>,
 }
 
 impl Attrs {
@@ -419,6 +448,10 @@ impl Attrs {
                 // #[wire(range = <u32>)]
                 let range: syn::LitInt = meta.value()?.parse()?;
                 self.range.set(attr.span(), range.base10_parse()?)?;
+            }
+            if meta.path.is_ident("refine") {
+                // #[wire(refine = <path>)]
+                self.refine.set(attr.span(), meta.value()?.parse()?)?;
             }
             Ok(())
         })

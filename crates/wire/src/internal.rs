@@ -96,7 +96,7 @@ mod schema {
             let _ = self.insert::<X>(Rule::Builtin(builtin));
         }
 
-        pub(crate) fn alias<X: 'static, T: Wire<'static>>(&mut self) {
+        pub fn alias<X: 'static, T: Wire<'static>>(&mut self) {
             if self.insert::<X>(Rule::Alias(TypeId::of::<T>())) {
                 T::schema(self);
             }
