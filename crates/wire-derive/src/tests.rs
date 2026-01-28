@@ -58,11 +58,15 @@ test_ok! {
             let fields = wasefire_wire::internal::Vec::new();
             if rules.struct_::<Self::Type<'static>>(fields) {}
         }
-        fn encode(&self, writer: &mut wasefire_wire::internal::Writer<'wire>) -> wasefire_wire::internal::Result<()> {
+        fn encode(
+            &self, writer: &mut wasefire_wire::internal::Writer<'wire>
+        ) -> wasefire_wire::internal::Result<()> {
             let Foo = self;
             Ok(())
         }
-        fn decode(reader: &mut wasefire_wire::internal::Reader<'wire>) -> wasefire_wire::internal::Result<Self> {
+        fn decode(
+            reader: &mut wasefire_wire::internal::Reader<'wire>
+        ) -> wasefire_wire::internal::Result<Self> {
             Ok(Foo)
         }
     }
@@ -118,6 +122,44 @@ test_ok! {
             let bar = <u8 as wire::internal::Wire>::decode(reader)?;
             let baz = <u32 as wire::internal::Wire>::decode(reader)?;
             Ok(Foo { bar, baz })
+        }
+    }
+}
+
+test_ok! {
+    fn struct_refine_unnamed() {}
+    #[wire(crate = wire, refine = check)]
+    struct Foo(Bar);
+    impl<'wire> wire::internal::Wire<'wire> for Foo {
+        type Type<'_wire> = Foo;
+        fn schema(rules: &mut wire::internal::Rules) {
+            rules.alias::<
+                Self::Type<'static>, <Bar as wire::internal::Wire<'wire>>::Type<'static>>();
+        }
+        fn encode(&self, writer: &mut wire::internal::Writer<'wire>) -> wire::internal::Result<()> {
+            self.0.encode(writer)
+        }
+        fn decode(reader: &mut wire::internal::Reader<'wire>) -> wire::internal::Result<Self> {
+            check(<Bar>::decode(reader)?)
+        }
+    }
+}
+
+test_ok! {
+    fn struct_refine_named() {}
+    #[wire(crate = wire, refine = path::check)]
+    struct Foo<'a> { bar: Bar<'a> }
+    impl<'a> wire::internal::Wire<'a> for Foo<'a> {
+        type Type<'_a> = Foo<'_a>;
+        fn schema(rules: &mut wire::internal::Rules) {
+            rules.alias::<
+                Self::Type<'static>, <Bar<'a> as wire::internal::Wire<'a>>::Type<'static>>();
+        }
+        fn encode(&self, writer: &mut wire::internal::Writer<'a>) -> wire::internal::Result<()> {
+            self.bar.encode(writer)
+        }
+        fn decode(reader: &mut wire::internal::Reader<'a>) -> wire::internal::Result<Self> {
+            path::check(<Bar<'a>>::decode(reader)?)
         }
     }
 }

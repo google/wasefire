@@ -2,6 +2,10 @@
 
 ## 0.1.3-git
 
+### Minor
+
+- Add `refine` attribute for refinement types
+
 ### Patch
 
 - Update dependencies
