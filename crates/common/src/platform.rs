@@ -36,6 +36,13 @@ impl Side {
             Side::B => Side::A,
         }
     }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Side::A => "A",
+            Side::B => "B",
+        }
+    }
 }
 
 impl From<bool> for Side {
@@ -46,10 +53,7 @@ impl From<bool> for Side {
 
 impl core::fmt::Display for Side {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Side::A => write!(f, "A"),
-            Side::B => write!(f, "B"),
-        }
+        self.name().fmt(f)
     }
 }
 

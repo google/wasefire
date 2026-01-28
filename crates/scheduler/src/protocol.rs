@@ -26,7 +26,7 @@ use wasefire_logger as log;
 use wasefire_protocol::applet::AppletId;
 #[cfg(any(feature = "pulley", feature = "wasm"))]
 use wasefire_protocol::applet::ExitStatus;
-use wasefire_protocol::platform::AppletKind;
+use wasefire_protocol::common::AppletKind;
 use wasefire_protocol::{self as service, Api, ApiResult, Request, Service, VERSION};
 
 use crate::Scheduler;

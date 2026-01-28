@@ -261,22 +261,17 @@ struct RunnerOptions {
     /// Runner name.
     name: RunnerName,
 
-    /// Platform name (in hexadecimal form).
+    /// Platform name.
     ///
-    /// Each runner has its own length constraints:
-    /// - Host supports any number of bytes.
-    /// - Nordic supports 24 bytes.
-    /// - OpenTitan supports 0 bytes.
+    /// The name must only contain graphic ASCII characters with a maximum length depending on the
+    /// runner:
+    /// - Host supports any length.
+    /// - Nordic supports at most 24 bytes.
+    /// - OpenTitan supports at most 0 bytes (there's no notion of platform name).
     ///
-    /// The default is the shortest name made of null bytes only.
+    /// The default is the empty string.
     #[clap(long, verbatim_doc_comment)]
-    name_hex: Option<String>,
-
-    /// Platform name (in string form).
-    ///
-    /// See --name-hex for the maximum length. Characters should be ASCII and graphic.
-    #[clap(long, conflicts_with("name_hex"))]
-    name_str: Option<String>,
+    name_: Option<String>,
 
     /// Platform version (big-endian hexadecimal number).
     ///
@@ -632,6 +627,12 @@ impl Runner {
 
 impl RunnerOptions {
     async fn execute(mut self, main: &MainOptions, cmd: Option<RunnerCommand>) -> Result<()> {
+        if let Some(name_) = &self.name_ {
+            ensure!(
+                name_.bytes().all(|x| x.is_ascii_graphic()),
+                "--name must be graphic ASCII characters only"
+            );
+        }
         let mut version = self.version.as_deref().map(Cow::Borrowed);
         ensure!(
             !self.single_sided || matches!(cmd, None | Some(RunnerCommand::Flash(_))),
@@ -714,11 +715,8 @@ impl RunnerOptions {
             if std::env::var_os("PKG_CONFIG_SYSROOT_DIR").is_none() {
                 cargo.env("PKG_CONFIG_SYSROOT_DIR", "/usr/lib/i386-linux-gnu/pkgconfig");
             }
-            if let Some(name_hex) = &self.name_hex {
-                cargo.env("WASEFIRE_HOST_NAME", name_hex);
-            }
-            if let Some(name_str) = &self.name_str {
-                cargo.env("WASEFIRE_HOST_NAME", HEX.encode(name_str.as_bytes()));
+            if let Some(name) = &self.name_ {
+                cargo.env("WASEFIRE_HOST_NAME", HEX.encode(name.as_bytes()));
             }
             if let Some(version) = version.as_deref() {
                 cargo.env("WASEFIRE_HOST_VERSION", version);
@@ -1076,24 +1074,12 @@ impl RunnerOptions {
     }
 
     fn name(&self, len: usize) -> Result<Vec<u8>> {
-        match (&self.name_hex, &self.name_str) {
-            (None, None) => Ok(vec![0; len]),
-            (None, Some(name)) => {
-                ensure!(name.len() <= len, "--name-str must have at most {len} bytes");
-                ensure!(
-                    name.bytes().all(|x| x.is_ascii_graphic()),
-                    "--name-str must only have graphic ASCII characters"
-                );
-                let mut result = vec![0; len];
-                result[.. name.len()].copy_from_slice(name.as_bytes());
-                Ok(result)
-            }
-            (Some(name), None) => {
-                ensure!(name.len() == 2 * len, "--name-hex must have {len} bytes");
-                Ok(HEX.decode(name.as_bytes())?)
-            }
-            (Some(_), Some(_)) => unreachable!(),
+        let mut result = vec![0; len];
+        if let Some(name) = &self.name_ {
+            ensure!(name.len() <= len, "--name must have at most {len} bytes");
+            result[.. name.len()].copy_from_slice(name.as_bytes());
         }
+        Ok(result)
     }
 }
 

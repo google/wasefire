@@ -1,26 +1,19 @@
+code {
+    border: 1px solid #000;
+    border-radius: 3px;
+    padding: 0px 2px 0px 2px;
+}
+
+footer {
+    font-size: 0.75rem;
+    margin-top: 3px;
+}
+
 .box {
     border: 1px solid #000;
     border-radius: 5px;
     padding: 3px 7px 3px 7px;
     margin: 2px;
-}
-
-.error {
-    @extend .box;
-    border-color: #d22;
-    background-color: #fdd;
-}
-
-.running {
-    @extend .box;
-    border-color: #dd2;
-    background-color: #ffd;
-}
-
-.idle {
-    @extend .box;
-    border-color: #2d2;
-    background-color: #dfd;
 }
 
 .devices, .commands {
@@ -42,19 +35,26 @@
     margin-bottom: 5px;
 
     .column {
-        @extend .idle;
         flex: 1;
     }
 }
 
-code {
-    border: 1px solid #99f;
-    border-radius: 3px;
-    background-color: #ddf;
-    padding: 0px 2px 0px 2px;
+.red {
+    border-color: #d22;
+    background-color: #fdd;
 }
 
-footer {
-    font-size: 0.75rem;
-    margin-top: 3px;
+.yellow {
+    border-color: #dd2;
+    background-color: #ffd;
+}
+
+.green {
+    border-color: #2d2;
+    background-color: #dfd;
+}
+
+.blue {
+    border-color: #99f;
+    background-color: #ddf;
 }
