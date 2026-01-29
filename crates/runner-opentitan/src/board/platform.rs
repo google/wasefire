@@ -18,7 +18,7 @@ use earlgrey::LC_CTRL;
 use wasefire_board_api::platform::Api;
 use wasefire_common::platform::Side;
 use wasefire_error::{Code, Error};
-use wasefire_protocol::common::Name;
+use wasefire_protocol::common::{Hexa, Name};
 use wasefire_protocol::platform::SideInfo;
 use wasefire_sync::Lazy;
 
@@ -60,7 +60,7 @@ impl Api for Impl {
     fn running_info() -> SideInfo<'static> {
         static VERSION: Lazy<[u8; 20]> = Lazy::new(|| version(true));
         let name = Name::default();
-        let version = Cow::Borrowed(&VERSION[..]);
+        let version = Hexa(Cow::Borrowed(&VERSION[..]));
         SideInfo { name, version }
     }
 
@@ -70,7 +70,7 @@ impl Api for Impl {
             return Err(Error::world(Code::NotFound));
         }
         let name = Name::default();
-        let version = Cow::Owned(version.to_vec());
+        let version = Hexa(Cow::Owned(version.to_vec()));
         Ok(SideInfo { name, version })
     }
 

@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloc::borrow::Cow;
-
 use wasefire_common::platform::Side;
 use wasefire_error::Error;
 use wasefire_wire::Wire;
 #[cfg(feature = "host")]
 use wasefire_wire::Yoke;
 
-use crate::common::{AppletKind, Name};
+use crate::common::{AppletKind, Hexa, Name};
 
 #[derive(Debug)]
 #[cfg(feature = "host")]
@@ -33,7 +31,7 @@ pub enum DynInfo {
 
 #[cfg(feature = "host")]
 impl DynInfo {
-    pub fn serial(&self) -> &[u8] {
+    pub fn serial(&self) -> &Hexa<'_> {
         match self {
             DynInfo::V3(x) => &x.get().serial,
             DynInfo::V2(x) => &x.get().serial,
@@ -60,7 +58,7 @@ impl DynInfo {
         }
     }
 
-    pub fn running_name(&self) -> Option<&str> {
+    pub fn running_name(&self) -> Option<&Name<'_>> {
         match self {
             DynInfo::V3(x) => Some(&x.get().running_info.name),
             DynInfo::V2(_) => None,
@@ -69,7 +67,7 @@ impl DynInfo {
         }
     }
 
-    pub fn running_version(&self) -> &[u8] {
+    pub fn running_version(&self) -> &Hexa<'_> {
         match self {
             DynInfo::V3(x) => &x.get().running_info.version,
             DynInfo::V2(x) => &x.get().running_version,
@@ -78,49 +76,29 @@ impl DynInfo {
         }
     }
 
-    pub fn opposite_name(&self) -> Option<Result<&str, Error>> {
-        Self::opposite(
-            |x| &x[..],
-            try {
-                match self {
-                    DynInfo::V3(x) => Some(&x.get().opposite_info.as_ref()?.name),
-                    DynInfo::V2(_) => None,
-                    DynInfo::V1(_) => None,
-                    DynInfo::V0(_) => None,
-                }
-            },
-        )
+    pub fn opposite_name(&self) -> Option<Result<&Name<'_>, Error>> {
+        Some(match self {
+            DynInfo::V3(x) => try { &x.get().opposite_info.as_ref()?.name },
+            DynInfo::V2(_) => return None,
+            DynInfo::V1(_) => return None,
+            DynInfo::V0(_) => return None,
+        })
     }
 
-    pub fn opposite_version(&self) -> Option<Result<&[u8], Error>> {
-        Self::opposite(
-            |x| &x[..],
-            try {
-                match self {
-                    DynInfo::V3(x) => Some(&x.get().opposite_info.as_ref()?.version),
-                    DynInfo::V2(x) => Some(x.get().opposite_version.as_ref()?),
-                    DynInfo::V1(x) => Some(x.get().opposite_version.as_ref()?),
-                    DynInfo::V0(_) => None,
-                }
-            },
-        )
-    }
-
-    fn opposite<T, R>(
-        f: impl FnOnce(T) -> R, x: Result<Option<T>, &Error>,
-    ) -> Option<Result<R, Error>> {
-        match x {
-            Ok(None) => None,
-            Ok(Some(x)) => Some(Ok(f(x))),
-            Err(e) => Some(Err(*e)),
-        }
+    pub fn opposite_version(&self) -> Option<Result<&Hexa<'_>, Error>> {
+        Some(match self {
+            DynInfo::V3(x) => try { &x.get().opposite_info.as_ref()?.version },
+            DynInfo::V2(x) => try { x.get().opposite_version.as_ref()? },
+            DynInfo::V1(x) => try { x.get().opposite_version.as_ref()? },
+            DynInfo::V0(_) => return None,
+        })
     }
 }
 
 #[derive(Debug, Wire)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Info<'a> {
-    pub serial: Cow<'a, [u8]>,
+    pub serial: Hexa<'a>,
     pub applet_kind: AppletKind,
     pub running_side: Side,
     pub running_info: SideInfo<'a>,
@@ -139,34 +117,34 @@ pub struct SideInfo<'a> {
     /// Version of the platform.
     ///
     /// This field is interpreted by lexicographical order.
-    pub version: Cow<'a, [u8]>,
+    pub version: Hexa<'a>,
 }
 
 #[derive(Debug, Wire)]
 #[cfg(feature = "host")]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct _Info2<'a> {
-    pub serial: Cow<'a, [u8]>,
+    pub serial: Hexa<'a>,
     pub applet_kind: AppletKind,
     pub running_side: Side,
-    pub running_version: Cow<'a, [u8]>,
-    pub opposite_version: Result<Cow<'a, [u8]>, Error>,
+    pub running_version: Hexa<'a>,
+    pub opposite_version: Result<Hexa<'a>, Error>,
 }
 
 #[derive(Debug, Wire)]
 #[cfg(feature = "host")]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct _Info1<'a> {
-    pub serial: Cow<'a, [u8]>,
+    pub serial: Hexa<'a>,
     pub running_side: Side,
-    pub running_version: Cow<'a, [u8]>,
-    pub opposite_version: Result<Cow<'a, [u8]>, Error>,
+    pub running_version: Hexa<'a>,
+    pub opposite_version: Result<Hexa<'a>, Error>,
 }
 
 #[derive(Debug, Wire)]
 #[cfg(feature = "host")]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct _Info0<'a> {
-    pub serial: Cow<'a, [u8]>,
-    pub version: Cow<'a, [u8]>,
+    pub serial: Hexa<'a>,
+    pub version: Hexa<'a>,
 }

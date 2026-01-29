@@ -23,7 +23,7 @@ use wasefire_common::addr_of_symbol;
 use wasefire_common::platform::Side;
 use wasefire_error::Code;
 use wasefire_logger as log;
-use wasefire_protocol::common::Name;
+use wasefire_protocol::common::{Hexa, Name};
 use wasefire_protocol::platform::SideInfo;
 use wasefire_sync::Once;
 
@@ -48,7 +48,7 @@ impl Api for Impl {
         let side = Self::running_side();
         let header = Header::new(side);
         let name = build_name(header.name());
-        let version = header.version().to_be_bytes().to_vec().into();
+        let version = Hexa(header.version().to_be_bytes().to_vec().into());
         SideInfo { name, version }
     }
 
@@ -62,7 +62,7 @@ impl Api for Impl {
             return Err(Error::world(Code::NotFound));
         }
         let name = build_name(header.name());
-        let version = header.version().to_be_bytes().to_vec().into();
+        let version = Hexa(header.version().to_be_bytes().to_vec().into());
         Ok(SideInfo { name, version })
     }
 
