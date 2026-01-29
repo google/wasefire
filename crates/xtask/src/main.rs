@@ -38,10 +38,10 @@ mod textreview;
 
 #[derive(Parser)]
 struct Flags {
-    #[clap(flatten)]
+    #[command(flatten)]
     options: MainOptions,
 
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: MainCommand,
 }
 
@@ -126,10 +126,10 @@ enum MainCommand {
 
 #[derive(clap::Args)]
 struct Applet {
-    #[clap(flatten)]
+    #[command(flatten)]
     options: AppletOptions,
 
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: Option<AppletCommand>,
 }
 
@@ -249,10 +249,10 @@ impl RunnerName {
 
 #[derive(clap::Args)]
 struct Runner {
-    #[clap(flatten)]
+    #[command(flatten)]
     options: RunnerOptions,
 
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: Option<RunnerCommand>,
 }
 
@@ -372,7 +372,7 @@ struct Update {
     #[arg(skip)]
     step: Option<usize>,
 
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: Option<UpdateCommand>,
 }
 
@@ -391,7 +391,7 @@ struct Flash {
     #[arg(long)]
     artifacts: bool,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     attach: AttachOptions,
 }
 
@@ -406,7 +406,7 @@ struct Attach {
     #[arg(long)]
     log: Option<String>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     options: AttachOptions,
 }
 
@@ -433,7 +433,7 @@ struct Wait {
 
 #[derive(clap::Args)]
 struct Changelog {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: ChangelogCommand,
 }
 
