@@ -82,7 +82,7 @@ pub struct AppletInstall {
     #[arg(value_hint = ValueHint::FilePath)]
     pub applet: PathBuf,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub transfer: Transfer,
 
     #[command(subcommand)]
@@ -151,7 +151,7 @@ impl AppletMetadata {
 #[derive(clap::Parser)]
 #[non_exhaustive]
 pub struct AppletExitStatus {
-    #[clap(flatten)]
+    #[command(flatten)]
     pub wait: Wait,
 
     /// Also exits with the applet exit code.
@@ -284,10 +284,10 @@ pub struct AppletRpc {
     /// Applet identifier in the platform.
     applet: Option<String>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     rpc: Rpc,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     wait: Wait,
 }
 
@@ -456,7 +456,7 @@ pub struct PlatformUpdate {
     #[arg(value_hint = ValueHint::FilePath)]
     pub platform_b: Option<PathBuf>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub transfer: Transfer,
 }
 
@@ -601,7 +601,7 @@ impl PlatformLock {
 /// Calls a vendor RPC on a platform.
 #[derive(clap::Args)]
 pub struct PlatformRpc {
-    #[clap(flatten)]
+    #[command(flatten)]
     rpc: Rpc,
 }
 
@@ -684,15 +684,15 @@ pub struct RustAppletBuild {
     pub profile: String,
 
     /// Optimization level.
-    #[clap(long, short = 'O')]
+    #[arg(long, short = 'O')]
     pub opt_level: Option<OptLevel>,
 
     /// Stack size (ignored for native applets).
-    #[clap(long, default_value = "16384")]
+    #[arg(long, default_value = "16384")]
     pub stack_size: usize,
 
     /// Extra arguments to cargo, e.g. --features=foo.
-    #[clap(last = true)]
+    #[arg(last = true)]
     pub cargo: Vec<String>,
 }
 
@@ -778,7 +778,7 @@ pub struct RustAppletTest {
     crate_dir: PathBuf,
 
     /// Extra arguments to cargo, e.g. --features=foo.
-    #[clap(last = true)]
+    #[arg(last = true)]
     cargo: Vec<String>,
 }
 
@@ -799,10 +799,10 @@ impl RustAppletTest {
 /// Builds and installs a Rust applet from its project.
 #[derive(clap::Parser)]
 pub struct RustAppletInstall {
-    #[clap(flatten)]
+    #[command(flatten)]
     build: RustAppletBuild,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     transfer: Transfer,
 
     #[command(subcommand)]

@@ -26,7 +26,7 @@ use wasefire_cli_tools::action::usb_serial::serialport::SerialPort;
 struct Flags {
     #[command(flatten)]
     options: ConnectionOptions,
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: Command,
 }
 
@@ -49,10 +49,10 @@ enum Command {
         /// The key to encrypt.
         key: usize,
 
-        #[clap(flatten)]
+        #[command(flatten)]
         input: Input,
 
-        #[clap(flatten)]
+        #[command(flatten)]
         output: Output,
     },
 
@@ -61,10 +61,10 @@ enum Command {
         /// The key to decrypt.
         key: usize,
 
-        #[clap(flatten)]
+        #[command(flatten)]
         input: Input,
 
-        #[clap(flatten)]
+        #[command(flatten)]
         output: Output,
     },
 
@@ -73,7 +73,7 @@ enum Command {
         /// The key to import.
         key: usize,
 
-        #[clap(flatten)]
+        #[command(flatten)]
         input: Input,
     },
 
@@ -82,7 +82,7 @@ enum Command {
         /// The key to export.
         key: usize,
 
-        #[clap(flatten)]
+        #[command(flatten)]
         output: Output,
     },
 }
@@ -90,14 +90,14 @@ enum Command {
 #[derive(Debug, clap::Args)]
 struct Input {
     /// The input file (defaults to stdin).
-    #[clap(long)]
+    #[arg(long)]
     input: Option<PathBuf>,
 }
 
 #[derive(Debug, clap::Args)]
 struct Output {
     /// The output file (defaults to stdout).
-    #[clap(long)]
+    #[arg(long)]
     output: Option<PathBuf>,
 }
 

@@ -35,7 +35,7 @@ use wasefire_wire::{Wire, Yoke};
 struct Flags {
     #[command(flatten)]
     options: ConnectionOptions,
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: Command,
 }
 
