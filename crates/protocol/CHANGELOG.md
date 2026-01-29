@@ -15,6 +15,8 @@
 
 ### Minor
 
+- Add `Api::AppletMetadata` and `applet::Metadata` for the metadata of an applet
+- Bump `Api::AppletInstall` tag to make sure `AppletMetadata` is checked
 - Add `common::Name` for graphic ASCII strings
 - Add `platform::DynInfo` to access the platform info regardless of the device version
 - Add `platform::Info` to also return `common::AppletKind` and platform name
@@ -78,4 +80,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 3 -->
+<!-- Increment to skip CHANGELOG.md test: 4 -->
