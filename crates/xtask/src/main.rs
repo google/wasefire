@@ -53,7 +53,7 @@ fn flags() {
 #[derive(clap::Args)]
 struct MainOptions {
     /// Compiles without debugging support.
-    #[clap(long)]
+    #[arg(long)]
     release: bool,
 
     /// Links the applet as a static library to the platform.
@@ -62,33 +62,33 @@ struct MainOptions {
     ///
     /// This option improves performance and footprint but removes the security guarantees provided
     /// by sandboxing the applet using WebAssembly.
-    #[clap(long)]
+    #[arg(long)]
     native: bool,
 
     /// Specifies the native target triple.
     ///
     /// Must match the runner target if both are provided. This implies `--native`.
-    #[clap(long)]
+    #[arg(long)]
     native_target: Option<String>,
 
     /// Compiles applets to Pulley and platforms with a Pulley interpreter.
     ///
     /// This experimental option improves performance for footprint.
-    #[clap(long, conflicts_with_all = ["native", "native_target"])]
+    #[arg(long, conflicts_with_all = ["native", "native_target"])]
     pulley: bool,
 
     /// Prints basic size information.
-    #[clap(long)]
+    #[arg(long)]
     size: bool,
 
     /// Updates footprint.toml with the measured footprint for the provided key.
     ///
     /// The key is a space-separated list of strings.
-    #[clap(long)]
+    #[arg(long)]
     footprint: Option<String>,
 
     /// Whether to run setsid before spawning processes.
-    #[clap(long)]
+    #[arg(long)]
     setsid: bool,
 }
 
@@ -142,19 +142,19 @@ struct AppletOptions {
     name: String,
 
     /// Cargo profile.
-    #[clap(long)]
+    #[arg(long)]
     profile: Option<String>,
 
     /// Cargo features.
-    #[clap(long)]
+    #[arg(long)]
     features: Vec<String>,
 
     /// Optimization level.
-    #[clap(long, short = 'O')]
+    #[arg(long, short = 'O')]
     opt_level: Option<action::OptLevel>,
 
     /// Stack size.
-    #[clap(long, default_value = "16384")]
+    #[arg(long, default_value = "16384")]
     stack_size: usize,
 }
 
@@ -270,7 +270,7 @@ struct RunnerOptions {
     /// - OpenTitan supports at most 0 bytes (there's no notion of platform name).
     ///
     /// The default is the empty string.
-    #[clap(long, verbatim_doc_comment)]
+    #[arg(long, verbatim_doc_comment)]
     name_: Option<String>,
 
     /// Platform version (big-endian hexadecimal number).
@@ -281,25 +281,25 @@ struct RunnerOptions {
     /// - OpenTitan needs 20 bytes that are not all 0xff. The bytes are the major version (4
     ///   bytes), the minor version (4 bytes), the security version (4 bytes), and the timestamp (8
     ///   bytes).
-    #[clap(long, verbatim_doc_comment)]
+    #[arg(long, verbatim_doc_comment)]
     version: Option<String>,
 
     /// Host platform serial.
     ///
     /// This is only used for the host runner. It must be an hexadecimal byte sequence.
-    #[clap(long)]
+    #[arg(long)]
     serial: Option<String>,
 
     /// Cargo no-default-features.
-    #[clap(long)]
+    #[arg(long)]
     no_default_features: bool,
 
     /// Cargo features.
-    #[clap(long)]
+    #[arg(long)]
     features: Vec<String>,
 
     /// Optimization level (0, 1, 2, 3, s, z).
-    #[clap(long, short = 'O')]
+    #[arg(long, short = 'O')]
     opt_level: Option<action::OptLevel>,
 
     /// Board selection.
@@ -308,38 +308,38 @@ struct RunnerOptions {
     /// - Host doesn't have a notion of board.
     /// - Nordic supports devkit (default), dongle, and makerdiary.
     /// - OpenTitan doesn't have a notion of board yet.
-    #[clap(long, verbatim_doc_comment)]
+    #[arg(long, verbatim_doc_comment)]
     board: Option<String>,
 
     /// Disables A/B platform partitioning.
     ///
     /// This is only supported on Nordic. This can be useful for debugging when a platform is too
     /// large. As a consequence, it is not possible to update such a platform.
-    #[clap(long)]
+    #[arg(long)]
     single_sided: bool,
 
     /// Prints the command lines to use GDB.
-    #[clap(long)]
+    #[arg(long)]
     gdb: bool,
 
     /// Defmt or log filter.
-    #[clap(long)]
+    #[arg(long)]
     log: Option<String>,
 
     /// Measures bloat after building.
     // TODO: Make this a subcommand taking additional options for cargo bloat.
-    #[clap(long)]
+    #[arg(long)]
     measure_bloat: bool,
 
     /// Show the (top N) stack sizes of the firmware.
-    #[clap(long)]
+    #[arg(long)]
     stack_sizes: Option<Option<usize>>,
 
     /// Allocates <MEMORY_PAGE_COUNT> pages for the WASM module.
     ///
     /// Supported values are numbers between 0 and 9 inclusive, i.e. single digit. The default when
     /// missing is 1 page.
-    #[clap(long)]
+    #[arg(long)]
     memory_page_count: Option<usize>,
 }
 
@@ -353,7 +353,7 @@ enum RunnerCommand {
 
     /// Produces the target/wasefire/platform{,_a,_b}.bin files for platform update.
     Bundle {
-        #[clap(skip)]
+        #[arg(skip)]
         step: usize,
     },
 }
@@ -366,10 +366,10 @@ struct Update {
     transfer: action::Transfer,
 
     /// Updates both sides of the runner.
-    #[clap(long)]
+    #[arg(long)]
     both: bool,
 
-    #[clap(skip)]
+    #[arg(skip)]
     step: Option<usize>,
 
     #[clap(subcommand)]
@@ -388,7 +388,7 @@ struct Flash {
     ///
     /// This is different from the bundle command which produces artifacts for the purpose of
     /// updating the platform. The artifacts here are meant for flashing the platform.
-    #[clap(long)]
+    #[arg(long)]
     artifacts: bool,
 
     #[clap(flatten)]
@@ -403,7 +403,7 @@ struct Attach {
     /// Log filter for Host runner.
     ///
     /// This is for host only, because the defmt filter is used at compile-time.
-    #[clap(long)]
+    #[arg(long)]
     log: Option<String>,
 
     #[clap(flatten)]
@@ -415,7 +415,7 @@ struct AttachOptions {
     /// Additional flags for `defmt-print run`.
     ///
     /// This is only for the OpenTitan runner so far.
-    #[clap(long)]
+    #[arg(long)]
     defmt_print: Vec<String>,
 
     /// Arguments to forward to the runner.

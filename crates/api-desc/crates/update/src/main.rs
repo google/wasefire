@@ -22,11 +22,11 @@ use wasefire_applet_api_desc::Api;
 #[derive(Parser)]
 struct Flags {
     /// Output file to generate the API [default: stdout].
-    #[clap(long)]
+    #[arg(long)]
     output: Option<String>,
 
     /// Language for which to generate the API.
-    #[clap(long)]
+    #[arg(long)]
     lang: Lang,
 }
 

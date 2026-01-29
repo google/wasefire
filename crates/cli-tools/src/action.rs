@@ -684,15 +684,15 @@ pub struct RustAppletBuild {
     pub profile: String,
 
     /// Optimization level.
-    #[clap(long, short = 'O')]
+    #[arg(long, short = 'O')]
     pub opt_level: Option<OptLevel>,
 
     /// Stack size (ignored for native applets).
-    #[clap(long, default_value = "16384")]
+    #[arg(long, default_value = "16384")]
     pub stack_size: usize,
 
     /// Extra arguments to cargo, e.g. --features=foo.
-    #[clap(last = true)]
+    #[arg(last = true)]
     pub cargo: Vec<String>,
 }
 
@@ -778,7 +778,7 @@ pub struct RustAppletTest {
     crate_dir: PathBuf,
 
     /// Extra arguments to cargo, e.g. --features=foo.
-    #[clap(last = true)]
+    #[arg(last = true)]
     cargo: Vec<String>,
 }
 

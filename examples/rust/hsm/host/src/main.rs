@@ -90,14 +90,14 @@ enum Command {
 #[derive(Debug, clap::Args)]
 struct Input {
     /// The input file (defaults to stdin).
-    #[clap(long)]
+    #[arg(long)]
     input: Option<PathBuf>,
 }
 
 #[derive(Debug, clap::Args)]
 struct Output {
     /// The output file (defaults to stdout).
-    #[clap(long)]
+    #[arg(long)]
     output: Option<PathBuf>,
 }
 
