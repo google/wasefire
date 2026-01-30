@@ -239,6 +239,12 @@ impl defmt::Format for Error {
 
 impl core::error::Error for Error {}
 
+impl From<&Error> for Error {
+    fn from(x: &Error) -> Self {
+        *x
+    }
+}
+
 #[cfg(feature = "std")]
 impl From<std::io::Error> for Error {
     fn from(_: std::io::Error) -> Self {
@@ -275,5 +281,10 @@ mod tests {
     fn new_ok() {
         assert_eq!(Error::new(Space::User, Code::InvalidLength), Error(0x010003));
         assert_eq!(Error::new(0xab, 0x1234u16), Error(0xab1234));
+    }
+
+    fn _as_ref_ok() -> Result<(), Error> {
+        let &() = Err(Error::new(0, 0)).as_ref()?;
+        Ok(())
     }
 }

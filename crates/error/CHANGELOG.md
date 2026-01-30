@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Implement `From<&Error>` for `Error` to make `res.as_ref()?` work
 - Add `serde` feature to implement `Serialize` and `Deserialize` for `Error`
 
 ### Patch
