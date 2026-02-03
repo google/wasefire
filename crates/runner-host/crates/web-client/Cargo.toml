@@ -9,13 +9,13 @@ edition = "2024"
 [dependencies]
 gloo-utils = "0.2.0"
 log = "0.4.29"
-serde_json = "1.0.148"
-wasm-bindgen = "0.2.106"
+serde_json = "1.0.149"
+wasm-bindgen = "0.2.108"
 wasm-logger = "0.2.0"
 web-common = { path = "../web-common" }
-web-sys = "0.3.83"
+web-sys = "0.3.85"
 yew = { version = "0.22", features = ["csr"] }
-yew-hooks = "0.4.0"
+yew-hooks = "0.4.2"
 
 [lints]
 clippy.mod-module-files = "warn"

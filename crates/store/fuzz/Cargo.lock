@@ -36,7 +36,6 @@ name = "fuzz"
 version = "0.1.0"
 dependencies = [
  "libfuzzer-sys",
- "rand_core",
  "rand_pcg",
  "strum",
  "wasefire-store",
@@ -133,9 +132,9 @@ checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
 
 [[package]]
 name = "rand_core"
-version = "0.9.3"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99d9a13982dcf210057a8a78572b2217b667c3beacbf3a0d8b454f6f82837d38"
+checksum = "76afc826de14238e6e8c374ddcc1fa19e374fd8dd986b0d2af0d02377261d83c"
 
 [[package]]
 name = "rand_pcg"

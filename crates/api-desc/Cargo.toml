@@ -12,11 +12,11 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-data-encoding = { version = "2.9.0", default-features = false }
-data-encoding-macro = { version = "0.1.18", default-features = false }
-proc-macro2 = { version = "1.0.105", default-features = false }
-quote = { version = "1.0.43", default-features = false }
-syn = { version = "2.0.113", default-features = false, features = ["printing"] }
+data-encoding = { version = "2.10.0", default-features = false }
+data-encoding-macro = { version = "0.1.19", default-features = false }
+proc-macro2 = { version = "1.0.106", default-features = false }
+quote = { version = "1.0.44", default-features = false }
+syn = { version = "2.0.114", default-features = false, features = ["printing"] }
 
 [features]
 # API features.
