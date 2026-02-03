@@ -7,7 +7,7 @@ publish = false
 edition = "2024"
 
 [dependencies]
-bytemuck = { version = "1.24.0", default-features = false }
+bytemuck = { version = "1.25.0", default-features = false }
 critical-section = "1.2.0"
 crypto-common = { version = "0.1.7", default-features = false }
 defmt = { version = "1.0.1", optional = true }
@@ -15,7 +15,7 @@ digest = { version = "0.10.7", default-features = false }
 earlgrey = { path = "crates/earlgrey" }
 embedded-alloc = "0.7.0"
 riscv = { version = "0.16.0", features = ["critical-section-single-hart"] }
-riscv-rt = { version = "0.17.0", features = ["single-hart", "v-trap"] }
+riscv-rt = { version = "0.17.1", features = ["single-hart", "v-trap"] }
 syscall-test = { path = "../board/crates/syscall-test", optional = true }
 typenum = { version = "1.19.0", default-features = false }
 usb-device = { version = "0.3.2", default-features = false }

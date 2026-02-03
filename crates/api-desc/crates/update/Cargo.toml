@@ -8,7 +8,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
-clap = { version = "4.5.54", features = ["derive"] }
+clap = { version = "4.5.56", features = ["derive"] }
 wasefire-applet-api-desc = { path = "../.." }
 
 [lints]

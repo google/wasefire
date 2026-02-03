@@ -18,11 +18,11 @@ features = ["full-api", "std"]
 aead = { version = "0.5.2", default-features = false, optional = true }
 aes = { version = "0.8.4", default-features = false, optional = true }
 aes-gcm = { version = "0.10.3", default-features = false, optional = true }
-bytemuck = { version = "1.24.0", default-features = false }
+bytemuck = { version = "1.25.0", default-features = false }
 cbc = { version = "0.1.2", default-features = false, optional = true }
 ccm = { version = "0.5.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.7", default-features = false, optional = true }
-data-encoding = { version = "2.9.0", default-features = false, features = ["alloc"] }
+data-encoding = { version = "2.10.0", default-features = false, features = ["alloc"] }
 defmt = { version = "1.0.1", default-features = false, optional = true }
 derive-where = { version = "1.6.0", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, optional = true }
