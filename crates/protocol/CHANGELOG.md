@@ -11,13 +11,13 @@
 - Deprecate `Api::PlatformInfo` to `Api::_PlatformInfo1`
 - Remove `Send` bound on `Connection`
 - Change `Connection{,Ext}` to take `&self` instead of `&mut self`
-- Use `Cow<'a, [u8]>` instead of `&'a [u8]` to support `serde`
+- Use `{Name,Hexa}<'a, [u8]>` instead of `&'a [u8]` to support `serde`
 
 ### Minor
 
 - Add `Api::AppletMetadata` and `applet::Metadata` for the metadata of an applet
 - Bump `Api::AppletInstall` tag to make sure `AppletMetadata` is checked
-- Add `common::Name` for graphic ASCII strings
+- Add `common::{Name,Hexa}` for graphic ASCII strings and hexadecimal numbers
 - Add `platform::DynInfo` to access the platform info regardless of the device version
 - Add `platform::Info` to also return `common::AppletKind` and platform name
 - Add `platform::SideInfo` to group platform side information like name and version
@@ -80,4 +80,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 4 -->
+<!-- Increment to skip CHANGELOG.md test: 5 -->

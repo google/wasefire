@@ -106,7 +106,7 @@ fn process_event_<B: Board>(
         Api::PlatformInfo(()) => {
             use wasefire_board_api::platform::Api as _;
             reply::<B, service::PlatformInfo>(service::platform::Info {
-                serial: board::Platform::<B>::serial(),
+                serial: wasefire_protocol::common::Hexa(board::Platform::<B>::serial()),
                 #[cfg(feature = "wasm")]
                 applet_kind: AppletKind::Wasm,
                 #[cfg(feature = "pulley")]

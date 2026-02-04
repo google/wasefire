@@ -83,4 +83,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 20 -->
+<!-- Increment to skip CHANGELOG.md test: 22 -->

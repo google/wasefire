@@ -31,6 +31,7 @@ use tokio::process::Command;
 use tokio::sync::OnceCell;
 use wasefire_cli_tools::error::root_cause_is;
 use wasefire_cli_tools::{action, changelog, cmd, fs};
+use wasefire_protocol::common::{Hexa, Name};
 
 mod footprint;
 mod opentitan;
@@ -271,7 +272,7 @@ struct RunnerOptions {
     ///
     /// The default is the empty string.
     #[arg(long, verbatim_doc_comment)]
-    name_: Option<String>,
+    name_: Option<Name<'static>>,
 
     /// Platform version (big-endian hexadecimal number).
     ///
@@ -281,14 +282,16 @@ struct RunnerOptions {
     /// - OpenTitan needs 20 bytes that are not all 0xff. The bytes are the major version (4
     ///   bytes), the minor version (4 bytes), the security version (4 bytes), and the timestamp (8
     ///   bytes).
+    ///
+    /// The default is the next version of the current platform in case of an update, or zero.
     #[arg(long, verbatim_doc_comment)]
-    version: Option<String>,
+    version: Option<Hexa<'static>>,
 
     /// Host platform serial.
     ///
     /// This is only used for the host runner. It must be an hexadecimal byte sequence.
     #[arg(long)]
-    serial: Option<String>,
+    serial: Option<Hexa<'static>>,
 
     /// Cargo no-default-features.
     #[arg(long)]
@@ -627,13 +630,6 @@ impl Runner {
 
 impl RunnerOptions {
     async fn execute(mut self, main: &MainOptions, cmd: Option<RunnerCommand>) -> Result<()> {
-        if let Some(name_) = &self.name_ {
-            ensure!(
-                name_.bytes().all(|x| x.is_ascii_graphic()),
-                "--name must be graphic ASCII characters only"
-            );
-        }
-        let mut version = self.version.as_deref().map(Cow::Borrowed);
         ensure!(
             !self.single_sided || matches!(cmd, None | Some(RunnerCommand::Flash(_))),
             "unsupported runner command for single-sided platforms"
@@ -674,7 +670,7 @@ impl RunnerOptions {
                 };
                 match next_step {
                     None => {
-                        if version.is_none() {
+                        if self.version.is_none() {
                             let mut next_version = info.running_version().to_vec();
                             for byte in next_version.iter_mut().rev() {
                                 *byte = byte.wrapping_add(1);
@@ -682,12 +678,12 @@ impl RunnerOptions {
                                     break;
                                 }
                             }
-                            version = Some(Cow::Owned(HEX.encode(&next_version)));
+                            self.version = Some(Hexa(Cow::Owned(next_version)));
                         }
                         step = running_side.opposite() as usize;
                     }
                     Some(next_step) => {
-                        let version = HEX.decode(version.as_ref().unwrap().as_bytes())?;
+                        let version = self.version.as_ref().unwrap();
                         step = *next_step;
                         ensure!(info.running_version() == version, "first update failed");
                         ensure!(running_side as usize == 1 - step, "first update failed");
@@ -718,11 +714,11 @@ impl RunnerOptions {
             if let Some(name) = &self.name_ {
                 cargo.env("WASEFIRE_HOST_NAME", HEX.encode(name.as_bytes()));
             }
-            if let Some(version) = version.as_deref() {
-                cargo.env("WASEFIRE_HOST_VERSION", version);
+            if let Some(version) = &self.version {
+                cargo.env("WASEFIRE_HOST_VERSION", version.to_string());
             }
             if let Some(serial) = &self.serial {
-                cargo.env("WASEFIRE_HOST_SERIAL", serial);
+                cargo.env("WASEFIRE_HOST_SERIAL", serial.to_string());
             }
             if fs::exists("target/wasefire/web").await {
                 fs::remove_dir_all("target/wasefire/web").await?;
@@ -824,10 +820,10 @@ impl RunnerOptions {
         let elf = self.name.elf(main).await;
         if self.name == RunnerName::Nordic {
             let name = self.name(24)?;
-            let version = version.as_deref().unwrap_or("00000000");
-            ensure!(version.len() == 8, "--version must be a big-endian hexadecimal u32");
-            ensure!(version != "ffffffff", "--version must be smaller than u32::MAX");
-            let version = u32::from_be_bytes(HEX.decode(version.as_bytes())?[..].try_into()?);
+            let mut version = self.version.clone().unwrap_or_default();
+            version.extend(4);
+            ensure!(version < Hexa((&[0xff; 4]).into()), "--version must be smaller than ffffffff");
+            let version = u32::from_be_bytes(version[.. 4].try_into()?);
             let mut content = fs::read(&elf).await?;
             let pos = section_offset(&content, ".header")?;
             content[pos ..][.. 4].copy_from_slice(&version.to_le_bytes());
@@ -836,14 +832,14 @@ impl RunnerOptions {
         }
         if self.name == RunnerName::OpenTitan {
             let _name = self.name(0)?;
-            let mut version = match version.as_deref() {
-                Some(x) => HEX.decode(x.as_bytes())?,
-                None => vec![0; 20],
-            };
-            ensure!(version.len() == 20, "--version must be 20 bytes in hexadecimal");
-            ensure!(version != [0xff; 20], "--version must not be all 0xff");
+            let mut version = self.version.clone().unwrap_or_default();
+            version.extend(20);
+            ensure!(
+                version < Hexa((&[0xff; 20]).into()),
+                "--version must be smaller than [0xff; 20]"
+            );
             let len = [4, 4, 4, 8].into_iter().fold(0, |pos, len| {
-                version[pos ..][.. len].reverse();
+                version.to_mut()[pos ..][.. len].reverse();
                 pos + len
             });
             let mut content = fs::read(&elf).await?;
@@ -923,7 +919,6 @@ impl RunnerOptions {
                     }
                 }
                 let cmd = RunnerCommand::Update(Update { step: Some(1 - step), ..cmd_update });
-                self.version = Some(version.unwrap().into_owned());
                 return Box::pin(self.execute(main, Some(cmd))).await;
             }
             RunnerCommand::Flash(x) => x,

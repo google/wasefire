@@ -17,7 +17,7 @@ use alloc::borrow::Cow;
 use wasefire_error::{Code, Error};
 use wasefire_wire::Wire;
 
-use crate::common::Name;
+use crate::common::{Hexa, Name};
 
 #[derive(Debug, Default, Clone, Wire)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -26,7 +26,7 @@ pub struct Metadata<'a> {
     pub name: Name<'a>,
 
     /// Version of the applet.
-    pub version: Cow<'a, [u8]>,
+    pub version: Hexa<'a>,
 }
 
 impl<'a> Metadata<'a> {

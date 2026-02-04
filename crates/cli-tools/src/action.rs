@@ -20,7 +20,6 @@ use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow, bail, ensure};
 use clap::{ValueEnum, ValueHint};
-use data_encoding::HEXLOWER as HEX;
 use rusb::GlobalContext;
 use tokio::fs::File;
 use tokio::io::{AsyncBufRead, AsyncBufReadExt as _, AsyncWrite, AsyncWriteExt, BufReader};
@@ -141,8 +140,8 @@ impl AppletMetadata {
     pub async fn run(self, device: &DynDevice) -> Result<()> {
         let AppletMetadata {} = self;
         let metadata = device.call::<service::AppletMetadata>(applet::AppletId).await?;
-        println!("   name: {}", &*metadata.get().name);
-        println!("version: {}", HEX.encode_display(&metadata.get().version));
+        println!("   name: {}", metadata.get().name);
+        println!("version: {}", metadata.get().version);
         Ok(())
     }
 }
@@ -388,7 +387,7 @@ impl PlatformInfo {
     pub async fn run(self, device: &DynDevice) -> Result<()> {
         let PlatformInfo {} = self;
         let info = device.platform_info().await?;
-        println!("  serial: {}", HEX.encode_display(info.serial()));
+        println!("  serial: {}", info.serial());
         if let Some(applet_kind) = info.applet_kind() {
             println!("  applet: {}", applet_kind.name());
         }
@@ -398,7 +397,7 @@ impl PlatformInfo {
         if let Some(running_name) = info.running_name() {
             println!("    name: {running_name}");
         }
-        println!(" version: {}", HEX.encode_display(info.running_version()));
+        println!(" version: {}", info.running_version());
         if let Some(version) = info.opposite_version() {
             let version = match version {
                 Ok(x) => x,
@@ -408,7 +407,7 @@ impl PlatformInfo {
             if let Some(name) = info.opposite_name() {
                 println!("    name: {}", name.unwrap());
             }
-            println!(" version: {}", HEX.encode_display(version));
+            println!(" version: {}", version);
         }
         Ok(())
     }

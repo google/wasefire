@@ -19,8 +19,8 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use anyhow::{Result, bail, ensure};
-use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use rusb::{Device, GlobalContext};
+use wasefire_protocol::common::Hexa;
 use wasefire_protocol::{Connection, DynDevice};
 
 #[derive(Clone)]
@@ -33,12 +33,9 @@ pub(crate) enum Protocol {
 #[derive(Clone)]
 pub(crate) enum ProtocolUsb {
     Auto,
-    Serial(Hex),
+    Serial(Hexa<'static>),
     BusDev { bus: u8, dev: u8 },
 }
-
-#[derive(Clone, PartialEq, Eq)]
-pub(crate) struct Hex(pub(crate) Vec<u8>);
 
 impl Protocol {
     pub(crate) async fn connect(&self, timeout: Duration) -> Result<DynDevice> {
@@ -80,7 +77,7 @@ impl ProtocolUsb {
         }
     }
 
-    fn matches(&self, device: &Device<GlobalContext>, serial: &Hex) -> bool {
+    fn matches(&self, device: &Device<GlobalContext>, serial: &Hexa<'_>) -> bool {
         match self {
             ProtocolUsb::Auto => true,
             ProtocolUsb::Serial(x) => x == serial,
@@ -148,23 +145,10 @@ impl Display for ProtocolUsb {
     }
 }
 
-impl Display for Hex {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        HEX.encode(&self.0).fmt(f)
-    }
-}
-
-impl FromStr for Hex {
-    type Err = data_encoding::DecodeError;
-    fn from_str(input: &str) -> std::result::Result<Self, Self::Err> {
-        Ok(Hex(HEX.decode(input.as_bytes())?))
-    }
-}
-
 pub(crate) async fn serial(
     connection: &wasefire_protocol_usb::Connection<GlobalContext>,
-) -> Result<Hex> {
+) -> Result<Hexa<'static>> {
     let desc = connection.device().device_descriptor()?;
     let serial = connection.handle().read_serial_number_string_ascii(&desc)?;
-    Ok(Hex(HEX.decode(serial.as_bytes())?))
+    Hexa::from_str(&serial)
 }
