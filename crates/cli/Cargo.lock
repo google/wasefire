@@ -2400,7 +2400,6 @@ dependencies = [
  "anyhow",
  "cargo_metadata",
  "clap",
- "data-encoding",
  "flate2",
  "humantime",
  "indicatif",

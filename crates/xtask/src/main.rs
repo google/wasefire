@@ -839,7 +839,7 @@ impl RunnerOptions {
                 "--version must be smaller than [0xff; 20]"
             );
             let len = [4, 4, 4, 8].into_iter().fold(0, |pos, len| {
-                version.0.to_mut()[pos ..][.. len].reverse();
+                version.to_mut()[pos ..][.. len].reverse();
                 pos + len
             });
             let mut content = fs::read(&elf).await?;

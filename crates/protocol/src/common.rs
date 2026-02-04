@@ -14,7 +14,7 @@
 
 use alloc::borrow::Cow;
 use core::cmp::Ordering;
-use core::ops::Deref;
+use core::ops::{Deref, DerefMut};
 
 use wasefire_error::{Code, Error};
 use wasefire_wire::Wire;
@@ -71,10 +71,16 @@ impl<'a> Name<'a> {
 pub struct Hexa<'a>(pub Cow<'a, [u8]>);
 
 impl<'a> Deref for Hexa<'a> {
-    type Target = [u8];
+    type Target = Cow<'a, [u8]>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<'a> DerefMut for Hexa<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -202,10 +208,10 @@ mod tests {
         fn test(input: &[u8], len: usize, expected: &[u8]) {
             let mut actual = Hexa(input.into());
             actual.extend(len);
-            assert_eq!(&*actual, expected);
+            assert_eq!(&**actual, expected);
             let mut actual = Hexa(input.to_vec().into());
             actual.extend(len);
-            assert_eq!(&*actual, expected);
+            assert_eq!(&**actual, expected);
         }
         test(&[], 0, &[]);
         test(&[], 2, &[0, 0]);
