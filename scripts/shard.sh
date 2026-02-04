@@ -16,12 +16,11 @@ shard_init() {
   _SHARD_INDEX=${1:-0}
   _SHARD_COUNT=${2:-1}
   echo "Initialize sharding for $_SHARD_INDEX modulo $_SHARD_COUNT"
-  _shard_index=0
+  _shard_index=-1
 }
 
 shard_next() {
-  local index=$(( _shard_index % _SHARD_COUNT ))
-  [ $index -eq $_SHARD_INDEX ] && echo "Current shard is $_shard_index"
   _shard_index=$(( _shard_index + 1 ))
-  [ $index -eq $_SHARD_INDEX ]
+  [ $(( _shard_index % _SHARD_COUNT )) -eq $_SHARD_INDEX ] || return
+  echo "Current shard is $_shard_index"
 }
