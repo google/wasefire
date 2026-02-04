@@ -140,18 +140,10 @@ impl<'a> Hexa<'a> {
         if len <= self.len() {
             return;
         }
-        match &mut self.0 {
-            Cow::Borrowed(old) => {
-                let mut new = alloc::vec![0; len];
-                new[len - old.len() ..].copy_from_slice(old);
-                self.0 = Cow::Owned(new);
-            }
-            Cow::Owned(cur) => {
-                let mid = cur.len();
-                cur.resize(len, 0);
-                cur.rotate_left(mid);
-            }
-        }
+        let cur = self.0.to_mut();
+        let mid = cur.len();
+        cur.resize(len, 0);
+        cur.rotate_left(mid);
     }
 }
 

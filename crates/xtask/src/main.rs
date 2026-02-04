@@ -823,7 +823,7 @@ impl RunnerOptions {
             let mut version = self.version.clone().unwrap_or_default();
             version.extend(4);
             ensure!(version < Hexa((&[0xff; 4]).into()), "--version must be smaller than ffffffff");
-            let version = u32::from_be_bytes(version[..].try_into()?);
+            let version = u32::from_be_bytes(version[.. 4].try_into()?);
             let mut content = fs::read(&elf).await?;
             let pos = section_offset(&content, ".header")?;
             content[pos ..][.. 4].copy_from_slice(&version.to_le_bytes());
