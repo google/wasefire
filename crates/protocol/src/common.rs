@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloc::borrow::Cow;
+use alloc::borrow::{Cow, ToOwned};
 use core::cmp::Ordering;
 use core::ops::{Deref, DerefMut};
 
@@ -59,6 +59,10 @@ impl<'a> Name<'a> {
         } else {
             Err(Error::user(Code::InvalidArgument))
         }
+    }
+
+    pub fn static_clone(&self) -> Name<'static> {
+        Name(Cow::Owned(<str as ToOwned>::to_owned(self)))
     }
 }
 
