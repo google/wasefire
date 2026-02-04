@@ -270,7 +270,8 @@ struct RunnerOptions {
     /// - Nordic supports at most 24 bytes.
     /// - OpenTitan supports at most 0 bytes (there's no notion of platform name).
     ///
-    /// The default is the empty string.
+    /// The default is the same as the current platform in case of an update, otherwise it is the
+    /// empty string.
     #[arg(long, verbatim_doc_comment)]
     name_: Option<Name<'static>>,
 
@@ -283,7 +284,8 @@ struct RunnerOptions {
     ///   bytes), the minor version (4 bytes), the security version (4 bytes), and the timestamp (8
     ///   bytes).
     ///
-    /// The default is the next version of the current platform in case of an update, or zero.
+    /// The default is the next version of the current platform in case of an update, otherwise it
+    /// is the empty string (encoding the value zero).
     #[arg(long, verbatim_doc_comment)]
     version: Option<Hexa<'static>>,
 
@@ -670,6 +672,9 @@ impl RunnerOptions {
                 };
                 match next_step {
                     None => {
+                        if self.name_.is_none() {
+                            self.name_ = info.running_name().map(|x| x.static_clone());
+                        }
                         if self.version.is_none() {
                             let mut next_version = info.running_version().to_vec();
                             for byte in next_version.iter_mut().rev() {
