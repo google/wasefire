@@ -148,6 +148,7 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
             ];
             let applet = [
                 service::AppletExitStatus::input(page.setter(), device.clone()),
+                service::AppletMetadata::input(page.setter(), device.clone()),
                 service::AppletReboot::input(page.setter(), device.clone()),
                 service::AppletInstall::input(page.setter(), device.clone()),
             ];
@@ -193,11 +194,8 @@ macro_rules! unwrap {
         match $x {
             Ok(x) => x,
             Err(e) => {
-                let (error, device) = match e.downcast_ref::<wasefire_error::Error>() {
-                    None => (e.to_string(), None),
-                    Some(e) => (e.to_string(), Some($d.clone())),
-                };
-                $p.set(Page::Error { error, device });
+                let device = e.is::<wasefire_error::Error>().then(|| $d.clone());
+                $p.set(Page::Error { error: e.to_string(), device });
                 return Default::default();
             }
         }
@@ -242,32 +240,38 @@ impl Command for service::PlatformInfo {
 }
 
 fn platform_info(info: wasefire_protocol::platform::DynInfo) -> Html {
-    let mut kvs: Vec<(&str, Result<Cow<str>, wasefire_error::Error>)> = Vec::new();
-    kvs.push(("Serial number", Ok(HEX.encode(info.serial()).into())));
+    let mut rows = Vec::new();
+    rows.push(("Serial number", Ok(HEX.encode(info.serial()).into())));
     if let Some(applet) = info.applet_kind() {
-        kvs.push(("Applet kind", Ok(applet.name().into())));
+        rows.push(("Applet kind", Ok(applet.name().into())));
     }
     if let Some(side) = info.running_side() {
-        kvs.push(("Running side", Ok(side.name().into())));
+        rows.push(("Running side", Ok(side.name().into())));
     }
     if let Some(name) = info.running_name() {
-        kvs.push(("Running name", Ok(name.to_string().into())));
+        rows.push(("Running name", Ok(name.to_string().into())));
     }
-    kvs.push(("Running version", Ok(HEX.encode(info.running_version()).into())));
+    rows.push(("Running version", Ok(HEX.encode(info.running_version()).into())));
     if let Some(name) = info.opposite_name() {
-        kvs.push(("Opposite name", name.map(|x| x.to_string().into())));
+        rows.push(("Opposite name", name.map(|x| x.to_string().into())));
     }
     if let Some(version) = info.opposite_version() {
-        kvs.push(("Opposite version", version.map(|x| HEX.encode(x).into())));
+        rows.push(("Opposite version", version.map(|x| HEX.encode(x).into())));
     }
-    let elements = kvs.into_iter().map(|(k, v)| {
+    render_table("Platform info", rows)
+}
+
+fn render_table(
+    title: &str, rows: Vec<(&str, Result<Cow<'static, str>, wasefire_error::Error>)>,
+) -> Html {
+    let rows = rows.into_iter().map(|(k, v)| {
         let v = match v {
             Ok(v) => html!(<code class="blue">{ v }</code>),
             Err(e) => html!(<code class="red">{ format!("{e}") }</code>),
         };
         html!(<li>{ k }{ ": " }{ v }</li>)
     });
-    html!(<>{ "Platform info:" }<ul>{ for elements }</ul></>)
+    html!(<>{ title }{ ":" }<ul>{ for rows }</ul></>)
 }
 
 impl Command for service::PlatformReboot {
@@ -434,6 +438,30 @@ impl Command for service::AppletExitStatus {
             });
         });
         html!(<li><button onclick={click}>{ "Read" }</button>{ " applet status" }</li>)
+    }
+}
+
+impl Command for service::AppletMetadata {
+    fn input(page: UseStateSetter<Page>, device: Device) -> Html {
+        if !Self::VERSIONS.contains(device.version()).unwrap() {
+            return html!();
+        }
+        let click = Callback::from(move |_| {
+            page.set(Page::Feedback { content: "Requesting applet metadata...".into() });
+            let page = page.clone();
+            let device = device.clone();
+            spawn_local(async move {
+                let metadata = device.call::<service::AppletMetadata>(AppletId).await;
+                let metadata = unwrap!(page, device, metadata);
+                let rows = vec![
+                    ("Name", Ok(metadata.get().name.to_string().into())),
+                    ("Version", Ok(metadata.get().version.to_string().into())),
+                ];
+                let content = render_table("Applet metadata", rows);
+                page.set(Page::Result { content, device: Some(device) });
+            });
+        });
+        html!(<li><button onclick={click}>{ "Read" }</button>{ " applet metadata" }</li>)
     }
 }
 
