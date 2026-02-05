@@ -135,18 +135,6 @@ impl Schema<'static> {
         let mut git = Command::new("git");
         git.args(["show", &format!("{base}:./{SIDE}.bin")]);
         let data = cmd::output(&mut git).await?.stdout.into_boxed_slice();
-        // TODO: Remove everything from HERE ...
-        #[cfg(feature = "host")]
-        {
-            if let Ok(x) = wasefire_wire::decode_yoke(data.clone()) {
-                return Ok(x);
-            }
-            let mut data = data.into_vec();
-            wasefire_wire::encode_suffix(&mut data, &View::Enum(Vec::new()))?;
-            return Ok(wasefire_wire::decode_yoke(data.into_boxed_slice())?);
-        }
-        #[cfg(feature = "device")]
-        // TODO: ... to HERE. This is a one-time migration step.
         Ok(wasefire_wire::decode_yoke(data)?)
     }
 
