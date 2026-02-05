@@ -137,6 +137,7 @@ impl<'a> Hexa<'a> {
     pub fn reborrow(&self) -> Hexa<'_> {
         Hexa(<&[u8]>::into(self))
     }
+
     /// Strips the leading zeroes.
     pub fn shrink(&self) -> &[u8] {
         let mut result = &*self.0;

@@ -28,7 +28,7 @@ pub const MAGIC: [u8; 4] = [0x3a, 0x5e, 0xf1, 0x2e];
 
 /// Bundle file extension.
 ///
-/// This is meant to read as WaseFire Bundle.
+/// This is meant to read as Wasefire File Bundle.
 pub const EXTENSION: &str = "wfb";
 
 /// Bundle content.
@@ -57,7 +57,7 @@ impl<'a> Bundle<'a> {
             return Err(Error::user(Code::InvalidLength));
         };
         if magic != MAGIC {
-            return Err(Error::user(Code::InvalidArgument));
+            return Err(Error::user(Code::InvalidState));
         }
         wasefire_wire::decode(content)
     }
