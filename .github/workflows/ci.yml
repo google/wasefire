@@ -52,9 +52,7 @@ jobs:
           x    artifacts  pull_request  push  schedule
           x    footprint  pull_request  push
           echo "checks=[$CHECKS]" >> $GITHUB_OUTPUT
-          # TODO: Re-enable after the release succeeds.
-          release=1047
-          # release=$(git log -1 --pretty=%s | sed -n 's/^Release all crates (#\([0-9]*\))$/\1/p')
+          release=$(git log -1 --pretty=%s | sed -n 's/^Release all crates (#\([0-9]*\))$/\1/p')
           [[ $GITHUB_EVENT_NAME == push ]] || release=
           [[ $GITHUB_REF == refs/heads/main ]] || release=
           echo release=${release:-0} >> $GITHUB_OUTPUT
