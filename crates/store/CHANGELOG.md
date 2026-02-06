@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.2-git
+## 0.3.2
 
 ### Patch
 
@@ -81,4 +81,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 2 -->
+<!-- Increment to skip CHANGELOG.md test: 0 -->
