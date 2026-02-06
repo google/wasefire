@@ -166,6 +166,13 @@ impl<'a> Applet<'a> {
         Ok(result)
     }
 
+    /// Returns the kind of the applet.
+    pub fn kind(&self) -> AppletKind {
+        match self {
+            Applet::V0(x) => x.kind,
+        }
+    }
+
     /// Returns the data of the applet.
     pub fn data(&self) -> &[u8] {
         match self {

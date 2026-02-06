@@ -103,8 +103,11 @@ pub enum AppletInstallWait {
 impl AppletInstall {
     pub async fn run(self, device: &DynDevice) -> Result<()> {
         let AppletInstall { applet, transfer, wait } = self;
-        let applet =
-            Bundle::decode(&fs::read(applet).await?)?.applet()?.payload(device.version())?;
+        let applet = fs::read(applet).await?;
+        let applet = Bundle::decode(&applet)?.applet()?;
+        let info = device.platform_info().await?;
+        ensure!(info.applet_kind().is_none_or(|x| x == applet.kind()), "applet kind mismatch");
+        let applet = applet.payload(device.version())?;
         transfer
             .run::<service::AppletInstall2>(device, applet, "Installed", None::<fn(_) -> _>)
             .await?;
