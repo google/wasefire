@@ -342,15 +342,10 @@ fn applet_install(page: UseStateSetter<Page>, device: Device) -> Html {
             let page = page.clone();
             let device = device.clone();
             spawn_local(async move {
-                let content = match gloo::file::futures::read_as_bytes(&file).await {
+                let content = match applet_payload(&device, &file).await {
                     Ok(x) => x,
                     Err(error) => return page.set(Page::error_device(error, &device)),
                 };
-                let content =
-                    match try { Bundle::decode(&content)?.applet()?.payload(device.version())? } {
-                        Result::<_, wasefire_error::Error>::Ok(x) => x,
-                        Err(error) => return page.set(Page::error_device(error, &device)),
-                    };
                 if transfer::<service::AppletInstall2>(&page, &device, &content, None).await {
                     let content = "Applet installed. ".into();
                     page.set(Page::Result { content, device: Some(device) });
@@ -362,6 +357,20 @@ fn applet_install(page: UseStateSetter<Page>, device: Device) -> Html {
         <button onclick={install}>{ "Install" }</button>{ " applet:" }
         <ul class="commands"><li><input ref={file} type="file" /></li></ul>
     </>}
+}
+
+async fn applet_payload(device: &Device, file: &File) -> Result<Vec<u8>, String> {
+    let content = gloo::file::futures::read_as_bytes(file).await.map_err(|x| x.to_string())?;
+    let applet = Bundle::decode(&content).map_err(|x| x.to_string())?;
+    let applet = applet.applet().map_err(|x| x.to_string())?;
+    let info = device.platform_info().await.map_err(|x| x.to_string())?;
+    if let Some(platform) = info.applet_kind() {
+        let applet = applet.kind();
+        if platform != applet {
+            return Err(format!("The applet is {applet} but the platform expects {platform}."));
+        }
+    }
+    applet.payload(device.version()).map_err(|x| x.to_string())
 }
 
 async fn transfer<
