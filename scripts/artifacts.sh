@@ -81,7 +81,7 @@ for target in $TARGETS; do
 done
 
 # We increment the version at each release.
-VERSION=0000
+VERSION=0001
 FLAGS="--name=github-$DATE --version=$VERSION"
 i "Build a simple Nordic platform for each supported board"
 yes | x cargo xtask --release runner nordic $FLAGS flash --artifacts
