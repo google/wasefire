@@ -4,7 +4,7 @@
 
 ### Patch
 
-- No change
+- Remove `range` from crates.io keywords
 
 ## 0.1.0
 
