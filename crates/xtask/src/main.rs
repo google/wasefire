@@ -1239,6 +1239,7 @@ fn section_offset(elf: &[u8], name: &str) -> Result<usize> {
 }
 
 async fn produce_hex(elf: &str, hex: &str) -> Result<()> {
+    fs::create_parent(hex).await?;
     let mut objcopy = wrap_command().await?;
     objcopy.args(["rust-objcopy", "--output-target=ihex", elf, hex]);
     cmd::execute(&mut objcopy).await

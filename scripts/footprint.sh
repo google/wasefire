@@ -22,6 +22,8 @@ set -e
 
 [ -e footprint.toml ] && e "footprint.toml already exists"
 
+[ "$1" = --cleanup ] && CLEANUP=y
+
 APPLET=exercises/part-7-sol
 RUNNER=nordic
 
@@ -41,3 +43,10 @@ measure debug wasm fast
 measure release wasm fast
 measure release native fast
 measure release native small
+
+if [ "$CLEANUP" = y ]; then
+  i "Cleanup generated footprint"
+  x rm footprint.toml
+else
+  d "Footprint generated"
+fi

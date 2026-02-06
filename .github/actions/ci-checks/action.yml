@@ -51,6 +51,9 @@ runs:
     - if: ${{ inputs.check == 'book' }}
       run: ./scripts/ci-book.sh
       shell: bash
+    - if: ${{ inputs.check == 'artifacts' }}
+      run: ./scripts/artifacts.sh --cleanup
+      shell: bash
     - if: ${{ inputs.check == 'footprint' }}
       name: Compute footprint
       uses: ./.github/actions/ci-footprint
