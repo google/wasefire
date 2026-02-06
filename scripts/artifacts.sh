@@ -20,6 +20,8 @@ set -e
 
 # This script generates release artifacts.
 
+[ "$1" = --cleanup ] && CLEANUP=y
+
 DATE=$(git log -1 --pretty=%cs)
 TOOLCHAIN=$(sed -n 's/"/`/g;s/^channel = //p' rust-toolchain.toml)
 i "Generate notes.txt"
@@ -104,3 +106,10 @@ cp_artifact target/wasefire/platform.hex platform-nordic-makerdiary.hex \
 x cargo xtask --release runner nordic --board=makerdiary $FLAGS bundle
 cp_artifact wasefire/platform.wfb platform-nordic-makerdiary.wfb \
   'Wasefire platform update (nRF52840 MDK USB Dongle)'
+
+if [ "$CLEANUP" = y ]; then
+  i "Cleanup generated artifacts"
+  x rm -r artifacts.txt artifacts/ notes.txt wasefire/
+else
+  d "Artifacts generated"
+fi

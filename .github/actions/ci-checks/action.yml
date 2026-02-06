@@ -52,7 +52,7 @@ runs:
       run: ./scripts/ci-book.sh
       shell: bash
     - if: ${{ inputs.check == 'artifacts' }}
-      run: ./scripts/artifacts.sh && rm -r artifacts.txt artifacts/ notes.txt wasefire/
+      run: ./scripts/artifacts.sh --cleanup
       shell: bash
     - if: ${{ inputs.check == 'footprint' }}
       name: Compute footprint

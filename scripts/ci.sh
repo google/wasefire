@@ -36,10 +36,8 @@ x ./scripts/ci-runners.sh
 x ./scripts/ci-tests.sh
 x ./scripts/hwci.sh host
 x ./scripts/ci-book.sh
-x ./scripts/artifacts.sh
-x rm -r artifacts.txt artifacts/ notes.txt wasefire/
-x ./scripts/footprint.sh
-x rm footprint.toml
+x ./scripts/artifacts.sh --cleanup
+x ./scripts/footprint.sh --cleanup
 git diff --exit-code || e 'Modified files'
 [ -z "$(git status -s | tee /dev/stderr)" ] || e 'Untracked files'
 d "CI passed"
