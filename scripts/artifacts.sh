@@ -88,7 +88,7 @@ yes | x cargo xtask --release runner nordic $FLAGS flash --artifacts
 cp_artifact target/wasefire/platform.hex platform-nordic-devkit.hex \
   'Wasefire platform bootstrap (nRF52840 DK)'
 x cargo xtask --release runner nordic $FLAGS bundle
-cp_artifact target/wasefire/platform.wfb platform-nordic-devkit.wfb \
+cp_artifact wasefire/platform.wfb platform-nordic-devkit.wfb \
   'Wasefire platform update (nRF52840 DK)'
 yes | x cargo xtask --release runner nordic --board=dongle $FLAGS flash --artifacts
 cp_artifact target/wasefire/platform.hex platform-nordic-dongle-1.hex \
@@ -96,11 +96,11 @@ cp_artifact target/wasefire/platform.hex platform-nordic-dongle-1.hex \
 cp_artifact target/wasefire/bootloader.hex platform-nordic-dongle-2.hex \
   'Wasefire platform bootstrap (nRF52840 Dongle) step 2'
 x cargo xtask --release runner nordic --board=dongle $FLAGS bundle
-cp_artifact target/wasefire/platform.wfb platform-nordic-dongle.wfb \
+cp_artifact wasefire/platform.wfb platform-nordic-dongle.wfb \
   'Wasefire platform update (nRF52840 Dongle)'
 yes | x cargo xtask --release runner nordic --board=makerdiary $FLAGS flash --artifacts
 cp_artifact target/wasefire/platform.hex platform-nordic-makerdiary.hex \
   'Wasefire platform bootstrap (nRF52840 MDK USB Dongle)'
 x cargo xtask --release runner nordic --board=makerdiary $FLAGS bundle
-cp_artifact target/wasefire/platform.wfb platform-nordic-makerdiary.wfb \
+cp_artifact wasefire/platform.wfb platform-nordic-makerdiary.wfb \
   'Wasefire platform update (nRF52840 MDK USB Dongle)'

@@ -49,9 +49,12 @@ jobs:
             x hw-host-$i  pull_request  push  schedule
           done
           x         book  pull_request  push  schedule
+          x    artifacts  pull_request  push  schedule
           x    footprint  pull_request  push
           echo "checks=[$CHECKS]" >> $GITHUB_OUTPUT
-          release=$(git log -1 --pretty=%s | sed -n 's/^Release all crates (#\([0-9]*\))$/\1/p')
+          # TODO: Re-enable after the release succeeds.
+          release=1047
+          # release=$(git log -1 --pretty=%s | sed -n 's/^Release all crates (#\([0-9]*\))$/\1/p')
           [[ $GITHUB_EVENT_NAME == push ]] || release=
           [[ $GITHUB_REF == refs/heads/main ]] || release=
           echo release=${release:-0} >> $GITHUB_OUTPUT
@@ -115,6 +118,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Restore the cache
+        uses: ./.github/actions/ci-cache
       - run: ./scripts/artifacts.sh
       - uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
         id: attest

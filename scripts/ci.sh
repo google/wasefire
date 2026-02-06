@@ -36,6 +36,8 @@ x ./scripts/ci-runners.sh
 x ./scripts/ci-tests.sh
 x ./scripts/hwci.sh host
 x ./scripts/ci-book.sh
+x ./scripts/artifacts.sh
+x rm -r artifacts.txt artifacts/ notes.txt wasefire/
 x ./scripts/footprint.sh
 x rm footprint.toml
 git diff --exit-code || e 'Modified files'
