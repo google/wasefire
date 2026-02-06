@@ -50,9 +50,13 @@ done
 
 [ -z "$(git status -s)" ] || e "Repository is not clean"
 
-i "Remove all -git suffixes (if any) and reset CHANGELOG tests"
+i "Remove all -git suffixes (if any)"
 sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})
+i "Reset CHANGELOG tests"
 sed -i 's/\(^<!-- .* test\): [0-9]* -->$/\1: 0 -->/' $(git ls-files '*/CHANGELOG.md')
+i "Bump the platform version for artifacts"
+version=$(printf '%04x' $(( 0x$(sed -n 's/^VERSION=//p' scripts/artifacts.sh) + 1 )))
+sed -Ei 's/^VERSION=.*$/VERSION='$version'/' scripts/artifacts.sh
 if [ -n "$(git status -s)" ]; then
   i "Commit release"
   git commit -aqm'Release all crates'

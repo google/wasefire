@@ -29,6 +29,10 @@ See the [changelog] for the list of changes in this release.
 This release was built with the $TOOLCHAIN toolchain. Applets may need to be built with the same
 toolchain. The CLI will install and use this toolchain if \`rustup\` is installed.
 
+You can use the CLI or the [Web UI] to update your platform using an appropriate "Wasefire platform
+update" file. Otherwise, you can flash a platform from scratch using an appropriate "Wasefire
+platform bootstrap" file.
+
 You can use the following command to check your downloaded assets:
 
     sha256sum --ignore-missing --check sha256sum.txt
@@ -38,6 +42,7 @@ You can use one of the following commands to verify a downloaded asset:
     gh attestation verify --repo=google/wasefire ASSET_PATH
     gh attestation verify --owner=google --bundle=attestation.intoto.jsonl ASSET_PATH
 
+[Web UI]: https://google.github.io/wasefire/webui
 [changelog]: https://github.com/google/wasefire/blob/main/docs/releases/$DATE.md
 EOF
 
@@ -75,15 +80,27 @@ for target in $TARGETS; do
   cp_artifact '' wasefire-$target.tar.gz "Wasefire CLI ($target)"
 done
 
+# We increment the version at each release.
+VERSION=0000
+FLAGS="--name=github-$DATE --version=$VERSION"
 i "Build a simple Nordic platform for each supported board"
-yes | x cargo xtask --release runner nordic flash --artifacts
+yes | x cargo xtask --release runner nordic $FLAGS flash --artifacts
 cp_artifact target/wasefire/platform.hex platform-nordic-devkit.hex \
-  'Wasefire platform (nRF52840 DK)'
-yes | x cargo xtask --release runner nordic --board=dongle flash --artifacts
+  'Wasefire platform bootstrap (nRF52840 DK)'
+x cargo xtask --release runner nordic $FLAGS bundle
+cp_artifact target/wasefire/platform.wfb platform-nordic-devkit.wfb \
+  'Wasefire platform update (nRF52840 DK)'
+yes | x cargo xtask --release runner nordic --board=dongle $FLAGS flash --artifacts
 cp_artifact target/wasefire/platform.hex platform-nordic-dongle-1.hex \
-  'Wasefire platform (nRF52840 Dongle) step 1'
+  'Wasefire platform bootstrap (nRF52840 Dongle) step 1'
 cp_artifact target/wasefire/bootloader.hex platform-nordic-dongle-2.hex \
-  'Wasefire platform (nRF52840 Dongle) step 2'
-yes | x cargo xtask --release runner nordic --board=makerdiary flash --artifacts
+  'Wasefire platform bootstrap (nRF52840 Dongle) step 2'
+x cargo xtask --release runner nordic --board=dongle $FLAGS bundle
+cp_artifact target/wasefire/platform.wfb platform-nordic-dongle.wfb \
+  'Wasefire platform update (nRF52840 Dongle)'
+yes | x cargo xtask --release runner nordic --board=makerdiary $FLAGS flash --artifacts
 cp_artifact target/wasefire/platform.hex platform-nordic-makerdiary.hex \
-  'Wasefire platform (nRF52840 MDK USB Dongle)'
+  'Wasefire platform bootstrap (nRF52840 MDK USB Dongle)'
+x cargo xtask --release runner nordic --board=makerdiary $FLAGS bundle
+cp_artifact target/wasefire/platform.wfb platform-nordic-makerdiary.wfb \
+  'Wasefire platform update (nRF52840 MDK USB Dongle)'
