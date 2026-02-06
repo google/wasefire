@@ -1014,7 +1014,6 @@ dependencies = [
  "wasefire-error",
  "wasefire-protocol",
  "wasefire-protocol-usb",
- "wasefire-wire",
  "web-sys",
  "webusb-web",
  "yew",

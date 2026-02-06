@@ -24,7 +24,7 @@ use wasefire_common::platform::Side;
 use wasefire_error::Code;
 use wasefire_logger as log;
 use wasefire_protocol::common::{Hexa, Name};
-use wasefire_protocol::platform::SideInfo;
+use wasefire_protocol::platform::SideInfo0;
 use wasefire_sync::Once;
 
 pub mod update;
@@ -44,15 +44,15 @@ impl Api for Impl {
         header::running_side().unwrap()
     }
 
-    fn running_info() -> SideInfo<'static> {
+    fn running_info() -> SideInfo0<'static> {
         let side = Self::running_side();
         let header = Header::new(side);
         let name = build_name(header.name());
         let version = Hexa(header.version().to_be_bytes().to_vec().into());
-        SideInfo { name, version }
+        SideInfo0 { name, version }
     }
 
-    fn opposite_info() -> Result<SideInfo<'static>, Error> {
+    fn opposite_info() -> Result<SideInfo0<'static>, Error> {
         if addr_of_symbol!(__sother) == addr_of_symbol!(__eother) {
             return Err(Error::world(Code::NotEnough));
         }
@@ -63,7 +63,7 @@ impl Api for Impl {
         }
         let name = build_name(header.name());
         let version = Hexa(header.version().to_be_bytes().to_vec().into());
-        Ok(SideInfo { name, version })
+        Ok(SideInfo0 { name, version })
     }
 
     fn reboot() -> Result<!, Error> {

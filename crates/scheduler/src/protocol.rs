@@ -103,9 +103,9 @@ fn process_event_<B: Board>(
             scheduler.protocol.0 = Tunnel { applet_id, delimiter };
             reply::<B, service::AppletTunnel>(())
         }
-        Api::PlatformInfo(()) => {
+        Api::PlatformInfo3(()) => {
             use wasefire_board_api::platform::Api as _;
-            reply::<B, service::PlatformInfo>(service::platform::Info {
+            reply::<B, service::PlatformInfo3>(service::platform::Info3 {
                 serial: wasefire_protocol::common::Hexa(board::Platform::<B>::serial()),
                 #[cfg(feature = "wasm")]
                 applet_kind: AppletKind::Wasm,
@@ -127,10 +127,10 @@ fn process_event_<B: Board>(
             process_transfer::<B, service::PlatformUpdate>(scheduler, request)?
         }
         #[cfg(feature = "native")]
-        Api::AppletInstall(_) => return Err(Error::world(Code::NotImplemented)),
+        Api::AppletInstall2(_) => return Err(Error::world(Code::NotImplemented)),
         #[cfg(any(feature = "pulley", feature = "wasm"))]
-        Api::AppletInstall(request) => {
-            process_transfer::<B, service::AppletInstall>(scheduler, request)?
+        Api::AppletInstall2(request) => {
+            process_transfer::<B, service::AppletInstall2>(scheduler, request)?
         }
         Api::AppletExitStatus(applet_id) => {
             use crate::applet::Slot;
@@ -164,14 +164,14 @@ fn process_event_<B: Board>(
             reply::<B, service::AppletReboot>(());
         }
         #[cfg(feature = "native")]
-        Api::AppletMetadata(_) => return Err(Error::world(Code::NotImplemented)),
+        Api::AppletMetadata0(_) => return Err(Error::world(Code::NotImplemented)),
         #[cfg(any(feature = "pulley", feature = "wasm"))]
-        Api::AppletMetadata(applet_id) => {
+        Api::AppletMetadata0(applet_id) => {
             let service::applet::AppletId = applet_id;
             let Some(metadata) = &scheduler.applet_metadata else {
                 return Err(Error::user(Code::NotFound));
             };
-            reply::<B, service::AppletMetadata>(metadata.clone());
+            reply::<B, service::AppletMetadata0>(metadata.clone());
         }
         #[cfg(not(feature = "_test"))]
         _ => return Err(Error::internal(Code::NotImplemented)),
@@ -227,7 +227,7 @@ impl<B: Board> TransferKind<B> for service::PlatformUpdate {
 }
 
 #[cfg(any(feature = "pulley", feature = "wasm"))]
-impl<B: Board> TransferKind<B> for service::AppletInstall {
+impl<B: Board> TransferKind<B> for service::AppletInstall2 {
     type Api = board::applet::Install<B>;
     fn start(scheduler: &mut Scheduler<B>) {
         scheduler.stop_applet(ExitStatus::Kill);

@@ -103,6 +103,12 @@ enum Action {
         action: action::AppletRpc,
     },
 
+    #[group(id = "Action::BundleInfo")]
+    BundleInfo {
+        #[command(flatten)]
+        action: action::BundleInfo,
+    },
+
     /// Starts a host platform.
     Host(Host),
 
@@ -296,6 +302,7 @@ async fn main() -> Result<()> {
         Action::AppletExitStatus { options, action } => action.run(&options.connect().await?).await,
         Action::AppletReboot { options, action } => action.run(&options.connect().await?).await,
         Action::AppletRpc { options, action } => action.run(&options.connect().await?).await,
+        Action::BundleInfo { action } => action.run().await,
         Action::Host(x) => x.run().await?,
         Action::PlatformClearStore { options, action } => {
             action.run(&options.connect().await?).await
@@ -307,7 +314,7 @@ async fn main() -> Result<()> {
         Action::PlatformLock { options, action } => action.run(&options.connect().await?).await,
         Action::PlatformRpc { options, action } => action.run(&options.connect().await?).await,
         Action::RustAppletNew(x) => x.run().await,
-        Action::RustAppletBuild(x) => x.run().await,
+        Action::RustAppletBuild(x) => x.run().await.map(|_| ()),
         Action::RustAppletTest(x) => x.run().await,
         Action::RustAppletInstall { options, action } => {
             action.run(&options.connect().await?).await

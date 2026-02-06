@@ -21,6 +21,8 @@ use anyhow::{Context, Result, bail, ensure};
 use tokio::process::Command;
 use wasefire_cli_tools::{cmd, fs};
 use wasefire_error::Error;
+#[cfg(feature = "host")]
+use wasefire_protocol::bundle::Bundle;
 use wasefire_protocol::{Api, DESCRIPTORS, Descriptor, Request, Response, VERSION};
 use wasefire_wire::schema::{View, ViewEnum, ViewFields};
 use wasefire_wire::{Wire, Yoke};
@@ -35,6 +37,8 @@ async fn main() -> Result<()> {
     check(&old.get().request, &new.request).context("checking request")?;
     check(&old.get().response, &new.response).context("checking response")?;
     check_versions(&old.get().versions, &new.versions).context("checking versions")?;
+    #[cfg(feature = "host")]
+    check(&old.get().bundle, &new.bundle).context("checking bundle")?;
     Ok(())
 }
 
@@ -104,6 +108,8 @@ struct Schema<'a> {
     request: View<'a>,  // Api<Request>
     response: View<'a>, // Api<Response>
     versions: Versions,
+    #[cfg(feature = "host")]
+    bundle: View<'a>, // Bundle
 }
 
 #[derive(Debug, Wire)]
@@ -119,6 +125,8 @@ impl Schema<'static> {
             request: View::new::<Api<Request>>(),
             response: View::new::<Api<Response>>(),
             versions: Versions { version: VERSION, descriptors: DESCRIPTORS.to_vec() },
+            #[cfg(feature = "host")]
+            bundle: View::new::<Bundle>(),
         }
     }
 
@@ -127,6 +135,18 @@ impl Schema<'static> {
         let mut git = Command::new("git");
         git.args(["show", &format!("{base}:./{SIDE}.bin")]);
         let data = cmd::output(&mut git).await?.stdout.into_boxed_slice();
+        // TODO: Remove everything from HERE ...
+        #[cfg(feature = "host")]
+        {
+            if let Ok(x) = wasefire_wire::decode_yoke(data.clone()) {
+                return Ok(x);
+            }
+            let mut data = data.into_vec();
+            wasefire_wire::encode_suffix(&mut data, &View::Enum(Vec::new()))?;
+            return Ok(wasefire_wire::decode_yoke(data.into_boxed_slice())?);
+        }
+        #[cfg(feature = "device")]
+        // TODO: ... to HERE. This is a one-time migration step.
         Ok(wasefire_wire::decode_yoke(data)?)
     }
 
@@ -171,6 +191,16 @@ impl Schema<'static> {
         }
         assert!(response.next().is_none());
         assert!(descriptor.next().is_none());
+        #[cfg(feature = "host")]
+        {
+            writeln!(&mut output, "bundle:")?;
+            for bundle in get_enum(&self.bundle).context("in bundle")?.iter() {
+                let name = bundle.0;
+                let tag = bundle.1;
+                let bundle = ViewFields(&bundle.2);
+                writeln!(&mut output, "{tag} {name}: {bundle}")?;
+            }
+        }
         fs::write(format!("{SIDE}.txt"), &output).await
     }
 }

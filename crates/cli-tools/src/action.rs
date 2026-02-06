@@ -25,6 +25,8 @@ use tokio::fs::File;
 use tokio::io::{AsyncBufRead, AsyncBufReadExt as _, AsyncWrite, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use wasefire_common::platform::Side;
+use wasefire_protocol::bundle::Bundle;
+use wasefire_protocol::common::{AppletKind, Hexa, Name};
 use wasefire_protocol::{self as service, ConnectionExt as _, DynDevice, applet};
 use wasefire_wire::{self as wire, Yoke};
 
@@ -101,12 +103,10 @@ pub enum AppletInstallWait {
 impl AppletInstall {
     pub async fn run(self, device: &DynDevice) -> Result<()> {
         let AppletInstall { applet, transfer, wait } = self;
-        let mut applet = fs::read(applet).await?;
-        let len = applet.len() as u32;
-        wasefire_wire::encode_suffix(&mut applet, &applet::Metadata::default())?;
-        applet.extend_from_slice(&len.to_be_bytes());
+        let applet =
+            Bundle::decode(&fs::read(applet).await?)?.applet()?.payload(device.version())?;
         transfer
-            .run::<service::AppletInstall>(device, applet, "Installed", None::<fn(_) -> _>)
+            .run::<service::AppletInstall2>(device, applet, "Installed", None::<fn(_) -> _>)
             .await?;
         match wait {
             Some(AppletInstallWait::Wait { mut action }) => {
@@ -127,7 +127,7 @@ impl AppletUninstall {
         let AppletUninstall {} = self;
         let transfer = Transfer { dry_run: false };
         transfer
-            .run::<service::AppletInstall>(device, Vec::new(), "Erased", None::<fn(_) -> _>)
+            .run::<service::AppletInstall2>(device, Vec::new(), "Erased", None::<fn(_) -> _>)
             .await
     }
 }
@@ -139,7 +139,7 @@ pub struct AppletMetadata {}
 impl AppletMetadata {
     pub async fn run(self, device: &DynDevice) -> Result<()> {
         let AppletMetadata {} = self;
-        let metadata = device.call::<service::AppletMetadata>(applet::AppletId).await?;
+        let metadata = device.call::<service::AppletMetadata0>(applet::AppletId).await?;
         println!("   name: {}", metadata.get().name);
         println!("version: {}", metadata.get().version);
         Ok(())
@@ -660,6 +660,14 @@ pub struct RustAppletBuild {
     #[arg(long)]
     pub prod: bool,
 
+    /// The name of the applet.
+    #[arg(long, default_value_t)]
+    pub name: Name<'static>,
+
+    /// The version of the applet.
+    #[arg(long, default_value_t)]
+    pub version: Hexa<'static>,
+
     /// Builds a native applet, e.g. --native=thumbv7em-none-eabi.
     #[arg(long, value_name = "TARGET")]
     pub native: Option<String>,
@@ -673,10 +681,8 @@ pub struct RustAppletBuild {
     #[arg(value_hint = ValueHint::DirPath)]
     pub crate_dir: PathBuf,
 
-    /// Copies the final artifacts to this directory.
-    #[arg(long, value_name = "DIRECTORY", default_value = "wasefire")]
-    #[arg(value_hint = ValueHint::DirPath)]
-    pub output_dir: PathBuf,
+    #[command(flatten)]
+    pub output: BundleOutput,
 
     /// Cargo profile.
     #[arg(long, default_value = "release")]
@@ -696,7 +702,7 @@ pub struct RustAppletBuild {
 }
 
 impl RustAppletBuild {
-    pub async fn run(self) -> Result<()> {
+    pub async fn run(self) -> Result<PathBuf> {
         let metadata = metadata(&self.crate_dir).await?;
         let package = &metadata.packages[0];
         let target_dir =
@@ -748,23 +754,20 @@ impl RustAppletBuild {
         cmd::execute(&mut cargo).await?;
         if let Some(target) = &self.native {
             let src = target_dir.join(format!("{target}/{profile}/lib{name}.a"));
-            let dst = self.output_dir.join("libapplet.a");
+            let dst = self.output.path("libapplet.a").await?;
             if fs::has_changed(&src, &dst).await? {
-                fs::copy(src, dst).await?;
+                fs::copy(src, &dst).await?;
             }
-            return Ok(());
+            return Ok(dst);
         }
         let src = target_dir.join(format!("wasm32-unknown-unknown/{profile}/{name}.wasm"));
-        let opt = self.output_dir.join("applet-opt.wasm");
-        optimize_wasm(src, self.opt_level, &opt).await?;
-        if self.pulley {
-            let dst = self.output_dir.join("applet.pulley");
-            compile_pulley(opt, dst).await?;
-        } else {
-            let dst = self.output_dir.join("applet.wasm");
-            compute_sidetable(opt, dst).await?;
-        }
-        Ok(())
+        let kind = if self.pulley { AppletKind::Pulley } else { AppletKind::Wasm };
+        // We don't know if the name or version changed since last time, so we always create a new
+        // bundle. This should be fast enough to not matter (and no further computation should
+        // depend on the bundle file).
+        self.output
+            .bundle_applet(src, target_dir, self.opt_level, kind, self.name, self.version)
+            .await
     }
 }
 
@@ -811,10 +814,103 @@ pub struct RustAppletInstall {
 impl RustAppletInstall {
     pub async fn run(self, device: &DynDevice) -> Result<()> {
         let RustAppletInstall { build, transfer, wait } = self;
-        let output = build.output_dir.clone();
-        build.run().await?;
-        let install = AppletInstall { applet: output.join("applet.wasm"), transfer, wait };
+        let applet = build.run().await?;
+        let install = AppletInstall { applet, transfer, wait };
         install.run(device).await
+    }
+}
+
+/// Prints information about a bundle.
+#[derive(clap::Args)]
+pub struct BundleInfo {
+    /// Path to the bundle to inspect.
+    #[arg(value_hint = ValueHint::FilePath)]
+    pub bundle: PathBuf,
+}
+
+impl BundleInfo {
+    pub async fn run(self) -> Result<()> {
+        let BundleInfo { bundle } = self;
+        match Bundle::decode(&fs::read(bundle).await?)? {
+            Bundle::Platform0(x) => {
+                println!("Platform (version 0):");
+                println!("- Name: {}", x.metadata.name);
+                println!("- Version: {}", x.metadata.version);
+                println!("- Side A: {} bytes", x.side_a.len());
+                println!("- Side B: {} bytes", x.side_b.len());
+            }
+            Bundle::Applet0(x) => {
+                println!("Applet (version 0):");
+                println!("- Kind: {}", x.kind);
+                println!("- Name: {}", x.metadata.name);
+                println!("- Version: {}", x.metadata.version);
+                println!("- Data: {} bytes", x.data.len());
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(clap::Parser)]
+pub struct BundleOutput {
+    /// Where to write the bundle file.
+    ///
+    /// If the path does not exist and ends with a slash, it is assumed to be a directory. If the
+    /// path is a directory, the file is written to that directory with some default name.
+    #[arg(long, value_hint = ValueHint::AnyPath, default_value = "wasefire/")]
+    pub output: PathBuf,
+
+    /// Do not make parent directories as needed.
+    #[arg(long)]
+    pub no_parents: bool,
+}
+
+impl BundleOutput {
+    /// Returns the path of the bundle file given its default name.
+    pub async fn path(&self, name: impl AsRef<Path>) -> Result<PathBuf> {
+        let mut path = self.output.clone();
+        let is_dir = if fs::exists(&path).await {
+            fs::metadata(&path).await?.is_dir()
+        } else {
+            path.has_trailing_sep()
+        };
+        if is_dir {
+            path.push(name);
+        }
+        Ok(path)
+    }
+
+    /// Writes the bundle file given its default name and content.
+    ///
+    /// Returns the path of the written file.
+    pub async fn write(&self, name: impl AsRef<Path>, content: &[u8]) -> Result<PathBuf> {
+        let path = self.path(name).await?;
+        if !self.no_parents {
+            fs::create_parent(&path).await?;
+        }
+        fs::write(&path, content).await?;
+        Ok(path)
+    }
+
+    /// Bundles and writes a WASM module as an applet.
+    ///
+    /// Returns the path of the written file.
+    pub async fn bundle_applet(
+        &self, wasm: impl AsRef<Path>, target: impl AsRef<Path>, opt_level: Option<OptLevel>,
+        kind: AppletKind, name: Name<'_>, version: Hexa<'_>,
+    ) -> Result<PathBuf> {
+        let opt = target.as_ref().join("wasefire/applet-opt.wasm");
+        optimize_wasm(wasm.as_ref(), opt_level, &opt).await?;
+        let dst = target.as_ref().join(format!("wasefire/applet.{kind}"));
+        match kind {
+            AppletKind::Wasm => compute_sidetable(opt, &dst).await?,
+            AppletKind::Pulley => compile_pulley(opt, &dst).await?,
+            AppletKind::Native => bail!("cannot bundle a native applet"),
+        }
+        let metadata = applet::Metadata0 { name, version };
+        let data = tokio::fs::read(dst).await?.into();
+        let bundle = Bundle::Applet0(wasefire_protocol::bundle::Applet0 { kind, metadata, data });
+        self.write("applet.wfb", &bundle.encode()?).await
     }
 }
 

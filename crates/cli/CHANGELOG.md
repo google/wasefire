@@ -1,9 +1,17 @@
 # Changelog
 
-## 0.3.1-git
+## 0.4.0-git
+
+### Major
+
+- Change `--output-dir` to `--output` in `rust-applet-{build,install}` to also support choosing the
+  file name
 
 ### Minor
 
+- Add `--no-parents` to `rust-applet-{build,install}` to expect the destination directory to exist
+- Add `--name` and `--version` flags to `rust-applet-{build,install}` for applet metadata
+- Add `bundle-info` to print information about a bundle
 - Add `applet-metadata` to print the metadata of an applet
 - Improve help for `host`
 - Do not hardcode `x86_64-unknown-linux-gnu` as the only target

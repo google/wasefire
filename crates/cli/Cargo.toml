@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-cli"
-version = "0.3.1-git"
+version = "0.4.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true

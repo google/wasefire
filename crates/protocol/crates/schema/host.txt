@@ -19,6 +19,9 @@ version: 11
 16 [7 - 10] _AppletInstall1: {Start=0:(dry_run:bool) Erase=1:() Write=2:(chunk:[u8]) Finish=3:()} -> {Start=0:(chunk_size:usize num_pages:usize) Erase=1:() Write=2:() Finish=3:()}
 17 [8 -] AppletReboot: () -> ()
 18 [9 - 9] _PlatformInfo2: () -> (serial:[u8] applet_kind:{Wasm=0:() Pulley=1:() Native=2:()} running_side:{A=0:() B=1:()} running_version:[u8] opposite_version:{Ok=0:[u8] Err=1:(space:u8 code:u16)})
-19 [10 -] PlatformInfo: () -> (serial:[u8] applet_kind:{Wasm=0:() Pulley=1:() Native=2:()} running_side:{A=0:() B=1:()} running_info:(name:[u8] version:[u8]) opposite_info:{Ok=0:(name:[u8] version:[u8]) Err=1:(space:u8 code:u16)})
-20 [11 -] AppletMetadata: () -> (name:[u8] version:[u8])
-21 [11 -] AppletInstall: {Start=0:(dry_run:bool) Erase=1:() Write=2:(chunk:[u8]) Finish=3:()} -> {Start=0:(chunk_size:usize num_pages:usize) Erase=1:() Write=2:() Finish=3:()}
+19 [10 -] PlatformInfo3: () -> (serial:[u8] applet_kind:{Wasm=0:() Pulley=1:() Native=2:()} running_side:{A=0:() B=1:()} running_info:(name:[u8] version:[u8]) opposite_info:{Ok=0:(name:[u8] version:[u8]) Err=1:(space:u8 code:u16)})
+20 [11 -] AppletMetadata0: () -> (name:[u8] version:[u8])
+21 [11 -] AppletInstall2: {Start=0:(dry_run:bool) Erase=1:() Write=2:(chunk:[u8]) Finish=3:()} -> {Start=0:(chunk_size:usize num_pages:usize) Erase=1:() Write=2:() Finish=3:()}
+bundle:
+0 Platform0: (metadata:(name:[u8] version:[u8]) side_a:[u8] side_b:[u8])
+1 Applet0: (kind:{Wasm=0:() Pulley=1:() Native=2:()} metadata:(name:[u8] version:[u8]) data:[u8])

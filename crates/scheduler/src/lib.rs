@@ -41,7 +41,7 @@ use wasefire_logger as log;
 use wasefire_one_of::exactly_one_of;
 use wasefire_protocol::applet::ExitStatus;
 #[cfg(any(feature = "pulley", feature = "wasm"))]
-use wasefire_protocol::applet::Metadata as AppletMetadata;
+use wasefire_protocol::applet::Metadata0 as AppletMetadata0;
 #[cfg(feature = "board-api-storage")]
 use wasefire_store as store;
 
@@ -100,7 +100,7 @@ pub struct Scheduler<B: Board> {
     host_funcs: Vec<Api<Id>>,
     applet: applet::Slot<B>,
     #[cfg(any(feature = "pulley", feature = "wasm"))]
-    applet_metadata: Option<AppletMetadata<'static>>,
+    applet_metadata: Option<AppletMetadata0<'static>>,
     #[cfg(feature = "board-api-timer")]
     timers: Vec<Option<Timer>>,
     #[cfg(feature = "internal-debug")]
@@ -364,7 +364,7 @@ impl<B: Board> Scheduler<B> {
             self.applet = applet::Slot::Empty;
             return Ok(());
         }
-        self.applet_metadata = Some(AppletMetadata::new(&mut pulley)?);
+        self.applet_metadata = Some(AppletMetadata0::new(&mut pulley)?);
         // TODO: Check the wasmtime version. Or is it done by wasmtime already?
         log::info!("Starting applet.");
         <board::Applet<B> as board::applet::Api>::notify_start();
@@ -413,7 +413,7 @@ impl<B: Board> Scheduler<B> {
             self.applet = applet::Slot::Empty;
             return Ok(());
         }
-        self.applet_metadata = Some(AppletMetadata::new(&mut wasm)?);
+        self.applet_metadata = Some(AppletMetadata0::new(&mut wasm)?);
         log::info!("Starting applet.");
         <board::Applet<B> as board::applet::Api>::notify_start();
         self.applet = applet::Slot::Running(Applet::default());
