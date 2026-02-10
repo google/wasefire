@@ -995,7 +995,7 @@ impl RunnerOptions {
                 objcopy.arg(format!("--update-section=.runner={runner}"));
                 cmd::execute(&mut objcopy).await?;
                 let artifact = "target/wasefire/platform.hex";
-                produce_hex(bootloader, artifact).await?;
+                objcopy_to("ihex", bootloader, artifact).await?;
                 if flash.artifacts {
                     instruction(&format!("Flash {artifact}")).await?;
                 } else {
@@ -1022,7 +1022,7 @@ impl RunnerOptions {
                 cmd::execute(&mut objcopy).await?;
                 if flash.artifacts {
                     let artifact = "target/wasefire/bootloader.hex";
-                    produce_hex(bootloader, artifact).await?;
+                    objcopy_to("ihex", bootloader, artifact).await?;
                     instruction(&format!("Flash {artifact}")).await?;
                 } else {
                     let mut nrfdfu = wrap_command().await?;
@@ -1037,10 +1037,10 @@ impl RunnerOptions {
         }
         if flash.artifacts {
             let artifact = "target/wasefire/platform.hex";
-            produce_hex("target/thumbv7em-none-eabi/release/bootloader", artifact).await?;
+            objcopy_to("ihex", "target/thumbv7em-none-eabi/release/bootloader", artifact).await?;
             let mut bootloader = tokio::fs::read(artifact).await?;
             assert_eq!(bootloader.pop(), Some(b'\n'));
-            produce_hex(&elf, artifact).await?;
+            objcopy_to("ihex", &elf, artifact).await?;
             let mut platform = tokio::fs::read(artifact).await?;
             assert_eq!(platform.pop(), Some(b'\n'));
             let mut merged = Vec::with_capacity(bootloader.len() + platform.len());
@@ -1098,11 +1098,7 @@ impl RunnerOptions {
                 opentitan::truncate(&signed).await?;
                 fs::copy(&signed, &bundle).await?;
             }
-            _ => {
-                let mut objcopy = wrap_command().await?;
-                objcopy.args(["rust-objcopy", "--output-target=binary", elf, &bundle]);
-                cmd::execute(&mut objcopy).await?;
-            }
+            _ => objcopy_to("binary", elf, &bundle).await?,
         }
         Ok(bundle)
     }
@@ -1238,10 +1234,10 @@ fn section_offset(elf: &[u8], name: &str) -> Result<usize> {
     Ok(header.sh_offset(file.endian()) as usize)
 }
 
-async fn produce_hex(elf: &str, hex: &str) -> Result<()> {
-    fs::create_parent(hex).await?;
+async fn objcopy_to(fmt: &str, src: &str, dst: &str) -> Result<()> {
+    fs::create_parent(dst).await?;
     let mut objcopy = wrap_command().await?;
-    objcopy.args(["rust-objcopy", "--output-target=ihex", elf, hex]);
+    objcopy.args(["rust-objcopy", &format!("--output-target={fmt}"), src, dst]);
     cmd::execute(&mut objcopy).await
 }
 
