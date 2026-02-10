@@ -15,6 +15,7 @@
 
 set -e
 . scripts/log.sh
+. scripts/shard.sh
 . scripts/system.sh
 . scripts/test-helper.sh
 
@@ -55,15 +56,15 @@ cp_artifact() {
   echo "artifacts/$2#$3" >> artifacts.txt
 }
 
-i "Build web-client once for all supported targets"
-( cd crates/runner-host/crates/web-client && make )
-
 i "Build the CLI for each supported target"
 TARGETS='
 i686-unknown-linux-gnu
 x86_64-unknown-linux-gnu
 '
+shard_init $SHARDING
 for target in $TARGETS; do
+  shard_next || continue
+  ( cd crates/runner-host/crates/web-client && make )
   ( set -x
     if [ $target = i686-unknown-linux-gnu ]; then
       ensure apt libusb-1.0-0:i386
@@ -86,26 +87,32 @@ done
 VERSION=0001
 FLAGS="--name=github-$DATE --version=$VERSION"
 i "Build a simple Nordic platform for each supported board"
-yes | x cargo xtask --release runner nordic $FLAGS flash --artifacts
-cp_artifact target/wasefire/platform.hex platform-nordic-devkit.hex \
-  'Wasefire platform bootstrap (nRF52840 DK)'
-x cargo xtask --release runner nordic $FLAGS bundle
-cp_artifact wasefire/platform.wfb platform-nordic-devkit.wfb \
-  'Wasefire platform update (nRF52840 DK)'
-yes | x cargo xtask --release runner nordic --board=dongle $FLAGS flash --artifacts
-cp_artifact target/wasefire/platform.hex platform-nordic-dongle-1.hex \
-  'Wasefire platform bootstrap (nRF52840 Dongle) step 1'
-cp_artifact target/wasefire/bootloader.hex platform-nordic-dongle-2.hex \
-  'Wasefire platform bootstrap (nRF52840 Dongle) step 2'
-x cargo xtask --release runner nordic --board=dongle $FLAGS bundle
-cp_artifact wasefire/platform.wfb platform-nordic-dongle.wfb \
-  'Wasefire platform update (nRF52840 Dongle)'
-yes | x cargo xtask --release runner nordic --board=makerdiary $FLAGS flash --artifacts
-cp_artifact target/wasefire/platform.hex platform-nordic-makerdiary.hex \
-  'Wasefire platform bootstrap (nRF52840 MDK USB Dongle)'
-x cargo xtask --release runner nordic --board=makerdiary $FLAGS bundle
-cp_artifact wasefire/platform.wfb platform-nordic-makerdiary.wfb \
-  'Wasefire platform update (nRF52840 MDK USB Dongle)'
+if shard_next; then
+  yes | x cargo xtask --release runner nordic $FLAGS flash --artifacts
+  cp_artifact target/wasefire/platform.hex platform-nordic-devkit.hex \
+    'Wasefire platform bootstrap (nRF52840 DK)'
+  x cargo xtask --release runner nordic $FLAGS bundle
+  cp_artifact wasefire/platform.wfb platform-nordic-devkit.wfb \
+    'Wasefire platform update (nRF52840 DK)'
+fi
+if shard_next; then
+  yes | x cargo xtask --release runner nordic --board=dongle $FLAGS flash --artifacts
+  cp_artifact target/wasefire/platform.hex platform-nordic-dongle-1.hex \
+    'Wasefire platform bootstrap (nRF52840 Dongle) step 1'
+  cp_artifact target/wasefire/bootloader.hex platform-nordic-dongle-2.hex \
+    'Wasefire platform bootstrap (nRF52840 Dongle) step 2'
+  x cargo xtask --release runner nordic --board=dongle $FLAGS bundle
+  cp_artifact wasefire/platform.wfb platform-nordic-dongle.wfb \
+    'Wasefire platform update (nRF52840 Dongle)'
+fi
+if shard_next; then
+  yes | x cargo xtask --release runner nordic --board=makerdiary $FLAGS flash --artifacts
+  cp_artifact target/wasefire/platform.hex platform-nordic-makerdiary.hex \
+    'Wasefire platform bootstrap (nRF52840 MDK USB Dongle)'
+  x cargo xtask --release runner nordic --board=makerdiary $FLAGS bundle
+  cp_artifact wasefire/platform.wfb platform-nordic-makerdiary.wfb \
+    'Wasefire platform update (nRF52840 MDK USB Dongle)'
+fi
 
 if [ "$CLEANUP" = y ]; then
   i "Cleanup generated artifacts"
