@@ -60,6 +60,7 @@ i "Build web-client once for all supported targets"
 
 i "Build the CLI for each supported target"
 TARGETS='
+i686-unknown-linux-gnu
 x86_64-unknown-linux-gnu
 '
 for target in $TARGETS; do
