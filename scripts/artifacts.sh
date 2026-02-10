@@ -86,8 +86,8 @@ done
 # We increment the version at each release.
 VERSION=0001
 FLAGS="--name=github-$DATE --version=$VERSION"
+i "Build a simple Nordic platform for each supported board"
 if shard_next; then
-  i "Build a simple Nordic platform for each supported board"
   yes | x cargo xtask --release runner nordic $FLAGS flash --artifacts
   cp_artifact target/wasefire/platform.hex platform-nordic-devkit.hex \
     'Wasefire platform bootstrap (nRF52840 DK)'
