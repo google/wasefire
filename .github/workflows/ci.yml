@@ -33,24 +33,26 @@ jobs:
             done
             true
           }
-          x    copyright  pull_request
-          x    changelog  pull_request
-          x   textreview  pull_request
-          x         sync  pull_request  push  schedule
-          x      publish  pull_request  push  schedule
-          x     markdown  pull_request  push  schedule
-          x        taplo  pull_request  push  schedule
-          x      applets  pull_request  push  schedule
-          x      runners  pull_request  push  schedule
+          x      copyright  pull_request
+          x      changelog  pull_request
+          x     textreview  pull_request
+          x           sync  pull_request  push  schedule
+          x        publish  pull_request  push  schedule
+          x       markdown  pull_request  push  schedule
+          x          taplo  pull_request  push  schedule
+          x        applets  pull_request  push  schedule
+          x        runners  pull_request  push  schedule
           for i in $(seq 0 10); do
-            x   tests-$i  pull_request  push  schedule
+            x     tests-$i  pull_request  push  schedule
           done
           for i in $(seq 0 1); do
-            x hw-host-$i  pull_request  push  schedule
+            x   hw-host-$i  pull_request  push  schedule
           done
-          x         book  pull_request  push  schedule
-          x    artifacts  pull_request  push  schedule
-          x    footprint  pull_request  push
+          x           book  pull_request  push  schedule
+          for i in $(seq 0 1); do
+            x artifacts-$i  pull_request  push  schedule
+          done
+          x      footprint  pull_request  push
           echo "checks=[$CHECKS]" >> $GITHUB_OUTPUT
           release=$(git log -1 --pretty=%s | sed -n 's/^Release all crates (#\([0-9]*\))$/\1/p')
           [[ $GITHUB_EVENT_NAME == push ]] || release=

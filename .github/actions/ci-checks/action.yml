@@ -51,8 +51,9 @@ runs:
     - if: ${{ inputs.check == 'book' }}
       run: ./scripts/ci-book.sh
       shell: bash
-    - if: ${{ inputs.check == 'artifacts' }}
-      run: ./scripts/artifacts.sh --cleanup
+    - if: ${{ startsWith(inputs.check, 'artifacts-') }}
+      run: |
+        SHARDING="$(sed s/artifacts-// <<< ${{ inputs.check }}) 2" ./scripts/artifacts.sh --cleanup
       shell: bash
     - if: ${{ inputs.check == 'footprint' }}
       name: Compute footprint
