@@ -92,7 +92,7 @@ if shard_next; then
   cp_artifact target/wasefire/platform.hex platform-nordic-devkit.hex \
     'Wasefire platform bootstrap (nRF52840 DK)'
   x cargo xtask --release runner nordic $FLAGS bundle
-  cp_artifact wasefire/platform.wfb platform-nordic-devkit.wfb \
+  cp_artifact target/wasefire/platform.wfb platform-nordic-devkit.wfb \
     'Wasefire platform update (nRF52840 DK)'
 fi
 if shard_next; then
@@ -102,7 +102,7 @@ if shard_next; then
   cp_artifact target/wasefire/bootloader.hex platform-nordic-dongle-2.hex \
     'Wasefire platform bootstrap (nRF52840 Dongle) step 2'
   x cargo xtask --release runner nordic --board=dongle $FLAGS bundle
-  cp_artifact wasefire/platform.wfb platform-nordic-dongle.wfb \
+  cp_artifact target/wasefire/platform.wfb platform-nordic-dongle.wfb \
     'Wasefire platform update (nRF52840 Dongle)'
 fi
 if shard_next; then
@@ -110,13 +110,13 @@ if shard_next; then
   cp_artifact target/wasefire/platform.hex platform-nordic-makerdiary.hex \
     'Wasefire platform bootstrap (nRF52840 MDK USB Dongle)'
   x cargo xtask --release runner nordic --board=makerdiary $FLAGS bundle
-  cp_artifact wasefire/platform.wfb platform-nordic-makerdiary.wfb \
+  cp_artifact target/wasefire/platform.wfb platform-nordic-makerdiary.wfb \
     'Wasefire platform update (nRF52840 MDK USB Dongle)'
 fi
 
 if [ "$CLEANUP" = y ]; then
   i "Cleanup generated artifacts"
-  x rm -r artifacts.txt artifacts/ notes.txt wasefire/
+  x rm -r artifacts.txt artifacts/ notes.txt
 else
   d "Artifacts generated"
 fi
