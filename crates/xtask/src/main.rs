@@ -364,9 +364,6 @@ enum RunnerCommand {
 
     /// Produces the bundle file to update the platform.
     Bundle {
-        #[command(flatten)]
-        output: action::BundleOutput,
-
         #[arg(skip)]
         step: usize,
     },
@@ -554,7 +551,7 @@ impl AppletOptions {
             opt_level: self.opt_level,
             stack_size: self.stack_size,
             crate_dir: dir,
-            output: Self::bundle_output(),
+            output: bundle_output(),
             ..action::RustAppletBuild::parse_from::<_, OsString>([])
         };
         if let Some(profile) = self.profile {
@@ -607,17 +604,8 @@ impl AppletOptions {
         let kind = if main.pulley { AppletKind::Pulley } else { AppletKind::Wasm };
         let name = Name::new((&self.name).into()).unwrap();
         let version = self.version.reborrow();
-        Self::bundle_output()
-            .bundle_applet(src, "target", self.opt_level, kind, name, version)
-            .await?;
+        bundle_output().bundle_applet(src, "target", self.opt_level, kind, name, version).await?;
         Ok(())
-    }
-
-    fn bundle_output() -> action::BundleOutput {
-        action::BundleOutput {
-            output: "target/wasefire/".into(),
-            ..action::BundleOutput::parse_from::<_, OsString>([])
-        }
     }
 }
 
@@ -944,7 +932,7 @@ impl RunnerOptions {
                 return Box::pin(self.execute(main, Some(cmd))).await;
             }
             RunnerCommand::Flash(x) => x,
-            RunnerCommand::Bundle { ref output, ref mut step } => {
+            RunnerCommand::Bundle { ref mut step } => {
                 self.bundle(&elf, side).await?;
                 if *step < max_step {
                     *step += 1;
@@ -952,7 +940,7 @@ impl RunnerOptions {
                 }
                 let name = self.name_.unwrap_or_default();
                 let version = self.version.unwrap();
-                let path = output.path("platform.wfb").await?;
+                let path = bundle_output().path("platform.wfb").await?;
                 let metadata = platform::SideInfo0 { name, version };
                 let (side_a, side_b) = match max_step {
                     0 => (tokio::fs::read("target/wasefire/platform.bin").await?, Vec::new()),
@@ -1245,6 +1233,13 @@ async fn instruction(msg: &str) -> Result<()> {
     println!("\x1b[1;33mTODO\x1b[m: {msg}, then hit ENTER.");
     std::io::stdin().read_line(&mut String::new())?;
     Ok(())
+}
+
+fn bundle_output() -> action::BundleOutput {
+    action::BundleOutput {
+        output: "target/wasefire/".into(),
+        ..action::BundleOutput::parse_from::<_, OsString>([])
+    }
 }
 
 #[tokio::main]
