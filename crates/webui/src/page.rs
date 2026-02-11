@@ -114,6 +114,9 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
             spawn_local(async move {
                 match crate::usb::request_device().await {
                     Ok(device) => page.set(Page::OpenDevice { device }),
+                    Err(error) if error.msg().contains("No device selected") => {
+                        page.set(Page::ListDevices)
+                    }
                     Err(error) => page.set(Page::error(error)),
                 }
             });
