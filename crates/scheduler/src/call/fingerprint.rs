@@ -47,7 +47,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { handler_func, handler_data } = call.read();
     let inst = call.inst();
-    let result = try {
+    let result = try bikeshed _ {
         call.applet()
             .enable(Handler {
                 key: Key::FingerDetected.into(),
@@ -64,7 +64,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
 #[cfg(feature = "internal-board-api-fingerprint")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params {} = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         board::Fingerprint::<B>::disable()?;
         call.scheduler()
             .disable_event(Key::FingerDetected.into())

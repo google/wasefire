@@ -63,7 +63,7 @@ fn enroll<B: Board>(mut call: SchedulerCall<B, api::enroll::Sig>) {
         call.read();
     let inst = call.inst();
     let applet = call.applet();
-    let result = try {
+    let result = try bikeshed _ {
         applet.enable(Handler {
             key: Key::EnrollStep.into(),
             inst,
@@ -84,7 +84,7 @@ fn enroll<B: Board>(mut call: SchedulerCall<B, api::enroll::Sig>) {
 #[cfg(feature = "board-api-fingerprint-matcher")]
 fn abort_enroll<B: Board>(mut call: SchedulerCall<B, api::abort_enroll::Sig>) {
     let api::abort_enroll::Params {} = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         board::fingerprint::Matcher::<B>::abort_enroll()?;
         call.scheduler().disable_event(Key::Enroll.into())?;
         call.scheduler().disable_event(Key::EnrollStep.into())?;
@@ -97,7 +97,7 @@ fn identify<B: Board>(mut call: SchedulerCall<B, api::identify::Sig>) {
     let api::identify::Params { template, handler_func, handler_data } = call.read();
     let inst = call.inst();
     let applet = call.applet();
-    let result = try {
+    let result = try bikeshed _ {
         applet.enable(Handler {
             key: Key::Identify.into(),
             inst,
@@ -115,7 +115,7 @@ fn identify<B: Board>(mut call: SchedulerCall<B, api::identify::Sig>) {
 #[cfg(feature = "board-api-fingerprint-matcher")]
 fn abort_identify<B: Board>(mut call: SchedulerCall<B, api::abort_identify::Sig>) {
     let api::abort_identify::Params {} = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         board::fingerprint::Matcher::<B>::abort_identify()?;
         call.scheduler().disable_event(Key::Identify.into())?;
     };
@@ -126,7 +126,7 @@ fn abort_identify<B: Board>(mut call: SchedulerCall<B, api::abort_identify::Sig>
 fn delete_template<B: Board>(mut call: SchedulerCall<B, api::delete_template::Sig>) {
     let api::delete_template::Params { template } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let len = board::fingerprint::Matcher::<B>::TEMPLATE_ID_SIZE as u32;
         let template = memory.get_opt(*template, len)?;
         board::fingerprint::Matcher::<B>::delete_template(template)?;
@@ -138,7 +138,7 @@ fn delete_template<B: Board>(mut call: SchedulerCall<B, api::delete_template::Si
 fn list_templates<B: Board>(mut call: SchedulerCall<B, api::list_templates::Sig>) {
     let api::list_templates::Params { templates } = call.read();
     let mut memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let len = board::fingerprint::Matcher::<B>::TEMPLATE_ID_SIZE;
         let src = board::fingerprint::Matcher::<B>::list_templates()?;
         let cnt = (src.len() / len) as u32;

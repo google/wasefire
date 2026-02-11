@@ -44,7 +44,7 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
 fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
     let api::register::Params { button, handler_func, handler_data } = call.read();
     let inst = call.inst();
-    let result = try {
+    let result = try bikeshed _ {
         let button = Id::new(*button as usize)?;
         call.applet()
             .enable(Handler {
@@ -62,7 +62,7 @@ fn register<B: Board>(mut call: SchedulerCall<B, api::register::Sig>) {
 #[cfg(feature = "board-api-button")]
 fn unregister<B: Board>(mut call: SchedulerCall<B, api::unregister::Sig>) {
     let api::unregister::Params { button } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let button = Id::new(*button as usize)?;
         board::Button::<B>::disable(button)?;
         call.scheduler()

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2-git
+
+### Patch
+
+- Update dependencies
+
 ## 0.3.1
 
 ### Minor

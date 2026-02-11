@@ -54,7 +54,8 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 #[cfg(feature = "applet-api-platform")]
 fn serial<B: Board>(mut call: SchedulerCall<B, api::serial::Sig>) {
     let api::serial::Params { ptr } = call.read();
-    let result = try { call.memory().alloc_copy(*ptr, None, &board::Platform::<B>::serial())? };
+    let result =
+        try bikeshed _ { call.memory().alloc_copy(*ptr, None, &board::Platform::<B>::serial())? };
     call.reply(result);
 }
 
@@ -67,7 +68,7 @@ fn running_side<B: Board>(call: SchedulerCall<B, api::running_side::Sig>) {
 #[cfg(feature = "applet-api-platform")]
 fn version<B: Board>(mut call: SchedulerCall<B, api::version::Sig>) {
     let api::version::Params { running, ptr } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let version = match running {
             1 => board::Platform::<B>::running_info().version,
             0 => board::Platform::<B>::opposite_info()?.version,
@@ -81,5 +82,5 @@ fn version<B: Board>(mut call: SchedulerCall<B, api::version::Sig>) {
 #[cfg(feature = "applet-api-platform")]
 fn reboot<B: Board>(call: SchedulerCall<B, api::reboot::Sig>) {
     let api::reboot::Params {} = call.read();
-    call.reply(try { board::Platform::<B>::reboot()? });
+    call.reply(try bikeshed _ { board::Platform::<B>::reboot()? });
 }

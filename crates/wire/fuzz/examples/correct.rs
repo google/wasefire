@@ -31,7 +31,7 @@ fn main() {
     println!("  -: {no_tag}");
     for (tag, len) in stats {
         let Len { err, ok, min, sum, max } = len;
-        let avg = if ok == 0 { 0 } else { sum / ok };
+        let avg = sum.checked_div(ok).unwrap_or(0);
         println!("{tag:3}: {ok} [{min} {avg} {max}] {err}");
     }
 }

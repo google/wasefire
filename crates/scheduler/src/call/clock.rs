@@ -35,7 +35,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 fn uptime_us<B: Board>(mut call: SchedulerCall<B, api::uptime_us::Sig>) {
     let api::uptime_us::Params { ptr } = call.read();
     let memory = call.memory();
-    let result = try {
+    let result = try bikeshed _ {
         let time = board::Clock::<B>::uptime_us()?;
         memory.get_mut(*ptr, 8)?.copy_from_slice(&time.to_le_bytes());
     };

@@ -59,7 +59,7 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
     let api::encrypt::Params { key, iv, aad, aad_len, length, clear, cipher, tag } = call.read();
     let applet = call.applet();
     let memory = applet.memory();
-    let result = try {
+    let result = try bikeshed _ {
         ensure_support::<B>()?;
         let key = memory.get_array::<32>(*key)?.into();
         let iv = memory.get_array::<12>(*iv)?.into();
@@ -78,7 +78,7 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
     let api::decrypt::Params { key, iv, aad, aad_len, tag, length, cipher, clear } = call.read();
     let applet = call.applet();
     let memory = applet.memory();
-    let result = try {
+    let result = try bikeshed _ {
         ensure_support::<B>()?;
         let key = memory.get_array::<32>(*key)?.into();
         let iv = memory.get_array::<12>(*iv)?.into();

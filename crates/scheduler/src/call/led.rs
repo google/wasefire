@@ -41,7 +41,7 @@ fn count<B: Board>(call: SchedulerCall<B, api::count::Sig>) {
 #[cfg(feature = "board-api-led")]
 fn get<B: Board>(call: SchedulerCall<B, api::get::Sig>) {
     let api::get::Params { led } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let id = Id::new(*led as usize)?;
         board::Led::<B>::get(id)?
     };
@@ -51,7 +51,7 @@ fn get<B: Board>(call: SchedulerCall<B, api::get::Sig>) {
 #[cfg(feature = "board-api-led")]
 fn set<B: Board>(call: SchedulerCall<B, api::set::Sig>) {
     let api::set::Params { led, status } = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         let id = Id::new(*led as usize)?;
         let on = matches!(api::Status::try_from(*status)?, api::Status::On);
         board::Led::<B>::set(id, on)?

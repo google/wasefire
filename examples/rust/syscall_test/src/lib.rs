@@ -91,8 +91,8 @@ fn test_handler() {
         calls.borrow_mut().push(Some(value));
     }
     debug!("- register handlers for Foo and Bar events");
-    unsafe { syscall(0, 4, foo as usize, data) }.unwrap();
-    unsafe { syscall(0, 5, bar as usize, data) }.unwrap();
+    unsafe { syscall(0, 4, foo as *const () as usize, data) }.unwrap();
+    unsafe { syscall(0, 5, bar as *const () as usize, data) }.unwrap();
     debug!("- trigger a Foo event and make sure the Foo handler is called");
     unsafe { syscall(0, 7, 0, 0) }.unwrap();
     assert_eq!(scheduling::num_pending_callbacks(), 1);

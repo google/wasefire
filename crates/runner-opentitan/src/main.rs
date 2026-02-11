@@ -15,7 +15,6 @@
 #![no_std]
 #![no_main]
 #![feature(never_type)]
-#![feature(slice_as_array)]
 #![feature(try_blocks)]
 
 extern crate alloc;

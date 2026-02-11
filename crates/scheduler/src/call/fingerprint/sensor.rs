@@ -45,7 +45,7 @@ fn capture<B: Board>(mut call: SchedulerCall<B, api::capture::Sig>) {
     let api::capture::Params { handler_func, handler_data } = call.read();
     let inst = call.inst();
     let applet = call.applet();
-    let result = try {
+    let result = try bikeshed _ {
         applet.enable(Handler {
             key: Key::Capture.into(),
             inst,
@@ -60,7 +60,7 @@ fn capture<B: Board>(mut call: SchedulerCall<B, api::capture::Sig>) {
 #[cfg(feature = "board-api-fingerprint-sensor")]
 fn abort_capture<B: Board>(mut call: SchedulerCall<B, api::abort_capture::Sig>) {
     let api::abort_capture::Params {} = call.read();
-    let result = try {
+    let result = try bikeshed _ {
         board::fingerprint::Sensor::<B>::abort_capture()?;
         call.scheduler().disable_event(Key::Capture.into())?;
     };

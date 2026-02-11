@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1-git
+
+### Patch
+
+- Update the nightly toolchain to compile Rust applets
+- Update dependencies
+
 ## 0.4.0
 
 ### Major

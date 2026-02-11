@@ -51,7 +51,7 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let api::insert::Params { key, ptr, len } = call.read();
     let scheduler = call.scheduler();
     let memory = scheduler.applet.get().unwrap().memory();
-    let result = try {
+    let result = try bikeshed _ {
         let value = memory.get(*ptr, *len)?;
         scheduler.store.insert(*key as usize, value)?
     };
@@ -61,7 +61,7 @@ fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
 #[cfg(feature = "board-api-storage")]
 fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
     let api::remove::Params { key } = call.read();
-    let res = try { call.scheduler().store.remove(*key as usize)? };
+    let res = try bikeshed _ { call.scheduler().store.remove(*key as usize)? };
     call.reply(res);
 }
 
@@ -70,7 +70,7 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let api::find::Params { key, ptr: ptr_ptr, len: len_ptr } = call.read();
     let scheduler = call.scheduler();
     let mut memory = scheduler.applet.get().unwrap().memory();
-    let result = try {
+    let result = try bikeshed _ {
         match scheduler.store.find(*key as usize)? {
             None => false,
             Some(value) => {
@@ -87,7 +87,7 @@ fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
     let api::keys::Params { ptr: ptr_ptr } = call.read();
     let scheduler = call.scheduler();
     let mut memory = scheduler.applet.get().unwrap().memory();
-    let result = try {
+    let result = try bikeshed _ {
         let mut keys = Vec::new();
         for handle in scheduler.store.iter()? {
             keys.push(handle?.get_key() as u16);
@@ -109,6 +109,6 @@ fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
 #[cfg(feature = "board-api-storage")]
 fn clear<B: Board>(mut call: SchedulerCall<B, api::clear::Sig>) {
     let api::clear::Params {} = call.read();
-    let result = try { call.scheduler().store.clear(0)? };
+    let result = try bikeshed _ { call.scheduler().store.clear(0)? };
     call.reply(result);
 }
