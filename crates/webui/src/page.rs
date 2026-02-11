@@ -26,7 +26,7 @@ use wasefire_protocol::{self as service, ConnectionExt as _, Service, transfer};
 use webusb_web::UsbDevice;
 use yew::platform::spawn_local;
 use yew::platform::time::sleep;
-use yew::{AttrValue, Callback, Html, UseStateHandle, UseStateSetter, html};
+use yew::{AttrValue, Callback, Html, TargetCast, UseStateHandle, UseStateSetter, html};
 
 use crate::usb::{Device, serial_number};
 
@@ -332,33 +332,29 @@ impl Command for service::AppletInstall2 {
 #[yew_autoprops::autoprops(AppletInstallProps)]
 #[yew::component(AppletInstall)]
 fn applet_install(page: UseStateSetter<Page>, device: Device) -> Html {
-    let file = yew::use_node_ref();
-    let install = Callback::from({
-        let file = file.clone();
-        move |_| {
-            let node = file.cast::<web_sys::HtmlInputElement>().unwrap();
-            let Some(file) = node.files().and_then(|x| x.item(0)) else {
-                return page.set(Page::error_device("No file selected.", &device));
+    let install = Callback::from(move |event: yew::Event| {
+        let node: web_sys::HtmlInputElement = event.target_dyn_into().unwrap();
+        let Some(file) = node.files().and_then(|x| x.item(0)) else {
+            return page.set(Page::error_device("No file selected.", &device));
+        };
+        page.set(Page::Feedback { content: "Reading file...".into() });
+        let file = File::from(file);
+        let page = page.clone();
+        let device = device.clone();
+        spawn_local(async move {
+            let content = match applet_payload(&device, &file).await {
+                Ok(x) => x,
+                Err(error) => return page.set(Page::error_device(error, &device)),
             };
-            page.set(Page::Feedback { content: "Reading file...".into() });
-            let file = File::from(file);
-            let page = page.clone();
-            let device = device.clone();
-            spawn_local(async move {
-                let content = match applet_payload(&device, &file).await {
-                    Ok(x) => x,
-                    Err(error) => return page.set(Page::error_device(error, &device)),
-                };
-                if transfer::<service::AppletInstall2>(&page, &device, &content, None).await {
-                    let content = "Applet installed. ".into();
-                    page.set(Page::Result { content, device: Some(device) });
-                }
-            });
-        }
+            if transfer::<service::AppletInstall2>(&page, &device, &content, None).await {
+                let content = "Applet installed. ".into();
+                page.set(Page::Result { content, device: Some(device) });
+            }
+        });
     });
     html! {<>
-        <button onclick={install}>{ "Install" }</button>{ " applet:" }
-        <ul class="commands"><li><input ref={file} type="file" /></li></ul>
+        <label for="applet-file">{ "Install applet: " }</label>
+        <input type="file" id="applet-file" onchange={install} />
     </>}
 }
 
@@ -506,22 +502,18 @@ impl Command for service::PlatformUpdate {
 #[yew_autoprops::autoprops(PlatformUpdateProps)]
 #[yew::component(PlatformUpdate)]
 fn platform_update(page: UseStateSetter<Page>, device: Device) -> Html {
-    let file = yew::use_node_ref();
-    let install = Callback::from({
-        let file = file.clone();
-        move |_| {
-            let node = file.cast::<web_sys::HtmlInputElement>().unwrap();
-            let Some(file) = node.files().and_then(|x| x.item(0)) else {
-                return page.set(Page::error_device("No file selected.", &device));
-            };
-            page.set(Page::Feedback { content: "Reading file...".into() });
-            let file = File::from(file);
-            spawn_local(platform_update_(page.clone(), device.clone(), file));
-        }
+    let install = Callback::from(move |event: yew::Event| {
+        let node: web_sys::HtmlInputElement = event.target_dyn_into().unwrap();
+        let Some(file) = node.files().and_then(|x| x.item(0)) else {
+            return page.set(Page::error_device("No file selected.", &device));
+        };
+        page.set(Page::Feedback { content: "Reading file...".into() });
+        let file = File::from(file);
+        spawn_local(platform_update_(page.clone(), device.clone(), file));
     });
     html! {<>
-        <button onclick={install}>{ "Update" }</button>{ " platform:" }
-        <ul class="commands"><li><input ref={file} type="file" /></li></ul>
+        <label for="platform-file">{ "Update platform: " }</label>
+        <input type="file" id="platform-file" onchange={install} />
     </>}
 }
 
