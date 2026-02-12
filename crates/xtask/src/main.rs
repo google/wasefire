@@ -715,8 +715,8 @@ impl RunnerOptions {
             RunnerName::Nordic | RunnerName::OpenTitan => (Some(step), 1),
         };
         if self.name == RunnerName::Host {
-            if std::env::var_os("PKG_CONFIG_SYSROOT_DIR").is_none() {
-                cargo.env("PKG_CONFIG_SYSROOT_DIR", "/usr/lib/i386-linux-gnu/pkgconfig");
+            if std::env::var_os("PKG_CONFIG_PATH").is_none() {
+                cargo.env("PKG_CONFIG_PATH", "/usr/lib/i386-linux-gnu/pkgconfig");
             }
             if let Some(name) = &self.name_ {
                 cargo.env("WASEFIRE_HOST_NAME", HEX.encode(name.as_bytes()));

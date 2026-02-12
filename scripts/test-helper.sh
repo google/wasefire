@@ -36,7 +36,7 @@ ensure_submodule() {
 }
 
 ensure_i686() {
-  export PKG_CONFIG_SYSROOT_DIR=/usr/lib/i386-linux-gnu/pkgconfig
+  export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
 }
 
 # check_*_api <prefix> <features> <clippy-args>..
