@@ -68,8 +68,7 @@ for target in $TARGETS; do
   ( set -x
     if [ $target = i686-unknown-linux-gnu ]; then
       ensure apt libusb-1.0-0:i386
-      export PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig
-      export PKG_CONFIG_SYSROOT_DIR=/usr/lib/i386-linux-gnu/pkgconfig
+      export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
     fi
     cargo build --manifest-path=crates/runner-host/Cargo.toml --release --target=$target \
       --features=debug,wasm
