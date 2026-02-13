@@ -32,3 +32,7 @@ It is ok to not quote variables that are known to expand to themselves.
 
 It is ok to have magic numbers used in exactly one place. Named constants are only needed when the
 value needs to be shared in multiple places.
+
+### Variable shadowing
+
+It is ok to shadow variables.
