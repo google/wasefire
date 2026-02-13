@@ -15,6 +15,7 @@
 use std::borrow::Cow;
 use std::time::Duration;
 
+use anyhow::{anyhow, bail, ensure};
 use data_encoding::HEXLOWER as HEX;
 use futures_util::StreamExt;
 use gloo::file::File;
@@ -31,7 +32,7 @@ use yew::{AttrValue, Callback, Html, TargetCast, UseStateHandle, UseStateSetter,
 use crate::usb::{Device, serial_number};
 
 pub(crate) enum Page {
-    Error { error: String, device: Option<Device> },
+    Error { error: anyhow::Error, device: Option<Device> },
     Feedback { content: Html },
     Result { content: Html, device: Option<Device> },
     ListDevices,
@@ -55,7 +56,9 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
     match &*page {
         Page::Error { error, device } => {
             let close = close(device.clone());
-            html_error(html!(<>{ error }{ " " }<button onclick={close}>{ "Close" }</button></>))
+            html_error(html!(
+                <>{ format!("{error:#} ") }<button onclick={close}>{ "Close" }</button></>
+            ))
         }
         Page::Feedback { content } => html_running(content.clone()),
         Page::Result { content, device } => {
@@ -172,12 +175,12 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
 }
 
 impl Page {
-    fn error(error: impl ToString) -> Self {
-        Page::Error { error: error.to_string(), device: None }
+    fn error(error: impl Into<anyhow::Error>) -> Self {
+        Page::Error { error: error.into(), device: None }
     }
 
-    fn error_device(error: impl ToString, device: &Device) -> Self {
-        Page::Error { error: error.to_string(), device: Some(device.clone()) }
+    fn error_device(error: impl Into<anyhow::Error>, device: &Device) -> Self {
+        Page::Error { error: error.into(), device: Some(device.clone()) }
     }
 }
 
@@ -197,9 +200,9 @@ macro_rules! unwrap {
     ($p:expr, $d:expr, $x:expr) => {
         match $x {
             Ok(x) => x,
-            Err(e) => {
-                let device = e.is::<wasefire_error::Error>().then(|| $d.clone());
-                $p.set(Page::Error { error: e.to_string(), device });
+            Err(error) => {
+                let device = error.is::<wasefire_error::Error>().then(|| $d.clone());
+                $p.set(Page::Error { error, device });
                 return Default::default();
             }
         }
@@ -303,7 +306,7 @@ async fn platform_reboot(page: UseStateSetter<Page>, device: UsbDevice) {
         }
         sleep(Duration::from_millis(100)).await;
     }
-    page.set(Page::error("Reboot seems to have failed."));
+    page.set(Page::error(anyhow!("Reboot seems to have failed.")));
 }
 
 impl Command for service::AppletInstall2 {
@@ -335,7 +338,7 @@ fn applet_install(page: UseStateSetter<Page>, device: Device) -> Html {
     let install = Callback::from(move |event: yew::Event| {
         let node: web_sys::HtmlInputElement = event.target_dyn_into().unwrap();
         let Some(file) = node.files().and_then(|x| x.item(0)) else {
-            return page.set(Page::error_device("No file selected.", &device));
+            return page.set(Page::error_device(anyhow!("No file selected."), &device));
         };
         page.set(Page::Feedback { content: "Reading file...".into() });
         let file = File::from(file);
@@ -358,18 +361,15 @@ fn applet_install(page: UseStateSetter<Page>, device: Device) -> Html {
     </>}
 }
 
-async fn applet_payload(device: &Device, file: &File) -> Result<Vec<u8>, String> {
-    let content = gloo::file::futures::read_as_bytes(file).await.map_err(|x| x.to_string())?;
-    let applet = Bundle::decode(&content).map_err(|x| x.to_string())?;
-    let applet = applet.applet().map_err(|x| x.to_string())?;
-    let info = device.platform_info().await.map_err(|x| x.to_string())?;
+async fn applet_payload(device: &Device, file: &File) -> anyhow::Result<Vec<u8>> {
+    let content = gloo::file::futures::read_as_bytes(file).await?;
+    let applet = Bundle::decode(&content)?.applet()?;
+    let info = device.platform_info().await?;
     if let Some(platform) = info.applet_kind() {
         let applet = applet.kind();
-        if platform != applet {
-            return Err(format!("The applet is {applet} but the platform expects {platform}."));
-        }
+        ensure!(platform == applet, "The applet is {applet} but the platform expects {platform}.");
     }
-    applet.payload(device.version()).map_err(|x| x.to_string())
+    Ok(applet.payload(device.version())?)
 }
 
 async fn transfer<
@@ -387,7 +387,7 @@ async fn transfer<
     let start = device.call::<T>(transfer::Request::Start { dry_run: false }).await;
     let start = unwrap!(page, device, start);
     let transfer::Response::Start { chunk_size, num_pages } = start.get() else {
-        page.set(Page::error_device("Invalid transfer response for Start.", device));
+        page.set(Page::error_device(anyhow!("Invalid transfer response for Start."), device));
         return false;
     };
     let n = *num_pages;
@@ -400,7 +400,7 @@ async fn transfer<
         });
         let erase = device.call::<T>(transfer::Request::Erase).await;
         let transfer::Response::Erase = unwrap!(page, device, erase).get() else {
-            page.set(Page::error_device("Invalid transfer response for Erase.", device));
+            page.set(Page::error_device(anyhow!("Invalid transfer response for Erase."), device));
             return false;
         };
     }
@@ -415,7 +415,7 @@ async fn transfer<
         let chunk = Cow::Borrowed(chunk);
         let write = device.call::<T>(transfer::Request::Write { chunk }).await;
         let transfer::Response::Write = unwrap!(page, device, write).get() else {
-            page.set(Page::error_device("Invalid transfer response for Write.", device));
+            page.set(Page::error_device(anyhow!("Invalid transfer response for Write."), device));
             return false;
         };
     }
@@ -425,7 +425,7 @@ async fn transfer<
         Some(_) => unwrap!(page, device, convert_final(finish)).is_none(),
     };
     if !result {
-        page.set(Page::error_device("Invalid transfer response for Finish.", device));
+        page.set(Page::error_device(anyhow!("Invalid transfer response for Finish."), device));
     }
     result
 }
@@ -463,7 +463,10 @@ impl Command for service::AppletMetadata0 {
             let device = device.clone();
             spawn_local(async move {
                 let metadata = device.call::<service::AppletMetadata0>(AppletId).await;
-                let metadata = unwrap!(page, device, metadata);
+                let Some(metadata) = unwrap!(page, device, convert_not_found(metadata)) else {
+                    let content = "There is no applet installed. ".into();
+                    return page.set(Page::Result { content, device: Some(device) });
+                };
                 let rows = vec![
                     ("Name", Ok(metadata.get().name.to_string().into())),
                     ("Version", Ok(metadata.get().version.to_string().into())),
@@ -505,7 +508,7 @@ fn platform_update(page: UseStateSetter<Page>, device: Device) -> Html {
     let install = Callback::from(move |event: yew::Event| {
         let node: web_sys::HtmlInputElement = event.target_dyn_into().unwrap();
         let Some(file) = node.files().and_then(|x| x.item(0)) else {
-            return page.set(Page::error_device("No file selected.", &device));
+            return page.set(Page::error_device(anyhow!("No file selected."), &device));
         };
         page.set(Page::Feedback { content: "Reading file...".into() });
         let file = File::from(file);
@@ -528,7 +531,8 @@ async fn platform_update_(page: UseStateSetter<Page>, device: Device, file: File
     };
     let info1 = unwrap!(page, device, device.platform_info().await);
     let Some(side1) = info1.running_side() else {
-        return page.set(Page::error_device("Device does not expose running side.", &device));
+        return page
+            .set(Page::error_device(anyhow!("Device does not expose running side."), &device));
     };
     let (side_1, side_2) = match side1 {
         Side::A => (side_b, side_a),
@@ -544,19 +548,20 @@ async fn platform_update_(page: UseStateSetter<Page>, device: Device, file: File
     };
     let info2 = unwrap!(page, device, device.platform_info().await);
     let Some(side2) = info2.running_side() else {
-        return page.set(Page::error_device("Update does not expose running side.", &device));
+        return page
+            .set(Page::error_device(anyhow!("Update does not expose running side."), &device));
     };
     if side2 != side1.opposite() {
-        return page.set(Page::error_device("Failed to boot the new platform.", &device));
+        return page.set(Page::error_device(anyhow!("Failed to boot the new platform."), &device));
     }
     if transfer::<service::PlatformUpdate>(&page, &device, &side_2, Some(true)).await {
         page.set(Page::Result { content: "Platform updated. ".into(), device: None });
     }
 }
 
-async fn reconnect(device: &UsbDevice) -> Result<Device, String> {
+async fn reconnect(device: &UsbDevice) -> anyhow::Result<Device> {
     let serial = serial_number(device);
-    let usb = webusb_web::Usb::new().map_err(|x| x.to_string())?;
+    let usb = webusb_web::Usb::new()?;
     let mut events = usb.events();
     while let Some(event) = events.next().await {
         let device = match event {
@@ -564,8 +569,8 @@ async fn reconnect(device: &UsbDevice) -> Result<Device, String> {
             _ => continue,
         };
         if crate::usb::is_wasefire(&device) && serial_number(&device) == serial {
-            return crate::usb::open_device(&device).await.map_err(|x| x.to_string());
+            return crate::usb::open_device(&device).await;
         }
     }
-    Err("Stopped receiving USB events.".to_string())
+    bail!("Stopped receiving USB events.")
 }
