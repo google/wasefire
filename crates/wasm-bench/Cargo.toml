@@ -18,7 +18,7 @@ wasefire-common = { version = "0.1.1", path = "../common", optional = true }
 wasefire-sync = { version = "0.1.3", path = "../sync", optional = true }
 
 [dependencies.wasmtime]
-version = "41.0.2"
+version = "41.0.4"
 default-features = false
 features = ["async", "runtime"]
 optional = true
@@ -29,7 +29,7 @@ features = ["float-types"]
 optional = true
 
 [build-dependencies.wasmtime]
-version = "41.0.2"
+version = "41.0.4"
 default-features = false
 features = ["cranelift", "pulley"]
 optional = true
