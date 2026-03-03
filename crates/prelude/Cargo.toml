@@ -1,6 +1,6 @@
 [package]
 name = "wasefire"
-version = "0.8.2-git"
+version = "0.9.0-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -19,9 +19,9 @@ features = ["full-api", "rust-crypto"]
 aead = { version = "0.5.2", default-features = false, features = ["alloc"], optional = true }
 bytemuck = { version = "1.25.0", default-features = false }
 const-default = { version = "1.0.0", default-features = false, optional = true }
-crypto-common = { version = "0.1.7", default-features = false, optional = true }
-digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
-rlsf = { version = "0.2.1", default-features = false, optional = true }
+crypto-common = { version = "0.2.1", default-features = false, optional = true }
+digest = { version = "0.11.1", default-features = false, features = ["mac"], optional = true }
+rlsf = { version = "0.2.2", default-features = false, optional = true }
 sealed = { version = "0.6.0", default-features = false, optional = true }
 typenum = { version = "1.19.0", default-features = false, optional = true }
 wasefire-applet-api = { version = "0.9.1-git", path = "../api", features = ["wasm"] }

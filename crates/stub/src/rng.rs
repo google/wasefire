@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use rand::RngCore;
+use rand::Rng;
 use wasefire_applet_api::rng as api;
 
 #[unsafe(no_mangle)]

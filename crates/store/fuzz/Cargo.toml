@@ -10,9 +10,9 @@ edition = "2024"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = "0.4.10"
-rand_pcg = "0.9.0"
-strum = { version = "0.27.2", features = ["derive"] }
+libfuzzer-sys = "0.4.12"
+rand_pcg = "0.10.1"
+strum = { version = "0.28.0", features = ["derive"] }
 wasefire-store = { path = "..", features = ["std"] }
 
 [[bin]]

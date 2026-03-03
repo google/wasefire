@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Update dependencies
 - Use heterogeneous try blocks when needed
 
 ## 0.4.0

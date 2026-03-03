@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use {wasefire_board_api as board, wasefire_logger as log};
+use wasefire_board_api as board;
+use wasefire_logger as log;
 
 pub enum Impl {}
 

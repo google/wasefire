@@ -43,7 +43,6 @@ impl Default for PreStore {
     fn default() -> Self {
         let mut config = Config::new();
         config.async_stack_size(16 * 1024);
-        config.async_support(true);
         config.max_wasm_stack(8 * 1024);
         config.memory_init_cow(false);
         config.memory_reservation(0);

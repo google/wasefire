@@ -7,7 +7,7 @@ publish = false
 edition = "2024"
 
 [dependencies]
-anyhow = "1.0.100"
+anyhow = "1.0.102"
 
 [lints]
 clippy.mod-module-files = "warn"

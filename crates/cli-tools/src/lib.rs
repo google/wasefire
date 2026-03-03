@@ -21,6 +21,7 @@
 #![feature(never_type)]
 #![feature(path_trailing_sep)]
 #![feature(try_blocks)]
+#![feature(try_blocks_heterogeneous)]
 #![feature(try_find)]
 
 macro_rules! debug {

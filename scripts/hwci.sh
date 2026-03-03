@@ -71,6 +71,7 @@ run() {
       fi
     done
   done
+  shard_done
 }
 
 # <protocol> <runner..>

@@ -953,7 +953,7 @@ impl Display for OptLevel {
 }
 
 async fn nightly_toolchain(cargo: &mut Command) {
-    const TOOLCHAIN: &str = "nightly-2026-02-11";
+    const TOOLCHAIN: &str = "nightly-2026-03-03";
     let mut rustup = Command::new("rustup");
     rustup.arg("--version");
     rustup.stdout(std::process::Stdio::null());
@@ -995,7 +995,7 @@ pub async fn compile_pulley(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Res
     if !fs::has_changed(src.as_ref(), dst.as_ref()).await? {
         return Ok(());
     }
-    let result: Result<()> = try {
+    let result = try bikeshed Result<()> {
         let wasm = fs::read(src).await?;
         let mut config = wasmtime::Config::new();
         config.target("pulley32")?;

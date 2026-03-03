@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.8.2-git
+## 0.9.0-git
+
+### Major
+
+- Change `crypto::ec::Int` from `generic_array::GenericArray` to `hybrid_array::Array`
 
 ### Patch
 
@@ -227,4 +231,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 1 -->

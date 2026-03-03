@@ -24,3 +24,7 @@ shard_next() {
   [ $(( _shard_index % _SHARD_COUNT )) -eq $_SHARD_INDEX ] || return
   echo "Current shard is $_shard_index"
 }
+
+shard_done() {
+  echo "There were $((_shard_index + 1)) shards in total"
+}
