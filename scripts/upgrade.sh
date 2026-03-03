@@ -51,13 +51,6 @@ for path in $(git ls-files '*/Cargo.toml'); do
   ./scripts/wrapper.sh cargo upgrade --manifest-path=$path --incompatible=allow
 done
 
-( cd examples/assemblyscript
-  x npm install --no-save assemblyscript
-)
-ASC_VERSION=$(sed -n 's/^  "version": "\(.*\)",$/\1/p' \
-  examples/assemblyscript/node_modules/assemblyscript/package.json)
-x sed -i "/ASC_VERSION:/s/\"[^\"]*\"/\"$ASC_VERSION\"/" crates/xtask/src/main.rs
-
 x git commit -am'Upgrade all dependencies'
 
 d "All dependencies have been upgraded and a commit created"

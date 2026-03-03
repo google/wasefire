@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use std::ffi::CString;
-use std::io::Write;
 use std::ops;
 
 use proc_macro2::{Ident, Span, TokenStream};
@@ -90,35 +89,14 @@ impl Default for Api {
     }
 }
 
-#[derive(Copy, Clone)]
-pub enum Lang {
-    C,
-    Assemblyscript,
-}
-
 impl Api {
     pub fn host(&self) -> TokenStream {
         Mod::body(None, &self.0)
     }
 
-    pub fn wasm(&self, output: &mut dyn Write, lang: Lang) -> std::io::Result<()> {
-        match lang {
-            Lang::C => unimplemented!(),
-            Lang::Assemblyscript => self.wasm_assemblyscript(output),
-        }
-    }
-
-    pub fn wasm_markdown(&self) -> &'static str {
-        include_str!("api.md")
-    }
-
     pub fn wasm_rust(&self) -> TokenStream {
         let items: Vec<_> = self.0.iter().map(|x| x.wasm_rust()).collect();
         quote!(#(#items)*)
-    }
-
-    pub fn wasm_assemblyscript(&self, output: &mut dyn Write) -> std::io::Result<()> {
-        write_items(output, &self.0, |output, item| item.wasm_assemblyscript(output, &Path::Empty))
     }
 }
 
@@ -215,15 +193,6 @@ impl Item {
             Item::Mod(x) => x.wasm_rust(),
         }
     }
-
-    fn wasm_assemblyscript(&self, output: &mut dyn Write, path: &Path) -> std::io::Result<()> {
-        match self {
-            Item::Enum(x) => x.wasm_assemblyscript(output, path),
-            Item::Struct(x) => x.wasm_assemblyscript(output, path),
-            Item::Fn(x) => x.wasm_assemblyscript(output, path),
-            Item::Mod(x) => x.wasm_assemblyscript(output, path),
-        }
-    }
 }
 
 impl Enum {
@@ -275,14 +244,6 @@ impl Enum {
             }
         }
     }
-
-    fn wasm_assemblyscript(&self, output: &mut dyn Write, path: &Path) -> std::io::Result<()> {
-        let Enum { docs, name, variants } = self;
-        write_docs(output, docs, path)?;
-        writeln!(output, "{path:#}enum {path}{name} {{")?;
-        write_items(output, variants, |output, variant| variant.wasm_assemblyscript(output, path))?;
-        writeln!(output, "{path:#}}}")
-    }
 }
 
 impl Struct {
@@ -304,14 +265,6 @@ impl Struct {
             #[repr(C)]
             pub struct #name { #(#fields),* }
         }
-    }
-
-    fn wasm_assemblyscript(&self, output: &mut dyn Write, path: &Path) -> std::io::Result<()> {
-        let Struct { docs, name, fields } = self;
-        write_docs(output, docs, path)?;
-        writeln!(output, "{path:#}class {path}{name} {{")?;
-        write_items(output, fields, |output, field| field.wasm_assemblyscript(output, path, ";"))?;
-        writeln!(output, "{path:#}}}")
     }
 }
 
@@ -393,15 +346,6 @@ impl Fn {
                 crate::wasm::native::env_dispatch(#ffi_link.as_ptr(), ffi_params)
             }
         }
-    }
-
-    fn wasm_assemblyscript(&self, output: &mut dyn Write, path: &Path) -> std::io::Result<()> {
-        let Fn { docs, name, link, params, result: _ } = self;
-        write_docs(output, docs, path)?;
-        writeln!(output, r#"{path:#}@external("env", "{link}")"#)?;
-        writeln!(output, "{path:#}export declare function {path}{name}(")?;
-        write_items(output, params, |output, param| param.wasm_assemblyscript(output, path, ","))?;
-        writeln!(output, "{path:#}): i32")
     }
 }
 
@@ -514,15 +458,6 @@ impl Mod {
             }
         }
     }
-
-    fn wasm_assemblyscript(&self, output: &mut dyn Write, path: &Path) -> std::io::Result<()> {
-        let Mod { docs, name, items } = self;
-        writeln!(output, "{path:#}// START OF MODULE {path}{name}")?;
-        write_docs(output, docs, path)?;
-        let inner_path = Path::Mod { name, prev: path };
-        write_items(output, items, |output, item| item.wasm_assemblyscript(output, &inner_path))?;
-        writeln!(output, "{path:#}// END OF MODULE {path}{name}")
-    }
 }
 
 impl Field {
@@ -546,22 +481,6 @@ impl Field {
         let name = format_ident!("{}", name);
         let type_ = type_.wasm_rust();
         quote!(#name: #type_)
-    }
-
-    fn wasm_assemblyscript(
-        &self, output: &mut dyn Write, path: &Path, separator: &str,
-    ) -> std::io::Result<()> {
-        let Field { docs, name, type_ } = self;
-        let name = match name.as_str() {
-            "private" => "private_",
-            "public" => "public_",
-            x => x,
-        };
-        let path = Path::Mod { name: "", prev: path };
-        write_docs(output, docs, &path)?;
-        write!(output, "{path:#}{name}: ")?;
-        type_.wasm_assemblyscript(output)?;
-        writeln!(output, "{separator}")
     }
 }
 
@@ -637,27 +556,6 @@ impl Type {
             }
         }
     }
-
-    fn wasm_assemblyscript(&self, output: &mut dyn Write) -> std::io::Result<()> {
-        match self {
-            Type::Never | Type::Unit | Type::Bool => unreachable!(),
-            Type::Integer { signed: true, bits: None } => write!(output, "isize"),
-            Type::Integer { signed: false, bits: None } => write!(output, "usize"),
-            Type::Integer { signed: true, bits: Some(8) } => write!(output, "i8"),
-            Type::Integer { signed: false, bits: Some(8) } => write!(output, "u8"),
-            Type::Integer { signed: true, bits: Some(16) } => write!(output, "i16"),
-            Type::Integer { signed: false, bits: Some(16) } => write!(output, "u16"),
-            Type::Integer { signed: true, bits: Some(32) } => write!(output, "i32"),
-            Type::Integer { signed: false, bits: Some(32) } => write!(output, "u32"),
-            Type::Integer { signed: true, bits: Some(64) } => write!(output, "i64"),
-            Type::Integer { signed: false, bits: Some(64) } => write!(output, "u64"),
-            Type::Integer { .. } => unimplemented!(),
-            // TODO: Is there a way to decorate this better?
-            Type::Pointer { mutable: _, type_: _ } => write!(output, "usize"),
-            // TODO: Is there a way to decorate this better?
-            Type::Function { params: _ } => write!(output, "usize"),
-        }
-    }
 }
 
 impl Variant {
@@ -665,13 +563,6 @@ impl Variant {
         let Variant { docs, name, value } = self;
         let name = format_ident!("{}", name);
         quote!(#(#[doc = #docs])* #name = #value)
-    }
-
-    fn wasm_assemblyscript(&self, output: &mut dyn Write, path: &Path) -> std::io::Result<()> {
-        let Variant { docs, name, value } = self;
-        let path = Path::Mod { name: "", prev: path };
-        write_docs(output, docs, &path)?;
-        writeln!(output, "{path:#}{name} = {value},")
     }
 }
 
@@ -691,42 +582,6 @@ fn camel(input: &str) -> Ident {
         }
     }
     Ident::new(&output, Span::call_site())
-}
-
-enum Path<'a> {
-    Empty,
-    Mod { name: &'a str, prev: &'a Path<'a> },
-}
-
-impl std::fmt::Display for Path<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let (name, prev) = match self {
-            Path::Empty => return Ok(()),
-            Path::Mod { name, prev } => (name, prev),
-        };
-        if f.alternate() { write!(f, "{prev:#}  ") } else { write!(f, "{prev}{name}_") }
-    }
-}
-
-fn write_docs(output: &mut dyn Write, docs: &[String], path: &Path) -> std::io::Result<()> {
-    for doc in docs {
-        writeln!(output, "{path:#}//{doc}")?;
-    }
-    Ok(())
-}
-
-fn write_items<T>(
-    output: &mut dyn Write, items: &[T],
-    mut write: impl FnMut(&mut dyn Write, &T) -> std::io::Result<()>,
-) -> std::io::Result<()> {
-    let mut first = true;
-    for item in items {
-        if !std::mem::replace(&mut first, false) {
-            writeln!(output)?;
-        }
-        write(output, item)?;
-    }
-    Ok(())
 }
 
 #[cfg(test)]

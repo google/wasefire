@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.1-git
+
+### Patch
+
+- Update dependencies
+
 ## 0.9.0
 
 ### Major

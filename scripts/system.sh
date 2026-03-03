@@ -34,7 +34,6 @@ install() {
           cc) set build-essential ;;
           curl) set curl ;;
           mdl) set markdownlint ;;
-          npm) set npm ;;
           pkg-config) set pkgconf ;;
           socat) set socat ;;
           usbip)
