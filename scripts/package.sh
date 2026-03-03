@@ -45,7 +45,6 @@ interpreter
 store
 store/fuzz
 api-desc
-api-desc/crates/update
 api-macro
 api
 stub

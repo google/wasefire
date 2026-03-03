@@ -513,7 +513,6 @@ impl AppletOptions {
         }
         match self.lang.as_str() {
             "rust" => self.execute_rust(main, command).await,
-            "assemblyscript" => self.execute_assemblyscript(main).await,
             x => bail!("unsupported language {x}"),
         }
     }
@@ -577,34 +576,6 @@ impl AppletOptions {
         if let Some(key) = &main.footprint {
             footprint::update_applet(key, size).await?;
         }
-        Ok(())
-    }
-
-    async fn execute_assemblyscript(&self, main: &MainOptions) -> Result<()> {
-        ensure!(!main.is_native(), "native applets are not supported for assemblyscript");
-        let dir = format!("examples/{}", self.lang);
-        ensure_assemblyscript().await?;
-        let mut asc = Command::new("./node_modules/.bin/asc");
-        let src = "target/wasefire/applet-assemblyscript.wasm";
-        asc.args(["-o", &format!("../../{src}")]);
-        match self.opt_level {
-            Some(level) => drop(asc.arg(format!("-O{level}"))),
-            None => drop(asc.arg("-O")),
-        }
-        asc.args(["--lowMemoryLimit", "--stackSize", &format!("{}", self.stack_size)]);
-        asc.args(["--use", &format!("abort={}/main/abort", self.name)]);
-        if main.release {
-            asc.arg("--noAssert");
-        } else {
-            asc.arg("--debug");
-        }
-        asc.arg(format!("{}/main.ts", self.name));
-        asc.current_dir(dir);
-        cmd::execute(&mut asc).await?;
-        let kind = if main.pulley { AppletKind::Pulley } else { AppletKind::Wasm };
-        let name = Name::new((&self.name).into()).unwrap();
-        let version = self.version.reborrow();
-        bundle_output().bundle_applet(src, "target", self.opt_level, kind, name, version).await?;
         Ok(())
     }
 }
@@ -1192,25 +1163,6 @@ async fn ensure_command(cmd: &[&str]) -> Result<()> {
 
 async fn wrap_command() -> Result<Command> {
     Ok(Command::new(fs::canonicalize("./scripts/wrapper.sh").await?))
-}
-
-async fn ensure_assemblyscript() -> Result<()> {
-    const ASC_VERSION: &str = "0.28.9"; // scripts/upgrade.sh relies on this name
-    const BIN: &str = "examples/assemblyscript/node_modules/.bin/asc";
-    const JSON: &str = "examples/assemblyscript/node_modules/assemblyscript/package.json";
-    if fs::exists(BIN).await && fs::exists(JSON).await {
-        let mut sed = Command::new("sed");
-        sed.args(["-n", r#"s/^  "version": "\(.*\)",$/\1/p"#, JSON]);
-        if cmd::output_line(&mut sed).await? == ASC_VERSION {
-            return Ok(());
-        }
-    }
-    ensure_command(&["npm"]).await?;
-    let mut npm = wrap_command().await?;
-    npm.args(["npm", "install", "--no-save"]);
-    npm.arg(format!("assemblyscript@{ASC_VERSION}"));
-    npm.current_dir("examples/assemblyscript");
-    cmd::execute(&mut npm).await
 }
 
 fn section_offset(elf: &[u8], name: &str) -> Result<usize> {

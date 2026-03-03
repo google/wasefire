@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0-git
+
+### Major
+
+- Remove `Lang` and `Api::wasm{,_assemblyscript,_markdown}`
+
 ## 0.2.3
 
 ### Minor
