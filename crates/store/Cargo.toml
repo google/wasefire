@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-store"
-version = "0.3.2"
+version = "0.3.3-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
@@ -18,7 +18,7 @@ features = ["std"]
 wasefire-error = { version = "0.1.4", path = "../error" }
 
 [dev-dependencies]
-tempfile = "3.24.0"
+tempfile = "3.26.0"
 
 [features]
 std = ["wasefire-error/std"]

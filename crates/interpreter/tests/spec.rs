@@ -368,7 +368,7 @@ fn spectest() -> Vec<u8> {
 fn assert_return(env: &mut Env, exec: WastExecute, expected: Vec<WastRet>) {
     let actual = only_sup!(env, wast_execute(env, exec)).unwrap();
     assert_eq!(actual.len(), expected.len());
-    for (actual, expected) in actual.into_iter().zip(expected.into_iter()) {
+    for (actual, expected) in actual.into_iter().zip(expected) {
         use Val::*;
         use WastRet::Core as C;
         use WastRetCore as W;

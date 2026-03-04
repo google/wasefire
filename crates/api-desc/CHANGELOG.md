@@ -6,6 +6,10 @@
 
 - Remove `Lang` and `Api::wasm{,_assemblyscript,_markdown}`
 
+### Patch
+
+- Update dependencies
+
 ## 0.2.3
 
 ### Minor

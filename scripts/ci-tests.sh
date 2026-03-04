@@ -27,3 +27,4 @@ for dir in $(git ls-files '*/test.sh'); do
   i "Run tests in $dir"
   ( cd $dir && ./test.sh )
 done
+shard_done

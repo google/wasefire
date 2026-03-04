@@ -113,6 +113,7 @@ if shard_next; then
     'Wasefire platform update (nRF52840 MDK USB Dongle)'
 fi
 
+shard_done
 if [ "$CLEANUP" = y ]; then
   i "Cleanup generated artifacts"
   x rm -r artifacts.txt artifacts/ notes.txt

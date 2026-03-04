@@ -21,7 +21,7 @@ bytemuck = { version = "1.25.0", default-features = false }
 const-default = { version = "1.0.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.7", default-features = false, optional = true }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
-rlsf = { version = "0.2.1", default-features = false, optional = true }
+rlsf = { version = "0.2.2", default-features = false, optional = true }
 sealed = { version = "0.6.0", default-features = false, optional = true }
 typenum = { version = "1.19.0", default-features = false, optional = true }
 wasefire-applet-api = { version = "0.9.1-git", path = "../api", features = ["wasm"] }

@@ -19,7 +19,7 @@ use clap::Parser;
 use interface::{Request, Response};
 use p256::ecdsa::signature::hazmat::PrehashVerifier;
 use p256::ecdsa::{Signature, VerifyingKey};
-use rand::RngCore;
+use rand::Rng;
 use wasefire_cli_tools::action::usb_serial::ConnectionOptions;
 
 #[derive(Parser)]

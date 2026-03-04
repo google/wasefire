@@ -10,7 +10,7 @@ edition = "2024"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = "0.4.10"
+libfuzzer-sys = "0.4.12"
 wasefire-slice-cell = { path = ".." }
 
 [[bin]]
