@@ -19,10 +19,11 @@ wasefire::applet!();
 
 use alloc::vec::Vec;
 
+use ecdh_vectors as ecdh;
+use ecdsa_vectors as ecdsa;
 use wasefire::crypto::ec::{
     Curve, EcdhPrivate, EcdhPublic, EcdsaPrivate, EcdsaPublic, EcdsaSignature, Int, P256, P384,
 };
-use {ecdh_vectors as ecdh, ecdsa_vectors as ecdsa};
 
 pub fn main() -> ! {
     test_ecdh::<P256>("p256", ecdh::P256_VECTORS);

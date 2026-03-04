@@ -14,7 +14,7 @@
 
 //! Provides elliptic curve cryptography.
 
-use crypto_common::array::{Array, ArraySize};
+use crypto_common::generic_array::{ArrayLength, GenericArray};
 use wasefire_applet_api::crypto::ec as api;
 #[cfg(any(feature = "api-crypto-hash", feature = "api-crypto-hkdf"))]
 use wasefire_applet_api::crypto::hash::Algorithm;
@@ -106,7 +106,7 @@ impl<C: Curve> EcdsaSignature<C> {
     /// Creates a signature for a message.
     #[cfg(feature = "api-crypto-hash")]
     pub fn new(private: &EcdsaPrivate<C>, message: &[u8]) -> Result<Self, Error> {
-        Self::new_prehash(private, prehash::<C>(message)?.as_slice().try_into().unwrap())
+        Self::new_prehash(private, prehash::<C>(message)?.as_slice().into())
     }
 
     /// Creates a signature for a prehash.
@@ -135,7 +135,7 @@ impl<C: Curve> EcdsaSignature<C> {
     /// Verifies a signature.
     #[cfg(feature = "api-crypto-hash")]
     pub fn verify(&self, public: &EcdsaPublic<C>, message: &[u8]) -> Result<bool, Error> {
-        self.verify_prehash(public, prehash::<C>(message)?.as_slice().try_into().unwrap())
+        self.verify_prehash(public, prehash::<C>(message)?.as_slice().into())
     }
 
     /// Verifies a signature.
@@ -235,7 +235,7 @@ impl<C: Curve> EcdhShared<C> {
 #[sealed::sealed]
 pub trait Curve {
     /// Integer type.
-    type N: ArraySize;
+    type N: ArrayLength<u8>;
 
     /// Hash to use for ECDSA signatures.
     #[cfg(feature = "api-crypto-hash")]
@@ -271,7 +271,7 @@ pub trait Curve {
 }
 
 /// Array representing a curve integer in SEC1 encoding.
-pub type Int<C> = Array<u8, <C as Curve>::N>;
+pub type Int<C> = GenericArray<u8, <C as Curve>::N>;
 
 /// P-256 curve.
 pub struct P256;
@@ -283,7 +283,7 @@ pub struct P384;
 #[sealed::sealed]
 pub trait InternalHelper {
     /// Scalar size for the curve.
-    type N: ArraySize;
+    type N: ArrayLength<u8>;
     /// Curve enum value.
     const C: api::Curve;
     /// Hash algorithm of the curve.

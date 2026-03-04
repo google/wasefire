@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 
 use rand_pcg::Pcg32;
-use rand_pcg::rand_core::{RngCore, SeedableRng};
+use rand_pcg::rand_core::{Rng, SeedableRng};
 use wasefire_store::{
     BufferOptions, BufferStorage, Store, StoreDriver, StoreDriverOff, StoreDriverOn,
     StoreInterruption, StoreInvariant, StoreOperation, StoreUpdate,

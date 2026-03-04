@@ -1,10 +1,6 @@
 # Changelog
 
-## 0.9.0-git
-
-### Major
-
-- Change `crypto::ec::Int` from `generic_array::GenericArray` to `hybrid_array::Array`
+## 0.8.2-git
 
 ### Patch
 
