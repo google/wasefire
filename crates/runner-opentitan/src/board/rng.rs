@@ -34,7 +34,7 @@ impl Api for Impl {
     fn fill_bytes(buffer: &mut [u8]) -> Result<(), Error> {
         match INSTANTIATED.load(Relaxed) {
             false => Err(Error::world(Code::InvalidState)),
-            true => drbg::generate(buffer),
+            true => drbg::generate_bytes(buffer),
         }
     }
 }

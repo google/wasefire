@@ -284,6 +284,11 @@ impl UnblindedKey {
         unsafe { core::slice::from_raw_parts(self.key, self.key_length / 4) }
     }
 
+    #[cfg(feature = "ed25519")]
+    pub fn key_mut(&mut self) -> &mut [u32] {
+        unsafe { core::slice::from_raw_parts_mut(self.key, self.key_length / 4) }
+    }
+
     pub fn checksum(&self) -> u32 {
         unsafe { integrity_unblinded_checksum(self) }
     }

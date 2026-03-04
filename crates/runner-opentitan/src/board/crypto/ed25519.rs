@@ -19,7 +19,7 @@ use wasefire_board_api::crypto::ed25519::Api;
 use wasefire_error::{Code, Error};
 
 use crate::board::crypto::{memshred, try_from_bytes, try_from_bytes_mut};
-use crate::crypto::common::{BlindedKey, EccKeyMode, KeyMode, UnblindedKey};
+use crate::crypto::common::{EccKeyMode, KeyMode, UnblindedKey};
 use crate::crypto::ed25519;
 
 pub enum Impl {}
@@ -30,22 +30,22 @@ impl Api for Impl {
     const PRIVATE: Layout = Layout::new::<Private>();
     const PUBLIC: Layout = Layout::new::<Public>();
     // TODO: We should use key wrapping once we figure out which key encryption key to use.
-    const WRAPPED: usize = core::mem::size_of::<Private>();
+    const WRAPPED: usize = 32;
 
     fn generate(private: &mut [u8]) -> Result<(), Error> {
         let private = try_from_bytes_mut::<Private>(private)?;
-        let (privkey, pubkey) = ed25519::keygen()?;
-        private.keyblob.copy_from_slice(privkey.0.keyblob());
+        let (privkey, _) = ed25519::keygen()?;
+        private.key.copy_from_slice(privkey.0.key());
         private.checksum = privkey.0.checksum;
-        private.public.key.copy_from_slice(pubkey.0.key());
-        private.public.checksum = pubkey.0.checksum;
         Ok(())
     }
 
     fn public(private: &[u8], public: &mut [u8]) -> Result<(), Error> {
         let private = try_from_bytes::<Private>(private)?;
         let public = try_from_bytes_mut::<Public>(public)?;
-        *public = private.public;
+        let pubkey = ed25519::public(&unsafe { private.borrow()? })?;
+        public.key.copy_from_slice(pubkey.0.key());
+        public.checksum = pubkey.0.checksum;
         Ok(())
     }
 
@@ -56,10 +56,10 @@ impl Api for Impl {
         let mut signature = [0; 16];
         let private = unsafe { private.borrow() }?;
         ed25519::sign(&private, message, &mut signature)?;
-        let signature = bytemuck::bytes_of_mut(&mut signature);
-        signature.reverse();
-        s.copy_from_slice(&signature[.. 32]);
-        r.copy_from_slice(&signature[32 ..]);
+        let signature = bytemuck::bytes_of(&signature);
+        r.copy_from_slice(&signature[.. 32]);
+        s.copy_from_slice(&signature[32 ..]);
+        r.reverse();
         Ok(())
     }
 
@@ -67,49 +67,48 @@ impl Api for Impl {
         let public = try_from_bytes::<Public>(public)?;
         let mut signature = [0; 16];
         let sig = bytemuck::bytes_of_mut(&mut signature);
-        sig[.. 32].copy_from_slice(s);
-        sig[32 ..].copy_from_slice(r);
-        sig.reverse();
+        sig[.. 32].copy_from_slice(r);
+        sig[32 ..].copy_from_slice(s);
+        sig[.. 32].reverse();
         let public = unsafe { public.borrow() }?;
         ed25519::verify(&public, message, &signature)
     }
 
     fn drop_private(private: &mut [u8]) -> Result<(), Error> {
         let private = try_from_bytes_mut::<Private>(private)?;
-        memshred(&mut private.keyblob);
+        memshred(&mut private.key);
         Ok(())
     }
 
     fn export_private(private: &[u8], wrapped: &mut [u8]) -> Result<(), Error> {
-        if private.len() != wrapped.len() {
+        let private = try_from_bytes::<Private>(private)?;
+        if wrapped.len() != Self::WRAPPED {
             return Err(Error::user(Code::InvalidLength));
         }
-        wrapped.copy_from_slice(private);
+        wrapped.copy_from_slice(bytemuck::bytes_of(&private.key));
         Ok(())
     }
 
     fn import_private(wrapped: &[u8], private: &mut [u8]) -> Result<(), Error> {
-        if private.len() != wrapped.len() {
+        let private = try_from_bytes_mut::<Private>(private)?;
+        if wrapped.len() != Self::WRAPPED {
             return Err(Error::user(Code::InvalidLength));
         }
-        private.copy_from_slice(wrapped);
+        bytemuck::bytes_of_mut(&mut private.key).copy_from_slice(wrapped);
+        private.checksum = unsafe { private.borrow()? }.checksum();
         Ok(())
     }
 
     fn export_public(public: &[u8], a: &mut [u8; 32]) -> Result<(), Error> {
         let public = try_from_bytes::<Public>(public)?;
-        let key = bytemuck::bytes_of(&public.key);
-        a.copy_from_slice(key);
-        a.reverse();
+        a.copy_from_slice(bytemuck::bytes_of(&public.key));
         Ok(())
     }
 
     fn import_public(a: &[u8; 32], public: &mut [u8]) -> Result<(), Error> {
         let public = try_from_bytes_mut::<Public>(public)?;
-        let key = bytemuck::bytes_of_mut(&mut public.key);
-        key.copy_from_slice(a);
-        key.reverse();
-        public.checksum = 0;
+        bytemuck::bytes_of_mut(&mut public.key).copy_from_slice(a);
+        public.checksum = unsafe { public.borrow()? }.checksum();
         Ok(())
     }
 }
@@ -124,10 +123,8 @@ struct Public {
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 struct Private {
-    keyblob: [u32; 20],
+    key: [u32; 8],
     checksum: u32,
-    // TODO: Remove once cryptolib provides a function to recover the public key of a private key.
-    public: Public,
 }
 
 impl Public {
@@ -137,7 +134,7 @@ impl Public {
 }
 
 impl Private {
-    unsafe fn borrow(&self) -> Result<BlindedKey, Error> {
-        unsafe { BlindedKey::new(KeyMode::Ecc(EccKeyMode::Ed25519), &self.keyblob, self.checksum) }
+    unsafe fn borrow(&self) -> Result<UnblindedKey, Error> {
+        unsafe { UnblindedKey::new(KeyMode::Ecc(EccKeyMode::Ed25519), &self.key, self.checksum) }
     }
 }

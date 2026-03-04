@@ -17,8 +17,7 @@
 use wasefire_error::Error;
 
 use crate::crypto::common::{
-    BlindedKey, ConstByteBuf, ConstWord32Buf, EccKeyMode, KeyMode, OwnedBlindedKey,
-    OwnedUnblindedKey, UnblindedKey, Word32Buf,
+    ConstByteBuf, ConstWord32Buf, EccKeyMode, KeyMode, OwnedUnblindedKey, UnblindedKey, Word32Buf,
 };
 use crate::error::unwrap_status;
 use crate::hardened_bool;
@@ -35,20 +34,29 @@ impl SignMode {
     }
 }
 
-pub fn keygen() -> Result<(OwnedBlindedKey, OwnedUnblindedKey), Error> {
-    let mut private = OwnedBlindedKey::new(KeyMode::Ecc(EccKeyMode::Ed25519))?;
-    let mut public = OwnedUnblindedKey::new(KeyMode::Ecc(EccKeyMode::Ed25519))?;
-    unwrap_status(unsafe { otcrypto_ed25519_keygen(&mut private.0, &mut public.0) })?;
+pub fn keygen() -> Result<(OwnedUnblindedKey, OwnedUnblindedKey), Error> {
+    let mut private = OwnedUnblindedKey::new(KeyMode::Ecc(EccKeyMode::Ed25519))?;
+    super::drbg::generate_words(private.0.key_mut())?;
+    private.0.checksum = private.0.checksum();
+    let public = public(&private.0)?;
     Ok((private, public))
 }
 
-pub fn sign(private: &BlindedKey, message: &[u8], signature: &mut [u32; 16]) -> Result<(), Error> {
+pub fn public(private: &UnblindedKey) -> Result<OwnedUnblindedKey, Error> {
+    let mut public = OwnedUnblindedKey::new(KeyMode::Ecc(EccKeyMode::Ed25519))?;
+    unwrap_status(unsafe { otcrypto_ed25519_keygen(private, &mut public.0) })?;
+    Ok(public)
+}
+
+pub fn sign(
+    private: &UnblindedKey, message: &[u8], signature: &mut [u32; 16],
+) -> Result<(), Error> {
     unwrap_status(unsafe {
         otcrypto_ed25519_sign(
             private,
             message.into(),
             SignMode::Eddsa.to_c(),
-            signature.as_mut_slice().into(),
+            &mut signature.as_mut_slice().into(),
         )
     })?;
     Ok(())
@@ -69,9 +77,9 @@ pub fn verify(public: &UnblindedKey, message: &[u8], signature: &[u32; 16]) -> R
 }
 
 unsafe extern "C" {
-    fn otcrypto_ed25519_keygen(private: *mut BlindedKey, public: *mut UnblindedKey) -> i32;
+    fn otcrypto_ed25519_keygen(private: *const UnblindedKey, public: *mut UnblindedKey) -> i32;
     fn otcrypto_ed25519_sign(
-        private: *const BlindedKey, message: ConstByteBuf, mode: i32, signature: Word32Buf,
+        private: *const UnblindedKey, message: ConstByteBuf, mode: i32, signature: *mut Word32Buf,
     ) -> i32;
     fn otcrypto_ed25519_verify(
         public: *const UnblindedKey, message: ConstByteBuf, mode: i32, signature: ConstWord32Buf,
