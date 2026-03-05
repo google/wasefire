@@ -34,12 +34,11 @@ impl SignMode {
     }
 }
 
-pub fn keygen() -> Result<(OwnedUnblindedKey, OwnedUnblindedKey), Error> {
+pub fn keygen() -> Result<OwnedUnblindedKey, Error> {
     let mut private = OwnedUnblindedKey::new(KeyMode::Ecc(EccKeyMode::Ed25519))?;
     super::drbg::generate_words(private.0.key_mut())?;
     private.0.checksum = private.0.checksum();
-    let public = public(&private.0)?;
-    Ok((private, public))
+    Ok(private)
 }
 
 pub fn public(private: &UnblindedKey) -> Result<OwnedUnblindedKey, Error> {

@@ -34,7 +34,7 @@ impl Api for Impl {
 
     fn generate(private: &mut [u8]) -> Result<(), Error> {
         let private = try_from_bytes_mut::<Private>(private)?;
-        let (privkey, _) = ed25519::keygen()?;
+        let privkey = ed25519::keygen()?;
         private.key.copy_from_slice(privkey.0.key());
         private.checksum = privkey.0.checksum;
         Ok(())
