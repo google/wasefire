@@ -24,19 +24,24 @@ pub fn instantiate() -> Result<(), Error> {
     Ok(())
 }
 
-pub fn generate(output: &mut [u8]) -> Result<(), Error> {
-    let salt: ConstByteBuf = (b"" as &'static [u8]).into();
+pub fn generate_bytes(output: &mut [u8]) -> Result<(), Error> {
     let (prefix, body, suffix) = bytemuck::pod_align_to_mut(output);
-    unwrap_status(unsafe { otcrypto_drbg_generate(salt, body.into()) })?;
+    generate_words(body)?;
     let len = prefix.len() + suffix.len();
     if 0 < len {
         let mut extra = [0u32; 2];
         let extra = &mut extra[.. len.div_ceil(4)];
-        unwrap_status(unsafe { otcrypto_drbg_generate(salt, extra.into()) })?;
+        generate_words(extra)?;
         let extra = &bytemuck::cast_slice::<_, u8>(extra)[.. len];
         prefix.copy_from_slice(&extra[.. prefix.len()]);
         suffix.copy_from_slice(&extra[prefix.len() ..]);
     }
+    Ok(())
+}
+
+pub fn generate_words(output: &mut [u32]) -> Result<(), Error> {
+    let salt: ConstByteBuf = (b"" as &'static [u8]).into();
+    unwrap_status(unsafe { otcrypto_drbg_generate(salt, output.into()) })?;
     Ok(())
 }
 
