@@ -18,7 +18,7 @@ wasefire-protocol = { path = "../protocol", features = ["host"] }
 wasefire-protocol-usb = { path = "../protocol-usb" }
 web-sys = "0.3.85"
 webusb-web = "0.4.1"
-yew = { version = "0.22.1", features = ["csr"] }
+yew = { version = "0.23.0", features = ["csr"] }
 yew-autoprops = "0.4.1"
 
 [lints]

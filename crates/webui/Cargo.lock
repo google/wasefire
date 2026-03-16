@@ -1040,9 +1040,9 @@ dependencies = [
 
 [[package]]
 name = "yew"
-version = "0.22.1"
+version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94b446be974884d87d58548f1662bc50c051996203a17d2558f8d6c56942b6ac"
+checksum = "2c154fadfa97eabdd3f3b79345ceeb9c05ee8f13f76d3d881d17fba618bf558d"
 dependencies = [
  "console_error_panic_hook",
  "futures",
@@ -1076,9 +1076,9 @@ dependencies = [
 
 [[package]]
 name = "yew-macro"
-version = "0.22.1"
+version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a708a4027c143be6ca160a341700b59f9ecc36a7ebd95e3c477018de8cf71c75"
+checksum = "c08b883d84a035f57519d057f65a2a07ae25f1884ad485e1a9a523c9d880c1ad"
 dependencies = [
  "prettyplease",
  "proc-macro-error",
