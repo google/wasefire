@@ -44,13 +44,10 @@ ensure bin curl
 ensure bin pkg-config
 
 if ! has bin rustup; then
-  x git submodule update --init third_party/rust-lang/rustup
   if [ -n "$WASEFIRE_YES" ]; then
-    x ./third_party/rust-lang/rustup/rustup-init.sh -y \
-      --default-toolchain=none --profile=minimal --no-modify-path
-  else
-    x ./third_party/rust-lang/rustup/rustup-init.sh
+    RUSTUP_ARGS='-s -- -y --default-toolchain=none --profile=minimal --no-modify-path'
   fi
+  x curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | x sh $RUSTUP_ARGS
 fi
 
 # Transitive dependencies of xtask.

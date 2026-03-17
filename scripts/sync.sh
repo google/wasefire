@@ -90,7 +90,6 @@ GIT_MODULES='
 SchemaStore/schemastore
 WebAssembly/spec
 lowRISC/opentitan
-rust-lang/rustup
 wasm3/wasm-coremark
 '
 [ "$(echo "$GIT_MODULES" | sort | tail -n+2)" = "$(echo "$GIT_MODULES")" ] \
@@ -100,17 +99,3 @@ for m in $GIT_MODULES; do
   printf "\tpath = third_party/$m\n"
   printf "\turl = https://github.com/$m.git\n"
 done > .gitmodules
-
-# This is done here instead of upgrade.sh for 2 reasons:
-# 1. This runs more often so users would install with the latest script.
-# 2. The upgrade.sh would need a way to know the latest version.
-RUSTUP_CURL="curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs"
-RUSTUP_SCRIPT="$(curl -s https://rustup.rs \
-  | sed -n '/^<div id="platform-instructions-unix"/,/^<\/div>$/'\
-'{s#^ *<pre class="rustup-command">\(.*\)</pre>$#\1#p;T;q}'
-)"
-[ "$RUSTUP_SCRIPT" = "$RUSTUP_CURL | sh" ] || e "RUSTUP_CURL is out of sync"
-git submodule update --init third_party/rust-lang/rustup
-eval "$RUSTUP_CURL" \
-  | diff - third_party/rust-lang/rustup/rustup-init.sh >/dev/null \
-  || e 'rustup submodule is out of sync'
