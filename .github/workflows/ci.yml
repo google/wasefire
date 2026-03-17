@@ -123,14 +123,9 @@ jobs:
       - run: ./scripts/setup.sh
       - run: ./scripts/artifacts.sh
       - uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
-        id: attest
         with:
           subject-path: 'artifacts/*'
       - run: |
-          mv ${{ steps.attest.outputs.bundle-path }} attestation.intoto.jsonl
-          echo 'attestation.intoto.jsonl#Provenance attestation' >> artifacts.txt
-          ( cd artifacts && sha256sum * > ../sha256sum.txt )
-          echo 'sha256sum.txt#Checksums' >> artifacts.txt
           COMMIT=$(git rev-parse -q --verify HEAD)
           DATE=$(git log -1 --pretty=%cs)
           xargs --arg-file=artifacts.txt --delimiter='\n' \

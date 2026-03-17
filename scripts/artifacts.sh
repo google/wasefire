@@ -29,21 +29,9 @@ i "Generate notes.txt"
 cat <<EOF > notes.txt
 See the [changelog] for the list of changes in this release.
 
-This release was built with the $TOOLCHAIN toolchain. Applets may need to be built with the same
-toolchain. The CLI will install and use this toolchain if \`rustup\` is installed.
+This release was built with the $TOOLCHAIN toolchain. Applets may need to be built with the same toolchain. The CLI will install and use this toolchain if \`rustup\` is installed.
 
-You can use the CLI or the [Web UI] to update your platform using an appropriate "Wasefire platform
-update" file. Otherwise, you can flash a platform from scratch using an appropriate "Wasefire
-platform bootstrap" file.
-
-You can use the following command to check your downloaded assets:
-
-    sha256sum --ignore-missing --check sha256sum.txt
-
-You can use one of the following commands to verify a downloaded asset:
-
-    gh attestation verify --repo=google/wasefire ASSET_PATH
-    gh attestation verify --owner=google --bundle=attestation.intoto.jsonl ASSET_PATH
+You can use the CLI or the [Web UI] to update your platform using an appropriate "Wasefire platform update" file. Otherwise, you can flash a platform from scratch using an appropriate "Wasefire platform bootstrap" file.
 
 [Web UI]: https://google.github.io/wasefire/webui
 [changelog]: https://github.com/google/wasefire/blob/main/docs/releases/$DATE.md
