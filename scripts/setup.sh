@@ -45,11 +45,9 @@ ensure bin pkg-config
 
 if ! has bin rustup; then
   if [ -n "$WASEFIRE_YES" ]; then
-    x curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- \
-      -y --default-toolchain=none --profile=minimal --no-modify-path
-  else
-    x curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    RUSTUP_ARGS='-s -- -y --default-toolchain=none --profile=minimal --no-modify-path'
   fi
+  x curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | x sh $RUSTUP_ARGS
 fi
 
 # Transitive dependencies of xtask.
