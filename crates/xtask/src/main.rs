@@ -16,8 +16,6 @@
 #![feature(try_blocks)]
 
 use std::borrow::Cow;
-use std::cmp::Reverse;
-use std::collections::BinaryHeap;
 use std::ffi::OsString;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -26,7 +24,6 @@ use anyhow::{Context, Result, anyhow, bail, ensure};
 use clap::{Parser, ValueEnum};
 use data_encoding::HEXLOWER_PERMISSIVE as HEX;
 use object::read::elf::{ElfFile32, SectionHeader as _};
-use rustc_demangle::demangle;
 use tokio::process::Command;
 use tokio::sync::OnceCell;
 use wasefire_cli_tools::error::root_cause_is;
@@ -341,10 +338,6 @@ struct RunnerOptions {
     // TODO: Make this a subcommand taking additional options for cargo bloat.
     #[arg(long)]
     measure_bloat: bool,
-
-    /// Show the (top N) stack sizes of the firmware.
-    #[arg(long)]
-    stack_sizes: Option<Option<usize>>,
 
     /// Allocates <MEMORY_PAGE_COUNT> pages for the WASM module.
     ///
@@ -753,10 +746,6 @@ impl RunnerOptions {
         if let Some(log) = &self.log {
             cargo.env(self.name.log_env(), log);
         }
-        if self.stack_sizes.is_some() {
-            rustflags.push("-Z emit-stack-sizes".to_string());
-            rustflags.push("-C link-arg=-Tstack-sizes.x".to_string());
-        }
         if main.is_native() {
             features.push("native".to_string());
         } else if main.pulley {
@@ -859,29 +848,6 @@ impl RunnerOptions {
         }
         if let Some(key) = &main.footprint {
             footprint::update_runner(key, footprint::rust_size(&elf).await?).await?;
-        }
-        if let Some(stack_sizes) = self.stack_sizes {
-            let elf = fs::read(&elf).await?;
-            let symbols = stack_sizes::analyze_executable(&elf)?;
-            assert!(symbols.have_32_bit_addresses);
-            assert!(symbols.undefined.is_empty());
-            let max_stack_sizes = stack_sizes.unwrap_or(10);
-            let mut top_stack_sizes = BinaryHeap::new();
-            for (address, symbol) in symbols.defined {
-                let stack = match symbol.stack() {
-                    None => continue,
-                    Some(x) => x,
-                };
-                // Multiple symbols can have the same address. Just use the first name.
-                let name = *symbol.names().first().context("missing symbol")?;
-                top_stack_sizes.push((Reverse(stack), address, name));
-                if top_stack_sizes.len() > max_stack_sizes {
-                    top_stack_sizes.pop();
-                }
-            }
-            while let Some((Reverse(stack), address, name)) = top_stack_sizes.pop() {
-                println!("{:#010x}\t{}\t{}", address, stack, demangle(name));
-            }
         }
         let Some(mut cmd) = cmd else { return Ok(()) };
         let flash = match cmd {
