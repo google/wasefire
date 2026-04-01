@@ -8,14 +8,14 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.102"
-clap = { version = "4.5.60", features = ["derive", "env"] }
+clap = { version = "4.6.0", features = ["derive", "env"] }
 data-encoding = "2.10.0"
-env_logger = { version = "0.11.9", optional = true }
+env_logger = { version = "0.11.10", optional = true }
 rand = "0.10.0"
 syscall-test = { path = "../board/crates/syscall-test" }
 tokio = { version = "1.50.0", features = ["full"] }
 usb-device = "0.3.2"
-usbd-hid = { version = "0.9.0", features = ["std"] }
+usbd-hid = "0.10.0"
 usbd-serial = "0.2.2"
 wasefire-board-api = { path = "../board", features = ["std"] }
 wasefire-cli-tools = { path = "../cli-tools" }

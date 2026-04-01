@@ -15,8 +15,8 @@ categories = ["embedded", "no-std"]
 all-features = true
 
 [dependencies]
-wasefire-common = { version = "0.1.1", path = "../common" }
-wasefire-error = { version = "0.1.4", path = "../error" }
+wasefire-common = { version = "0.1.2-git", path = "../common" }
+wasefire-error = { version = "0.1.5-git", path = "../error" }
 wasefire-wire-derive = { version = "0.1.4-git", path = "../wire-derive" }
 
 [features]
@@ -29,3 +29,4 @@ clippy.uninlined_format_args = "allow"
 clippy.unit-arg = "allow"
 rust.unreachable-pub = "warn"
 rust.unused-crate-dependencies = "warn"
+rust.unused-features = "allow"

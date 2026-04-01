@@ -7,8 +7,8 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.102"
-clap = { version = "4.5.60", features = ["derive"] }
-env_logger = "0.11.9"
+clap = { version = "4.6.0", features = ["derive"] }
+env_logger = "0.11.10"
 rusb = "0.9.4"
 tokio = { version = "1.50.0", features = ["full"] }
 wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["action"] }

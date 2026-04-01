@@ -106,7 +106,7 @@
 
 #![cfg_attr(not(feature = "debug"), no_std)]
 #![cfg_attr(test, allow(unused_crate_dependencies))]
-#![feature(float_minimum_maximum)]
+#![cfg_attr(feature = "float-types", feature(float_minimum_maximum))]
 #![feature(never_type)]
 #![feature(pointer_is_aligned_to)]
 #![feature(try_blocks)]

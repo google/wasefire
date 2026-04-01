@@ -19,7 +19,7 @@ anyhow = { version = "1.0.102", default-features = false, features = ["std"], op
 defmt = { version = "1.0.1", default-features = false, optional = true }
 rusb = { version = "0.9.4", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false, optional = true }
-wasefire-error = { version = "0.1.4", path = "../error", optional = true }
+wasefire-error = { version = "0.1.5-git", path = "../error", optional = true }
 wasefire-logger = { version = "0.2.1", path = "../logger" }
 wasefire-one-of = { version = "0.1.2", path = "../one-of" }
 

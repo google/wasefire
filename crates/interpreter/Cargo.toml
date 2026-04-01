@@ -12,16 +12,16 @@ keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
 
 [dependencies]
-derive-where = { version = "1.6.0", default-features = false, features = ["nightly"] }
+derive-where = { version = "1.6.1", default-features = false, features = ["nightly"] }
 libm = { version = "0.2.16", default-features = false, optional = true }
-num_enum = { version = "0.7.5", default-features = false }
+num_enum = { version = "0.7.6", default-features = false }
 paste = { version = "1.0.15", default-features = false }
-wasefire-common = { version = "0.1.1", path = "../common" }
-wasefire-error = { version = "0.1.4", path = "../error" }
+wasefire-common = { version = "0.1.2-git", path = "../common" }
+wasefire-error = { version = "0.1.5-git", path = "../error" }
 
 [dev-dependencies]
 lazy_static = "1.5.0"
-wast = "245.0.1"
+wast = "246.0.1"
 
 [features]
 # Enable debugging features (only works for targets with std).
