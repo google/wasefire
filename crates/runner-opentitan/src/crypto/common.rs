@@ -381,7 +381,7 @@ impl OwnedBlindedKey {
         let keyblob_length = 4 * (share0.len + share1.len);
         let keyblob = unsafe { alloc(BlindedKey::layout(keyblob_length)?) as *mut u32 };
         let mut key = BlindedKey { config, keyblob_length, keyblob, checksum: 0 };
-        let status = unsafe { otcrypto_import_blinded_key(share0, share1, &mut key) };
+        let status = unsafe { otcrypto_import_blinded_key(&share0, &share1, &mut key) };
         unwrap_status(status)?;
         Ok(OwnedBlindedKey(key))
     }
@@ -389,7 +389,7 @@ impl OwnedBlindedKey {
 
 unsafe extern "C" {
     fn otcrypto_import_blinded_key(
-        share0: ConstWord32Buf, share1: ConstWord32Buf, key: *mut BlindedKey,
+        share0: *const ConstWord32Buf, share1: *const ConstWord32Buf, key: *mut BlindedKey,
     ) -> i32;
     fn integrity_unblinded_checksum(key: *const UnblindedKey) -> u32;
     #[cfg(feature = "test-vendor")]

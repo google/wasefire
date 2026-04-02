@@ -20,7 +20,7 @@ use crate::crypto::common::{ConstByteBuf, Word32Buf};
 use crate::error::unwrap_status;
 
 pub fn instantiate() -> Result<(), Error> {
-    unwrap_status(unsafe { otcrypto_drbg_instantiate(b"wasefire"[..].into()) })?;
+    unwrap_status(unsafe { otcrypto_drbg_instantiate(&mut b"wasefire"[..].into()) })?;
     Ok(())
 }
 
@@ -40,12 +40,12 @@ pub fn generate_bytes(output: &mut [u8]) -> Result<(), Error> {
 }
 
 pub fn generate_words(output: &mut [u32]) -> Result<(), Error> {
-    let salt: ConstByteBuf = (b"" as &'static [u8]).into();
-    unwrap_status(unsafe { otcrypto_drbg_generate(salt, output.into()) })?;
+    let mut salt: ConstByteBuf = (b"" as &'static [u8]).into();
+    unwrap_status(unsafe { otcrypto_drbg_generate(&mut salt, &mut output.into()) })?;
     Ok(())
 }
 
 unsafe extern "C" {
-    fn otcrypto_drbg_instantiate(perso: ConstByteBuf) -> i32;
-    fn otcrypto_drbg_generate(salt: ConstByteBuf, output: Word32Buf) -> i32;
+    fn otcrypto_drbg_instantiate(perso: *mut ConstByteBuf) -> i32;
+    fn otcrypto_drbg_generate(salt: *mut ConstByteBuf, output: *mut Word32Buf) -> i32;
 }

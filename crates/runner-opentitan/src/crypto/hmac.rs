@@ -33,13 +33,13 @@ impl Context {
     }
 
     pub fn update(&mut self, data: &[u8]) -> Result<(), Error> {
-        let status = unsafe { otcrypto_hmac_update(self.to_c(), data.into()) };
+        let status = unsafe { otcrypto_hmac_update(self.to_c(), &data.into()) };
         unwrap_status(status)?;
         Ok(())
     }
 
     pub fn finalize(mut self, tag: &mut [u32]) -> Result<(), Error> {
-        let status = unsafe { otcrypto_hmac_final(self.to_c(), tag.into()) };
+        let status = unsafe { otcrypto_hmac_final(self.to_c(), &mut tag.into()) };
         unwrap_status(status)?;
         Ok(())
     }
@@ -52,6 +52,6 @@ impl Context {
 
 unsafe extern "C" {
     fn otcrypto_hmac_init(ctx: *mut u32, key: *const BlindedKey) -> i32;
-    fn otcrypto_hmac_update(ctx: *mut u32, message: ConstByteBuf) -> i32;
-    fn otcrypto_hmac_final(ctx: *mut u32, tag: Word32Buf) -> i32;
+    fn otcrypto_hmac_update(ctx: *mut u32, message: *const ConstByteBuf) -> i32;
+    fn otcrypto_hmac_final(ctx: *mut u32, tag: *mut Word32Buf) -> i32;
 }
