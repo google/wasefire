@@ -24,7 +24,7 @@ ccm = { version = "0.5.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.7", default-features = false, optional = true }
 data-encoding = { version = "2.10.0", default-features = false, features = ["alloc"] }
 defmt = { version = "1.0.1", default-features = false, optional = true }
-derive-where = { version = "1.6.0", default-features = false, features = ["nightly"] }
+derive-where = { version = "1.6.1", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, optional = true }
 ecdsa = { version = "0.16.9", default-features = false, optional = true }
 ed25519-dalek = { version = "2.2.0", optional = true, default-features = false }
@@ -36,10 +36,10 @@ sha2 = { version = "0.10.9", default-features = false, optional = true }
 signature = { version = "2.2.0", default-features = false, optional = true }
 typenum = { version = "1.19.0", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false }
-usbd-hid = { version = "0.9.0", default-features = false, optional = true }
+usbd-hid = { version = "0.10.0", default-features = false, optional = true }
 usbd-serial = { version = "0.2.2", default-features = false, optional = true }
-wasefire-common = { version = "0.1.1", path = "../common" }
-wasefire-error = { version = "0.1.4", path = "../error" }
+wasefire-common = { version = "0.1.2-git", path = "../common" }
+wasefire-error = { version = "0.1.5-git", path = "../error" }
 wasefire-logger = { version = "0.2.1", path = "../logger" }
 wasefire-protocol = { version = "0.4.1-git", path = "../protocol" }
 wasefire-store = { version = "0.3.3-git", path = "../store", optional = true }
@@ -259,3 +259,4 @@ clippy.unit-arg = "allow"
 rust.missing-docs = "warn"
 rust.unreachable-pub = "warn"
 rust.unused-crate-dependencies = "warn"
+rust.unused-features = "allow"

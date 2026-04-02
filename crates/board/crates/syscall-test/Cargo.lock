@@ -60,9 +60,9 @@ dependencies = [
 
 [[package]]
 name = "derive-where"
-version = "1.6.0"
+version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef941ded77d15ca19b40374869ac6000af1c9f2a4c0f3d4c70926287e6364a8f"
+checksum = "d08b3a0bcc0d079199cd476b2cae8435016ec11d1c0986c6901c5ac223041534"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -90,9 +90,9 @@ dependencies = [
 
 [[package]]
 name = "num_enum"
-version = "0.7.5"
+version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1207a7e20ad57b847bbddc6776b968420d38292bbfe2089accff5e19e82454c"
+checksum = "5d0bca838442ec211fa11de3a8b0e0e8f3a4522575b5c4c06ed722e005036f26"
 dependencies = [
  "num_enum_derive",
  "rustversion",
@@ -100,9 +100,9 @@ dependencies = [
 
 [[package]]
 name = "num_enum_derive"
-version = "0.7.5"
+version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff32365de1b6743cb203b710788263c44a03de03802daf96092f2da4fe6ba4d7"
+checksum = "680998035259dcfcafe653688bf2aa6d3e2dc05e98be6ab46afb089dc84f1df8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -148,9 +148,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.44"
+version = "1.0.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b2ebcf727b7760c461f091f9f0f539b77b8e87f2fd88131e7f1b433b3cece4"
+checksum = "41f2619966050689382d2b44f664f4bc593e129785a36d6ee376ddf37259b924"
 dependencies = [
  "proc-macro2",
 ]
@@ -248,7 +248,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-common"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "wasefire-error",
  "wasefire-sync",
@@ -256,7 +256,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.4"
+version = "0.1.5-git"
 dependencies = [
  "num_enum",
 ]

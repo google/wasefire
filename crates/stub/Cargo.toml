@@ -24,7 +24,7 @@ p384 = { version = "0.13.1", default-features = false, features = ["ecdsa"] }
 rand = { version = "0.10.0", default-features = false, features = ["thread_rng"] }
 sha2 = { version = "0.10.9", default-features = false }
 signature = { version = "2.2.0", default-features = false }
-wasefire-error = { version = "0.1.4", path = "../error" }
+wasefire-error = { version = "0.1.5-git", path = "../error" }
 wasefire-logger = { version = "0.2.1", path = "../logger" }
 zeroize = { version = "1.8.2", default-features = false }
 

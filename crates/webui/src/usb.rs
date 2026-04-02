@@ -96,8 +96,8 @@ impl wasefire_protocol::Connection for Connection {
             let mut decoder = Decoder::default();
             loop {
                 let packet = self.0.transfer_in(WASEFIRE_EP, MAX_PACKET_SIZE).await?;
-                let packet = packet.as_slice().try_into().map_err(|_| transfer_in_error())?;
-                match decoder.push(packet).ok_or_else(transfer_in_error)? {
+                let packet = packet.to_vec().try_into().map_err(|_| transfer_in_error())?;
+                match decoder.push(&packet).ok_or_else(transfer_in_error)? {
                     Ok(x) => break Ok(x.into_boxed_slice()),
                     Err(x) => decoder = x,
                 }

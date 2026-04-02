@@ -56,7 +56,7 @@ case "$1" in
   probe-rs) ensure_cargo probe-rs-tools 0.31.0 ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.4.0 ;;
   taplo) ensure_cargo taplo-cli 0.10.0 ;;
-  trunk) ensure_cargo trunk 0.21.14 ;;
+  trunk) ensure_cargo trunk 0.22.0-beta.1 ;;
   twiggy) ensure_cargo twiggy 0.8.0 ;;
   *) IS_CARGO=n ;;
 esac

@@ -14,8 +14,8 @@
 
 //! Wasefire protocol for Unix and TCP streams.
 
-#![feature(never_type)]
-#![feature(trait_alias)]
+#![cfg_attr(feature = "device", feature(never_type))]
+#![cfg_attr(feature = "device", feature(trait_alias))]
 
 #[cfg(feature = "device")]
 pub use device::*;

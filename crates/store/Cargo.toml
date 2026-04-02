@@ -15,10 +15,10 @@ categories = ["embedded", "no-std"]
 features = ["std"]
 
 [dependencies]
-wasefire-error = { version = "0.1.4", path = "../error" }
+wasefire-error = { version = "0.1.5-git", path = "../error" }
 
 [dev-dependencies]
-tempfile = "3.26.0"
+tempfile = "3.27.0"
 
 [features]
 std = ["wasefire-error/std"]

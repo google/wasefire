@@ -21,7 +21,6 @@
 
 //{ ANCHOR: all
 #![no_std]
-#![feature(try_blocks)]
 #![feature(try_blocks_heterogeneous)]
 wasefire::applet!();
 

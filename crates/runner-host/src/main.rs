@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #![feature(never_type)]
-#![feature(try_blocks)]
 
 use std::net::SocketAddr;
 use std::path::PathBuf;

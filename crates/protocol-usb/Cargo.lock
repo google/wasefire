@@ -91,7 +91,7 @@ dependencies = [
  "proc-macro-error2",
  "proc-macro2",
  "quote",
- "syn 2.0.117",
+ "syn",
 ]
 
 [[package]]
@@ -105,20 +105,14 @@ dependencies = [
 
 [[package]]
 name = "derive-where"
-version = "1.6.0"
+version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef941ded77d15ca19b40374869ac6000af1c9f2a4c0f3d4c70926287e6364a8f"
+checksum = "d08b3a0bcc0d079199cd476b2cae8435016ec11d1c0986c6901c5ac223041534"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.117",
+ "syn",
 ]
-
-[[package]]
-name = "encode_unicode"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
 name = "hash32"
@@ -174,9 +168,9 @@ checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
 
 [[package]]
 name = "num_enum"
-version = "0.7.5"
+version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1207a7e20ad57b847bbddc6776b968420d38292bbfe2089accff5e19e82454c"
+checksum = "5d0bca838442ec211fa11de3a8b0e0e8f3a4522575b5c4c06ed722e005036f26"
 dependencies = [
  "num_enum_derive",
  "rustversion",
@@ -184,13 +178,13 @@ dependencies = [
 
 [[package]]
 name = "num_enum_derive"
-version = "0.7.5"
+version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff32365de1b6743cb203b710788263c44a03de03802daf96092f2da4fe6ba4d7"
+checksum = "680998035259dcfcafe653688bf2aa6d3e2dc05e98be6ab46afb089dc84f1df8"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.117",
+ "syn",
 ]
 
 [[package]]
@@ -230,7 +224,7 @@ dependencies = [
  "proc-macro-error-attr2",
  "proc-macro2",
  "quote",
- "syn 2.0.117",
+ "syn",
 ]
 
 [[package]]
@@ -244,9 +238,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.44"
+version = "1.0.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b2ebcf727b7760c461f091f9f0f539b77b8e87f2fd88131e7f1b433b3cece4"
+checksum = "41f2619966050689382d2b44f664f4bc593e129785a36d6ee376ddf37259b924"
 dependencies = [
  "proc-macro2",
 ]
@@ -284,7 +278,7 @@ checksum = "243902eda00fad750862fc144cea25caca5e20d615af0a81bee94ca738f1df1f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.117",
+ "syn",
 ]
 
 [[package]]
@@ -297,31 +291,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "ssmarshal"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3e6ad23b128192ed337dfa4f1b8099ced0c2bf30d61e551b65fda5916dbb850"
-dependencies = [
- "encode_unicode",
- "serde",
-]
-
-[[package]]
 name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
-
-[[package]]
-name = "syn"
-version = "1.0.109"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
-dependencies = [
- "proc-macro2",
- "quote",
- "unicode-ident",
-]
 
 [[package]]
 name = "syn"
@@ -351,7 +324,7 @@ checksum = "7f7cf42b4507d8ea322120659672cf1b9dbb93f8f2d4ecfd6e51350ff5b17a1d"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.117",
+ "syn",
 ]
 
 [[package]]
@@ -373,31 +346,29 @@ dependencies = [
 
 [[package]]
 name = "usbd-hid"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a7cd3bfb2bb57779f2aeab3f679e5ec6c80265adfe77894539792be7c22aaf0"
+checksum = "68beab087e4971a2fe76f631478b0e91d39593f58efd2775026ce6dc07a7bac6"
 dependencies = [
  "defmt 0.3.100",
- "serde",
- "ssmarshal",
  "usb-device",
  "usbd-hid-macros",
 ]
 
 [[package]]
 name = "usbd-hid-descriptors"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac781e4d4c61a4d3bea4cda03fb4ed4d13578c55386b29c5cdc70b3bd89c47df"
+checksum = "b297f021719c4308d5d0c61b6c1e7c6b3ba383deba774b49aa5484f996bdb8f1"
 dependencies = [
  "bitfield",
 ]
 
 [[package]]
 name = "usbd-hid-macros"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab457064302de0aca303a13cd520dcf035fdfd2aff713fa69d713d0a8e4291d8"
+checksum = "011a3219e0933f5b3ad7dc90d9a66541a967d084c98c067deed1cd608e557ed7"
 dependencies = [
  "byteorder",
  "hashbrown",
@@ -405,7 +376,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "serde",
- "syn 1.0.109",
+ "syn",
  "usbd-hid-descriptors",
 ]
 
@@ -441,7 +412,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-common"
-version = "0.1.1"
+version = "0.1.2-git"
 dependencies = [
  "wasefire-error",
  "wasefire-sync",
@@ -449,7 +420,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-error"
-version = "0.1.4"
+version = "0.1.5-git"
 dependencies = [
  "defmt 1.0.1",
  "num_enum",
@@ -523,7 +494,7 @@ version = "0.1.4-git"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.117",
+ "syn",
 ]
 
 [[package]]
@@ -543,5 +514,5 @@ checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.117",
+ "syn",
 ]

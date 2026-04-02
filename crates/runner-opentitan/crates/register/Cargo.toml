@@ -8,7 +8,7 @@ edition = "2024"
 
 [dependencies]
 bytemuck = { version = "1.25.0", default-features = false, features = ["derive"] }
-derive-where = { version = "1.6.0", default-features = false, features = ["nightly"] }
+derive-where = { version = "1.6.1", default-features = false, features = ["nightly"] }
 
 [lints]
 clippy.mod-module-files = "warn"

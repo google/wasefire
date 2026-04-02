@@ -10,16 +10,16 @@ edition = "2024"
 anyhow = "1.0.102"
 data-encoding = "2.10.0"
 futures-util = "0.3.32"
-gloo = { version = "0.11.0", features = ["futures"] }
-js-sys = "0.3.85"
+gloo = { version = "0.12.0", features = ["futures"] }
+js-sys = "0.3.94"
 wasefire-common = { path = "../common" }
 wasefire-error = { path = "../error" }
 wasefire-protocol = { path = "../protocol", features = ["host"] }
 wasefire-protocol-usb = { path = "../protocol-usb" }
-web-sys = "0.3.85"
-webusb-web = "0.4.1"
+web-sys = "0.3.94"
+webusb-web = "0.5.1"
 yew = { version = "0.23.0", features = ["csr"] }
-yew-autoprops = "0.4.1"
+yew-autoprops = "0.5.0"
 
 [lints]
 clippy.mod-module-files = "warn"
