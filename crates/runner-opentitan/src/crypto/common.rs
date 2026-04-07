@@ -40,11 +40,15 @@ impl HashMode {
 pub struct ConstByteBuf {
     pub data: *const u8,
     pub len: usize,
+    ptr_checksum: u32,
 }
 
 impl From<&[u8]> for ConstByteBuf {
     fn from(value: &[u8]) -> Self {
-        ConstByteBuf { data: value.as_ptr(), len: value.len() }
+        let data = value.as_ptr();
+        let len = value.len();
+        let ptr_checksum = calculate_buf_checksum(data, len);
+        ConstByteBuf { data, len, ptr_checksum }
     }
 }
 
@@ -54,11 +58,15 @@ impl From<&[u8]> for ConstByteBuf {
 pub struct ByteBuf {
     pub data: *mut u8,
     pub len: usize,
+    ptr_checksum: u32,
 }
 
 impl From<&mut [u8]> for ByteBuf {
     fn from(value: &mut [u8]) -> Self {
-        ByteBuf { data: value.as_mut_ptr(), len: value.len() }
+        let data = value.as_mut_ptr();
+        let len = value.len();
+        let ptr_checksum = calculate_buf_checksum(data, len);
+        ByteBuf { data, len, ptr_checksum }
     }
 }
 
@@ -67,11 +75,15 @@ impl From<&mut [u8]> for ByteBuf {
 pub struct ConstWord32Buf {
     pub data: *const u32,
     pub len: usize,
+    ptr_checksum: u32,
 }
 
 impl From<&[u32]> for ConstWord32Buf {
     fn from(value: &[u32]) -> Self {
-        ConstWord32Buf { data: value.as_ptr(), len: value.len() }
+        let data = value.as_ptr();
+        let len = value.len();
+        let ptr_checksum = calculate_buf_checksum(data.cast(), len);
+        ConstWord32Buf { data, len, ptr_checksum }
     }
 }
 
@@ -80,11 +92,15 @@ impl From<&[u32]> for ConstWord32Buf {
 pub struct Word32Buf {
     pub data: *mut u32,
     pub len: usize,
+    ptr_checksum: u32,
 }
 
 impl From<&mut [u32]> for Word32Buf {
     fn from(value: &mut [u32]) -> Self {
-        Word32Buf { data: value.as_mut_ptr(), len: value.len() }
+        let data = value.as_mut_ptr();
+        let len = value.len();
+        let ptr_checksum = calculate_buf_checksum(data.cast(), len);
+        Word32Buf { data, len, ptr_checksum }
     }
 }
 
@@ -385,6 +401,11 @@ impl OwnedBlindedKey {
         unwrap_status(status)?;
         Ok(OwnedBlindedKey(key))
     }
+}
+
+// We implement this manually because it's a static inline in OpenTitan.
+fn calculate_buf_checksum(data: *const u8, len: usize) -> u32 {
+    0x5a3u32.wrapping_add(data.addr() as u32).wrapping_add(len as u32)
 }
 
 unsafe extern "C" {
