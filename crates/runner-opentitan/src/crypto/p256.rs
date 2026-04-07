@@ -39,7 +39,7 @@ pub fn ecdsa_sign(
         data: digest.as_ptr() as *mut u32,
         len: digest.len(),
     };
-    unwrap_status(unsafe { otcrypto_ecdsa_p256_sign(private, digest, signature.into()) })?;
+    unwrap_status(unsafe { otcrypto_ecdsa_p256_sign(private, digest, &mut signature.into()) })?;
     Ok(())
 }
 
@@ -53,7 +53,7 @@ pub fn ecdsa_verify(
     };
     let mut result = 0i32;
     unwrap_status(unsafe {
-        otcrypto_ecdsa_p256_verify(public, digest, signature.into(), &mut result)
+        otcrypto_ecdsa_p256_verify(public, digest, &mut signature.into(), &mut result)
     })?;
     Ok(result == hardened_bool::TRUE)
 }
@@ -76,10 +76,10 @@ pub fn ecdh(
 unsafe extern "C" {
     fn otcrypto_ecdsa_p256_keygen(private: *mut BlindedKey, public: *mut UnblindedKey) -> i32;
     fn otcrypto_ecdsa_p256_sign(
-        private: *const BlindedKey, digest: HashDigest, signature: Word32Buf,
+        private: *const BlindedKey, digest: HashDigest, signature: *mut Word32Buf,
     ) -> i32;
     fn otcrypto_ecdsa_p256_verify(
-        public: *const UnblindedKey, digest: HashDigest, signature: ConstWord32Buf,
+        public: *const UnblindedKey, digest: HashDigest, signature: *mut ConstWord32Buf,
         result: *mut i32,
     ) -> i32;
     fn otcrypto_ecdh_p256_keygen(private: *mut BlindedKey, public: *mut UnblindedKey) -> i32;

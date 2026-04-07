@@ -710,6 +710,7 @@ impl RunnerOptions {
                 let mut bazel = wrap_command().await?;
                 bazel.current_dir(OPENTITAN);
                 bazel.args(["bazel", "build", &format!("//{CRYPTODIR}:otcrypto")]);
+                bazel.args(["--define", "disable_buf_integrity_checks=true"]);
                 cmd::execute(&mut bazel).await?;
                 rustflags.push(format!("-C link-arg=-L../../{OPENTITAN}/bazel-bin/{CRYPTODIR}"));
                 rustflags.push("-C link-arg=-lotcrypto".to_string());

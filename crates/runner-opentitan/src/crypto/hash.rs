@@ -33,15 +33,15 @@ impl Context {
     }
 
     pub fn update(&mut self, data: &[u8]) -> Result<(), Error> {
-        let status = unsafe { otcrypto_sha2_update(self.to_c(), data.into()) };
+        let status = unsafe { otcrypto_sha2_update(self.to_c(), &mut data.into()) };
         unwrap_status(status)?;
         Ok(())
     }
 
     pub fn finalize(mut self, digest: &mut [u32]) -> Result<(), Error> {
         // The mode is set by the function based on the length.
-        let digest = HashDigest { mode: 0, data: digest.as_mut_ptr(), len: digest.len() };
-        let status = unsafe { otcrypto_sha2_final(self.to_c(), digest) };
+        let mut digest = HashDigest { mode: 0, data: digest.as_mut_ptr(), len: digest.len() };
+        let status = unsafe { otcrypto_sha2_final(self.to_c(), &mut digest) };
         unwrap_status(status)?;
         Ok(())
     }
@@ -54,6 +54,6 @@ impl Context {
 
 unsafe extern "C" {
     fn otcrypto_sha2_init(mode: i32, ctx: *mut u32) -> i32;
-    fn otcrypto_sha2_update(ctx: *mut u32, message: ConstByteBuf) -> i32;
-    fn otcrypto_sha2_final(ctx: *mut u32, digest: HashDigest) -> i32;
+    fn otcrypto_sha2_update(ctx: *mut u32, message: *mut ConstByteBuf) -> i32;
+    fn otcrypto_sha2_final(ctx: *mut u32, digest: *mut HashDigest) -> i32;
 }

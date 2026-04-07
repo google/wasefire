@@ -25,17 +25,17 @@ pub fn encrypt_cbc(key: &[u8; 32], iv: &[u8; 16], blocks: &mut [u8]) -> Result<(
     if !blocks.len().is_multiple_of(16) {
         return Err(Error::user(Code::InvalidLength));
     }
-    let key = convert_key(key)?;
+    let mut key = convert_key(key)?;
     let mut iv: [u32; 4] = bytemuck::cast(*iv);
     unwrap_status(unsafe {
         otcrypto_aes(
-            &key.0,
-            (&mut iv[..]).into(),
+            &mut key.0,
+            &mut (&mut iv[..]).into(),
             Mode::Cbc.to_c(),
             Operation::Encrypt.to_c(),
-            blocks[..].into(),
+            &mut blocks[..].into(),
             Padding::Null.to_c(),
-            blocks.into(),
+            &mut blocks.into(),
         )
     })?;
     Ok(())
@@ -45,17 +45,17 @@ pub fn decrypt_cbc(key: &[u8; 32], iv: &[u8; 16], blocks: &mut [u8]) -> Result<(
     if !blocks.len().is_multiple_of(16) {
         return Err(Error::user(Code::InvalidLength));
     }
-    let key = convert_key(key)?;
+    let mut key = convert_key(key)?;
     let mut iv: [u32; 4] = bytemuck::cast(*iv);
     unwrap_status(unsafe {
         otcrypto_aes(
-            &key.0,
-            (&mut iv[..]).into(),
+            &mut key.0,
+            &mut (&mut iv[..]).into(),
             Mode::Cbc.to_c(),
             Operation::Decrypt.to_c(),
-            blocks[..].into(),
+            &mut blocks[..].into(),
             Padding::Null.to_c(),
-            blocks.into(),
+            &mut blocks.into(),
         )
     })?;
     Ok(())
@@ -106,7 +106,7 @@ impl Padding {
 
 unsafe extern "C" {
     fn otcrypto_aes(
-        key: *const BlindedKey, iv: Word32Buf, mode: i32, operation: i32, input: ConstByteBuf,
-        padding: i32, output: ByteBuf,
+        key: *mut BlindedKey, iv: *mut Word32Buf, mode: i32, operation: i32,
+        input: *mut ConstByteBuf, padding: i32, output: *mut ByteBuf,
     ) -> i32;
 }

@@ -53,7 +53,7 @@ pub fn sign(
     unwrap_status(unsafe {
         otcrypto_ed25519_sign(
             private,
-            message.into(),
+            &mut message.into(),
             SignMode::Eddsa.to_c(),
             &mut signature.as_mut_slice().into(),
         )
@@ -66,9 +66,9 @@ pub fn verify(public: &UnblindedKey, message: &[u8], signature: &[u32; 16]) -> R
     unwrap_status(unsafe {
         otcrypto_ed25519_verify(
             public,
-            message.into(),
+            &mut message.into(),
             SignMode::Eddsa.to_c(),
-            signature.as_slice().into(),
+            &mut signature.as_slice().into(),
             &mut result,
         )
     })?;
@@ -78,10 +78,11 @@ pub fn verify(public: &UnblindedKey, message: &[u8], signature: &[u32; 16]) -> R
 unsafe extern "C" {
     fn otcrypto_ed25519_keygen(private: *const UnblindedKey, public: *mut UnblindedKey) -> i32;
     fn otcrypto_ed25519_sign(
-        private: *const UnblindedKey, message: ConstByteBuf, mode: i32, signature: *mut Word32Buf,
+        private: *const UnblindedKey, message: *mut ConstByteBuf, mode: i32,
+        signature: *mut Word32Buf,
     ) -> i32;
     fn otcrypto_ed25519_verify(
-        public: *const UnblindedKey, message: ConstByteBuf, mode: i32, signature: ConstWord32Buf,
-        result: *mut i32,
+        public: *const UnblindedKey, message: *mut ConstByteBuf, mode: i32,
+        signature: *mut ConstWord32Buf, result: *mut i32,
     ) -> i32;
 }
