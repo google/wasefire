@@ -26,12 +26,13 @@ pub mod hmac;
 pub mod p256;
 
 pub fn init() {
-    let _ = unwrap_status(unsafe { entropy_complex_init() })
-        .inspect_err(|e| log::error!("entropy_complex_init() failed {}", e));
+    let security_level = common::SecurityLevel::Low;
+    let _ = unwrap_status(unsafe { otcrypto_init(security_level.to_c()) })
+        .inspect_err(|e| log::error!("otcrypto_init({}) failed {}", security_level, e));
 }
 
 unsafe extern "C" {
-    fn entropy_complex_init() -> i32;
+    fn otcrypto_init(security_level: i32) -> i32;
 }
 
 // This constant is used by cryptolib through security_config_check().
