@@ -45,10 +45,7 @@ pub struct ConstByteBuf {
 
 impl From<&[u8]> for ConstByteBuf {
     fn from(value: &[u8]) -> Self {
-        let data = value.as_ptr();
-        let len = value.len();
-        let ptr_checksum = calculate_buf_checksum(data, len);
-        ConstByteBuf { data, len, ptr_checksum }
+        unsafe { otcrypto_make_const_byte_buf(value.as_ptr(), value.len()) }
     }
 }
 
@@ -63,10 +60,7 @@ pub struct ByteBuf {
 
 impl From<&mut [u8]> for ByteBuf {
     fn from(value: &mut [u8]) -> Self {
-        let data = value.as_mut_ptr();
-        let len = value.len();
-        let ptr_checksum = calculate_buf_checksum(data, len);
-        ByteBuf { data, len, ptr_checksum }
+        unsafe { otcrypto_make_byte_buf(value.as_mut_ptr(), value.len()) }
     }
 }
 
@@ -80,10 +74,7 @@ pub struct ConstWord32Buf {
 
 impl From<&[u32]> for ConstWord32Buf {
     fn from(value: &[u32]) -> Self {
-        let data = value.as_ptr();
-        let len = value.len();
-        let ptr_checksum = calculate_buf_checksum(data.cast(), len);
-        ConstWord32Buf { data, len, ptr_checksum }
+        unsafe { otcrypto_make_const_word32_buf(value.as_ptr(), value.len()) }
     }
 }
 
@@ -97,10 +88,7 @@ pub struct Word32Buf {
 
 impl From<&mut [u32]> for Word32Buf {
     fn from(value: &mut [u32]) -> Self {
-        let data = value.as_mut_ptr();
-        let len = value.len();
-        let ptr_checksum = calculate_buf_checksum(data.cast(), len);
-        Word32Buf { data, len, ptr_checksum }
+        unsafe { otcrypto_make_word32_buf(value.as_mut_ptr(), value.len()) }
     }
 }
 
@@ -258,6 +246,7 @@ impl KeyConfig {
 
 // otcrypto_key_security_level_t
 #[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "debug", derive(defmt::Format))]
 pub enum SecurityLevel {
     Low = 0x1e9,
     #[allow(dead_code)]
@@ -267,7 +256,7 @@ pub enum SecurityLevel {
 }
 
 impl SecurityLevel {
-    const fn to_c(self) -> i32 {
+    pub const fn to_c(self) -> i32 {
         self as i32
     }
 }
@@ -403,11 +392,6 @@ impl OwnedBlindedKey {
     }
 }
 
-// We implement this manually because it's a static inline in OpenTitan.
-fn calculate_buf_checksum(data: *const u8, len: usize) -> u32 {
-    0x5a3u32.wrapping_add(data.addr() as u32).wrapping_add(len as u32)
-}
-
 unsafe extern "C" {
     fn otcrypto_import_blinded_key(
         share0: *const ConstWord32Buf, share1: *const ConstWord32Buf, key: *mut BlindedKey,
@@ -415,4 +399,8 @@ unsafe extern "C" {
     fn integrity_unblinded_checksum(key: *const UnblindedKey) -> u32;
     #[cfg(feature = "test-vendor")]
     fn integrity_blinded_checksum(key: *const BlindedKey) -> u32;
+    fn otcrypto_make_byte_buf(data: *mut u8, len: usize) -> ByteBuf;
+    fn otcrypto_make_const_byte_buf(data: *const u8, len: usize) -> ConstByteBuf;
+    fn otcrypto_make_word32_buf(data: *mut u32, len: usize) -> Word32Buf;
+    fn otcrypto_make_const_word32_buf(data: *const u32, len: usize) -> ConstWord32Buf;
 }
