@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Disable `unused-features` lint
 - Use heterogeneous try blocks when needed
 - Update dependencies
 

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #![no_std]
+#![allow(unused_features)]
 #![feature(try_blocks)]
 #![feature(try_blocks_heterogeneous)]
 
