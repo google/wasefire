@@ -47,7 +47,7 @@ for dir in $(find crates examples/rust -name Cargo.toml -printf '%h\n' | sort); 
   esac
   # TODO(https://github.com/rust-lang/rust/issues/154487): Remove when fixed.
   case $crate in
-    api|board|cli-tools|prelude|protocol|scheduler|wire)
+    api|board|cli-tools|prelude|protocol|wire)
       add_lint $file allow rust.unused-features ;;
   esac
   # add_lint $file warn rust.unused-results
