@@ -62,7 +62,7 @@ features = ["host", "log"]
 optional = true
 
 [dependencies.wasmtime]
-version = "43.0.0"
+version = "43.0.1"
 default-features = false
 features = ["anyhow", "cranelift", "pulley"]
 optional = true
