@@ -9,4 +9,4 @@ disclosure here on GitHub (including using a GitHub Security Advisory when neces
 The Google Security Team will process your report within a day, and respond within a week (although
 it will depend on the severity of your report).
 
-[low-priority]: https://bughunters.google.com/about/rules/open-source/google-open-source-software-vulnerability-reward-program-rules#low-priority-oss-projects
+[low-priority]: https://bughunters.google.com/about/rules/open-source/google-open-source-software-vulnerability-reward-program-rules#low-priority-oss-projects-ot3-

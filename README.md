@@ -7,7 +7,9 @@ start](https://google.github.io/wasefire/quick) section to get started.
 
 ### :warning: Disclaimer :warning:
 
-This is not an officially supported Google product.
+This is not an officially supported Google product. This project is not eligible
+for financial rewards under the [Google Open Source Software Vulnerability
+Rewards Program](https://bughunters.google.com/open-source-security).
 
 This is a **research** project and should be considered **experimental**. In
 particular, the project does not provide any guarantees. However, the project
