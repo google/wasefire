@@ -11,7 +11,7 @@ anyhow = "1.0.102"
 clap = { version = "4.6.0", features = ["derive", "env"] }
 data-encoding = "2.10.0"
 env_logger = { version = "0.11.10", optional = true }
-rand = "0.10.0"
+rand = "0.10.1"
 syscall-test = { path = "../board/crates/syscall-test" }
 tokio = { version = "1.50.0", features = ["full"] }
 usb-device = "0.3.2"
