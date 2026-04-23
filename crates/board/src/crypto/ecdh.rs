@@ -113,7 +113,7 @@ mod software {
         FieldBytesSize<C>: ModulusSize,
         R: Default + CryptoRngCore + WithError + Send,
     {
-        const PRIVATE: Layout = unsafe { Layout::from_size_align_unchecked(N, 1) };
+        const PRIVATE: Layout = unsafe { Layout::from_size_align_unchecked(N - 1, 1) };
         const PUBLIC: Layout = unsafe { Layout::from_size_align_unchecked(2 * N, 1) };
         const SHARED: Layout = unsafe { Layout::from_size_align_unchecked(N, 1) };
 
