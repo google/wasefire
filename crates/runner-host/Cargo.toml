@@ -8,12 +8,12 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.102"
-clap = { version = "4.6.0", features = ["derive", "env"] }
-data-encoding = "2.10.0"
+clap = { version = "4.6.1", features = ["derive", "env"] }
+data-encoding = "2.11.0"
 env_logger = { version = "0.11.10", optional = true }
 rand = "0.10.1"
 syscall-test = { path = "../board/crates/syscall-test" }
-tokio = { version = "1.50.0", features = ["full"] }
+tokio = { version = "1.52.2", features = ["full"] }
 usb-device = "0.3.2"
 usbd-hid = "0.10.0"
 usbd-serial = "0.2.2"

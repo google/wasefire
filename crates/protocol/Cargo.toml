@@ -21,7 +21,7 @@ wasefire-error = { version = "0.1.5-git", path = "../error" }
 wasefire-wire = { version = "0.1.4-git", path = "../wire" }
 
 [dependencies.data-encoding]
-version = "2.10.0"
+version = "2.11.0"
 default-features = false
 features = ["std"]
 optional = true

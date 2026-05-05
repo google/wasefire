@@ -17,7 +17,7 @@ embedded-alloc = "0.7.0"
 riscv = { version = "0.16.0", features = ["critical-section-single-hart"] }
 riscv-rt = { version = "0.17.1", features = ["single-hart", "v-trap"] }
 syscall-test = { path = "../board/crates/syscall-test", optional = true }
-typenum = { version = "1.19.0", default-features = false }
+typenum = { version = "1.20.0", default-features = false }
 usb-device = { version = "0.3.2", default-features = false }
 usbd-hid = { version = "0.10.0", optional = true }
 wasefire-board-api = { path = "../board" }

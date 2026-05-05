@@ -150,7 +150,7 @@ impl Console {
                 }
             }
             c => {
-                self.write(&format!("Unexpected input {c:#02x}."));
+                self.write(&format!("Unexpected input 0x{c:02x}."));
                 None
             }
         }

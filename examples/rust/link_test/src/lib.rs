@@ -38,6 +38,7 @@ fn test(f: impl FnOnce() -> isize) {
 }
 
 #[cfg(not(feature = "native"))]
+#[link(wasm_import_module = "env")]
 unsafe extern "C" {
     unsafe fn test_only_0() -> isize;
     unsafe fn test_only_1(_: usize) -> isize;

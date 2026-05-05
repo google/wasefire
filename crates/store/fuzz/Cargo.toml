@@ -11,7 +11,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4.12"
-rand_pcg = "0.10.1"
+rand_pcg = "0.10.2"
 strum = { version = "0.28.0", features = ["derive"] }
 wasefire-store = { path = "..", features = ["std"] }
 

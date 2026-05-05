@@ -6,6 +6,10 @@
 
 - Remove `Lang` and `Api::wasm{,_assemblyscript,_markdown}`
 
+### Minor
+
+- Specify `#[link(wasm_import_module = "env")]` for extern blocks in `Api::wasm_rust()`
+
 ### Patch
 
 - Update dependencies
@@ -176,4 +180,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 1 -->
+<!-- Increment to skip CHANGELOG.md test: 2 -->

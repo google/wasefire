@@ -7,11 +7,11 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.102"
-clap = { version = "4.6.0", features = ["derive"] }
+clap = { version = "4.6.1", features = ["derive"] }
 common = { path = "../common" }
-data-encoding = "2.10.0"
-signal-hook = "0.4.3"
-tokio = { version = "1.50.0", features = ["full"] }
+data-encoding = "2.11.0"
+signal-hook = "0.4.4"
+tokio = { version = "1.52.2", features = ["full"] }
 wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["action"] }
 wasefire-error = { path = "../../../../crates/error" }
 wasefire-protocol = { path = "../../../../crates/protocol", features = ["host"] }
