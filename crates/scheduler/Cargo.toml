@@ -21,7 +21,7 @@ defmt = { version = "1.0.1", default-features = false, optional = true }
 derive-where = { version = "1.6.1", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
 generic-array = { version = "=0.14.7", default-features = false, optional = true }
-typenum = { version = "1.19.0", default-features = false, optional = true }
+typenum = { version = "1.20.0", default-features = false, optional = true }
 wasefire-applet-api = { version = "0.9.1-git", path = "../api", features = ["host"] }
 wasefire-board-api = { version = "0.10.1-git", path = "../board" }
 wasefire-common = { version = "0.1.2-git", path = "../common", optional = true }
@@ -40,7 +40,7 @@ features = ["toctou"]
 optional = true
 
 [dependencies.wasmtime]
-version = "43.0.1"
+version = "44.0.1"
 default-features = false
 features = ["async", "runtime"]
 optional = true

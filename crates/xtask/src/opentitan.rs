@@ -198,7 +198,7 @@ pub async fn attach(
             (Control, _) => {
                 // Don't print the warning when it looks like a reset.
                 if !matches!(byte, 0 | b'\r' | b'O') {
-                    log::warn!("unsupported control byte {byte:#02x}");
+                    log::warn!("unsupported control byte 0x{byte:02x}");
                 }
                 delimit("Reset detected (restarting defmt).");
                 state = Stdout;

@@ -98,10 +98,10 @@ enum Kind {
 impl std::fmt::Display for Kind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            Kind::End(x) => write!(f, "line ends with {x:#02x} instead of 0x0a"),
-            Kind::Trail(x) => write!(f, "line trails with {x:#02x} outside of 0x21 to 0x7f"),
+            Kind::End(x) => write!(f, "line ends with 0x{x:02x} instead of 0x0a"),
+            Kind::Trail(x) => write!(f, "line trails with 0x{x:02x} outside of 0x21 to 0x7f"),
             Kind::Inner(b'\t') => write!(f, "line contains 0x09 outside indentation"),
-            Kind::Inner(x) => write!(f, "line contains {x:#02x} outside of 0x20 to 0x7f"),
+            Kind::Inner(x) => write!(f, "line contains 0x{x:02x} outside of 0x20 to 0x7f"),
         }
     }
 }

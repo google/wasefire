@@ -328,6 +328,7 @@ impl Fn {
                 pub struct Params { #(#params,)* }
             }
             #[cfg(not(feature = "native"))]
+            #[link(wasm_import_module = "env")]
             unsafe extern "C" {
                 #[link_name = #link]
                 unsafe fn #name_wasm(#(#params_wasm,)*) -> isize;

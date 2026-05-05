@@ -34,7 +34,7 @@ features = [
 
 [dev-dependencies]
 prettyplease = "0.2.37"
-similar-asserts = "1.7.0"
+similar-asserts = "2.0.0"
 
 [features]
 _dev = []

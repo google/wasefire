@@ -117,7 +117,9 @@ impl PreStore {
         'imports: for import in module.imports().filter(|x| x.module() == "env") {
             let name = import.name();
             let ExternType::Func(func) = import.ty() else { continue };
-            let None = self.linker.get(&mut self.store, "env", name) else { continue };
+            if self.linker.get(&mut self.store, "env", name).is_ok() {
+                continue;
+            };
             let mut params = 0;
             for param in func.params() {
                 let ValType::I32 = param else { continue 'imports };
