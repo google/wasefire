@@ -1,7 +1,6 @@
 [package]
 name = "wasefire-logger"
-version = "0.2.1"
-authors = ["Julien Cretin <cretin@google.com>"]
+version = "0.2.2-git"
 license = "Apache-2.0"
 publish = true
 edition = "2024"

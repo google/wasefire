@@ -30,7 +30,7 @@ x cargo xtask textreview
 x ./scripts/sync.sh
 x ./scripts/publish.sh --dry-run
 x ./scripts/wrapper.sh mdl -g -s markdownlint.rb .
-x ./scripts/ci-taplo.sh
+x ./scripts/ci-tombi.sh
 x ./scripts/ci-applets.sh
 x ./scripts/ci-runners.sh
 x ./scripts/ci-tests.sh

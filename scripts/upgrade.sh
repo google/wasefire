@@ -45,6 +45,19 @@ for crate in $(get_crates); do
   update_crate "$crate" "$(cargo_info_version "$crate")"
 done
 
+get_repos() { sed -n 's/^    REPO=//p' scripts/wrapper.sh; }
+update_repo() {
+  local repo=$1
+  local version
+  version=$(x gh release view --repo=$repo --json=tagName --jq=.tagName)
+  echo "$version" | grep -q '^v[0-9]\+\.[0-9]\+\.[0-9]\+$' \
+    || e "Invalid version '$version' for $repo"
+  x sed -i '\:^    REPO='$repo'$:,+1{s/VERSION=.*$/VERSION='$version'/}' scripts/wrapper.sh
+}
+for repo in $(get_repos); do
+  update_repo $repo
+done
+
 for path in $(git ls-files '*/Cargo.toml'); do
   ./scripts/wrapper.sh cargo upgrade --manifest-path=$path --incompatible=allow
 done
