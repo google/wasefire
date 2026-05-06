@@ -1,20 +1,20 @@
 [package]
 name = "wasefire-store"
 version = "0.3.3-git"
-license = "Apache-2.0"
-publish = true
 edition = "2024"
 description = "Key-value store for SLC flash storage"
 repository = "https://github.com/google/wasefire"
-include = ["/LICENSE", "/src/"]
+license = "Apache-2.0"
 keywords = ["embedded", "no-std"]
 categories = ["embedded", "no-std"]
+include = ["/LICENSE", "/src/"]
+publish = true
 
 [package.metadata.docs.rs]
 features = ["std"]
 
 [dependencies]
-wasefire-error = { version = "0.1.5-git", path = "../error" }
+wasefire-error = { path = "../error", version = "0.1.5-git" }
 
 [dev-dependencies]
 tempfile = "3.27.0"

@@ -1,20 +1,20 @@
 [package]
 name = "wasefire-applet-api-macro"
 version = "0.9.1-git"
-license = "Apache-2.0"
-publish = true
 edition = "2024"
 description = "Proc-macro to generate the Wasefire applet API"
 repository = "https://github.com/google/wasefire"
-include = ["/LICENSE", "/src/"]
+license = "Apache-2.0"
 keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
+include = ["/LICENSE", "/src/"]
+publish = true
 
 [lib]
 proc-macro = true
 
 [dependencies]
-wasefire-applet-api-desc = { version = "=0.3.0-git", path = "../api-desc" }
+wasefire-applet-api-desc = { path = "../api-desc", version = "=0.3.0-git" }
 
 [features]
 api-button = ["wasefire-applet-api-desc/api-button"]

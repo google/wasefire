@@ -1,20 +1,20 @@
 [package]
 name = "wasefire-common"
 version = "0.1.2-git"
-license = "Apache-2.0"
-publish = true
 edition = "2024"
 description = "Wasefire common items"
 repository = "https://github.com/google/wasefire"
-include = ["/LICENSE", "/src/"]
+license = "Apache-2.0"
 keywords = ["embedded", "framework", "no-std"]
 categories = ["embedded", "no-std"]
+include = ["/LICENSE", "/src/"]
+publish = true
 
 [dependencies]
 defmt = { version = "1.0.1", default-features = false, optional = true }
 serde = { version = "1.0.228", default-features = false, features = ["derive"], optional = true }
-wasefire-error = { version = "0.1.5-git", path = "../error" }
-wasefire-sync = { version = "0.1.4-git", path = "../sync" }
+wasefire-error = { path = "../error", version = "0.1.5-git" }
+wasefire-sync = { path = "../sync", version = "0.1.4-git" }
 
 [features]
 defmt = ["dep:defmt"]

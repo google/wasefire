@@ -1,14 +1,14 @@
 [package]
 name = "wasefire"
 version = "0.8.2-git"
-license = "Apache-2.0"
-publish = true
 edition = "2024"
 description = "High-level Wasefire applet API"
 repository = "https://github.com/google/wasefire"
-include = ["/LICENSE", "/src/"]
+license = "Apache-2.0"
 keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
+include = ["/LICENSE", "/src/"]
+publish = true
 
 [package.metadata.docs.rs]
 default-target = "wasm32-unknown-unknown"
@@ -23,15 +23,16 @@ digest = { version = "0.10.7", default-features = false, features = ["mac"], opt
 rlsf = { version = "0.2.2", default-features = false, optional = true }
 sealed = { version = "0.6.0", default-features = false, optional = true }
 typenum = { version = "1.20.0", default-features = false, optional = true }
-wasefire-applet-api = { version = "0.9.1-git", path = "../api", features = ["wasm"] }
-wasefire-common = { version = "0.1.2-git", path = "../common", optional = true }
-wasefire-error = { version = "0.1.5-git", path = "../error" }
-wasefire-one-of = { version = "0.1.3-git", path = "../one-of" }
-wasefire-sync = { version = "0.1.4-git", path = "../sync" }
+wasefire-applet-api = { path = "../api", version = "0.9.1-git", features = ["wasm"] }
+wasefire-common = { path = "../common", version = "0.1.2-git", optional = true }
+wasefire-error = { path = "../error", version = "0.1.5-git" }
+wasefire-one-of = { path = "../one-of", version = "0.1.3-git" }
+wasefire-sync = { path = "../sync", version = "0.1.4-git" }
 zeroize = { version = "1.8.2", default-features = false, features = ["derive"], optional = true }
 
 [features]
 default = ["full-api"]
+
 # API features.
 api-button = ["dep:wasefire-common", "wasefire-applet-api/api-button"]
 api-clock = ["wasefire-applet-api/api-clock"]
@@ -73,6 +74,7 @@ api-uart = ["internal-serial", "wasefire-applet-api/api-uart"]
 api-usb-ctap = ["internal-api-usb", "wasefire-applet-api/api-usb-ctap"]
 api-usb-serial = ["internal-api-usb", "internal-serial", "wasefire-applet-api/api-usb-serial"]
 api-vendor = ["wasefire-applet-api/api-vendor"]
+
 # Enables all API features.
 full-api = [
   "api-button",
@@ -103,14 +105,18 @@ full-api = [
   "api-usb-serial",
   "api-vendor",
 ]
+
 # Implements RustCrypto traits.
 rust-crypto = ["dep:aead", "dep:crypto-common", "dep:digest", "dep:typenum", "dep:zeroize"]
+
 # Selects the applet kind: wasm, native, or test. Exactly one must be enabled (done by the CLI).
 native = ["wasefire-applet-api/native"]
 test = []
 wasm = ["dep:const-default", "dep:rlsf"]
+
 # Sets portable-atomic/unsafe-assume-single-core (for convenience).
 unsafe-assume-single-core = ["wasefire-sync/unsafe-assume-single-core"]
+
 # Internal features.
 internal-api-crypto = []
 internal-api-crypto-hash = ["internal-api-crypto"]

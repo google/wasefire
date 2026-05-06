@@ -1,12 +1,10 @@
+[files]
 # Exclude .gitignore and submodules.
-files.exclude = [".root/**", "target/**", "third_party/**"]
+exclude = [".root/**", "target/**", "third_party/**"]
 
 [format.rules]
 line-width = 100
 
-# TODO: Remove in a separate PR to reduce the noise of the migration.
 [[schemas]]
-path = "tombi://www.schemastore.org/cargo.json"
+path = "target/tombi/https/www.schemastore.org/cargo.json"
 include = ["Cargo.toml"]
-format.rules.array-values-order.enabled = false
-format.rules.table-keys-order.enabled = false
