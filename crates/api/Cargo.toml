@@ -1,14 +1,14 @@
 [package]
 name = "wasefire-applet-api"
 version = "0.9.1-git"
-license = "Apache-2.0"
-publish = true
 edition = "2024"
 description = "Low-level Wasefire applet API"
 repository = "https://github.com/google/wasefire"
-include = ["/LICENSE", "/src/"]
+license = "Apache-2.0"
 keywords = ["embedded", "framework", "no-std", "wasm"]
 categories = ["embedded", "no-std", "wasm"]
+include = ["/LICENSE", "/src/"]
+publish = true
 
 [package.metadata.docs.rs]
 default-target = "wasm32-unknown-unknown"
@@ -17,10 +17,10 @@ features = ["full-api", "wasm"]
 [dependencies]
 bytemuck = { version = "1.25.0", default-features = false, features = ["derive"] }
 sealed = { version = "0.6.0", default-features = false, optional = true }
-wasefire-applet-api-macro = { version = "0.9.1-git", path = "../api-macro" }
-wasefire-error = { version = "0.1.5-git", path = "../error" }
-wasefire-logger = { version = "0.2.2-git", path = "../logger", optional = true }
-wasefire-one-of = { version = "0.1.3-git", path = "../one-of" }
+wasefire-applet-api-macro = { path = "../api-macro", version = "0.9.1-git" }
+wasefire-error = { path = "../error", version = "0.1.5-git" }
+wasefire-logger = { path = "../logger", version = "0.2.2-git", optional = true }
+wasefire-one-of = { path = "../one-of", version = "0.1.3-git" }
 
 [dependencies.derive-where]
 version = "1.6.1"
@@ -32,6 +32,7 @@ optional = true
 # Compiles for host or wasm (choose exactly one).
 host = ["dep:derive-where", "dep:sealed"]
 wasm = []
+
 # API features.
 api-button = ["wasefire-applet-api-macro/api-button"]
 api-clock = ["wasefire-applet-api-macro/api-clock"]
@@ -60,6 +61,7 @@ api-uart = ["wasefire-applet-api-macro/api-uart"]
 api-usb-ctap = ["wasefire-applet-api-macro/api-usb-ctap"]
 api-usb-serial = ["wasefire-applet-api-macro/api-usb-serial"]
 api-vendor = ["wasefire-applet-api-macro/api-vendor"]
+
 # Enables all API features (unstable for host).
 full-api = [
   "api-button",
@@ -90,6 +92,7 @@ full-api = [
   "api-usb-serial",
   "api-vendor",
 ]
+
 # Implements the API with weak symbols to permit custom definitions (only
 # relevant in wasm mode).
 #
@@ -98,6 +101,7 @@ full-api = [
 # panicking. The `env_dispatch` function takes 3 arguments: the link name, a
 # pointer to the parameters, and a pointer to the results.
 native = ["dep:wasefire-logger"]
+
 # Internal features.
 internal-api-crypto-hash = []
 

@@ -1,20 +1,20 @@
 [package]
 name = "fuzz"
 version = "0.1.0"
+edition = "2024"
 license = "Apache-2.0"
 publish = false
-edition = "2024"
 
 [package.metadata]
 cargo-fuzz = true
 
-[dependencies]
-libfuzzer-sys = "0.4.12"
-wasefire-slice-cell = { path = ".." }
-
 [[bin]]
 name = "lib"
 path = "fuzz_targets/lib.rs"
+
+[dependencies]
+libfuzzer-sys = "0.4.12"
+wasefire-slice-cell = { path = ".." }
 
 [lints]
 clippy.mod-module-files = "warn"

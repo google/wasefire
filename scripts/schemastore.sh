@@ -30,8 +30,18 @@ copy_schema() {
   cp $SOURCE/src/schemas/json/$1.json $TARGET
 }
 
-copy_schema cargo
 copy_schema cargo-lints-clippy
 copy_schema cargo-lints-rust
 copy_schema rust-toolchain
 copy_schema rustfmt
+
+# We put the lints table last for cargo.
+CARGO_JSON=$SOURCE/src/schemas/json/cargo.json
+LINTS_BEG=$(sed -n '/^    "lints": {$/=' $CARGO_JSON)
+LINTS_END=$(sed -n '/^    "lints": {$/,${/^    },$/{=;q}}' $CARGO_JSON)
+LAST_END=$(sed -n '/^    "lints": {$/,${/^    }$/{=;q}}' $CARGO_JSON)
+{ sed -n "1,$((LINTS_BEG - 1))p" $CARGO_JSON
+  sed -n "$((LINTS_END + 1)),$((LAST_END - 1))p" $CARGO_JSON
+  sed -n "$((LINTS_BEG - 1)),$((LINTS_END - 1))p" $CARGO_JSON
+  sed -n "$LAST_END,\$p" $CARGO_JSON
+} > $TARGET/cargo.json

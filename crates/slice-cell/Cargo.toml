@@ -1,14 +1,14 @@
 [package]
 name = "wasefire-slice-cell"
 version = "0.1.2-git"
-license = "Apache-2.0"
-publish = true
 edition = "2024"
 description = "Slice with dynamic borrow checking"
 repository = "https://github.com/google/wasefire"
-include = ["/LICENSE", "/src/"]
+license = "Apache-2.0"
 keywords = ["borrow", "cell", "lifetime", "no-std", "slice"]
 categories = ["data-structures", "memory-management", "no-std"]
+include = ["/LICENSE", "/src/"]
+publish = true
 
 [features]
 _internal = []

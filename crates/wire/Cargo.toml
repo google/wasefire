@@ -1,22 +1,22 @@
 [package]
 name = "wasefire-wire"
 version = "0.1.4-git"
-license = "Apache-2.0"
-publish = true
 edition = "2024"
 description = "Wasefire wire format"
 repository = "https://github.com/google/wasefire"
-include = ["/LICENSE", "/src/"]
+license = "Apache-2.0"
 keywords = ["embedded", "framework", "no-std"]
 categories = ["embedded", "no-std"]
+include = ["/LICENSE", "/src/"]
+publish = true
 
 [package.metadata.docs.rs]
 all-features = true
 
 [dependencies]
-wasefire-common = { version = "0.1.2-git", path = "../common" }
-wasefire-error = { version = "0.1.5-git", path = "../error" }
-wasefire-wire-derive = { version = "0.1.4-git", path = "../wire-derive" }
+wasefire-common = { path = "../common", version = "0.1.2-git" }
+wasefire-error = { path = "../error", version = "0.1.5-git" }
+wasefire-wire-derive = { path = "../wire-derive", version = "0.1.4-git" }
 
 [features]
 schema = ["std", "wasefire-wire-derive/schema"]

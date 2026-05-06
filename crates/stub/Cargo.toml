@@ -1,14 +1,14 @@
 [package]
 name = "wasefire-stub"
 version = "0.1.8-git"
-license = "Apache-2.0"
-publish = true
 edition = "2024"
 description = "Stubs for the Wasefire applet API"
 repository = "https://github.com/google/wasefire"
-include = ["/LICENSE", "/src/"]
+license = "Apache-2.0"
 keywords = ["framework"]
 categories = []
+include = ["/LICENSE", "/src/"]
+publish = true
 
 [dependencies]
 crypto-common = { version = "0.1.7", default-features = false }
@@ -23,8 +23,8 @@ p384 = { version = "0.13.1", default-features = false, features = ["ecdsa"] }
 rand = { version = "0.10.1", default-features = false, features = ["thread_rng"] }
 sha2 = { version = "0.10.9", default-features = false }
 signature = { version = "2.2.0", default-features = false }
-wasefire-error = { version = "0.1.5-git", path = "../error" }
-wasefire-logger = { version = "0.2.2-git", path = "../logger" }
+wasefire-error = { path = "../error", version = "0.1.5-git" }
+wasefire-logger = { path = "../logger", version = "0.2.2-git" }
 zeroize = { version = "1.8.2", default-features = false }
 
 # TODO(elliptic-curve > 0.13.8): Unpin the version.
@@ -34,9 +34,9 @@ default-features = false
 features = ["getrandom"]
 
 [dependencies.wasefire-applet-api]
-features = ["full-api", "native", "wasm"]
-version = "0.9.1-git"
 path = "../api"
+version = "0.9.1-git"
+features = ["full-api", "native", "wasm"]
 
 [lints]
 clippy.mod-module-files = "warn"

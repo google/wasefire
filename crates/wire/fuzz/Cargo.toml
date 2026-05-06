@@ -1,21 +1,21 @@
 [package]
 name = "fuzz"
 version = "0.1.0"
+edition = "2024"
 license = "Apache-2.0"
 publish = false
-edition = "2024"
 
 [package.metadata]
 cargo-fuzz = true
+
+[[bin]]
+name = "correct"
+path = "fuzz_targets/correct.rs"
 
 [dependencies]
 libfuzzer-sys = "0.4"
 wasefire-error.path = "../../error"
 wasefire-wire = { path = "..", features = ["schema"] }
-
-[[bin]]
-name = "correct"
-path = "fuzz_targets/correct.rs"
 
 [lints]
 clippy.mod-module-files = "warn"

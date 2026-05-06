@@ -1,9 +1,9 @@
 [package]
 name = "earlgrey"
 version = "0.1.0"
+edition = "2024"
 license = "Apache-2.0"
 publish = false
-edition = "2024"
 
 [dependencies]
 bytemuck = { version = "1.25.0", default-features = false, features = ["derive"] }

@@ -1,9 +1,9 @@
 [package]
 name = "bootloader"
 version = "0.1.0"
+edition = "2024"
 license = "Apache-2.0"
 publish = false
-edition = "2024"
 
 [dependencies]
 cortex-m = "0.7.7"
@@ -18,14 +18,15 @@ wasefire-one-of = { path = "../../../one-of" }
 [features]
 # Enabled by xtask.
 single-sided = []
+
 # Exactly one is enabled by xtask.
 board-devkit = ["header/board-devkit"]
 board-dongle = ["header/board-dongle"]
 
 [profile.release]
-codegen-units = 1
 lto = true
 panic = "abort"
+codegen-units = 1
 
 [lints]
 clippy.mod-module-files = "warn"

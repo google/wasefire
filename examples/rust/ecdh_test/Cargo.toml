@@ -1,8 +1,8 @@
 [package]
 name = "ecdh_test"
 version = "0.1.0"
-license = "Apache-2.0"
 edition = "2024"
+license = "Apache-2.0"
 
 [dependencies]
 ecdh_vectors = { path = "../ec_test/crates/ecdh_vectors" }

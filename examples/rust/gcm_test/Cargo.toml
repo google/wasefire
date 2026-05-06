@@ -1,8 +1,8 @@
 [package]
 name = "gcm_test"
 version = "0.1.0"
-license = "Apache-2.0"
 edition = "2024"
+license = "Apache-2.0"
 
 [dependencies]
 aead = { version = "0.5.2", default-features = false, features = ["alloc"], optional = true }
