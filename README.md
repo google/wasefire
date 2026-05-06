@@ -4,7 +4,8 @@ This project aims at making firmware development more accessible and secure by
 providing a platform for WebAssembly applets. See the
 [book](https://google.github.io/wasefire) for more information or the [quick
 start](https://google.github.io/wasefire/quick) section to get started. See
-[OpenSK](https://github.com/google/OpenSK) for a project using Wasefire.
+[OpenSK](https://github.com/google/OpenSK) for a FIDO2 security key
+implementation using Wasefire.
 
 ### :warning: Disclaimer :warning:
 
