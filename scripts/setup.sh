@@ -29,7 +29,7 @@ set -e
 . scripts/log.sh
 . scripts/system.sh
 
-# Parse flags
+# Parse flags.
 while [ $# -gt 0 ]; do
   case $1 in
     -h) echo "Usage: $0 [-y]"; exit ;;
@@ -52,8 +52,11 @@ fi
 
 # Transitive dependencies of xtask.
 ensure bin cc
-ensure lib libudev
+[ "$(uname)" = Linux ] && ensure lib libudev
 ensure lib openssl
+
+# Additional dependencies are only needed for CI on Linux.
+[ "$RUNNER_OS" = Linux ] || exit 0
 
 # Transitive dependencies of runner-host.
 ensure bin usbip
