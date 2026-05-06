@@ -1,7 +1,6 @@
 [package]
 name = "wasefire-cli"
 version = "0.4.1-git"
-authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
 edition = "2024"
@@ -22,7 +21,7 @@ clap_complete = { version = "4.6.3", default-features = false }
 env_logger = { version = "0.11.10", default-features = false, features = ["default"] }
 target-triple = { version = "1.0.0", default-features = false }
 wasefire-cli-tools = { version = "0.4.1-git", path = "../cli-tools", features = ["action"] }
-wasefire-one-of = { version = "0.1.2", path = "../one-of" }
+wasefire-one-of = { version = "0.1.3-git", path = "../one-of" }
 
 [dependencies.tokio]
 version = "1.52.2"

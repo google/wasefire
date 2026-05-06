@@ -55,14 +55,11 @@ case "$1" in
   nrfdfu) ensure_cargo nrfdfu 0.2.1 ;;
   probe-rs) ensure_cargo probe-rs-tools 0.31.0 ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.4.0 ;;
-  taplo) ensure_cargo taplo-cli 0.10.0 ;;
   trunk) ensure_cargo trunk 0.22.0-beta.1 ;;
   twiggy) ensure_cargo twiggy 0.8.0 ;;
   *) IS_CARGO=n ;;
 esac
 [ $IS_CARGO = y ] && run "$@"
-
-has bin "$1" && run "$@"
 
 # download <URL> [<chmod> [<name>]]
 download() {
@@ -70,16 +67,44 @@ download() {
   x curl -fLSso "$CARGO_ROOT/bin/$name" "$1"
   [ -z "$2" ] || x chmod "$2" "$CARGO_ROOT/bin/$name"
 }
+github_url() {
+  URL=https://github.com/$REPO/releases/download/$VERSION/$1
+}
+tag_installed() {
+  local file=$CARGO_ROOT/tag/$1
+  [ -e $file ] && [ "$(cat $file)" = $VERSION ]
+}
+install_tag() {
+  mkdir -p $CARGO_ROOT/tag
+  echo $VERSION > $CARGO_ROOT/tag/$1
+}
 
 IS_LOCAL=y
 case "$1" in
   bazel)
-    URL=https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64
-    download $URL +x bazel ;;
+    REPO=bazelbuild/bazelisk
+    VERSION=v1.29.0
+    if ! tag_installed bazel; then
+      github_url bazelisk-linux-amd64
+      download $URL +x bazel
+      install_tag bazel
+    fi ;;
+  tombi)
+    REPO=tombi-toml/tombi
+    VERSION=v0.10.5
+    if ! tag_installed tombi; then
+      ASSET=tombi-cli-${VERSION#v}-x86_64-unknown-linux-musl
+      github_url $ASSET.tar.gz
+      x curl -fLSs $URL | x tar xzO $ASSET/tombi > "$CARGO_ROOT/bin/tombi"
+      x chmod +x "$CARGO_ROOT/bin/tombi"
+      install_tag tombi
+    fi ;;
   uf2conv.py)
-    URL=https://raw.githubusercontent.com/microsoft/uf2/refs/heads/master/utils
-    download $URL/uf2conv.py +x
-    download $URL/uf2families.json ;;
+    if ! has bin "$1"; then
+      URL=https://raw.githubusercontent.com/microsoft/uf2/refs/heads/master/utils
+      download $URL/uf2conv.py +x
+      download $URL/uf2families.json
+    fi ;;
   *) IS_LOCAL=n ;;
 esac
 [ $IS_LOCAL = y ] && run "$@"

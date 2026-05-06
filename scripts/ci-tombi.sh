@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2022 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ set -e
 # This script runs the continuous integration tests for TOML files.
 
 x ./scripts/schemastore.sh
-x ./scripts/wrapper.sh taplo lint \
---schema-catalog=file://"$PWD"/target/schemastore/catalog.json
-x ./scripts/wrapper.sh taplo format
+
+export TOMBI_CACHE_HOME="$PWD/target/tombi"
+export TOMBI_OFFLINE=true
+
+x ./scripts/wrapper.sh tombi lint --error-on-warnings
+x ./scripts/wrapper.sh tombi format

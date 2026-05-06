@@ -1,7 +1,6 @@
 [package]
 name = "part-7-sol"
 version = "0.1.0"
-authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 edition = "2024"
 
@@ -10,7 +9,7 @@ interface = { path = "../interface" }
 wasefire = { path = "../../../../crates/prelude" }
 
 [features]
-usb = [] # Use USB serial instead of UART.
+usb = []  # Use USB serial instead of UART.
 
 [lints]
 clippy.mod-module-files = "warn"

@@ -263,7 +263,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-logger"
-version = "0.2.1"
+version = "0.2.2-git"
 
 [[package]]
 name = "wasefire-protocol"
@@ -276,7 +276,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-sync"
-version = "0.1.3"
+version = "0.1.4-git"
 dependencies = [
  "portable-atomic",
  "spin",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2-git
+
+### Patch
+
+- Remove deprecated `package.authors` field from `Cargo.toml`
+
 ## 0.2.1
 
 ### Patch
@@ -70,4 +76,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 0 -->
+<!-- Increment to skip CHANGELOG.md test: 1 -->

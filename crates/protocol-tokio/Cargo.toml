@@ -1,7 +1,6 @@
 [package]
 name = "wasefire-protocol-tokio"
 version = "0.1.3-git"
-authors = ["Julien Cretin <cretin@google.com>"]
 license = "Apache-2.0"
 publish = true
 edition = "2024"
@@ -17,8 +16,8 @@ features = ["device"]
 [dependencies]
 anyhow = { version = "1.0.102", default-features = false, features = ["std"] }
 wasefire-error = { version = "0.1.5-git", path = "../error", optional = true }
-wasefire-logger = { version = "0.2.1", path = "../logger", optional = true }
-wasefire-one-of = { version = "0.1.2", path = "../one-of" }
+wasefire-logger = { version = "0.2.2-git", path = "../logger", optional = true }
+wasefire-one-of = { version = "0.1.3-git", path = "../one-of" }
 
 [dependencies.tokio]
 version = "1.52.2"

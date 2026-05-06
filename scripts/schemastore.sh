@@ -19,19 +19,19 @@ set -e
 # This script generates local JSON schema store files.
 
 SOURCE=third_party/SchemaStore/schemastore
-TARGET=target/schemastore
+TARGET=target/tombi/https/www.schemastore.org
 
 [ -e $SOURCE/.git ] || x git submodule update --init $SOURCE
-[ -e $TARGET ] || x mkdir -p $TARGET
 
-convert() {
-  PATTERN='\(Cargo\|rustfmt\|rust-toolchain\).toml'
-  sed -n '/^    /!p;/^    {/{:a;N;/\n    },\?$/!ba;/'"$PATTERN"'/p}' \
-    | sed '/"url"/s#https://[^/]*schemastore\.org#file://'"$PWD/$TARGET"'#' \
-    | sed '/^    },$/{N;s/},\n  ]/}\n  ]/}'
+mkdir -p $TARGET/api/json
+cp $SOURCE/src/api/json/catalog.json $TARGET/api/json
+
+copy_schema() {
+  cp $SOURCE/src/schemas/json/$1.json $TARGET
 }
 
-convert < $SOURCE/src/api/json/catalog.json > $TARGET/catalog.json
-for file in $(sed -n 's#^.*/\([^/]*\.json\)"$#\1#p' $TARGET/catalog.json); do
-  cp $SOURCE/src/schemas/json/$file $TARGET
-done
+copy_schema cargo
+copy_schema cargo-lints-clippy
+copy_schema cargo-lints-rust
+copy_schema rust-toolchain
+copy_schema rustfmt
