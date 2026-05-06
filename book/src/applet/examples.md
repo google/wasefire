@@ -14,3 +14,6 @@ Noticeable examples are:
   USB serial interface.
 - `memory_game` implements some memory game using the `usb::serial` module of the prelude. It
   describes its usage when connecting to the USB serial interface.
+
+For a realistic example, you can check the [OpenSK](https://github.com/google/OpenSK) repository,
+which contains a FIDO2 applet.
