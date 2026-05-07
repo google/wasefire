@@ -71,7 +71,6 @@ runner-opentitan/crates/register
 runner-opentitan/crates/earlgrey
 runner-opentitan
 runner-opentitan/crates/earlgrey/crates/generate
-wasm-bench
 '
 
 # Internal helpers
