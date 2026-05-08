@@ -64,6 +64,7 @@ esac
 # download <URL> [<chmod> [<name>]]
 download() {
   local name="${3:-${1##*/}}"
+  mkdir -p "$CARGO_ROOT/bin"
   x curl -fLSso "$CARGO_ROOT/bin/$name" "$1"
   [ -z "$2" ] || x chmod "$2" "$CARGO_ROOT/bin/$name"
 }
