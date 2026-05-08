@@ -27,6 +27,7 @@ ROOT="${ROOT%/scripts}"
 
 CARGO_ROOT="$ROOT/.root"
 export PATH="$CARGO_ROOT/bin:$PATH"
+mkdir -p "$CARGO_ROOT/bin" "$CARGO_ROOT/tag"
 
 run() {
   [ "$WASEFIRE_WRAPPER_EXEC" = n ] && exit 0
@@ -75,7 +76,6 @@ tag_installed() {
   [ -e $file ] && [ "$(cat $file)" = $VERSION ]
 }
 install_tag() {
-  mkdir -p $CARGO_ROOT/tag
   echo $VERSION > $CARGO_ROOT/tag/$1
 }
 
