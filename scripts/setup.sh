@@ -45,6 +45,7 @@ ensure bin pkg-config
 
 if ! has bin rustup; then
   x git submodule update --init third_party/rust-lang/rustup
+  RUSTUP_ARGS=
   if [ -n "$WASEFIRE_YES" ]; then
     RUSTUP_ARGS='-y --default-toolchain=none --profile=minimal --no-modify-path'
   fi
