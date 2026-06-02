@@ -27,6 +27,8 @@ case "$(git branch --show-current)" in
 esac
 
 for submodule in $(git submodule status | cut -d' ' -f3); do
+  # The rustup script is checked in the sync.sh script.
+  [ $submodule = third_party/rust-lang/rustup ] && continue
   i "Upgrade $submodule"
   ( cd $submodule
     git fetch -p origin
