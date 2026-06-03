@@ -295,7 +295,7 @@ impl UnblindedKey {
     }
 
     pub fn checksum(&self) -> u32 {
-        unsafe { integrity_unblinded_checksum(self) }
+        unsafe { otcrypto_integrity_unblinded_checksum(self) }
     }
 
     fn layout(key_length: usize) -> Result<Layout, Error> {
@@ -353,7 +353,7 @@ impl BlindedKey {
 
     #[cfg(feature = "test-vendor")]
     pub fn checksum(&self) -> u32 {
-        unsafe { integrity_blinded_checksum(self) }
+        unsafe { otcrypto_integrity_blinded_checksum(self) }
     }
 
     fn layout(keyblob_length: usize) -> Result<Layout, Error> {
@@ -396,9 +396,9 @@ unsafe extern "C" {
     fn otcrypto_import_blinded_key(
         share0: *const ConstWord32Buf, share1: *const ConstWord32Buf, key: *mut BlindedKey,
     ) -> i32;
-    fn integrity_unblinded_checksum(key: *const UnblindedKey) -> u32;
+    fn otcrypto_integrity_unblinded_checksum(key: *const UnblindedKey) -> u32;
     #[cfg(feature = "test-vendor")]
-    fn integrity_blinded_checksum(key: *const BlindedKey) -> u32;
+    fn otcrypto_integrity_blinded_checksum(key: *const BlindedKey) -> u32;
     fn otcrypto_make_byte_buf(data: *mut u8, len: usize) -> ByteBuf;
     fn otcrypto_make_const_byte_buf(data: *const u8, len: usize) -> ConstByteBuf;
     fn otcrypto_make_word32_buf(data: *mut u32, len: usize) -> Word32Buf;
