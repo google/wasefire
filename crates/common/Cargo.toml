@@ -11,7 +11,7 @@ include = ["/LICENSE", "/src/"]
 publish = true
 
 [dependencies]
-defmt = { version = "1.0.1", default-features = false, optional = true }
+defmt = { version = "1.1.0", default-features = false, optional = true }
 serde = { version = "1.0.228", default-features = false, features = ["derive"], optional = true }
 wasefire-error = { path = "../error", version = "0.1.5-git" }
 wasefire-sync = { path = "../sync", version = "0.1.4-git" }

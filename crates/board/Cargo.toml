@@ -22,7 +22,7 @@ cbc = { version = "0.1.2", default-features = false, optional = true }
 ccm = { version = "0.5.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.7", default-features = false, optional = true }
 data-encoding = { version = "2.11.0", default-features = false, features = ["alloc"] }
-defmt = { version = "1.0.1", default-features = false, optional = true }
+defmt = { version = "1.1.0", default-features = false, optional = true }
 derive-where = { version = "1.6.1", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, optional = true }
 ecdsa = { version = "0.16.9", default-features = false, optional = true }
@@ -33,7 +33,7 @@ p256 = { version = "0.13.2", default-features = false, optional = true }
 p384 = { version = "0.13.1", default-features = false, optional = true }
 sha2 = { version = "0.10.9", default-features = false, optional = true }
 signature = { version = "2.2.0", default-features = false, optional = true }
-typenum = { version = "1.20.0", default-features = false, optional = true }
+typenum = { version = "1.20.1", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false }
 usbd-hid = { version = "0.10.0", default-features = false, optional = true }
 usbd-serial = { version = "0.2.2", default-features = false, optional = true }

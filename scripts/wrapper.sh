@@ -47,12 +47,12 @@ case "$1" in
   cargo)
     case "$2" in
       bloat) ensure_cargo cargo-bloat 0.12.1 ;;
-      upgrade) ensure_cargo cargo-edit 0.13.10 ;;
+      upgrade) ensure_cargo cargo-edit 0.13.11 ;;
       *) e "Wrapper does not support 'cargo $2'" ;;
     esac
     ;;
-  defmt-print) ensure_cargo defmt-print 1.0.0 ;;
-  mdbook) ensure_cargo mdbook 0.5.2 ;;
+  defmt-print) ensure_cargo defmt-print 1.1.0 ;;
+  mdbook) ensure_cargo mdbook 0.5.3 ;;
   nrfdfu) ensure_cargo nrfdfu 0.2.1 ;;
   probe-rs) ensure_cargo probe-rs-tools 0.31.0 ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.4.0 ;;
@@ -91,7 +91,7 @@ case "$1" in
     fi ;;
   tombi)
     REPO=tombi-toml/tombi
-    VERSION=v0.10.5
+    VERSION=v1.1.1
     if ! tag_installed tombi; then
       ASSET=tombi-cli-${VERSION#v}-x86_64-unknown-linux-musl
       github_url $ASSET.tar.gz

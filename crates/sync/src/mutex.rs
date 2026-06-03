@@ -18,7 +18,7 @@
 pub struct Mutex<T>(spin::Mutex<T>);
 
 /// Locks a mutex and provides access to its content until dropped.
-pub type MutexGuard<'a, T> = spin::MutexGuard<'a, T>;
+pub type MutexGuard<'a, T> = spin::MutexGuard<'a, T, spin::Spin>;
 
 impl<T> Mutex<T> {
     /// Creates a new mutex.
