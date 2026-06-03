@@ -7,7 +7,7 @@ publish = false
 
 [dependencies]
 bytemuck = { version = "1.25.0", default-features = false, features = ["derive"] }
-defmt = { version = "1.0.1", default-features = false, optional = true }
+defmt = { version = "1.1.0", default-features = false, optional = true }
 
 [features]
 defmt = ["dep:defmt"]
