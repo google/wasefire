@@ -27,12 +27,13 @@ pub mod p256;
 
 pub fn init() {
     let security_level = common::SecurityLevel::Low;
-    let _ = unwrap_status(unsafe { otcrypto_init(security_level.to_c()) })
+    let state = &raw mut common::STATE;
+    let _ = unwrap_status(unsafe { otcrypto_init(security_level.to_c(), state) })
         .inspect_err(|e| log::error!("otcrypto_init({}) failed {}", security_level, e));
 }
 
 unsafe extern "C" {
-    fn otcrypto_init(security_level: i32) -> i32;
+    fn otcrypto_init(security_level: i32, state: *mut common::State) -> i32;
 }
 
 // This constant is used by cryptolib through security_config_check().
