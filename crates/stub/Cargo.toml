@@ -25,7 +25,7 @@ sha2 = { version = "0.10.9", default-features = false }
 signature = { version = "2.2.0", default-features = false }
 wasefire-error = { path = "../error", version = "0.1.5-git" }
 wasefire-logger = { path = "../logger", version = "0.2.2-git" }
-zeroize = { version = "1.8.2", default-features = false }
+zeroize = { version = "1.9.0", default-features = false }
 
 # TODO(elliptic-curve > 0.13.8): Unpin the version.
 [dependencies.rand_core]

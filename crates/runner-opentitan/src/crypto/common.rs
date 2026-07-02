@@ -100,6 +100,13 @@ pub struct HashDigest {
     pub len: usize,     // in 32-bit words
 }
 
+// otcrypto_state_t
+#[repr(C)]
+pub struct State {
+    data: [u32; 24],
+}
+pub static mut STATE: State = State { data: [0; 24] };
+
 // otcrypto_key_mode_t
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum KeyMode {

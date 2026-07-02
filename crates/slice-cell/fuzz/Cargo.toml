@@ -13,7 +13,7 @@ name = "lib"
 path = "fuzz_targets/lib.rs"
 
 [dependencies]
-libfuzzer-sys = "0.4.12"
+libfuzzer-sys = "0.4.13"
 wasefire-slice-cell = { path = ".." }
 
 [lints]
