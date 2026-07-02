@@ -6,16 +6,16 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
-anyhow = "1.0.102"
+anyhow = "1.0.103"
 data-encoding = "2.11.0"
 futures-util = "0.3.32"
 gloo = { version = "0.12.0", features = ["futures"] }
-js-sys = "0.3.99"
+js-sys = "0.3.103"
 wasefire-common = { path = "../common" }
 wasefire-error = { path = "../error" }
 wasefire-protocol = { path = "../protocol", features = ["host"] }
 wasefire-protocol-usb = { path = "../protocol-usb" }
-web-sys = "0.3.99"
+web-sys = "0.3.103"
 webusb-web = "0.5.1"
 yew = { version = "0.23.0", features = ["csr"] }
 yew-autoprops = "0.5.0"

@@ -14,7 +14,7 @@ publish = true
 features = ["device", "host"]
 
 [dependencies]
-anyhow = { version = "1.0.102", default-features = false, features = ["std"], optional = true }
+anyhow = { version = "1.0.103", default-features = false, features = ["std"], optional = true }
 wasefire-common = { path = "../common", version = "0.1.2-git" }
 wasefire-error = { path = "../error", version = "0.1.5-git" }
 wasefire-wire = { path = "../wire", version = "0.1.4-git" }

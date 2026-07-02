@@ -14,7 +14,7 @@ publish = true
 portable-atomic = { version = "1.13.1", default-features = false }
 
 [dependencies.spin]
-version = "0.12.0"
+version = "0.12.1"
 default-features = false
 features = ["lazy", "once", "portable_atomic", "spin_mutex"]
 

@@ -13,7 +13,7 @@ name = "store"
 path = "fuzz_targets/store.rs"
 
 [dependencies]
-libfuzzer-sys = "0.4.12"
+libfuzzer-sys = "0.4.13"
 rand_pcg = "0.10.2"
 strum = { version = "0.28.0", features = ["derive"] }
 wasefire-store = { path = "..", features = ["std"] }

@@ -91,7 +91,7 @@ case "$1" in
     fi ;;
   tombi)
     REPO=tombi-toml/tombi
-    VERSION=v1.1.1
+    VERSION=v1.1.7
     if ! tag_installed tombi; then
       ASSET=tombi-cli-${VERSION#v}-x86_64-unknown-linux-musl
       github_url $ASSET.tar.gz
