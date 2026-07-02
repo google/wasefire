@@ -40,7 +40,6 @@ run() {
   local name name_flags feature features
   local runner_specific runner_feature runner_default
   shift 2
-  shard_init $SHARDING
   for name in $(list); do
     shard_next || continue
     runner_specific=n
@@ -71,7 +70,6 @@ run() {
       fi
     done
   done
-  shard_done
 }
 
 # <protocol> <runner..>
@@ -95,6 +93,7 @@ full() {
   trap - EXIT
 }
 
+shard_init $SHARDING
 case $1 in
   host) FLASH_ARGS=--protocol=unix full unix host ;;
   # P1.01, P1.02, and P1.03 must be connected together (gpio_test).
@@ -102,3 +101,4 @@ case $1 in
   opentitan) full usb opentitan --features=test-vendor ;;
   *) run --protocol=${1:-usb} "$2" ;;
 esac
+shard_done
