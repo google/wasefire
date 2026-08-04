@@ -16,12 +16,12 @@ features = ["full-api", "rust-crypto"]
 
 [dependencies]
 aead = { version = "0.5.2", default-features = false, features = ["alloc"], optional = true }
-bytemuck = { version = "1.25.0", default-features = false }
+bytemuck = { version = "1.25.2", default-features = false }
 const-default = { version = "1.0.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.7", default-features = false, optional = true }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
-rlsf = { version = "0.2.2", default-features = false, optional = true }
-sealed = { version = "0.6.0", default-features = false, optional = true }
+rlsf = { version = "0.2.3", default-features = false, optional = true }
+sealed = { version = "0.7.0", default-features = false, optional = true }
 typenum = { version = "1.20.1", default-features = false, optional = true }
 wasefire-applet-api = { path = "../api", version = "0.9.1-git", features = ["wasm"] }
 wasefire-common = { path = "../common", version = "0.1.2-git", optional = true }
@@ -128,10 +128,10 @@ internal-rpc = ["dep:sealed"]
 internal-serial = ["dep:sealed"]
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.missing-docs = "warn"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
-rust.unused-features = "allow"
+clippy.unit_arg = "allow"
+rust.missing_docs = "warn"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"
+rust.unused_features = "allow"

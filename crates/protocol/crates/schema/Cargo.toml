@@ -6,8 +6,8 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
-anyhow = "1.0.103"
-tokio = { version = "1.52.3", features = ["full"] }
+anyhow = "1.0.104"
+tokio = { version = "1.53.1", features = ["full"] }
 wasefire-cli-tools = { path = "../../../cli-tools" }
 wasefire-error = { path = "../../../error" }
 wasefire-protocol = { path = "../..", features = ["_descriptor"] }
@@ -18,8 +18,8 @@ device = ["wasefire-protocol/device"]
 host = ["wasefire-protocol/host"]
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

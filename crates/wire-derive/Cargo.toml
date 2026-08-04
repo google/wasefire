@@ -14,11 +14,11 @@ publish = true
 proc-macro = true
 
 [dependencies]
-proc-macro2 = { version = "1.0.106", default-features = false }
-quote = { version = "1.0.46", default-features = false }
+proc-macro2 = { version = "1.0.107", default-features = false }
+quote = { version = "1.0.47", default-features = false }
 
 [dependencies.syn]
-version = "2.0.118"
+version = "3.0.3"
 default-features = false
 features = [
   "clone-impls",
@@ -32,7 +32,7 @@ features = [
 ]
 
 [dev-dependencies]
-prettyplease = "0.2.37"
+prettyplease = "0.3.0"
 similar-asserts = "2.0.0"
 
 [features]
@@ -40,8 +40,8 @@ _dev = []
 schema = []
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

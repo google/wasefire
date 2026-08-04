@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 gloo-utils = "0.3.0"
 log = "0.4.33"
-serde_json = "1.0.150"
+serde_json = "1.0.151"
 wasm-bindgen = "0.2.126"
 wasm-logger = "0.2.0"
 web-common = { path = "../web-common" }
@@ -17,7 +17,7 @@ yew = { version = "0.23", features = ["csr"] }
 yew-hooks = "0.6.4"
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unused_crate_dependencies = "warn"

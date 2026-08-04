@@ -18,6 +18,6 @@ wasefire-error.path = "../../error"
 wasefire-wire = { path = "..", features = ["schema"] }
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
+clippy.unit_arg = "allow"

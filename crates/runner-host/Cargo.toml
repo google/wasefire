@@ -6,15 +6,15 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
-anyhow = "1.0.103"
-clap = { version = "4.6.1", features = ["derive", "env"] }
-data-encoding = "2.11.0"
+anyhow = "1.0.104"
+clap = { version = "4.6.5", features = ["derive", "env"] }
+data-encoding = "2.11.1"
 env_logger = { version = "0.11.11", optional = true }
-rand = "0.10.1"
+rand = "0.10.2"
 syscall-test = { path = "../board/crates/syscall-test" }
-tokio = { version = "1.52.3", features = ["full"] }
+tokio = { version = "1.53.1", features = ["full"] }
 usb-device = "0.3.2"
-usbd-hid = "0.10.0"
+usbd-hid = "0.10.1"
 usbd-serial = "0.2.2"
 wasefire-board-api = { path = "../board", features = ["std"] }
 wasefire-cli-tools = { path = "../cli-tools" }
@@ -86,7 +86,7 @@ pulley = ["wasefire-scheduler/pulley"]
 wasm = ["dep:wasefire-interpreter", "wasefire-scheduler/wasm"]
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unused_crate_dependencies = "warn"

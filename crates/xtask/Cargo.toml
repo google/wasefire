@@ -6,22 +6,22 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
-anyhow = "1.0.103"
-clap = { version = "4.6.1", features = ["derive"] }
-data-encoding = "2.11.0"
+anyhow = "1.0.104"
+clap = { version = "4.6.5", features = ["derive"] }
+data-encoding = "2.11.1"
 env_logger = "0.11.11"
-libc = "0.2.186"
+libc = "0.2.189"
 log = "0.4.33"
-object = "0.39.1"
-serde = { version = "1.0.228", features = ["derive"] }
+object = "0.40.0"
+serde = { version = "1.0.229", features = ["derive"] }
 serialport = "4.9.0"
-tokio = { version = "1.52.3", features = ["full"] }
+tokio = { version = "1.53.1", features = ["full"] }
 wasefire-cli-tools = { path = "../cli-tools", features = ["action", "changelog"] }
 wasefire-error = { path = "../error", features = ["std"] }
 wasefire-protocol = { path = "../protocol", features = ["host"] }
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unused_crate_dependencies = "warn"

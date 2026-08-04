@@ -15,8 +15,8 @@ publish = true
 features = ["std", "wasm"]
 
 [dependencies]
-bytemuck = { version = "1.25.0", default-features = false, optional = true }
-defmt = { version = "1.1.0", default-features = false, optional = true }
+bytemuck = { version = "1.25.2", default-features = false, optional = true }
+defmt = { version = "1.1.1", default-features = false, optional = true }
 derive-where = { version = "1.6.1", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
 generic-array = { version = "=0.14.7", default-features = false, optional = true }
@@ -39,7 +39,7 @@ features = ["toctou"]
 optional = true
 
 [dependencies.wasmtime]
-version = "46.0.1"
+version = "47.0.3"
 default-features = false
 features = ["async", "runtime"]
 optional = true
@@ -340,7 +340,7 @@ internal-debug = ["dep:bytemuck"]
 internal-hash-context = []
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unused_crate_dependencies = "warn"

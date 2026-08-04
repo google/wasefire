@@ -6,9 +6,9 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
-anyhow = "1.0.103"
-data-encoding = "2.11.0"
-futures-util = "0.3.32"
+anyhow = "1.0.104"
+data-encoding = "2.11.1"
+futures-util = "0.3.33"
 gloo = { version = "0.12.0", features = ["futures"] }
 js-sys = "0.3.103"
 wasefire-common = { path = "../common" }
@@ -21,8 +21,8 @@ yew = { version = "0.23.0", features = ["csr"] }
 yew-autoprops = "0.5.0"
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

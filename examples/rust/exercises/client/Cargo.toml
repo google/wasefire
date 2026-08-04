@@ -5,10 +5,10 @@ edition = "2024"
 license = "Apache-2.0"
 
 [dependencies]
-clap = { version = "4.6.1", features = ["derive"] }
+clap = { version = "4.6.5", features = ["derive"] }
 interface = { path = "../interface" }
 p256 = "0.13.2"
-rand = "0.10.1"
+rand = "0.10.2"
 wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["action"] }
 
 [features]
@@ -16,7 +16,7 @@ wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["actio
 usb = []
 
 [lints]
-clippy.mod-module-files = "warn"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.mod_module_files = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

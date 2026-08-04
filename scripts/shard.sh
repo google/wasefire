@@ -15,13 +15,15 @@
 shard_init() {
   _SHARD_INDEX=${1:-0}
   _SHARD_COUNT=${2:-1}
-  echo "Initialize sharding for $_SHARD_INDEX modulo $_SHARD_COUNT"
+  _SHARD_SKIP=${3:-0}
+  echo "Initialize sharding for $_SHARD_INDEX modulo $_SHARD_COUNT skipping first $_SHARD_SKIP"
   _shard_index=-1
 }
 
 shard_next() {
   _shard_index=$(( _shard_index + 1 ))
   [ $(( _shard_index % _SHARD_COUNT )) -eq $_SHARD_INDEX ] || return
+  [ $_SHARD_SKIP -le $_shard_index ] || return
   echo "Current shard is $_shard_index"
 }
 

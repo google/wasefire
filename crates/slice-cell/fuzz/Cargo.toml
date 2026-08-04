@@ -17,6 +17,6 @@ libfuzzer-sys = "0.4.13"
 wasefire-slice-cell = { path = ".." }
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
+clippy.unit_arg = "allow"

@@ -20,7 +20,7 @@ wasefire-error = { path = "../error", version = "0.1.5-git" }
 
 [dev-dependencies]
 lazy_static = "1.5.0"
-wast = "252.0.0"
+wast = "255.0.0"
 
 [features]
 # Enable debugging features (only works for targets with std).
@@ -32,7 +32,7 @@ toctou = []
 vector-types = []
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unused_crate_dependencies = "warn"

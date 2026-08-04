@@ -15,8 +15,8 @@ default-target = "wasm32-unknown-unknown"
 features = ["full-api", "wasm"]
 
 [dependencies]
-bytemuck = { version = "1.25.0", default-features = false, features = ["derive"] }
-sealed = { version = "0.6.0", default-features = false, optional = true }
+bytemuck = { version = "1.25.2", default-features = false, features = ["derive"] }
+sealed = { version = "0.7.0", default-features = false, optional = true }
 wasefire-applet-api-macro = { path = "../api-macro", version = "0.9.1-git" }
 wasefire-error = { path = "../error", version = "0.1.5-git" }
 wasefire-logger = { path = "../logger", version = "0.2.2-git", optional = true }
@@ -106,9 +106,9 @@ native = ["dep:wasefire-logger"]
 internal-api-crypto-hash = []
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
-rust.unused-features = "allow"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"
+rust.unused_features = "allow"
