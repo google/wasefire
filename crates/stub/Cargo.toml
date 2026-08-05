@@ -20,7 +20,7 @@ hkdf = { version = "0.12.4", default-features = false }
 hmac = { version = "0.12.1", default-features = false }
 p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
 p384 = { version = "0.13.1", default-features = false, features = ["ecdsa"] }
-rand = { version = "0.10.1", default-features = false, features = ["thread_rng"] }
+rand = { version = "0.10.2", default-features = false, features = ["thread_rng"] }
 sha2 = { version = "0.10.9", default-features = false }
 signature = { version = "2.2.0", default-features = false }
 wasefire-error = { path = "../error", version = "0.1.5-git" }
@@ -39,8 +39,8 @@ version = "0.9.1-git"
 features = ["full-api", "native", "wasm"]
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

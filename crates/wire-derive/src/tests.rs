@@ -26,9 +26,9 @@ fn test_ok(item: syn::DeriveInput, mut expected: syn::ItemImpl) {
     if actual == expected {
         return;
     }
-    print!("{}", format(item));
-    let actual_str = format(actual.clone());
-    let expected_str = format(expected.clone());
+    print!("{}", format(item.into()));
+    let actual_str = format(syn::Item::Impl(actual.clone()));
+    let expected_str = format(syn::Item::Impl(expected.clone()));
     if actual_str == expected_str {
         similar_asserts::assert_eq!(expected, actual);
         unreachable!();
@@ -36,8 +36,13 @@ fn test_ok(item: syn::DeriveInput, mut expected: syn::ItemImpl) {
     panic!("{}", SimpleDiff::from_str(&expected_str, &actual_str, "expected", "actual"));
 }
 
-fn format(item: impl Into<syn::Item>) -> String {
-    prettyplease::unparse(&syn::File { shebang: None, attrs: vec![], items: vec![item.into()] })
+fn format(item: syn::Item) -> String {
+    prettyplease::unparse(&syn::File {
+        shebang: None,
+        frontmatter: None,
+        attrs: vec![],
+        items: vec![item],
+    })
 }
 
 macro_rules! test_ok {

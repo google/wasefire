@@ -11,9 +11,9 @@ include = ["/LICENSE", "/src/"]
 publish = true
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.missing-docs = "warn"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.missing_docs = "warn"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

@@ -6,15 +6,15 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
-defmt = { version = "1.1.0", default-features = false, optional = true }
+defmt = { version = "1.1.1", default-features = false, optional = true }
 wasefire-board-api = { path = "../..", features = ["api-vendor"] }
 
 [features]
 defmt = ["dep:defmt"]
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

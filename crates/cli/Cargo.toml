@@ -15,16 +15,16 @@ name = "wasefire"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = { version = "1.0.103", default-features = false }
-clap = { version = "4.6.1", default-features = false, features = ["default", "derive", "env"] }
-clap_complete = { version = "4.6.7", default-features = false }
+anyhow = { version = "1.0.104", default-features = false }
+clap = { version = "4.6.5", default-features = false, features = ["default", "derive", "env"] }
+clap_complete = { version = "4.6.8", default-features = false }
 env_logger = { version = "0.11.11", default-features = false, features = ["default"] }
-target-triple = { version = "1.0.0", default-features = false }
+target-triple = { version = "1.0.1", default-features = false }
 wasefire-cli-tools = { path = "../cli-tools", version = "0.4.1-git", features = ["action"] }
 wasefire-one-of = { path = "../one-of", version = "0.1.3-git" }
 
 [dependencies.tokio]
-version = "1.52.3"
+version = "1.53.1"
 default-features = false
 features = ["macros", "parking_lot", "rt", "rt-multi-thread"]
 
@@ -33,8 +33,8 @@ _dev = []
 _prod = []
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

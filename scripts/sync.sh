@@ -27,30 +27,30 @@ for dir in $(find crates examples/rust -name Cargo.toml -printf '%h\n' | sort); 
   grep -q '^\[lints\.' $file && e "unexpected [lints.*] section in $file"
   sed -i '/^\[lints\]$/q' $file
   [ "$(tail -n1 $file)" = '[lints]' ] || printf '\n[lints]\n' >> $file
-  add_lint $file warn clippy.mod-module-files
+  add_lint $file warn clippy.mod_module_files
   [ $crate = $dir ] || add_lint $file allow clippy.uninlined_format_args
-  add_lint $file allow clippy.unit-arg
-  # add_lint $file warn rust.elided-lifetimes-in-paths
+  add_lint $file allow clippy.unit_arg
+  # add_lint $file warn rust.elided_lifetimes_in_paths
   # TODO: Use the same [ -e src/lib.rs -a "$(package_publish)" = true ] test as in test-helper.
   case $crate in
-    board|one-of|prelude) add_lint $file warn rust.missing-docs ;;
+    board|one-of|prelude) add_lint $file warn rust.missing_docs ;;
   esac
   # TODO: Enable for all crates.
   case $crate in
     interpreter|runner-*|scheduler|xtask|*/fuzz) ;;
     examples/rust/exercises/part-*) ;;
-    *) add_lint $file warn rust.unreachable-pub ;;
+    *) add_lint $file warn rust.unreachable_pub ;;
   esac
   case $crate in
     */fuzz) ;;
-    *) add_lint $file warn rust.unused-crate-dependencies ;;
+    *) add_lint $file warn rust.unused_crate_dependencies ;;
   esac
   # TODO(https://github.com/rust-lang/rust/issues/154487): Remove when fixed.
   case $crate in
     api|board|cli-tools|prelude|protocol|wire)
-      add_lint $file allow rust.unused-features ;;
+      add_lint $file allow rust.unused_features ;;
   esac
-  # add_lint $file warn rust.unused-results
+  # add_lint $file warn rust.unused_results
 done
 
 for dir in $(git ls-files '*/sync.sh'); do

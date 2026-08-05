@@ -5,13 +5,13 @@ edition = "2024"
 license = "Apache-2.0"
 
 [dependencies]
-thiserror = { version = "2.0.18", optional = true }
+thiserror = { version = "2.0.19", optional = true }
 
 [features]
 std = ["dep:thiserror"]
 
 [lints]
-clippy.mod-module-files = "warn"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.mod_module_files = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

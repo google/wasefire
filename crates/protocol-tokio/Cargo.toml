@@ -14,13 +14,13 @@ publish = true
 features = ["device"]
 
 [dependencies]
-anyhow = { version = "1.0.103", default-features = false, features = ["std"] }
+anyhow = { version = "1.0.104", default-features = false, features = ["std"] }
 wasefire-error = { path = "../error", version = "0.1.5-git", optional = true }
 wasefire-logger = { path = "../logger", version = "0.2.2-git", optional = true }
 wasefire-one-of = { path = "../one-of", version = "0.1.3-git" }
 
 [dependencies.tokio]
-version = "1.52.3"
+version = "1.53.1"
 default-features = false
 features = ["io-util", "macros", "net", "rt", "sync"]
 
@@ -44,8 +44,8 @@ device = ["dep:wasefire-board-api", "dep:wasefire-error", "dep:wasefire-logger"]
 host = ["dep:wasefire-protocol"]
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

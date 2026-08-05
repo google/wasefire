@@ -11,11 +11,11 @@ include = ["/LICENSE", "/src/"]
 publish = true
 
 [dependencies]
-data-encoding = { version = "2.11.0", default-features = false }
-data-encoding-macro = { version = "0.1.20", default-features = false }
-proc-macro2 = { version = "1.0.106", default-features = false }
-quote = { version = "1.0.46", default-features = false }
-syn = { version = "2.0.118", default-features = false, features = ["printing"] }
+data-encoding = { version = "2.11.1", default-features = false }
+data-encoding-macro = { version = "0.1.21", default-features = false }
+proc-macro2 = { version = "1.0.107", default-features = false }
+quote = { version = "1.0.47", default-features = false }
+syn = { version = "3.0.3", default-features = false, features = ["printing"] }
 
 [features]
 # API features.
@@ -85,8 +85,8 @@ internal-api-store = []
 internal-api-usb = []
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

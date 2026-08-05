@@ -14,7 +14,7 @@ wasefire-stub = { path = "../../../crates/stub", optional = true }
 test = ["dep:wasefire-stub", "wasefire/test"]
 
 [lints]
-clippy.mod-module-files = "warn"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.mod_module_files = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

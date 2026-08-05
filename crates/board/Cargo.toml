@@ -17,12 +17,12 @@ features = ["full-api", "std"]
 aead = { version = "0.5.2", default-features = false, optional = true }
 aes = { version = "0.8.4", default-features = false, optional = true }
 aes-gcm = { version = "0.10.3", default-features = false, optional = true }
-bytemuck = { version = "1.25.0", default-features = false }
+bytemuck = { version = "1.25.2", default-features = false }
 cbc = { version = "0.1.2", default-features = false, optional = true }
 ccm = { version = "0.5.0", default-features = false, optional = true }
 crypto-common = { version = "0.1.7", default-features = false, optional = true }
-data-encoding = { version = "2.11.0", default-features = false, features = ["alloc"] }
-defmt = { version = "1.1.0", default-features = false, optional = true }
+data-encoding = { version = "2.11.1", default-features = false, features = ["alloc"] }
+defmt = { version = "1.1.1", default-features = false, optional = true }
 derive-where = { version = "1.6.1", default-features = false, features = ["nightly"] }
 digest = { version = "0.10.7", default-features = false, optional = true }
 ecdsa = { version = "0.16.9", default-features = false, optional = true }
@@ -35,7 +35,7 @@ sha2 = { version = "0.10.9", default-features = false, optional = true }
 signature = { version = "2.2.0", default-features = false, optional = true }
 typenum = { version = "1.20.1", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false }
-usbd-hid = { version = "0.10.0", default-features = false, optional = true }
+usbd-hid = { version = "0.10.1", default-features = false, optional = true }
 usbd-serial = { version = "0.2.2", default-features = false, optional = true }
 wasefire-common = { path = "../common", version = "0.1.2-git" }
 wasefire-error = { path = "../error", version = "0.1.5-git" }
@@ -257,10 +257,10 @@ internal-test-software-crypto = []
 internal-with-error = []
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.missing-docs = "warn"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
-rust.unused-features = "allow"
+clippy.unit_arg = "allow"
+rust.missing_docs = "warn"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"
+rust.unused_features = "allow"

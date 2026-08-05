@@ -5,15 +5,15 @@ edition = "2024"
 license = "Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.103"
-clap = { version = "4.6.1", features = ["derive"] }
+anyhow = "1.0.104"
+clap = { version = "4.6.5", features = ["derive"] }
 common = { path = "../common", features = ["std"] }
 env_logger = "0.11.11"
 log = "0.4.33"
 wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["action"] }
 
 [lints]
-clippy.mod-module-files = "warn"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.mod_module_files = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

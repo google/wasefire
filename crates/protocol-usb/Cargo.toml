@@ -14,8 +14,8 @@ publish = true
 features = ["device"]
 
 [dependencies]
-anyhow = { version = "1.0.103", default-features = false, features = ["std"], optional = true }
-defmt = { version = "1.1.0", default-features = false, optional = true }
+anyhow = { version = "1.0.104", default-features = false, features = ["std"], optional = true }
+defmt = { version = "1.1.1", default-features = false, optional = true }
 rusb = { version = "0.9.4", default-features = false, optional = true }
 usb-device = { version = "0.3.2", default-features = false, optional = true }
 wasefire-error = { path = "../error", version = "0.1.5-git", optional = true }
@@ -43,8 +43,8 @@ device = ["dep:usb-device", "dep:wasefire-board-api", "dep:wasefire-error"]
 host = ["dep:anyhow", "dep:rusb", "dep:wasefire-protocol", "std"]
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

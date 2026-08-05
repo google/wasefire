@@ -11,7 +11,7 @@ include = ["/LICENSE", "/src/"]
 publish = true
 
 [dependencies]
-defmt = { version = "1.1.0", default-features = false, optional = true }
+defmt = { version = "1.1.1", default-features = false, optional = true }
 log = { version = "0.4.33", default-features = false, optional = true }
 
 [features]
@@ -19,8 +19,8 @@ defmt = ["dep:defmt"]
 log = ["dep:log"]
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"

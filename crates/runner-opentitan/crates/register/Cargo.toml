@@ -6,11 +6,11 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
-bytemuck = { version = "1.25.0", default-features = false, features = ["derive"] }
+bytemuck = { version = "1.25.2", default-features = false, features = ["derive"] }
 derive-where = { version = "1.6.1", default-features = false, features = ["nightly"] }
 
 [lints]
-clippy.mod-module-files = "warn"
+clippy.mod_module_files = "warn"
 clippy.uninlined_format_args = "allow"
-clippy.unit-arg = "allow"
-rust.unused-crate-dependencies = "warn"
+clippy.unit_arg = "allow"
+rust.unused_crate_dependencies = "warn"

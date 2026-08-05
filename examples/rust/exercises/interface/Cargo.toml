@@ -6,10 +6,10 @@ license = "Apache-2.0"
 
 [dependencies]
 postcard = { version = "1.1.3", default-features = false, features = ["alloc"] }
-serde = { version = "1.0.228", default-features = false, features = ["alloc", "derive"] }
+serde = { version = "1.0.229", default-features = false, features = ["alloc", "derive"] }
 
 [lints]
-clippy.mod-module-files = "warn"
-clippy.unit-arg = "allow"
-rust.unreachable-pub = "warn"
-rust.unused-crate-dependencies = "warn"
+clippy.mod_module_files = "warn"
+clippy.unit_arg = "allow"
+rust.unreachable_pub = "warn"
+rust.unused_crate_dependencies = "warn"
