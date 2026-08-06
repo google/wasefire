@@ -14,8 +14,8 @@
 
 #![allow(unused_imports)]
 
+use crypto_common as _;
 use digest::{FixedOutput, InvalidLength, KeyInit, Output, Update};
-use generic_array::GenericArray;
 use wasefire_applet_api::crypto::hash::{self as api, Algorithm, Api};
 use wasefire_board_api::applet::{Memory as _, MemoryExt as _};
 use wasefire_board_api::{self as board, Api as Board, Support};
@@ -104,12 +104,12 @@ fn finalize<B: Board>(mut call: SchedulerCall<B, api::finalize::Sig>) {
             #[cfg(feature = "board-api-crypto-sha256")]
             HashContext::Sha256(context) => {
                 let digest = memory.get_array_mut::<32>(*digest)?;
-                context.finalize_into(GenericArray::from_mut_slice(digest))?
+                context.finalize_into(digest.into())?
             }
             #[cfg(feature = "board-api-crypto-sha384")]
             HashContext::Sha384(context) => {
                 let digest = memory.get_array_mut::<48>(*digest)?;
-                context.finalize_into(GenericArray::from_mut_slice(digest))?
+                context.finalize_into(digest.into())?
             }
             _ => trap_use!(memory),
         }
@@ -173,12 +173,12 @@ fn hmac_finalize<B: Board>(mut call: SchedulerCall<B, api::hmac_finalize::Sig>) 
             #[cfg(feature = "board-api-crypto-hmac-sha256")]
             HashContext::HmacSha256(context) => {
                 let hmac = memory.get_array_mut::<32>(*hmac)?;
-                context.finalize_into(GenericArray::from_mut_slice(hmac))?
+                context.finalize_into(hmac.into())?
             }
             #[cfg(feature = "board-api-crypto-hmac-sha384")]
             HashContext::HmacSha384(context) => {
                 let hmac = memory.get_array_mut::<48>(*hmac)?;
-                context.finalize_into(GenericArray::from_mut_slice(hmac))?
+                context.finalize_into(hmac.into())?
             }
             _ => trap_use!(memory),
         }

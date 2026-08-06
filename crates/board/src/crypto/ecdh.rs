@@ -83,14 +83,15 @@ pub trait Api<const N: usize>: Support<bool> + Send {
 mod software {
     use core::marker::PhantomData;
 
-    use elliptic_curve::sec1::{EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint};
+    use elliptic_curve::ff::PrimeField;
+    use elliptic_curve::sec1::{FromSec1Point, ModulusSize, Sec1Point, ToSec1Point};
     use elliptic_curve::subtle::CtOption;
     use elliptic_curve::zeroize::Zeroize;
     use elliptic_curve::{
-        AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, ProjectivePoint, Scalar,
-        ScalarPrimitive, SecretKey,
+        AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, Generate, ProjectivePoint,
+        Scalar, SecretKey,
     };
-    use signature::rand_core::CryptoRngCore;
+    use signature::rand_core::CryptoRng;
     use wasefire_error::Code;
 
     use super::*;
@@ -108,10 +109,10 @@ mod software {
     impl<C, R, const N: usize> Api<N> for Software<C, R, N>
     where
         C: CurveArithmetic,
-        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        ProjectivePoint<C>: FromEncodedPoint<C>,
+        AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
+        ProjectivePoint<C>: FromSec1Point<C>,
         FieldBytesSize<C>: ModulusSize,
-        R: Default + CryptoRngCore + WithError + Send,
+        R: Default + CryptoRng + WithError + Send,
     {
         const PRIVATE: Layout = unsafe { Layout::from_size_align_unchecked(N, 1) };
         const PUBLIC: Layout = unsafe { Layout::from_size_align_unchecked(2 * N, 1) };
@@ -122,7 +123,7 @@ mod software {
                 return Err(Error::user(Code::InvalidLength));
             }
             let mut rng = R::default();
-            let key = R::with_error(|| SecretKey::<C>::random(&mut rng))?;
+            let key = R::with_error(|| SecretKey::<C>::generate_from_rng(&mut rng))?;
             private.copy_from_slice(&key.to_bytes());
             Ok(())
         }
@@ -131,9 +132,11 @@ mod software {
             if private.len() != N || public.len() != 2 * N {
                 return Err(Error::user(Code::InvalidLength));
             }
-            let key = SecretKey::<C>::from_bytes(FieldBytes::<C>::from_slice(private))
+            let bytes = FieldBytes::<C>::try_from(private)
                 .map_err(|_| Error::user(Code::InvalidArgument))?;
-            let key = key.public_key().as_affine().to_encoded_point(false);
+            let key = SecretKey::<C>::from_bytes(&bytes)
+                .map_err(|_| Error::user(Code::InvalidArgument))?;
+            let key = key.public_key().as_affine().to_sec1_point(false);
             let (x, y) = public.split_at_mut(N);
             x.copy_from_slice(key.x().ok_or(Error::user(0))?);
             y.copy_from_slice(key.y().ok_or(Error::user(0))?);
@@ -144,13 +147,16 @@ mod software {
             if private.len() != N || public.len() != 2 * N || shared.len() != N {
                 return Err(Error::user(Code::InvalidLength));
             }
-            let private = unwrap_ct(ScalarPrimitive::<C>::from_bytes(private.into()))?;
-            let private = Scalar::<C>::from(private);
+            let bytes = FieldBytes::<C>::try_from(private)
+                .map_err(|_| Error::user(Code::InvalidArgument))?;
+            let private = unwrap_ct(Scalar::<C>::from_repr(bytes))?;
             let (x, y) = public.split_at(N);
-            let public = EncodedPoint::<C>::from_affine_coordinates(x.into(), y.into(), false);
-            let public = unwrap_ct(ProjectivePoint::<C>::from_encoded_point(&public))?;
+            let x = FieldBytes::<C>::try_from(x).map_err(|_| Error::user(Code::InvalidArgument))?;
+            let y = FieldBytes::<C>::try_from(y).map_err(|_| Error::user(Code::InvalidArgument))?;
+            let public = Sec1Point::<C>::from_affine_coordinates(&x, &y, false);
+            let public = unwrap_ct(ProjectivePoint::<C>::from_sec1_point(&public).into())?;
             let secret: AffinePoint<C> = (public * private).into();
-            let secret = secret.to_encoded_point(false);
+            let secret = secret.to_sec1_point(false);
             shared.copy_from_slice(secret.x().ok_or(Error::user(0))?);
             Ok(())
         }

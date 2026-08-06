@@ -5,7 +5,7 @@ edition = "2024"
 license = "Apache-2.0"
 
 [dependencies]
-digest = { version = "0.10.7", default-features = false, optional = true }
+digest = { version = "0.11.3", default-features = false, optional = true }
 wasefire = { path = "../../../crates/prelude" }
 wasefire-stub = { path = "../../../crates/stub", optional = true }
 

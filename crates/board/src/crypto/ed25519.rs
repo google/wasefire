@@ -76,7 +76,7 @@ mod software {
     use core::marker::PhantomData;
 
     use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
-    use signature::rand_core::CryptoRngCore;
+    use signature::rand_core::CryptoRng;
     use wasefire_error::Code;
     use zeroize::Zeroize;
 
@@ -91,7 +91,7 @@ mod software {
 
     impl<R> Supported for Software<R> {}
 
-    impl<R: Default + CryptoRngCore + WithError + Send> Api for Software<R> {
+    impl<R: Default + CryptoRng + WithError + Send> Api for Software<R> {
         const PRIVATE: Layout = unsafe { Layout::from_size_align_unchecked(32, 1) };
         const PUBLIC: Layout = unsafe { Layout::from_size_align_unchecked(32, 1) };
         const WRAPPED: usize = 32;

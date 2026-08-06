@@ -14,14 +14,14 @@
 
 //! Elliptic-curve cryptography.
 
-use crypto_common::generic_array::{ArrayLength, GenericArray};
+use crypto_common::array::ArraySize;
 #[cfg(feature = "internal-software-crypto-ecc")]
 pub use software::*;
 
 use crate::{Error, Support};
 
 /// Elliptic-curve cryptography interface.
-pub trait Api<N: ArrayLength<u8>>: Support<bool> + Send {
+pub trait Api<N: ArraySize>: Support<bool> + Send {
     /// Returns whether a scalar is valid.
     fn is_valid_scalar(n: &Int<N>) -> bool;
 
@@ -46,23 +46,22 @@ pub trait Api<N: ArrayLength<u8>>: Support<bool> + Send {
 }
 
 /// SEC-1 encoding of an `N` bytes integer.
-pub type Int<N> = GenericArray<u8, N>;
+pub type Int<N> = crypto_common::array::Array<u8, N>;
 
 #[cfg(feature = "internal-software-crypto-ecc")]
 mod software {
     use core::marker::PhantomData;
 
     use crypto_common::BlockSizeUser;
-    use ecdsa::hazmat::{SignPrimitive, VerifyPrimitive};
-    use ecdsa::{PrimeCurve, Signature, SignatureSize, VerifyingKey};
-    use elliptic_curve::ops::MulByGenerator;
-    use elliptic_curve::sec1::{EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint};
+    use ecdsa::{EcdsaCurve, PrimeCurve, Signature, SignatureSize, SigningKey, VerifyingKey};
+    use elliptic_curve::ff::PrimeField;
+    use elliptic_curve::sec1::{FromSec1Point, ModulusSize, Sec1Point, ToSec1Point};
     use elliptic_curve::subtle::CtOption;
     use elliptic_curve::{
-        AffinePoint, CurveArithmetic, FieldBytesSize, ProjectivePoint, Scalar, ScalarPrimitive,
+        AffinePoint, CurveArithmetic, FieldBytesSize, Group, NonZeroScalar, ProjectivePoint, Scalar,
     };
     use signature::digest::{Digest, FixedOutput, FixedOutputReset};
-    use signature::hazmat::PrehashVerifier;
+    use signature::hazmat::{PrehashSigner, PrehashVerifier};
 
     use super::*;
     use crate::Support;
@@ -81,14 +80,14 @@ mod software {
 
     impl<C, D> Api<FieldBytesSize<C>> for Software<C, D>
     where
-        C: Send + PrimeCurve + CurveArithmetic,
+        C: Send + PrimeCurve + CurveArithmetic + EcdsaCurve,
         D: Support<bool> + Send,
         D: Digest + BlockSizeUser + FixedOutput<OutputSize = FieldBytesSize<C>> + FixedOutputReset,
-        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
-        ProjectivePoint<C>: FromEncodedPoint<C>,
-        SignatureSize<C>: ArrayLength<u8>,
-        Scalar<C>: SignPrimitive<C>,
+        AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
+        ProjectivePoint<C>: FromSec1Point<C>,
+        SignatureSize<C>: ArraySize,
         FieldBytesSize<C>: ModulusSize,
+        SigningKey<C>: PrehashSigner<Signature<C>>,
     {
         fn is_valid_scalar(n: &Int<C>) -> bool {
             Self::scalar_from_int(n).is_ok()
@@ -99,7 +98,7 @@ mod software {
         }
 
         fn base_point_mul(n: &Int<C>, x: &mut Int<C>, y: &mut Int<C>) -> Result<(), Error> {
-            let r = ProjectivePoint::<C>::mul_by_generator(&Self::scalar_from_int(n)?);
+            let r = ProjectivePoint::<C>::generator() * Self::scalar_from_int(n)?;
             Self::point_to_ints(&r.into(), x, y)
         }
 
@@ -111,9 +110,9 @@ mod software {
         }
 
         fn ecdsa_sign(d: &Int<C>, m: &Int<C>, r: &mut Int<C>, s: &mut Int<C>) -> Result<(), Error> {
-            let d = Self::scalar_from_int(d)?;
-            let (signature, _) =
-                d.try_sign_prehashed_rfc6979::<D>(m, &[]).map_err(|_| Error::world(0))?;
+            let d = convert(NonZeroScalar::<C>::new(Self::scalar_from_int(d)?))?;
+            let key = SigningKey::<C>::from(d);
+            let signature: Signature<C> = key.sign_prehash(m).map_err(|_| Error::world(0))?;
             r.copy_from_slice(&Self::scalar_to_int(signature.r()));
             s.copy_from_slice(&Self::scalar_to_int(signature.s()));
             Ok(())
@@ -122,10 +121,9 @@ mod software {
         fn ecdsa_verify(
             m: &Int<C>, x: &Int<C>, y: &Int<C>, r: &Int<C>, s: &Int<C>,
         ) -> Result<bool, Error> {
-            let p = EncodedPoint::<C>::from_affine_coordinates(x, y, false);
-            let p = VerifyingKey::<C>::from_encoded_point(&p).map_err(|_| Error::user(0))?;
-            let signature =
-                Signature::from_scalars(r.clone(), s.clone()).map_err(|_| Error::user(0))?;
+            let p = Sec1Point::<C>::from_affine_coordinates(x, y, false);
+            let p = VerifyingKey::<C>::from_sec1_point(&p).map_err(|_| Error::user(0))?;
+            let signature = Signature::from_scalars(*r, *s).map_err(|_| Error::user(0))?;
             Ok(p.verify_prehash(m, &signature).is_ok())
         }
     }
@@ -133,12 +131,12 @@ mod software {
     impl<C, D> Software<C, D>
     where
         C: CurveArithmetic,
-        AffinePoint<C>: ToEncodedPoint<C>,
-        ProjectivePoint<C>: FromEncodedPoint<C>,
+        AffinePoint<C>: ToSec1Point<C>,
+        ProjectivePoint<C>: FromSec1Point<C>,
         FieldBytesSize<C>: ModulusSize,
     {
         fn scalar_from_int(x: &Int<C>) -> Result<Scalar<C>, Error> {
-            Ok(convert(ScalarPrimitive::from_bytes(x))?.into())
+            convert(Scalar::<C>::from_repr(*x))
         }
 
         fn scalar_to_int(x: impl AsRef<Scalar<C>>) -> Int<C> {
@@ -146,12 +144,12 @@ mod software {
         }
 
         fn point_from_ints(x: &Int<C>, y: &Int<C>) -> Result<ProjectivePoint<C>, Error> {
-            let r = EncodedPoint::<C>::from_affine_coordinates(x, y, false);
-            convert(ProjectivePoint::<C>::from_encoded_point(&r))
+            let r = Sec1Point::<C>::from_affine_coordinates(x, y, false);
+            convert(ProjectivePoint::<C>::from_sec1_point(&r).into())
         }
 
         fn point_to_ints(p: &AffinePoint<C>, x: &mut Int<C>, y: &mut Int<C>) -> Result<(), Error> {
-            let p = p.to_encoded_point(false);
+            let p = p.to_sec1_point(false);
             x.copy_from_slice(p.x().ok_or(Error::user(0))?);
             y.copy_from_slice(p.y().ok_or(Error::user(0))?);
             Ok(())

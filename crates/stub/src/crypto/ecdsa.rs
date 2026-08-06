@@ -12,18 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crypto_common::BlockSizeUser;
-use crypto_common::generic_array::ArrayLength;
+use crypto_common::array::ArraySize;
+use crypto_common::{BlockSizeUser, Generate};
 use digest::typenum::Unsigned;
 use digest::{Digest, FixedOutput, FixedOutputReset};
-use ecdsa::hazmat::{SignPrimitive, VerifyPrimitive};
 use ecdsa::{Signature, SignatureSize, SigningKey, VerifyingKey};
-use elliptic_curve::sec1::{EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint};
+use elliptic_curve::sec1::{FromSec1Point, ModulusSize, Sec1Point, ToSec1Point};
 use elliptic_curve::zeroize::Zeroize;
-use elliptic_curve::{
-    AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, PrimeCurve, Scalar,
-};
-use signature::hazmat::PrehashVerifier;
+use elliptic_curve::{AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, PrimeCurve};
+use signature::hazmat::{PrehashSigner, PrehashVerifier};
 use wasefire_applet_api::crypto::ecdsa as api;
 use wasefire_error::{Code, Error};
 
@@ -72,11 +69,11 @@ unsafe extern "C" fn env_cdg(params: api::generate::Params) -> isize {
 
 fn generate<C>(private: *mut u8)
 where
-    C: PrimeCurve + CurveArithmetic,
-    Scalar<C>: SignPrimitive<C>,
-    SignatureSize<C>: ArrayLength<u8>,
+    C: PrimeCurve + CurveArithmetic + ecdsa::EcdsaCurve,
+    SignatureSize<C>: ArraySize,
+    SigningKey<C>: PrehashSigner<Signature<C>>,
 {
-    let key = SigningKey::<C>::random(&mut rand_core::OsRng).to_bytes();
+    let key = SigningKey::<C>::generate_from_rng(&mut rand::rng()).to_bytes();
     let private = unsafe { std::slice::from_raw_parts_mut(private, key.len()) };
     private.copy_from_slice(&key);
 }
@@ -93,17 +90,16 @@ unsafe extern "C" fn env_cdp(params: api::public::Params) -> isize {
 
 fn public_key<C>(private: *const u8, public: *mut u8) -> Result<(), Error>
 where
-    C: PrimeCurve + CurveArithmetic,
-    Scalar<C>: SignPrimitive<C>,
-    SignatureSize<C>: ArrayLength<u8>,
-    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    C: PrimeCurve + CurveArithmetic + ecdsa::EcdsaCurve,
+    SignatureSize<C>: ArraySize,
+    AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
 {
     let n = FieldBytesSize::<C>::USIZE;
     let private = unsafe { std::slice::from_raw_parts(private, n) };
-    let key = SigningKey::<C>::from_bytes(FieldBytes::<C>::from_slice(private))
+    let key = SigningKey::<C>::from_bytes(&FieldBytes::<C>::try_from(private).unwrap())
         .map_err(|_| Error::user(Code::InvalidArgument))?;
-    let key = key.verifying_key().as_affine().to_encoded_point(false);
+    let key = key.verifying_key().as_affine().to_sec1_point(false);
     let public = unsafe { std::slice::from_raw_parts_mut(public, 2 * n) };
     let (x, y) = public.split_at_mut(n);
     x.copy_from_slice(key.x().ok_or(Error::user(0))?);
@@ -123,22 +119,20 @@ unsafe extern "C" fn env_cdi(params: api::sign::Params) -> isize {
 
 fn sign<C, D>(private: *const u8, digest: *const u8, r: *mut u8, s: *mut u8) -> Result<(), Error>
 where
-    C: PrimeCurve + CurveArithmetic,
-    Scalar<C>: SignPrimitive<C>,
-    SignatureSize<C>: ArrayLength<u8>,
-    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    C: PrimeCurve + CurveArithmetic + ecdsa::EcdsaCurve,
+    SignatureSize<C>: ArraySize,
+    SigningKey<C>: PrehashSigner<Signature<C>>,
+    AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
     D: Digest + BlockSizeUser + FixedOutput<OutputSize = FieldBytesSize<C>> + FixedOutputReset,
 {
+    let _ = core::marker::PhantomData::<D>;
     let n = FieldBytesSize::<C>::USIZE;
     let private = unsafe { std::slice::from_raw_parts(private, n) };
-    let key = SigningKey::<C>::from_bytes(FieldBytes::<C>::from_slice(private))
+    let key = SigningKey::<C>::from_bytes(&FieldBytes::<C>::try_from(private).unwrap())
         .map_err(|_| Error::user(Code::InvalidArgument))?;
     let digest = unsafe { std::slice::from_raw_parts(digest, n) };
-    let (sig, _) = key
-        .as_nonzero_scalar()
-        .try_sign_prehashed_rfc6979::<D>(FieldBytes::<C>::from_slice(digest), &[])
-        .map_err(|_| Error::world(0))?;
+    let sig = key.sign_prehash(digest).map_err(|_| Error::world(0))?;
     let r = unsafe { std::slice::from_raw_parts_mut(r, n) };
     let s = unsafe { std::slice::from_raw_parts_mut(s, n) };
     r.copy_from_slice(FieldBytes::<C>::from(sig.r()).as_slice());
@@ -160,21 +154,22 @@ fn verify<C>(
     public: *const u8, digest: *const u8, r: *const u8, s: *const u8,
 ) -> Result<bool, Error>
 where
-    C: PrimeCurve + CurveArithmetic,
-    Scalar<C>: SignPrimitive<C>,
-    SignatureSize<C>: ArrayLength<u8>,
-    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+    C: PrimeCurve + CurveArithmetic + ecdsa::EcdsaCurve,
+    SignatureSize<C>: ArraySize,
+    AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
 {
     let n = FieldBytesSize::<C>::USIZE;
     let public = unsafe { std::slice::from_raw_parts(public, 2 * n) };
     let (x, y) = public.split_at(n);
-    let key = EncodedPoint::<C>::from_affine_coordinates(x.into(), y.into(), false);
-    let key = VerifyingKey::<C>::from_encoded_point(&key).map_err(|_| Error::user(0))?;
+    let x = FieldBytes::<C>::try_from(x).unwrap();
+    let y = FieldBytes::<C>::try_from(y).unwrap();
+    let key = Sec1Point::<C>::from_affine_coordinates(&x, &y, false);
+    let key = VerifyingKey::<C>::from_sec1_point(&key).map_err(|_| Error::user(0))?;
     let r = unsafe { std::slice::from_raw_parts(r, n) };
     let s = unsafe { std::slice::from_raw_parts(s, n) };
-    let r = FieldBytes::<C>::from_slice(r).clone();
-    let s = FieldBytes::<C>::from_slice(s).clone();
+    let r = FieldBytes::<C>::try_from(r).unwrap();
+    let s = FieldBytes::<C>::try_from(s).unwrap();
     let sig = Signature::from_scalars(r, s).map_err(|_| Error::user(0))?;
     let digest = unsafe { std::slice::from_raw_parts(digest, n) };
     Ok(key.verify_prehash(digest, &sig).is_ok())

@@ -206,23 +206,20 @@ impl<T: crate::Api> Default for CryptoRng<T> {
 }
 
 #[cfg(feature = "internal-crypto-rng")]
-impl<T: crate::Api> rand_core::RngCore for CryptoRng<T> {
-    fn next_u32(&mut self) -> u32 {
-        rand_core::impls::next_u32_via_fill(self)
+impl<T: crate::Api> rand_core::TryRng for CryptoRng<T> {
+    type Error = core::convert::Infallible;
+
+    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+        rand_core::utils::next_word_via_fill(self)
     }
 
-    fn next_u64(&mut self) -> u64 {
-        rand_core::impls::next_u64_via_fill(self)
+    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+        rand_core::utils::next_word_via_fill(self)
     }
 
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
-        self.try_fill_bytes(dest).unwrap()
-    }
-
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-        ERROR
-            .record(<crate::Rng<T> as crate::rng::Api>::fill_bytes(dest))
-            .ok_or_else(|| core::num::NonZeroU32::new(1).unwrap().into())
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Self::Error> {
+        ERROR.record(<crate::Rng<T> as crate::rng::Api>::fill_bytes(dest));
+        Ok(())
     }
 }
 
@@ -230,7 +227,7 @@ impl<T: crate::Api> rand_core::RngCore for CryptoRng<T> {
 static ERROR: GlobalError = GlobalError::new();
 
 #[cfg(feature = "internal-crypto-rng")]
-impl<T: crate::Api> rand_core::CryptoRng for CryptoRng<T> {}
+impl<T: crate::Api> rand_core::TryCryptoRng for CryptoRng<T> {}
 
 #[cfg(feature = "internal-crypto-rng")]
 impl<T: crate::Api> WithError for CryptoRng<T> {
@@ -372,7 +369,7 @@ mod _test_software_crypto {
     #[cfg(feature = "software-crypto-aes256-gcm")]
     test!(SoftwareAes256Gcm; aead::Api<typenum::U32, typenum::U12>);
     #[cfg(feature = "software-crypto-ed25519")]
-    test!(SoftwareEd25519 R [R: Default + rand_core::CryptoRngCore + WithError + Send];
+    test!(SoftwareEd25519 R [R: Default + rand_core::CryptoRng + WithError + Send];
           ed25519::Api);
     #[cfg(feature = "software-crypto-hmac-sha256")]
     test!(SoftwareHmacSha256 T [T: Api]; Hmac<KeySize = typenum::U64, OutputSize = typenum::U32>);
@@ -381,20 +378,20 @@ mod _test_software_crypto {
     #[cfg(feature = "software-crypto-p256")]
     test!(SoftwareP256 T [T: Api, T::Sha256: digest::FixedOutputReset]; ecc::Api<typenum::U32>);
     #[cfg(feature = "software-crypto-p256-ecdh")]
-    test!(SoftwareP256Ecdh R [R: Default + rand_core::CryptoRngCore + WithError + Send];
+    test!(SoftwareP256Ecdh R [R: Default + rand_core::CryptoRng + WithError + Send];
           ecdh::Api<32>);
     #[cfg(feature = "software-crypto-p256-ecdsa")]
     test!(SoftwareP256Ecdsa T R [T: Api, T::Sha256: digest::FixedOutputReset,
-                                 R: Default + rand_core::CryptoRngCore + WithError + Send];
+                                 R: Default + rand_core::CryptoRng + WithError + Send];
           ecdsa::Api<32>);
     #[cfg(feature = "software-crypto-p384")]
     test!(SoftwareP384 T [T: Api, T::Sha384: digest::FixedOutputReset]; ecc::Api<typenum::U48>);
     #[cfg(feature = "software-crypto-p384-ecdh")]
-    test!(SoftwareP384Ecdh R [R: Default + rand_core::CryptoRngCore + WithError + Send];
+    test!(SoftwareP384Ecdh R [R: Default + rand_core::CryptoRng + WithError + Send];
           ecdh::Api<48>);
     #[cfg(feature = "software-crypto-p384-ecdsa")]
     test!(SoftwareP384Ecdsa T R [T: Api, T::Sha384: digest::FixedOutputReset,
-                                 R: Default + rand_core::CryptoRngCore + WithError + Send];
+                                 R: Default + rand_core::CryptoRng + WithError + Send];
           ecdsa::Api<48>);
     #[cfg(feature = "software-crypto-sha256")]
     test!(SoftwareSha256[]; Hash<BlockSize = typenum::U64, OutputSize = typenum::U32>);

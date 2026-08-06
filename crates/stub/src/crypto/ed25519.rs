@@ -41,7 +41,7 @@ unsafe extern "C" fn env_c2k() -> isize {
 #[unsafe(no_mangle)]
 unsafe extern "C" fn env_c2g(params: api::generate::Params) -> isize {
     let api::generate::Params { private } = params;
-    let key = SigningKey::generate(&mut rand_core::OsRng).to_bytes();
+    let key = SigningKey::generate(&mut rand::rng()).to_bytes();
     let private = unsafe { std::slice::from_raw_parts_mut(private, key.len()) };
     private.copy_from_slice(&key);
     convert_unit(Ok(()))

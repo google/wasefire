@@ -14,7 +14,7 @@
 
 //! Cipher block chaining (CBC).
 
-use crypto_common::generic_array::{ArrayLength, GenericArray};
+use crypto_common::array::ArraySize;
 #[cfg(feature = "internal-software-crypto-cbc")]
 pub use software::*;
 
@@ -23,8 +23,8 @@ use crate::{Error, Support};
 /// CBC interface.
 pub trait Api<Key, Block>: Support<bool> + Send
 where
-    Key: ArrayLength<u8>,
-    Block: ArrayLength<u8>,
+    Key: ArraySize,
+    Block: ArraySize,
 {
     /// Encrypts a sequence of blocks given a key and IV.
     fn encrypt(key: &Array<Key>, iv: &Array<Block>, blocks: &mut [u8]) -> Result<(), Error>;
@@ -34,15 +34,15 @@ where
 }
 
 /// Sequence of N bytes.
-pub type Array<N> = GenericArray<u8, N>;
+pub type Array<N> = crypto_common::array::Array<u8, N>;
 
 #[cfg(feature = "internal-software-crypto-cbc")]
 mod software {
     use core::marker::PhantomData;
 
-    use aes::cipher::{BlockCipher, BlockDecryptMut, BlockEncryptMut};
+    use cbc::cipher::{BlockCipherDecrypt, BlockCipherEncrypt, BlockModeDecrypt, BlockModeEncrypt};
     use cbc::{Decryptor, Encryptor};
-    use crypto_common::{KeyInit, KeyIvInit, KeySizeUser};
+    use crypto_common::{BlockSizeUser, KeyInit, KeyIvInit, KeySizeUser};
     use wasefire_error::Code;
 
     use super::*;
@@ -58,21 +58,21 @@ mod software {
 
     impl<Key, Block, C> Api<Key, Block> for Software<C>
     where
-        C: Send + KeyInit + KeySizeUser<KeySize = Key>,
-        C: BlockCipher<BlockSize = Block> + BlockDecryptMut + BlockEncryptMut,
-        Key: ArrayLength<u8>,
-        Block: ArrayLength<u8>,
+        C: Send + KeyInit + KeySizeUser<KeySize = Key> + BlockSizeUser<BlockSize = Block>,
+        C: BlockCipherDecrypt + BlockCipherEncrypt,
+        Key: ArraySize,
+        Block: ArraySize,
     {
         fn encrypt(key: &Array<Key>, iv: &Array<Block>, blocks: &mut [u8]) -> Result<(), Error> {
-            Ok(Encryptor::<C>::new(key, iv).encrypt_blocks_mut(convert_blocks(blocks)?))
+            Ok(Encryptor::<C>::new(key, iv).encrypt_blocks(convert_blocks(blocks)?))
         }
 
         fn decrypt(key: &Array<Key>, iv: &Array<Block>, blocks: &mut [u8]) -> Result<(), Error> {
-            Ok(Decryptor::<C>::new(key, iv).decrypt_blocks_mut(convert_blocks(blocks)?))
+            Ok(Decryptor::<C>::new(key, iv).decrypt_blocks(convert_blocks(blocks)?))
         }
     }
 
-    fn convert_blocks<N: ArrayLength<u8>>(blocks: &mut [u8]) -> Result<&mut [Array<N>], Error> {
+    fn convert_blocks<N: ArraySize>(blocks: &mut [u8]) -> Result<&mut [Array<N>], Error> {
         if !blocks.len().is_multiple_of(N::USIZE) {
             return Err(Error::user(Code::InvalidLength));
         }

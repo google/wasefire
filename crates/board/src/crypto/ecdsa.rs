@@ -91,16 +91,15 @@ pub trait Api<const N: usize>: Support<bool> + Send {
 mod software {
     use core::marker::PhantomData;
 
-    use crypto_common::BlockSizeUser;
-    use crypto_common::generic_array::ArrayLength;
-    use ecdsa::hazmat::{SignPrimitive, VerifyPrimitive};
-    use ecdsa::{EncodedPoint, PrimeCurve, Signature, SignatureSize, SigningKey, VerifyingKey};
-    use elliptic_curve::sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint};
+    use crypto_common::array::ArraySize;
+    use crypto_common::{BlockSizeUser, Generate};
+    use ecdsa::{EcdsaCurve, PrimeCurve, Signature, SignatureSize, SigningKey, VerifyingKey};
+    use elliptic_curve::sec1::{FromSec1Point, ModulusSize, Sec1Point, ToSec1Point};
     use elliptic_curve::zeroize::Zeroize;
-    use elliptic_curve::{AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, Scalar};
+    use elliptic_curve::{AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize};
     use signature::digest::{Digest, FixedOutput, FixedOutputReset};
-    use signature::hazmat::PrehashVerifier;
-    use signature::rand_core::CryptoRngCore;
+    use signature::hazmat::{PrehashSigner, PrehashVerifier};
+    use signature::rand_core::CryptoRng;
     use wasefire_error::Code;
 
     use super::*;
@@ -118,14 +117,14 @@ mod software {
 
     impl<C, D, R, const N: usize> Api<N> for Software<C, D, R, N>
     where
-        C: PrimeCurve + CurveArithmetic,
-        Scalar<C>: SignPrimitive<C>,
-        SignatureSize<C>: ArrayLength<u8>,
-        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+        C: PrimeCurve + CurveArithmetic + EcdsaCurve,
+        SignatureSize<C>: ArraySize,
+        AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
         FieldBytesSize<C>: ModulusSize,
         D: Support<bool> + Send,
         D: Digest + BlockSizeUser + FixedOutput<OutputSize = FieldBytesSize<C>> + FixedOutputReset,
-        R: Default + CryptoRngCore + WithError + Send,
+        R: Default + CryptoRng + WithError + Send,
+        SigningKey<C>: PrehashSigner<Signature<C>>,
     {
         const PRIVATE: Layout = unsafe { Layout::from_size_align_unchecked(N, 1) };
         const PUBLIC: Layout = unsafe { Layout::from_size_align_unchecked(2 * N, 1) };
@@ -136,7 +135,7 @@ mod software {
                 return Err(Error::user(Code::InvalidLength));
             }
             let mut rng = R::default();
-            let key = R::with_error(|| SigningKey::<C>::random(&mut rng))?;
+            let key = R::with_error(|| SigningKey::<C>::generate_from_rng(&mut rng))?;
             private.copy_from_slice(&key.to_bytes());
             Ok(())
         }
@@ -145,9 +144,11 @@ mod software {
             if private.len() != N || public.len() != 2 * N {
                 return Err(Error::user(Code::InvalidLength));
             }
-            let key = SigningKey::<C>::from_bytes(FieldBytes::<C>::from_slice(private))
+            let bytes = FieldBytes::<C>::try_from(private)
                 .map_err(|_| Error::user(Code::InvalidArgument))?;
-            let key = key.verifying_key().as_affine().to_encoded_point(false);
+            let key = SigningKey::<C>::from_bytes(&bytes)
+                .map_err(|_| Error::user(Code::InvalidArgument))?;
+            let key = key.verifying_key().as_affine().to_sec1_point(false);
             let (x, y) = public.split_at_mut(N);
             x.copy_from_slice(key.x().ok_or(Error::user(0))?);
             y.copy_from_slice(key.y().ok_or(Error::user(0))?);
@@ -160,12 +161,11 @@ mod software {
             if private.len() != N {
                 return Err(Error::user(Code::InvalidLength));
             }
-            let key = SigningKey::<C>::from_bytes(FieldBytes::<C>::from_slice(private))
+            let bytes = FieldBytes::<C>::try_from(private)
                 .map_err(|_| Error::user(Code::InvalidArgument))?;
-            let (sig, _) = key
-                .as_nonzero_scalar()
-                .try_sign_prehashed_rfc6979::<D>(FieldBytes::<C>::from_slice(digest), &[])
-                .map_err(|_| Error::world(0))?;
+            let key = SigningKey::<C>::from_bytes(&bytes)
+                .map_err(|_| Error::user(Code::InvalidArgument))?;
+            let sig: Signature<C> = key.sign_prehash(digest).map_err(|_| Error::world(0))?;
             r.copy_from_slice(FieldBytes::<C>::from(sig.r()).as_slice());
             s.copy_from_slice(FieldBytes::<C>::from(sig.s()).as_slice());
             Ok(())
@@ -178,10 +178,12 @@ mod software {
                 return Err(Error::user(Code::InvalidLength));
             }
             let (x, y) = public.split_at(N);
-            let key = EncodedPoint::<C>::from_affine_coordinates(x.into(), y.into(), false);
-            let key = VerifyingKey::<C>::from_encoded_point(&key).map_err(|_| Error::user(0))?;
-            let r = FieldBytes::<C>::from_slice(r).clone();
-            let s = FieldBytes::<C>::from_slice(s).clone();
+            let x = FieldBytes::<C>::try_from(x).map_err(|_| Error::user(Code::InvalidArgument))?;
+            let y = FieldBytes::<C>::try_from(y).map_err(|_| Error::user(Code::InvalidArgument))?;
+            let key = Sec1Point::<C>::from_affine_coordinates(&x, &y, false);
+            let key = VerifyingKey::<C>::from_sec1_point(&key).map_err(|_| Error::user(0))?;
+            let r = FieldBytes::<C>::try_from(r.as_slice()).map_err(|_| Error::user(0))?;
+            let s = FieldBytes::<C>::try_from(s.as_slice()).map_err(|_| Error::user(0))?;
             let sig = Signature::from_scalars(r, s).map_err(|_| Error::user(0))?;
             Ok(key.verify_prehash(digest, &sig).is_ok())
         }

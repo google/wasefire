@@ -6,9 +6,9 @@ license = "Apache-2.0"
 
 [dependencies]
 ecdh_vectors = { path = "../ecdh_vectors" }
-elliptic-curve = { version = "0.13.8", features = ["sec1"] }
-p256 = "0.13.2"
-p384 = "0.13.1"
+elliptic-curve = { version = "0.14.1", features = ["sec1"] }
+p256 = "0.14.0"
+p384 = "0.14.0"
 
 [lints]
 clippy.mod_module_files = "warn"

@@ -14,7 +14,7 @@
 
 //! Authenticated Encryption with Associated Data.
 
-use crypto_common::generic_array::{ArrayLength, GenericArray};
+use crypto_common::array::ArraySize;
 
 use crate::{Error, Support};
 
@@ -37,11 +37,11 @@ impl From<AeadSupport> for bool {
 /// AEAD interface.
 pub trait Api<Key, Iv>: Support<AeadSupport> + Send
 where
-    Key: ArrayLength<u8>,
-    Iv: ArrayLength<u8>,
+    Key: ArraySize,
+    Iv: ArraySize,
 {
     /// The tag length.
-    type Tag: ArrayLength<u8>;
+    type Tag: ArraySize;
 
     /// Encrypts and authenticates a clear text with associated data given a key and IV.
     ///
@@ -63,26 +63,27 @@ where
 }
 
 /// Sequence of N bytes.
-pub type Array<N> = GenericArray<u8, N>;
+pub type Array<N> = crypto_common::array::Array<u8, N>;
 
 #[cfg(feature = "internal-software-crypto-aead")]
 mod software {
-    use aead::{AeadCore, AeadInPlace};
+    use aead::inout::InOutBuf;
+    use aead::{AeadCore, AeadInOut};
     use crypto_common::{KeyInit, KeySizeUser};
 
     use super::*;
 
-    impl<T: AeadInPlace> Support<AeadSupport> for T {
+    impl<T: AeadInOut> Support<AeadSupport> for T {
         const SUPPORT: AeadSupport = AeadSupport { no_copy: false, in_place_no_copy: true };
     }
 
     impl<Key, Iv, T> Api<Key, Iv> for T
     where
-        T: Send + KeyInit + AeadInPlace,
+        T: Send + KeyInit + AeadInOut,
         T: KeySizeUser<KeySize = Key>,
         T: AeadCore<NonceSize = Iv>,
-        Key: ArrayLength<u8>,
-        Iv: ArrayLength<u8>,
+        Key: ArraySize,
+        Iv: ArraySize,
     {
         type Tag = T::TagSize;
 
@@ -94,8 +95,9 @@ mod software {
             if let Some(clear) = clear {
                 cipher.copy_from_slice(clear);
             }
+            let buffer = InOutBuf::from(cipher);
             tag.copy_from_slice(
-                &aead.encrypt_in_place_detached(iv, aad, cipher).map_err(|_| Error::world(0))?,
+                &aead.encrypt_inout_detached(iv, aad, buffer).map_err(|_| Error::world(0))?,
             );
             Ok(())
         }
@@ -108,7 +110,8 @@ mod software {
             if let Some(cipher) = cipher {
                 clear.copy_from_slice(cipher);
             }
-            aead.decrypt_in_place_detached(iv, aad, clear, tag).map_err(|_| Error::world(0))
+            let buffer = InOutBuf::from(clear);
+            aead.decrypt_inout_detached(iv, aad, buffer, tag).map_err(|_| Error::world(0))
         }
     }
 }

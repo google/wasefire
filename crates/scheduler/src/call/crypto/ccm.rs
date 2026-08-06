@@ -15,7 +15,7 @@
 use wasefire_applet_api::crypto::ccm::{self as api, Api};
 use wasefire_board_api::Api as Board;
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
-use wasefire_board_api::applet::Memory as _;
+use wasefire_board_api::applet::{Memory as _, MemoryExt as _};
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
 use wasefire_board_api::crypto::aead::{Api as _, Array};
 #[cfg(feature = "board-api-crypto-aes128-ccm")]
@@ -49,12 +49,12 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
     let memory = applet.memory();
     let result = try bikeshed _ {
         ensure_support::<B>()?;
-        let key = memory.get(*key, 16)?.into();
+        let key = memory.get_array::<16>(*key)?.into();
         let iv = expand_iv(memory.get(*iv, 8)?);
         let aad = &[0];
         let clear = Some(memory.get(*clear, *len)?);
         let (cipher, tag) = memory.get_mut(*cipher, *len + 4)?.split_at_mut(*len as usize);
-        let tag = tag.into();
+        let tag = tag.try_into().map_err(|_| Trap)?;
         board::crypto::Aes128Ccm::<B>::encrypt(key, &iv, aad, clear, cipher, tag)?
     };
     call.reply(result);
@@ -67,12 +67,12 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
     let memory = applet.memory();
     let result = try bikeshed _ {
         ensure_support::<B>()?;
-        let key = memory.get(*key, 16)?.into();
+        let key = memory.get_array::<16>(*key)?.into();
         let iv = expand_iv(memory.get(*iv, 8)?);
         let aad = &[0];
         let (cipher, tag) = memory.get(*cipher, *len + 4)?.split_at(*len as usize);
         let cipher = Some(cipher);
-        let tag = tag.into();
+        let tag = tag.try_into().map_err(|_| Trap)?;
         let clear = memory.get_mut(*clear, *len)?;
         board::crypto::Aes128Ccm::<B>::decrypt(key, &iv, aad, cipher, tag, clear)?
     };

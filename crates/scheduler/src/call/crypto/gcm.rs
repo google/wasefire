@@ -67,7 +67,7 @@ fn encrypt<B: Board>(mut call: SchedulerCall<B, api::encrypt::Sig>) {
         let clear = memory.get_opt(*clear, *length)?;
         let cipher = memory.get_mut(*cipher, *length)?;
         let tag_len = tag_len::<B>() as u32;
-        let tag = memory.get_mut(*tag, tag_len)?.into();
+        let tag = memory.get_mut(*tag, tag_len)?.try_into().map_err(|_| Trap)?;
         board::crypto::Aes256Gcm::<B>::encrypt(key, iv, aad, clear, cipher, tag)?
     };
     call.reply(result);
@@ -84,7 +84,7 @@ fn decrypt<B: Board>(mut call: SchedulerCall<B, api::decrypt::Sig>) {
         let iv = memory.get_array::<12>(*iv)?.into();
         let aad = memory.get(*aad, *aad_len)?;
         let tag_len = tag_len::<B>() as u32;
-        let tag = memory.get(*tag, tag_len)?.into();
+        let tag = memory.get(*tag, tag_len)?.try_into().map_err(|_| Trap)?;
         let cipher = memory.get_opt(*cipher, *length)?;
         let clear = memory.get_mut(*clear, *length)?;
         board::crypto::Aes256Gcm::<B>::decrypt(key, iv, aad, cipher, tag, clear)?

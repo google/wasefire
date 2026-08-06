@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crypto_common::Generate;
 use digest::typenum::Unsigned;
-use elliptic_curve::sec1::{EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint};
+use elliptic_curve::ff::PrimeField;
+use elliptic_curve::sec1::{FromSec1Point, ModulusSize, Sec1Point, ToSec1Point};
 use elliptic_curve::subtle::CtOption;
 use elliptic_curve::zeroize::Zeroize;
 use elliptic_curve::{
-    AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, ProjectivePoint, Scalar,
-    ScalarPrimitive, SecretKey,
+    AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, ProjectivePoint, Scalar, SecretKey,
 };
 use wasefire_applet_api::crypto::ecdh as api;
 use wasefire_error::{Code, Error};
@@ -58,7 +59,7 @@ unsafe extern "C" fn env_cig(params: api::generate::Params) -> isize {
 }
 
 fn generate<C: CurveArithmetic>(private: *mut u8) {
-    let key = SecretKey::<C>::random(&mut rand_core::OsRng).to_bytes();
+    let key = SecretKey::<C>::generate_from_rng(&mut rand::rng()).to_bytes();
     let private = unsafe { std::slice::from_raw_parts_mut(private, key.len()) };
     private.copy_from_slice(&key);
 }
@@ -76,14 +77,14 @@ unsafe extern "C" fn env_cip(params: api::public::Params) -> isize {
 fn public_key<C>(private: *const u8, public: *mut u8) -> Result<(), Error>
 where
     C: CurveArithmetic,
-    AffinePoint<C>: ToEncodedPoint<C>,
+    AffinePoint<C>: ToSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
 {
     let n = FieldBytesSize::<C>::USIZE;
     let private = unsafe { std::slice::from_raw_parts(private, n) };
-    let key = SecretKey::<C>::from_bytes(FieldBytes::<C>::from_slice(private))
+    let key = SecretKey::<C>::from_bytes(&FieldBytes::<C>::try_from(private).unwrap())
         .map_err(|_| Error::user(Code::InvalidArgument))?;
-    let key = key.public_key().as_affine().to_encoded_point(false);
+    let key = key.public_key().as_affine().to_sec1_point(false);
     let public = unsafe { std::slice::from_raw_parts_mut(public, 2 * n) };
     let (x, y) = public.split_at_mut(n);
     x.copy_from_slice(key.x().ok_or(Error::user(0))?);
@@ -104,20 +105,21 @@ unsafe extern "C" fn env_cia(params: api::shared::Params) -> isize {
 fn shared_<C>(private: *const u8, public: *const u8, shared: *mut u8) -> Result<(), Error>
 where
     C: CurveArithmetic,
-    AffinePoint<C>: ToEncodedPoint<C>,
-    ProjectivePoint<C>: FromEncodedPoint<C>,
+    AffinePoint<C>: ToSec1Point<C>,
+    ProjectivePoint<C>: FromSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
 {
     let n = FieldBytesSize::<C>::USIZE;
     let private = unsafe { std::slice::from_raw_parts(private, n) };
-    let private = unwrap_ct(ScalarPrimitive::<C>::from_bytes(private.into()))?;
-    let private = Scalar::<C>::from(private);
+    let private = unwrap_ct(Scalar::<C>::from_repr(FieldBytes::<C>::try_from(private).unwrap()))?;
     let public = unsafe { std::slice::from_raw_parts(public, 2 * n) };
     let (x, y) = public.split_at(n);
-    let public = EncodedPoint::<C>::from_affine_coordinates(x.into(), y.into(), false);
-    let public = unwrap_ct(ProjectivePoint::<C>::from_encoded_point(&public))?;
+    let x = FieldBytes::<C>::try_from(x).map_err(|_| Error::user(Code::InvalidArgument))?;
+    let y = FieldBytes::<C>::try_from(y).map_err(|_| Error::user(Code::InvalidArgument))?;
+    let public = Sec1Point::<C>::from_affine_coordinates(&x, &y, false);
+    let public = unwrap_ct(ProjectivePoint::<C>::from_sec1_point(&public).into())?;
     let secret: AffinePoint<C> = (public * private).into();
-    let secret = secret.to_encoded_point(false);
+    let secret = secret.to_sec1_point(false);
     let shared = unsafe { std::slice::from_raw_parts_mut(shared, n) };
     shared.copy_from_slice(secret.x().ok_or(Error::user(0))?);
     Ok(())

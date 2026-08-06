@@ -13,11 +13,10 @@
 // limitations under the License.
 
 use ecdh_vectors as ecdh;
-use elliptic_curve::generic_array::typenum::Unsigned;
-use elliptic_curve::sec1::{ModulusSize, ToEncodedPoint};
-use elliptic_curve::{
-    AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, Scalar, ScalarPrimitive, SecretKey,
-};
+use elliptic_curve::array::typenum::Unsigned;
+use elliptic_curve::ff::PrimeField;
+use elliptic_curve::sec1::{ModulusSize, ToSec1Point};
+use elliptic_curve::{AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize, Scalar, SecretKey};
 
 fn main() {
     check_ecdh::<p256::NistP256>("p256", &MASK_P256, ecdh::P256_VECTORS);
@@ -27,7 +26,7 @@ fn main() {
 fn check_ecdh<C>(curve: &str, mask: &[u8], vectors: &[ecdh::Vector])
 where
     C: CurveArithmetic,
-    AffinePoint<C>: ToEncodedPoint<C>,
+    AffinePoint<C>: ToSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
 {
     for &ecdh::Vector { private, otprivate, .. } in vectors {
@@ -38,20 +37,20 @@ where
 fn check<C>(curve: &str, algo: &str, mask: &[u8], private: &[u8], actual: &[u8])
 where
     C: CurveArithmetic,
-    AffinePoint<C>: ToEncodedPoint<C>,
+    AffinePoint<C>: ToSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
 {
-    let d: Scalar<C> = ScalarPrimitive::<C>::from_slice(private).unwrap().into();
-    let d0: Scalar<C> = ScalarPrimitive::<C>::from_slice(mask).unwrap().into();
+    let d = Scalar::<C>::from_repr(FieldBytes::<C>::try_from(private).unwrap()).unwrap();
+    let d0 = Scalar::<C>::from_repr(FieldBytes::<C>::try_from(mask).unwrap()).unwrap();
     let d1 = d - d0;
     let mut d0_bytes: FieldBytes<C> = d0.into();
     let mut d1_bytes: FieldBytes<C> = d1.into();
     d0_bytes.reverse();
     d1_bytes.reverse();
-    let privkey = SecretKey::<C>::from_slice(private).unwrap();
-    let pubkey = privkey.public_key().as_affine().to_encoded_point(false);
-    let mut x_bytes = pubkey.x().unwrap().clone();
-    let mut y_bytes = pubkey.y().unwrap().clone();
+    let privkey = SecretKey::<C>::from_bytes(private.try_into().unwrap()).unwrap();
+    let pubkey = privkey.public_key().as_affine().to_sec1_point(false);
+    let mut x_bytes = *pubkey.x().unwrap();
+    let mut y_bytes = *pubkey.y().unwrap();
     x_bytes.reverse();
     y_bytes.reverse();
     let mut expected = Vec::with_capacity(4 * FieldBytesSize::<C>::USIZE + 24);

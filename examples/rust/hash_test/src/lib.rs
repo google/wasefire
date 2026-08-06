@@ -20,7 +20,7 @@ wasefire::applet!();
 use alloc::vec;
 
 #[cfg(feature = "rust-crypto")]
-use digest::{Digest, Mac};
+use digest::{Digest, KeyInit, Mac};
 use wasefire::crypto::hash::{Algorithm, hkdf_expand, hkdf_extract};
 #[cfg(not(feature = "rust-crypto"))]
 use wasefire::crypto::hash::{Digest, Hmac};
