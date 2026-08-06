@@ -326,7 +326,7 @@ pub type SoftwareP256Ecdh<R> = ecdh::Software<p256::NistP256, R, 32>;
 
 /// P-256 ECDSA interface.
 #[cfg(feature = "software-crypto-p256-ecdsa")]
-pub type SoftwareP256Ecdsa<T, R> = ecdsa::Software<p256::NistP256, <T as Api>::Sha256, R, 32>;
+pub type SoftwareP256Ecdsa<R> = ecdsa::Software<p256::NistP256, R, 32>;
 
 /// P-384 interface.
 #[cfg(feature = "software-crypto-p384")]
@@ -338,7 +338,7 @@ pub type SoftwareP384Ecdh<R> = ecdh::Software<p384::NistP384, R, 48>;
 
 /// P-384 ECDSA interface.
 #[cfg(feature = "software-crypto-p384-ecdsa")]
-pub type SoftwareP384Ecdsa<T, R> = ecdsa::Software<p384::NistP384, <T as Api>::Sha384, R, 48>;
+pub type SoftwareP384Ecdsa<R> = ecdsa::Software<p384::NistP384, R, 48>;
 
 /// SHA-256 interface.
 #[cfg(feature = "software-crypto-sha256")]
@@ -381,8 +381,7 @@ mod _test_software_crypto {
     test!(SoftwareP256Ecdh R [R: Default + rand_core::CryptoRng + WithError + Send];
           ecdh::Api<32>);
     #[cfg(feature = "software-crypto-p256-ecdsa")]
-    test!(SoftwareP256Ecdsa T R [T: Api, T::Sha256: digest::FixedOutputReset,
-                                 R: Default + rand_core::CryptoRng + WithError + Send];
+    test!(SoftwareP256Ecdsa R [R: Default + rand_core::CryptoRng + WithError + Send];
           ecdsa::Api<32>);
     #[cfg(feature = "software-crypto-p384")]
     test!(SoftwareP384 T [T: Api, T::Sha384: digest::FixedOutputReset]; ecc::Api<typenum::U48>);
@@ -390,8 +389,7 @@ mod _test_software_crypto {
     test!(SoftwareP384Ecdh R [R: Default + rand_core::CryptoRng + WithError + Send];
           ecdh::Api<48>);
     #[cfg(feature = "software-crypto-p384-ecdsa")]
-    test!(SoftwareP384Ecdsa T R [T: Api, T::Sha384: digest::FixedOutputReset,
-                                 R: Default + rand_core::CryptoRng + WithError + Send];
+    test!(SoftwareP384Ecdsa R [R: Default + rand_core::CryptoRng + WithError + Send];
           ecdsa::Api<48>);
     #[cfg(feature = "software-crypto-sha256")]
     test!(SoftwareSha256[]; Hash<BlockSize = typenum::U64, OutputSize = typenum::U32>);

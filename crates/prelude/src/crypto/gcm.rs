@@ -164,7 +164,7 @@ mod rust_crypto {
 
     /// AES-256-GCM key parametric over in-place flavor.
     ///
-    /// Prefer using [`Aes256Gcm`] or [`Aes256GcmInPlace`] instead.
+    /// Prefer using [`Aes256Gcm`] or [`Aes256GcmInOut`] instead.
     #[derive(zeroize::Zeroize, zeroize::ZeroizeOnDrop)]
     pub struct Key<const IN_PLACE: bool> {
         key: [u8; 32],
@@ -183,9 +183,6 @@ mod rust_crypto {
 
     /// AES-256-GCM key to be used with the `AeadInOut` trait.
     pub type Aes256GcmInOut = Key<true>;
-    /// Deprecated: AES-256-GCM key to be used with the `AeadInPlace` trait.
-    #[deprecated(note = "use Aes256GcmInOut instead")]
-    pub type Aes256GcmInPlace = Key<true>;
 
     impl<const IN_PLACE: bool> aead::KeySizeUser for Key<IN_PLACE> {
         type KeySize = aead::consts::U32;

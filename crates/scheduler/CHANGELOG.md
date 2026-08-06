@@ -2,6 +2,10 @@
 
 ## 0.5.2-git
 
+### Minor
+
+- Support `crypto-common` bump from `wasefire-board-api`
+
 ### Patch
 
 - Disable `unused-features` lint

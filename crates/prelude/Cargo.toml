@@ -1,6 +1,6 @@
 [package]
 name = "wasefire"
-version = "0.8.2-git"
+version = "0.9.0-git"
 edition = "2024"
 description = "High-level Wasefire applet API"
 repository = "https://github.com/google/wasefire"

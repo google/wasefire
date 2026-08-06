@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.10.1-git
+## 0.11.0-git
+
+### Major
+
+- Remove type parameter from `crypto::SoftwareP{256,384}Ecdsa`
+- Bump `crypto-common` from 0.1.7 to 0.2.2 which affects `crypto` APIs
 
 ### Patch
 
@@ -223,4 +228,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 9 -->
+<!-- Increment to skip CHANGELOG.md test: 8 -->

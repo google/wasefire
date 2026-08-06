@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crypto_common::Generate;
 use crypto_common::array::ArraySize;
-use crypto_common::{BlockSizeUser, Generate};
 use digest::typenum::Unsigned;
-use digest::{Digest, FixedOutput, FixedOutputReset};
 use ecdsa::{Signature, SignatureSize, SigningKey, VerifyingKey};
 use elliptic_curve::sec1::{FromSec1Point, ModulusSize, Sec1Point, ToSec1Point};
 use elliptic_curve::zeroize::Zeroize;
@@ -111,22 +110,20 @@ where
 unsafe extern "C" fn env_cdi(params: api::sign::Params) -> isize {
     let api::sign::Params { curve, private, digest, r, s } = params;
     let res = match api::Curve::from(curve) {
-        api::Curve::P256 => sign::<p256::NistP256, sha2::Sha256>(private, digest, r, s),
-        api::Curve::P384 => sign::<p384::NistP384, sha2::Sha384>(private, digest, r, s),
+        api::Curve::P256 => sign::<p256::NistP256>(private, digest, r, s),
+        api::Curve::P384 => sign::<p384::NistP384>(private, digest, r, s),
     };
     convert_unit(res)
 }
 
-fn sign<C, D>(private: *const u8, digest: *const u8, r: *mut u8, s: *mut u8) -> Result<(), Error>
+fn sign<C>(private: *const u8, digest: *const u8, r: *mut u8, s: *mut u8) -> Result<(), Error>
 where
     C: PrimeCurve + CurveArithmetic + ecdsa::EcdsaCurve,
     SignatureSize<C>: ArraySize,
     SigningKey<C>: PrehashSigner<Signature<C>>,
     AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
-    D: Digest + BlockSizeUser + FixedOutput<OutputSize = FieldBytesSize<C>> + FixedOutputReset,
 {
-    let _ = core::marker::PhantomData::<D>;
     let n = FieldBytesSize::<C>::USIZE;
     let private = unsafe { std::slice::from_raw_parts(private, n) };
     let key = SigningKey::<C>::from_bytes(&FieldBytes::<C>::try_from(private).unwrap())

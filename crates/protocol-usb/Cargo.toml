@@ -24,7 +24,7 @@ wasefire-one-of = { path = "../one-of", version = "0.1.3-git" }
 
 [dependencies.wasefire-board-api]
 path = "../board"
-version = "0.10.1-git"
+version = "0.11.0-git"
 optional = true
 
 [dependencies.wasefire-protocol]

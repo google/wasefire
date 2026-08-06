@@ -22,7 +22,7 @@ derive-where = { version = "1.6.1", default-features = false, features = ["night
 digest = { version = "0.11.3", default-features = false, features = ["mac"], optional = true }
 typenum = { version = "1.20.1", default-features = false, optional = true }
 wasefire-applet-api = { path = "../api", version = "0.9.1-git", features = ["host"] }
-wasefire-board-api = { path = "../board", version = "0.10.1-git" }
+wasefire-board-api = { path = "../board", version = "0.11.0-git" }
 wasefire-common = { path = "../common", version = "0.1.2-git", optional = true }
 wasefire-error = { path = "../error", version = "0.1.5-git" }
 wasefire-logger = { path = "../logger", version = "0.2.2-git" }

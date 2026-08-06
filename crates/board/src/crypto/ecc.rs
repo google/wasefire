@@ -111,8 +111,8 @@ mod software {
 
         fn ecdsa_sign(d: &Int<C>, m: &Int<C>, r: &mut Int<C>, s: &mut Int<C>) -> Result<(), Error> {
             let d = convert(NonZeroScalar::<C>::new(Self::scalar_from_int(d)?))?;
-            let key = SigningKey::<C>::from(d);
-            let signature: Signature<C> = key.sign_prehash(m).map_err(|_| Error::world(0))?;
+            let signature =
+                SigningKey::<C>::from(d).sign_prehash(m).map_err(|_| Error::world(0))?;
             r.copy_from_slice(&Self::scalar_to_int(signature.r()));
             s.copy_from_slice(&Self::scalar_to_int(signature.s()));
             Ok(())

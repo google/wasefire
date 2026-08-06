@@ -756,7 +756,7 @@ dependencies = [
 
 [[package]]
 name = "wasefire-board-api"
-version = "0.10.1-git"
+version = "0.11.0-git"
 dependencies = [
  "bytemuck",
  "crypto-common",

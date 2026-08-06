@@ -2,6 +2,10 @@
 
 ## 0.1.8-git
 
+### Minor
+
+- Support `crypto-common` bump from `wasefire-board-api`
+
 ### Patch
 
 - Update dependencies

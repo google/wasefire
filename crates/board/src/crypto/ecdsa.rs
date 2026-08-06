@@ -91,13 +91,12 @@ pub trait Api<const N: usize>: Support<bool> + Send {
 mod software {
     use core::marker::PhantomData;
 
+    use crypto_common::Generate;
     use crypto_common::array::ArraySize;
-    use crypto_common::{BlockSizeUser, Generate};
     use ecdsa::{EcdsaCurve, PrimeCurve, Signature, SignatureSize, SigningKey, VerifyingKey};
     use elliptic_curve::sec1::{FromSec1Point, ModulusSize, Sec1Point, ToSec1Point};
     use elliptic_curve::zeroize::Zeroize;
     use elliptic_curve::{AffinePoint, CurveArithmetic, FieldBytes, FieldBytesSize};
-    use signature::digest::{Digest, FixedOutput, FixedOutputReset};
     use signature::hazmat::{PrehashSigner, PrehashVerifier};
     use signature::rand_core::CryptoRng;
     use wasefire_error::Code;
@@ -107,22 +106,19 @@ mod software {
     use crate::crypto::WithError;
 
     /// ECDSA software implementation.
-    pub struct Software<C, D, R, const N: usize> {
+    pub struct Software<C, R, const N: usize> {
         curve: PhantomData<C>,
-        digest: PhantomData<D>,
         rng: PhantomData<R>,
     }
 
-    impl<C, D, R, const N: usize> Supported for Software<C, D, R, N> {}
+    impl<C, R, const N: usize> Supported for Software<C, R, N> {}
 
-    impl<C, D, R, const N: usize> Api<N> for Software<C, D, R, N>
+    impl<C, R, const N: usize> Api<N> for Software<C, R, N>
     where
         C: PrimeCurve + CurveArithmetic + EcdsaCurve,
         SignatureSize<C>: ArraySize,
         AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
         FieldBytesSize<C>: ModulusSize,
-        D: Support<bool> + Send,
-        D: Digest + BlockSizeUser + FixedOutput<OutputSize = FieldBytesSize<C>> + FixedOutputReset,
         R: Default + CryptoRng + WithError + Send,
         SigningKey<C>: PrehashSigner<Signature<C>>,
     {
