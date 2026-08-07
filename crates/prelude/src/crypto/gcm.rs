@@ -164,7 +164,7 @@ mod rust_crypto {
 
     /// AES-256-GCM key parametric over in-place flavor.
     ///
-    /// Prefer using [`Aes256Gcm`] or [`Aes256GcmInPlace`] instead.
+    /// Prefer using [`Aes256Gcm`] or [`Aes256GcmInOut`] instead.
     #[derive(zeroize::Zeroize, zeroize::ZeroizeOnDrop)]
     pub struct Key<const IN_PLACE: bool> {
         key: [u8; 32],
@@ -181,8 +181,8 @@ mod rust_crypto {
     /// AES-256-GCM key to be used with the `Aead` trait.
     pub type Aes256Gcm = Key<false>;
 
-    /// AES-256-GCM key to be used with the `AeadInPlace` trait.
-    pub type Aes256GcmInPlace = Key<true>;
+    /// AES-256-GCM key to be used with the `AeadInOut` trait.
+    pub type Aes256GcmInOut = Key<true>;
 
     impl<const IN_PLACE: bool> aead::KeySizeUser for Key<IN_PLACE> {
         type KeySize = aead::consts::U32;
@@ -199,7 +199,7 @@ mod rust_crypto {
         // This is the maximum tag size. We can't know at compile-time the actual supported tag
         // length. This means we pad with zeros the tag. The user must truncate the tag.
         type TagSize = aead::consts::U16;
-        type CiphertextOverhead = aead::consts::U0;
+        const TAG_POSITION: aead::TagPosition = aead::TagPosition::Postfix;
     }
 
     impl aead::Aead for Key<false> {
@@ -243,32 +243,33 @@ mod rust_crypto {
         }
     }
 
-    impl aead::AeadInPlace for Key<true> {
-        fn encrypt_in_place_detached(
-            &self, nonce: &aead::Nonce<Self>, associated_data: &[u8], buffer: &mut [u8],
+    impl aead::AeadInOut for Key<true> {
+        fn encrypt_inout_detached(
+            &self, nonce: &aead::Nonce<Self>, associated_data: &[u8],
+            mut buffer: aead::inout::InOutBuf<'_, '_, u8>,
         ) -> aead::Result<aead::Tag<Self>> {
             let mut tag = [0; 16];
             encrypt_in_place(
                 &self.key,
                 nonce.as_ref(),
                 associated_data,
-                buffer,
+                buffer.get_out(),
                 &mut tag[.. tag_length()],
             )
             .map_err(|_| aead::Error)?;
             Ok(tag.into())
         }
 
-        fn decrypt_in_place_detached(
-            &self, nonce: &aead::Nonce<Self>, associated_data: &[u8], buffer: &mut [u8],
-            tag: &aead::Tag<Self>,
+        fn decrypt_inout_detached(
+            &self, nonce: &aead::Nonce<Self>, associated_data: &[u8],
+            mut buffer: aead::inout::InOutBuf<'_, '_, u8>, tag: &aead::Tag<Self>,
         ) -> aead::Result<()> {
             decrypt_in_place(
                 &self.key,
                 nonce.as_ref(),
                 associated_data,
                 &tag[.. tag_length()],
-                buffer,
+                buffer.get_out(),
             )
             .map_err(|_| aead::Error)
         }

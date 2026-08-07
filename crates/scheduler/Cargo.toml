@@ -16,13 +16,13 @@ features = ["std", "wasm"]
 
 [dependencies]
 bytemuck = { version = "1.25.2", default-features = false, optional = true }
+crypto-common = { version = "0.2.2", default-features = false, optional = true }
 defmt = { version = "1.1.1", default-features = false, optional = true }
 derive-where = { version = "1.6.1", default-features = false, features = ["nightly"] }
-digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
-generic-array = { version = "=0.14.7", default-features = false, optional = true }
+digest = { version = "0.11.3", default-features = false, features = ["mac"], optional = true }
 typenum = { version = "1.20.1", default-features = false, optional = true }
 wasefire-applet-api = { path = "../api", version = "0.9.1-git", features = ["host"] }
-wasefire-board-api = { path = "../board", version = "0.10.1-git" }
+wasefire-board-api = { path = "../board", version = "0.11.0-git" }
 wasefire-common = { path = "../common", version = "0.1.2-git", optional = true }
 wasefire-error = { path = "../error", version = "0.1.5-git" }
 wasefire-logger = { path = "../logger", version = "0.2.2-git" }
@@ -153,19 +153,19 @@ board-api-crypto-p256-ecdsa = [
 ]
 board-api-crypto-p384 = [
   "applet-api-crypto-ec",
-  "generic-array/more_lengths",
+  "dep:crypto-common",
   "internal-board-api-crypto-ecc",
   "wasefire-board-api/api-crypto-p384",
 ]
 board-api-crypto-p384-ecdh = [
   "applet-api-crypto-ecdh",
-  "generic-array/more_lengths",
+  "dep:crypto-common",
   "internal-board-api-crypto-ecdh",
   "wasefire-board-api/api-crypto-p384-ecdh",
 ]
 board-api-crypto-p384-ecdsa = [
   "applet-api-crypto-ecdsa",
-  "generic-array/more_lengths",
+  "dep:crypto-common",
   "internal-board-api-crypto-ecdsa",
   "wasefire-board-api/api-crypto-p384-ecdsa",
 ]
@@ -326,7 +326,7 @@ unsafe-skip-validation = []
 # Internal features.
 _test = ["wasefire-protocol/_exhaustive"]
 internal-applet-api-crypto = []
-internal-applet-api-crypto-hash = ["dep:digest", "dep:generic-array", "internal-applet-api-crypto"]
+internal-applet-api-crypto-hash = ["dep:crypto-common", "dep:digest", "internal-applet-api-crypto"]
 internal-applet-api-fingerprint = []
 internal-applet-api-platform = []
 internal-applet-api-store = []

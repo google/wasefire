@@ -46,10 +46,10 @@ fn test_ecdh<C: Curve>(name: &str, vectors: &[ecdh::Vector]) {
     for &ecdh::Vector { tc_id, private, public_x, public_y, shared, .. } in vectors {
         debug!("- {tc_id}");
         let private =
-            EcdhPrivate::<C>::from_non_zero_scalar(Int::<C>::clone_from_slice(private)).unwrap();
+            EcdhPrivate::<C>::from_non_zero_scalar(Int::<C>::try_from(private).unwrap()).unwrap();
         let public = EcdhPublic::<C>::from_coordinates(
-            Int::<C>::clone_from_slice(public_x),
-            Int::<C>::clone_from_slice(public_y),
+            Int::<C>::try_from(public_x).unwrap(),
+            Int::<C>::try_from(public_y).unwrap(),
         )
         .unwrap();
         let shared_ = private.diffie_hellman(&public);
@@ -82,13 +82,13 @@ fn test_ecdsa<C: Curve>(name: &str, vectors: &[ecdsa::Vector]) {
     for &ecdsa::Vector { x, y, m, r, s, v } in vectors {
         debug!("- {:02x?}", &m[.. 8]);
         let public = EcdsaPublic::<C>::from_coordinates(
-            Int::<C>::clone_from_slice(x),
-            Int::<C>::clone_from_slice(y),
+            Int::<C>::try_from(x).unwrap(),
+            Int::<C>::try_from(y).unwrap(),
         )
         .unwrap();
         let signature = EcdsaSignature::from_components(
-            Int::<C>::clone_from_slice(r),
-            Int::<C>::clone_from_slice(s),
+            Int::<C>::try_from(r).unwrap(),
+            Int::<C>::try_from(s).unwrap(),
         );
         let v_ = public.verify(m, &signature).unwrap();
         assert_eq!(v_, v);

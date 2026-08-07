@@ -20,10 +20,10 @@ wasefire::applet!();
 use alloc::vec;
 
 #[cfg(feature = "rust-crypto")]
-use aead::{Aead, AeadInPlace, KeyInit, Payload};
+use aead::{Aead, AeadInOut, KeyInit, Payload};
 use wasefire::crypto::gcm::tag_length;
 #[cfg(feature = "rust-crypto")]
-use wasefire::crypto::gcm::{Aes256Gcm, Aes256GcmInPlace};
+use wasefire::crypto::gcm::{Aes256Gcm, Aes256GcmInOut};
 #[cfg(not(feature = "rust-crypto"))]
 use wasefire::crypto::gcm::{Cipher, decrypt, decrypt_in_place, encrypt, encrypt_in_place};
 
@@ -67,8 +67,9 @@ fn test_encrypt_in_place() {
         let mut tag_ = vec![0; tag_len];
         #[cfg(feature = "rust-crypto")]
         {
-            let key = Aes256GcmInPlace::new(key.into());
-            let tag = key.encrypt_in_place_detached(iv.into(), aad, &mut cipher_).unwrap();
+            let key = Aes256GcmInOut::new(key.into());
+            let tag =
+                key.encrypt_inout_detached(iv.into(), aad, (&mut cipher_[..]).into()).unwrap();
             tag_.copy_from_slice(&tag[.. tag_len]);
         }
         #[cfg(not(feature = "rust-crypto"))]
@@ -110,8 +111,8 @@ fn test_decrypt_in_place() {
         debug!("- {} bytes", clear.len());
         let mut clear_ = cipher.to_vec();
         #[cfg(feature = "rust-crypto")]
-        Aes256GcmInPlace::new(key.into())
-            .decrypt_in_place_detached(iv.into(), aad, &mut clear_, tag.into())
+        Aes256GcmInOut::new(key.into())
+            .decrypt_inout_detached(iv.into(), aad, (&mut clear_[..]).into(), tag.into())
             .unwrap();
         #[cfg(not(feature = "rust-crypto"))]
         decrypt_in_place(key, iv, aad, &tag[.. tag_len], &mut clear_).unwrap();

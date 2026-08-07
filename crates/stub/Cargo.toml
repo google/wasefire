@@ -11,27 +11,21 @@ include = ["/LICENSE", "/src/"]
 publish = true
 
 [dependencies]
-crypto-common = { version = "0.1.7", default-features = false }
-digest = { version = "0.10.7", default-features = false, features = ["mac"] }
-ecdsa = { version = "0.16.9", default-features = false, features = ["signing"] }
-ed25519-dalek = { version = "2.2.0", default-features = false, features = ["rand_core"] }
-elliptic-curve = { version = "0.13.8", default-features = false }
-hkdf = { version = "0.12.4", default-features = false }
-hmac = { version = "0.12.1", default-features = false }
-p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
-p384 = { version = "0.13.1", default-features = false, features = ["ecdsa"] }
+crypto-common = { version = "0.2.2", default-features = false }
+digest = { version = "0.11.3", default-features = false, features = ["mac"] }
+ecdsa = { version = "0.17.0", default-features = false }
+ed25519-dalek = { version = "3.0.0", default-features = false, features = ["rand_core"] }
+elliptic-curve = { version = "0.14.1", default-features = false }
+hkdf = { version = "0.13.0", default-features = false }
+hmac = { version = "0.13.0", default-features = false }
+p256 = { version = "0.14.0", default-features = false, features = ["ecdsa"] }
+p384 = { version = "0.14.0", default-features = false, features = ["ecdsa"] }
 rand = { version = "0.10.2", default-features = false, features = ["thread_rng"] }
-sha2 = { version = "0.10.9", default-features = false }
-signature = { version = "2.2.0", default-features = false }
+sha2 = { version = "0.11.0", default-features = false }
+signature = { version = "3.0.0", default-features = false }
 wasefire-error = { path = "../error", version = "0.1.5-git" }
 wasefire-logger = { path = "../logger", version = "0.2.2-git" }
 zeroize = { version = "1.9.0", default-features = false }
-
-# TODO(elliptic-curve > 0.13.8): Unpin the version.
-[dependencies.rand_core]
-version = "=0.6.4"
-default-features = false
-features = ["getrandom"]
 
 [dependencies.wasefire-applet-api]
 path = "../api"

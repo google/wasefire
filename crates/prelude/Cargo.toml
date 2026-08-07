@@ -1,6 +1,6 @@
 [package]
 name = "wasefire"
-version = "0.8.2-git"
+version = "0.9.0-git"
 edition = "2024"
 description = "High-level Wasefire applet API"
 repository = "https://github.com/google/wasefire"
@@ -15,11 +15,11 @@ default-target = "wasm32-unknown-unknown"
 features = ["full-api", "rust-crypto"]
 
 [dependencies]
-aead = { version = "0.5.2", default-features = false, features = ["alloc"], optional = true }
+aead = { version = "0.6.1", default-features = false, features = ["alloc"], optional = true }
 bytemuck = { version = "1.25.2", default-features = false }
 const-default = { version = "1.0.0", default-features = false, optional = true }
-crypto-common = { version = "0.1.7", default-features = false, optional = true }
-digest = { version = "0.10.7", default-features = false, features = ["mac"], optional = true }
+crypto-common = { version = "0.2.2", default-features = false, optional = true }
+digest = { version = "0.11.3", default-features = false, features = ["mac"], optional = true }
 rlsf = { version = "0.2.3", default-features = false, optional = true }
 sealed = { version = "0.7.0", default-features = false, optional = true }
 typenum = { version = "1.20.1", default-features = false, optional = true }

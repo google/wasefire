@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #[cfg(feature = "board-api-crypto-p384-ecdh")]
-use generic_array as _;
+use crypto_common as _;
 #[cfg(feature = "internal-board-api-crypto-ecdh")]
 use wasefire_applet_api::crypto::ecdh::Kind;
 use wasefire_applet_api::crypto::ecdh::{self as api, Api, Curve};

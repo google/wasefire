@@ -12,19 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crypto_common::BlockSizeUser;
-use crypto_common::generic_array::{ArrayLength, GenericArray};
-use digest::{Digest, FixedOutput, FixedOutputReset};
-use ecdsa::hazmat::{SignPrimitive, VerifyPrimitive};
-use ecdsa::{Signature, SignatureSize, VerifyingKey};
-use elliptic_curve::ops::MulByGenerator;
-use elliptic_curve::sec1::{EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint};
+use crypto_common::array::{Array, ArraySize};
+use ecdsa::{Signature, SignatureSize, SigningKey, VerifyingKey};
+use elliptic_curve::ff::PrimeField;
+use elliptic_curve::sec1::{FromSec1Point, ModulusSize, Sec1Point, ToSec1Point};
 use elliptic_curve::subtle::CtOption;
 use elliptic_curve::{
-    AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, ProjectivePoint, Scalar,
-    ScalarPrimitive,
+    AffinePoint, CurveArithmetic, FieldBytesSize, Group, NonZeroScalar, PrimeCurve,
+    ProjectivePoint, Scalar,
 };
-use signature::hazmat::PrehashVerifier;
+use signature::hazmat::{PrehashSigner, PrehashVerifier};
 use wasefire_applet_api::crypto::ec as api;
 use wasefire_error::Error;
 
@@ -79,12 +76,8 @@ unsafe extern "C" fn env_cep(params: api::point_mul::Params) -> isize {
 unsafe extern "C" fn env_cei(params: api::ecdsa_sign::Params) -> isize {
     let api::ecdsa_sign::Params { curve, key, message, r, s } = params;
     let res = match api::Curve::from(curve) {
-        api::Curve::P256 => unsafe {
-            ecdsa_sign::<p256::NistP256, sha2::Sha256>(key, message, r, s)
-        },
-        api::Curve::P384 => unsafe {
-            ecdsa_sign::<p384::NistP384, sha2::Sha384>(key, message, r, s)
-        },
+        api::Curve::P256 => unsafe { ecdsa_sign::<p256::NistP256>(key, message, r, s) },
+        api::Curve::P384 => unsafe { ecdsa_sign::<p384::NistP384>(key, message, r, s) },
     };
     convert_unit(res)
 }
@@ -99,12 +92,12 @@ unsafe extern "C" fn env_cev(params: api::ecdsa_verify::Params) -> isize {
     convert_bool(res)
 }
 
-unsafe fn array_from_ptr<'a, N: ArrayLength<u8>>(n: *const u8) -> &'a GenericArray<u8, N> {
-    GenericArray::from_slice(unsafe { std::slice::from_raw_parts(n, N::to_usize()) })
+unsafe fn array_from_ptr<'a, N: ArraySize>(n: *const u8) -> &'a Array<u8, N> {
+    unsafe { std::slice::from_raw_parts(n, N::USIZE) }.try_into().unwrap()
 }
 
-unsafe fn array_from_ptr_mut<'a, N: ArrayLength<u8>>(n: *mut u8) -> &'a mut GenericArray<u8, N> {
-    GenericArray::from_mut_slice(unsafe { std::slice::from_raw_parts_mut(n, N::to_usize()) })
+unsafe fn array_from_ptr_mut<'a, N: ArraySize>(n: *mut u8) -> &'a mut Array<u8, N> {
+    unsafe { std::slice::from_raw_parts_mut(n, N::USIZE) }.try_into().unwrap()
 }
 
 unsafe fn is_valid_scalar<C: CurveArithmetic>(n: *const u8) -> bool {
@@ -114,7 +107,7 @@ unsafe fn is_valid_scalar<C: CurveArithmetic>(n: *const u8) -> bool {
 unsafe fn is_valid_point<C>(x: *const u8, y: *const u8) -> bool
 where
     C: CurveArithmetic,
-    ProjectivePoint<C>: FromEncodedPoint<C>,
+    ProjectivePoint<C>: FromSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
 {
     point_from_ints::<C>(unsafe { array_from_ptr(x) }, unsafe { array_from_ptr(y) }).is_ok()
@@ -123,13 +116,13 @@ where
 unsafe fn base_point_mul<C>(n: *const u8, x: *mut u8, y: *mut u8) -> Result<(), Error>
 where
     C: CurveArithmetic,
-    AffinePoint<C>: ToEncodedPoint<C>,
+    AffinePoint<C>: ToSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
 {
     let n = unsafe { array_from_ptr(n) };
     let x = unsafe { array_from_ptr_mut(x) };
     let y = unsafe { array_from_ptr_mut(y) };
-    let r = ProjectivePoint::<C>::mul_by_generator(&scalar_from_int::<C>(n)?);
+    let r = ProjectivePoint::<C>::generator() * scalar_from_int::<C>(n)?;
     point_to_ints::<C>(&r.into(), x, y)
 }
 
@@ -138,8 +131,8 @@ unsafe fn point_mul<C>(
 ) -> Result<(), Error>
 where
     C: PrimeCurve + CurveArithmetic,
-    AffinePoint<C>: ToEncodedPoint<C>,
-    ProjectivePoint<C>: FromEncodedPoint<C>,
+    AffinePoint<C>: ToSec1Point<C>,
+    ProjectivePoint<C>: FromSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
 {
     let n = unsafe { array_from_ptr(n) };
@@ -151,19 +144,19 @@ where
     point_to_ints::<C>(&r.into(), out_x, out_y)
 }
 
-unsafe fn ecdsa_sign<C, D>(d: *const u8, m: *const u8, r: *mut u8, s: *mut u8) -> Result<(), Error>
+unsafe fn ecdsa_sign<C>(d: *const u8, m: *const u8, r: *mut u8, s: *mut u8) -> Result<(), Error>
 where
-    C: PrimeCurve + CurveArithmetic,
-    D: Digest + BlockSizeUser + FixedOutput<OutputSize = FieldBytesSize<C>> + FixedOutputReset,
-    SignatureSize<C>: ArrayLength<u8>,
-    Scalar<C>: SignPrimitive<C>,
+    C: PrimeCurve + CurveArithmetic + ecdsa::EcdsaCurve,
+    SignatureSize<C>: ArraySize,
+    SigningKey<C>: PrehashSigner<Signature<C>>,
 {
     let d = unsafe { array_from_ptr(d) };
-    let m = unsafe { array_from_ptr(m) };
+    let m = unsafe { array_from_ptr::<FieldBytesSize<C>>(m) };
     let r = unsafe { array_from_ptr_mut::<FieldBytesSize<C>>(r) };
     let s = unsafe { array_from_ptr_mut::<FieldBytesSize<C>>(s) };
-    let d = scalar_from_int::<C>(d)?;
-    let (signature, _) = d.try_sign_prehashed_rfc6979::<D>(m, &[]).unwrap();
+    let d = convert_ct(NonZeroScalar::<C>::new(scalar_from_int::<C>(d)?)).ok_or(Error::user(0))?;
+    let key = SigningKey::<C>::from(d);
+    let signature = key.sign_prehash(m).map_err(|_| Error::world(0))?;
     r.copy_from_slice(&scalar_to_int::<C>(signature.r()));
     s.copy_from_slice(&scalar_to_int::<C>(signature.s()));
     Ok(())
@@ -173,26 +166,26 @@ unsafe fn ecdsa_verify<C>(
     m: *const u8, x: *const u8, y: *const u8, r: *const u8, s: *const u8,
 ) -> Result<bool, Error>
 where
-    C: PrimeCurve + CurveArithmetic,
-    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+    C: PrimeCurve + CurveArithmetic + ecdsa::EcdsaCurve,
+    AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
-    SignatureSize<C>: ArrayLength<u8>,
+    SignatureSize<C>: ArraySize,
 {
     let m = unsafe { array_from_ptr::<FieldBytesSize<C>>(m) };
     let x = unsafe { array_from_ptr(x) };
     let y = unsafe { array_from_ptr(y) };
     let r = unsafe { array_from_ptr(r) };
     let s = unsafe { array_from_ptr(s) };
-    let p = EncodedPoint::<C>::from_affine_coordinates(x, y, false);
-    let p = VerifyingKey::<C>::from_encoded_point(&p).map_err(|_| Error::user(0))?;
-    let signature = Signature::from_scalars(r.clone(), s.clone()).map_err(|_| Error::user(0))?;
+    let p = Sec1Point::<C>::from_affine_coordinates(x, y, false);
+    let p = VerifyingKey::<C>::from_sec1_point(&p).map_err(|_| Error::user(0))?;
+    let signature = Signature::from_scalars(*r, *s).map_err(|_| Error::user(0))?;
     Ok(p.verify_prehash(m, &signature).is_ok())
 }
 
-type Int<C> = GenericArray<u8, FieldBytesSize<C>>;
+type Int<C> = Array<u8, FieldBytesSize<C>>;
 
 fn scalar_from_int<C: CurveArithmetic>(n: &Int<C>) -> Result<Scalar<C>, Error> {
-    Ok(convert_ct(ScalarPrimitive::from_bytes(n)).ok_or(Error::user(0))?.into())
+    convert_ct(Scalar::<C>::from_repr(*n)).ok_or(Error::user(0))
 }
 
 fn scalar_to_int<C: CurveArithmetic>(n: impl AsRef<Scalar<C>>) -> Int<C> {
@@ -202,20 +195,20 @@ fn scalar_to_int<C: CurveArithmetic>(n: impl AsRef<Scalar<C>>) -> Int<C> {
 fn point_from_ints<C>(x: &Int<C>, y: &Int<C>) -> Result<ProjectivePoint<C>, Error>
 where
     C: CurveArithmetic,
-    ProjectivePoint<C>: FromEncodedPoint<C>,
+    ProjectivePoint<C>: FromSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
 {
-    let r = EncodedPoint::<C>::from_affine_coordinates(x, y, false);
-    convert_ct(ProjectivePoint::<C>::from_encoded_point(&r)).ok_or(Error::user(0))
+    let r = Sec1Point::<C>::from_affine_coordinates(x, y, false);
+    convert_ct(ProjectivePoint::<C>::from_sec1_point(&r).into()).ok_or(Error::user(0))
 }
 
 fn point_to_ints<C>(p: &AffinePoint<C>, x: &mut Int<C>, y: &mut Int<C>) -> Result<(), Error>
 where
     C: CurveArithmetic,
-    AffinePoint<C>: ToEncodedPoint<C>,
+    AffinePoint<C>: ToSec1Point<C>,
     FieldBytesSize<C>: ModulusSize,
 {
-    let p = p.to_encoded_point(false);
+    let p = p.to_sec1_point(false);
     x.copy_from_slice(p.x().ok_or(Error::user(0))?);
     y.copy_from_slice(p.y().ok_or(Error::user(0))?);
     Ok(())

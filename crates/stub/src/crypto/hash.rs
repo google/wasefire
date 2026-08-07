@@ -14,10 +14,10 @@
 
 use std::sync::Mutex;
 
-use crypto_common::{InvalidLength, KeyInit, OutputSizeUser};
+use crypto_common::{InvalidLength, KeyInit};
 use digest::{FixedOutput, Update};
-use hkdf::{Hkdf, HmacImpl};
-use hmac::Hmac;
+use hkdf::Hkdf;
+use hmac::{EagerHash, Hmac};
 use sha2::{Sha256, Sha384};
 use wasefire_applet_api::crypto::hash as api;
 use wasefire_error::Error;
@@ -90,8 +90,8 @@ unsafe extern "C" fn env_chf(params: api::finalize::Params) -> isize {
     let api::finalize::Params { id, digest } = params;
     let digest = |length| unsafe { std::slice::from_raw_parts_mut(digest, length) };
     match CONTEXTS.lock().unwrap().take(id) {
-        Context::Sha256(x) => x.finalize_into(digest(32).into()),
-        Context::Sha384(x) => x.finalize_into(digest(48).into()),
+        Context::Sha256(x) => x.finalize_into(digest(32).try_into().unwrap()),
+        Context::Sha384(x) => x.finalize_into(digest(48).try_into().unwrap()),
         _ => log::panic!("Invalid context"),
     };
     0
@@ -136,8 +136,8 @@ unsafe extern "C" fn env_chg(params: api::hmac_finalize::Params) -> isize {
     let api::hmac_finalize::Params { id, hmac } = params;
     let hmac = |length| unsafe { std::slice::from_raw_parts_mut(hmac, length) };
     match CONTEXTS.lock().unwrap().take(id) {
-        Context::HmacSha256(x) => x.finalize_into(hmac(32).into()),
-        Context::HmacSha384(x) => x.finalize_into(hmac(48).into()),
+        Context::HmacSha256(x) => x.finalize_into(hmac(32).try_into().unwrap()),
+        Context::HmacSha384(x) => x.finalize_into(hmac(48).try_into().unwrap()),
         _ => log::panic!("Invalid context"),
     };
     0
@@ -155,15 +155,13 @@ unsafe extern "C" fn env_che(params: api::hkdf_expand::Params) -> isize {
     let info = unsafe { std::slice::from_raw_parts(info, info_len) };
     let okm = unsafe { std::slice::from_raw_parts_mut(okm, okm_len) };
     let res = match api::Algorithm::from(algorithm) {
-        api::Algorithm::Sha256 => hkdf::<Sha256, Hmac<Sha256>>(prk, info, okm),
-        api::Algorithm::Sha384 => hkdf::<Sha384, Hmac<Sha384>>(prk, info, okm),
+        api::Algorithm::Sha256 => hkdf::<Sha256>(prk, info, okm),
+        api::Algorithm::Sha384 => hkdf::<Sha384>(prk, info, okm),
     };
     convert_unit(res)
 }
 
-fn hkdf<H: OutputSizeUser, I: HmacImpl<H>>(
-    prk: &[u8], info: &[u8], okm: &mut [u8],
-) -> Result<(), Error> {
-    let hkdf = Hkdf::<H, I>::from_prk(prk).map_err(|_| Error::user(0))?;
+fn hkdf<H: EagerHash>(prk: &[u8], info: &[u8], okm: &mut [u8]) -> Result<(), Error> {
+    let hkdf = Hkdf::<H>::from_prk(prk).map_err(|_| Error::user(0))?;
     hkdf.expand(info, okm).map_err(|_| Error::user(0))
 }

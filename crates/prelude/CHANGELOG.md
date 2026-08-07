@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.8.2-git
+## 0.9.0-git
+
+### Major
+
+- Bump `crypto-common` from 0.1.7 to 0.2.2 which affects `crypto` APIs
 
 ### Patch
 
@@ -227,4 +231,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 8 -->
+<!-- Increment to skip CHANGELOG.md test: 9 -->

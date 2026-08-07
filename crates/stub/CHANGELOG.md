@@ -2,6 +2,10 @@
 
 ## 0.1.8-git
 
+### Minor
+
+- Support `crypto-common` bump from `wasefire-board-api`
+
 ### Patch
 
 - Update dependencies
@@ -67,4 +71,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 9 -->
+<!-- Increment to skip CHANGELOG.md test: 10 -->
