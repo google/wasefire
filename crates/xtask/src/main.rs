@@ -705,8 +705,9 @@ impl RunnerOptions {
                 rustflags.push(format!("-C link-arg=--defsym=RUNNER_NUM_SIDES={num_sides}"));
             }
             if self.name == RunnerName::OpenTitan {
-                const OPENTITAN: &str = "third_party/lowRISC/opentitan";
+                const OPENTITAN: &str = opentitan::PATH;
                 const CRYPTODIR: &str = "sw/device/lib/crypto";
+                ensure_submodule(OPENTITAN).await?;
                 let mut bazel = wrap_command().await?;
                 bazel.current_dir(OPENTITAN);
                 bazel.args(["bazel", "build", &format!("//{CRYPTODIR}:otcrypto")]);
@@ -1118,6 +1119,15 @@ impl Wait {
             }
         }
     }
+}
+
+async fn ensure_submodule(path: &str) -> Result<()> {
+    if fs::exists(format!("{path}/.git")).await {
+        return Ok(());
+    }
+    let mut git = Command::new("git");
+    git.args(["submodule", "update", "--init", path]);
+    cmd::execute(&mut git).await
 }
 
 async fn ensure_command(cmd: &[&str]) -> Result<()> {
