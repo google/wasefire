@@ -46,7 +46,7 @@ SECTIONS {
     . = ORIGIN(MANIF) + 816;
     LONG(0x1d4); /* address translation */
     . = ORIGIN(MANIF) + 824;
-    LONG(0x71c36c47); /* manifest version */
+    LONG(0x00026c47); /* manifest version */
     . = ORIGIN(MANIF) + 892;
     LONG(ADDR(.text) - ORIGIN(MANIF)); /* code start */
     LONG(ADDR(.text) + SIZEOF(.text) - ORIGIN(MANIF)); /* code end */
