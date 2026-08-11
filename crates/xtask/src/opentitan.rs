@@ -25,10 +25,36 @@ use wasefire_cli_tools::{cmd, fs};
 use crate::{AttachOptions, MainOptions, ensure_command, wrap_command};
 
 pub const APPKEY: &str = "gb00-app-key-prod-0";
+pub const PATH: &str = "third_party/lowRISC/opentitan";
 
 pub async fn build(elf: &str) -> Result<String> {
     let prov_exts_dir = std::env::var("PROV_EXTS_DIR")
         .context("PROV_EXTS_DIR must be set to ot-provisioning-google-skus/skus")?;
+
+    // Compile and install necessary tools if needed.
+    const TAG: &str = ".root/tag/opentitan";
+    let commit =
+        cmd::output_line(Command::new("git").args(["-C", PATH, "rev-parse", "HEAD"])).await?;
+    if !fs::read_string(TAG).await.is_ok_and(|x| x == commit) {
+        let mut bazel = Command::new("bazel");
+        bazel.arg("build");
+        bazel.current_dir("third_party/lowRISC/opentitan");
+        bazel.args(["//sw/host/opentitantool", "//sw/host/hsmtool", "@cloud_kms_hsm//:libkmsp11"]);
+        cmd::execute(&mut bazel).await?;
+        fs::copy_multiple(
+            &[
+                format!("{PATH}/bazel-bin/sw/host/opentitantool/opentitantool"),
+                format!("{PATH}/bazel-bin/sw/host/hsmtool/hsmtool"),
+                format!("{PATH}/bazel-opentitan/external/+hsm+cloud_kms_hsm/libkmsp11.so"),
+            ],
+            ".root/bin",
+        )
+        .await?;
+        fs::chmod(0o750, ".root/bin/opentitantool")?;
+        fs::chmod(0o750, ".root/bin/hsmtool")?;
+        fs::chmod(0o750, ".root/bin/libkmsp11.so")?;
+        fs::write(TAG, commit).await?;
+    }
 
     // Copy ELF to binary.
     let bin = format!("{elf}.bin");
@@ -38,7 +64,7 @@ pub async fn build(elf: &str) -> Result<String> {
 
     // Prepare the pre-signing artifact.
     let presign = format!("{elf}.{APPKEY}.pre-signing");
-    let mut opentitan = Command::new("opentitantool");
+    let mut opentitan = Command::new(".root/bin/opentitantool");
     opentitan.args(["--quiet", "image", "manifest", "update", &bin]);
     opentitan.arg("--manifest=crates/runner-opentitan/manifest.json");
     opentitan.arg("--domain=None");
@@ -50,7 +76,7 @@ pub async fn build(elf: &str) -> Result<String> {
 
     // Compute the digest of the artifact.
     let digest = format!("{elf}.{APPKEY}.digest");
-    let mut opentitan = Command::new("opentitantool");
+    let mut opentitan = Command::new(".root/bin/opentitantool");
     opentitan.args(["--quiet", "image", "digest"]);
     opentitan.arg(format!("--bin={digest}"));
     opentitan.arg(&presign);
@@ -58,7 +84,9 @@ pub async fn build(elf: &str) -> Result<String> {
 
     // Sign the digest.
     let ecdsasig = format!("{elf}.{APPKEY}.ecdsa-sig");
-    let mut hsmtool = Command::new("hsmtool");
+    let mut hsmtool = Command::new(".root/bin/hsmtool");
+    hsmtool.env("HSMTOOL_MODULE", ".root/bin/libkmsp11.so");
+    hsmtool.env("KMS_PKCS11_CONFIG", format!("{prov_exts_dir}/shared/tokens/ot-earlgrey-a1.yaml"));
     hsmtool.args([
         "--quiet",
         "--lockfile=/tmp/hsmtool.lock",
@@ -75,7 +103,7 @@ pub async fn build(elf: &str) -> Result<String> {
 
     // Attach the signature.
     let signed = format!("{elf}.{APPKEY}.signed.bin");
-    let mut opentitan = Command::new("opentitantool");
+    let mut opentitan = Command::new(".root/bin/opentitantool");
     opentitan.args(["--quiet", "image", "manifest", "update", "--update-length=false"]);
     opentitan.arg(format!("--output={signed}"));
     opentitan.arg(&presign);
@@ -84,7 +112,7 @@ pub async fn build(elf: &str) -> Result<String> {
 
     // Assemble the image.
     let img = format!("{elf}.img");
-    let mut opentitan = Command::new("opentitantool");
+    let mut opentitan = Command::new(".root/bin/opentitantool");
     opentitan.args(["image", "assemble", "--mirror=false"]);
     opentitan.arg(format!("--output={img}"));
     opentitan.arg(format!(
@@ -113,7 +141,7 @@ pub async fn execute(main: &MainOptions, attach_options: &AttachOptions, elf: &s
     let input = connect().await?;
 
     // Bootstrap the image.
-    let mut opentitan = Command::new("opentitantool");
+    let mut opentitan = Command::new(".root/bin/opentitantool");
     opentitan.args(["--interface=teacup-bga69", "--exec=transport init"]);
     opentitan.args(["bootstrap", "--speed=8000000", &img]);
     cmd::execute(&mut opentitan).await?;

@@ -14,9 +14,10 @@
 
 //! Wrappers around `tokio::fs` with descriptive errors.
 
-use std::fs::Metadata;
+use std::fs::{Metadata, Permissions};
 use std::future::Future;
 use std::io::ErrorKind;
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Component, Path, PathBuf};
 
 use anyhow::{Context, Result};
@@ -89,6 +90,12 @@ pub async fn has_changed(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result
     Ok(changed)
 }
 
+pub fn chmod(mode: u32, path: impl AsRef<Path>) -> Result<()> {
+    let name = path.as_ref().display();
+    std::fs::set_permissions(path.as_ref(), Permissions::from_mode(mode))
+        .with_context(|| format!("chmod {mode} {name}"))
+}
+
 pub async fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     let src = from.as_ref().display();
     let dst = to.as_ref().display();
@@ -97,6 +104,16 @@ pub async fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     tokio::fs::copy(from.as_ref(), to.as_ref())
         .await
         .with_context(|| format!("copying {src} to {dst}"))
+}
+
+pub async fn copy_multiple(froms: &[impl AsRef<Path>], to: impl AsRef<Path>) -> Result<()> {
+    let to = to.as_ref();
+    for from in froms {
+        let from = from.as_ref();
+        let name = from.file_name().context("no file name")?;
+        copy(from, to.join(name)).await?;
+    }
+    Ok(())
 }
 
 pub async fn create_dir_all(path: impl AsRef<Path>) -> Result<()> {
@@ -136,6 +153,10 @@ pub async fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
     let name = path.as_ref().display();
     debug!("read < {name:?}");
     tokio::fs::read(path.as_ref()).await.with_context(|| format!("reading {name}"))
+}
+
+pub async fn read_string(path: impl AsRef<Path>) -> Result<String> {
+    String::from_utf8(read(path).await?).context("invalid UTF-8")
 }
 
 pub async fn read_dir(path: impl AsRef<Path>) -> Result<ReadDir> {
