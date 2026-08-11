@@ -36,10 +36,15 @@ pub async fn build(elf: &str) -> Result<String> {
     let commit =
         cmd::output_line(Command::new("git").args(["-C", PATH, "rev-parse", "HEAD"])).await?;
     if !fs::read_string(TAG).await.is_ok_and(|x| x == commit) {
-        let mut bazel = Command::new("bazel");
-        bazel.arg("build");
+        let mut bazel = wrap_command().await?;
         bazel.current_dir("third_party/lowRISC/opentitan");
-        bazel.args(["//sw/host/opentitantool", "//sw/host/hsmtool", "@cloud_kms_hsm//:libkmsp11"]);
+        bazel.args([
+            "bazel",
+            "build",
+            "//sw/host/opentitantool",
+            "//sw/host/hsmtool",
+            "@cloud_kms_hsm//:libkmsp11",
+        ]);
         cmd::execute(&mut bazel).await?;
         fs::copy_multiple(
             &[
@@ -50,9 +55,9 @@ pub async fn build(elf: &str) -> Result<String> {
             ".root/bin",
         )
         .await?;
-        fs::chmod(0o750, ".root/bin/opentitantool")?;
-        fs::chmod(0o750, ".root/bin/hsmtool")?;
-        fs::chmod(0o750, ".root/bin/libkmsp11.so")?;
+        fs::chmod(0o750, ".root/bin/opentitantool").await?;
+        fs::chmod(0o750, ".root/bin/hsmtool").await?;
+        fs::chmod(0o750, ".root/bin/libkmsp11.so").await?;
         fs::write(TAG, commit).await?;
     }
 

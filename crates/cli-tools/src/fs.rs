@@ -90,10 +90,11 @@ pub async fn has_changed(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result
     Ok(changed)
 }
 
-pub fn chmod(mode: u32, path: impl AsRef<Path>) -> Result<()> {
+pub async fn chmod(mode: u32, path: impl AsRef<Path>) -> Result<()> {
     let name = path.as_ref().display();
-    std::fs::set_permissions(path.as_ref(), Permissions::from_mode(mode))
-        .with_context(|| format!("chmod {mode} {name}"))
+    tokio::fs::set_permissions(path.as_ref(), Permissions::from_mode(mode))
+        .await
+        .with_context(|| format!("chmod {mode:03o} {name}"))
 }
 
 pub async fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
@@ -156,7 +157,9 @@ pub async fn read(path: impl AsRef<Path>) -> Result<Vec<u8>> {
 }
 
 pub async fn read_string(path: impl AsRef<Path>) -> Result<String> {
-    String::from_utf8(read(path).await?).context("invalid UTF-8")
+    let name = path.as_ref().display();
+    debug!("read < {name:?}");
+    tokio::fs::read_to_string(path.as_ref()).await.with_context(|| format!("reading {name}"))
 }
 
 pub async fn read_dir(path: impl AsRef<Path>) -> Result<ReadDir> {

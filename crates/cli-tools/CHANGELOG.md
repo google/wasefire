@@ -2,6 +2,12 @@
 
 ## 0.4.1-git
 
+### Minor
+
+- Add `fs::chmod()` to change the permissions of a file
+- Add `fs::copy_multiple()` to copy multiple files to a directory
+- Add `fs::read_string()` to read a `String` rather than a `Vec<u8>`
+
 ### Patch
 
 - Update the nightly toolchain to compile Rust applets
