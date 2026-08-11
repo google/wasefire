@@ -37,7 +37,7 @@ pub async fn build(elf: &str) -> Result<String> {
         cmd::output_line(Command::new("git").args(["-C", PATH, "rev-parse", "HEAD"])).await?;
     if !fs::read_string(TAG).await.is_ok_and(|x| x == commit) {
         let mut bazel = wrap_command().await?;
-        bazel.current_dir("third_party/lowRISC/opentitan");
+        bazel.current_dir(PATH);
         bazel.args([
             "bazel",
             "build",
