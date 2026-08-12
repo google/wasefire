@@ -309,7 +309,9 @@ async fn main() -> Result<()> {
         }
         Action::PlatformInfo { options, action } => action.run(&options.connect().await?).await,
         Action::PlatformList(x) => x.run().await,
-        Action::PlatformUpdate { options, action } => action.run(&options.connect().await?).await,
+        Action::PlatformUpdate { options, action } => {
+            action.run(&options.connect().await?, &options).await
+        }
         Action::PlatformReboot { options, action } => action.run(&options.connect().await?).await,
         Action::PlatformLock { options, action } => action.run(&options.connect().await?).await,
         Action::PlatformRpc { options, action } => action.run(&options.connect().await?).await,

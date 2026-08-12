@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.4.1-git
+## 0.5.0-git
+
+### Major
+
+- Change `platform-update` to take a bundle instead of the 2 sides
 
 ### Patch
 
