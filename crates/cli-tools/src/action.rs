@@ -62,6 +62,17 @@ impl ConnectionOptions {
         self.protocol.connect(*self.timeout).await
     }
 
+    /// Establishes a connection after a reboot.
+    pub async fn reconnect(&self) -> Result<DynDevice> {
+        for _ in 0 .. 40 {
+            tokio::time::sleep(Duration::from_millis(300)).await;
+            if let Ok(x) = self.connect().await {
+                return Ok(x);
+            }
+        }
+        bail!("timeout while reconnecting")
+    }
+
     /// Returns whether these options identify a device even after reboot.
     pub fn reboot_stable(&self) -> bool {
         match &self.protocol {
@@ -445,35 +456,48 @@ impl PlatformList {
 /// Updates a platform.
 #[derive(clap::Args)]
 pub struct PlatformUpdate {
-    /// Path to the A side of the new platform.
-    ///
-    /// If only this file is provided, it is used without checking the running side. In particular,
-    /// it can be the B side of the new platform.
+    /// Path to the platform to update.
     #[arg(value_hint = ValueHint::FilePath)]
-    pub platform_a: PathBuf,
-
-    /// Path to the B side of the new platform.
-    ///
-    /// If this file is not provided, [`Self::platform_a`] is used regardless of the running side.
-    #[arg(value_hint = ValueHint::FilePath)]
-    pub platform_b: Option<PathBuf>,
+    pub platform: PathBuf,
 
     #[command(flatten)]
     pub transfer: Transfer,
 }
 
 impl PlatformUpdate {
-    pub async fn run(self, device: &DynDevice) -> Result<()> {
-        let PlatformUpdate { platform_a, platform_b, transfer } = self;
-        let platform = match platform_b {
-            Some(platform_b) => match device.platform_info().await?.running_side() {
-                None => bail!("device does not support platform update"),
-                Some(Side::A) => platform_b,
-                Some(Side::B) => platform_a,
-            },
-            None => platform_a,
-        };
+    /// Updates a platform given a bundle file.
+    pub async fn run(self, device: &DynDevice, options: &ConnectionOptions) -> Result<()> {
+        let PlatformUpdate { platform, transfer } = self;
+        ensure!(options.reboot_stable(), "protocol is not reboot-stable");
         let platform = fs::read(platform).await?;
+        let (side_a, side_b) = Bundle::decode(&platform)?.platform()?.payloads();
+        let Some(old_side) = device.platform_info().await?.running_side() else {
+            bail!("device does not expose running side");
+        };
+        let (side_1, side_2) = match old_side {
+            Side::A => (side_b, side_a),
+            Side::B => (side_a, side_b),
+        };
+        Self::update(device, transfer.clone(), side_1).await?;
+        println!("First side updated. Reconnecting...");
+        let device = options.reconnect().await?;
+        let Some(new_side) = device.platform_info().await?.running_side() else {
+            bail!("update does not expose running side");
+        };
+        ensure!(new_side != old_side, "failed to boot on the new side");
+        Self::update(&device, transfer, side_2).await?;
+        println!("Platform updated.");
+        Ok(())
+    }
+
+    /// Updates a platform given an image file.
+    pub async fn run_exact(self, device: &DynDevice) -> Result<()> {
+        let PlatformUpdate { platform, transfer } = self;
+        let platform = fs::read(platform).await?;
+        Self::update(device, transfer, platform).await
+    }
+
+    async fn update(device: &DynDevice, transfer: Transfer, platform: Vec<u8>) -> Result<()> {
         transfer
             .run::<service::PlatformUpdate>(
                 device,

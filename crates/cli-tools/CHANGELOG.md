@@ -1,9 +1,18 @@
 # Changelog
 
-## 0.4.1-git
+## 0.5.0-git
+
+### Major
+
+- Merge `platform_{a,b}` into `platform` in `action::PlatformUpdate` for bundle files and to update
+  both sides
+- Add `options: &ConnectionOptions` parameter to `action::PlatformUpdate::run()` for reconnection
+  after updating the first side
 
 ### Minor
 
+- Add `action::ConnectionOptions::run_exact()` to update a single side
+- Add `action::ConnectionOptions::reconnect()` to reconnect after a reboot
 - Add `fs::chmod()` to change the permissions of a file
 - Add `fs::copy_multiple()` to copy multiple files to a directory
 - Add `fs::read_string()` to read a `String` rather than a `Vec<u8>`
@@ -132,4 +141,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 13 -->
+<!-- Increment to skip CHANGELOG.md test: 14 -->

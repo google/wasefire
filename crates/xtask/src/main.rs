@@ -625,12 +625,7 @@ impl RunnerOptions {
                 );
                 let device = match next_step {
                     None => options.connect().await?,
-                    Some(_) => loop {
-                        tokio::time::sleep(Duration::from_millis(300)).await;
-                        if let Ok(x) = options.connect().await {
-                            break x;
-                        }
-                    },
+                    Some(_) => options.reconnect().await?,
                 };
                 let info = device.platform_info().await?;
                 let Some(running_side) = info.running_side() else {
@@ -809,13 +804,14 @@ impl RunnerOptions {
                 *version < Hexa((&[0xff; 20]).into()),
                 "--version must be smaller than [0xff; 20]"
             );
+            let mut version = version.clone();
             let len = [4, 4, 4, 8].into_iter().fold(0, |pos, len| {
                 version.to_mut()[pos ..][.. len].reverse();
                 pos + len
             });
             let mut content = fs::read(&elf).await?;
             let pos = section_offset(&content, ".manifest")? + 836;
-            content[pos ..][.. len].copy_from_slice(version);
+            content[pos ..][.. len].copy_from_slice(&version);
             fs::write(&elf, content).await?;
         }
         if self.measure_bloat {
@@ -853,10 +849,10 @@ impl RunnerOptions {
         let Some(mut cmd) = cmd else { return Ok(()) };
         let flash = match cmd {
             RunnerCommand::Update(cmd_update) => {
-                let platform_a = self.bundle(&elf, side).await?.into();
+                let platform = self.bundle(&elf, side).await?.into();
                 let transfer = cmd_update.transfer.clone();
-                let action = action::PlatformUpdate { platform_a, platform_b: None, transfer };
-                action.run(&update.unwrap()).await?;
+                let action = action::PlatformUpdate { platform, transfer };
+                action.run_exact(&update.unwrap()).await?;
                 if !cmd_update.both || cmd_update.step.is_some() {
                     match cmd_update.command {
                         Some(UpdateCommand::Attach(options)) => {

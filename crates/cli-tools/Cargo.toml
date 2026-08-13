@@ -1,6 +1,6 @@
 [package]
 name = "wasefire-cli-tools"
-version = "0.4.1-git"
+version = "0.5.0-git"
 edition = "2024"
 description = "Command-line utilities for Wasefire"
 repository = "https://github.com/google/wasefire"
