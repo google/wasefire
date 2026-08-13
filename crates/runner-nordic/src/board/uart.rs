@@ -16,7 +16,7 @@ use alloc::boxed::Box;
 
 use embedded_hal::digital::OutputPin;
 use nrf52840_hal::pac::uarte0::{RegisterBlock, errorsrc};
-use nrf52840_hal::pac::{UARTE0, UARTE1};
+use nrf52840_hal::pac::{PPI, TIMER4, UARTE0};
 use nrf52840_hal::target_constants::{EASY_DMA_SIZE, SRAM_LOWER, SRAM_UPPER};
 use nrf52840_hal::{gpio, uarte};
 use wasefire_board_api::uart::{Api, Direction, Event};
@@ -26,10 +26,11 @@ use wasefire_logger as log;
 
 use crate::{Board, with_state};
 
-pub struct Uarts {
-    uarte0: UARTE0,
-    uarte1: UARTE1,
-    states: [State; 2],
+pub struct Uart {
+    regs: UARTE0,
+    timer: TIMER4,
+    ppi: PPI,
+    state: State,
 }
 
 const BUFFER_SIZE: usize = 8 * BUSY_SIZE;
@@ -84,23 +85,30 @@ impl Default for State {
 
 pub enum Impl {}
 
-impl Uarts {
-    // We only support UARTE0 without control flow.
+impl Uart {
     pub fn new(
-        uarte0: UARTE0, rx: gpio::Pin<gpio::Input<gpio::Floating>>,
-        tx: gpio::Pin<gpio::Output<gpio::PushPull>>, uarte1: UARTE1,
+        regs: UARTE0, rx: gpio::Pin<gpio::Input<gpio::Floating>>,
+        tx: gpio::Pin<gpio::Output<gpio::PushPull>>, timer: TIMER4, ppi: PPI,
     ) -> Self {
-        let mut uarts = Uarts { uarte0, uarte1, states: [State::default(), State::default()] };
-        let Uart { regs, .. } = uarts.get(Id::new(0).unwrap());
         regs.psel.rxd.write(|w| unsafe { w.bits(rx.psel_bits()) });
         regs.psel.txd.write(|w| unsafe { w.bits(tx.psel_bits()) });
         regs.config.reset();
         regs.baudrate.write(|w| w.baudrate().variant(uarte::Baudrate::BAUD115200));
-        uarts
+        timer.mode.write(|w| w.mode().timer());
+        timer.bitmode.write(|w| w.bitmode()._32bit());
+        timer.prescaler.write(|w| unsafe { w.prescaler().bits(4) });
+        timer.cc[0].write(|w| unsafe { w.cc().bits(500) });
+        timer.shorts.write(|w| w.compare0_stop().set_bit());
+        ppi.ch[0].eep.write(|w| unsafe { w.bits(regs.events_rxdrdy.as_ptr() as u32) });
+        ppi.ch[0].tep.write(|w| unsafe { w.bits(timer.tasks_clear.as_ptr() as u32) });
+        ppi.fork[0].tep.write(|w| unsafe { w.bits(timer.tasks_start.as_ptr() as u32) });
+        ppi.ch[1].eep.write(|w| unsafe { w.bits(timer.events_compare[0].as_ptr() as u32) });
+        ppi.ch[1].tep.write(|w| unsafe { w.bits(regs.tasks_stoprx.as_ptr() as u32) });
+        Uart { regs, timer, ppi, state: State::default() }
     }
 
-    pub fn tick(&mut self, uart_id: Id<Impl>, push: impl FnMut(Event<Board>)) {
-        let Uart { regs, state: s } = self.get(uart_id);
+    pub fn tick(&mut self, mut push: impl FnMut(Event<Board>)) {
+        let Uart { regs, state, .. } = self;
         if regs.events_error.read().events_error().bit_is_set() {
             regs.events_error.reset();
             regs.errorsrc.modify(|r, w| {
@@ -111,43 +119,24 @@ impl Uarts {
         }
         if regs.events_rxstarted.read().events_rxstarted().bit_is_set() {
             regs.events_rxstarted.reset();
-            s.read_end = (regs.rxd.ptr.read().ptr().bits() - s.read_ptr as u32) as usize;
-            let next_end = (s.read_end + BUSY_SIZE) % BUFFER_SIZE;
-            if BUSY_SIZE <= dist(next_end, s.read_beg) {
-                let next_ptr = s.read_ptr as u32 + next_end as u32;
+            let new_end = (regs.rxd.ptr.read().ptr().bits() - state.read_ptr as u32) as usize;
+            if new_end != state.read_end {
+                state.read_end += regs.rxd.amount.read().amount().bits() as usize;
+                state.align();
+            }
+            let next_end = (state.read_end + BUSY_SIZE) % BUFFER_SIZE;
+            if BUSY_SIZE <= dist(next_end, state.read_beg) {
+                let next_ptr = state.read_ptr as u32 + next_end as u32;
                 regs.rxd.ptr.write(|w| unsafe { w.ptr().bits(next_ptr) });
             }
         }
-        if s.listen_read {
-            Self::tick_read(uart_id, regs, push);
+        if state.listen_read && !state.is_empty() {
+            push(Event { uart: Id::new(0).unwrap(), direction: Direction::Read });
         }
-    }
-
-    fn tick_read(uart: Id<Impl>, regs: &RegisterBlock, mut push: impl FnMut(Event<Board>)) {
-        if regs.events_rxdrdy.read().events_rxdrdy().bit_is_set() {
-            regs.events_rxdrdy.reset();
-            regs.intenclr.write(|w| w.rxdrdy().set_bit());
-            push(Event { uart, direction: Direction::Read });
-        }
-    }
-
-    fn get(&mut self, uart: Id<Impl>) -> Uart<'_> {
-        let regs: &RegisterBlock = match *uart {
-            0 => &self.uarte0,
-            1 => &self.uarte1,
-            _ => unreachable!(),
-        };
-        let state = &mut self.states[*uart];
-        Uart { regs, state }
     }
 }
 
-struct Uart<'a> {
-    regs: &'a RegisterBlock,
-    state: &'a mut State,
-}
-
-impl Uart<'_> {
+impl Uart {
     fn stoptx(regs: &RegisterBlock) {
         regs.tasks_stoptx.write(|w| w.tasks_stoptx().set_bit());
         while regs.events_txstopped.read().events_txstopped().bit_is_clear() {}
@@ -178,15 +167,34 @@ impl State {
         *output = &mut core::mem::take(output)[len ..];
         self.read_beg = (self.read_beg + len) % BUFFER_SIZE;
     }
+
+    /// Aligns the end of the ready part to the next multiple of BUSY_SIZE.
+    fn align(&mut self) {
+        let old_beg = self.read_beg;
+        let old_end = self.read_end;
+        let new_end = old_end.next_multiple_of(BUSY_SIZE);
+        let delta = new_end - old_end;
+        if delta == 0 {
+            return;
+        }
+        let len = dist(old_beg, old_end);
+        for i in (0 .. len).rev() {
+            let src = (old_beg + i) % BUFFER_SIZE;
+            let dst = (src + delta) % BUFFER_SIZE;
+            unsafe { *self.read_ptr.add(dst) = *self.read_ptr.add(src) };
+        }
+        self.read_beg = (old_beg + delta) % BUFFER_SIZE;
+        self.read_end = new_end % BUFFER_SIZE;
+    }
 }
 
 impl Support<usize> for Impl {
-    // We deliberately advertise only the first UART for now.
     const SUPPORT: usize = 1;
 }
 
 impl Api for Impl {
     fn set_baudrate(uart: Id<Self>, baudrate: usize) -> Result<(), Error> {
+        assert_eq!(*uart, 0);
         let baudrate = match baudrate {
             9600 => uarte::Baudrate::BAUD9600,
             31250 => uarte::Baudrate::BAUD31250,
@@ -197,7 +205,7 @@ impl Api for Impl {
             _ => return Err(Error::internal(Code::NotImplemented)),
         };
         with_state(|state| {
-            let Uart { regs, state } = state.uarts.get(uart);
+            let Uart { regs, state, .. } = &state.uart;
             Error::user(Code::InvalidState).check(!state.running)?;
             regs.baudrate.write(|w| w.baudrate().variant(baudrate));
             Ok(())
@@ -205,10 +213,12 @@ impl Api for Impl {
     }
 
     fn start(uart: Id<Self>) -> Result<(), Error> {
+        assert_eq!(*uart, 0);
         with_state(|state| {
-            let Uart { regs, state } = state.uarts.get(uart);
+            let Uart { regs, state, ppi, .. } = &mut state.uart;
             Error::user(Code::InvalidState).check(!state.running)?;
             state.running = true;
+            ppi.chenset.write(|w| w.ch0().set_bit().ch1().set_bit());
             set_high(regs.psel.txd.read().bits());
             regs.enable.write(|w| w.enable().enabled());
             regs.shorts.write(|w| w.endrx_startrx().set_bit());
@@ -221,10 +231,13 @@ impl Api for Impl {
     }
 
     fn stop(uart: Id<Self>) -> Result<(), Error> {
+        assert_eq!(*uart, 0);
         with_state(|state| {
-            let Uart { regs, state } = state.uarts.get(uart);
+            let Uart { regs, state, timer, ppi } = &mut state.uart;
             Error::user(Code::InvalidState).check(state.running)?;
             state.running = false;
+            ppi.chenclr.write(|w| w.ch0().clear_bit_by_one().ch1().clear_bit_by_one());
+            timer.tasks_stop.write(|w| w.tasks_stop().set_bit());
             regs.shorts.write(|w| w.endrx_startrx().clear_bit());
             Uart::stoptx(regs);
             Uart::stoprx(regs);
@@ -236,22 +249,24 @@ impl Api for Impl {
     }
 
     fn read(uart: Id<Self>, mut output: &mut [u8]) -> Result<usize, Error> {
+        assert_eq!(*uart, 0);
         with_state(|state| {
-            let Uart { state: s, .. } = state.uarts.get(uart);
-            Error::user(Code::InvalidState).check(s.running)?;
+            let Uart { state, .. } = &mut state.uart;
+            Error::user(Code::InvalidState).check(state.running)?;
             let initial_len = output.len();
-            s.copy(&mut output);
-            if !output.is_empty() && !s.is_empty() {
+            state.copy(&mut output);
+            if !output.is_empty() && !state.is_empty() {
                 // We neither filled output nor consumed all the ready part. This can only happen if
                 // the ready part was discontinuous.
-                assert_eq!(s.read_beg, 0);
-                s.copy(&mut output);
+                assert_eq!(state.read_beg, 0);
+                state.copy(&mut output);
             }
             Ok(initial_len - output.len())
         })
     }
 
     fn write(uart: Id<Self>, input: &[u8]) -> Result<usize, Error> {
+        assert_eq!(*uart, 0);
         if input.is_empty() {
             return Ok(0);
         }
@@ -259,7 +274,7 @@ impl Api for Impl {
             return Err(Error::user(Code::InvalidArgument));
         }
         with_state::<Result<_, Error>>(|state| {
-            let Uart { regs, state } = state.uarts.get(uart);
+            let Uart { regs, state, .. } = &state.uart;
             Error::user(Code::InvalidState).check(state.running)?;
             regs.txd.ptr.write(|w| unsafe { w.ptr().bits(input.as_ptr() as u32) });
             regs.txd.maxcnt.write(|w| unsafe { w.maxcnt().bits(input.len() as u16) });
@@ -268,7 +283,7 @@ impl Api for Impl {
         })?;
         loop {
             let get_amount = |state: &mut crate::State| {
-                let Uart { regs, .. } = state.uarts.get(uart);
+                let Uart { regs, .. } = &state.uart;
                 if regs.events_endtx.read().events_endtx().bit_is_set() {
                     regs.events_endtx.reset();
                     Some(regs.txd.amount.read().amount().bits() as usize)
@@ -284,13 +299,11 @@ impl Api for Impl {
     }
 
     fn enable(uart: Id<Self>, direction: Direction) -> Result<(), Error> {
+        assert_eq!(*uart, 0);
         with_state(|state| {
-            let Uart { regs, state } = state.uarts.get(uart);
+            let Uart { state, .. } = &mut state.uart;
             match direction {
-                Direction::Read => {
-                    regs.intenset.write(|w| w.rxdrdy().set_bit());
-                    state.listen_read = true;
-                }
+                Direction::Read => state.listen_read = true,
                 Direction::Write => (),
             }
             Ok(())
@@ -298,13 +311,11 @@ impl Api for Impl {
     }
 
     fn disable(uart: Id<Self>, direction: Direction) -> Result<(), Error> {
+        assert_eq!(*uart, 0);
         with_state(|state| {
-            let uart = state.uarts.get(uart);
+            let Uart { state, .. } = &mut state.uart;
             match direction {
-                Direction::Read => {
-                    uart.regs.intenclr.write(|w| w.rxdrdy().set_bit());
-                    uart.state.listen_read = false;
-                }
+                Direction::Read => state.listen_read = false,
                 Direction::Write => (),
             }
             Ok(())

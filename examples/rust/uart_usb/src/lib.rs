@@ -38,7 +38,7 @@ struct Serial<Port> {
 impl<Src: serial::Serial> Serial<Src> {
     fn copy_to<Dst: serial::Serial>(&self, dst: &Serial<Dst>, buf: &mut [u8]) {
         let mut total: usize = 0;
-        while total.is_multiple_of(buf.len()) {
+        loop {
             let len = serial::read(&self.port, buf).unwrap();
             if len == 0 {
                 break;
@@ -47,7 +47,7 @@ impl<Src: serial::Serial> Serial<Src> {
             if wlen < len {
                 debug!("Only wrote {wlen} from {len} bytes to {}.", dst.name);
             }
-            total += len;
+            total += wlen;
         }
         if 0 < total {
             serial::flush(&dst.port).unwrap();

@@ -75,7 +75,7 @@ use crate::board::clock::Clock;
 use crate::board::gpio::Gpio;
 use crate::board::timer::Timers;
 #[cfg(feature = "uart")]
-use crate::board::uart::Uarts;
+use crate::board::uart::Uart;
 use crate::board::usb::Usb;
 #[cfg(feature = "ble-adv")]
 use crate::board::vendor::ble_adv::Ble;
@@ -119,7 +119,7 @@ struct State {
     rng: Rng,
     storage: Option<Storage>,
     #[cfg(feature = "uart")]
-    uarts: Uarts,
+    uart: Uart,
     usb_dev: UsbDevice<'static, Usb>,
 }
 
@@ -189,7 +189,12 @@ fn main() -> ! {
         Gpio::new(port0.p0_31.degrade(), 0, 31),
     ];
     let clock = Clock::new(p.TIMER1);
-    let timers = Timers::new(p.TIMER2, p.TIMER3, p.TIMER4);
+    let timers = Timers::new(
+        p.TIMER2,
+        p.TIMER3,
+        #[cfg(not(feature = "uart"))]
+        p.TIMER4,
+    );
     let gpiote = Gpiote::new(p.GPIOTE);
     #[cfg_attr(not(feature = "fpc2534-sensor"), allow(unused_mut))]
     let mut channels = Channels::default();
@@ -245,11 +250,12 @@ fn main() -> ! {
     crate::board::platform::update::init(Storage::new_other());
     crate::board::applet::init(Storage::new_applet());
     #[cfg(feature = "uart")]
-    let uarts = {
+    let uart = {
         let uart_rx = port0.p0_28.into_floating_input().degrade();
         let uart_tx = port0.p0_29.into_push_pull_output(Level::High).degrade();
-        Uarts::new(p.UARTE0, uart_rx, uart_tx, p.UARTE1)
+        Uart::new(p.UARTE0, uart_rx, uart_tx, p.TIMER4, p.PPI)
     };
+
     let events = Events::default();
     let state = State {
         events,
@@ -275,7 +281,7 @@ fn main() -> ! {
         rng,
         storage,
         #[cfg(feature = "uart")]
-        uarts,
+        uart,
         usb_dev,
     };
     // We first set the board and then enable interrupts so that interrupts may assume the board is
@@ -310,11 +316,10 @@ interrupts! {
     TIMER1 = clock(),
     TIMER2 = timer(0),
     TIMER3 = timer(1),
+    #[cfg(not(feature = "uart"))]
     TIMER4 = timer(2),
     #[cfg(feature = "uart")]
-    UARTE0_UART0 = uarte(0),
-    #[cfg(feature = "uart")]
-    UARTE1 = uarte(1),
+    UARTE0_UART0 = uarte(),
     USBD = usbd(),
 }
 
@@ -365,10 +370,9 @@ fn timer(timer: usize) {
 }
 
 #[cfg(feature = "uart")]
-fn uarte(uarte: usize) {
-    let uart = Id::new(uarte).unwrap();
+fn uarte() {
     with_state(|state| {
-        state.uarts.tick(uart, |event| state.events.push(event.into()));
+        state.uart.tick(|event| state.events.push(event.into()));
     })
 }
 
