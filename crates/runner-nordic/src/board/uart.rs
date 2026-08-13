@@ -162,10 +162,10 @@ impl State {
     fn copy(&mut self, output: &mut &mut [u8]) {
         let end = if self.read_end < self.read_beg { BUFFER_SIZE } else { self.read_end };
         let len = core::cmp::min(end - self.read_beg, output.len());
-        let new_beg = self.read_beg + len;
-        output[.. len].copy_from_slice(unsafe { self.range(self.read_beg, new_beg) });
+        let ptr = unsafe { self.read_ptr.add(self.read_beg) };
+        output[.. len].copy_from_slice(unsafe { core::slice::from_raw_parts(ptr, len) });
         *output = &mut core::mem::take(output)[len ..];
-        self.read_beg = new_beg % BUFFER_SIZE;
+        self.read_beg = (self.read_beg + len) % BUFFER_SIZE;
     }
 
     /// Aligns the end of the ready part to the next multiple of BUSY_SIZE.
@@ -185,18 +185,6 @@ impl State {
         }
         self.read_beg = (old_beg + delta) % BUFFER_SIZE;
         self.read_end = new_end % BUFFER_SIZE;
-    }
-
-    /// Returns a mutable slice from the buffer.
-    ///
-    /// # Safety
-    ///
-    /// The range `beg..end` should be within the ready part and should not overlap with other
-    /// mutable slices. In particular, the ready part should not change while the returned slice is
-    /// alive.
-    #[allow(clippy::mut_from_ref)]
-    unsafe fn range(&self, beg: usize, end: usize) -> &mut [u8] {
-        unsafe { core::slice::from_raw_parts_mut(self.read_ptr.add(beg), end - beg) }
     }
 }
 
