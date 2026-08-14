@@ -245,9 +245,9 @@ pub async fn attach(
 }
 
 async fn connect() -> Result<Box<dyn SerialPort>> {
-    let serial = std::env::var("CONSOLE_SERIAL")
-        .context("CONSOLE_SERIAL must be set to a serial for the console UART")?;
-    ensure!(fs::exists(&serial).await, "{serial} not found");
+    let port = std::env::var("CONSOLE_PORT")
+        .context("CONSOLE_PORT must be set to the path of the console UART port")?;
+    ensure!(fs::exists(&port).await, "{port} not found");
     ensure_command(&["defmt-print"]).await?;
-    Ok(serialport::new(&serial, 115200).timeout(Duration::from_secs(3600)).open()?)
+    Ok(serialport::new(&port, 115200).timeout(Duration::from_secs(3600)).open()?)
 }
