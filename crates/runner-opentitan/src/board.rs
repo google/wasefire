@@ -87,12 +87,20 @@ impl board::Api for Board {
     type Led = led::Impl;
     type Platform = platform::Impl;
     type Rng = rng::Impl;
-    type Storage = storage::Impl;
+    type Store = board::store::WithStore<Self>;
     type Timer = timer::Impl;
     #[cfg(feature = "_usb")]
     type Usb = usb::Impl;
     #[cfg(feature = "test-vendor")]
     type Vendor = vendor::Impl;
+}
+
+impl board::store::HasStore for Board {
+    type Storage = storage::Impl;
+
+    fn with_store<R>(f: impl FnOnce(&mut wasefire_store::Store<Self::Storage>) -> R) -> R {
+        with_state(|state| f(&mut state.storage.store))
+    }
 }
 
 #[derive(Default)]

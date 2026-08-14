@@ -6,6 +6,10 @@
 
 - Bump `crypto-common` from 0.1.7 to 0.2.2 which affects `crypto` APIs
 
+### Minor
+
+- Add `store::max_{key,len}()` and update `store{,::fragment}` accordingly
+
 ### Patch
 
 - Update dependencies

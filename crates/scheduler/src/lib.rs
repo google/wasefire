@@ -30,8 +30,6 @@ use core::marker::PhantomData;
 use derive_where::derive_where;
 use event::Key;
 use wasefire_applet_api::{self as api, Api, ArrayU32, Dispatch, Id, Signature, U32};
-#[cfg(feature = "board-api-storage")]
-use wasefire_board_api::Singleton;
 #[cfg(feature = "board-api-timer")]
 use wasefire_board_api::Support;
 use wasefire_board_api::{self as board, Api as Board, Failure, Trap};
@@ -43,8 +41,6 @@ use wasefire_one_of::exactly_one_of;
 use wasefire_protocol::applet::ExitStatus;
 #[cfg(any(feature = "pulley", feature = "wasm"))]
 use wasefire_protocol::applet::Metadata0 as AppletMetadata0;
-#[cfg(feature = "board-api-storage")]
-use wasefire_store as store;
 
 #[cfg(feature = "pulley")]
 use crate::applet::store::RunResult;
@@ -96,8 +92,6 @@ impl<B: Board> Events<B> {
 }
 
 pub struct Scheduler<B: Board> {
-    #[cfg(feature = "board-api-storage")]
-    store: store::Store<B::Storage>,
     host_funcs: Vec<Api<Id>>,
     applet: applet::Slot<B>,
     #[cfg(any(feature = "pulley", feature = "wasm"))]
@@ -308,8 +302,6 @@ impl<B: Board> Scheduler<B> {
         assert!(host_funcs.windows(2).all(|x| x[0].descriptor().name != x[1].descriptor().name));
         protocol::enable::<B>();
         Self {
-            #[cfg(feature = "board-api-storage")]
-            store: store::Store::new(board::Storage::<B>::take().unwrap()).ok().unwrap(),
             host_funcs,
             #[cfg(feature = "native")]
             applet: applet::Slot::Running(Applet::default()),

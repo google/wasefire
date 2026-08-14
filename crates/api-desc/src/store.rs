@@ -25,19 +25,31 @@ pub(crate) fn new() -> Item {
     let items = vec![
         #[cfg(feature = "api-store")]
         item! {
+            /// Returns the maximum key.
+            fn max_key "smk" {} -> usize
+        },
+        #[cfg(feature = "api-store")]
+        item! {
+            /// Returns the maximum value length.
+            fn max_len "sml" {} -> usize
+        },
+        #[cfg(feature = "api-store")]
+        item! {
             /// Inserts an entry in the store.
             ///
             /// If an entry for that key was already present, it is overwritten.
             fn insert "si" {
                 /// Key of the entry.
                 ///
-                /// This must be smaller than 4096.
+                /// This must be smaller than or equal to [`max_key`].
                 key: usize,
 
                 /// Value of the entry.
                 ptr: *const u8,
 
                 /// Length of the value.
+                ///
+                /// This must be smaller than or equal to [`max_len`].
                 len: usize,
             } -> ()
         },

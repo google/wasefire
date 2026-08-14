@@ -25,9 +25,9 @@ use crate::{Error, convert_bool, convert_unit};
 ///
 /// The entry will be fragmented over multiple keys within the provided range as needed.
 ///
-/// The range must be non-empty and end before 4096. The `value` argument is the slice to associate
-/// with this key. If there was already a value, it is overwritten. Overwritten values are zeroized
-/// from flash.
+/// The range must be non-empty and stay within [`max_key()`](super::max_key). The `value` argument
+/// is the slice to associate with this key. If there was already a value, it is overwritten.
+/// Overwritten values are zeroized from flash.
 pub fn insert(keys: Range<usize>, value: &[u8]) -> Result<(), Error> {
     let params =
         api::insert::Params { keys: encode_keys(keys)?, ptr: value.as_ptr(), len: value.len() };

@@ -75,7 +75,8 @@ api-fingerprint-sensor = ["internal-api-fingerprint"]
 api-gpio = ["bytemuck/derive"]
 api-led = []
 api-rng = []
-api-storage = ["dep:wasefire-store"]
+api-store = ["dep:wasefire-store", "internal-api-store"]
+api-store-fragment = ["api-store"]
 api-timer = []
 api-uart = []
 api-usb-ctap = ["dep:usbd-hid", "internal-api-usb"]
@@ -105,7 +106,8 @@ full-api = [
   "api-gpio",
   "api-led",
   "api-rng",
-  "api-storage",
+  "api-store",
+  "api-store-fragment",
   "api-timer",
   "api-uart",
   "api-usb-ctap",
@@ -211,6 +213,7 @@ internal-api-crypto-hmac = [
   "internal-with-error",
 ]
 internal-api-fingerprint = []
+internal-api-store = []
 internal-api-usb = []
 internal-crypto-rng = ["api-rng", "dep:signature", "internal-with-error", "signature?/rand_core"]
 internal-software-crypto = [

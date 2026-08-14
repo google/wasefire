@@ -28,7 +28,7 @@ use wasefire_interpreter as _;
 use wasefire_one_of::exactly_one_of;
 use wasefire_protocol_tokio::Pipe;
 use wasefire_scheduler::Scheduler;
-use wasefire_store::{FileOptions, FileStorage};
+use wasefire_store::{FileOptions, FileStorage, Store};
 
 use crate::board::Board;
 use crate::board::platform::protocol::State as ProtocolState;
@@ -149,7 +149,8 @@ async fn main() -> Result<()> {
     board::clock::init();
     wasefire_cli_tools::fs::create_dir_all(&FLAGS.dir).await?;
     let options = FileOptions { word_size: 4, page_size: 4096, num_pages: 16 };
-    let storage = Some(FileStorage::new(&FLAGS.dir.join("storage.bin"), options)?);
+    let storage = FileStorage::new(&FLAGS.dir.join("storage.bin"), options)?;
+    let store = Store::new(storage).map_err(|(error, _)| error)?;
     board::applet::init().await;
     let (sender, receiver) = channel(10);
     *RECEIVER.lock().unwrap() = Some(receiver);
@@ -184,7 +185,7 @@ async fn main() -> Result<()> {
         uarts: board::uart::Uarts::new(),
         protocol,
         usb,
-        storage,
+        store,
         web,
     });
     board::uart::Uarts::init();

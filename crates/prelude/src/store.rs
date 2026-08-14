@@ -28,11 +28,23 @@ use crate::{Error, convert, convert_bool, convert_unit};
 #[cfg(feature = "api-store-fragment")]
 pub mod fragment;
 
+/// Returns the maximum key.
+#[cfg(feature = "api-store")]
+pub fn max_key() -> Result<usize, Error> {
+    convert(unsafe { api::max_key() })
+}
+
+/// Returns the maximum value length.
+#[cfg(feature = "api-store")]
+pub fn max_len() -> Result<usize, Error> {
+    convert(unsafe { api::max_len() })
+}
+
 /// Inserts an entry in the store.
 ///
-/// The `key` argument must be a small integer (currently less than 4096). The `value` argument is
-/// the slice to associate with this key. If there was already a value, it is overwritten.
-/// Overwritten values are zeroized from flash.
+/// The `key` argument must be smaller than or equal to [`max_key()`]. The `value` argument is the
+/// slice to associate with this key, and its length must be smaller than or equal to [`max_len()`].
+/// If there was already a value, it is overwritten. Overwritten values are zeroized from flash.
 #[cfg(feature = "api-store")]
 pub fn insert(key: usize, value: &[u8]) -> Result<(), Error> {
     let params = api::insert::Params { key, ptr: value.as_ptr(), len: value.len() };

@@ -4,6 +4,9 @@
 
 ### Major
 
+- Replace `api-storage` feature with `api-store{,-fragment}`
+- Replace `Api::Storage` and `Storage<B>` with `Api::Store` and `Store<B>`
+- Remove `Singleton`
 - Remove type parameter from `crypto::SoftwareP{256,384}Ecdsa`
 - Bump `crypto-common` from 0.1.7 to 0.2.2 which affects `crypto` APIs
 
