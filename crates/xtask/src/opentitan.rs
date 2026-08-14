@@ -245,10 +245,9 @@ pub async fn attach(
 }
 
 async fn connect() -> Result<Box<dyn SerialPort>> {
-    let serial = std::env::var("HYPERDEBUG_SERIAL")
-        .context("HYPERDEBUG_SERIAL must be set to a HyperDebug serial")?;
-    let port = format!("/dev/serial/by-id/usb-Google_LLC_HyperDebug_CMSIS-DAP_{serial}-if03-port0");
-    ensure!(fs::exists(&port).await, "HyperDebug {serial} not found. Is it connected?");
+    let port = std::env::var("CONSOLE_PORT")
+        .context("CONSOLE_PORT must be set to the path of the console UART port")?;
+    ensure!(fs::exists(&port).await, "{port} not found");
     ensure_command(&["defmt-print"]).await?;
     Ok(serialport::new(&port, 115200).timeout(Duration::from_secs(3600)).open()?)
 }
