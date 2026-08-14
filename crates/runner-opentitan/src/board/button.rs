@@ -41,9 +41,12 @@ struct Active {
     touch: bool,
 }
 
-// TODO: Use top_earlgrey_muxed_pads_ior13 once it exists.
+// TODO: Use top_earlgrey_muxed_pads_ior13/ioc12 once they exist.
+#[cfg(feature = "button-ior13")]
 const BUTTON_PAD: u32 = 46; // IOR13
-const BUTTON_GPIO: u32 = 1;
+#[cfg(not(feature = "button-ior13"))]
+const BUTTON_PAD: u32 = 34; // IOC12
+const BUTTON_GPIO: u32 = 4;
 const BUTTON_MASK: u32 = 1 << BUTTON_GPIO;
 
 pub fn init() -> State {
@@ -57,7 +60,7 @@ pub fn init() -> State {
     // user first doesn't touch the button, then touches it). It is important to make sure
     // `history_len` is positive (e.g. by using 1 if it's 0) and to not modify it while the button
     // is active.
-    State { threshold: 50_000, history_len: 5, active: None }
+    State { threshold: 30_000, history_len: 5, active: None }
 }
 
 pub fn interrupt() {

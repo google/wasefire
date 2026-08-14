@@ -31,4 +31,6 @@ cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf --featur
 cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf --features=native,debug
 cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf --features=native,release
 cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf \
+--features=native,release,button-ior13
+cargo check --bin=runner-opentitan --target=riscv32imc-unknown-none-elf \
 --features=native,release,usb-ctap
