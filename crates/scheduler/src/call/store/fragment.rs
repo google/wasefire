@@ -38,7 +38,7 @@ pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
 #[cfg(feature = "board-api-store-fragment")]
 fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let api::insert::Params { keys, ptr, len } = call.read();
-    let memory = call.scheduler().applet.get().unwrap().memory();
+    let memory = call.memory();
     let result = try bikeshed _ {
         let keys = decode_keys(keys)?;
         let value = memory.get(*ptr, *len)?;
@@ -57,7 +57,7 @@ fn remove<B: Board>(call: SchedulerCall<B, api::remove::Sig>) {
 #[cfg(feature = "board-api-store-fragment")]
 fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let api::find::Params { keys, ptr: ptr_ptr, len: len_ptr } = call.read();
-    let mut memory = call.scheduler().applet.get().unwrap().memory();
+    let mut memory = call.memory();
     let result = try bikeshed _ {
         match board::store::Fragment::<B>::read(decode_keys(keys)?)? {
             None => false,

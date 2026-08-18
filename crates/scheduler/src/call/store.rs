@@ -66,7 +66,7 @@ fn max_len<B: Board>(call: SchedulerCall<B, api::max_len::Sig>) {
 #[cfg(feature = "board-api-store")]
 fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let api::insert::Params { key, ptr, len } = call.read();
-    let memory = call.scheduler().applet.get().unwrap().memory();
+    let memory = call.memory();
     let result = try bikeshed _ {
         let value = memory.get(*ptr, *len)?;
         board::Store::<B>::insert(*key as usize, value)?
@@ -84,7 +84,7 @@ fn remove<B: Board>(call: SchedulerCall<B, api::remove::Sig>) {
 #[cfg(feature = "board-api-store")]
 fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let api::find::Params { key, ptr: ptr_ptr, len: len_ptr } = call.read();
-    let mut memory = call.scheduler().applet.get().unwrap().memory();
+    let mut memory = call.memory();
     let result = try bikeshed _ {
         match board::Store::<B>::find(*key as usize)? {
             None => false,
@@ -100,7 +100,7 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
 #[cfg(feature = "board-api-store")]
 fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
     let api::keys::Params { ptr: ptr_ptr } = call.read();
-    let mut memory = call.scheduler().applet.get().unwrap().memory();
+    let mut memory = call.memory();
     let result = try bikeshed _ {
         let keys = board::Store::<B>::keys()?;
         match keys {

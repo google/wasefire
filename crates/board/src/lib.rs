@@ -246,7 +246,7 @@ pub type Platform<B> = <B as Api>::Platform;
 #[cfg(feature = "api-rng")]
 pub type Rng<B> = <B as Api>::Rng;
 
-/// Persistent storage interface.
+/// Persistent store interface.
 #[cfg(feature = "api-store")]
 pub type Store<B> = <B as Api>::Store;
 

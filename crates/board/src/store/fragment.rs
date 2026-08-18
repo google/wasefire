@@ -35,20 +35,23 @@ pub trait Api: Send {
 
 impl<T: super::HasStore> Api for super::WithStore<T> {
     fn read(keys: Range<usize>) -> Result<Option<Vec<u8>>, Error> {
-        let start = super::shift_key::<T>(keys.start)?;
-        let end = super::shift_key::<T>(keys.end)?;
-        T::with_store(|store| fragment::read(store, &(start .. end)))
+        let keys = shift_range::<T>(keys)?;
+        T::with_store(|store| fragment::read(store, &keys))
     }
 
     fn write(keys: Range<usize>, value: &[u8]) -> Result<(), Error> {
-        let start = super::shift_key::<T>(keys.start)?;
-        let end = super::shift_key::<T>(keys.end)?;
-        T::with_store(|store| fragment::write(store, &(start .. end), value))
+        let keys = shift_range::<T>(keys)?;
+        T::with_store(|store| fragment::write(store, &keys, value))
     }
 
     fn delete(keys: Range<usize>) -> Result<(), Error> {
-        let start = super::shift_key::<T>(keys.start)?;
-        let end = super::shift_key::<T>(keys.end)?;
-        T::with_store(|store| fragment::delete(store, &(start .. end)))
+        let keys = shift_range::<T>(keys)?;
+        T::with_store(|store| fragment::delete(store, &keys))
     }
+}
+
+fn shift_range<T: super::HasStore>(keys: Range<usize>) -> Result<Range<usize>, Error> {
+    let start = super::shift_key::<T>(keys.start)?;
+    let end = super::shift_key::<T>(keys.end)?;
+    Ok(start .. end)
 }
