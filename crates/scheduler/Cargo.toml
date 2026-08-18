@@ -29,7 +29,6 @@ wasefire-logger = { path = "../logger", version = "0.2.2-git" }
 wasefire-one-of = { path = "../one-of", version = "0.1.3-git" }
 wasefire-protocol = { path = "../protocol", version = "0.4.1-git", features = ["device"] }
 wasefire-slice-cell = { path = "../slice-cell", version = "0.1.2-git", optional = true }
-wasefire-store = { path = "../store", version = "0.3.3-git", optional = true }
 wasefire-sync = { path = "../sync", version = "0.1.4-git", optional = true }
 
 [dependencies.wasefire-interpreter]
@@ -45,7 +44,7 @@ features = ["async", "runtime"]
 optional = true
 
 [features]
-std = ["wasefire-board-api/std", "wasefire-store?/std"]
+std = ["wasefire-board-api/std"]
 
 # Logging features (enable at most one).
 defmt = [
@@ -184,12 +183,15 @@ board-api-fingerprint-sensor = [
 board-api-gpio = ["applet-api-gpio", "dep:bytemuck", "wasefire-board-api/api-gpio"]
 board-api-led = ["applet-api-led", "wasefire-board-api/api-led"]
 board-api-rng = ["applet-api-rng", "wasefire-board-api/api-rng"]
-board-api-storage = [
+board-api-store = [
   "applet-api-store",
-  "applet-api-store-fragment",
   "dep:bytemuck",
-  "dep:wasefire-store",
-  "wasefire-board-api/api-storage",
+  "wasefire-board-api/api-store",
+]
+board-api-store-fragment = [
+  "applet-api-store-fragment",
+  "board-api-store",
+  "wasefire-board-api/api-store-fragment",
 ]
 board-api-timer = ["applet-api-timer", "wasefire-board-api/api-timer"]
 board-api-uart = ["applet-api-uart", "wasefire-board-api/api-uart"]
@@ -262,7 +264,8 @@ full-board-api = [
   "board-api-gpio",
   "board-api-led",
   "board-api-rng",
-  "board-api-storage",
+  "board-api-store",
+  "board-api-store-fragment",
   "board-api-timer",
   "board-api-uart",
   "board-api-usb-ctap",

@@ -42,7 +42,8 @@ features = [
   "board-api-crypto-sha256",
   "board-api-led",
   "board-api-rng",
-  "board-api-storage",
+  "board-api-store",
+  "board-api-store-fragment",
   "board-api-timer",
 ]
 

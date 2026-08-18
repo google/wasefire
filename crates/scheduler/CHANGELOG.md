@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support board API migration from `Storage` to `Store`
 - Support `crypto-common` bump from `wasefire-board-api`
 
 ### Patch
@@ -229,4 +230,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 12 -->
+<!-- Increment to skip CHANGELOG.md test: 13 -->

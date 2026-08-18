@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use wasefire_board_api::{self as board, Event, Singleton};
+use wasefire_board_api::{self as board, Event};
 use wasefire_scheduler as scheduler;
 
 use crate::{Board, with_state};
@@ -64,7 +64,7 @@ impl board::Api for Board {
     type Led = led::Impl;
     type Platform = platform::Impl;
     type Rng = rng::Impl;
-    type Storage = crate::storage::Storage;
+    type Store = board::store::WithStore<Self>;
     type Timer = timer::Impl;
     #[cfg(feature = "uart")]
     type Uart = uart::Impl;
@@ -74,9 +74,11 @@ impl board::Api for Board {
     type Vendor = vendor::Impl;
 }
 
-impl Singleton for crate::storage::Storage {
-    fn take() -> Option<Self> {
-        with_state(|state| state.storage.take())
+impl board::store::HasStore for Board {
+    type Storage = crate::storage::Storage;
+
+    fn with_store<R>(f: impl FnOnce(&mut wasefire_store::Store<Self::Storage>) -> R) -> R {
+        with_state(|state| f(&mut state.store))
     }
 }
 

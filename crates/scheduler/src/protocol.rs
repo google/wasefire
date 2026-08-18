@@ -147,12 +147,13 @@ fn process_event_<B: Board>(
             scheduler.protocol.0 = Locked;
             reply::<B, service::PlatformLock>(());
         }
-        #[cfg(feature = "board-api-storage")]
+        #[cfg(feature = "board-api-store")]
         Api::PlatformClearStore(min_key) => {
-            scheduler.store.clear(min_key)?;
+            use wasefire_board_api::store::Api as _;
+            board::Store::<B>::clear(min_key)?;
             reply::<B, service::PlatformClearStore>(());
         }
-        #[cfg(not(feature = "board-api-storage"))]
+        #[cfg(not(feature = "board-api-store"))]
         Api::PlatformClearStore(_) => return Err(Error::world(Code::NotImplemented)),
         #[cfg(feature = "native")]
         Api::AppletReboot(_) => return Err(Error::world(Code::NotImplemented)),

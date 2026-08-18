@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(feature = "board-api-storage")]
-use alloc::vec::Vec;
-
 use wasefire_applet_api::store::Api;
-#[cfg(feature = "board-api-storage")]
+#[cfg(feature = "board-api-store")]
 use wasefire_applet_api::store::{self as api};
+#[cfg(feature = "board-api-store")]
+use wasefire_board_api as board;
 use wasefire_board_api::Api as Board;
-#[cfg(feature = "board-api-storage")]
+#[cfg(feature = "board-api-store")]
 use wasefire_board_api::applet::{Memory as _, MemoryExt as _};
+#[cfg(feature = "board-api-store")]
+use wasefire_board_api::store::Api as _;
 
 use crate::DispatchSchedulerCall;
-#[cfg(feature = "board-api-storage")]
+#[cfg(feature = "board-api-store")]
 use crate::SchedulerCall;
 
 #[cfg(feature = "applet-api-store-fragment")]
@@ -32,46 +33,60 @@ mod fragment;
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         #[cfg(feature = "applet-api-store")]
-        Api::Insert(call) => or_fail!("board-api-storage", insert(call)),
+        Api::MaxKey(call) => or_fail!("board-api-store", max_key(call)),
         #[cfg(feature = "applet-api-store")]
-        Api::Remove(call) => or_fail!("board-api-storage", remove(call)),
+        Api::MaxLen(call) => or_fail!("board-api-store", max_len(call)),
         #[cfg(feature = "applet-api-store")]
-        Api::Find(call) => or_fail!("board-api-storage", find(call)),
+        Api::Insert(call) => or_fail!("board-api-store", insert(call)),
         #[cfg(feature = "applet-api-store")]
-        Api::Keys(call) => or_fail!("board-api-storage", keys(call)),
+        Api::Remove(call) => or_fail!("board-api-store", remove(call)),
         #[cfg(feature = "applet-api-store")]
-        Api::Clear(call) => or_fail!("board-api-storage", clear(call)),
+        Api::Find(call) => or_fail!("board-api-store", find(call)),
+        #[cfg(feature = "applet-api-store")]
+        Api::Keys(call) => or_fail!("board-api-store", keys(call)),
+        #[cfg(feature = "applet-api-store")]
+        Api::Clear(call) => or_fail!("board-api-store", clear(call)),
         #[cfg(feature = "applet-api-store-fragment")]
         Api::Fragment(call) => fragment::process(call),
     }
 }
 
-#[cfg(feature = "board-api-storage")]
+#[cfg(feature = "board-api-store")]
+fn max_key<B: Board>(call: SchedulerCall<B, api::max_key::Sig>) {
+    let api::max_key::Params {} = call.read();
+    call.reply(Ok(board::Store::<B>::MAX_KEY as u32));
+}
+
+#[cfg(feature = "board-api-store")]
+fn max_len<B: Board>(call: SchedulerCall<B, api::max_len::Sig>) {
+    let api::max_len::Params {} = call.read();
+    call.reply(Ok(board::Store::<B>::MAX_LEN as u32));
+}
+
+#[cfg(feature = "board-api-store")]
 fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let api::insert::Params { key, ptr, len } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.get().unwrap().memory();
+    let memory = call.memory();
     let result = try bikeshed _ {
         let value = memory.get(*ptr, *len)?;
-        scheduler.store.insert(*key as usize, value)?
+        board::Store::<B>::insert(*key as usize, value)?
     };
     call.reply(result);
 }
 
-#[cfg(feature = "board-api-storage")]
-fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
+#[cfg(feature = "board-api-store")]
+fn remove<B: Board>(call: SchedulerCall<B, api::remove::Sig>) {
     let api::remove::Params { key } = call.read();
-    let res = try bikeshed _ { call.scheduler().store.remove(*key as usize)? };
+    let res = try bikeshed _ { board::Store::<B>::remove(*key as usize)? };
     call.reply(res);
 }
 
-#[cfg(feature = "board-api-storage")]
+#[cfg(feature = "board-api-store")]
 fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let api::find::Params { key, ptr: ptr_ptr, len: len_ptr } = call.read();
-    let scheduler = call.scheduler();
-    let mut memory = scheduler.applet.get().unwrap().memory();
+    let mut memory = call.memory();
     let result = try bikeshed _ {
-        match scheduler.store.find(*key as usize)? {
+        match board::Store::<B>::find(*key as usize)? {
             None => false,
             Some(value) => {
                 memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &value)?;
@@ -82,16 +97,12 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     call.reply(result);
 }
 
-#[cfg(feature = "board-api-storage")]
+#[cfg(feature = "board-api-store")]
 fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
     let api::keys::Params { ptr: ptr_ptr } = call.read();
-    let scheduler = call.scheduler();
-    let mut memory = scheduler.applet.get().unwrap().memory();
+    let mut memory = call.memory();
     let result = try bikeshed _ {
-        let mut keys = Vec::new();
-        for handle in scheduler.store.iter()? {
-            keys.push(handle?.get_key() as u16);
-        }
+        let keys = board::Store::<B>::keys()?;
         match keys {
             keys if keys.is_empty() => 0,
             keys => {
@@ -106,9 +117,9 @@ fn keys<B: Board>(mut call: SchedulerCall<B, api::keys::Sig>) {
     call.reply(result);
 }
 
-#[cfg(feature = "board-api-storage")]
-fn clear<B: Board>(mut call: SchedulerCall<B, api::clear::Sig>) {
+#[cfg(feature = "board-api-store")]
+fn clear<B: Board>(call: SchedulerCall<B, api::clear::Sig>) {
     let api::clear::Params {} = call.read();
-    let result = try bikeshed _ { call.scheduler().store.clear(0)? };
+    let result = try bikeshed _ { board::Store::<B>::clear(0)? };
     call.reply(result);
 }

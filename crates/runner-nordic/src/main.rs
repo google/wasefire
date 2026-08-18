@@ -117,7 +117,7 @@ struct State {
     gpios: [Gpio; <board::gpio::Impl as Support<usize>>::SUPPORT],
     leds: [Pin<Output<PushPull>>; <led::Impl as Support<usize>>::SUPPORT],
     rng: Rng,
-    storage: Option<Storage>,
+    store: wasefire_store::Store<Storage>,
     #[cfg(feature = "uart")]
     uart: Uart,
     usb_dev: UsbDevice<'static, Usb>,
@@ -246,7 +246,7 @@ fn main() -> ! {
     #[cfg(feature = "aes128-ccm")]
     let ccm = Ccm::init(p.CCM, p.AAR, DataRate::_1Mbit);
     storage::init(p.NVMC);
-    let storage = Some(Storage::new_store());
+    let store = wasefire_store::Store::new(Storage::new_store()).ok().unwrap();
     crate::board::platform::update::init(Storage::new_other());
     crate::board::applet::init(Storage::new_applet());
     #[cfg(feature = "uart")]
@@ -279,7 +279,7 @@ fn main() -> ! {
         gpios,
         leds,
         rng,
-        storage,
+        store,
         #[cfg(feature = "uart")]
         uart,
         usb_dev,

@@ -227,7 +227,8 @@ fingerprint-sensor
 gpio
 led
 rng
-storage
+store
+store-fragment
 timer
 uart
 usb-ctap

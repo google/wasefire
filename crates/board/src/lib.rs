@@ -47,6 +47,8 @@ pub mod led;
 pub mod platform;
 #[cfg(feature = "api-rng")]
 pub mod rng;
+#[cfg(feature = "internal-api-store")]
+pub mod store;
 #[cfg(feature = "api-timer")]
 pub mod timer;
 pub mod transfer;
@@ -111,9 +113,9 @@ pub trait Api: Send + 'static {
     #[cfg(feature = "api-rng")]
     type Rng: rng::Api;
 
-    /// Persistent storage interface.
-    #[cfg(feature = "api-storage")]
-    type Storage: Singleton + wasefire_store::Storage + Send;
+    /// Persistent store interface.
+    #[cfg(feature = "api-store")]
+    type Store: store::Api;
 
     /// Timer interface.
     #[cfg(feature = "api-timer")]
@@ -143,14 +145,6 @@ pub trait Support<Value> {
 
 /// Marker trait for supported API.
 pub trait Supported {}
-
-/// Provides access to a singleton API.
-pub trait Singleton: Sized {
-    /// Returns the singleton.
-    ///
-    /// Returns `None` if the API is not supported. Returns `None` if called more than once.
-    fn take() -> Option<Self>;
-}
 
 /// Events that interfaces may trigger.
 ///
@@ -252,9 +246,9 @@ pub type Platform<B> = <B as Api>::Platform;
 #[cfg(feature = "api-rng")]
 pub type Rng<B> = <B as Api>::Rng;
 
-/// Persistent storage interface.
-#[cfg(feature = "api-storage")]
-pub type Storage<B> = <B as Api>::Storage;
+/// Persistent store interface.
+#[cfg(feature = "api-store")]
+pub type Store<B> = <B as Api>::Store;
 
 /// Timer interface.
 #[cfg(feature = "api-timer")]

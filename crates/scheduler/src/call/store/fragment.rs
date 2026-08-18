@@ -13,54 +13,53 @@
 // limitations under the License.
 
 use wasefire_applet_api::store::fragment::Api;
-#[cfg(feature = "board-api-storage")]
+#[cfg(feature = "board-api-store-fragment")]
 use wasefire_applet_api::store::fragment::{self as api};
+#[cfg(feature = "board-api-store-fragment")]
+use wasefire_board_api as board;
 use wasefire_board_api::Api as Board;
-#[cfg(feature = "board-api-storage")]
+#[cfg(feature = "board-api-store-fragment")]
 use wasefire_board_api::applet::{Memory as _, MemoryExt as _};
-#[cfg(feature = "board-api-storage")]
-use wasefire_store::fragment;
+#[cfg(feature = "board-api-store-fragment")]
+use wasefire_board_api::store::fragment::Api as _;
 
 use crate::DispatchSchedulerCall;
-#[cfg(feature = "board-api-storage")]
+#[cfg(feature = "board-api-store-fragment")]
 use crate::SchedulerCall;
 
 pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
-        Api::Insert(call) => or_fail!("board-api-storage", insert(call)),
-        Api::Remove(call) => or_fail!("board-api-storage", remove(call)),
-        Api::Find(call) => or_fail!("board-api-storage", find(call)),
+        Api::Insert(call) => or_fail!("board-api-store-fragment", insert(call)),
+        Api::Remove(call) => or_fail!("board-api-store-fragment", remove(call)),
+        Api::Find(call) => or_fail!("board-api-store-fragment", find(call)),
     }
 }
 
-#[cfg(feature = "board-api-storage")]
+#[cfg(feature = "board-api-store-fragment")]
 fn insert<B: Board>(mut call: SchedulerCall<B, api::insert::Sig>) {
     let api::insert::Params { keys, ptr, len } = call.read();
-    let scheduler = call.scheduler();
-    let memory = scheduler.applet.get().unwrap().memory();
+    let memory = call.memory();
     let result = try bikeshed _ {
         let keys = decode_keys(keys)?;
         let value = memory.get(*ptr, *len)?;
-        fragment::write(&mut scheduler.store, &keys, value)?
+        board::store::Fragment::<B>::write(keys, value)?
     };
     call.reply(result);
 }
 
-#[cfg(feature = "board-api-storage")]
-fn remove<B: Board>(mut call: SchedulerCall<B, api::remove::Sig>) {
+#[cfg(feature = "board-api-store-fragment")]
+fn remove<B: Board>(call: SchedulerCall<B, api::remove::Sig>) {
     let api::remove::Params { keys } = call.read();
-    let result =
-        try bikeshed _ { fragment::delete(&mut call.scheduler().store, &decode_keys(keys)?)? };
+    let result = try bikeshed _ { board::store::Fragment::<B>::delete(decode_keys(keys)?)? };
     call.reply(result);
 }
 
-#[cfg(feature = "board-api-storage")]
+#[cfg(feature = "board-api-store-fragment")]
 fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     let api::find::Params { keys, ptr: ptr_ptr, len: len_ptr } = call.read();
-    let scheduler = call.scheduler();
-    let mut memory = scheduler.applet.get().unwrap().memory();
+    let mut memory = call.memory();
     let result = try bikeshed _ {
-        match fragment::read(&scheduler.store, &decode_keys(keys)?)? {
+        match board::store::Fragment::<B>::read(decode_keys(keys)?)? {
             None => false,
             Some(value) => {
                 memory.alloc_copy(*ptr_ptr, Some(*len_ptr), &value)?;
@@ -71,7 +70,7 @@ fn find<B: Board>(mut call: SchedulerCall<B, api::find::Sig>) {
     call.reply(result);
 }
 
-#[cfg(feature = "board-api-storage")]
+#[cfg(feature = "board-api-store-fragment")]
 fn decode_keys(keys: u32) -> Result<core::ops::Range<usize>, crate::Trap> {
     if keys & 0xf000f000 == 0 {
         Ok((keys & 0xffff) as usize .. ((keys >> 16) & 0xffff) as usize)

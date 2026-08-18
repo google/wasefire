@@ -8,6 +8,7 @@
 
 ### Minor
 
+- Add `store::max_{key,len}()` functions and update `store::insert()` documentation accordingly
 - Specify `#[link(wasm_import_module = "env")]` for extern blocks in `Api::wasm_rust()`
 
 ### Patch

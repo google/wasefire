@@ -15,16 +15,14 @@
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
 
-use wasefire_board_api::Singleton;
 use wasefire_common::addr_of_symbol;
 use wasefire_error::{Code, Error};
 use wasefire_store::StorageIndex;
 
-use crate::board::with_state;
 use crate::flash::PAGE_SIZE;
 
 pub struct State {
-    store: Option<Impl>,
+    pub store: wasefire_store::Store<Impl>,
     pub applets: [Raw; 2],
     pub other: Raw,
 }
@@ -39,7 +37,8 @@ pub fn init() -> State {
     let mut pages = Vec::new();
     pages.extend((storea .. limita).step_by(PAGE_SIZE));
     pages.extend((storeb .. limitb).step_by(PAGE_SIZE));
-    let store = Some(Impl { pages });
+    let storage = Impl { pages };
+    let store = wasefire_store::Store::new(storage).ok().unwrap();
     let applets = [Raw { start: appleta, limit: storea }, Raw { start: appletb, limit: storeb }];
     let start = crate::manifest::inactive() as *const _ as usize;
     let limit = applets[crate::flash::bank_side(start) as usize].start;
@@ -49,12 +48,6 @@ pub fn init() -> State {
 
 pub struct Impl {
     pages: Vec<usize>,
-}
-
-impl Singleton for Impl {
-    fn take() -> Option<Self> {
-        with_state(|state| state.storage.store.take())
-    }
 }
 
 impl wasefire_store::Storage for Impl {

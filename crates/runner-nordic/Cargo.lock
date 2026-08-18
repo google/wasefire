@@ -1901,7 +1901,6 @@ dependencies = [
  "wasefire-one-of",
  "wasefire-protocol",
  "wasefire-slice-cell",
- "wasefire-store",
  "wasefire-sync",
  "wasmtime",
 ]

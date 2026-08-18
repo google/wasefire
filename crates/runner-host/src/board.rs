@@ -20,17 +20,17 @@ mod debug;
 mod led;
 pub mod platform;
 mod rng;
-mod storage;
 pub mod timer;
 pub mod uart;
 pub mod usb;
 mod vendor;
 
 use tokio::sync::mpsc::Sender;
+use wasefire_board_api::store::{HasStore, WithStore};
 use wasefire_board_api::{Api, Event};
-use wasefire_store::FileStorage;
+use wasefire_store::{FileStorage, Store};
 
-use crate::RECEIVER;
+use crate::{RECEIVER, with_state};
 
 pub struct State {
     pub sender: Sender<Event<Board>>,
@@ -40,7 +40,7 @@ pub struct State {
     pub uarts: uart::Uarts,
     pub protocol: platform::protocol::State,
     pub usb: usb::State,
-    pub storage: Option<FileStorage>,
+    pub store: Store<FileStorage>,
     pub web: Option<web_server::Client>,
 }
 
@@ -63,9 +63,17 @@ impl Api for Board {
     type Led = led::Impl;
     type Platform = platform::Impl;
     type Rng = rng::Impl;
-    type Storage = storage::Impl;
+    type Store = WithStore<Self>;
     type Timer = timer::Impl;
     type Uart = uart::Impl;
     type Usb = usb::Impl;
     type Vendor = vendor::Impl;
+}
+
+impl HasStore for Board {
+    type Storage = FileStorage;
+
+    fn with_store<R>(f: impl FnOnce(&mut Store<Self::Storage>) -> R) -> R {
+        with_state(|state| f(&mut state.store))
+    }
 }
