@@ -118,6 +118,8 @@ impl HasRpc<'static, Usb> for Impl {
             };
             crate::bootsvc::next_boot(next, primary)?;
             Ok(Box::default())
+        } else if let Some(request) = request.strip_prefix(b"captouch ") {
+            crate::board::button::vendor(request)
         } else {
             Err(Error::user(Code::InvalidArgument))
         }

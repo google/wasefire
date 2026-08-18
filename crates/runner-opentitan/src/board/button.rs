@@ -18,6 +18,7 @@ use earlgrey::{GPIO, PINMUX_AON};
 use wasefire_board_api::button::{Api, Event};
 use wasefire_board_api::{Id, Support};
 use wasefire_error::{Code, Error};
+use wasefire_logger as log;
 
 use crate::board::with_state;
 
@@ -39,6 +40,7 @@ struct Active {
     sum: u64, // history.iter().sum()
     start: u64,
     touch: bool,
+    push: bool,
 }
 
 // TODO: Use top_earlgrey_muxed_pads_ior13/ioc12 once they exist.
@@ -49,18 +51,21 @@ const BUTTON_PAD: u32 = 34; // IOC12
 const BUTTON_GPIO: u32 = 4;
 const BUTTON_MASK: u32 = 1 << BUTTON_GPIO;
 
-pub fn init() -> State {
+pub fn init(store: &mut wasefire_store::Store<crate::board::storage::Impl>) -> State {
     PINMUX_AON.mio_outsel(BUTTON_PAD).reset().out(3 + BUTTON_GPIO).reg.write();
     PINMUX_AON.mio_periph_insel(BUTTON_GPIO).reset().r#in(2 + BUTTON_PAD).reg.write();
     GPIO.intr_enable().modify_raw(|x| x | BUTTON_MASK);
     GPIO.ctrl_en_input_filter().modify_raw(|x| x | BUTTON_MASK);
     GPIO.masked_out_lower().reset().mask(BUTTON_MASK).data(BUTTON_MASK).reg.write();
-    // TODO: Add logic to use different values. The user should be able to set them and persist them
-    // in flash. It should also be possible to guess them using some calibration logic (where the
-    // user first doesn't touch the button, then touches it). It is important to make sure
-    // `history_len` is positive (e.g. by using 1 if it's 0) and to not modify it while the button
-    // is active.
-    State { threshold: 30_000, history_len: 5, active: None }
+    let config = read(store).unwrap_or_else(|e| {
+        log::warn!("failed to read captouch config: {}", e);
+        DEFAULT
+    });
+    State {
+        threshold: u64::from_ne_bytes(config.threshold),
+        history_len: usize::from_ne_bytes(config.history_len),
+        active: None,
+    }
 }
 
 pub fn interrupt() {
@@ -81,15 +86,74 @@ pub fn interrupt() {
                     active.sum -= active.history.pop_front().unwrap();
                     if (active.average() < state.button.threshold) != active.touch {
                         active.touch = !active.touch;
-                        let button = Id::new(0).unwrap();
-                        let pressed = active.touch;
-                        state.events.push(Event { button, pressed }.into());
+                        if active.push {
+                            let button = Id::new(0).unwrap();
+                            let pressed = active.touch;
+                            state.events.push(Event { button, pressed }.into());
+                        }
                     }
                 }
             }
             active.start();
         }
     });
+}
+
+#[cfg(feature = "test-vendor")]
+pub fn vendor(request: &[u8]) -> Result<alloc::boxed::Box<[u8]>, Error> {
+    use alloc::boxed::Box;
+    let request = request.trim_ascii_end();
+    if request == b"start" {
+        with_state(|state| {
+            state.button.start(false)?;
+            Ok(Box::default())
+        })
+    } else if request == b"measure" {
+        with_state(|state| {
+            let Some(active) = state.button.active(false)? else {
+                return Err(Error::user(Code::InvalidState));
+            };
+            Ok(alloc::format!("{:?}\n", active.history).into_bytes().into_boxed_slice())
+        })
+    } else if request == b"stop" {
+        with_state(|state| {
+            state.button.stop(false)?;
+            Ok(Box::default())
+        })
+    } else if request == b"dump" {
+        with_state(|state| {
+            let x = state.button.threshold;
+            let y = state.button.history_len;
+            Ok(alloc::format!("threshold: {x}\nhistory_len: {y}\n").into_bytes().into_boxed_slice())
+        })
+    } else if let Some(val) = request.strip_prefix(b"set_threshold ") {
+        let val = try { str::from_utf8(val).ok()?.parse::<u64>().ok()? };
+        let val = val.ok_or(Error::user(Code::InvalidArgument))?;
+        with_state(|state| {
+            if state.button.active(false)?.is_some() {
+                return Err(Error::user(Code::InvalidState));
+            }
+            state.button.threshold = val;
+            state.button.write(&mut state.storage.store)?;
+            Ok(Box::default())
+        })
+    } else if let Some(val) = request.strip_prefix(b"set_history_len ") {
+        let val = try { str::from_utf8(val).ok()?.parse::<usize>().ok()? };
+        let val = val.ok_or(Error::user(Code::InvalidArgument))?;
+        if val == 0 || 100 < val {
+            return Err(Error::user(Code::OutOfBounds));
+        }
+        with_state(|state| {
+            if state.button.active(false)?.is_some() {
+                return Err(Error::user(Code::InvalidState));
+            }
+            state.button.history_len = val;
+            state.button.write(&mut state.storage.store)?;
+            Ok(Box::default())
+        })
+    } else {
+        Err(Error::user(Code::InvalidArgument))
+    }
 }
 
 pub enum Impl {}
@@ -103,23 +167,63 @@ impl Api for Impl {
         if *button != 0 {
             return Err(Error::user(Code::OutOfBounds));
         }
-        with_state(|state| {
-            let active = state.button.active.insert(Active {
-                history: VecDeque::with_capacity(state.button.history_len),
-                sum: 0,
-                start: 0,     // is set below
-                touch: false, // is set when reaching the history len
-            });
-            active.start();
-            Ok(())
-        })
+        with_state(|state| state.button.start(true))
     }
 
     fn disable(button: Id<Self>) -> Result<(), Error> {
         if *button != 0 {
             return Err(Error::user(Code::OutOfBounds));
         }
-        with_state(|state| Ok(state.button.active = None))
+        with_state(|state| state.button.stop(true))
+    }
+}
+
+impl State {
+    fn active(&mut self, push: bool) -> Result<Option<&mut Active>, Error> {
+        match &mut self.active {
+            None => Ok(None),
+            Some(active) => {
+                if active.push == push {
+                    Ok(Some(active))
+                } else {
+                    Err(Error::user(Code::InvalidState))
+                }
+            }
+        }
+    }
+
+    fn start(&mut self, push: bool) -> Result<(), Error> {
+        if self.active(push)?.is_some() {
+            return Ok(());
+        }
+        let active = self.active.insert(Active {
+            history: VecDeque::with_capacity(self.history_len),
+            sum: 0,
+            start: 0,     // is set below
+            touch: false, // is set when reaching the history len
+            push,
+        });
+        active.start();
+        Ok(())
+    }
+
+    fn stop(&mut self, push: bool) -> Result<(), Error> {
+        if self.active(push)?.is_none() {
+            return Ok(());
+        }
+        self.active = None;
+        Ok(())
+    }
+
+    #[cfg(feature = "test-vendor")]
+    fn write(
+        &self, store: &mut wasefire_store::Store<crate::board::storage::Impl>,
+    ) -> Result<(), Error> {
+        let config = Config {
+            threshold: self.threshold.to_ne_bytes(),
+            history_len: self.history_len.to_ne_bytes(),
+        };
+        write(store, config)
     }
 }
 
@@ -135,4 +239,33 @@ impl Active {
     fn average(&self) -> u64 {
         self.sum / (self.history.len() as u64)
     }
+}
+
+const KEY: usize = 0;
+
+#[derive(Clone, Copy, PartialEq, Eq, bytemuck::Pod, bytemuck::Zeroable)]
+#[repr(C)]
+struct Config {
+    threshold: [u8; 8],
+    history_len: [u8; 4],
+}
+
+const DEFAULT: Config =
+    Config { threshold: u64::to_ne_bytes(30_000), history_len: usize::to_ne_bytes(2) };
+
+fn read(store: &mut wasefire_store::Store<crate::board::storage::Impl>) -> Result<Config, Error> {
+    match store.find(KEY)? {
+        None => Ok(DEFAULT),
+        Some(value) if value.len() == core::mem::size_of::<Config>() => {
+            Ok(*bytemuck::from_bytes(&value))
+        }
+        _ => Err(Error::internal(Code::InvalidState)),
+    }
+}
+
+#[cfg(feature = "test-vendor")]
+fn write(
+    store: &mut wasefire_store::Store<crate::board::storage::Impl>, value: Config,
+) -> Result<(), Error> {
+    if value == DEFAULT { store.remove(KEY) } else { store.insert(KEY, bytemuck::bytes_of(&value)) }
 }
