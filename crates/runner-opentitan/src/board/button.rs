@@ -57,13 +57,10 @@ pub fn init(store: &mut wasefire_store::Store<crate::board::storage::Impl>) -> S
     GPIO.intr_enable().modify_raw(|x| x | BUTTON_MASK);
     GPIO.ctrl_en_input_filter().modify_raw(|x| x | BUTTON_MASK);
     GPIO.masked_out_lower().reset().mask(BUTTON_MASK).data(BUTTON_MASK).reg.write();
-    let config = match read(store) {
-        Ok(x) => x,
-        Err(e) => {
-            log::warn!("failed to read captouch config: {}", e);
-            DEFAULT
-        }
-    };
+    let config = read(store).unwrap_or_else(|e| {
+        log::warn!("failed to read captouch config: {}", e);
+        DEFAULT
+    });
     State {
         threshold: u64::from_ne_bytes(config.threshold),
         history_len: usize::from_ne_bytes(config.history_len),
