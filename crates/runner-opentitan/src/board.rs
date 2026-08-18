@@ -49,12 +49,13 @@ fn with_state<R>(f: impl FnOnce(&mut State) -> R) -> R {
 }
 
 pub fn init() {
+    let mut storage = storage::init();
     let state = State {
         events: Events::default(),
         applet: applet::init(),
-        button: button::init(),
+        button: button::init(&mut storage.store),
         platform: platform::init(),
-        storage: storage::init(),
+        storage,
         timer: timer::init(),
         usb: usb::init(),
     };
@@ -97,6 +98,10 @@ impl board::Api for Board {
 
 impl board::store::HasStore for Board {
     type Storage = storage::Impl;
+
+    // key 0: button
+    // keys 1-7: reserved
+    const FIRST_KEY: usize = 8;
 
     fn with_store<R>(f: impl FnOnce(&mut wasefire_store::Store<Self::Storage>) -> R) -> R {
         with_state(|state| f(&mut state.storage.store))
