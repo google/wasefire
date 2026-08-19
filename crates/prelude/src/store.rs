@@ -21,6 +21,8 @@ use alloc::vec::Vec;
 
 #[cfg(feature = "api-store")]
 use wasefire_applet_api::store as api;
+#[cfg(feature = "api-store")]
+use wasefire_sync::Lazy;
 
 #[cfg(feature = "api-store")]
 use crate::{Error, convert, convert_bool, convert_unit};
@@ -30,14 +32,16 @@ pub mod fragment;
 
 /// Returns the maximum key.
 #[cfg(feature = "api-store")]
-pub fn max_key() -> Result<usize, Error> {
-    convert(unsafe { api::max_key() })
+pub fn max_key() -> usize {
+    static MAX_KEY: Lazy<usize> = Lazy::new(|| convert(unsafe { api::max_key() }).unwrap());
+    *MAX_KEY
 }
 
 /// Returns the maximum value length.
 #[cfg(feature = "api-store")]
-pub fn max_len() -> Result<usize, Error> {
-    convert(unsafe { api::max_len() })
+pub fn max_len() -> usize {
+    static MAX_LEN: Lazy<usize> = Lazy::new(|| convert(unsafe { api::max_len() }).unwrap());
+    *MAX_LEN
 }
 
 /// Inserts an entry in the store.
