@@ -137,7 +137,7 @@ impl Key {
         let key: Key = key.parse().map_err(|_| "Failed to parse key")?;
         let valid = match &key {
             Key::Exact(key) => *key <= store::max_key(),
-            Key::Range(keys) => !keys.is_empty() && keys.end <= store::max_key(),
+            Key::Range(keys) => !keys.is_empty() && keys.end <= store::max_key() + 1,
         };
         if !valid {
             return Err("Invalid key".to_string());

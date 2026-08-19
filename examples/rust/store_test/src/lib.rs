@@ -96,10 +96,10 @@ fn test_keys(inserted: &[usize], removed: &[usize]) {
 
 fn test_fragment() {
     debug!("test_fragment(): Test fragmented entries.");
-    let len = 3 * store::max_len() / 2;
+    let value = vec![0xca; 3 * store::max_len() / 2];
     debug!("- insert then find");
-    store::fragment::insert(0 .. 2, &vec![0xca; len]).unwrap();
-    assert_eq!(store::fragment::find(0 .. 2).unwrap().unwrap()[..], vec![0xca; len]);
+    store::fragment::insert(0 .. 2, &value).unwrap();
+    assert_eq!(store::fragment::find(0 .. 2).unwrap().unwrap()[..], value);
     debug!("- remove then find");
     store::fragment::remove(0 .. 2).unwrap();
     assert!(store::fragment::find(0 .. 2).unwrap().is_none());
