@@ -66,7 +66,10 @@ impl<'a> Command<'a> {
     fn parse(input: &'a str) -> Result<Self, String> {
         Ok(match *input.split_whitespace().collect::<Vec<_>>().as_slice() {
             [] | ["help"] => Command::Help,
-            ["insert", key, value] => Command::Insert { key: Key::parse(key)?, value },
+            ["insert", key, value] if value.len() <= store::max_len() => {
+                Command::Insert { key: Key::parse(key)?, value }
+            }
+            ["insert", _, _] => return Err("Value too long".to_string()),
             ["find", key] => Command::Find { key: Key::parse(key)? },
             ["remove", key] => Command::Remove { key: Key::parse(key)? },
             [command, ..] => return Err(format!("Invalid command {command:?}")),
@@ -133,8 +136,8 @@ impl Key {
     fn parse(key: &str) -> Result<Self, String> {
         let key: Key = key.parse().map_err(|_| "Failed to parse key")?;
         let valid = match &key {
-            Key::Exact(key) => *key < 4096,
-            Key::Range(keys) => !keys.is_empty() && keys.end < 4096,
+            Key::Exact(key) => *key <= store::max_key(),
+            Key::Range(keys) => !keys.is_empty() && keys.end <= store::max_key() + 1,
         };
         if !valid {
             return Err("Invalid key".to_string());

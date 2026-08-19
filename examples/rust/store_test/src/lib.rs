@@ -17,20 +17,25 @@
 #![no_std]
 wasefire::applet!();
 
+use alloc::vec;
 use alloc::vec::Vec;
 
 fn main() {
     store::clear().unwrap();
     assert!(store::keys().unwrap().is_empty());
-    test_insert();
-    test_remove();
-    test_find();
-    test_keys();
+    let mut inserted = vec![0, 1, 2, 3, 100, 500, 1000, 2000];
+    let mut removed = vec![2, 500];
+    inserted.retain(|x| 2 * x <= store::max_key());
+    removed.retain(|x| 2 * x <= store::max_key());
+    test_insert(&inserted);
+    test_remove(&removed);
+    test_find(&inserted, &removed);
+    test_keys(&inserted, &removed);
     test_fragment();
     scheduling::exit();
 }
 
-fn test_insert() {
+fn test_insert(inserted: &[usize]) {
     debug!("test_insert(): Inserts some entries into the store.");
     fn insert(key: usize) {
         let value = value(key);
@@ -38,25 +43,25 @@ fn test_insert() {
         debug!("- Insert {key:4} with {length:4} bytes");
         store::insert(key, &value).unwrap();
     }
-    for &key in INSERTED {
+    for &key in inserted {
         insert(key);
         insert(reverse(key));
     }
 }
 
-fn test_remove() {
+fn test_remove(removed: &[usize]) {
     debug!("test_remove(): Removes some entries.");
     fn remove(key: usize) {
         debug!("- Remove {key:4}");
         store::remove(key).unwrap();
     }
-    for &key in REMOVED {
+    for &key in removed {
         remove(key);
         remove(reverse(key));
     }
 }
 
-fn test_find() {
+fn test_find(inserted: &[usize], removed: &[usize]) {
     debug!("test_find(): Checks whether entries where inserted/removed.");
     fn find(key: usize, removed: bool) {
         let expected = (!removed).then(|| value(key));
@@ -64,18 +69,18 @@ fn test_find() {
         let actual = store::find(key).unwrap();
         assert_eq!(actual.as_deref(), expected.as_deref());
     }
-    for &key in INSERTED {
-        let removed = REMOVED.contains(&key);
+    for &key in inserted {
+        let removed = removed.contains(&key);
         find(key, removed);
         find(reverse(key), removed);
     }
 }
 
-fn test_keys() {
+fn test_keys(inserted: &[usize], removed: &[usize]) {
     debug!("test_keys(): Checks that keys match entries.");
     let mut expected = Vec::new();
-    for &key in INSERTED {
-        if REMOVED.contains(&key) {
+    for &key in inserted {
+        if removed.contains(&key) {
             continue;
         }
         expected.push(key as u16);
@@ -91,30 +96,28 @@ fn test_keys() {
 
 fn test_fragment() {
     debug!("test_fragment(): Test fragmented entries.");
+    let value = vec![0xca; 3 * store::max_len() / 2];
     debug!("- insert then find");
-    store::fragment::insert(0 .. 2, &[0xca; 1500]).unwrap();
-    assert_eq!(store::fragment::find(0 .. 2).unwrap().unwrap()[..], [0xca; 1500]);
+    store::fragment::insert(0 .. 2, &value).unwrap();
+    assert_eq!(store::fragment::find(0 .. 2).unwrap().unwrap()[..], value);
     debug!("- remove then find");
     store::fragment::remove(0 .. 2).unwrap();
     assert!(store::fragment::find(0 .. 2).unwrap().is_none());
 }
 
-const INSERTED: &[usize] = &[0, 1, 2, 3, 100, 500, 1000, 2000];
-const REMOVED: &[usize] = &[2, 500];
-
 fn reverse(key: usize) -> usize {
-    4095 - key
+    store::max_key() - key
 }
 
 fn value(mut key: usize) -> Vec<u8> {
-    let reversed = key & 0x800 != 0;
+    let reversed = 2 * key <= store::max_key();
     if reversed {
-        key = 4095 - key;
+        key = store::max_key() - key;
     }
     let val = key as u8;
     let mut len = val as usize;
     if reversed {
-        len = 1023 - len;
+        len = store::max_len() - len;
     }
     alloc::vec![val; len]
 }
