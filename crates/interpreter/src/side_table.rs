@@ -18,16 +18,16 @@ use crate::cursor::*;
 use crate::error::*;
 use crate::toctou::*;
 
-pub const SECTION_NAME: &str = "wasefire-sidetable";
+pub(crate) const SECTION_NAME: &str = "wasefire-sidetable";
 
 #[derive(Debug, Clone, Copy)]
-pub struct SideTableView<'m> {
+pub(crate) struct SideTableView<'m> {
     pub indices: &'m [u8], // including 0 and the length of metadata_array
     pub metadata: &'m [u8],
 }
 
 impl<'m> SideTableView<'m> {
-    pub fn metadata<M: Mode>(&self, func_idx: usize) -> MResult<Metadata<'m>, M> {
+    pub(crate) fn metadata<M: Mode>(&self, func_idx: usize) -> MResult<Metadata<'m>, M> {
         let start_idx = M::open(|| func_idx.checked_mul(2))?;
         let end_idx = M::open(|| start_idx.checked_add(2))?;
         let start = parse_u16::<M>(self.indices, start_idx)? as usize;
@@ -37,14 +37,14 @@ impl<'m> SideTableView<'m> {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Metadata<'m>(&'m [u8]);
+pub(crate) struct Metadata<'m>(&'m [u8]);
 
 impl<'m> Metadata<'m> {
-    pub fn type_idx<M: Mode>(&self) -> MResult<usize, M> {
+    pub(crate) fn type_idx<M: Mode>(&self) -> MResult<usize, M> {
         parse_u16::<M>(self.0, 0).map(|x| x as usize)
     }
 
-    pub fn branch_table<M: Mode>(&self) -> MResult<&'m [BranchTableEntry], M> {
+    pub(crate) fn branch_table<M: Mode>(&self) -> MResult<&'m [BranchTableEntry], M> {
         let entry_size = size_of::<BranchTableEntry>();
         let branch_table = M::open(|| self.0.get(10 ..))?;
         M::check(|| branch_table.len().is_multiple_of(entry_size))?;
@@ -56,7 +56,7 @@ impl<'m> Metadata<'m> {
         })
     }
 
-    pub fn parser_state<M: Mode>(&self) -> MResult<CursorState, M> {
+    pub(crate) fn parser_state<M: Mode>(&self) -> MResult<CursorState, M> {
         let start = parse_u32::<M>(self.0, 2).map(|x| x as usize)?;
         let end = parse_u32::<M>(self.0, 6).map(|x| x as usize)?;
         Ok(CursorState::from_range(start .. end))
@@ -64,13 +64,13 @@ impl<'m> Metadata<'m> {
 }
 
 #[derive(Default, Debug)]
-pub struct MetadataEntry {
+pub(crate) struct MetadataEntry {
     pub type_idx: usize,
     pub parser_state: CursorState,
     pub branch_table: Vec<BranchTableEntry>,
 }
 
-pub fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
+pub(crate) fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
     let mut res = Vec::new();
     let num_funcs = try_from::<u16>("length of MetadataEntry", side_table.len())?;
     res.extend_from_slice(&num_funcs.to_le_bytes());
@@ -101,10 +101,10 @@ pub fn serialize(side_table: &[MetadataEntry]) -> Result<Vec<u8>, Error> {
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
-pub struct BranchTableEntry([u8; 6]); // 48 bits
+pub(crate) struct BranchTableEntry([u8; 6]); // 48 bits
 
 #[derive(Debug)]
-pub struct BranchTableEntryView {
+pub(crate) struct BranchTableEntryView {
     /// The amount to adjust the instruction pointer by if the branch is taken.
     pub delta_ip: i32, // 19 bits
     /// The amount to adjust the side-table pointer by if the branch is taken.
@@ -116,7 +116,7 @@ pub struct BranchTableEntryView {
 }
 
 impl BranchTableEntry {
-    pub fn new(view: BranchTableEntryView) -> Result<Self, Error> {
+    pub(crate) fn new(view: BranchTableEntryView) -> Result<Self, Error> {
         debug_assert!([0, -1].contains(&(view.delta_ip >> 18)), "{view:?}");
         debug_assert!([0, -1].contains(&(view.delta_stp >> 12)), "{view:?}");
         debug_assert!(view.val_cnt <= 0xf);
@@ -134,7 +134,7 @@ impl BranchTableEntry {
         ]))
     }
 
-    pub fn view<M: Mode>(self) -> MResult<BranchTableEntryView, M> {
+    pub(crate) fn view<M: Mode>(self) -> MResult<BranchTableEntryView, M> {
         let mut delta_ip = parse_u16::<M>(&self.0, 0)? as u32;
         let delta_stp = parse_u16::<M>(&self.0, 2)?;
         let pop_val_counts = parse_u16::<M>(&self.0, 4)?;
@@ -149,11 +149,11 @@ impl BranchTableEntry {
         })
     }
 
-    pub fn is_invalid(self) -> bool {
+    pub(crate) fn is_invalid(self) -> bool {
         self.0 == [0; 6]
     }
 
-    pub fn invalid() -> Self {
+    pub(crate) fn invalid() -> Self {
         BranchTableEntry([0; 6])
     }
 }

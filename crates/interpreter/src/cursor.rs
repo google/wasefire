@@ -19,21 +19,21 @@ use derive_where::derive_where;
 use crate::toctou::*;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
-pub struct CursorState {
+pub(crate) struct CursorState {
     start: usize,
     end: usize,
 }
 
 impl CursorState {
-    pub fn from_range(range: Range<usize>) -> Self {
+    pub(crate) fn from_range(range: Range<usize>) -> Self {
         CursorState { start: range.start, end: range.end }
     }
 
-    pub fn start(self) -> usize {
+    pub(crate) fn start(self) -> usize {
         self.start
     }
 
-    pub fn end(self) -> usize {
+    pub(crate) fn end(self) -> usize {
         self.end
     }
 
@@ -56,40 +56,40 @@ impl CursorState {
 
 #[derive(Debug)]
 #[derive_where(Default, Clone)]
-pub struct Cursor<'a, T> {
+pub(crate) struct Cursor<'a, T> {
     slice: &'a [T],
     state: CursorState, // within bounds
 }
 
 impl<'a, T> Cursor<'a, T> {
-    pub fn new(slice: &'a [T]) -> Self {
+    pub(crate) fn new(slice: &'a [T]) -> Self {
         Cursor { slice, state: CursorState::new(slice.len()) }
     }
 
-    pub fn shrink(&mut self) {
+    pub(crate) fn shrink(&mut self) {
         self.slice = &self.slice[self.state.range()];
         self.state.start = 0;
         self.state.end = self.slice.len();
     }
 
-    pub fn save(&self) -> CursorState {
+    pub(crate) fn save(&self) -> CursorState {
         self.state
     }
 
     // Safety: Must be a previously saved state.
-    pub unsafe fn restore(&mut self, state: CursorState) {
+    pub(crate) unsafe fn restore(&mut self, state: CursorState) {
         self.state = state;
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.state.is_empty()
     }
 
-    pub fn get(&self, index: usize) -> &'a T {
+    pub(crate) fn get(&self, index: usize) -> &'a T {
         unwrap(unwrap(self.slice.get(self.state.range())).get(index))
     }
 
-    pub fn split<M: Mode>(&mut self, len: usize) -> MResult<Cursor<'a, T>, M> {
+    pub(crate) fn split<M: Mode>(&mut self, len: usize) -> MResult<Cursor<'a, T>, M> {
         M::check(|| len <= self.state.len())?;
         let mut result = self.clone();
         #[cfg(feature = "toctou")]
@@ -100,11 +100,11 @@ impl<'a, T> Cursor<'a, T> {
         Ok(result)
     }
 
-    pub fn consume(self) -> &'a [T] {
+    pub(crate) fn consume(self) -> &'a [T] {
         unwrap(self.slice.get(self.state.range()))
     }
 
-    pub fn adjust_start(&mut self, off: isize) {
+    pub(crate) fn adjust_start(&mut self, off: isize) {
         let new_start = self.state.start.strict_add_signed(off);
         assert!(new_start <= self.state.end);
         self.state.start = new_start;

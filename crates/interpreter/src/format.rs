@@ -14,7 +14,7 @@
 
 use alloc::vec::Vec;
 
-pub fn leb128(wasm: &mut Vec<u8>, mut x: usize) {
+pub(crate) fn leb128(wasm: &mut Vec<u8>, mut x: usize) {
     assert!(x <= u32::MAX as usize);
     while x > 127 {
         wasm.push(0x80 | (x & 0x7f) as u8);
@@ -23,7 +23,7 @@ pub fn leb128(wasm: &mut Vec<u8>, mut x: usize) {
     wasm.push(x as u8);
 }
 
-pub fn custom_section(wasm: &mut Vec<u8>, name: &str, content: &[u8]) {
+pub(crate) fn custom_section(wasm: &mut Vec<u8>, name: &str, content: &[u8]) {
     assert!(name.len() < 128);
     wasm.push(0);
     leb128(wasm, 1 + name.len() + content.len());

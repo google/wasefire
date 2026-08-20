@@ -15,7 +15,7 @@
 use crate::error::*;
 use crate::syntax::*;
 
-pub trait Mode {
+pub(crate) trait Mode {
     type Error;
 
     fn invalid<T>() -> Result<T, Self::Error>;
@@ -34,7 +34,7 @@ pub trait Mode {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct Check;
+pub(crate) struct Check;
 
 impl Mode for Check {
     type Error = Error;
@@ -70,7 +70,7 @@ impl Mode for Check {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct Use;
+pub(crate) struct Use;
 
 impl Mode for Use {
     type Error = !;
@@ -116,19 +116,19 @@ impl Mode for Use {
     }
 }
 
-pub type MResult<T, M> = Result<T, <M as Mode>::Error>;
+pub(crate) type MResult<T, M> = Result<T, <M as Mode>::Error>;
 
-pub fn byte_enum<M: Mode, T: Copy + TryFromByte + UnsafeFromByte>(x: u8) -> MResult<T, M> {
+pub(crate) fn byte_enum<M: Mode, T: Copy + TryFromByte + UnsafeFromByte>(x: u8) -> MResult<T, M> {
     M::choose(|| T::try_from_byte(x), || unsafe { T::from_byte_unchecked(x) })
 }
 
 #[cfg(feature = "toctou")]
-pub fn unwrap<T>(x: Option<T>) -> T {
+pub(crate) fn unwrap<T>(x: Option<T>) -> T {
     x.unwrap()
 }
 
 #[cfg(not(feature = "toctou"))]
-pub fn unwrap<T>(x: Option<T>) -> T {
+pub(crate) fn unwrap<T>(x: Option<T>) -> T {
     unsafe { x.unwrap_unchecked() }
 }
 

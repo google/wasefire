@@ -38,7 +38,7 @@ pub fn prepare(binary: &[u8]) -> Result<Vec<u8>, Error> {
 }
 
 /// Checks whether a WASM module with the side table in binary format is valid.
-pub fn verify(binary: &[u8]) -> Result<(), Error> {
+pub(crate) fn verify(binary: &[u8]) -> Result<(), Error> {
     validate::<Verify>(binary)
 }
 
@@ -205,7 +205,7 @@ impl<'m> BranchTableApi<'m> for MetadataView<'m> {
     }
 }
 
-pub type Parser<'m> = parser::Parser<'m, Check>;
+pub(crate) type Parser<'m> = parser::Parser<'m, Check>;
 type CheckResult = MResult<(), Check>;
 
 #[derive(Default)]
