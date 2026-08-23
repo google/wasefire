@@ -61,37 +61,37 @@ pub enum Unsupported {
 }
 
 #[cfg(feature = "debug")]
-pub fn print_backtrace() {
+pub(crate) fn print_backtrace() {
     let backtrace = std::backtrace::Backtrace::capture();
     if matches!(backtrace.status(), std::backtrace::BacktraceStatus::Captured) {
         println!("{backtrace}");
     }
 }
 
-pub fn invalid() -> Error {
+pub(crate) fn invalid() -> Error {
     #[cfg(feature = "debug")]
     print_backtrace();
     Error::Invalid
 }
 
-pub fn not_found() -> Error {
+pub(crate) fn not_found() -> Error {
     #[cfg(feature = "debug")]
     print_backtrace();
     Error::NotFound
 }
 
-pub fn unsupported(reason: Unsupported) -> Error {
+pub(crate) fn unsupported(reason: Unsupported) -> Error {
     #[cfg(feature = "debug")]
     print_backtrace();
     Error::Unsupported(reason)
 }
 
-pub fn trap() -> Error {
+pub(crate) fn trap() -> Error {
     #[cfg(feature = "debug")]
     print_backtrace();
     Error::Trap
 }
 
-pub fn check(cond: bool) -> Result<(), Error> {
+pub(crate) fn check(cond: bool) -> Result<(), Error> {
     if cond { Ok(()) } else { Err(invalid()) }
 }

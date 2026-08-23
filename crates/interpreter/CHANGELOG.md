@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Enable `unreachable_pub` lint
 - Update dependencies
 
 ## 0.5.0

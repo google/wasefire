@@ -31,7 +31,7 @@ pub struct Module<'m> {
 }
 
 impl<'m> Import<'m> {
-    pub fn type_(&self, module: &Module<'m>) -> ExternType<'m> {
+    pub(crate) fn type_(&self, module: &Module<'m>) -> ExternType<'m> {
         self.desc.type_(module)
     }
 }
@@ -90,7 +90,7 @@ impl<'m> Module<'m> {
     }
 }
 
-pub type Parser<'m> = parser::Parser<'m, Use>;
+pub(crate) type Parser<'m> = parser::Parser<'m, Use>;
 
 impl<'m> Module<'m> {
     pub(crate) fn section(&self, expected_id: SectionId) -> Option<Parser<'m>> {

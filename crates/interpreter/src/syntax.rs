@@ -31,7 +31,7 @@ pub enum NumType {
 #[allow(dead_code)] // TODO: Remove when we support them.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive, UnsafeFromPrimitive)]
 #[repr(u8)]
-pub enum VecType {
+pub(crate) enum VecType {
     V128 = 0x7b,
 }
 
@@ -87,8 +87,8 @@ pub struct Limits {
     pub max: u32,
 }
 
-pub const TABLE_MAX: u32 = u32::MAX;
-pub const MEM_MAX: u32 = 0x10000;
+pub(crate) const TABLE_MAX: u32 = u32::MAX;
+pub(crate) const MEM_MAX: u32 = 0x10000;
 
 impl Limits {
     pub fn valid(&self, k: u32) -> bool {
@@ -100,7 +100,7 @@ impl Limits {
     }
 }
 
-pub type MemType = Limits;
+pub(crate) type MemType = Limits;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct TableType {
@@ -122,7 +122,7 @@ pub struct GlobalType {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Sx {
+pub(crate) enum Sx {
     U,
     S,
 }
@@ -143,12 +143,12 @@ pub enum Bx {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ITestOp {
+pub(crate) enum ITestOp {
     Eqz,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum IRelOp {
+pub(crate) enum IRelOp {
     Eq,
     Ne,
     Lt(Sx),
@@ -158,14 +158,14 @@ pub enum IRelOp {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum IUnOp {
+pub(crate) enum IUnOp {
     Clz,
     Ctz,
     PopCnt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum IBinOp {
+pub(crate) enum IBinOp {
     Add,
     Sub,
     Mul,
@@ -182,7 +182,7 @@ pub enum IBinOp {
 
 #[cfg(feature = "float-types")]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FRelOp {
+pub(crate) enum FRelOp {
     Eq,
     Ne,
     Lt,
@@ -193,7 +193,7 @@ pub enum FRelOp {
 
 #[cfg(feature = "float-types")]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FUnOp {
+pub(crate) enum FUnOp {
     Abs,
     Neg,
     Ceil,
@@ -205,7 +205,7 @@ pub enum FUnOp {
 
 #[cfg(feature = "float-types")]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FBinOp {
+pub(crate) enum FBinOp {
     Add,
     Sub,
     Mul,
@@ -216,7 +216,7 @@ pub enum FBinOp {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CvtOp {
+pub(crate) enum CvtOp {
     Wrap,
     Extend(Sx),
     #[cfg(feature = "float-types")]
@@ -236,7 +236,7 @@ pub enum CvtOp {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Instr<'m> {
+pub(crate) enum Instr<'m> {
     Unreachable,
     Nop,
     Block(BlockType),
@@ -302,18 +302,18 @@ pub enum Instr<'m> {
     TableFill(TableIdx),
 }
 
-pub type TypeIdx = u32;
-pub type FuncIdx = u32;
-pub type TableIdx = u32;
-pub type MemIdx = u32;
-pub type GlobalIdx = u32;
-pub type ElemIdx = u32;
-pub type DataIdx = u32;
-pub type LocalIdx = u32;
-pub type LabelIdx = u32;
+pub(crate) type TypeIdx = u32;
+pub(crate) type FuncIdx = u32;
+pub(crate) type TableIdx = u32;
+pub(crate) type MemIdx = u32;
+pub(crate) type GlobalIdx = u32;
+pub(crate) type ElemIdx = u32;
+pub(crate) type DataIdx = u32;
+pub(crate) type LocalIdx = u32;
+pub(crate) type LabelIdx = u32;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ExportDesc {
+pub(crate) enum ExportDesc {
     Func(FuncIdx),
     Table(TableIdx),
     Mem(MemIdx),
@@ -329,7 +329,7 @@ pub enum ImportDesc {
 }
 
 #[derive(Debug, Clone)]
-pub struct Import<'m> {
+pub(crate) struct Import<'m> {
     pub module: &'m str,
     pub name: &'m str,
     pub desc: ImportDesc,
@@ -359,21 +359,21 @@ impl<'m> ExternType<'m> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BlockType {
+pub(crate) enum BlockType {
     None,
     Type(ValType),
     Index(TypeIdx),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct MemArg {
+pub(crate) struct MemArg {
     pub align: u32,
     pub offset: u32,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive, UnsafeFromPrimitive)]
 #[repr(u8)]
-pub enum SectionId {
+pub(crate) enum SectionId {
     Custom = 0,
     Type = 1,
     Import = 2,
@@ -475,7 +475,7 @@ impl From<Bx> for usize {
 }
 
 impl CvtOp {
-    pub fn dst(&self) -> NumType {
+    pub(crate) fn dst(&self) -> NumType {
         match *self {
             CvtOp::Wrap => NumType::I32,
             CvtOp::Extend(_) => NumType::I64,
@@ -496,7 +496,7 @@ impl CvtOp {
         }
     }
 
-    pub fn src(&self) -> NumType {
+    pub(crate) fn src(&self) -> NumType {
         match *self {
             CvtOp::Wrap => NumType::I64,
             CvtOp::Extend(_) => NumType::I32,
@@ -521,7 +521,7 @@ impl CvtOp {
 macro_rules! impl_op {
     ($n:ident, $u:ident, $i:ident, $f:ident) => {
         impl ITestOp {
-            pub fn $n(&self, x: $u) -> bool {
+            pub(crate) fn $n(&self, x: $u) -> bool {
                 match self {
                     ITestOp::Eqz => x == 0,
                 }
@@ -529,7 +529,7 @@ macro_rules! impl_op {
         }
 
         impl IRelOp {
-            pub fn $n(&self, x: $u, y: $u) -> bool {
+            pub(crate) fn $n(&self, x: $u, y: $u) -> bool {
                 match self {
                     IRelOp::Eq => x == y,
                     IRelOp::Ne => x != y,
@@ -546,7 +546,7 @@ macro_rules! impl_op {
         }
 
         impl IUnOp {
-            pub fn $n(&self, x: $u) -> Option<$u> {
+            pub(crate) fn $n(&self, x: $u) -> Option<$u> {
                 Some(match self {
                     IUnOp::Clz => x.leading_zeros(),
                     IUnOp::Ctz => x.trailing_zeros(),
@@ -556,7 +556,7 @@ macro_rules! impl_op {
         }
 
         impl IBinOp {
-            pub fn $n(&self, x: $u, y: $u) -> Option<$u> {
+            pub(crate) fn $n(&self, x: $u, y: $u) -> Option<$u> {
                 match self {
                     IBinOp::Add => Some(x.wrapping_add(y)),
                     IBinOp::Sub => Some(x.wrapping_sub(y)),
@@ -580,7 +580,7 @@ macro_rules! impl_op {
 
         #[cfg(feature = "float-types")]
         impl FRelOp {
-            pub fn $n(&self, x: $u, y: $u) -> bool {
+            pub(crate) fn $n(&self, x: $u, y: $u) -> bool {
                 let x = $f::from_bits(x);
                 let y = $f::from_bits(y);
                 match self {
@@ -596,7 +596,7 @@ macro_rules! impl_op {
 
         #[cfg(feature = "float-types")]
         impl FUnOp {
-            pub fn $n(&self, x: $u) -> $u {
+            pub(crate) fn $n(&self, x: $u) -> $u {
                 let x = $f::from_bits(x);
                 let z = match self {
                     FUnOp::Abs => float::$f::abs(x),
@@ -625,7 +625,7 @@ macro_rules! impl_op {
 
         #[cfg(feature = "float-types")]
         impl FBinOp {
-            pub fn $n(&self, x_: $u, y_: $u) -> $u {
+            pub(crate) fn $n(&self, x_: $u, y_: $u) -> $u {
                 let x = $f::from_bits(x_);
                 let y = $f::from_bits(y_);
                 let z = match self {
@@ -651,22 +651,22 @@ impl_op!(n64, u64, i64, f64);
 #[cfg(feature = "float-types")]
 #[allow(non_upper_case_globals)]
 mod float {
-    pub mod f32 {
-        pub const abs: fn(f32) -> f32 = libm::fabsf;
-        pub const ceil: fn(f32) -> f32 = libm::ceilf;
-        pub const floor: fn(f32) -> f32 = libm::floorf;
-        pub const round: fn(f32) -> f32 = libm::roundf;
-        pub const sqrt: fn(f32) -> f32 = libm::sqrtf;
-        pub const trunc: fn(f32) -> f32 = libm::truncf;
+    pub(crate) mod f32 {
+        pub(crate) const abs: fn(f32) -> f32 = libm::fabsf;
+        pub(crate) const ceil: fn(f32) -> f32 = libm::ceilf;
+        pub(crate) const floor: fn(f32) -> f32 = libm::floorf;
+        pub(crate) const round: fn(f32) -> f32 = libm::roundf;
+        pub(crate) const sqrt: fn(f32) -> f32 = libm::sqrtf;
+        pub(crate) const trunc: fn(f32) -> f32 = libm::truncf;
     }
 
-    pub mod f64 {
-        pub const abs: fn(f64) -> f64 = libm::fabs;
-        pub const ceil: fn(f64) -> f64 = libm::ceil;
-        pub const floor: fn(f64) -> f64 = libm::floor;
-        pub const round: fn(f64) -> f64 = libm::round;
-        pub const sqrt: fn(f64) -> f64 = libm::sqrt;
-        pub const trunc: fn(f64) -> f64 = libm::trunc;
+    pub(crate) mod f64 {
+        pub(crate) const abs: fn(f64) -> f64 = libm::fabs;
+        pub(crate) const ceil: fn(f64) -> f64 = libm::ceil;
+        pub(crate) const floor: fn(f64) -> f64 = libm::floor;
+        pub(crate) const round: fn(f64) -> f64 = libm::round;
+        pub(crate) const sqrt: fn(f64) -> f64 = libm::sqrt;
+        pub(crate) const trunc: fn(f64) -> f64 = libm::trunc;
     }
 }
 
@@ -796,7 +796,7 @@ impl From<u8> for FBinOp {
 }
 
 impl SectionId {
-    pub fn order(self) -> u8 {
+    pub(crate) fn order(self) -> u8 {
         // DataCount is actually between Element and Code.
         match self as u8 {
             x @ 0 ..= 5 => x,
@@ -809,11 +809,11 @@ impl SectionId {
     }
 }
 
-pub trait TryFromByte: Sized {
+pub(crate) trait TryFromByte: Sized {
     fn try_from_byte(byte: u8) -> Option<Self>;
 }
 
-pub trait UnsafeFromByte {
+pub(crate) trait UnsafeFromByte {
     // Safety: The byte must be a valid representation.
     unsafe fn from_byte_unchecked(byte: u8) -> Self;
 }

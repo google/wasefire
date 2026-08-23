@@ -23,64 +23,64 @@ use crate::syntax::*;
 use crate::toctou::*;
 
 #[derive(Debug, Default, Clone)]
-pub struct Parser<'m, M: Mode> {
+pub(crate) struct Parser<'m, M: Mode> {
     data: Cursor<'m, u8>,
     mode: PhantomData<M>,
 }
 
 impl<'m> Parser<'m, Check> {
-    pub fn new(data: &'m [u8]) -> Self {
+    pub(crate) fn new(data: &'m [u8]) -> Self {
         Self::internal_new(data)
     }
 }
 
 impl<'m> Parser<'m, Use> {
     // Safety: The data must have been previously parsed in Check mode.
-    pub unsafe fn new(data: &'m [u8]) -> Self {
+    pub(crate) unsafe fn new(data: &'m [u8]) -> Self {
         Self::internal_new(data)
     }
 }
 
 impl<'m, M: Mode> Parser<'m, M> {
-    pub fn shrink(&mut self) {
+    pub(crate) fn shrink(&mut self) {
         self.data.shrink()
     }
 
-    pub fn remaining(self) -> &'m [u8] {
+    pub(crate) fn remaining(self) -> &'m [u8] {
         self.data.consume()
     }
 
-    pub fn save(&self) -> CursorState {
+    pub(crate) fn save(&self) -> CursorState {
         self.data.save()
     }
 
     // Safety: The data must have been saved in a similar state.
-    pub unsafe fn restore(&mut self, state: CursorState) {
+    pub(crate) unsafe fn restore(&mut self, state: CursorState) {
         unsafe { self.data.restore(state) };
     }
 
-    pub fn update(&mut self, offset: isize) {
+    pub(crate) fn update(&mut self, offset: isize) {
         self.data.adjust_start(offset);
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
 
-    pub fn parse_bytes(&mut self, len: usize) -> MResult<&'m [u8], M> {
+    pub(crate) fn parse_bytes(&mut self, len: usize) -> MResult<&'m [u8], M> {
         Ok(self.data.split::<M>(len)?.consume())
     }
 
-    pub fn split_at(&mut self, len: usize) -> MResult<Parser<'m, M>, M> {
+    pub(crate) fn split_at(&mut self, len: usize) -> MResult<Parser<'m, M>, M> {
         let data = self.data.split::<M>(len)?;
         Ok(Parser { data, mode: self.mode })
     }
 
-    pub fn parse_byte(&mut self) -> MResult<u8, M> {
+    pub(crate) fn parse_byte(&mut self) -> MResult<u8, M> {
         Ok(self.parse_bytes(1)?[0])
     }
 
-    pub fn parse_leb128(&mut self, signed: bool, bits: u8) -> MResult<u64, M> {
+    pub(crate) fn parse_leb128(&mut self, signed: bool, bits: u8) -> MResult<u64, M> {
         debug_assert!(bits <= 64);
         let mut val: u64 = 0;
         let mut len = bits;
@@ -106,72 +106,72 @@ impl<'m, M: Mode> Parser<'m, M> {
         Ok(val)
     }
 
-    pub fn parse_u32(&mut self) -> MResult<u32, M> {
+    pub(crate) fn parse_u32(&mut self) -> MResult<u32, M> {
         Ok(self.parse_leb128(false, 32)? as u32)
     }
 
-    pub fn parse_s32(&mut self) -> MResult<i32, M> {
+    pub(crate) fn parse_s32(&mut self) -> MResult<i32, M> {
         Ok(self.parse_leb128(true, 32)? as i32)
     }
 
-    pub fn parse_i32(&mut self) -> MResult<u32, M> {
+    pub(crate) fn parse_i32(&mut self) -> MResult<u32, M> {
         Ok(self.parse_s32()? as u32)
     }
 
-    pub fn parse_s64(&mut self) -> MResult<i64, M> {
+    pub(crate) fn parse_s64(&mut self) -> MResult<i64, M> {
         Ok(self.parse_leb128(true, 64)? as i64)
     }
 
-    pub fn parse_i64(&mut self) -> MResult<u64, M> {
+    pub(crate) fn parse_i64(&mut self) -> MResult<u64, M> {
         Ok(self.parse_s64()? as u64)
     }
 
-    pub fn parse_typeidx(&mut self) -> MResult<TypeIdx, M> {
+    pub(crate) fn parse_typeidx(&mut self) -> MResult<TypeIdx, M> {
         self.parse_u32()
     }
 
-    pub fn parse_funcidx(&mut self) -> MResult<TypeIdx, M> {
+    pub(crate) fn parse_funcidx(&mut self) -> MResult<TypeIdx, M> {
         self.parse_u32()
     }
 
-    pub fn parse_tableidx(&mut self) -> MResult<TypeIdx, M> {
+    pub(crate) fn parse_tableidx(&mut self) -> MResult<TypeIdx, M> {
         self.parse_u32()
     }
 
-    pub fn parse_memidx(&mut self) -> MResult<TypeIdx, M> {
+    pub(crate) fn parse_memidx(&mut self) -> MResult<TypeIdx, M> {
         self.parse_u32()
     }
 
-    pub fn parse_globalidx(&mut self) -> MResult<TypeIdx, M> {
+    pub(crate) fn parse_globalidx(&mut self) -> MResult<TypeIdx, M> {
         self.parse_u32()
     }
 
-    pub fn parse_elemidx(&mut self) -> MResult<TypeIdx, M> {
+    pub(crate) fn parse_elemidx(&mut self) -> MResult<TypeIdx, M> {
         self.parse_u32()
     }
 
-    pub fn parse_dataidx(&mut self) -> MResult<TypeIdx, M> {
+    pub(crate) fn parse_dataidx(&mut self) -> MResult<TypeIdx, M> {
         self.parse_u32()
     }
 
-    pub fn parse_localidx(&mut self) -> MResult<TypeIdx, M> {
+    pub(crate) fn parse_localidx(&mut self) -> MResult<TypeIdx, M> {
         self.parse_u32()
     }
 
-    pub fn parse_labelidx(&mut self) -> MResult<TypeIdx, M> {
+    pub(crate) fn parse_labelidx(&mut self) -> MResult<TypeIdx, M> {
         self.parse_u32()
     }
 
-    pub fn parse_section_id(&mut self) -> MResult<SectionId, M> {
+    pub(crate) fn parse_section_id(&mut self) -> MResult<SectionId, M> {
         byte_enum::<M, _>(self.parse_byte()?)
     }
 
-    pub fn split_section(&mut self) -> MResult<Parser<'m, M>, M> {
+    pub(crate) fn split_section(&mut self) -> MResult<Parser<'m, M>, M> {
         let n = self.parse_u32()? as usize;
         self.split_at(n)
     }
 
-    pub fn parse_name(&mut self) -> MResult<&'m str, M> {
+    pub(crate) fn parse_name(&mut self) -> MResult<&'m str, M> {
         let n = self.parse_u32()? as usize;
         let xs = self.parse_bytes(n)?;
         M::choose(
@@ -180,17 +180,17 @@ impl<'m, M: Mode> Parser<'m, M> {
         )
     }
 
-    pub fn parse_vec(&mut self) -> MResult<usize, M> {
+    pub(crate) fn parse_vec(&mut self) -> MResult<usize, M> {
         Ok(self.parse_u32()? as usize)
     }
 
-    pub fn parse_valtype(&mut self) -> MResult<ValType, M> {
+    pub(crate) fn parse_valtype(&mut self) -> MResult<ValType, M> {
         let byte = self.parse_byte()?;
         M::check_support(|| ValType::is_unsupported(byte))?;
         byte_enum::<M, _>(byte)
     }
 
-    pub fn parse_resulttype(&mut self) -> MResult<ResultType<'m>, M> {
+    pub(crate) fn parse_resulttype(&mut self) -> MResult<ResultType<'m>, M> {
         let n = self.parse_vec()?;
         let xs = self.parse_bytes(n)?;
         M::check_support(|| xs.iter().find_map(|&x| ValType::is_unsupported(x)))?;
@@ -200,7 +200,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         Ok(unsafe { core::slice::from_raw_parts(ptr, n) }.into())
     }
 
-    pub fn parse_functype(&mut self) -> MResult<FuncType<'m>, M> {
+    pub(crate) fn parse_functype(&mut self) -> MResult<FuncType<'m>, M> {
         let byte = self.parse_byte()?;
         M::check_support(|| {
             matches!(byte, 0x4e | 0x4f | 0x50 | 0x5e | 0x5f)
@@ -212,13 +212,13 @@ impl<'m, M: Mode> Parser<'m, M> {
         Ok(FuncType { params, results })
     }
 
-    pub fn parse_reftype(&mut self) -> MResult<RefType, M> {
+    pub(crate) fn parse_reftype(&mut self) -> MResult<RefType, M> {
         let byte = self.parse_byte()?;
         M::check_support(|| RefType::is_unsupported(byte))?;
         byte_enum::<M, _>(byte)
     }
 
-    pub fn parse_limits(&mut self, mut max: u32) -> MResult<Limits, M> {
+    pub(crate) fn parse_limits(&mut self, mut max: u32) -> MResult<Limits, M> {
         let has_max = byte_enum::<M, bool>(self.parse_byte()?)?;
         let min = self.parse_u32()?;
         if has_max {
@@ -227,27 +227,27 @@ impl<'m, M: Mode> Parser<'m, M> {
         Ok(Limits { min, max })
     }
 
-    pub fn parse_tabletype(&mut self) -> MResult<TableType, M> {
+    pub(crate) fn parse_tabletype(&mut self) -> MResult<TableType, M> {
         let item = self.parse_reftype()?;
         let limits = self.parse_limits(TABLE_MAX)?;
         Ok(TableType { limits, item })
     }
 
-    pub fn parse_memtype(&mut self) -> MResult<MemType, M> {
+    pub(crate) fn parse_memtype(&mut self) -> MResult<MemType, M> {
         self.parse_limits(MEM_MAX)
     }
 
-    pub fn parse_mut(&mut self) -> MResult<Mut, M> {
+    pub(crate) fn parse_mut(&mut self) -> MResult<Mut, M> {
         byte_enum::<M, _>(self.parse_byte()?)
     }
 
-    pub fn parse_globaltype(&mut self) -> MResult<GlobalType, M> {
+    pub(crate) fn parse_globaltype(&mut self) -> MResult<GlobalType, M> {
         let value = self.parse_valtype()?;
         let mutable = self.parse_mut()?;
         Ok(GlobalType { mutable, value })
     }
 
-    pub fn parse_importdesc(&mut self) -> MResult<ImportDesc, M> {
+    pub(crate) fn parse_importdesc(&mut self) -> MResult<ImportDesc, M> {
         Ok(match self.parse_byte()? {
             0 => ImportDesc::Func(self.parse_typeidx()?),
             1 => ImportDesc::Table(self.parse_tabletype()?),
@@ -258,7 +258,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         })
     }
 
-    pub fn parse_exportdesc(&mut self) -> MResult<ExportDesc, M> {
+    pub(crate) fn parse_exportdesc(&mut self) -> MResult<ExportDesc, M> {
         Ok(match self.parse_byte()? {
             0 => ExportDesc::Func(self.parse_funcidx()?),
             1 => ExportDesc::Table(self.parse_tableidx()?),
@@ -268,13 +268,13 @@ impl<'m, M: Mode> Parser<'m, M> {
         })
     }
 
-    pub fn parse_memarg(&mut self) -> MResult<MemArg, M> {
+    pub(crate) fn parse_memarg(&mut self) -> MResult<MemArg, M> {
         let align = self.parse_u32()?;
         let offset = self.parse_u32()?;
         Ok(MemArg { align, offset })
     }
 
-    pub fn parse_blocktype(&mut self) -> MResult<BlockType, M> {
+    pub(crate) fn parse_blocktype(&mut self) -> MResult<BlockType, M> {
         let x = self.parse_leb128(true, 33)?;
         if x & 0x100000000 == 0 {
             return Ok(BlockType::Index(x as TypeIdx));
@@ -284,13 +284,13 @@ impl<'m, M: Mode> Parser<'m, M> {
         Ok(if x == 0x40 { BlockType::None } else { BlockType::Type(byte_enum::<M, _>(x)?) })
     }
 
-    pub fn parse_br_table(&mut self) -> MResult<Instr<'m>, M> {
+    pub(crate) fn parse_br_table(&mut self) -> MResult<Instr<'m>, M> {
         let labels =
             (0 .. self.parse_u32()?).map(|_| self.parse_labelidx()).collect::<Result<_, _>>()?;
         Ok(Instr::BrTable(labels, self.parse_labelidx()?))
     }
 
-    pub fn parse_instr_fc(&mut self) -> MResult<Instr<'m>, M> {
+    pub(crate) fn parse_instr_fc(&mut self) -> MResult<Instr<'m>, M> {
         Ok(match self.parse_u32()? {
             x @ 0 ..= 7 => support_if!(
                 "float-types"[x],
@@ -330,7 +330,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         })
     }
 
-    pub fn parse_instr(&mut self) -> MResult<Instr<'m>, M> {
+    pub(crate) fn parse_instr(&mut self) -> MResult<Instr<'m>, M> {
         Ok(match self.parse_byte()? {
             0x00 => Instr::Unreachable,
             0x01 => Instr::Nop,
@@ -488,7 +488,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         })
     }
 
-    pub fn parse_locals(&mut self, locals: &mut Vec<ValType>) -> MResult<(), M> {
+    pub(crate) fn parse_locals(&mut self, locals: &mut Vec<ValType>) -> MResult<(), M> {
         let mut total = locals.len() as u32;
         for _ in 0 .. self.parse_vec()? {
             let len = self.parse_u32()?;
@@ -501,7 +501,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         if total <= MAX_LOCALS { Ok(()) } else { M::unsupported(if_debug!(Unsupported::MaxLocals)) }
     }
 
-    pub fn parse_elem(&mut self, user: &mut impl ParseElem<'m, M>) -> MResult<(), M> {
+    pub(crate) fn parse_elem(&mut self, user: &mut impl ParseElem<'m, M>) -> MResult<(), M> {
         // A <---- B ----> <- C --> <--- D ---->
         // 0          expr          vec(funcidx)
         // 1               elemkind vec(funcidx)
@@ -549,7 +549,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         Ok(())
     }
 
-    pub fn parse_data(&mut self, user: &mut impl ParseData<'m, M>) -> MResult<(), M> {
+    pub(crate) fn parse_data(&mut self, user: &mut impl ParseData<'m, M>) -> MResult<(), M> {
         // A < B -> <C > <-- D -->
         // 0        expr vec(byte)
         // 1             vec(byte)
@@ -571,7 +571,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         user.init(self.parse_bytes(len)?)
     }
 
-    pub fn parse_side_table(&mut self) -> MResult<SideTableView<'m>, M> {
+    pub(crate) fn parse_side_table(&mut self) -> MResult<SideTableView<'m>, M> {
         let id = self.parse_section_id()?;
         M::check(|| id == SectionId::Custom)?;
         let mut parser = self.split_section()?;
@@ -584,7 +584,7 @@ impl<'m, M: Mode> Parser<'m, M> {
         Ok(SideTableView { indices, metadata })
     }
 
-    pub fn skip_to_end(&mut self, l: LabelIdx) -> MResult<(), M> {
+    pub(crate) fn skip_to_end(&mut self, l: LabelIdx) -> MResult<(), M> {
         let mut depth = l as usize + 1;
         while depth > 0 {
             match self.parse_instr()? {
@@ -599,7 +599,7 @@ impl<'m, M: Mode> Parser<'m, M> {
     }
 }
 
-pub trait ParseElem<'m, M: Mode> {
+pub(crate) trait ParseElem<'m, M: Mode> {
     // Must read an expr from the parser.
     fn mode(&mut self, mode: ElemMode<'_, 'm, M>) -> MResult<(), M> {
         match mode {
@@ -623,17 +623,17 @@ pub trait ParseElem<'m, M: Mode> {
 }
 
 #[derive(Debug)]
-pub enum ElemMode<'a, 'm, M: Mode> {
+pub(crate) enum ElemMode<'a, 'm, M: Mode> {
     Passive,
     Active { table: TableIdx, offset: &'a mut Parser<'m, M> },
     Declarative,
 }
 
-pub struct SkipElem;
+pub(crate) struct SkipElem;
 
 impl<M: Mode> ParseElem<'_, M> for SkipElem {}
 
-pub trait ParseData<'m, M: Mode> {
+pub(crate) trait ParseData<'m, M: Mode> {
     // Must read an expr from the parser.
     fn mode(&mut self, mode: DataMode<'_, 'm, M>) -> MResult<(), M> {
         match mode {
@@ -648,12 +648,12 @@ pub trait ParseData<'m, M: Mode> {
 }
 
 #[derive(Debug)]
-pub enum DataMode<'a, 'm, M: Mode> {
+pub(crate) enum DataMode<'a, 'm, M: Mode> {
     Passive,
     Active { memory: MemIdx, offset: &'a mut Parser<'m, M> },
 }
 
-pub struct SkipData;
+pub(crate) struct SkipData;
 
 impl<M: Mode> ParseData<'_, M> for SkipData {}
 
@@ -677,7 +677,7 @@ mod tests {
     use crate::Error;
 
     #[test]
-    pub fn parse_leb128_is_correct() {
+    fn parse_leb128_is_correct() {
         #[track_caller]
         fn test(signed: bool, bits: u8, data: &[u8], result: Result<u64, Error>) {
             let mut parser = <Parser<Check>>::new(data);
