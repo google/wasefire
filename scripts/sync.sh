@@ -37,7 +37,7 @@ for dir in $(find crates examples/rust -name Cargo.toml -printf '%h\n' | sort); 
   esac
   # TODO: Enable for all crates.
   case $crate in
-    runner-*|scheduler|xtask|*/fuzz) ;;
+    runner-*|scheduler|*/fuzz) ;;
     examples/rust/exercises/part-*) ;;
     *) add_lint $file warn rust.unreachable_pub ;;
   esac

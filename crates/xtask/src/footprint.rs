@@ -35,11 +35,11 @@ struct Row {
     value: HashMap<String, usize>,
 }
 
-pub async fn update_applet(config: &str, value: usize) -> Result<()> {
+pub(crate) async fn update_applet(config: &str, value: usize) -> Result<()> {
     update("applet", config, value).await
 }
 
-pub async fn update_runner(config: &str, value: usize) -> Result<()> {
+pub(crate) async fn update_runner(config: &str, value: usize) -> Result<()> {
     update("runner", config, value).await
 }
 
@@ -65,7 +65,7 @@ async fn update(key: &str, config: &str, value: usize) -> Result<()> {
     Ok(())
 }
 
-pub async fn compare(output: &str) -> Result<()> {
+pub(crate) async fn compare(output: &str) -> Result<()> {
     let mut output = OpenOptions::new().create(true).append(true).open(output)?;
     let base = Footprint::read("footprint-push.toml").await;
     let head = Footprint::read("footprint-pull_request.toml").await;
@@ -109,7 +109,7 @@ pub async fn compare(output: &str) -> Result<()> {
 }
 
 /// Returns the sum of the .text and .data size.
-pub async fn rust_size(elf: &str) -> Result<usize> {
+pub(crate) async fn rust_size(elf: &str) -> Result<usize> {
     let mut size = wrap_command().await?;
     size.args(["rust-size", elf]);
     let output = String::from_utf8(cmd::output(&mut size).await?.stdout)?;
