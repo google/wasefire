@@ -25,7 +25,7 @@ use wasefire_board_api::{self as board, Support};
 use crate::Trap;
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::IsSupported(call) => is_supported(call),
         Api::Encrypt(call) => or_fail!("board-api-crypto-aes128-ccm", encrypt(call)),

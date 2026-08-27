@@ -25,7 +25,7 @@ use wasefire_board_api::{self as board, Support};
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::IsSupported(call) => is_supported(call),
         Api::IsValidScalar(call) => {

@@ -33,7 +33,7 @@ use wasmtime::{
 use super::StoreApi;
 use crate::Trap;
 
-pub struct PreStore {
+pub(crate) struct PreStore {
     engine: Engine,
     store: WtStore<()>,
     linker: Linker<()>,
@@ -57,7 +57,7 @@ impl Default for PreStore {
 }
 
 impl PreStore {
-    pub fn link_func(&mut self, id: usize, name: &str, params: usize) -> Result<(), Error> {
+    pub(crate) fn link_func(&mut self, id: usize, name: &str, params: usize) -> Result<(), Error> {
         let item = match params {
             0 => Func::wrap_async(&mut self.store, move |caller, ()| call(caller, id, vec![])),
             1 => Func::wrap_async(&mut self.store, move |caller, args: (u32,)| {
@@ -109,7 +109,9 @@ impl PreStore {
     }
 
     // Safety: the slice must outlive the store.
-    pub unsafe fn instantiate(mut self, pulley: &'static [u8], id: usize) -> Result<Store, Error> {
+    pub(crate) unsafe fn instantiate(
+        mut self, pulley: &'static [u8], id: usize,
+    ) -> Result<Store, Error> {
         let Ok(module) = (unsafe { Module::deserialize_raw(&self.engine, pulley.into()) }) else {
             log::warn!("Failed to deserialize pulley module.");
             return Err(Error::user(Code::InvalidArgument));
@@ -154,7 +156,7 @@ impl PreStore {
     }
 }
 
-pub struct Store {
+pub(crate) struct Store {
     instance: Instance,
     // Owned Box if threads is empty, otherwise the first thread exclusively owns it.
     store: *mut WtStore<()>,
@@ -188,14 +190,16 @@ impl Drop for Store {
     }
 }
 
-pub enum RunResult {
+pub(crate) enum RunResult {
     Done(Vec<Val>),
     Host,
     Trap,
 }
 
 impl Store {
-    pub fn invoke(&mut self, name: &str, args: &[u32], nres: usize) -> Result<RunResult, Error> {
+    pub(crate) fn invoke(
+        &mut self, name: &str, args: &[u32], nres: usize,
+    ) -> Result<RunResult, Error> {
         let mut context = self.context();
         let Some(func) = self.instance.get_func(&mut context, name) else {
             return Err(Error::internal(Code::NotFound));
@@ -211,14 +215,14 @@ impl Store {
         Ok(self.execute())
     }
 
-    pub fn resume(&mut self, result: u32) -> Result<RunResult, Error> {
+    pub(crate) fn resume(&mut self, result: u32) -> Result<RunResult, Error> {
         assert_eq!(self.calls.len(), self.threads.len());
         self.calls.pop();
         STATE.put(State::Reply(result));
         Ok(self.execute())
     }
 
-    pub fn last_call(&self) -> Option<&Call> {
+    pub(crate) fn last_call(&self) -> Option<&Call> {
         self.calls.last()
     }
 
@@ -255,7 +259,7 @@ impl Store {
     }
 }
 
-pub struct Call {
+pub(crate) struct Call {
     // This is an owned box. The lifetime is bound to the thread of this call (the one at the same
     // index in the store).
     caller: ExclusivePtr<Caller<'static, ()>>,
@@ -304,7 +308,7 @@ impl StoreApi for Store {
     }
 }
 
-pub struct Memory<'a> {
+pub(crate) struct Memory<'a> {
     store: *mut Store,
     memory: SliceCell<'a, u8>,
 }

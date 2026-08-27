@@ -29,7 +29,7 @@ use crate::event::{Handler, usb::ctap::Key};
 #[cfg(feature = "board-api-usb-ctap")]
 use crate::{SchedulerCall, Trap};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Read(call) => or_fail!("board-api-usb-ctap", read(call)),
         Api::Write(call) => or_fail!("board-api-usb-ctap", write(call)),

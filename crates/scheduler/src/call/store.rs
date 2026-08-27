@@ -30,7 +30,7 @@ use crate::SchedulerCall;
 #[cfg(feature = "applet-api-store-fragment")]
 mod fragment;
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         #[cfg(feature = "applet-api-store")]
         Api::MaxKey(call) => or_fail!("board-api-store", max_key(call)),

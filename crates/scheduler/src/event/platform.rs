@@ -16,11 +16,11 @@ use wasefire_board_api::Api as Board;
 use wasefire_board_api::platform::Event;
 use wasefire_error::Error;
 
-pub mod protocol;
+pub(crate) mod protocol;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Key {
+pub(crate) enum Key {
     Protocol(protocol::Key),
 }
 
@@ -39,14 +39,14 @@ impl<'a> From<&'a Event> for Key {
 }
 
 impl Key {
-    pub fn disable(self) -> Result<(), Error> {
+    pub(crate) fn disable(self) -> Result<(), Error> {
         match self {
             Key::Protocol(x) => x.disable(),
         }
     }
 }
 
-pub fn process(event: Event) {
+pub(crate) fn process(event: Event) {
     match event {
         Event::Protocol(_) => protocol::process(),
     }

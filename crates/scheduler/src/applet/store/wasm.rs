@@ -26,13 +26,13 @@ use super::StoreApi;
 use crate::Trap;
 
 #[derive(Debug, Default)]
-pub struct Store {
+pub(crate) struct Store {
     inst: Option<InstId>,
     store: InterpreterStore<'static>,
 }
 
 impl Store {
-    pub fn instantiate(
+    pub(crate) fn instantiate(
         &mut self, module: Module<'static>, memory: &'static mut [u8],
     ) -> Result<InstId, Error> {
         // We assume a single module per applet.
@@ -42,23 +42,23 @@ impl Store {
         Ok(inst)
     }
 
-    pub fn link_func(
+    pub(crate) fn link_func(
         &mut self, module: &'static str, name: &'static str, params: usize, results: usize,
     ) -> Result<(), Error> {
         self.store.link_func(module, name, params, results)
     }
 
-    pub fn link_func_default(&mut self, module: &'static str) -> Result<(), Error> {
+    pub(crate) fn link_func_default(&mut self, module: &'static str) -> Result<(), Error> {
         self.store.link_func_default(module)
     }
 
-    pub fn invoke<'a>(
+    pub(crate) fn invoke<'a>(
         &'a mut self, inst: InstId, name: &str, args: Vec<Val>,
     ) -> Result<RunResult<'a, 'static>, Error> {
         self.store.invoke(inst, name, args)
     }
 
-    pub fn last_call(&mut self) -> Option<Call<'_, 'static>> {
+    pub(crate) fn last_call(&mut self) -> Option<Call<'_, 'static>> {
         self.store.last_call()
     }
 }
@@ -76,7 +76,7 @@ impl StoreApi for Store {
     }
 }
 
-pub struct Memory<'a> {
+pub(crate) struct Memory<'a> {
     store: *mut Store,
     memory: SliceCell<'a, u8>,
 }

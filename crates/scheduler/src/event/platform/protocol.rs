@@ -18,7 +18,7 @@ use wasefire_error::Error;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Key {
+pub(crate) enum Key {
     Request,
 }
 
@@ -37,10 +37,10 @@ impl<'a> From<&'a Event> for Key {
 }
 
 impl Key {
-    pub fn disable(self) -> Result<(), Error> {
+    pub(crate) fn disable(self) -> Result<(), Error> {
         // We need to process non-applet requests.
         Ok(())
     }
 }
 
-pub fn process() {}
+pub(crate) fn process() {}

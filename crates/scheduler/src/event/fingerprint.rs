@@ -21,13 +21,13 @@ use wasefire_error::Error;
 use crate::applet::Applet;
 
 #[cfg(feature = "board-api-fingerprint-matcher")]
-pub mod matcher;
+pub(crate) mod matcher;
 #[cfg(feature = "board-api-fingerprint-sensor")]
-pub mod sensor;
+pub(crate) mod sensor;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Key {
+pub(crate) enum Key {
     #[cfg(feature = "board-api-fingerprint-matcher")]
     Matcher(matcher::Key),
 
@@ -56,7 +56,7 @@ impl<'a> From<&'a Event> for Key {
 }
 
 impl Key {
-    pub fn disable<B: Board>(self) -> Result<(), Error> {
+    pub(crate) fn disable<B: Board>(self) -> Result<(), Error> {
         match self {
             #[cfg(feature = "board-api-fingerprint-matcher")]
             Key::Matcher(x) => x.disable::<B>(),
@@ -67,7 +67,7 @@ impl Key {
     }
 }
 
-pub fn process<B: Board>(event: Event, params: &mut Vec<u32>, applet: &mut Applet<B>) {
+pub(crate) fn process<B: Board>(event: Event, params: &mut Vec<u32>, applet: &mut Applet<B>) {
     match event {
         #[cfg(feature = "board-api-fingerprint-matcher")]
         Event::Matcher(event) => matcher::process(event, params, applet),

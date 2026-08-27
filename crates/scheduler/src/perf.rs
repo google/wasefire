@@ -19,7 +19,7 @@ use wasefire_applet_api::debug as api;
 use wasefire_board_api::debug::Api as _;
 use wasefire_board_api::{self as board, Api as Board};
 
-pub struct Perf<B: Board> {
+pub(crate) struct Perf<B: Board> {
     start: u64,
     value: api::Perf,
     board: PhantomData<B>,
@@ -32,7 +32,7 @@ impl<B: Board> Default for Perf<B> {
 }
 
 impl<B: Board> Perf<B> {
-    pub fn record(&mut self, slot: Slot) {
+    pub(crate) fn record(&mut self, slot: Slot) {
         let end = board::Debug::<B>::time();
         let start = core::mem::replace(&mut self.start, end);
         let value = match slot {
@@ -44,13 +44,13 @@ impl<B: Board> Perf<B> {
             if end < start { board::Debug::<B>::MAX_TIME - start + end + 1 } else { end - start };
     }
 
-    pub fn read(&mut self) -> api::Perf {
+    pub(crate) fn read(&mut self) -> api::Perf {
         self.value
     }
 }
 
 #[derive(Debug)]
-pub enum Slot {
+pub(crate) enum Slot {
     Platform,
     Applets,
     Waiting,

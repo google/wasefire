@@ -19,7 +19,7 @@ use wasefire_error::Error;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive_where(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Key<B: Board> {
+pub(crate) struct Key<B: Board> {
     pub uart: Id<board::Uart<B>>,
     pub direction: Direction,
 }
@@ -37,10 +37,10 @@ impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
 }
 
 impl<B: Board> Key<B> {
-    pub fn disable(self) -> Result<(), Error> {
+    pub(crate) fn disable(self) -> Result<(), Error> {
         use wasefire_board_api::uart::Api as _;
         board::Uart::<B>::disable(self.uart, self.direction)
     }
 }
 
-pub fn process() {}
+pub(crate) fn process() {}

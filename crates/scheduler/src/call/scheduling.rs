@@ -17,7 +17,7 @@ use wasefire_board_api::Api as Board;
 
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::WaitForCallback(call) => wait_for_callback(call),
         Api::NumPendingCallbacks(call) => num_pending_callbacks(call),

@@ -25,7 +25,7 @@ use wasefire_board_api::{self as board, Support as _};
 use crate::Trap;
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Support(call) => support(call),
         Api::TagLength(call) => or_fail!("board-api-crypto-aes256-gcm", tag_length(call)),

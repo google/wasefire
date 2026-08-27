@@ -26,7 +26,7 @@ use wasefire_board_api::{self as board, Support};
 use crate::event::{Handler, fingerprint::matcher::Key};
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::IsSupported(call) => is_supported(call),
         Api::TemplateLength(call) => {

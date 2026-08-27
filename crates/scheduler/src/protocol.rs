@@ -32,19 +32,19 @@ use wasefire_protocol::{self as service, Api, ApiResult, Request, Service, VERSI
 use crate::Scheduler;
 
 #[derive(Debug, Default)]
-pub struct State(StateImpl);
+pub(crate) struct State(StateImpl);
 
-pub fn enable<B: Board>() {
+pub(crate) fn enable<B: Board>() {
     if let Err(error) = board::platform::Protocol::<B>::enable() {
         log::warn!("Failed to enable platform protocol: {}", error);
     }
 }
 
-pub fn should_process_event<B: Board>(event: &board::Event<B>) -> bool {
+pub(crate) fn should_process_event<B: Board>(event: &board::Event<B>) -> bool {
     *event == board::Event::from(board::platform::protocol::Event)
 }
 
-pub fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event<B>) {
+pub(crate) fn process_event<B: Board>(scheduler: &mut Scheduler<B>, event: board::Event<B>) {
     let request = match board::platform::Protocol::<B>::read() {
         Ok(Some(x)) => x,
         Ok(None) => return log::warn!("Expected platform protocol request, but found none."),
@@ -181,7 +181,7 @@ fn process_event_<B: Board>(
 }
 
 #[cfg(feature = "applet-api-platform-protocol")]
-pub fn put_response<B: Board>(
+pub(crate) fn put_response<B: Board>(
     call: &mut crate::SchedulerCall<B, applet_api::write::Sig>, response: Box<[u8]>,
 ) -> Result<(), Error> {
     match call.applet().put_response(response) {

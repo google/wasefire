@@ -19,7 +19,7 @@ use wasefire_board_api::{self as board, Api as Board};
 
 use crate::{DispatchSchedulerCall, SchedulerCall, Trap};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Initialize(call) => initialize(call),
         Api::Process(call) => process_(call),
