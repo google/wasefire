@@ -154,6 +154,14 @@ pub(crate) fn encode_length(len: usize, writer: &mut Writer) -> Result<(), Error
     <u32 as crate::internal::Wire>::encode(&len, writer)
 }
 
+/// Efficiently encodes a byte slice (length prefix + data).
+/// Uses zero-copy for borrowed slices via `Writer::put_bytes`.
+pub(crate) fn encode_bytes<'a>(bytes: &'a [u8], writer: &mut Writer<'a>) -> Result<(), Error> {
+    encode_length(bytes.len(), writer)?;
+    writer.put_bytes(bytes);
+    Ok(())
+}
+
 pub(crate) fn decode_length(reader: &mut Reader) -> Result<usize, Error> {
     Ok(<u32 as crate::internal::Wire>::decode(reader)? as usize)
 }

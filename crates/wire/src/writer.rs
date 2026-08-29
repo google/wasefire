@@ -29,6 +29,13 @@ impl<'a> Writer<'a> {
         self.chunks.push(Chunk::Borrowed(data));
     }
 
+    /// Efficiently writes a byte slice using zero-copy when possible.
+    /// For borrowed slices, uses `Chunk::Borrowed` (zero-copy).
+    /// The slice must live at least as long as the `Writer`.
+    pub fn put_bytes(&mut self, data: &'a [u8]) {
+        self.put_share(data);
+    }
+
     pub(crate) fn put_copy(&mut self, data: &[u8]) {
         // We reuse the last owned chunk to avoid having too many chunks. This is particularly
         // important when encoding slices of small objects like bytes, because we have an 8 bytes

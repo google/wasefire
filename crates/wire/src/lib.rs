@@ -244,7 +244,7 @@ impl<'a> internal::Wire<'a> for &'a [u8] {
     }
     fn encode(&self, writer: &mut Writer<'a>) -> Result<(), Error> {
         helper::encode_length(self.len(), writer)?;
-        writer.put_share(self);
+        writer.put_bytes(self);
         Ok(())
     }
     fn decode(reader: &mut Reader<'a>) -> Result<Self, Error> {

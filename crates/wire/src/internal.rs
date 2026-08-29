@@ -20,6 +20,7 @@ use wasefire_error::{Code, Error, Space};
 
 #[cfg(feature = "schema")]
 pub use self::schema::*;
+pub use crate::helper::encode_bytes;
 pub use crate::reader::Reader;
 pub use crate::writer::Writer;
 
