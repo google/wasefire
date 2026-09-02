@@ -24,9 +24,9 @@ Guidelines](https://opensource.google/conduct/).
 ## LLM usage policy
 
 You are free to use LLMs to assist you, but you remain accountable for your contributions. Do not
-submit a PR for review if you would not have written it that way yourself. PR titles and
-descriptions must be written by a human and should remain precise and concise. Any non-trivial use
-of LLMs must be disclosed in the PR description.
+submit a PR for review if you do not fully understand the changes or cannot maintain them yourself.
+PR titles and descriptions must be written by a human and should remain precise and concise. Any
+non-trivial use of LLMs must be disclosed in the PR description.
 
 ## Contribution process
 
