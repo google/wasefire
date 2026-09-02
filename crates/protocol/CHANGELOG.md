@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Remove now stable `never_type` attribute
 - Update dependencies
 - Use heterogeneous try blocks when needed
 

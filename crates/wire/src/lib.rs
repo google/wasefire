@@ -37,7 +37,6 @@
 #![no_std]
 #![feature(array_try_from_fn)]
 #![feature(doc_cfg)]
-#![feature(never_type)]
 #![feature(try_blocks)]
 
 extern crate alloc;
@@ -50,7 +49,6 @@ use alloc::string::String;
 use alloc::vec::Vec;
 #[cfg(feature = "schema")]
 use core::any::TypeId;
-use core::convert::Infallible;
 use core::mem::{ManuallyDrop, MaybeUninit};
 
 use wasefire_common::platform::Side;
@@ -395,10 +393,6 @@ impl<'a> internal::Wire<'a> for ! {
         Err(Error::user(Code::InvalidArgument))
     }
 }
-
-#[internal_wire]
-#[wire(crate = crate)]
-enum Infallible {}
 
 #[internal_wire]
 #[wire(crate = crate, where = T: Wire<'wire>)]

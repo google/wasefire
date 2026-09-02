@@ -18,7 +18,7 @@ proc-macro2 = { version = "1.0.107", default-features = false }
 quote = { version = "1.0.47", default-features = false }
 
 [dependencies.syn]
-version = "3.0.3"
+version = "3.0.4"
 default-features = false
 features = [
   "clone-impls",

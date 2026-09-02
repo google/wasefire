@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 ble-adv = { path = "crates/ble-adv", optional = true }
 bytemuck = { version = "1.25.2", default-features = false, optional = true }
-cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
+cortex-m = { version = "0.7.9", features = ["critical-section-single-core"] }
 cortex-m-rt = { version = "0.7.6", features = ["set-vtor"] }
 critical-section = "1.2.0"
 data-encoding = { version = "2.11.1", default-features = false, optional = true }
