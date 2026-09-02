@@ -24,10 +24,10 @@ use wasefire_cli_tools::{cmd, fs};
 
 use crate::{AttachOptions, MainOptions, ensure_command, wrap_command};
 
-pub const APPKEY: &str = "gb00-app-key-prod-0";
-pub const PATH: &str = "third_party/lowRISC/opentitan";
+pub(crate) const APPKEY: &str = "gb00-app-key-prod-0";
+pub(crate) const PATH: &str = "third_party/lowRISC/opentitan";
 
-pub async fn build(elf: &str) -> Result<String> {
+pub(crate) async fn build(elf: &str) -> Result<String> {
     let prov_exts_dir = std::env::var("PROV_EXTS_DIR")
         .context("PROV_EXTS_DIR must be set to ot-provisioning-google-skus/skus")?;
 
@@ -129,7 +129,7 @@ pub async fn build(elf: &str) -> Result<String> {
     Ok(img)
 }
 
-pub async fn truncate(img_path: &str) -> Result<()> {
+pub(crate) async fn truncate(img_path: &str) -> Result<()> {
     let mut img_file = File::options().read(true).write(true).open(img_path).await?;
     img_file.seek(std::io::SeekFrom::Start(0x340)).await?;
     let mut length = [0; 4];
@@ -138,7 +138,9 @@ pub async fn truncate(img_path: &str) -> Result<()> {
     Ok(())
 }
 
-pub async fn execute(main: &MainOptions, attach_options: &AttachOptions, elf: &str) -> Result<!> {
+pub(crate) async fn execute(
+    main: &MainOptions, attach_options: &AttachOptions, elf: &str,
+) -> Result<!> {
     // Build the image.
     let img = build(elf).await?;
 
@@ -155,7 +157,7 @@ pub async fn execute(main: &MainOptions, attach_options: &AttachOptions, elf: &s
     attach(Some(input), main, attach_options, elf).await
 }
 
-pub async fn attach(
+pub(crate) async fn attach(
     input: Option<Box<dyn SerialPort>>, main: &MainOptions, options: &AttachOptions, elf: &str,
 ) -> Result<!> {
     let (wait, mut input) = match input {
