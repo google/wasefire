@@ -18,7 +18,7 @@ use wasefire_error::Error;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Key {
+pub(crate) enum Key {
     Read,
     Write,
 }
@@ -39,7 +39,7 @@ impl<'a> From<&'a Event> for Key {
 }
 
 impl Key {
-    pub fn disable<B: Board>(self) -> Result<(), Error> {
+    pub(crate) fn disable<B: Board>(self) -> Result<(), Error> {
         use wasefire_board_api::usb::ctap::Api as _;
         let event = match self {
             Key::Read => Event::Read,
@@ -49,4 +49,4 @@ impl Key {
     }
 }
 
-pub fn process() {}
+pub(crate) fn process() {}

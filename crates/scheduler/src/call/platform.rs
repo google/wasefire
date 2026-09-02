@@ -34,7 +34,7 @@ mod protocol;
 #[cfg(feature = "applet-api-platform-update")]
 mod update;
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         #[cfg(feature = "applet-api-platform-protocol")]
         Api::Protocol(call) => protocol::process(call),

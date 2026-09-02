@@ -19,35 +19,35 @@ use derive_where::derive_where;
 use wasefire_board_api::{Api as Board, Event, Impossible};
 use wasefire_error::Error;
 #[cfg(feature = "wasm")]
-pub use wasefire_interpreter::InstId;
+pub(crate) use wasefire_interpreter::InstId;
 use wasefire_logger as log;
 
 use crate::Scheduler;
 
 #[cfg(feature = "board-api-button")]
-pub mod button;
+pub(crate) mod button;
 #[cfg(feature = "internal-board-api-fingerprint")]
-pub mod fingerprint;
+pub(crate) mod fingerprint;
 #[cfg(feature = "board-api-gpio")]
-pub mod gpio;
-pub mod platform;
+pub(crate) mod gpio;
+pub(crate) mod platform;
 #[cfg(feature = "board-api-timer")]
-pub mod timer;
+pub(crate) mod timer;
 #[cfg(feature = "board-api-uart")]
-pub mod uart;
+pub(crate) mod uart;
 #[cfg(feature = "internal-board-api-usb")]
-pub mod usb;
+pub(crate) mod usb;
 #[cfg(feature = "board-api-vendor")]
-pub mod vendor;
+pub(crate) mod vendor;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg(any(feature = "native", feature = "pulley"))]
-pub struct InstId;
+pub(crate) struct InstId;
 
 // TODO: This could be encoded into a u32 for performance/footprint.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive_where(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Key<B: Board> {
+pub(crate) enum Key<B: Board> {
     #[cfg(feature = "board-api-button")]
     Button(button::Key<B>),
     #[cfg(feature = "internal-board-api-fingerprint")]
@@ -125,7 +125,7 @@ impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
 }
 
 impl<B: Board> Key<B> {
-    pub fn disable(self) -> Result<(), Error> {
+    pub(crate) fn disable(self) -> Result<(), Error> {
         match self {
             #[cfg(feature = "board-api-button")]
             Key::Button(x) => x.disable(),
@@ -148,7 +148,7 @@ impl<B: Board> Key<B> {
 }
 
 #[derive_where(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Handler<B: Board> {
+pub(crate) struct Handler<B: Board> {
     pub key: Key<B>,
     pub inst: InstId,
     pub func: u32,
@@ -162,7 +162,7 @@ impl<B: Board> Borrow<Key<B>> for Handler<B> {
 }
 
 #[cfg_attr(feature = "native", allow(clippy::needless_pass_by_ref_mut))]
-pub fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
+pub(crate) fn process<B: Board>(scheduler: &mut Scheduler<B>, event: Event<B>) {
     let applet = scheduler.applet.get().unwrap();
     let (inst, func, data) = match applet.get(Key::from(&event)) {
         Some(x) => (x.inst, x.func, x.data),

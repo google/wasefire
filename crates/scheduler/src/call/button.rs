@@ -23,7 +23,7 @@ use wasefire_error::{Code, Error};
 use crate::event::{Handler, button::Key};
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Count(call) => count(call),
         Api::Register(call) => or_fail!("board-api-button", register(call)),

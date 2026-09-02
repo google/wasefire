@@ -23,7 +23,7 @@ use crate::applet::Applet;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Key {
+pub(crate) enum Key {
     Enroll,
     EnrollStep,
     Identify,
@@ -46,7 +46,7 @@ impl<'a> From<&'a Event> for Key {
 }
 
 impl Key {
-    pub fn disable<B: Board>(self) -> Result<(), Error> {
+    pub(crate) fn disable<B: Board>(self) -> Result<(), Error> {
         use wasefire_board_api::fingerprint::matcher::Api as _;
         match self {
             Key::Enroll => board::fingerprint::Matcher::<B>::abort_enroll(),
@@ -56,7 +56,7 @@ impl Key {
     }
 }
 
-pub fn process<B: Board>(event: Event, params: &mut Vec<u32>, applet: &mut Applet<B>) {
+pub(crate) fn process<B: Board>(event: Event, params: &mut Vec<u32>, applet: &mut Applet<B>) {
     match event {
         Event::EnrollStep { remaining } => params.push(remaining as u32),
         Event::EnrollDone => {

@@ -17,13 +17,13 @@ use wasefire_board_api::usb::Event;
 use wasefire_error::Error;
 
 #[cfg(feature = "board-api-usb-ctap")]
-pub mod ctap;
+pub(crate) mod ctap;
 #[cfg(feature = "board-api-usb-serial")]
-pub mod serial;
+pub(crate) mod serial;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Key {
+pub(crate) enum Key {
     #[cfg(feature = "board-api-usb-ctap")]
     Ctap(ctap::Key),
 
@@ -49,7 +49,7 @@ impl<'a> From<&'a Event> for Key {
 }
 
 impl Key {
-    pub fn disable<B: Board>(self) -> Result<(), Error> {
+    pub(crate) fn disable<B: Board>(self) -> Result<(), Error> {
         match self {
             #[cfg(feature = "board-api-usb-ctap")]
             Key::Ctap(x) => x.disable::<B>(),
@@ -59,7 +59,7 @@ impl Key {
     }
 }
 
-pub fn process(event: Event) {
+pub(crate) fn process(event: Event) {
     match event {
         #[cfg(feature = "board-api-usb-ctap")]
         Event::Ctap(_) => ctap::process(),

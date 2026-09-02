@@ -14,18 +14,18 @@
 
 use wasefire_board_api::applet::Memory as AppletMemory;
 
-pub use self::impl_::Store;
+pub(crate) use self::impl_::Store;
 #[cfg(feature = "pulley")]
-pub use self::impl_::{PreStore, RunResult};
+pub(crate) use self::impl_::{PreStore, RunResult};
 
 #[cfg_attr(feature = "native", path = "store/native.rs")]
 #[cfg_attr(feature = "pulley", path = "store/pulley.rs")]
 #[cfg_attr(feature = "wasm", path = "store/wasm.rs")]
 mod impl_;
 
-pub type Memory<'a> = <Store as StoreApi>::Memory<'a>;
+pub(crate) type Memory<'a> = <Store as StoreApi>::Memory<'a>;
 
-pub trait StoreApi {
+pub(crate) trait StoreApi {
     type Memory<'a>: AppletMemory
     where Self: 'a;
 

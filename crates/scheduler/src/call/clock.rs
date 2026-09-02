@@ -25,7 +25,7 @@ use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-clock")]
 use crate::SchedulerCall;
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::UptimeUs(call) => or_fail!("board-api-clock", uptime_us(call)),
     }

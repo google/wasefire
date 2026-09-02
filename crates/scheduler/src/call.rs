@@ -76,7 +76,7 @@ mod usb;
 #[cfg(feature = "applet-api-vendor")]
 mod vendor;
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(crate) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         #[cfg(feature = "applet-api-button")]
         Api::Button(call) => button::process(call),

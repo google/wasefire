@@ -26,7 +26,7 @@ use crate::applet::HashContext;
 use crate::applet::store::StoreApi;
 use crate::{DispatchSchedulerCall, Failure, SchedulerCall, Trap};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         #[cfg(feature = "applet-api-crypto-hash")]
         Api::IsSupported(call) => is_supported(call),

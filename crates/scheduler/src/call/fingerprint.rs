@@ -32,7 +32,7 @@ mod matcher;
 #[cfg(feature = "applet-api-fingerprint-sensor")]
 mod sensor;
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         #[cfg(feature = "applet-api-fingerprint-matcher")]
         Api::Matcher(call) => matcher::process(call),

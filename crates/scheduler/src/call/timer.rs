@@ -27,7 +27,7 @@ use crate::{DispatchSchedulerCall, SchedulerCall};
 #[cfg(feature = "board-api-timer")]
 use crate::{Scheduler, Timer};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Allocate(call) => allocate(call),
         Api::Start(call) => or_fail!("board-api-timer", start(call)),
