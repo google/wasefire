@@ -21,7 +21,7 @@ use crate::event::Handler;
 use crate::event::platform::protocol::Key;
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Read(call) => read(call),
         Api::Write(call) => write(call),

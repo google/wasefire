@@ -20,9 +20,9 @@ use super::StoreApi;
 use crate::Trap;
 
 #[derive(Debug, Default)]
-pub struct Store(());
+pub(crate) struct Store(());
 
-pub struct Memory;
+pub(crate) struct Memory;
 
 impl StoreApi for Store {
     type Memory<'a>

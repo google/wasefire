@@ -27,7 +27,7 @@ use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-rng")]
 use crate::SchedulerCall;
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::FillBytes(call) => or_fail!("board-api-rng", fill_bytes(call)),
     }

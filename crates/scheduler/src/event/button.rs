@@ -21,7 +21,7 @@ use wasefire_error::Error;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive_where(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Key<B: Board> {
+pub(crate) struct Key<B: Board> {
     pub button: Id<board::Button<B>>,
 }
 
@@ -38,12 +38,12 @@ impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
 }
 
 impl<B: Board> Key<B> {
-    pub fn disable(self) -> Result<(), Error> {
+    pub(crate) fn disable(self) -> Result<(), Error> {
         use wasefire_board_api::button::Api as _;
         board::Button::<B>::disable(self.button)
     }
 }
 
-pub fn process<B: Board>(event: Event<B>, params: &mut Vec<u32>) {
+pub(crate) fn process<B: Board>(event: Event<B>, params: &mut Vec<u32>) {
     params.push(event.pressed as u32);
 }

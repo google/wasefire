@@ -21,7 +21,7 @@ use wasefire_board_api::{self as board, Id, Support};
 
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Count(call) => count(call),
         Api::Get(call) => or_fail!("board-api-led", get(call)),

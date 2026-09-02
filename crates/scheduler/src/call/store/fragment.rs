@@ -27,7 +27,7 @@ use crate::DispatchSchedulerCall;
 #[cfg(feature = "board-api-store-fragment")]
 use crate::SchedulerCall;
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Insert(call) => or_fail!("board-api-store-fragment", insert(call)),
         Api::Remove(call) => or_fail!("board-api-store-fragment", remove(call)),

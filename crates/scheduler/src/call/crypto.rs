@@ -34,7 +34,7 @@ use wasefire_board_api::Api as Board;
 
 use crate::DispatchSchedulerCall;
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         #[cfg(feature = "applet-api-crypto-cbc")]
         Api::Cbc(call) => cbc::process(call),

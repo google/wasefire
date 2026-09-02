@@ -24,7 +24,7 @@ use crate::applet::store::StoreApi as _;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive_where(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Key<B: Board> {
+pub(crate) struct Key<B: Board> {
     pub key: board::vendor::Key<B>,
 }
 
@@ -41,12 +41,12 @@ impl<'a, B: Board> From<&'a Event<B>> for Key<B> {
 }
 
 impl<B: Board> Key<B> {
-    pub fn disable(self) -> Result<(), Error> {
+    pub(crate) fn disable(self) -> Result<(), Error> {
         board::Vendor::<B>::disable(self.key)
     }
 }
 
-pub fn process<B: Board>(event: Event<B>, params: &mut Vec<u32>, applet: &mut Applet<B>) {
+pub(crate) fn process<B: Board>(event: Event<B>, params: &mut Vec<u32>, applet: &mut Applet<B>) {
     let memory = applet.store.memory();
     let handlers = applet.events.handlers(None);
     board::Vendor::<B>::callback(memory, handlers, event.0, params)

@@ -22,7 +22,7 @@ mod ctap;
 #[cfg(feature = "applet-api-usb-serial")]
 mod serial;
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         #[cfg(feature = "applet-api-usb-ctap")]
         Api::Ctap(call) => ctap::process(call),

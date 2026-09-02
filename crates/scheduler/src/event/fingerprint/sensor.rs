@@ -23,7 +23,7 @@ use crate::applet::Applet;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Key {
+pub(crate) enum Key {
     Capture,
 }
 
@@ -42,7 +42,7 @@ impl<'a> From<&'a Event> for Key {
 }
 
 impl Key {
-    pub fn disable<B: Board>(self) -> Result<(), Error> {
+    pub(crate) fn disable<B: Board>(self) -> Result<(), Error> {
         use wasefire_board_api::fingerprint::sensor::Api as _;
         match self {
             Key::Capture => board::fingerprint::Sensor::<B>::abort_capture(),
@@ -50,7 +50,7 @@ impl Key {
     }
 }
 
-pub fn process<B: Board>(event: Event, params: &mut Vec<u32>, applet: &mut Applet<B>) {
+pub(crate) fn process<B: Board>(event: Event, params: &mut Vec<u32>, applet: &mut Applet<B>) {
     match event {
         Event::CaptureDone => {
             let width = board::fingerprint::Sensor::<B>::IMAGE_WIDTH as u32;

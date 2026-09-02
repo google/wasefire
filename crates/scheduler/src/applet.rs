@@ -30,10 +30,10 @@ use crate::Trap;
 use crate::event::InstId;
 use crate::event::{Handler, Key};
 
-pub mod store;
+pub(crate) mod store;
 
 #[allow(clippy::large_enum_variant)]
-pub enum Slot<B: Board> {
+pub(crate) enum Slot<B: Board> {
     #[cfg(any(feature = "pulley", feature = "wasm"))]
     Empty,
     Running(Applet<B>),
@@ -41,7 +41,7 @@ pub enum Slot<B: Board> {
 }
 
 impl<B: Board> Slot<B> {
-    pub fn get(&mut self) -> Option<&mut Applet<B>> {
+    pub(crate) fn get(&mut self) -> Option<&mut Applet<B>> {
         match self {
             Slot::Running(x) => Some(x),
             _ => None,
@@ -50,7 +50,7 @@ impl<B: Board> Slot<B> {
 }
 
 #[cfg_attr(not(feature = "pulley"), derive_where(Default))]
-pub struct Applet<B: Board> {
+pub(crate) struct Applet<B: Board> {
     pub store: self::store::Store,
     pub events: Events<B>,
 
@@ -67,7 +67,7 @@ pub struct Applet<B: Board> {
 }
 
 #[derive_where(Default)]
-pub struct Events<B: Board> {
+pub(crate) struct Events<B: Board> {
     /// Pending events.
     pending: VecDeque<Event<B>>,
 
@@ -76,7 +76,7 @@ pub struct Events<B: Board> {
 }
 
 #[cfg(feature = "board-api-vendor")]
-pub struct Handlers<'a, B: Board> {
+pub(crate) struct Handlers<'a, B: Board> {
     inst: Option<InstId>,
     events: &'a mut Events<B>,
 }
@@ -93,7 +93,7 @@ enum Protocol {
 
 /// Currently alive hash contexts.
 #[cfg(feature = "internal-hash-context")]
-pub struct AppletHashes<B: Board>([Option<HashContext<B>>; 4]);
+pub(crate) struct AppletHashes<B: Board>([Option<HashContext<B>>; 4]);
 
 // We have to implement manually because derive is not able to find the correct bounds.
 #[cfg(feature = "internal-hash-context")]
@@ -104,7 +104,7 @@ impl<B: Board> Default for AppletHashes<B> {
 }
 
 #[cfg(feature = "internal-hash-context")]
-pub enum HashContext<B: Board> {
+pub(crate) enum HashContext<B: Board> {
     #[cfg(feature = "board-api-crypto-sha256")]
     Sha256(board::crypto::HashApi<board::crypto::Sha256<B>>),
     #[cfg(feature = "board-api-crypto-sha384")]
@@ -118,17 +118,17 @@ pub enum HashContext<B: Board> {
 
 #[cfg(feature = "internal-hash-context")]
 impl<B: Board> AppletHashes<B> {
-    pub fn insert(&mut self, hash: HashContext<B>) -> Result<usize, Trap> {
+    pub(crate) fn insert(&mut self, hash: HashContext<B>) -> Result<usize, Trap> {
         let id = self.0.iter().position(|x| x.is_none()).ok_or(Trap)?;
         self.0[id] = Some(hash);
         Ok(id)
     }
 
-    pub fn get_mut(&mut self, id: usize) -> Result<&mut HashContext<B>, Trap> {
+    pub(crate) fn get_mut(&mut self, id: usize) -> Result<&mut HashContext<B>, Trap> {
         self.0.get_mut(id).ok_or(Trap)?.as_mut().ok_or(Trap)
     }
 
-    pub fn take(&mut self, id: usize) -> Result<HashContext<B>, Trap> {
+    pub(crate) fn take(&mut self, id: usize) -> Result<HashContext<B>, Trap> {
         self.0.get_mut(id).ok_or(Trap)?.take().ok_or(Trap)
     }
 }
@@ -157,7 +157,7 @@ impl<B: Board> Events<B> {
     }
 
     #[cfg(feature = "board-api-vendor")]
-    pub fn handlers(&mut self, inst: Option<InstId>) -> Handlers<'_, B> {
+    pub(crate) fn handlers(&mut self, inst: Option<InstId>) -> Handlers<'_, B> {
         Handlers { inst, events: self }
     }
 }
@@ -178,7 +178,7 @@ impl<'a, B: Board> board::applet::Handlers<board::vendor::Key<B>> for Handlers<'
 
 impl<B: Board> Applet<B> {
     #[cfg(feature = "pulley")]
-    pub fn new(store: self::store::Store) -> Self {
+    pub(crate) fn new(store: self::store::Store) -> Self {
         Applet {
             store,
             events: Events::default(),
@@ -190,16 +190,16 @@ impl<B: Board> Applet<B> {
         }
     }
 
-    pub fn store_mut(&mut self) -> &mut Store {
+    pub(crate) fn store_mut(&mut self) -> &mut Store {
         &mut self.store
     }
 
     #[allow(dead_code)] // in case no API uses memory
-    pub fn memory(&mut self) -> Memory<'_> {
+    pub(crate) fn memory(&mut self) -> Memory<'_> {
         self.store.memory()
     }
 
-    pub fn push(&mut self, event: Event<B>) {
+    pub(crate) fn push(&mut self, event: Event<B>) {
         const MAX_EVENTS: usize = 5;
         #[allow(clippy::if_same_then_else)]
         if !self.events.handlers.contains(&Key::from(&event)) {
@@ -217,7 +217,7 @@ impl<B: Board> Applet<B> {
     }
 
     /// Returns the next event action.
-    pub fn pop(&mut self) -> EventAction<B> {
+    pub(crate) fn pop(&mut self) -> EventAction<B> {
         #[cfg(any(feature = "pulley", feature = "wasm"))]
         if core::mem::replace(&mut self.done, false) {
             return EventAction::Reply;
@@ -229,27 +229,27 @@ impl<B: Board> Applet<B> {
     }
 
     #[cfg(any(feature = "pulley", feature = "wasm"))]
-    pub fn done(&mut self) {
+    pub(crate) fn done(&mut self) {
         self.done = true;
     }
 
     #[allow(dead_code)] // in case there are no events
-    pub fn enable(&mut self, handler: Handler<B>) -> Result<(), Trap> {
+    pub(crate) fn enable(&mut self, handler: Handler<B>) -> Result<(), Trap> {
         self.events.enable(handler)
     }
 
-    pub fn disable(&mut self, key: Key<B>) -> Result<(), Trap> {
+    pub(crate) fn disable(&mut self, key: Key<B>) -> Result<(), Trap> {
         self.events.disable(key)
     }
 
     #[cfg_attr(not(feature = "board-api-fingerprint-matcher"), allow(dead_code))]
-    pub fn disable_noerror(&mut self, key: Key<B>) {
+    pub(crate) fn disable_noerror(&mut self, key: Key<B>) {
         if self.disable(key).is_err() {
             log::warn!("Failed disabling {:?}", key);
         }
     }
 
-    pub fn free(&mut self) {
+    pub(crate) fn free(&mut self) {
         self.events.pending.clear();
         for &Handler { key, .. } in &self.events.handlers {
             if let Err(error) = key.disable() {
@@ -258,21 +258,21 @@ impl<B: Board> Applet<B> {
         }
     }
 
-    pub fn get(&self, key: Key<B>) -> Option<&Handler<B>> {
+    pub(crate) fn get(&self, key: Key<B>) -> Option<&Handler<B>> {
         self.events.handlers.get(&key)
     }
 
     #[cfg(any(feature = "pulley", feature = "wasm"))]
-    pub fn has_handlers(&self) -> bool {
+    pub(crate) fn has_handlers(&self) -> bool {
         !self.events.handlers.is_empty()
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.events.pending.len()
     }
 
     #[cfg(feature = "applet-api-platform-protocol")]
-    pub fn put_request(&mut self, event: Event<B>, request: &[u8]) -> Result<(), Error> {
+    pub(crate) fn put_request(&mut self, event: Event<B>, request: &[u8]) -> Result<(), Error> {
         self.get(Key::from(&event)).ok_or(Error::world(Code::InvalidState))?;
         // If the applet is processing a request, we'll send the event when they respond.
         if !matches!(self.protocol, Protocol::Processing) {
@@ -284,7 +284,7 @@ impl<B: Board> Applet<B> {
     }
 
     #[cfg(feature = "applet-api-platform-protocol")]
-    pub fn get_request(&mut self) -> Result<Option<Box<[u8]>>, Error> {
+    pub(crate) fn get_request(&mut self) -> Result<Option<Box<[u8]>>, Error> {
         let (update, result) = match core::mem::take(&mut self.protocol) {
             x @ (Protocol::Empty | Protocol::Response(_)) => (x, Ok(None)),
             Protocol::Request(x) => (Protocol::Processing, Ok(Some(x))),
@@ -295,7 +295,7 @@ impl<B: Board> Applet<B> {
     }
 
     #[cfg(feature = "applet-api-platform-protocol")]
-    pub fn put_response(&mut self, response: Box<[u8]>) -> Result<(), Error> {
+    pub(crate) fn put_response(&mut self, response: Box<[u8]>) -> Result<(), Error> {
         match &self.protocol {
             Protocol::Processing => self.protocol = Protocol::Response(response),
             // We use World:InvalidState to know that there is a new request.
@@ -306,7 +306,7 @@ impl<B: Board> Applet<B> {
     }
 
     #[cfg(feature = "applet-api-platform-protocol")]
-    pub fn get_response(&mut self) -> Result<Option<Box<[u8]>>, Error> {
+    pub(crate) fn get_response(&mut self) -> Result<Option<Box<[u8]>>, Error> {
         let (update, result) = match core::mem::take(&mut self.protocol) {
             x @ (Protocol::Processing | Protocol::Request(_)) => (x, Ok(None)),
             Protocol::Response(x) => (Protocol::Empty, Ok(Some(x))),
@@ -319,7 +319,7 @@ impl<B: Board> Applet<B> {
 
 /// Action when waiting for callbacks.
 #[derive(Debug)]
-pub enum EventAction<B: Board> {
+pub(crate) enum EventAction<B: Board> {
     /// Should handle the event.
     Handle(Event<B>),
 

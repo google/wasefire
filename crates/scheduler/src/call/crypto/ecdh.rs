@@ -30,7 +30,7 @@ use wasefire_error::{Code, Error};
 use crate::applet::store::Memory;
 use crate::{DispatchSchedulerCall, Failure, SchedulerCall};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::IsSupported(call) => is_supported(call),
         Api::GetLayout(call) => or_fail!("internal-board-api-crypto-ecdh", get_layout(call)),

@@ -25,7 +25,7 @@ use wasefire_error::{Code, Error};
 use crate::event::{Handler, gpio::Key};
 use crate::{DispatchSchedulerCall, SchedulerCall};
 
-pub fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
+pub(super) fn process<B: Board>(call: Api<DispatchSchedulerCall<B>>) {
     match call {
         Api::Count(call) => count(call),
         Api::Configure(call) => or_fail!("board-api-gpio", configure(call)),
