@@ -6,7 +6,7 @@ license = "Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.104"
-clap = { version = "4.6.5", features = ["derive"] }
+clap = { version = "4.6.6", features = ["derive"] }
 common = { path = "../common" }
 data-encoding = "2.11.1"
 signal-hook = "0.4.4"

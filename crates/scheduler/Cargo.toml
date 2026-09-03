@@ -38,7 +38,7 @@ features = ["toctou"]
 optional = true
 
 [dependencies.wasmtime]
-version = "47.0.3"
+version = "48.0.1"
 default-features = false
 features = ["async", "runtime"]
 optional = true

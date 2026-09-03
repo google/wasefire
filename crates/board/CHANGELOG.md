@@ -12,6 +12,7 @@
 
 ### Patch
 
+- Remove now stable `never_type` attribute
 - Update dependencies
 
 ## 0.10.0
@@ -231,4 +232,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 9 -->
+<!-- Increment to skip CHANGELOG.md test: 10 -->

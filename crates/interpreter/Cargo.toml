@@ -20,7 +20,7 @@ wasefire-error = { path = "../error", version = "0.1.5-git" }
 
 [dev-dependencies]
 lazy_static = "1.5.0"
-wast = "255.0.0"
+wast = "258.0.0"
 
 [features]
 # Enable debugging features (only works for targets with std).

@@ -14,7 +14,6 @@
 
 //! Wasefire protocol for Unix and TCP streams.
 
-#![cfg_attr(feature = "device", feature(never_type))]
 #![cfg_attr(feature = "device", feature(trait_alias))]
 
 #[cfg(feature = "device")]

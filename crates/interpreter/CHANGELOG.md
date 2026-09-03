@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Remove now stable `never_type` attribute
 - Enable `unreachable_pub` lint
 - Update dependencies
 
@@ -126,4 +127,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 7 -->
+<!-- Increment to skip CHANGELOG.md test: 8 -->

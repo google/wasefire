@@ -29,7 +29,6 @@
 #![no_std]
 #![feature(doc_cfg)]
 #![feature(macro_metavar_expr)]
-#![feature(never_type)]
 #![feature(try_blocks)]
 #![feature(try_blocks_heterogeneous)]
 

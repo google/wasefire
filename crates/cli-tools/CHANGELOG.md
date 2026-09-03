@@ -19,6 +19,7 @@
 
 ### Patch
 
+- Remove now stable `never_type` attribute
 - Update the nightly toolchain to compile Rust applets
 - Update dependencies
 
@@ -141,4 +142,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 14 -->
+<!-- Increment to skip CHANGELOG.md test: 15 -->

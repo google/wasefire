@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(never_type)]
-
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex};

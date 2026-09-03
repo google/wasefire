@@ -32,7 +32,6 @@
 #![feature(macro_metavar_expr)]
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(negative_impls)]
-#![feature(never_type)]
 
 extern crate alloc;
 

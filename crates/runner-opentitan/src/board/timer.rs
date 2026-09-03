@@ -83,10 +83,8 @@ fn trigger(state: &mut crate::board::State, mut do_refresh: bool) {
 }
 
 fn refresh(state: &mut crate::board::State) {
-    let mut deadline = u64::MAX;
-    for id in 0 .. Impl::SUPPORT {
-        deadline = core::cmp::min(deadline, state.timer.deadline[id]);
-    }
+    let deadline =
+        state.timer.deadline.iter().take(Impl::SUPPORT).cloned().min().unwrap_or(u64::MAX);
     crate::time::deadline_us(deadline);
 }
 
