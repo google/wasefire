@@ -28,9 +28,16 @@ pub fn inactive() -> &'static Manifest {
 
 #[repr(C)]
 pub struct Manifest {
-    pub signature: Signature,
+    pub ecdsa_signature: [u8; 64],
+    pub reserved_signature: [u8; 4 * 40],
+    pub reserved_unsigned: [u8; 4 * 40],
     pub usage_constraints: UsageConstraints,
-    pub public_key: PublicKey,
+    pub ecdsa_public_key: [u8; 64],
+    pub reserved_public_key: [u8; 4 * 40],
+    pub reserved: [u8; 4 * 37],
+    pub dice_cert_storage_mode: [u8; 4],
+    pub on_demand_dice: [u8; 4],
+    pub manifest_base_address: [u8; 4],
     pub address_translation: [u8; 4],
     pub identifier: [u8; 4],
     pub manifest_version: [u8; 4],
@@ -49,12 +56,6 @@ pub struct Manifest {
 }
 
 #[repr(C)]
-pub union Signature {
-    pub rsa: [u8; 384],
-    pub ecdsa: [u8; 64],
-}
-
-#[repr(C)]
 pub struct UsageConstraints {
     pub selector_bits: [u8; 4],
     pub device_id: [u8; 32],
@@ -64,20 +65,17 @@ pub struct UsageConstraints {
 }
 
 #[repr(C)]
-pub union PublicKey {
-    pub rsa: [u8; 384],
-    pub ecdsa: [u8; 64],
-}
-
-#[repr(C)]
 pub struct Extension {
     pub identifier: [u8; 4],
     pub offset: [u8; 4],
 }
 
-const _: () = assert!(offset_of!(Manifest, signature) == 0);
+const _: () = assert!(offset_of!(Manifest, ecdsa_signature) == 0);
 const _: () = assert!(offset_of!(Manifest, usage_constraints) == 384);
-const _: () = assert!(offset_of!(Manifest, public_key) == 432);
+const _: () = assert!(offset_of!(Manifest, ecdsa_public_key) == 432);
+const _: () = assert!(offset_of!(Manifest, dice_cert_storage_mode) == 804);
+const _: () = assert!(offset_of!(Manifest, on_demand_dice) == 808);
+const _: () = assert!(offset_of!(Manifest, manifest_base_address) == 812);
 const _: () = assert!(offset_of!(Manifest, address_translation) == 816);
 const _: () = assert!(offset_of!(Manifest, identifier) == 820);
 const _: () = assert!(offset_of!(Manifest, manifest_version) == 824);
