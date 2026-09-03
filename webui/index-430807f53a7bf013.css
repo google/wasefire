@@ -1,0 +1,55 @@
+code {
+  border: 1px solid #000;
+  border-radius: 3px;
+  padding: 0px 2px 0px 2px;
+}
+
+footer {
+  font-size: 0.75rem;
+  margin-top: 3px;
+}
+
+.box {
+  border: 1px solid #000;
+  border-radius: 5px;
+  padding: 3px 7px 3px 7px;
+  margin: 2px;
+}
+
+.devices li, .commands li {
+  margin-bottom: 5px;
+}
+.devices li:last-child, .commands li:last-child {
+  margin-bottom: 0;
+}
+.devices ul, .commands ul {
+  margin-top: 5px;
+}
+
+.columns {
+  display: flex;
+  margin-bottom: 5px;
+}
+.columns .column {
+  flex: 1;
+}
+
+.red {
+  border-color: #d22;
+  background-color: #fdd;
+}
+
+.yellow {
+  border-color: #dd2;
+  background-color: #ffd;
+}
+
+.green {
+  border-color: #2d2;
+  background-color: #dfd;
+}
+
+.blue {
+  border-color: #99f;
+  background-color: #ddf;
+}
