@@ -43,7 +43,8 @@ MEMORY {
 SECTIONS {
   .manifest : {
     _smanifest = .;
-    . = ORIGIN(MANIF) + 816;
+    . = ORIGIN(MANIF) + 812;
+    LONG(ORIGIN(MANIF)); /* manifest base address */
     LONG(0x1d4); /* address translation */
     . = ORIGIN(MANIF) + 824;
     LONG(0x00026c47); /* manifest version */
