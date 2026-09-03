@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Remove now stable `never_type` attribute
 - Enable `unreachable_pub` lint
 - Update dependencies
 

@@ -19,6 +19,7 @@
 
 ### Patch
 
+- Remove now stable `never_type` attribute
 - Update the nightly toolchain to compile Rust applets
 - Update dependencies
 

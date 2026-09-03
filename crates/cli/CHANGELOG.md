@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Remove now stable `never_type` attribute
 - Update dependencies
 
 ## 0.4.0
