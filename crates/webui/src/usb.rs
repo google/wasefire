@@ -115,7 +115,15 @@ fn transfer_in_error() -> webusb_web::Error {
 }
 
 pub(crate) fn is_transfer_in_error(e: &webusb_web::Error) -> bool {
-    e.kind() == webusb_web::ErrorKind::Transfer && e.msg().contains("transferIn")
+    matches!(
+        e.kind(),
+        // Linux always reports a Transfer when the device reboots on transferIn.
+        webusb_web::ErrorKind::Transfer
+            // macOS additionally reports Disconnected (about 20% of the time).
+            | webusb_web::ErrorKind::Disconnected
+            // Windows always reports Stall instead.
+            | webusb_web::ErrorKind::Stall
+    ) && e.msg().contains("transferIn")
 }
 
 const VID_GOOGLE: u16 = 0x18d1;
