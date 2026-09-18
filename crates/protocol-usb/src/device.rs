@@ -382,7 +382,7 @@ const fn make_winusb_desc(interface: u8) -> [u8; WINUSB_DESC_LEN] {
         [0xa0, 0x00], // wSubsetLength (160)
         // Microsoft OS 2.0 compatible ID descriptor (20 bytes)
         [0x14, 0x00],                                     // wLength (20)
-        [0x03, 0x00], // wDescriptorType (MS_OS_20_FEATURE_COMPATBLE_ID = 3)
+        [0x03, 0x00], // wDescriptorType (MS_OS_20_FEATURE_COMPATIBLE_ID = 3)
         [b'W', b'I', b'N', b'U', b'S', b'B', 0x00, 0x00], // CompatibleID ("WINUSB")
         [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // SubCompatibleID
         // Microsoft OS 2.0 registry property descriptor (132 bytes)
