@@ -325,37 +325,26 @@ macro_rules! make_descriptor {
 }
 
 const WEBUSB_BOS_CAPABILITY: [u8; 21] = make_descriptor!(
-    // bReserved
-    [0x00],
-    // PlatformCapabilityUUID
+    [0x00], // bReserved
     [
         0x38, 0xb6, 0x08, 0x34, 0xa9, 0x09, 0xa0, 0x47, 0x8b, 0xfd, 0xa0, 0x76, 0x88, 0x15, 0xb6,
         0x65
-    ],
-    // bcdVersion
-    [0x00, 0x01],
-    // bVendorCode
-    [WEBUSB_VENDOR_CODE],
-    // iLandingPage
-    [WEBUSB_URL_DESC.is_some() as u8],
+    ], // PlatformCapabilityUUID
+    [0x00, 0x01], // bcdVersion
+    [WEBUSB_VENDOR_CODE], // bVendorCode
+    [WEBUSB_URL_DESC.is_some() as u8], // iLandingPage
 );
 
 const WINUSB_BOS_CAPABILITY: [u8; 25] = make_descriptor!(
-    // bReserved
-    [0x00],
-    // PlatformCapabilityUUID (D8DD60DF-4589-4CC7-9CD2-659D9E648A9F)
+    [0x00], // bReserved
     [
         0xdf, 0x60, 0xdd, 0xd8, 0x89, 0x45, 0xc7, 0x4c, 0x9c, 0xd2, 0x65, 0x9d, 0x9e, 0x64, 0x8a,
         0x9f
-    ],
-    // dwWindowsVersion (0x06030000 = Windows 8.1+)
-    [0x00, 0x00, 0x03, 0x06],
-    // wMSOSDescriptorSetTotalLength (182)
-    [0xb6, 0x00],
-    // bMS_VendorCode
-    [WINUSB_VENDOR_CODE],
-    // bAltEnumCode
-    [0x00],
+    ], // PlatformCapabilityUUID (D8DD60DF-4589-4CC7-9CD2-659D9E648A9F)
+    [0x00, 0x00, 0x03, 0x06], // dwWindowsVersion (0x06030000 = Windows 8.1+)
+    [0xb6, 0x00], // wMSOSDescriptorSetTotalLength (182)
+    [WINUSB_VENDOR_CODE], // bMS_VendorCode
+    [0x00], // bAltEnumCode
 );
 
 const fn make_winusb_desc(interface: u8) -> [u8; WINUSB_DESC_LEN] {
@@ -381,8 +370,9 @@ const fn make_winusb_desc(interface: u8) -> [u8; WINUSB_DESC_LEN] {
         [0x00],       // bReserved
         [0xa0, 0x00], // wSubsetLength (160)
         // Microsoft OS 2.0 compatible ID descriptor (20 bytes)
-        [0x14, 0x00],                                     // wLength (20)
+        [0x14, 0x00], // wLength (20)
         [0x03, 0x00], // wDescriptorType (MS_OS_20_FEATURE_COMPATIBLE_ID = 3)
+        // ... work around rustfmt ...
         [b'W', b'I', b'N', b'U', b'S', b'B', 0x00, 0x00], // CompatibleID ("WINUSB")
         [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // SubCompatibleID
         // Microsoft OS 2.0 registry property descriptor (132 bytes)
@@ -390,21 +380,19 @@ const fn make_winusb_desc(interface: u8) -> [u8; WINUSB_DESC_LEN] {
         [0x04, 0x00], // wDescriptorType (MS_OS_20_FEATURE_REG_PROPERTY = 4)
         [0x07, 0x00], // wPropertyDataType (REG_MULTI_SZ = 7)
         [0x2a, 0x00], // wPropertyNameLength (42)
-        // PropertyName ("DeviceInterfaceGUIDs\0" in UTF-16LE)
         [
             b'D', 0, b'e', 0, b'v', 0, b'i', 0, b'c', 0, b'e', 0, b'I', 0, b'n', 0, b't', 0, b'e',
             0, b'r', 0, b'f', 0, b'a', 0, b'c', 0, b'e', 0, b'G', 0, b'U', 0, b'I', 0, b'D', 0,
             b's', 0, 0, 0
-        ],
+        ], // PropertyName ("DeviceInterfaceGUIDs\0" in UTF-16LE)
         [0x50, 0x00], // wPropertyDataLength (80)
-        // PropertyData ("{b649b634-31ec-4394-ba28-42324d6c3993}\0\0" in UTF-16LE)
         [
             b'{', 0, b'b', 0, b'6', 0, b'4', 0, b'9', 0, b'b', 0, b'6', 0, b'3', 0, b'4', 0, b'-',
             0, b'3', 0, b'1', 0, b'e', 0, b'c', 0, b'-', 0, b'4', 0, b'3', 0, b'9', 0, b'4', 0,
             b'-', 0, b'b', 0, b'a', 0, b'2', 0, b'8', 0, b'-', 0, b'4', 0, b'2', 0, b'3', 0, b'2',
             0, b'4', 0, b'd', 0, b'6', 0, b'c', 0, b'3', 0, b'9', 0, b'9', 0, b'3', 0, b'}', 0, 0,
             0, 0, 0
-        ],
+        ], // PropertyData ("{b649b634-31ec-4394-ba28-42324d6c3993}\0\0" in UTF-16LE)
     )
 }
 
