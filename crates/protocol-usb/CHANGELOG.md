@@ -2,6 +2,10 @@
 
 ## 0.3.2-git
 
+### Minor
+
+- Support WinUSB (Microsoft OS 2.0 descriptors)
+
 ### Patch
 
 - Remove now stable `never_type` attribute
@@ -59,4 +63,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 8 -->
+<!-- Increment to skip CHANGELOG.md test: 10 -->
