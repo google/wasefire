@@ -147,14 +147,6 @@ fn process_event_<B: Board>(
             scheduler.protocol.0 = Locked;
             reply::<B, service::PlatformLock>(());
         }
-        #[cfg(feature = "board-api-store")]
-        Api::PlatformClearStore(min_key) => {
-            use wasefire_board_api::store::Api as _;
-            board::Store::<B>::clear(min_key)?;
-            reply::<B, service::PlatformClearStore>(());
-        }
-        #[cfg(not(feature = "board-api-store"))]
-        Api::PlatformClearStore(_) => return Err(Error::world(Code::NotImplemented)),
         #[cfg(feature = "native")]
         Api::AppletReboot(_) => return Err(Error::world(Code::NotImplemented)),
         #[cfg(any(feature = "pulley", feature = "wasm"))]
@@ -173,6 +165,11 @@ fn process_event_<B: Board>(
                 return Err(Error::user(Code::NotFound));
             };
             reply::<B, service::AppletMetadata0>(metadata.clone());
+        }
+        Api::PlatformWipeStorage(()) => {
+            use wasefire_board_api::platform::Api as _;
+            board::Platform::<B>::wipe_storage()?;
+            reply::<B, service::PlatformWipeStorage>(());
         }
         #[cfg(not(feature = "_test"))]
         _ => return Err(Error::internal(Code::NotImplemented)),

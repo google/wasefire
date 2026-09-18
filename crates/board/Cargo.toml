@@ -40,7 +40,7 @@ usbd-serial = { version = "0.2.2", default-features = false, optional = true }
 wasefire-common = { path = "../common", version = "0.1.2-git" }
 wasefire-error = { path = "../error", version = "0.1.5-git" }
 wasefire-logger = { path = "../logger", version = "0.2.2-git" }
-wasefire-protocol = { path = "../protocol", version = "0.4.1-git" }
+wasefire-protocol = { path = "../protocol", version = "0.5.0-git" }
 wasefire-store = { path = "../store", version = "0.3.3-git", optional = true }
 wasefire-sync = { path = "../sync", version = "0.1.4-git" }
 zeroize = { version = "1.9.0", default-features = false, optional = true }

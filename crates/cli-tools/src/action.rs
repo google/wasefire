@@ -378,18 +378,20 @@ impl Wait {
     }
 }
 
-/// Clears the store for the platform and all applets.
+/// Wipes all persistent storage (board, scheduler, and applets).
 #[derive(clap::Args)]
-pub struct PlatformClearStore {
-    /// Clears all entries with a key greater or equal to this value.
-    #[arg(default_value_t = 0)]
-    min_key: usize,
-}
+pub struct PlatformWipeStorage {}
 
-impl PlatformClearStore {
+impl PlatformWipeStorage {
     pub async fn run(self, device: &DynDevice) -> Result<()> {
-        let PlatformClearStore { min_key } = self;
-        device.call::<service::PlatformClearStore>(min_key).await.map(|x| *x.get())
+        let PlatformWipeStorage {} = self;
+        if device.supports::<service::PlatformWipeStorage>() {
+            device.call::<service::PlatformWipeStorage>(()).await.map(|x| *x.get())
+        } else if device.supports::<service::_PlatformClearStore0>() {
+            device.call::<service::_PlatformClearStore0>(0).await.map(|x| *x.get())
+        } else {
+            bail!("device does not support wiping storage");
+        }
     }
 }
 

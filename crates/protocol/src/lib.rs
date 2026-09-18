@@ -297,10 +297,10 @@ api! {
     /// This message is deprecated in favor of [`_PlatformInfo2`].
     13 [5 - 8] _PlatformInfo1: () => platform::_Info1<'a>,
 
-    /// Clears the store for the platform and all applets.
+    /// (deprecated) Clears the store for the platform and all applets.
     ///
-    /// The argument is the number of keys to protect. Using zero will clear all entries.
-    14 [6 -] PlatformClearStore: usize => (),
+    /// This message is deprecated in favor of [`PlatformWipeStorage`].
+    14 [6 - 11] _PlatformClearStore0: usize => (),
 
     /// Updates the platform.
     15 [7 -] PlatformUpdate: transfer::Request<'a> => transfer::Response,
@@ -330,5 +330,8 @@ api! {
     /// [`applet::Metadata0`]), and 4 big-endian bytes encoding the size (in bytes) of the applet.
     21 [11 -] AppletInstall2: transfer::Request<'a> => transfer::Response,
 
-    next 22 [12 -]
+    /// Wipes all persistent storage (board, scheduler, and applets).
+    22 [12 -] PlatformWipeStorage: () => (),
+
+    next 23 [13 -]
 }

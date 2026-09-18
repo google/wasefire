@@ -4,6 +4,7 @@
 
 ### Major
 
+- Rename `platform-clear-store` to `platform-wipe-storage` and remove argument
 - Change `platform-update` to take a bundle instead of the 2 sides
 
 ### Patch
