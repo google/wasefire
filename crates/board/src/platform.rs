@@ -67,6 +67,9 @@ pub trait Api: Send {
     /// - `World:NotFound`: The other side is empty.
     fn opposite_info() -> Result<wasefire_protocol::platform::SideInfo0<'static>, Error>;
 
+    /// Wipes all persistent storage (board, scheduler, and applets).
+    fn wipe_storage() -> Result<(), Error>;
+
     /// Reboots the device (thus platform and applets).
     fn reboot() -> Result<!, Error>;
 }

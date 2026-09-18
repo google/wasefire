@@ -44,7 +44,7 @@ features = ["fs", "io-std", "io-util", "macros", "process", "rt"]
 
 [dependencies.wasefire-protocol]
 path = "../protocol"
-version = "0.4.1-git"
+version = "0.5.0-git"
 features = ["host"]
 optional = true
 
