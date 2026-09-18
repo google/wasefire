@@ -68,6 +68,7 @@ pub struct Rpc<'a, B: UsbBus> {
 impl<'a, B: UsbBus> Rpc<'a, B> {
     pub fn new(usb_bus: &'a UsbBusAllocator<B>) -> Self {
         let interface = usb_bus.interface();
+        assert!(u8::from(interface) == 0); // we assume interface 0 for WinUSB
         let read_ep = usb_bus.bulk(MAX_PACKET_SIZE);
         let write_ep = usb_bus.bulk(MAX_PACKET_SIZE);
         Rpc { interface, read_ep, write_ep, state: State::Disabled }
@@ -242,16 +243,10 @@ impl<B: UsbBus> UsbClass<B> for Rpc<'_, B> {
     }
 
     fn get_bos_descriptors(&self, writer: &mut BosWriter) -> usb_device::Result<()> {
-        // Advertise WebUSB.
-        let mut data = Vec::with_capacity(24);
-        data.push(0); // bReserved
-        // PlatformCapabilityUUID
-        data.extend_from_slice(b"\x38\xb6\x08\x34\xa9\x09\xa0\x47\x8b\xfd\xa0\x76\x88\x15\xb6\x65");
-        data.extend_from_slice(&[0x00, 0x01]); // bcdVersion
-        data.push(WEBUSB_VENDOR_CODE); // bVendorCode
-        data.push(WEBUSB_URL_DESC.is_some() as u8); // iLandingPage
-        // bDevCapabilityType = PLATFORM
-        writer.capability(0x05, &data)
+        const PLATFORM: u8 = 0x05; // bDevCapabilityType
+        writer.capability(PLATFORM, &WEBUSB_BOS_CAPABILITY)?;
+        writer.capability(PLATFORM, &WINUSB_BOS_CAPABILITY)?;
+        Ok(())
     }
 
     fn get_string(&self, _: StringIndex, _id: LangID) -> Option<&str> {
@@ -278,17 +273,28 @@ impl<B: UsbBus> UsbClass<B> for Rpc<'_, B> {
         let req = xfer.request();
         if req.request_type != usb_device::control::RequestType::Vendor
             || req.recipient != usb_device::control::Recipient::Device
-            || req.request != WEBUSB_VENDOR_CODE
         {
-            return; // Only handle WebUSB requests.
+            return;
         }
-        // Stall on invalid requests.
-        let Some(descriptor) = WEBUSB_URL_DESC else { return xfer.reject().unwrap() };
-        const GET_URL: u16 = 2;
-        if req.index != GET_URL || req.value != 1 {
-            return xfer.reject().unwrap();
+        match req.request {
+            WEBUSB_VENDOR_CODE => {
+                // Stall on invalid requests.
+                let Some(descriptor) = WEBUSB_URL_DESC else { return xfer.reject().unwrap() };
+                const GET_URL: u16 = 2;
+                if req.index != GET_URL || req.value != 1 {
+                    return xfer.reject().unwrap();
+                }
+                xfer.accept_with_static(descriptor).unwrap();
+            }
+            WINUSB_VENDOR_CODE => {
+                const MS_OS_20_DESCRIPTOR_INDEX: u16 = 7;
+                if req.index != MS_OS_20_DESCRIPTOR_INDEX || req.value != 0 {
+                    return xfer.reject().unwrap();
+                }
+                xfer.accept_with_static(&WINUSB_DESC).unwrap();
+            }
+            _ => (),
         }
-        xfer.accept_with_static(descriptor).unwrap();
     }
 
     fn endpoint_setup(&mut self, _: EndpointAddress) {
@@ -311,6 +317,81 @@ impl<B: UsbBus> UsbClass<B> for Rpc<'_, B> {
 }
 
 const WEBUSB_VENDOR_CODE: u8 = 1;
+const WINUSB_VENDOR_CODE: u8 = 2;
+const WINUSB_DESC_LEN: usize = 182;
+
+macro_rules! make_descriptor {
+    ($([$($x:expr),*$(,)?]),*$(,)?) => { [$($($x,)*)*] };
+}
+
+const WEBUSB_BOS_CAPABILITY: [u8; 21] = make_descriptor!(
+    [0x00], // bReserved
+    [
+        0x38, 0xb6, 0x08, 0x34, 0xa9, 0x09, 0xa0, 0x47, 0x8b, 0xfd, 0xa0, 0x76, 0x88, 0x15, 0xb6,
+        0x65
+    ], // PlatformCapabilityUUID
+    [0x00, 0x01], // bcdVersion
+    [WEBUSB_VENDOR_CODE], // bVendorCode
+    [WEBUSB_URL_DESC.is_some() as u8], // iLandingPage
+);
+
+const WINUSB_BOS_CAPABILITY: [u8; 25] = make_descriptor!(
+    [0x00], // bReserved
+    [
+        0xdf, 0x60, 0xdd, 0xd8, 0x89, 0x45, 0xc7, 0x4c, 0x9c, 0xd2, 0x65, 0x9d, 0x9e, 0x64, 0x8a,
+        0x9f
+    ], // PlatformCapabilityUUID (D8DD60DF-4589-4CC7-9CD2-659D9E648A9F)
+    [0x00, 0x00, 0x03, 0x06], // dwWindowsVersion (0x06030000 = Windows 8.1+)
+    [0xb6, 0x00], // wMSOSDescriptorSetTotalLength (182)
+    [WINUSB_VENDOR_CODE], // bMS_VendorCode
+    [0x00], // bAltEnumCode
+);
+
+const WINUSB_DESC: [u8; WINUSB_DESC_LEN] = make_descriptor!(
+    // Microsoft OS 2.0 descriptor set header (10 bytes)
+    [0x0a, 0x00],             // wLength (10)
+    [0x00, 0x00],             // wDescriptorType (MS_OS_20_SET_HEADER_DESCRIPTOR = 0)
+    [0x00, 0x00, 0x03, 0x06], // dwWindowsVersion (0x06030000 = Windows 8.1+)
+    [0xb6, 0x00],             // wTotalLength (182)
+    // Microsoft OS 2.0 CCGP device descriptor (4 bytes)
+    [0x04, 0x00], // wLength (4)
+    [0x07, 0x00], // wDescriptorType (MS_OS_20_FEATURE_CCGP_DEVICE = 7)
+    // Microsoft OS 2.0 configuration subset header (8 bytes)
+    [0x08, 0x00], // wLength (8)
+    [0x01, 0x00], // wDescriptorType (MS_OS_20_SUBSET_HEADER_CONFIGURATION = 1)
+    [0x00],       // bConfigurationValue (0)
+    [0x00],       // bReserved
+    [0xa8, 0x00], // wTotalLength (168)
+    // Microsoft OS 2.0 function subset header (8 bytes)
+    [0x08, 0x00], // wLength (8)
+    [0x02, 0x00], // wDescriptorType (MS_OS_20_SUBSET_HEADER_FUNCTION = 2)
+    [0x00],       // bFirstInterface (0)
+    [0x00],       // bReserved
+    [0xa0, 0x00], // wSubsetLength (160)
+    // Microsoft OS 2.0 compatible ID descriptor (20 bytes)
+    [0x14, 0x00], // wLength (20)
+    [0x03, 0x00], // wDescriptorType (MS_OS_20_FEATURE_COMPATIBLE_ID = 3)
+    // ... work around rustfmt ...
+    [b'W', b'I', b'N', b'U', b'S', b'B', 0x00, 0x00], // CompatibleID ("WINUSB")
+    [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // SubCompatibleID
+    // Microsoft OS 2.0 registry property descriptor (132 bytes)
+    [0x84, 0x00], // wLength (132)
+    [0x04, 0x00], // wDescriptorType (MS_OS_20_FEATURE_REG_PROPERTY = 4)
+    [0x07, 0x00], // wPropertyDataType (REG_MULTI_SZ = 7)
+    [0x2a, 0x00], // wPropertyNameLength (42)
+    [
+        b'D', 0, b'e', 0, b'v', 0, b'i', 0, b'c', 0, b'e', 0, b'I', 0, b'n', 0, b't', 0, b'e', 0,
+        b'r', 0, b'f', 0, b'a', 0, b'c', 0, b'e', 0, b'G', 0, b'U', 0, b'I', 0, b'D', 0, b's', 0,
+        0, 0
+    ], // PropertyName ("DeviceInterfaceGUIDs\0" in UTF-16LE)
+    [0x50, 0x00], // wPropertyDataLength (80)
+    [
+        b'{', 0, b'b', 0, b'6', 0, b'4', 0, b'9', 0, b'b', 0, b'6', 0, b'3', 0, b'4', 0, b'-', 0,
+        b'3', 0, b'1', 0, b'e', 0, b'c', 0, b'-', 0, b'4', 0, b'3', 0, b'9', 0, b'4', 0, b'-', 0,
+        b'b', 0, b'a', 0, b'2', 0, b'8', 0, b'-', 0, b'4', 0, b'2', 0, b'3', 0, b'2', 0, b'4', 0,
+        b'd', 0, b'6', 0, b'c', 0, b'3', 0, b'9', 0, b'9', 0, b'3', 0, b'}', 0, 0, 0, 0, 0
+    ], // PropertyData ("{b649b634-31ec-4394-ba28-42324d6c3993}\0\0" in UTF-16LE)
+);
 
 const WEBUSB_URL_DESC: Option<&[u8]> = {
     const SPLIT: (Option<u8>, &[u8]) = split_webusb_url(option_env!("WASEFIRE_WEBUSB_URL"));
