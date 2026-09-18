@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.4.1-git
+## 0.5.0-git
+
+### Major
+
+- Deprecate `Api::PlatformClearStore` to `Api::_PlatformClearStore0` in favor of
+  `Api::PlatformWipeStorage`
 
 ### Patch
 

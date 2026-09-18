@@ -4,6 +4,7 @@
 
 ### Major
 
+- Add `platform::Api::wipe_storage()` to wipe all persistent storage
 - Replace `api-storage` feature with `api-store{,-fragment}`
 - Replace `Api::Storage` and `Storage<B>` with `Api::Store` and `Store<B>`
 - Remove `Singleton`

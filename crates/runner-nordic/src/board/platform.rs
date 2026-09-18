@@ -27,6 +27,8 @@ use wasefire_protocol::common::{Hexa, Name};
 use wasefire_protocol::platform::SideInfo0;
 use wasefire_sync::Once;
 
+use crate::with_state;
+
 pub mod update;
 
 pub enum Impl {}
@@ -64,6 +66,10 @@ impl Api for Impl {
         let name = build_name(header.name());
         let version = Hexa(header.version().to_be_bytes().to_vec().into());
         Ok(SideInfo0 { name, version })
+    }
+
+    fn wipe_storage() -> Result<(), Error> {
+        with_state(|state| state.store.clear(0))
     }
 
     fn reboot() -> Result<!, Error> {

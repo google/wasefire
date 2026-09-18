@@ -22,6 +22,8 @@ use wasefire_protocol::common::{Hexa, Name};
 use wasefire_protocol::platform::SideInfo0;
 use wasefire_sync::Lazy;
 
+use crate::board::with_state;
+
 mod update;
 
 pub struct State {
@@ -72,6 +74,10 @@ impl Api for Impl {
         let name = Name::default();
         let version = Hexa(Cow::Owned(version.to_vec()));
         Ok(SideInfo0 { name, version })
+    }
+
+    fn wipe_storage() -> Result<(), Error> {
+        with_state(|state| state.storage.store.clear(0))
     }
 
     fn reboot() -> Result<!, Error> {
