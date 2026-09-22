@@ -246,6 +246,8 @@ impl<B: UsbBus> UsbClass<B> for Rpc<'_, B> {
         writer.capability(PLATFORM, &WEBUSB_BOS_CAPABILITY)?;
         if u8::from(self.interface) == 0 {
             writer.capability(PLATFORM, &WINUSB_BOS_CAPABILITY)?;
+        } else {
+            log::warn!("WinUSB is disabled");
         }
         Ok(())
     }
