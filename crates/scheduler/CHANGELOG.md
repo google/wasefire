@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Support `PlatformWipeStorage` protocol call
 - Support board API migration from `Storage` to `Store`
 - Support `crypto-common` bump from `wasefire-board-api`
 

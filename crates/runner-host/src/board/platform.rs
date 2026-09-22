@@ -22,7 +22,7 @@ use wasefire_error::Code;
 use wasefire_protocol::common::{Hexa, Name};
 use wasefire_protocol::platform::SideInfo0;
 
-use crate::FLAGS;
+use crate::{FLAGS, with_state};
 
 pub mod protocol;
 mod update;
@@ -51,6 +51,10 @@ impl Api for Impl {
 
     fn opposite_info() -> Result<SideInfo0<'static>, Error> {
         Err(Error::world(Code::NotEnough))
+    }
+
+    fn wipe_storage() -> Result<(), Error> {
+        with_state(|state| state.store.clear(0))
     }
 
     fn reboot() -> Result<!, Error> {
