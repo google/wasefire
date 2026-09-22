@@ -68,7 +68,6 @@ pub struct Rpc<'a, B: UsbBus> {
 impl<'a, B: UsbBus> Rpc<'a, B> {
     pub fn new(usb_bus: &'a UsbBusAllocator<B>) -> Self {
         let interface = usb_bus.interface();
-        assert!(u8::from(interface) == 0); // we assume interface 0 for WinUSB
         let read_ep = usb_bus.bulk(MAX_PACKET_SIZE);
         let write_ep = usb_bus.bulk(MAX_PACKET_SIZE);
         Rpc { interface, read_ep, write_ep, state: State::Disabled }
@@ -245,7 +244,9 @@ impl<B: UsbBus> UsbClass<B> for Rpc<'_, B> {
     fn get_bos_descriptors(&self, writer: &mut BosWriter) -> usb_device::Result<()> {
         const PLATFORM: u8 = 0x05; // bDevCapabilityType
         writer.capability(PLATFORM, &WEBUSB_BOS_CAPABILITY)?;
-        writer.capability(PLATFORM, &WINUSB_BOS_CAPABILITY)?;
+        if u8::from(self.interface) == 0 {
+            writer.capability(PLATFORM, &WINUSB_BOS_CAPABILITY)?;
+        }
         Ok(())
     }
 
@@ -286,7 +287,7 @@ impl<B: UsbBus> UsbClass<B> for Rpc<'_, B> {
                 }
                 xfer.accept_with_static(descriptor).unwrap();
             }
-            WINUSB_VENDOR_CODE => {
+            WINUSB_VENDOR_CODE if u8::from(self.interface) == 0 => {
                 const MS_OS_20_DESCRIPTOR_INDEX: u16 = 7;
                 if req.index != MS_OS_20_DESCRIPTOR_INDEX || req.value != 0 {
                     return xfer.reject().unwrap();
@@ -318,7 +319,6 @@ impl<B: UsbBus> UsbClass<B> for Rpc<'_, B> {
 
 const WEBUSB_VENDOR_CODE: u8 = 1;
 const WINUSB_VENDOR_CODE: u8 = 2;
-const WINUSB_DESC_LEN: usize = 182;
 
 macro_rules! make_descriptor {
     ($([$($x:expr),*$(,)?]),*$(,)?) => { [$($($x,)*)*] };
@@ -347,7 +347,7 @@ const WINUSB_BOS_CAPABILITY: [u8; 25] = make_descriptor!(
     [0x00], // bAltEnumCode
 );
 
-const WINUSB_DESC: [u8; WINUSB_DESC_LEN] = make_descriptor!(
+const WINUSB_DESC: [u8; 182] = make_descriptor!(
     // Microsoft OS 2.0 descriptor set header (10 bytes)
     [0x0a, 0x00],             // wLength (10)
     [0x00, 0x00],             // wDescriptorType (MS_OS_20_SET_HEADER_DESCRIPTOR = 0)
