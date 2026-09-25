@@ -33,14 +33,14 @@ use wasefire_protocol_usb::Rpc;
 
 use crate::with_state;
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
 impl Api for Impl {
     type Ctap = WithHid<Impl>;
     type Serial = WithSerial<Impl>;
 }
 
-pub struct State {
+pub(crate) struct State {
     protocol: Option<Rpc<'static, UsbIpBus>>,
     ctap: Option<Ctap<'static, UsbIpBus>>,
     serial: Option<Serial<'static, UsbIpBus>>,
@@ -48,7 +48,7 @@ pub struct State {
     usb_dev: Option<UsbDevice<'static, UsbIpBus>>,
 }
 
-pub async fn init() -> Result<()> {
+pub(crate) async fn init() -> Result<()> {
     if with_state(|x| x.usb.usb_dev.is_none()) {
         return Ok(());
     }
@@ -97,7 +97,7 @@ pub async fn init() -> Result<()> {
 }
 
 impl State {
-    pub fn new(protocol: bool, ctap: bool, serial: bool) -> Self {
+    pub(crate) fn new(protocol: bool, ctap: bool, serial: bool) -> Self {
         let mut state = State { protocol: None, ctap: None, serial: None, usb_dev: None };
         if !protocol && !ctap && !serial {
             return state;
@@ -121,15 +121,15 @@ impl State {
         state
     }
 
-    pub fn protocol(&mut self) -> &mut Rpc<'static, UsbIpBus> {
+    pub(crate) fn protocol(&mut self) -> &mut Rpc<'static, UsbIpBus> {
         self.protocol.as_mut().expect("--protocol is not usb")
     }
 
-    pub fn ctap(&mut self) -> &mut Ctap<'static, UsbIpBus> {
+    pub(crate) fn ctap(&mut self) -> &mut Ctap<'static, UsbIpBus> {
         self.ctap.as_mut().expect("--usb-ctap is not set")
     }
 
-    pub fn serial(&mut self) -> &mut Serial<'static, UsbIpBus> {
+    pub(crate) fn serial(&mut self) -> &mut Serial<'static, UsbIpBus> {
         self.serial.as_mut().expect("--usb-serial is not set")
     }
 

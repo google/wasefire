@@ -15,13 +15,13 @@
 use std::io::Write;
 use std::sync::Mutex;
 
-pub type Cleanup = Box<dyn FnOnce() + Send>;
+pub(crate) type Cleanup = Box<dyn FnOnce() + Send>;
 
-pub fn push(cleanup: Cleanup) {
+pub(crate) fn push(cleanup: Cleanup) {
     CLEANUP.lock().unwrap().push(cleanup);
 }
 
-pub fn shutdown(status: i32) -> ! {
+pub(crate) fn shutdown(status: i32) -> ! {
     wasefire_logger::info!("Shutting down.");
     let cleanups = std::mem::take(&mut *CLEANUP.lock().unwrap());
     for cleanup in cleanups {

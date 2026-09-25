@@ -15,7 +15,7 @@
 use wasefire_board_api as board;
 use wasefire_logger as log;
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
 impl board::debug::Api for Impl {
     const MAX_TIME: u64 = u64::MAX;

@@ -20,7 +20,7 @@ use wasefire_board_api::transfer::Api;
 use wasefire_cli_tools::fs;
 use wasefire_error::{Code, Error};
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
 impl Api for Impl {
     const CHUNK_SIZE: usize = 4096;

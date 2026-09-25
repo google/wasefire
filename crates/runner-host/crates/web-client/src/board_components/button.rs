@@ -17,14 +17,14 @@ use web_common::{ButtonState, Event};
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
-pub struct Props {
+pub(crate) struct Props {
     #[prop_or_default]
     pub id: usize,
     pub on_event: Callback<Event>,
 }
 
 #[function_component]
-pub fn Button(Props { id, on_event }: &Props) -> Html {
+pub(crate) fn Button(Props { id, on_event }: &Props) -> Html {
     let id = *id;
     let pressed = use_state(|| false);
     let press = Callback::from({

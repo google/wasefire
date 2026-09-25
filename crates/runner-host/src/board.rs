@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod applet;
-pub mod button;
-pub mod clock;
+pub(crate) mod applet;
+pub(crate) mod button;
+pub(crate) mod clock;
 mod crypto;
 mod debug;
 mod led;
-pub mod platform;
+pub(crate) mod platform;
 mod rng;
-pub mod timer;
-pub mod uart;
-pub mod usb;
+pub(crate) mod timer;
+pub(crate) mod uart;
+pub(crate) mod usb;
 mod vendor;
 
 use tokio::sync::mpsc::Sender;
@@ -32,7 +32,7 @@ use wasefire_store::{FileStorage, Store};
 
 use crate::{RECEIVER, with_state};
 
-pub struct State {
+pub(crate) struct State {
     pub sender: Sender<Event<Board>>,
     pub button: bool, // whether interrupts are enabled
     pub led: bool,
@@ -44,7 +44,7 @@ pub struct State {
     pub web: Option<web_server::Client>,
 }
 
-pub enum Board {}
+pub(crate) enum Board {}
 
 impl Api for Board {
     fn try_event() -> Option<Event<Board>> {
