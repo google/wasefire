@@ -17,7 +17,7 @@ use wasefire_board_api::{Error, Id, Support};
 
 use crate::with_state;
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
 impl Support<usize> for Impl {
     const SUPPORT: usize = 1;

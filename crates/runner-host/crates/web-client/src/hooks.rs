@@ -18,16 +18,16 @@ use yew::prelude::*;
 use yew_hooks::prelude::*;
 
 #[derive(Clone)]
-pub struct UseRunnerConnectionHandle {
+pub(crate) struct UseRunnerConnectionHandle {
     pub ws: UseWebSocketHandle,
     pub command_state: UseStateHandle<Option<Command>>,
 }
 
 impl UseRunnerConnectionHandle {
-    pub fn send_board_ready(&self) {
+    pub(crate) fn send_board_ready(&self) {
         self.ws.send(serde_json::to_string(&Event::BoardReady).unwrap());
     }
-    pub fn send_event(&self, event: Event) {
+    pub(crate) fn send_event(&self, event: Event) {
         self.ws.send(serde_json::to_string(&event).unwrap());
     }
 }

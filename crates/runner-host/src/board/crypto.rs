@@ -16,7 +16,7 @@ use wasefire_board_api::crypto::{self, Api};
 
 use crate::board::Board;
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
 impl Api for Impl {
     type Aes128Ccm = crypto::SoftwareAes128Ccm;

@@ -19,7 +19,7 @@ use wasefire_error::Error;
 
 use crate::with_state;
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
 impl Api for Impl {
     type Event = syscall_test::Event;

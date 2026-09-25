@@ -18,7 +18,7 @@ use wasefire_board_api::{Error, Id, Support};
 use crate::board::State;
 use crate::with_state;
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
 impl Support<usize> for Impl {
     const SUPPORT: usize = 1;
@@ -38,7 +38,7 @@ impl Api for Impl {
     }
 }
 
-pub fn event(state: &State, pressed: Option<bool>) {
+pub(crate) fn event(state: &State, pressed: Option<bool>) {
     if !state.button {
         return;
     }

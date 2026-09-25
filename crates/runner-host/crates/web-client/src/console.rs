@@ -18,14 +18,14 @@ use yew::prelude::*;
 use yew_hooks::prelude::*;
 
 #[derive(Properties, PartialEq)]
-pub struct Props {
+pub(crate) struct Props {
     #[prop_or_default]
     pub id: usize,
     pub command_state: UseStateHandle<Option<Command>>,
 }
 
 #[function_component(Console)]
-pub fn console(Props { id, command_state }: &Props) -> Html {
+pub(crate) fn console(Props { id, command_state }: &Props) -> Html {
     let history = use_list(vec![]);
     let button_enabled = use_state(|| false);
 

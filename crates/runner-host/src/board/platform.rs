@@ -24,10 +24,10 @@ use wasefire_protocol::platform::SideInfo0;
 
 use crate::{FLAGS, with_state};
 
-pub mod protocol;
+pub(crate) mod protocol;
 mod update;
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
 impl Api for Impl {
     type Protocol = protocol::Impl;

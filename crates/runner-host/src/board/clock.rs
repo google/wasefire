@@ -18,17 +18,17 @@ use std::time::Instant;
 use wasefire_board_api::Error;
 use wasefire_board_api::clock::Api;
 
-pub fn init() {
+pub(crate) fn init() {
     let _ = Impl::uptime_us();
 }
 
-pub fn uptime_us() -> u64 {
+pub(crate) fn uptime_us() -> u64 {
     let now = Instant::now();
     let origin = ORIGIN.get_or_init(|| now);
     now.duration_since(*origin).as_micros() as u64
 }
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
 impl Api for Impl {
     fn uptime_us() -> Result<u64, Error> {

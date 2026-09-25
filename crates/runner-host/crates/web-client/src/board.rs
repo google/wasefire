@@ -21,14 +21,14 @@ use crate::board_components::button::Button;
 use crate::board_components::led::LED;
 
 #[derive(Properties, PartialEq)]
-pub struct Props {
+pub(crate) struct Props {
     pub command_state: UseStateHandle<Option<Command>>,
     pub on_board_ready: Callback<()>,
     pub on_event: Callback<Event>,
 }
 
 #[function_component]
-pub fn Board(Props { command_state, on_board_ready, on_event }: &Props) -> Html {
+pub(crate) fn Board(Props { command_state, on_board_ready, on_event }: &Props) -> Html {
     let board_config = use_state(|| None);
 
     use_effect_with(command_state.clone(), {

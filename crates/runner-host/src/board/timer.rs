@@ -21,7 +21,7 @@ use wasefire_board_api::{Error, Id, Support};
 
 use crate::with_state;
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
 impl Support<usize> for Impl {
     const SUPPORT: usize = 5;
@@ -70,9 +70,9 @@ impl Api for Impl {
 }
 
 #[derive(Default)]
-pub struct Timers([Timer; <Impl as Support<usize>>::SUPPORT]);
+pub(crate) struct Timers([Timer; <Impl as Support<usize>>::SUPPORT]);
 
 #[derive(Default)]
-pub struct Timer {
+pub(crate) struct Timer {
     handle: Option<JoinHandle<()>>,
 }

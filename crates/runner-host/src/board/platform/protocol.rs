@@ -18,7 +18,7 @@ use wasefire_protocol_tokio::Pipe;
 
 use crate::with_state;
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
 impl Api for Impl {
     fn read() -> Result<Option<Box<[u8]>>, Error> {
@@ -60,7 +60,7 @@ impl Api for Impl {
     }
 }
 
-pub enum State {
+pub(crate) enum State {
     Pipe(Pipe),
     Usb,
 }

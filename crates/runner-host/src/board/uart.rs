@@ -25,16 +25,16 @@ use wasefire_logger as log;
 use crate::board::Board;
 use crate::with_state;
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
-pub struct Uarts([Uart; <Impl as Support<usize>>::SUPPORT]);
+pub(crate) struct Uarts([Uart; <Impl as Support<usize>>::SUPPORT]);
 
 impl Uarts {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Uarts(std::array::from_fn(Uart::new))
     }
 
-    pub fn init() {
+    pub(crate) fn init() {
         let uart = crate::FLAGS.dir.join("uart0");
         let _ = std::fs::remove_file(&uart);
         let listener = match UnixListener::bind(&uart) {

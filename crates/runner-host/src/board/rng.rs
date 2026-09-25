@@ -16,7 +16,7 @@ use rand::Rng;
 use wasefire_board_api::Error;
 use wasefire_board_api::rng::Api;
 
-pub enum Impl {}
+pub(crate) enum Impl {}
 
 impl Api for Impl {
     fn fill_bytes(buffer: &mut [u8]) -> Result<(), Error> {
