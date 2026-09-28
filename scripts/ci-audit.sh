@@ -35,9 +35,9 @@ done
 # Audit every committed Rust lockfile. The first invocation refreshes the
 # advisory database; subsequent checks reuse it to avoid dozens of fetches.
 first=true
-find crates -name Cargo.lock -type f | sort | while read -r lock; do
+for lock in $(git ls-files | grep 'Cargo.lock$' | sort); do
   no_fetch=--no-fetch
-  if $first; then
+  if [ "$first" = "true" ]; then
     no_fetch=
     first=false
   fi
