@@ -36,6 +36,9 @@ runs:
     - if: ${{ inputs.check == 'tombi' }}
       run: ./scripts/ci-tombi.sh
       shell: bash
+    - if: ${{ inputs.check == 'audit' }}
+      run: ./scripts/ci-audit.sh
+      shell: bash
     - if: ${{ inputs.check == 'applets' }}
       run: ./scripts/ci-applets.sh
       shell: bash

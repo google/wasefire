@@ -40,6 +40,7 @@ jobs:
           x        publish  pull_request  push  schedule
           x       markdown  pull_request  push  schedule
           x          tombi  pull_request  push  schedule
+          x          audit  pull_request  push  schedule
           x        applets  pull_request  push  schedule
           x        runners  pull_request  push  schedule
           for i in $(seq 0 10); do
