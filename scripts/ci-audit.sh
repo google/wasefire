@@ -15,10 +15,10 @@
 
 set -e
 . scripts/log.sh
+. scripts/shard.sh
 
-# Known informational advisories in transitive dependencies that require
-# upstream migrations rather than lockfile updates. Keep these explicit so
-# --deny warnings still catches any new advisory.
+# This script runs cargo audit on all crates.
+
 IGNORED_ADVISORIES="
 RUSTSEC-2023-0089
 RUSTSEC-2024-0370
@@ -29,18 +29,13 @@ RUSTSEC-2026-0110
 
 ignore_args=
 for advisory in $IGNORED_ADVISORIES; do
-  ignore_args="$ignore_args --ignore $advisory"
+  ignore_args="$ignore_args --ignore=$advisory"
 done
 
-# Audit every committed Rust lockfile. The first invocation refreshes the
-# advisory database; subsequent checks reuse it to avoid dozens of fetches.
-first=true
-for lock in $(git ls-files | grep 'Cargo.lock$' | sort); do
+shard_init "$@"
+for lock in $(git ls-files '*/Cargo.lock'); do
+  shard_next || continue
+  x ./scripts/wrapper.sh cargo audit --deny=warnings $ignore_args $no_fetch --file="$lock"
   no_fetch=--no-fetch
-  if [ "$first" = "true" ]; then
-    no_fetch=
-    first=false
-  fi
-  # shellcheck disable=SC2086  # ignore_args intentionally expands into arguments.
-  x ./scripts/wrapper.sh cargo audit --deny warnings $ignore_args $no_fetch --file "$lock"
 done
+shard_done

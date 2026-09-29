@@ -10,7 +10,7 @@
 ### Patch
 
 - Remove now stable `never_type` attribute
-- Update dependencies, including RustSec fixes for `h2`, `rustls`, and yanked transitive crates
+- Update dependencies
 
 ## 0.4.0
 
@@ -103,4 +103,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 22 -->
+<!-- Increment to skip CHANGELOG.md test: 23 -->

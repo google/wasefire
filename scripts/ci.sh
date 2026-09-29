@@ -31,12 +31,12 @@ x ./scripts/sync.sh
 x ./scripts/publish.sh --dry-run
 x ./scripts/wrapper.sh mdl -g -s markdownlint.rb .
 x ./scripts/ci-tombi.sh
-x ./scripts/ci-audit.sh
 x ./scripts/ci-applets.sh
 x ./scripts/ci-runners.sh
 x ./scripts/ci-tests.sh
 x ./scripts/hwci.sh host
 x ./scripts/ci-book.sh
+x ./scripts/ci-audit.sh
 x ./scripts/artifacts.sh --cleanup
 x ./scripts/footprint.sh --cleanup
 git diff --exit-code || e 'Modified files'
