@@ -49,6 +49,7 @@ jobs:
             x   hw-host-$i  pull_request  push  schedule
           done
           x           book  pull_request  push  schedule
+          x          audit  pull_request  push  schedule
           for i in $(seq 0 1); do
             x artifacts-$i  pull_request  push  schedule
           done
