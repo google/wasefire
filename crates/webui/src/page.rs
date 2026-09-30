@@ -152,6 +152,7 @@ pub(crate) fn render(page: UseStateHandle<Page>) -> Html {
                 service::PlatformInfo3::input(page.setter(), device.clone()),
                 service::PlatformReboot::input(page.setter(), device.clone()),
                 service::PlatformUpdate::input(page.setter(), device.clone()),
+                service::PlatformWipeStorage::input(page.setter(), device.clone()),
             ];
             let applet = [
                 service::AppletExitStatus::input(page.setter(), device.clone()),
@@ -307,6 +308,29 @@ async fn platform_reboot(page: UseStateSetter<Page>, device: UsbDevice) {
         sleep(Duration::from_millis(100)).await;
     }
     page.set(Page::error(anyhow!("Reboot seems to have failed.")));
+}
+
+impl Command for service::PlatformWipeStorage {
+    fn input(page: UseStateSetter<Page>, device: Device) -> Html {
+        let click = Callback::from(move |_| {
+            page.set(Page::Feedback { content: "Wiping persistent storage...".into() });
+            let page = page.clone();
+            let device = device.clone();
+            spawn_local(async move {
+                let wipe = if device.supports::<service::PlatformWipeStorage>() {
+                    device.call::<service::PlatformWipeStorage>(()).await
+                } else if device.supports::<service::_PlatformClearStore0>() {
+                    device.call::<service::_PlatformClearStore0>(0).await
+                } else {
+                    Err(anyhow!("Device does not support wiping storage."))
+                };
+                unwrap!(page, device, wipe).get();
+                let content = "Persistent storage wiped. ".into();
+                page.set(Page::Result { content, device: Some(device) });
+            });
+        });
+        html!(<li><button onclick={click}>{ "Wipe" }</button>{ " all persistent storage" }</li>)
+    }
 }
 
 impl Command for service::AppletInstall2 {
