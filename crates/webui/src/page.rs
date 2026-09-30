@@ -322,7 +322,7 @@ impl Command for service::PlatformWipeStorage {
                 } else if device.supports::<service::_PlatformClearStore0>() {
                     device.call::<service::_PlatformClearStore0>(0).await
                 } else {
-                    Err(anyhow!("device does not support wiping storage"))
+                    Err(anyhow!("Device does not support wiping storage."))
                 };
                 unwrap!(page, device, wipe).get();
                 let content = "Persistent storage wiped. ".into();
