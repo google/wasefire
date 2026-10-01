@@ -35,13 +35,15 @@ trap 'git worktree remove --force "$BASELINE" >/dev/null 2>&1 || true' EXIT
 x git worktree add --quiet --detach "$BASELINE" "$BASE"
 
 version() {
-  sed -n '/^\[package\]$/,/^$/{s/^version = "\(.*\)"$/\1/p}' "$1"
+  sed -n '/^\[package\][[:space:]]*$/,/^\[/{s/^version[[:space:]]*=[[:space:]]*"\([^"]*\)"[[:space:]]*$/\1/p}' "$1"
 }
 
 for crate in board scheduler prelude; do
   manifest=crates/$crate/Cargo.toml
   current=$(version "$manifest")
+  [ -n "$current" ] || e "Failed to parse current version for $crate"
   baseline=$(version "$BASELINE/$manifest")
+  [ -n "$baseline" ] || e "Failed to parse baseline version for $crate"
   if [ "$current" = "$baseline" ]; then
     i "Skip $crate unchanged at $current"
     continue
