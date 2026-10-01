@@ -7,7 +7,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - if: ${{ contains(fromJSON('["changelog", "copyright", "sync"]'), inputs.check) }}
+    - if: ${{ contains(fromJSON('["changelog", "copyright", "semver", "sync"]'), inputs.check) }}
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         fetch-depth: 0
@@ -53,6 +53,9 @@ runs:
       shell: bash
     - if: ${{ inputs.check == 'audit' }}
       run: ./scripts/ci-audit.sh
+      shell: bash
+    - if: ${{ inputs.check == 'semver' }}
+      run: ./scripts/ci-semver.sh ${{ github.event.pull_request.base.sha }}
       shell: bash
     - if: ${{ startsWith(inputs.check, 'artifacts-') }}
       run: |

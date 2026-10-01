@@ -50,6 +50,7 @@ jobs:
           done
           x           book  pull_request  push  schedule
           x          audit  pull_request  push  schedule
+          x         semver  pull_request
           for i in $(seq 0 1); do
             x artifacts-$i  pull_request  push  schedule
           done
