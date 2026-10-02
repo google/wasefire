@@ -55,7 +55,7 @@ runs:
       run: ./scripts/ci-audit.sh
       shell: bash
     - if: ${{ inputs.check == 'semver' }}
-      run: ./scripts/ci-semver.sh ${{ github.event.pull_request.base.sha }}
+      run: ./scripts/ci-semver.sh
       shell: bash
     - if: ${{ startsWith(inputs.check, 'artifacts-') }}
       run: |
