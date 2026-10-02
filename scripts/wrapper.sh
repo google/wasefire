@@ -58,7 +58,7 @@ case "$1" in
   nrfdfu) ensure_cargo nrfdfu 0.2.1 ;;
   probe-rs) ensure_cargo probe-rs-tools 0.32.0 ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.4.0 ;;
-  trunk) ensure_cargo trunk 0.22.0-beta.2 ;;
+  trunk) ensure_cargo trunk 0.22.0-rc.1 ;;
   twiggy) ensure_cargo twiggy 0.8.0 ;;
   *) IS_CARGO=n ;;
 esac
@@ -93,7 +93,7 @@ case "$1" in
     fi ;;
   tombi)
     REPO=tombi-toml/tombi
-    VERSION=v1.5.0
+    VERSION=v1.7.1
     if ! tag_installed tombi; then
       ASSET=tombi-cli-${VERSION#v}-x86_64-unknown-linux-musl
       github_url $ASSET.tar.gz

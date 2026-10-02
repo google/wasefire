@@ -104,7 +104,7 @@ fn pool_size(name: &str) -> usize {
         "align" => 0x200000,
         "bulk" => 0x200000,
         "const" => 0x200000,
-        "data" => 0x400000,
+        "data" => 0x800000,
         "linking" => 0x1000000,
         "memory_copy" => 0x400000,
         "memory_fill" => 0x200000,

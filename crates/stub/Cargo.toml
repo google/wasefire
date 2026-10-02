@@ -20,7 +20,7 @@ hkdf = { version = "0.13.0", default-features = false }
 hmac = { version = "0.13.0", default-features = false }
 p256 = { version = "0.14.0", default-features = false, features = ["ecdsa"] }
 p384 = { version = "0.14.0", default-features = false, features = ["ecdsa"] }
-rand = { version = "0.10.2", default-features = false, features = ["thread_rng"] }
+rand = { version = "0.10.3", default-features = false, features = ["thread_rng"] }
 sha2 = { version = "0.11.0", default-features = false }
 signature = { version = "3.0.0", default-features = false }
 wasefire-error = { path = "../error", version = "0.1.5-git" }
