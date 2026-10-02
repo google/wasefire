@@ -37,6 +37,7 @@ x ./scripts/ci-tests.sh
 x ./scripts/hwci.sh host
 x ./scripts/ci-book.sh
 x ./scripts/ci-audit.sh
+x ./scripts/ci-semver.sh
 x ./scripts/artifacts.sh --cleanup
 x ./scripts/footprint.sh --cleanup
 git diff --exit-code || e 'Modified files'

@@ -48,6 +48,7 @@ case "$1" in
     case "$2" in
       audit) ensure_cargo cargo-audit 0.22.2 ;;
       bloat) ensure_cargo cargo-bloat 0.12.1 ;;
+      semver-checks) ensure_cargo cargo-semver-checks 0.50.0 ;;
       upgrade) ensure_cargo cargo-edit 0.13.13 ;;
       *) e "Wrapper does not support 'cargo $2'" ;;
     esac
