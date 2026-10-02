@@ -15,44 +15,28 @@
 
 set -e
 . scripts/log.sh
+. scripts/package.sh
 
 # This script checks SemVer compatibility for user-facing published crates.
 
-BASE="$1"
-if [ -z "$BASE" ]; then
-  for ref in upstream/main origin/main main; do
-    git rev-parse --verify -q "$ref^{commit}" >/dev/null || continue
-    BASE=$(git merge-base HEAD "$ref")
-    break
-  done
-fi
-[ -n "$BASE" ] || e "Could not determine the SemVer baseline"
-git cat-file -e "$BASE^{commit}" || e "Invalid SemVer baseline '$BASE'"
+BASE="$(git tag -l 'release/*' | tail -n1)"
+[ -n "$BASE" ] || e "Failed to find latest release"
 
-BASELINE=$(mktemp -d)
-rmdir "$BASELINE"
+BASELINE="$(mktemp -du)"
 trap 'git worktree remove --force "$BASELINE" >/dev/null 2>&1 || true' EXIT
 x git worktree add --quiet --detach "$BASELINE" "$BASE"
 
-version() {
-  sed -n '/^\[package\][[:space:]]*$/,/^\[/{s/^version[[:space:]]*=[[:space:]]*"\([^"]*\)"[[:space:]]*$/\1/p}' "$1"
+check() {
+  local dir=$1; shift
+  local ver=$(cd $dir && package_version)
+  if [ "$ver" = "$(cd "$BASELINE/$dir" && package_version)" ]
+  then i "Skip $dir unchanged at $ver"
+  else x ./scripts/wrapper.sh cargo semver-checks \
+         --manifest-path=$dir --baseline-root="$BASELINE/$dir" "$@"
+  fi
 }
 
-for crate in board scheduler prelude; do
-  manifest=crates/$crate/Cargo.toml
-  current=$(version "$manifest")
-  [ -n "$current" ] || e "Failed to parse current version for $crate"
-  baseline=$(version "$BASELINE/$manifest")
-  [ -n "$baseline" ] || e "Failed to parse baseline version for $crate"
-  if [ "$current" = "$baseline" ]; then
-    i "Skip $crate unchanged at $current"
-    continue
-  fi
-  case "$crate" in
-    board) features="--only-explicit-features --features=full-api,std" ;;
-    scheduler) features="--only-explicit-features --features=std,wasm" ;;
-    prelude) features="--default-features --features=rust-crypto" ;;
-  esac
-  x ./scripts/wrapper.sh cargo semver-checks check-release \
-    --manifest-path="$manifest" --baseline-root="$BASELINE/crates/$crate" $features
-done
+# TODO(https://github.com/obi1kenobi/cargo-semver-checks/issues/1746): Uncomment when fixed.
+# check crates/board --only-explicit-features --features=full-api,std
+# check crates/scheduler --only-explicit-features --features=std,wasm
+check crates/prelude --default-features --features=rust-crypto
