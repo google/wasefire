@@ -7,14 +7,14 @@ publish = false
 
 [dependencies]
 anyhow = "1.0.104"
-clap = { version = "4.6.6", features = ["derive", "env"] }
+clap = { version = "4.6.7", features = ["derive", "env"] }
 data-encoding = "2.11.1"
 env_logger = { version = "0.11.11", optional = true }
-rand = "0.10.2"
+rand = "0.10.3"
 syscall-test = { path = "../board/crates/syscall-test" }
 tokio = { version = "1.53.1", features = ["full"] }
 usb-device = "0.3.2"
-usbd-hid = "0.10.1"
+usbd-hid = "0.10.2"
 usbd-serial = "0.2.2"
 wasefire-board-api = { path = "../board", features = ["std"] }
 wasefire-cli-tools = { path = "../cli-tools" }

@@ -264,7 +264,7 @@ impl Completion {
 async fn self_update() -> Result<PathBuf> {
     const URL: &str = concat!(
         "https://github.com/google/wasefire/releases/latest/download/wasefire-",
-        target_triple::target!(),
+        target_tuple::target!(),
         ".tar.gz"
     );
     let path = std::env::current_exe()?;

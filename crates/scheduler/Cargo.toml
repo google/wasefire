@@ -18,7 +18,7 @@ features = ["std", "wasm"]
 bytemuck = { version = "1.25.2", default-features = false, optional = true }
 crypto-common = { version = "0.2.2", default-features = false, optional = true }
 defmt = { version = "1.1.1", default-features = false, optional = true }
-derive-where = { version = "1.6.1", default-features = false, features = ["nightly"] }
+derive-where = { version = "1.7.0", default-features = false, features = ["nightly"] }
 digest = { version = "0.11.3", default-features = false, features = ["mac"], optional = true }
 typenum = { version = "1.20.1", default-features = false, optional = true }
 wasefire-applet-api = { path = "../api", version = "0.9.1-git", features = ["host"] }
@@ -38,7 +38,7 @@ features = ["toctou"]
 optional = true
 
 [dependencies.wasmtime]
-version = "48.0.1"
+version = "49.0.1"
 default-features = false
 features = ["async", "runtime"]
 optional = true

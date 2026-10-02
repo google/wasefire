@@ -7,7 +7,7 @@ publish = false
 
 [dependencies]
 bytemuck = { version = "1.25.2", default-features = false, features = ["derive"] }
-derive-where = { version = "1.6.1", default-features = false, features = ["nightly"] }
+derive-where = { version = "1.7.0", default-features = false, features = ["nightly"] }
 
 [lints]
 clippy.mod_module_files = "warn"

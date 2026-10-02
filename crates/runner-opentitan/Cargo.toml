@@ -18,7 +18,7 @@ riscv-rt = { version = "0.18.0", features = ["single-hart", "v-trap"] }
 syscall-test = { path = "../board/crates/syscall-test", optional = true }
 typenum = { version = "1.20.1", default-features = false }
 usb-device = { version = "0.3.2", default-features = false }
-usbd-hid = { version = "0.10.1", optional = true }
+usbd-hid = { version = "0.10.2", optional = true }
 wasefire-board-api = { path = "../board" }
 wasefire-common = { path = "../common" }
 wasefire-error = { path = "../error" }

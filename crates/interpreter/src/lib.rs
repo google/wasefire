@@ -109,7 +109,6 @@
 #![cfg_attr(feature = "float-types", feature(float_minimum_maximum))]
 #![feature(pointer_is_aligned_to)]
 #![feature(try_blocks)]
-#![feature(unwrap_infallible)]
 
 extern crate alloc;
 
