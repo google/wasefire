@@ -19,7 +19,7 @@ use wasefire_board_api::crypto::ecdh::Api;
 use wasefire_error::Error;
 
 use crate::board::crypto::{memshred, try_from_bytes, try_from_bytes_mut};
-use crate::crypto::common::{AesKeyMode, BlindedKey, EccKeyMode, KeyMode, UnblindedKey};
+use crate::crypto::common::{BlindedKey, EccKeyMode, HmacKeyMode, KeyMode, UnblindedKey};
 use crate::crypto::p256;
 
 pub enum Impl {}
@@ -54,9 +54,9 @@ impl Api<32> for Impl {
         let shared = try_from_bytes_mut::<Shared>(shared)?;
         let private = unsafe { private.borrow() }?;
         let public = unsafe { public.borrow() }?;
-        // We want a symmetric key of 32 bytes. The actual key mode doesn't matter (at least for
-        // now). So we just use AES-256-CBC since we already have the key mode defined.
-        let secret = p256::ecdh(&private, &public, KeyMode::Aes(AesKeyMode::Cbc))?;
+        // We want a symmetric key of 64 bytes. The actual key mode doesn't matter (at least for
+        // now). So we just use HMAC-SHA-256 since we already have the key mode defined.
+        let secret = p256::ecdh(&private, &public, KeyMode::Hmac(HmacKeyMode::Sha256))?;
         shared.keyblob.copy_from_slice(secret.0.keyblob());
         shared.checksum = secret.0.checksum;
         Ok(())
@@ -98,7 +98,7 @@ impl Api<32> for Impl {
         let shared = try_from_bytes::<Shared>(shared)?;
         let keyblob = bytemuck::bytes_of(&shared.keyblob);
         let share0 = &keyblob[.. 32];
-        let share1 = &keyblob[32 ..];
+        let share1 = &keyblob[64 .. 96];
         for (x, (s0, s1)) in x.iter_mut().zip(share0.iter().zip(share1.iter())) {
             *x = s0 ^ s1;
         }
@@ -144,7 +144,7 @@ struct Private {
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 struct Shared {
-    keyblob: [u32; 16],
+    keyblob: [u32; 32],
     checksum: u32,
 }
 
