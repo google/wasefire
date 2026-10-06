@@ -22,18 +22,9 @@ set -e
 BASE="$(git tag -l 'release/*' | tail -n1)"
 [ -n "$BASE" ] || e "Failed to find latest release"
 
-BASELINE="$(mktemp -du)"
-trap 'git worktree remove --force "$BASELINE" >/dev/null 2>&1 || true' EXIT
-x git worktree add --quiet --detach "$BASELINE" "$BASE"
-
 check() {
   local dir=$1; shift
-  local ver=$(cd $dir && package_version)
-  if [ "$ver" = "$(cd "$BASELINE/$dir" && package_version)" ]
-  then i "Skip $dir unchanged at $ver"
-  else x ./scripts/wrapper.sh cargo semver-checks \
-         --manifest-path=$dir --baseline-root="$BASELINE/$dir" "$@"
-  fi
+  x ./scripts/wrapper.sh cargo semver-checks --manifest-path=$dir --baseline-rev=$BASE "$@"
 }
 
 # TODO(https://github.com/obi1kenobi/cargo-semver-checks/issues/1746): Uncomment when fixed.
