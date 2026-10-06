@@ -105,9 +105,11 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     needs: [ubuntu, macos]
-    if: always() # this job is required to merge PRs
+    if: always()
     steps:
-      - run: true
+      - run: |
+          [ "${{ needs.ubuntu.result }}" = success ]
+          [ "${{ needs.macos.result }}" = success ]
   pages:
     runs-on: ubuntu-latest
     needs: ci
