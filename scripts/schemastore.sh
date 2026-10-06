@@ -30,6 +30,7 @@ copy_schema() {
   cp $SOURCE/src/schemas/json/$1.json $TARGET
 }
 
+copy_schema cargo-config
 copy_schema cargo-lints-clippy
 copy_schema cargo-lints-rust
 copy_schema rust-toolchain
