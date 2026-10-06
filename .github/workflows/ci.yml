@@ -105,6 +105,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     needs: [ubuntu, macos]
+    if: always() # this job is required to merge PRs
     steps:
       - run: true
   pages:
