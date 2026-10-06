@@ -103,9 +103,9 @@ pub struct HashDigest {
 // otcrypto_state_t
 #[repr(C)]
 pub struct State {
-    data: [u32; 24],
+    data: [u32; 4],
 }
-pub static mut STATE: State = State { data: [0; 24] };
+pub static mut STATE: State = State { data: [0; 4] };
 
 // otcrypto_key_mode_t
 #[derive(Clone, Copy, PartialEq, Eq)]

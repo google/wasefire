@@ -21,7 +21,7 @@ use crate::error::unwrap_status;
 #[repr(C)]
 pub struct Context {
     key: OwnedBlindedKey,
-    data: [u32; 92],
+    data: [u32; 177],
 }
 
 impl Context {
