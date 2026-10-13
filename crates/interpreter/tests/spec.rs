@@ -31,8 +31,17 @@ fn test(repo: &str, name: &str, skip: Option<usize>) {
     lexer.allow_confusing_unicode(true);
     let buffer = parser::ParseBuffer::new_with_lexer(lexer).unwrap();
     let wast: Wast = parser::parse(&buffer).unwrap();
-    let layout = std::alloc::Layout::from_size_align(pool_size(name), MEMORY_ALIGN).unwrap();
-    let pool = unsafe { std::slice::from_raw_parts_mut(std::alloc::alloc(layout), layout.size()) };
+    #[repr(C, align(16))]
+    #[derive(Clone)]
+    #[allow(dead_code)] // The field makes the allocation large enough for the byte view below.
+    struct Aligned([u8; MEMORY_ALIGN]);
+    assert_eq!(std::mem::size_of::<Aligned>(), MEMORY_ALIGN);
+    assert!(std::mem::align_of::<Aligned>() >= MEMORY_ALIGN);
+    let mut blocks = vec![Aligned([0; MEMORY_ALIGN]); pool_size(name).div_ceil(MEMORY_ALIGN)];
+    // Each block is aligned and has exactly MEMORY_ALIGN bytes, so the buffer is contiguous.
+    let pool = unsafe {
+        std::slice::from_raw_parts_mut(blocks.as_mut_ptr().cast(), blocks.len() * MEMORY_ALIGN)
+    };
     let mut env = Env::new(pool);
     env.instantiate("spectest", &SPECTEST);
     env.register_name("spectest", None);
