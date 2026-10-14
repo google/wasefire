@@ -31,9 +31,8 @@ fn test(repo: &str, name: &str, skip: Option<usize>) {
     lexer.allow_confusing_unicode(true);
     let buffer = parser::ParseBuffer::new_with_lexer(lexer).unwrap();
     let wast: Wast = parser::parse(&buffer).unwrap();
-    let layout = std::alloc::Layout::from_size_align(pool_size(name), MEMORY_ALIGN).unwrap();
-    let pool = unsafe { std::slice::from_raw_parts_mut(std::alloc::alloc(layout), layout.size()) };
-    let mut env = Env::new(pool);
+    let mut pool = Pool::new(name);
+    let mut env = Env::new(unsafe { pool.get_mut() });
     env.instantiate("spectest", &SPECTEST);
     env.register_name("spectest", None);
     assert!(matches!(env.inst, Sup::Yes(_)));
@@ -190,6 +189,31 @@ macro_rules! only_sup {
             Err(x) => Err(x),
         }
     };
+}
+
+struct Pool {
+    layout: std::alloc::Layout,
+    alloc: *mut u8,
+}
+
+impl Drop for Pool {
+    fn drop(&mut self) {
+        unsafe { std::alloc::dealloc(self.alloc, self.layout) };
+    }
+}
+
+impl Pool {
+    fn new(name: &str) -> Self {
+        let layout = std::alloc::Layout::from_size_align(pool_size(name), MEMORY_ALIGN).unwrap();
+        let alloc = unsafe { std::alloc::alloc(layout) };
+        assert!(!alloc.is_null());
+        Pool { layout, alloc }
+    }
+
+    // SAFETY: Call once per instance.
+    unsafe fn get_mut(&mut self) -> &mut [u8] {
+        unsafe { std::slice::from_raw_parts_mut(self.alloc, self.layout.size()) }
+    }
 }
 
 struct Env<'m> {

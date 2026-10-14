@@ -37,3 +37,7 @@ RUSTFLAGS=--cfg=portable_atomic_unsafe_assume_single_core \
 cargo check --example=hello
 # Run with `-- --test-threads=1 --nocapture` to see unsupported tests.
 cargo test --test=spec --features=debug,toctou,float-types,vector-types
+MIRIFLAGS=-Zmiri-disable-isolation \
+  cargo miri test --test=spec --features=debug,toctou,float-types,vector-types -- start --exact
+MIRIFLAGS=-Zmiri-disable-isolation \
+  cargo miri test --test=spec --features=debug,toctou,float-types,vector-types -- memory_size --exact
