@@ -1467,7 +1467,25 @@ impl<'m> Memory<'m> {
     }
 
     fn len(&self) -> u32 {
-        core::cmp::min(self.data.len() as u32, self.size * 0x10000)
+        // 65536 pages is 4 GiB, which does not fit in u32.
+        let backed = self.data.len().min(u32::MAX as usize) as u32;
+        backed.min(self.size.saturating_mul(0x10000))
+    }
+}
+
+#[cfg(test)]
+mod memory_tests {
+    use super::*;
+
+    #[test]
+    fn max_pages_keep_backing_memory_accessible() {
+        #[repr(align(16))]
+        struct Aligned([u8; 16]);
+
+        let mut data = Aligned([0; 16]);
+        let mut memory = Memory::default();
+        memory.init(&mut data.0, Limits { min: MEM_MAX, max: MEM_MAX }).unwrap();
+        assert_eq!(memory.len(), 16);
     }
 }
 
