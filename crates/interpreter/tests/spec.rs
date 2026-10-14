@@ -31,7 +31,8 @@ fn test(repo: &str, name: &str, skip: Option<usize>) {
     lexer.allow_confusing_unicode(true);
     let buffer = parser::ParseBuffer::new_with_lexer(lexer).unwrap();
     let wast: Wast = parser::parse(&buffer).unwrap();
-    let mut env = Env::new(name);
+    let mut pool = Pool::new(name);
+    let mut env = Env::new(unsafe { pool.get_mut() });
     env.instantiate("spectest", &SPECTEST);
     env.register_name("spectest", None);
     assert!(matches!(env.inst, Sup::Yes(_)));
@@ -190,9 +191,32 @@ macro_rules! only_sup {
     };
 }
 
-struct Env<'m> {
+struct Pool {
     layout: std::alloc::Layout,
     alloc: *mut u8,
+}
+
+impl Drop for Pool {
+    fn drop(&mut self) {
+        unsafe { std::alloc::dealloc(self.alloc, self.layout) };
+    }
+}
+
+impl Pool {
+    fn new(name: &str) -> Self {
+        let layout = std::alloc::Layout::from_size_align(pool_size(name), MEMORY_ALIGN).unwrap();
+        let alloc = unsafe { std::alloc::alloc(layout) };
+        assert!(!alloc.is_null());
+        Pool { layout, alloc }
+    }
+
+    // SAFETY: Call once per instance.
+    unsafe fn get_mut(&mut self) -> &mut [u8] {
+        unsafe { std::slice::from_raw_parts_mut(self.alloc, self.layout.size()) }
+    }
+}
+
+struct Env<'m> {
     pool: &'m mut [u8],
     store: Store<'m>,
     inst: Sup<InstId>,
@@ -201,21 +225,10 @@ struct Env<'m> {
     skip: Option<usize>,
 }
 
-impl<'m> Drop for Env<'m> {
-    fn drop(&mut self) {
-        unsafe { std::alloc::dealloc(self.alloc, self.layout) };
-    }
-}
-
 impl<'m> Env<'m> {
-    fn new(name: &str) -> Self {
-        let layout = std::alloc::Layout::from_size_align(pool_size(name), MEMORY_ALIGN).unwrap();
-        let alloc = unsafe { std::alloc::alloc(layout) };
-        assert!(!alloc.is_null());
+    fn new(pool: &'m mut [u8]) -> Self {
         Env {
-            layout,
-            alloc,
-            pool: unsafe { std::slice::from_raw_parts_mut(alloc, layout.size()) },
+            pool,
             store: Store::default(),
             inst: Sup::Uninit,
             insts: HashMap::new(),
