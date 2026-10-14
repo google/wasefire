@@ -211,6 +211,7 @@ impl<'m> Env<'m> {
     fn new(name: &str) -> Self {
         let layout = std::alloc::Layout::from_size_align(pool_size(name), MEMORY_ALIGN).unwrap();
         let alloc = unsafe { std::alloc::alloc(layout) };
+        assert!(!alloc.is_null());
         Env {
             layout,
             alloc,
