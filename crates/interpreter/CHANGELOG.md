@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Fix incorrect length computation for memories with 65536 pages
 - Remove now stable `never_type` attribute
 - Enable `unreachable_pub` lint
 - Update dependencies
