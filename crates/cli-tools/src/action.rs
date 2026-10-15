@@ -390,8 +390,11 @@ impl PlatformWipeStorage {
     pub async fn run(self, device: &DynDevice) -> Result<()> {
         let PlatformWipeStorage { external } = self;
         if device.supports::<service::PlatformWipeStorage>() {
-            device.call::<service::PlatformWipeStorage>(external).await.map(|x| *x.get())
-        } else if device.supports::<service::_PlatformWipeStorage0>() {
+            return device.call::<service::PlatformWipeStorage>(external).await.map(|x| *x.get());
+        } else if external {
+            bail!("device does not support wiping external storage");
+        }
+        if device.supports::<service::_PlatformWipeStorage0>() {
             device.call::<service::_PlatformWipeStorage0>(()).await.map(|x| *x.get())
         } else if device.supports::<service::_PlatformClearStore0>() {
             device.call::<service::_PlatformClearStore0>(0).await.map(|x| *x.get())

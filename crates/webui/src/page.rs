@@ -346,13 +346,12 @@ fn platform_wipe_storage(page: UseStateSetter<Page>, device: Device) -> Html {
             });
         }
     });
-    let checked = device.supports::<service::PlatformWipeStorage>();
-    let disabled = !checked;
+    let disabled = !device.supports::<service::PlatformWipeStorage>();
     html! {<>
         <button onclick={wipe}>{ "Wipe" }</button>{ " internal persistent storage: " }
         <ul>
           <li>
-            <input type="checkbox" id="wipe-external" ref={external} {checked} {disabled} />
+            <input type="checkbox" id="wipe-external" ref={external} {disabled} />
             <label for="wipe-external">{ " also wipe external persistent storage" }</label>
           </li>
         </ul>
