@@ -378,15 +378,21 @@ impl Wait {
     }
 }
 
-/// Wipes all persistent storage (board, scheduler, and applets).
+/// Wipes all persistent storage from the device.
 #[derive(clap::Args)]
-pub struct PlatformWipeStorage {}
+pub struct PlatformWipeStorage {
+    /// Also wipes external storage (outside the chip, on the board).
+    #[arg(long)]
+    external: bool,
+}
 
 impl PlatformWipeStorage {
     pub async fn run(self, device: &DynDevice) -> Result<()> {
-        let PlatformWipeStorage {} = self;
+        let PlatformWipeStorage { external } = self;
         if device.supports::<service::PlatformWipeStorage>() {
-            device.call::<service::PlatformWipeStorage>(()).await.map(|x| *x.get())
+            device.call::<service::PlatformWipeStorage>(external).await.map(|x| *x.get())
+        } else if device.supports::<service::_PlatformWipeStorage0>() {
+            device.call::<service::_PlatformWipeStorage0>(()).await.map(|x| *x.get())
         } else if device.supports::<service::_PlatformClearStore0>() {
             device.call::<service::_PlatformClearStore0>(0).await.map(|x| *x.get())
         } else {

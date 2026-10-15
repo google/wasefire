@@ -330,8 +330,16 @@ api! {
     /// [`applet::Metadata0`]), and 4 big-endian bytes encoding the size (in bytes) of the applet.
     21 [11 -] AppletInstall2: transfer::Request<'a> => transfer::Response,
 
-    /// Wipes all persistent storage (board, scheduler, and applets).
-    22 [12 -] PlatformWipeStorage: () => (),
+    /// (deprecated) Wipes all persistent storage (board, scheduler, and applets).
+    ///
+    /// This message is deprecated in favor of [`PlatformWipeStorage`].
+    22 [12 - 12] _PlatformWipeStorage0: () => (),
 
-    next 23 [13 -]
+    /// Wipes all persistent storage from the device.
+    ///
+    /// The boolean indicates whether only chip storage (false) or all board storage (true) must be
+    /// wiped from the device.
+    23 [13 -] PlatformWipeStorage: bool => (),
+
+    next 24 [14 -]
 }

@@ -4,7 +4,7 @@
 
 ### Major
 
-- Rename `action::PlatformClearStore` to `action::PlatformWipeStorage` and remove field
+- Rename `action::PlatformClearStore` to `action::PlatformWipeStorage` and replace field
 - Merge `platform_{a,b}` into `platform` in `action::PlatformUpdate` for bundle files and to update
   both sides
 - Add `options: &ConnectionOptions` parameter to `action::PlatformUpdate::run()` for reconnection

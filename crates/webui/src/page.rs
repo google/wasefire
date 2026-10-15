@@ -312,13 +312,29 @@ async fn platform_reboot(page: UseStateSetter<Page>, device: UsbDevice) {
 
 impl Command for service::PlatformWipeStorage {
     fn input(page: UseStateSetter<Page>, device: Device) -> Html {
-        let click = Callback::from(move |_| {
+        html!(<li><PlatformWipeStorage page={page} device={device} /></li>)
+    }
+}
+
+#[yew_autoprops::autoprops(PlatformWipeStorageProps)]
+#[yew::component(PlatformWipeStorage)]
+fn platform_wipe_storage(page: UseStateSetter<Page>, device: Device) -> Html {
+    let external = yew::use_node_ref();
+    let wipe = Callback::from({
+        let page = page.clone();
+        let device = device.clone();
+        let external = external.clone();
+        move |_| {
+            let external =
+                external.cast::<web_sys::HtmlInputElement>().is_some_and(|x| x.checked());
             page.set(Page::Feedback { content: "Wiping persistent storage...".into() });
             let page = page.clone();
             let device = device.clone();
             spawn_local(async move {
                 let wipe = if device.supports::<service::PlatformWipeStorage>() {
-                    device.call::<service::PlatformWipeStorage>(()).await
+                    device.call::<service::PlatformWipeStorage>(external).await
+                } else if device.supports::<service::_PlatformWipeStorage0>() {
+                    device.call::<service::_PlatformWipeStorage0>(()).await
                 } else if device.supports::<service::_PlatformClearStore0>() {
                     device.call::<service::_PlatformClearStore0>(0).await
                 } else {
@@ -328,9 +344,19 @@ impl Command for service::PlatformWipeStorage {
                 let content = "Persistent storage wiped. ".into();
                 page.set(Page::Result { content, device: Some(device) });
             });
-        });
-        html!(<li><button onclick={click}>{ "Wipe" }</button>{ " all persistent storage" }</li>)
-    }
+        }
+    });
+    let checked = device.supports::<service::PlatformWipeStorage>();
+    let disabled = !checked;
+    html! {<>
+        <button onclick={wipe}>{ "Wipe" }</button>{ " internal persistent storage: " }
+        <ul>
+          <li>
+            <input type="checkbox" id="wipe-external" ref={external} {checked} {disabled} />
+            <label for="wipe-external">{ " also wipe external persistent storage" }</label>
+          </li>
+        </ul>
+    </>}
 }
 
 impl Command for service::AppletInstall2 {

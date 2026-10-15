@@ -166,9 +166,9 @@ fn process_event_<B: Board>(
             };
             reply::<B, service::AppletMetadata0>(metadata.clone());
         }
-        Api::PlatformWipeStorage(()) => {
+        Api::PlatformWipeStorage(external) => {
             use wasefire_board_api::platform::Api as _;
-            board::Platform::<B>::wipe_storage()?;
+            board::Platform::<B>::wipe_storage(external)?;
             reply::<B, service::PlatformWipeStorage>(());
         }
         #[cfg(not(feature = "_test"))]

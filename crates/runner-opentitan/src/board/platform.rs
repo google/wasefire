@@ -76,7 +76,7 @@ impl Api for Impl {
         Ok(SideInfo0 { name, version })
     }
 
-    fn wipe_storage() -> Result<(), Error> {
+    fn wipe_storage(_external: bool) -> Result<(), Error> {
         with_state(|state| state.storage.store.clear(0))
     }
 

@@ -67,8 +67,11 @@ pub trait Api: Send {
     /// - `World:NotFound`: The other side is empty.
     fn opposite_info() -> Result<wasefire_protocol::platform::SideInfo0<'static>, Error>;
 
-    /// Wipes all persistent storage (board, scheduler, and applets).
-    fn wipe_storage() -> Result<(), Error>;
+    /// Wipes all persistent storage from the device.
+    ///
+    /// The boolean indicates whether only chip storage (false) or all board storage (true) must be
+    /// wiped from the device.
+    fn wipe_storage(external: bool) -> Result<(), Error>;
 
     /// Reboots the device (thus platform and applets).
     fn reboot() -> Result<!, Error>;

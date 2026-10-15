@@ -26,7 +26,17 @@ footer {
     }
 
     ul {
+        list-style-type: none;
+        padding-left: 15px;
         margin-top: 5px;
+
+        input[type="checkbox"] {
+            vertical-align: middle;
+
+            &:disabled + label {
+                color: grey;
+            }
+        }
     }
 }
 

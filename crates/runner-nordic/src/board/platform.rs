@@ -68,7 +68,12 @@ impl Api for Impl {
         Ok(SideInfo0 { name, version })
     }
 
-    fn wipe_storage() -> Result<(), Error> {
+    fn wipe_storage(_external: bool) -> Result<(), Error> {
+        #[cfg(feature = "fpc2534")]
+        if _external {
+            use wasefire_board_api::fingerprint::matcher::Api as _;
+            crate::board::fpc2534::Impl::delete_template(None)?;
+        }
         with_state(|state| state.store.clear(0))
     }
 
