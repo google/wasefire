@@ -4,7 +4,7 @@
 
 ### Major
 
-- Rename `platform-clear-store` to `platform-wipe-storage` and remove argument
+- Rename `platform-clear-store` to `platform-wipe-storage` and replace argument with `--external`
 - Change `platform-update` to take a bundle instead of the 2 sides
 
 ### Patch

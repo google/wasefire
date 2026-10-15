@@ -53,7 +53,7 @@ impl Api for Impl {
         Err(Error::world(Code::NotEnough))
     }
 
-    fn wipe_storage() -> Result<(), Error> {
+    fn wipe_storage(_external: bool) -> Result<(), Error> {
         with_state(|state| state.store.clear(0))
     }
 
