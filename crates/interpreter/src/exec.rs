@@ -933,7 +933,7 @@ impl<'m> Thread<'m> {
                 let s = self.pop_value().unwrap_i32() as usize;
                 let d = self.pop_value().unwrap_i32() as usize;
                 let mem = store.mem(inst_id, 0);
-                if core::cmp::max(s, d).checked_add(n).is_none_or(|x| x > mem.len() as usize) {
+                if core::cmp::max(s, d).checked_add(n).is_none_or(|x| x > mem.len()) {
                     return Err(trap());
                 }
                 mem.data.copy_within(s .. s + n, d);
@@ -943,7 +943,7 @@ impl<'m> Thread<'m> {
                 let val = self.pop_value().unwrap_i32() as u8;
                 let d = self.pop_value().unwrap_i32() as usize;
                 let mem = store.mem(inst_id, 0);
-                if d.checked_add(n).is_none_or(|x| x > mem.len() as usize) {
+                if d.checked_add(n).is_none_or(|x| x > mem.len()) {
                     memory_too_small(d, n, mem);
                     return Err(trap());
                 }
@@ -1100,12 +1100,12 @@ impl<'m> Thread<'m> {
     fn mem_slice<'a>(
         &mut self, mem: &'a mut Memory<'m>, m: MemArg, i: u32, len: usize,
     ) -> Option<&'a mut [u8]> {
-        let ea = i.checked_add(m.offset)?;
-        if ea.checked_add(len as u32)? > mem.len() {
-            memory_too_small(ea as usize, len, mem);
+        let ea = (i as usize).checked_add(m.offset as usize)?;
+        if ea.checked_add(len)? > mem.len() {
+            memory_too_small(ea, len, mem);
             return None;
         }
-        Some(&mut mem.data[ea as usize ..][.. len])
+        Some(&mut mem.data[ea ..][.. len])
     }
 
     fn load(
@@ -1387,7 +1387,7 @@ fn table_init(d: usize, s: usize, n: usize, table: &mut Table, elems: &[Val]) ->
 
 fn memory_init(d: usize, s: usize, n: usize, mem: &mut Memory, data: &[u8]) -> Result<(), Error> {
     if s.checked_add(n).is_none_or(|x| x > data.len())
-        || d.checked_add(n).is_none_or(|x| x > mem.len() as usize)
+        || d.checked_add(n).is_none_or(|x| x > mem.len())
     {
         memory_too_small(d, n, mem);
         Err(trap())
@@ -1449,15 +1449,12 @@ struct Memory<'m> {
 }
 
 impl<'m> Memory<'m> {
-    fn init(&mut self, mut data: &'m mut [u8], limits: Limits) -> Result<(), Error> {
+    fn init(&mut self, data: &'m mut [u8], limits: Limits) -> Result<(), Error> {
         if !data.as_ptr().is_aligned_to(MEMORY_ALIGN) {
             return Err(invalid());
         }
-        if limits.max < 0x10000 {
-            let max = core::cmp::min(limits.max as usize * 0x10000, data.len());
-            data = &mut data[.. max];
-        }
-        self.data = data;
+        let max = core::cmp::min(data.len(), (limits.max as usize).saturating_mul(0x10000));
+        self.data = &mut data[.. max];
         // TODO: Figure out if we need to do this or whether we can rely on the caller to provide a
         // zeroed-out slice.
         self.data.fill(0);
@@ -1466,8 +1463,8 @@ impl<'m> Memory<'m> {
         Ok(())
     }
 
-    fn len(&self) -> u32 {
-        core::cmp::min(self.data.len() as u32, self.size * 0x10000)
+    fn len(&self) -> usize {
+        core::cmp::min(self.data.len(), (self.size as usize).saturating_mul(0x10000))
     }
 }
 
