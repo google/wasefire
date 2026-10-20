@@ -103,4 +103,4 @@
 
 ## 0.1.0
 
-<!-- Increment to skip CHANGELOG.md test: 26 -->
+<!-- Increment to skip CHANGELOG.md test: 27 -->
