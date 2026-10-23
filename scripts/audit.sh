@@ -19,23 +19,17 @@ set -e
 
 # This script runs cargo audit on all crates.
 
-IGNORED_ADVISORIES="
-RUSTSEC-2023-0089
-RUSTSEC-2024-0370
-RUSTSEC-2024-0436
-RUSTSEC-2025-0141
-RUSTSEC-2026-0110
-"
-
-ignore_args=
-for advisory in $IGNORED_ADVISORIES; do
-  ignore_args="$ignore_args --ignore=$advisory"
-done
+[ "$1" = --fix ] && { shift; fix=y; }
 
 shard_init "$@"
 for lock in $(git ls-files '*/Cargo.lock'); do
   shard_next || continue
-  x ./scripts/wrapper.sh cargo audit --deny=warnings $ignore_args $no_fetch --file="$lock"
+  code=0
+  x ./scripts/wrapper.sh cargo audit $no_fetch --file="$lock" || code=$?
+  if [ $code -ne 0 ]; then
+    [ "$fix" = y ] || exit $code
+    x ./scripts/wrapper.sh cargo audit fix --file="$lock"
+  fi
   no_fetch=--no-fetch
 done
 shard_done

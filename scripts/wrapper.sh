@@ -46,7 +46,7 @@ IS_CARGO=y
 case "$1" in
   cargo)
     case "$2" in
-      audit) ensure_cargo cargo-audit 0.22.2 ;;
+      audit) ensure_cargo cargo-audit 0.22.2 --features=fix ;;
       bloat) ensure_cargo cargo-bloat 0.12.1 ;;
       semver-checks) ensure_cargo cargo-semver-checks 0.51.0 ;;
       upgrade) ensure_cargo cargo-edit 0.13.13 ;;

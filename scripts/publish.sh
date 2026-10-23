@@ -49,6 +49,7 @@ done
 [ "$1" = --dry-run ] && d "Nothing more to do with --dry-run"
 
 [ -z "$(git status -s)" ] || e "Repository is not clean"
+./scripts/audit.sh || e "Repository has vulnerabilities"
 
 i "Remove all -git suffixes (if any)"
 sed -i 's/-git//' $(git ls-files '*/'{Cargo.{toml,lock},CHANGELOG.md})

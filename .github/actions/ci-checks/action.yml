@@ -51,9 +51,6 @@ runs:
     - if: ${{ inputs.check == 'book' }}
       run: ./scripts/ci-book.sh
       shell: bash
-    - if: ${{ inputs.check == 'audit' }}
-      run: ./scripts/ci-audit.sh
-      shell: bash
     - if: ${{ inputs.check == 'semver' }}
       run: ./scripts/ci-semver.sh
       shell: bash
