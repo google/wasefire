@@ -46,6 +46,8 @@ for crate in $TOPOLOGICAL_ORDER; do
   done
 done
 
+./scripts/audit.sh || e "Fix and merge audit warnings first"
+
 [ "$1" = --dry-run ] && d "Nothing more to do with --dry-run"
 
 [ -z "$(git status -s)" ] || e "Repository is not clean"
