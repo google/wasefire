@@ -19,17 +19,12 @@ set -e
 
 # This script runs cargo audit on all crates.
 
-[ "$1" = --fix ] && { shift; fix=y; }
+[ "$1" = --fix ] && { shift; fix=fix; }
 
 shard_init "$@"
 for lock in $(git ls-files '*/Cargo.lock'); do
   shard_next || continue
-  code=0
-  x ./scripts/wrapper.sh cargo audit $no_fetch --file="$lock" || code=$?
-  if [ $code -ne 0 ]; then
-    [ "$fix" = y ] || exit $code
-    x ./scripts/wrapper.sh cargo audit fix --file="$lock"
-  fi
+  x ./scripts/wrapper.sh cargo audit $no_fetch $fix --file="$lock"
   no_fetch=--no-fetch
 done
 shard_done
