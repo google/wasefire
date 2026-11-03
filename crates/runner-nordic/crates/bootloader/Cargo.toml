@@ -6,14 +6,19 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
-cortex-m = "0.7.9"
+cortex-m = "0.7.10"
 cortex-m-rt = "0.7.7"
 embedded-storage = "0.3.2"
 header = { path = "../header" }
 nrf52840-hal = "0.19.0"
-panic-abort = "0.3.2"
 wasefire-common = { path = "../../../common" }
 wasefire-one-of = { path = "../../../one-of" }
+
+# TODO(https://github.com/japaric/panic-abort/pull/10): Update when merged.
+[dependencies.panic-abort]
+git = "https://github.com/ia0/panic-abort.git"
+rev = "86fe2758d1fabc677136159629c19cad3a6fe205"
+version = "0.3.2"
 
 [features]
 # Enabled by xtask.

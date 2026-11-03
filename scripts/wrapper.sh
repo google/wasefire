@@ -49,16 +49,16 @@ case "$1" in
       audit) ensure_cargo cargo-audit 0.22.2 --features=fix ;;
       bloat) ensure_cargo cargo-bloat 0.12.1 ;;
       semver-checks) ensure_cargo cargo-semver-checks 0.51.0 ;;
-      upgrade) ensure_cargo cargo-edit 0.13.13 ;;
+      upgrade) ensure_cargo cargo-edit 0.13.14 ;;
       *) e "Wrapper does not support 'cargo $2'" ;;
     esac
     ;;
-  defmt-print) ensure_cargo defmt-print 1.1.0 ;;
+  defmt-print) ensure_cargo defmt-print 1.2.0 ;;
   mdbook) ensure_cargo mdbook 0.5.4 ;;
   nrfdfu) ensure_cargo nrfdfu 0.2.1 ;;
   probe-rs) ensure_cargo probe-rs-tools 0.32.0 ;;
   rust-objcopy|rust-size) ensure_cargo cargo-binutils 0.4.0 ;;
-  trunk) ensure_cargo trunk 0.22.0-rc.1 ;;
+  trunk) ensure_cargo trunk 0.22.1 ;;
   twiggy) ensure_cargo twiggy 0.8.0 ;;
   *) IS_CARGO=n ;;
 esac
@@ -85,7 +85,7 @@ IS_LOCAL=y
 case "$1" in
   bazel)
     REPO=bazelbuild/bazelisk
-    VERSION=v1.29.0
+    VERSION=v1.30.0
     if ! tag_installed bazel; then
       github_url bazelisk-linux-amd64
       download $URL +x bazel
@@ -93,7 +93,7 @@ case "$1" in
     fi ;;
   tombi)
     REPO=tombi-toml/tombi
-    VERSION=v1.7.1
+    VERSION=v1.9.9
     if ! tag_installed tombi; then
       ASSET=tombi-cli-${VERSION#v}-x86_64-unknown-linux-musl
       github_url $ASSET.tar.gz
