@@ -12,7 +12,7 @@ data-encoding = "2.11.1"
 env_logger = { version = "0.11.11", optional = true }
 rand = "0.10.3"
 syscall-test = { path = "../board/crates/syscall-test" }
-tokio = { version = "1.53.1", features = ["full"] }
+tokio = { version = "1.54.1", features = ["full"] }
 usb-device = "0.3.2"
 usbd-hid = "0.10.2"
 usbd-serial = "0.2.2"

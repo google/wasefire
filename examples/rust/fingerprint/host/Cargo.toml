@@ -9,8 +9,8 @@ anyhow = "1.0.104"
 clap = { version = "4.6.7", features = ["derive"] }
 common = { path = "../common" }
 data-encoding = "2.11.1"
-signal-hook = "0.4.4"
-tokio = { version = "1.53.1", features = ["full"] }
+signal-hook = "0.4.6"
+tokio = { version = "1.54.1", features = ["full"] }
 wasefire-cli-tools = { path = "../../../../crates/cli-tools", features = ["action"] }
 wasefire-error = { path = "../../../../crates/error" }
 wasefire-protocol = { path = "../../../../crates/protocol", features = ["host"] }

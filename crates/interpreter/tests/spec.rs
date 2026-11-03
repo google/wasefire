@@ -537,7 +537,7 @@ macro_rules! test {
 test!(address);
 test!(align);
 test!(annotations);
-test!(binary);
+test!(binary; Some(2));
 test!(binary_leb128, "binary-leb128");
 test!(block);
 test!(br);
