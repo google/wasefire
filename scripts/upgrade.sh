@@ -64,6 +64,8 @@ for path in $(git ls-files '*/Cargo.toml'); do
   ./scripts/wrapper.sh cargo upgrade --manifest-path=$path --incompatible=allow
 done
 
+./scripts/audit.sh --fix
+
 x git commit -am'Upgrade all dependencies'
 
 d "All dependencies have been upgraded and a commit created"
