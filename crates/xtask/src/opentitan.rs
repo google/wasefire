@@ -72,7 +72,6 @@ pub(crate) async fn build(elf: &str) -> Result<String> {
     let mut opentitan = Command::new(".root/bin/opentitantool");
     opentitan.args(["--quiet", "image", "manifest", "update", &bin]);
     opentitan.arg("--manifest=crates/runner-opentitan/manifest.json");
-    opentitan.arg("--domain=None");
     opentitan.arg(format!("--output={presign}"));
     opentitan.arg(format!(
         "--ecdsa-key={prov_exts_dir}/shared/rom_ext/gb/keys/gb00-app-key-prod-0.pub.der"
