@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Reject host results with the wrong type without losing the pending call
 - Fix incorrect length computation for memories with 65536 pages
 - Remove now stable `never_type` attribute
 - Enable `unreachable_pub` lint

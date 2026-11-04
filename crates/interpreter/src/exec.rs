@@ -339,9 +339,13 @@ impl<'a, 'm> Call<'a, 'm> {
     }
 
     /// Resumes execution with the results from the host.
+    ///
+    /// Returns [`Error::Invalid`] if the results do not match the host function signature. The
+    /// call remains pending and can be obtained again with [`Store::last_call()`].
     pub fn resume(self, results: &[Val]) -> Result<RunResult<'a, 'm>, Error> {
-        let Continuation { mut thread, arity, .. } = self.store.threads.pop().unwrap();
-        check(results.len() == arity)?;
+        let index = self.cont().index;
+        check_types(&self.store.funcs[index].1.results, results)?;
+        let Continuation { mut thread, .. } = self.store.threads.pop().unwrap();
         thread.push_values(results);
         thread.run(self.store)
     }
@@ -503,7 +507,6 @@ struct Continuation<'m> {
     thread: Thread<'m>,
     index: usize,
     args: Vec<Val>,
-    arity: usize,
 }
 
 impl<'m> Store<'m> {
@@ -1355,9 +1358,8 @@ impl<'m> Thread<'m> {
             Side::Host => {
                 let index = ptr.index() as usize;
                 let t = store.funcs[index].1;
-                let arity = t.results.len();
                 let args = self.pop_values(t.params.len());
-                store.threads.push(Continuation { thread: self, arity, index, args });
+                store.threads.push(Continuation { thread: self, index, args });
                 return Ok(ThreadResult::Host);
             }
             Side::Wasm(x) => x,
