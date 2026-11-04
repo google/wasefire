@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Wasefire WebUI</title>
+    <link rel="stylesheet" href="/wasefire/webui/index-8b68b6ae61d09415.css" integrity="sha384-sluG/xHlEIL66aSLeSf4+8IuthfuuhODVGMlV29RDy6krdDITkZMGFjiR0Gm8UvL"/>
+  <link rel="modulepreload" href="/wasefire/webui/webui-2be989d115bf5060.js" crossorigin="anonymous" integrity="sha384-1C6JgYAeZRGPvIoTbIqW15eUpRT48jvkgh1vNH/Z9jYaumsQq+CtS/cBjJ/xwJxD"><link rel="preload" href="/wasefire/webui/webui-90c64203c431bbf2_bg.wasm" crossorigin="anonymous" integrity="sha384-0JPCHszdP883Qwg0ff4/CCIP4f++9VvKBlMrKb0MRTwXbh98BVV9DityKsZU9vqI" as="fetch" type="application/wasm"></head>
+  <body>
+<script type="module">
+import init, * as bindings from '/wasefire/webui/webui-2be989d115bf5060.js';
+const wasm = await init({ module_or_path: '/wasefire/webui/webui-90c64203c431bbf2_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script></body>
+</html>
