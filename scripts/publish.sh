@@ -70,6 +70,8 @@ git log -1 --pretty=%s | grep -q '^Release all crates (#[0-9]*)$' \
   || e "This is not a merged release commit"
 [ "$1" = --no-dry-run ] || d "Run with --no-dry-run to actually publish"
 
+# Allow resolving sibling wasefire crates that were just published in this loop.
+export CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow
 for crate in $TOPOLOGICAL_ORDER; do
   ( cd crates/$crate
     $(package_publish) || exit 0
