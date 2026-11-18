@@ -15,7 +15,6 @@
 
 set -e
 . scripts/log.sh
-. scripts/package.sh
 
 # This script upgrades all dependencies.
 
@@ -42,9 +41,23 @@ x sed -i 's/^\(channel = "nightly-\)[^"]*"$/\1'$(date +%F)'"/' \
   rust-toolchain.toml
 
 get_crates() { sed -En 's/^.*ensure_cargo ([^ ]+) .*$/\1/p' scripts/wrapper.sh; }
-update_crate() { x sed -Ei 's/(ensure_cargo '"$1"') [^ ]+ /\1 '"$2"' /' scripts/wrapper.sh; }
+# Updates $1 in scripts/wrapper.sh to its highest version while respecting .cargo/config.toml
+# (including registry.global-min-publish-age).
+update_crate() {
+  local crate=$1
+  local version
+  rm -rf target/upgrade
+  cargo new -q --vcs=none target/upgrade
+  cargo add -q --manifest-path=target/upgrade/Cargo.toml --no-default-features "$crate"
+  version=$(cargo pkgid -q --manifest-path=target/upgrade/Cargo.toml -p "$crate")
+  rm -rf target/upgrade
+  version=${version#*@}
+  echo "$version" | grep -q '^[0-9]\+\.[0-9]\+\.[0-9]\+$' \
+    || e "Invalid version '$version' for $crate"
+  x sed -Ei 's/(ensure_cargo '"$crate"') [^ ]+ /\1 '"$version"' /' scripts/wrapper.sh
+}
 for crate in $(get_crates); do
-  update_crate "$crate" "$(cargo_info_version "$crate")"
+  update_crate "$crate"
 done
 
 get_repos() { sed -n 's/^    REPO=//p' scripts/wrapper.sh; }

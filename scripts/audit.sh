@@ -19,7 +19,12 @@ set -e
 
 # This script runs cargo audit on all crates.
 
-[ "$1" = --fix ] && { shift; fix=fix; }
+if [ "$1" = --fix ]; then
+  shift
+  fix=fix
+  # Allow resolving security fixes published less than global-min-publish-age ago.
+  export CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow
+fi
 
 shard_init "$@"
 for lock in $(git ls-files '*/Cargo.lock'); do
