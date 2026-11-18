@@ -49,9 +49,11 @@ update_crate() {
   rm -rf target/upgrade
   cargo new -q --vcs=none target/upgrade
   cargo add -q --manifest-path=target/upgrade/Cargo.toml --no-default-features "$crate"
-  version=$(sed -n 's/^'"$crate"' = { version = "\([^"]*\)".*$/\1/p' target/upgrade/Cargo.toml)
+  version=$(cargo pkgid -q --manifest-path=target/upgrade/Cargo.toml -p "$crate")
   rm -rf target/upgrade
-  [ -n "$version" ] || e "Failed to resolve version for $crate"
+  version=${version#*@}
+  echo "$version" | grep -q '^[0-9]\+\.[0-9]\+\.[0-9]\+$' \
+    || e "Invalid version '$version' for $crate"
   x sed -Ei 's/(ensure_cargo '"$crate"') [^ ]+ /\1 '"$version"' /' scripts/wrapper.sh
 }
 for crate in $(get_crates); do
