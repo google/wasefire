@@ -40,34 +40,22 @@ done
 x sed -i 's/^\(channel = "nightly-\)[^"]*"$/\1'$(date +%F)'"/' \
   rust-toolchain.toml
 
-# Resolves the highest version of $1 while respecting .cargo/config.toml (including
-# registry.global-min-publish-age).
-latest_crate_version() {
-  local crate=$1
-  local ver
-  rm -rf target/upgrade
-  mkdir -p target/upgrade/src
-  touch target/upgrade/src/lib.rs
-  cat <<EOF > target/upgrade/Cargo.toml
-[package]
-name = "upgrade"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-$crate = { version = "*", default-features = false }
-EOF
-  ver=$(cargo tree -q --manifest-path=target/upgrade/Cargo.toml --depth=1 --prefix=none \
-    | sed -n "s/^$crate v\\([^ +]*\\).*\$/\\1/p")
-  rm -rf target/upgrade
-  [ -n "$ver" ] || e "Failed to resolve version for $crate"
-  echo "$ver"
-}
-
 get_crates() { sed -En 's/^.*ensure_cargo ([^ ]+) .*$/\1/p' scripts/wrapper.sh; }
-update_crate() { x sed -Ei 's/(ensure_cargo '"$1"') [^ ]+ /\1 '"$2"' /' scripts/wrapper.sh; }
+# Updates $1 in scripts/wrapper.sh to its highest version while respecting .cargo/config.toml
+# (including registry.global-min-publish-age).
+update_crate() {
+  local crate=$1
+  local version
+  rm -rf target/upgrade
+  cargo new -q --vcs=none target/upgrade
+  cargo add -q --manifest-path=target/upgrade/Cargo.toml --no-default-features "$crate"
+  version=$(sed -n 's/^'"$crate"' = { version = "\([^"]*\)".*$/\1/p' target/upgrade/Cargo.toml)
+  rm -rf target/upgrade
+  [ -n "$version" ] || e "Failed to resolve version for $crate"
+  x sed -Ei 's/(ensure_cargo '"$crate"') [^ ]+ /\1 '"$version"' /' scripts/wrapper.sh
+}
 for crate in $(get_crates); do
-  update_crate "$crate" "$(latest_crate_version "$crate")"
+  update_crate "$crate"
 done
 
 get_repos() { sed -n 's/^    REPO=//p' scripts/wrapper.sh; }
