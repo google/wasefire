@@ -2,6 +2,10 @@
 
 ## 0.5.1-git
 
+### Minor
+
+- Support start functions calling host functions
+
 ### Patch
 
 - Reject host results with the wrong type without losing the pending call
