@@ -199,20 +199,24 @@ impl<'m> Store<'m> {
             Some(mut parser) => {
                 let x = parser.parse_funcidx().into_ok();
                 let ptr = self.func_ptr(inst_id, x);
-                // The start function may be imported, so it may run in another instance.
-                let func_inst_id = ptr.instance().unwrap_wasm();
-                let (mut parser, side_table) = self.insts[func_inst_id].module.func(ptr.index());
-                let mut locals = Vec::new();
-                append_locals(&mut parser, &mut locals);
-                let ret = Parser::default();
-                let frame = Frame::new(func_inst_id, 0, ret, locals, side_table, 0);
-                let mut thread = Thread::new(parser, frame);
+                // Call the start function as a `call` instruction would, from a body made of a
+                // single `end`. This way it may be defined by this module, imported from another
+                // one, or be a host function.
+                // SAFETY: A single `end` is a valid expression.
+                let body = unsafe { Parser::new(&[0x0b]) };
+                let frame =
+                    Frame::new(inst_id, 0, Parser::default(), Vec::new(), Cursor::default(), 0);
+                let mut thread = Thread::new(body, frame);
                 thread.starting = Some(inst_id);
                 // The thread marks the instance started when it returns, which may only be after
                 // the host resumed it if the start function calls into the host.
-                match thread.run(self)? {
-                    RunResult::Done(x) => debug_assert!(x.is_empty()),
-                    RunResult::Host(_) => (),
+                match thread.invoke(self, ptr)? {
+                    ThreadResult::Continue(thread) => match thread.run(self)? {
+                        RunResult::Done(x) => debug_assert!(x.is_empty()),
+                        RunResult::Host(_) => (),
+                    },
+                    ThreadResult::Host => (),
+                    ThreadResult::Done(_) => unreachable!(),
                 }
             }
             None => self.last_inst().started = true,

@@ -81,3 +81,27 @@ fn start_function_trapping_after_host_call_leaves_instance_unusable() {
     // Instantiation failed, so the instance never becomes usable.
     assert_eq!(store.invoke(inst, "get", vec![]).unwrap_err(), Error::Invalid);
 }
+
+#[test]
+fn start_function_can_be_a_host_function() {
+    let mut store = Store::default();
+    store.link_func("env", "init", 0, 0).unwrap();
+    let wat = r#"(module
+        (import "env" "init" (func $init))
+        (func (export "get") (result i32) (i32.const 1))
+        (start $init))"#;
+    let inst = store.instantiate(module(wat), &mut []).unwrap();
+    let call = store.last_call().expect("the start function should be called");
+    assert_eq!(call.index(), 0);
+    assert_eq!(store.invoke(inst, "get", vec![]).unwrap_err(), Error::Invalid);
+
+    let call = store.last_call().unwrap();
+    let RunResult::Done(result) = call.resume(&[]).unwrap() else {
+        panic!("expected the start function to return");
+    };
+    assert!(result.is_empty());
+    let RunResult::Done(result) = store.invoke(inst, "get", vec![]).unwrap() else {
+        panic!("expected the function to return");
+    };
+    assert_eq!(result, vec![Val::I32(1)]);
+}
