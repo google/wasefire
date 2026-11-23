@@ -36,6 +36,7 @@ RUSTFLAGS=--cfg=portable_atomic_unsafe_assume_single_core \
   cargo check --lib --target=riscv32imc-unknown-none-elf
 cargo check --example=hello
 cargo test --test=host_results
+cargo test --test=start_host_calls
 # Run with `-- --test-threads=1 --nocapture` to see unsupported tests.
 cargo test --test=spec --features=debug,toctou,float-types,vector-types
 MIRIFLAGS=-Zmiri-disable-isolation \

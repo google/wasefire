@@ -118,6 +118,10 @@ impl<'m> Store<'m> {
     /// The memory is not dynamically allocated and must thus be provided. It is not necessary for
     /// the memory length to be a multiple of 64kB. Execution will trap if the module tries to
     /// access part of the memory that does not exist.
+    ///
+    /// If the start function of the module calls into the host, this function returns with that
+    /// call pending. It can be obtained with [`Self::last_call()`] and resumed like any other host
+    /// call. The instance can't be invoked or linked to until the start function returns.
     pub fn instantiate(
         &mut self, module: Module<'m>, memory: &'m mut [u8],
     ) -> Result<InstId, Error> {
@@ -191,17 +195,27 @@ impl<'m> Store<'m> {
                 self.last_inst().datas.push(drop);
             }
         }
-        if let Some(mut parser) = self.last_inst().module.section(SectionId::Start) {
-            let x = parser.parse_funcidx().into_ok();
-            let ptr = self.func_ptr(inst_id, x);
-            let inst_id = ptr.instance().unwrap_wasm();
-            let (mut parser, side_table) = self.insts[inst_id].module.func(ptr.index());
-            let mut locals = Vec::new();
-            append_locals(&mut parser, &mut locals);
-            let ret = Parser::default();
-            let thread = Thread::new(parser, Frame::new(inst_id, 0, ret, locals, side_table, 0));
-            let result = thread.run(self)?;
-            assert!(matches!(result, RunResult::Done(x) if x.is_empty()));
+        match self.last_inst().module.section(SectionId::Start) {
+            Some(mut parser) => {
+                let x = parser.parse_funcidx().into_ok();
+                let ptr = self.func_ptr(inst_id, x);
+                // The start function may be imported, so it may run in another instance.
+                let func_inst_id = ptr.instance().unwrap_wasm();
+                let (mut parser, side_table) = self.insts[func_inst_id].module.func(ptr.index());
+                let mut locals = Vec::new();
+                append_locals(&mut parser, &mut locals);
+                let ret = Parser::default();
+                let frame = Frame::new(func_inst_id, 0, ret, locals, side_table, 0);
+                let mut thread = Thread::new(parser, frame);
+                thread.starting = Some(inst_id);
+                // The thread marks the instance started when it returns, which may only be after
+                // the host resumed it if the start function calls into the host.
+                match thread.run(self)? {
+                    RunResult::Done(x) => debug_assert!(x.is_empty()),
+                    RunResult::Host(_) => (),
+                }
+            }
+            None => self.last_inst().started = true,
         }
         Ok(InstId { store_id: self.id, inst_id })
     }
@@ -216,6 +230,7 @@ impl<'m> Store<'m> {
     ) -> Result<RunResult<'a, 'm>, Error> {
         let inst_id = self.inst_id(inst)?;
         let inst = &self.insts[inst_id];
+        check(inst.started)?;
         let ptr = match inst.module.export(name).ok_or_else(not_found)? {
             ExportDesc::Func(x) => inst.funcs.ptr(inst_id, x),
             _ => return Err(Error::Invalid),
@@ -465,6 +480,9 @@ struct Instance<'m> {
     globals: Component<Vec<Global>>,
     elems: Vec<bool>, // whether the elem segment is dropped
     datas: Vec<bool>, // whether the data segment is dropped
+    // Whether the start function returned (or there is none). The instance can't be invoked or
+    // linked to before.
+    started: bool,
 }
 
 #[derive(Debug)]
@@ -474,6 +492,8 @@ struct Thread<'m> {
     // TODO: Consider the performance tradeoff between keeping the locals in and out of the value
     // stack. See the comments in PR #605 for more details.
     values: Vec<Val>,
+    // The instance whose start function this thread runs, to mark it started when it returns.
+    starting: Option<usize>,
 }
 
 /// Runtime result.
@@ -593,6 +613,7 @@ impl<'m> Store<'m> {
         } else {
             let inst_id = self.resolve_inst(import.module)?;
             let inst = &self.insts[inst_id];
+            check(inst.started)?;
             if let Some(mut parser) = inst.module.section(SectionId::Export) {
                 for _ in 0 .. parser.parse_vec().into_ok() {
                     let name = parser.parse_name().into_ok();
@@ -646,6 +667,7 @@ impl<'m> Instance<'m> {
             globals: Component::default(),
             elems: Vec::new(),
             datas: Vec::new(),
+            started: false,
         }
     }
 }
@@ -752,7 +774,7 @@ enum ThreadResult<'m> {
 
 impl<'m> Thread<'m> {
     fn new(parser: Parser<'m>, frame: Frame<'m>) -> Thread<'m> {
-        Thread { parser, frames: vec![frame], values: vec![] }
+        Thread { parser, frames: vec![frame], values: vec![], starting: None }
     }
 
     fn const_expr(store: &mut Store<'m>, inst_id: usize, mut_parser: &mut Parser<'m>) -> Val {
@@ -776,12 +798,19 @@ impl<'m> Thread<'m> {
     }
 
     fn run<'a>(mut self, store: &'a mut Store<'m>) -> Result<RunResult<'a, 'm>, Error> {
+        // Read before the loop: stepping consumes the thread and the last step doesn't return it.
+        let starting = self.starting;
         loop {
             // TODO: When trapping, we could return some CoreDump<'m> that contains the Thread<'m>.
             // This permits to dump the frames.
             match self.step(store)? {
                 ThreadResult::Continue(x) => self = x,
-                ThreadResult::Done(x) => return Ok(RunResult::Done(x)),
+                ThreadResult::Done(x) => {
+                    if let Some(inst_id) = starting {
+                        store.insts[inst_id].started = true;
+                    }
+                    return Ok(RunResult::Done(x));
+                }
                 ThreadResult::Host => return Ok(RunResult::Host(Call { store })),
             }
         }
